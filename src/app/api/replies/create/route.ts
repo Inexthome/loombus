@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { validateContent } from "@/lib/moderation/content";
 
 const REPLY_COOLDOWN_MS = 10000;
 
@@ -55,6 +56,15 @@ export async function POST(request: NextRequest) {
     if (!content) {
       return NextResponse.json(
         { error: "Please enter a reply." },
+        { status: 400 }
+      );
+    }
+
+    const moderationError = validateContent(content);
+
+    if (moderationError) {
+      return NextResponse.json(
+        { error: moderationError },
         { status: 400 }
       );
     }
