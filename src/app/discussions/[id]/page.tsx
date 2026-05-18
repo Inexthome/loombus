@@ -92,6 +92,11 @@ export default function DiscussionPage() {
   async function handleReply() {
     setMessage("");
 
+    if (!replyBody.trim()) {
+      setMessage("Reply cannot be empty.");
+      return;
+    }
+
     const { data: userData } = await supabase.auth.getUser();
 
     if (!userData.user) {

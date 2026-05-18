@@ -15,6 +15,18 @@ export default function CreatePage() {
     setLoading(true);
     setMessage("");
 
+    if (!title.trim()) {
+      setMessage("Please enter a discussion title.");
+      setLoading(false);
+      return;
+    }
+
+    if (!body.trim()) {
+      setMessage("Please enter discussion content.");
+      setLoading(false);
+      return;
+    }
+
     const { data: userData } = await supabase.auth.getUser();
 
     if (!userData.user) {
