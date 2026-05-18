@@ -106,8 +106,8 @@ export default function RootLayout({
                     </Link>
 
                     {isAdmin && (
-                      <Link href="/admin/reports" className="transition hover:text-white">
-                        Reports
+                      <Link href="/admin" className="transition hover:text-white">
+                        Admin
                       </Link>
                     )}
 
@@ -171,8 +171,8 @@ export default function RootLayout({
                     </Link>
 
                     {isAdmin && (
-                      <Link href="/admin/reports">
-                        Reports
+                      <Link href="/admin">
+                        Admin
                       </Link>
                     )}
 
