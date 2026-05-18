@@ -42,6 +42,10 @@ export default function RootLayout({
                 People
               </Link>
 
+              <Link href="/following" className="transition hover:text-white">
+                Following
+              </Link>
+
               <Link href="/profile" className="transition hover:text-white">
                 Profile
               </Link>
