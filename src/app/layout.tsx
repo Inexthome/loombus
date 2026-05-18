@@ -11,6 +11,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [user, setUser] = useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -40,62 +41,124 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-black text-white antialiased">
         <header className="border-b border-zinc-900">
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-            <Link
-              href="/"
-              className="text-xl font-semibold tracking-tight"
-            >
-              Loombus
-            </Link>
+          <div className="mx-auto max-w-6xl px-6 py-5">
 
-            <nav className="flex items-center gap-6 text-sm text-zinc-400">
-              <Link href="/discussions" className="transition hover:text-white">
-                Discussions
+            <div className="flex items-center justify-between">
+              <Link
+                href="/"
+                className="text-xl font-semibold tracking-tight"
+              >
+                Loombus
               </Link>
 
-              <Link href="/people" className="transition hover:text-white">
-                People
-              </Link>
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="rounded-lg border border-zinc-800 px-3 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white md:hidden"
+              >
+                Menu
+              </button>
 
-              {user && (
-                <>
-                  <Link href="/following" className="transition hover:text-white">
-                    Following
-                  </Link>
+              <nav className="hidden items-center gap-6 text-sm text-zinc-400 md:flex">
+                <Link href="/discussions" className="transition hover:text-white">
+                  Discussions
+                </Link>
 
-                  <Link href="/saved" className="transition hover:text-white">
-                    Saved
-                  </Link>
+                <Link href="/people" className="transition hover:text-white">
+                  People
+                </Link>
 
-                  <Link href="/create" className="transition hover:text-white">
-                    Create
-                  </Link>
+                {user && (
+                  <>
+                    <Link href="/following" className="transition hover:text-white">
+                      Following
+                    </Link>
 
-                  <Link href="/profile" className="transition hover:text-white">
-                    Profile
-                  </Link>
+                    <Link href="/saved" className="transition hover:text-white">
+                      Saved
+                    </Link>
 
-                  <button
-                    onClick={handleLogout}
-                    className="transition hover:text-white"
-                  >
-                    Logout
-                  </button>
-                </>
-              )}
+                    <Link href="/create" className="transition hover:text-white">
+                      Create
+                    </Link>
 
-              {!user && (
-                <>
-                  <Link href="/login" className="transition hover:text-white">
-                    Login
-                  </Link>
+                    <Link href="/profile" className="transition hover:text-white">
+                      Profile
+                    </Link>
 
-                  <Link href="/signup" className="transition hover:text-white">
-                    Sign Up
-                  </Link>
-                </>
-              )}
-            </nav>
+                    <button
+                      onClick={handleLogout}
+                      className="transition hover:text-white"
+                    >
+                      Logout
+                    </button>
+                  </>
+                )}
+
+                {!user && (
+                  <>
+                    <Link href="/login" className="transition hover:text-white">
+                      Login
+                    </Link>
+
+                    <Link href="/signup" className="transition hover:text-white">
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </nav>
+            </div>
+
+            {mobileMenuOpen && (
+              <nav className="mt-5 flex flex-col gap-4 border-t border-zinc-900 pt-5 text-sm text-zinc-400 md:hidden">
+                <Link href="/discussions">
+                  Discussions
+                </Link>
+
+                <Link href="/people">
+                  People
+                </Link>
+
+                {user && (
+                  <>
+                    <Link href="/following">
+                      Following
+                    </Link>
+
+                    <Link href="/saved">
+                      Saved
+                    </Link>
+
+                    <Link href="/create">
+                      Create
+                    </Link>
+
+                    <Link href="/profile">
+                      Profile
+                    </Link>
+
+                    <button
+                      onClick={handleLogout}
+                      className="text-left"
+                    >
+                      Logout
+                    </button>
+                  </>
+                )}
+
+                {!user && (
+                  <>
+                    <Link href="/login">
+                      Login
+                    </Link>
+
+                    <Link href="/signup">
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </nav>
+            )}
+
           </div>
         </header>
 
