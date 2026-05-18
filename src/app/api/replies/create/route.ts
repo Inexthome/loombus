@@ -106,6 +106,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await supabase.from("audit_logs").insert({
+      actor_id: user.id,
+      action: "reply.created",
+      target_type: "reply",
+      target_id: reply.id,
+      metadata: {
+        discussion_id: discussionId,
+      },
+    });
+
     return NextResponse.json({ reply });
   } catch {
     return NextResponse.json(
