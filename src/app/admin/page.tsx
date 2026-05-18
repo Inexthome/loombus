@@ -153,21 +153,59 @@ export default function AdminDashboardPage() {
 
         </div>
 
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-          <h2 className="mb-4 text-3xl font-semibold">
-            Moderation
-          </h2>
+        <div className="grid gap-6 lg:grid-cols-3">
 
-          <p className="mb-6 max-w-2xl leading-relaxed text-zinc-400">
-            Review community-submitted reports and monitor moderation activity.
-          </p>
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <h2 className="mb-4 text-3xl font-semibold">
+              Reports
+            </h2>
 
-          <Link
-            href="/admin/reports"
-            className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-          >
-            Open Reports →
-          </Link>
+            <p className="mb-6 leading-relaxed text-zinc-400">
+              Review community-submitted moderation reports.
+            </p>
+
+            <Link
+              href="/admin/reports"
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Open Reports →
+            </Link>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <h2 className="mb-4 text-3xl font-semibold">
+              Deleted Content
+            </h2>
+
+            <p className="mb-6 leading-relaxed text-zinc-400">
+              Review and restore soft-deleted discussions.
+            </p>
+
+            <Link
+              href="/admin/deleted"
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Open Deleted →
+            </Link>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <h2 className="mb-4 text-3xl font-semibold">
+              Audit Logs
+            </h2>
+
+            <p className="mb-6 leading-relaxed text-zinc-400">
+              Inspect platform activity and moderation events.
+            </p>
+
+            <Link
+              href="/admin/audit"
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Open Audit →
+            </Link>
+          </div>
+
         </div>
 
       </div>
