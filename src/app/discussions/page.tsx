@@ -15,6 +15,7 @@ type Discussion = {
 type Profile = {
   id: string;
   full_name: string | null;
+  username: string | null;
 };
 
 export default function DiscussionsPage() {
@@ -84,30 +85,45 @@ export default function DiscussionsPage() {
         )}
 
         <div className="space-y-6">
-          {discussions.map((discussion) => (
-            <a
-              key={discussion.id}
-              href={`/discussions/${discussion.id}`}
-              className="block rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
-            >
-              <p className="mb-3 text-sm text-zinc-500">
-                {discussion.topic}
-              </p>
+          {discussions.map((discussion) => {
+            const profile = profiles[discussion.user_id];
 
-              <h2 className="mb-3 text-2xl font-medium">
-                {discussion.title}
-              </h2>
+            return (
+              <div
+                key={discussion.id}
+                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+              >
+                <a href={`/discussions/${discussion.id}`} className="block">
+                  <p className="mb-3 text-sm text-zinc-500">
+                    {discussion.topic}
+                  </p>
 
-              <p className="mb-4 line-clamp-2 leading-relaxed text-zinc-400">
-                {discussion.body}
-              </p>
+                  <h2 className="mb-3 text-2xl font-medium">
+                    {discussion.title}
+                  </h2>
 
-              <p className="text-sm text-zinc-600">
-                by {profiles[discussion.user_id]?.full_name ?? "Loombus member"} ·{" "}
-                {new Date(discussion.created_at).toLocaleDateString()}
-              </p>
-            </a>
-          ))}
+                  <p className="mb-4 line-clamp-2 leading-relaxed text-zinc-400">
+                    {discussion.body}
+                  </p>
+                </a>
+
+                <p className="text-sm text-zinc-600">
+                  by{" "}
+                  {profile?.username ? (
+                    <a
+                      href={`/u/${profile.username}`}
+                      className="text-zinc-400 transition hover:text-white"
+                    >
+                      @{profile.username}
+                    </a>
+                  ) : (
+                    "Loombus member"
+                  )}{" "}
+                  · {new Date(discussion.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </main>
