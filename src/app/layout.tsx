@@ -34,6 +34,10 @@ export default function RootLayout({
                 Dashboard
               </Link>
 
+              <Link href="/saved" className="transition hover:text-white">
+                Saved
+              </Link>
+
               <Link href="/profile" className="transition hover:text-white">
                 Profile
               </Link>

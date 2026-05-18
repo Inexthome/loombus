@@ -37,6 +37,7 @@ export default function DiscussionPage() {
   const [replyBody, setReplyBody] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [bookmarkMessage, setBookmarkMessage] = useState("");
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -119,6 +120,29 @@ export default function DiscussionPage() {
     window.location.reload();
   }
 
+  async function handleBookmark() {
+    setBookmarkMessage("");
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const { error } = await supabase.from("bookmarks").insert({
+      user_id: userData.user.id,
+      discussion_id: id,
+    });
+
+    if (error) {
+      setBookmarkMessage("Already saved or unable to save.");
+      return;
+    }
+
+    setBookmarkMessage("Discussion saved.");
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -170,6 +194,21 @@ export default function DiscussionPage() {
         <p className="mb-10 text-xl leading-relaxed text-zinc-300">
           {discussion.body}
         </p>
+
+        <div className="mb-12">
+          <button
+            onClick={handleBookmark}
+            className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+          >
+            Save Discussion
+          </button>
+
+          {bookmarkMessage && (
+            <p className="mt-4 text-sm text-zinc-500">
+              {bookmarkMessage}
+            </p>
+          )}
+        </div>
 
         <div className="mb-16 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
           <h2 className="mb-6 text-xl font-medium">
