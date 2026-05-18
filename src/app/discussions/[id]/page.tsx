@@ -118,21 +118,29 @@ export default function DiscussionPage() {
       return;
     }
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
 
-    if (!userData.user) {
+    if (!sessionData.session) {
       window.location.href = "/login";
       return;
     }
 
-    const { error } = await supabase.from("replies").insert({
-      discussion_id: id,
-      user_id: userData.user.id,
-      body: replyBody,
+    const response = await fetch("/api/replies/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      },
+      body: JSON.stringify({
+        discussionId: id,
+        body: replyBody,
+      }),
     });
 
-    if (error) {
-      setMessage(`Error: ${error.message}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to post reply.");
       return;
     }
 
