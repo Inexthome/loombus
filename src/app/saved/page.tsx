@@ -18,6 +18,7 @@ type SavedDiscussion = {
 export default function SavedPage() {
   const [saved, setSaved] = useState<SavedDiscussion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     async function loadSaved() {
@@ -58,6 +59,26 @@ export default function SavedPage() {
     loadSaved();
   }, []);
 
+  async function removeBookmark(bookmarkId: string) {
+    setMessage("");
+
+    const { error } = await supabase
+      .from("bookmarks")
+      .delete()
+      .eq("id", bookmarkId);
+
+    if (error) {
+      setMessage("Unable to remove bookmark.");
+      return;
+    }
+
+    setSaved((current) =>
+      current.filter((item) => item.id !== bookmarkId)
+    );
+
+    setMessage("Bookmark removed.");
+  }
+
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-4xl">
@@ -87,6 +108,12 @@ export default function SavedPage() {
           </div>
         )}
 
+        {message && (
+          <p className="mb-6 text-sm text-zinc-500">
+            {message}
+          </p>
+        )}
+
         <div className="space-y-6">
           {saved.map((item) => {
             const discussion = item.discussions;
@@ -96,27 +123,40 @@ export default function SavedPage() {
             }
 
             return (
-              <a
+              <div
                 key={item.id}
-                href={`/discussions/${discussion.id}`}
-                className="block rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
               >
-                <p className="mb-3 text-sm text-zinc-500">
-                  {discussion.topic}
-                </p>
+                <a
+                  href={`/discussions/${discussion.id}`}
+                  className="block transition hover:opacity-90"
+                >
+                  <p className="mb-3 text-sm text-zinc-500">
+                    {discussion.topic}
+                  </p>
 
-                <h2 className="mb-3 text-2xl font-medium">
-                  {discussion.title}
-                </h2>
+                  <h2 className="mb-3 text-2xl font-medium">
+                    {discussion.title}
+                  </h2>
 
-                <p className="mb-4 line-clamp-2 leading-relaxed text-zinc-400">
-                  {discussion.body}
-                </p>
+                  <p className="mb-4 line-clamp-2 leading-relaxed text-zinc-400">
+                    {discussion.body}
+                  </p>
+                </a>
 
-                <p className="text-sm text-zinc-600">
-                  Saved {new Date(item.created_at).toLocaleDateString()}
-                </p>
-              </a>
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm text-zinc-600">
+                    Saved {new Date(item.created_at).toLocaleDateString()}
+                  </p>
+
+                  <button
+                    onClick={() => removeBookmark(item.id)}
+                    className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
             );
           })}
         </div>

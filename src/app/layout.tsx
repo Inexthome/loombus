@@ -38,6 +38,10 @@ export default function RootLayout({
                 Saved
               </Link>
 
+              <Link href="/people" className="transition hover:text-white">
+                People
+              </Link>
+
               <Link href="/profile" className="transition hover:text-white">
                 Profile
               </Link>

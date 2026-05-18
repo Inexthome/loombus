@@ -26,6 +26,9 @@ export default function UserProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followMessage, setFollowMessage] = useState("");
 
   useEffect(() => {
     async function loadProfile() {
@@ -42,6 +45,22 @@ export default function UserProfilePage() {
 
       setProfile(profileData);
 
+      const { data: userData } = await supabase.auth.getUser();
+      const viewerId = userData.user?.id ?? null;
+
+      setCurrentUserId(viewerId);
+
+      if (viewerId && viewerId !== profileData.id) {
+        const { data: followData } = await supabase
+          .from("follows")
+          .select("*")
+          .eq("follower_id", viewerId)
+          .eq("following_id", profileData.id)
+          .maybeSingle();
+
+        setIsFollowing(Boolean(followData));
+      }
+
       const { data: discussionData } = await supabase
         .from("discussions")
         .select("*")
@@ -54,6 +73,56 @@ export default function UserProfilePage() {
 
     loadProfile();
   }, [username]);
+
+  async function toggleFollow() {
+    setFollowMessage("");
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!profile) {
+      return;
+    }
+
+    if (userData.user.id === profile.id) {
+      setFollowMessage("You cannot follow yourself.");
+      return;
+    }
+
+    if (isFollowing) {
+      const { error } = await supabase
+        .from("follows")
+        .delete()
+        .eq("follower_id", userData.user.id)
+        .eq("following_id", profile.id);
+
+      if (error) {
+        setFollowMessage("Unable to unfollow.");
+        return;
+      }
+
+      setIsFollowing(false);
+      setFollowMessage("Unfollowed.");
+      return;
+    }
+
+    const { error } = await supabase.from("follows").insert({
+      follower_id: userData.user.id,
+      following_id: profile.id,
+    });
+
+    if (error) {
+      setFollowMessage("Unable to follow.");
+      return;
+    }
+
+    setIsFollowing(true);
+    setFollowMessage("Following.");
+  }
 
   if (loading) {
     return (
@@ -92,6 +161,23 @@ export default function UserProfilePage() {
           <p className="max-w-2xl leading-relaxed text-zinc-400">
             {profile.bio || "No bio added yet."}
           </p>
+
+          {currentUserId && currentUserId !== profile.id && (
+            <div className="mt-8">
+              <button
+                onClick={toggleFollow}
+                className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                {isFollowing ? "Following" : "Follow"}
+              </button>
+
+              {followMessage && (
+                <p className="mt-4 text-sm text-zinc-500">
+                  {followMessage}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <h2 className="mb-8 text-3xl font-semibold tracking-tight">
