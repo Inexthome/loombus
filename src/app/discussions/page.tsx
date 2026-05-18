@@ -23,6 +23,7 @@ export default function DiscussionsPage() {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
   const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
+  const [bookmarkCounts, setBookmarkCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,6 +85,20 @@ export default function DiscussionsPage() {
           }
 
           setViewCounts(views);
+
+          const { data: bookmarkData } = await supabase
+            .from("bookmarks")
+            .select("discussion_id")
+            .in("discussion_id", discussionIds);
+
+          const bookmarks: Record<string, number> = {};
+
+          for (const bookmark of bookmarkData ?? []) {
+            bookmarks[bookmark.discussion_id] =
+              (bookmarks[bookmark.discussion_id] ?? 0) + 1;
+          }
+
+          setBookmarkCounts(bookmarks);
         }
       }
 
@@ -227,10 +242,21 @@ export default function DiscussionsPage() {
                     · {new Date(discussion.created_at).toLocaleDateString()}
                   </p>
 
-                  <p className="text-sm text-zinc-500">
-                    {replyCounts[discussion.id] ?? 0} replies ·{" "}
-                    {viewCounts[discussion.id] ?? 0} views
-                  </p>
+                  <div className="text-right">
+                    <p className="text-sm text-zinc-500">
+                      {replyCounts[discussion.id] ?? 0} replies ·{" "}
+                      {viewCounts[discussion.id] ?? 0} views
+                    </p>
+
+                    <p className="mt-1 text-xs uppercase tracking-wide text-zinc-600">
+                      Signal Score{" "}
+                      {(
+                        (replyCounts[discussion.id] ?? 0) * 3 +
+                        (bookmarkCounts[discussion.id] ?? 0) * 5 +
+                        (viewCounts[discussion.id] ?? 0)
+                      )}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
