@@ -74,6 +74,42 @@ export default function AdminReportsPage() {
     loadReports();
   }, []);
 
+  async function softDeleteDiscussion(discussionId: string | undefined) {
+    if (!discussionId) {
+      return;
+    }
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    await supabase
+      .from("discussions")
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: userData.user.id,
+        deletion_reason: "Admin moderation action",
+      })
+      .eq("id", discussionId);
+
+    await supabase.from("audit_logs").insert({
+      actor_id: userData.user.id,
+      action: "discussion.soft_deleted",
+      target_type: "discussion",
+      target_id: discussionId,
+      metadata: {
+        reason: "Admin moderation action",
+      },
+    });
+
+    setReports((current) =>
+      current.filter((report) => report.discussion_id !== discussionId)
+    );
+  }
+
   async function markReviewed(reportId: string) {
     const { error } = await supabase
       .from("reports")
@@ -180,6 +216,15 @@ export default function AdminReportsPage() {
                     className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
                   >
                     Mark reviewed
+                  </button>
+                )}
+
+                {report.discussions && (
+                  <button
+                    onClick={() => softDeleteDiscussion(report.discussions?.id)}
+                    className="rounded-full border border-red-900 px-4 py-2 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300"
+                  >
+                    Soft delete discussion
                   </button>
                 )}
               </div>
