@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 type Discussion = {
@@ -22,6 +22,8 @@ export default function DiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
+  const [selectedTopic, setSelectedTopic] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     async function loadDiscussions() {
@@ -57,13 +59,45 @@ export default function DiscussionsPage() {
     loadDiscussions();
   }, []);
 
+  const topics = useMemo(() => {
+    const uniqueTopics = [...new Set(discussions.map((d) => d.topic))];
+    return ["All", ...uniqueTopics];
+  }, [discussions]);
+
+  const filteredDiscussions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return discussions.filter((discussion) => {
+      const profile = profiles[discussion.user_id];
+
+      const matchesTopic =
+        selectedTopic === "All" || discussion.topic === selectedTopic;
+
+      const matchesSearch =
+        !query ||
+        discussion.title.toLowerCase().includes(query) ||
+        discussion.body.toLowerCase().includes(query) ||
+        discussion.topic.toLowerCase().includes(query) ||
+        (profile?.username ?? "").toLowerCase().includes(query) ||
+        (profile?.full_name ?? "").toLowerCase().includes(query);
+
+      return matchesTopic && matchesSearch;
+    });
+  }, [discussions, profiles, selectedTopic, searchQuery]);
+
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-12 flex items-center justify-between gap-6">
-          <h1 className="text-5xl font-semibold tracking-tight">
-            Discussions
-          </h1>
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-5xl font-semibold tracking-tight">
+              Discussions
+            </h1>
+
+            <p className="mt-3 text-zinc-500">
+              Explore thoughtful, high-signal conversations.
+            </p>
+          </div>
 
           <a
             href="/create"
@@ -73,19 +107,52 @@ export default function DiscussionsPage() {
           </a>
         </div>
 
-        {loading && <p className="text-zinc-500">Loading discussions...</p>}
+        <div className="mb-8">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search discussions, topics, or contributors..."
+            className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+          />
+        </div>
 
-        {!loading && discussions.length === 0 && (
+        <div className="mb-10 flex flex-wrap gap-3">
+          {topics.map((topic) => (
+            <button
+              key={topic}
+              onClick={() => setSelectedTopic(topic)}
+              className={`rounded-full px-4 py-2 text-sm transition ${
+                selectedTopic === topic
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+              }`}
+            >
+              {topic}
+            </button>
+          ))}
+        </div>
+
+        {loading && (
+          <p className="text-zinc-500">
+            Loading discussions...
+          </p>
+        )}
+
+        {!loading && filteredDiscussions.length === 0 && (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-            <h2 className="mb-3 text-2xl font-medium">No discussions yet.</h2>
+            <h2 className="mb-3 text-2xl font-medium">
+              No discussions found.
+            </h2>
+
             <p className="text-zinc-400">
-              Start the first high-signal conversation on Loombus.
+              There are currently no discussions in this topic.
             </p>
           </div>
         )}
 
         <div className="space-y-6">
-          {discussions.map((discussion) => {
+          {filteredDiscussions.map((discussion) => {
             const profile = profiles[discussion.user_id];
 
             return (
@@ -93,7 +160,10 @@ export default function DiscussionsPage() {
                 key={discussion.id}
                 className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
               >
-                <a href={`/discussions/${discussion.id}`} className="block">
+                <a
+                  href={`/discussions/${discussion.id}`}
+                  className="block"
+                >
                   <p className="mb-3 text-sm text-zinc-500">
                     {discussion.topic}
                   </p>
