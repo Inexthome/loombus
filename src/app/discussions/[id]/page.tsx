@@ -80,6 +80,13 @@ export default function DiscussionPage() {
         }
       }
 
+      const { data: viewerData } = await supabase.auth.getUser();
+
+      await supabase.from("discussion_views").insert({
+        discussion_id: id,
+        viewer_id: viewerData.user?.id ?? null,
+      });
+
       setDiscussion(discussionData);
       setProfile(profileData ?? null);
       setReplies(repliesData ?? []);

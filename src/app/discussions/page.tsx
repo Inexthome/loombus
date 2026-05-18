@@ -22,6 +22,7 @@ export default function DiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
+  const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,6 +70,20 @@ export default function DiscussionsPage() {
           }
 
           setReplyCounts(counts);
+
+          const { data: viewData } = await supabase
+            .from("discussion_views")
+            .select("discussion_id")
+            .in("discussion_id", discussionIds);
+
+          const views: Record<string, number> = {};
+
+          for (const view of viewData ?? []) {
+            views[view.discussion_id] =
+              (views[view.discussion_id] ?? 0) + 1;
+          }
+
+          setViewCounts(views);
         }
       }
 
@@ -213,7 +228,8 @@ export default function DiscussionsPage() {
                   </p>
 
                   <p className="text-sm text-zinc-500">
-                    {replyCounts[discussion.id] ?? 0} replies
+                    {replyCounts[discussion.id] ?? 0} replies ·{" "}
+                    {viewCounts[discussion.id] ?? 0} views
                   </p>
                 </div>
               </div>
