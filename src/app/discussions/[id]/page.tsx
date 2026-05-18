@@ -39,6 +39,7 @@ export default function DiscussionPage() {
   const [message, setMessage] = useState("");
   const [bookmarkMessage, setBookmarkMessage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
+  const [reportMessage, setReportMessage] = useState("");
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -163,6 +164,30 @@ export default function DiscussionPage() {
     setBookmarkMessage("Discussion saved.");
   }
 
+  async function handleReport() {
+    setReportMessage("");
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const { error } = await supabase.from("reports").insert({
+      reporter_id: userData.user.id,
+      discussion_id: id,
+      reason: "User submitted report",
+    });
+
+    if (error) {
+      setReportMessage("Unable to submit report.");
+      return;
+    }
+
+    setReportMessage("Discussion reported.");
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -215,7 +240,7 @@ export default function DiscussionPage() {
           {discussion.body}
         </p>
 
-        <div className="mb-12">
+        <div className="mb-12 flex flex-wrap items-center gap-4">
           <button
             onClick={handleBookmark}
             disabled={isSaved}
@@ -228,9 +253,16 @@ export default function DiscussionPage() {
             {isSaved ? "Saved" : "Save Discussion"}
           </button>
 
-          {bookmarkMessage && (
-            <p className="mt-4 text-sm text-zinc-500">
-              {bookmarkMessage}
+          <button
+            onClick={handleReport}
+            className="rounded-full border border-red-900 px-5 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300"
+          >
+            Report Discussion
+          </button>
+
+          {(bookmarkMessage || reportMessage) && (
+            <p className="text-sm text-zinc-500">
+              {bookmarkMessage || reportMessage}
             </p>
           )}
         </div>
