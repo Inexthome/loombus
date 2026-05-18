@@ -29,6 +29,8 @@ export default function UserProfilePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followMessage, setFollowMessage] = useState("");
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     async function loadProfile() {
@@ -60,6 +62,19 @@ export default function UserProfilePage() {
 
         setIsFollowing(Boolean(followData));
       }
+
+      const { count: followerTotal } = await supabase
+        .from("follows")
+        .select("*", { count: "exact", head: true })
+        .eq("following_id", profileData.id);
+
+      const { count: followingTotal } = await supabase
+        .from("follows")
+        .select("*", { count: "exact", head: true })
+        .eq("follower_id", profileData.id);
+
+      setFollowerCount(followerTotal ?? 0);
+      setFollowingCount(followingTotal ?? 0);
 
       const { data: discussionData } = await supabase
         .from("discussions")
@@ -106,6 +121,7 @@ export default function UserProfilePage() {
       }
 
       setIsFollowing(false);
+      setFollowerCount((count) => Math.max(0, count - 1));
       setFollowMessage("Unfollowed.");
       return;
     }
@@ -121,6 +137,7 @@ export default function UserProfilePage() {
     }
 
     setIsFollowing(true);
+    setFollowerCount((count) => count + 1);
     setFollowMessage("Following.");
   }
 
@@ -161,6 +178,16 @@ export default function UserProfilePage() {
           <p className="max-w-2xl leading-relaxed text-zinc-400">
             {profile.bio || "No bio added yet."}
           </p>
+
+          <div className="mt-6 flex gap-8 text-sm text-zinc-500">
+            <p>
+              <span className="text-white">{followerCount}</span> followers
+            </p>
+
+            <p>
+              <span className="text-white">{followingCount}</span> following
+            </p>
+          </div>
 
           {currentUserId && currentUserId !== profile.id && (
             <div className="mt-8">
