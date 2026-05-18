@@ -79,6 +79,8 @@ export default function UserProfilePage() {
       const { data: discussionData } = await supabase
         .from("discussions")
         .select("*")
+        .is("deleted_at", null)
+        .is("deleted_at", null)
         .eq("user_id", profileData.id)
         .order("created_at", { ascending: false });
 

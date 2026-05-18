@@ -34,6 +34,8 @@ export default function DiscussionsPage() {
       const { data, error } = await supabase
         .from("discussions")
         .select("*")
+        .is("deleted_at", null)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
       if (!error && data) {

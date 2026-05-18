@@ -47,6 +47,8 @@ export default function DiscussionPage() {
         .from("discussions")
         .select("*")
         .eq("id", id)
+        .is("deleted_at", null)
+        .is("deleted_at", null)
         .single();
 
       if (discussionError || !discussionData) {
@@ -65,6 +67,8 @@ export default function DiscussionPage() {
         .from("replies")
         .select("*")
         .eq("discussion_id", id)
+        .is("deleted_at", null)
+        .is("deleted_at", null)
         .order("created_at", { ascending: true });
 
       const replyUserIds = [...new Set((repliesData ?? []).map((reply) => reply.user_id))];

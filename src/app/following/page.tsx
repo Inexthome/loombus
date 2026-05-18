@@ -49,6 +49,8 @@ export default function FollowingPage() {
       const { data: discussionData } = await supabase
         .from("discussions")
         .select("*")
+        .is("deleted_at", null)
+        .is("deleted_at", null)
         .in("user_id", followingIds)
         .order("created_at", { ascending: false });
 
