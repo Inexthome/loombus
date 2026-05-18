@@ -27,31 +27,35 @@ export default function CreatePage() {
       return;
     }
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
 
-    if (!userData.user) {
+    if (!sessionData.session) {
       window.location.href = "/login";
       return;
     }
 
-    const { data, error } = await supabase
-      .from("discussions")
-      .insert({
-        user_id: userData.user.id,
+    const response = await fetch("/api/discussions/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      },
+      body: JSON.stringify({
         title,
         topic,
         body,
-      })
-      .select()
-      .single();
+      }),
+    });
 
-    if (error) {
-      setMessage(`Error: ${error.message}`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to publish discussion.");
       setLoading(false);
       return;
     }
 
-    window.location.href = `/discussions/${data.id}`;
+    window.location.href = `/discussions/${result.discussion.id}`;
   }
 
   return (
