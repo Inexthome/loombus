@@ -38,6 +38,7 @@ export default function DiscussionPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [bookmarkMessage, setBookmarkMessage] = useState("");
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -86,6 +87,17 @@ export default function DiscussionPage() {
         discussion_id: id,
         viewer_id: viewerData.user?.id ?? null,
       });
+
+      if (viewerData.user) {
+        const { data: savedData } = await supabase
+          .from("bookmarks")
+          .select("id")
+          .eq("user_id", viewerData.user.id)
+          .eq("discussion_id", id)
+          .maybeSingle();
+
+        setIsSaved(Boolean(savedData));
+      }
 
       setDiscussion(discussionData);
       setProfile(profileData ?? null);
@@ -147,6 +159,7 @@ export default function DiscussionPage() {
       return;
     }
 
+    setIsSaved(true);
     setBookmarkMessage("Discussion saved.");
   }
 
@@ -205,9 +218,14 @@ export default function DiscussionPage() {
         <div className="mb-12">
           <button
             onClick={handleBookmark}
-            className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            disabled={isSaved}
+            className={`rounded-full border px-5 py-3 text-sm transition ${
+              isSaved
+                ? "border-zinc-800 bg-zinc-900 text-zinc-500"
+                : "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+            }`}
           >
-            Save Discussion
+            {isSaved ? "Saved" : "Save Discussion"}
           </button>
 
           {bookmarkMessage && (
