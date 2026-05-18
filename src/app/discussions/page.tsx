@@ -27,6 +27,7 @@ export default function DiscussionsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortMode, setSortMode] = useState("Newest");
 
   useEffect(() => {
     async function loadDiscussions() {
@@ -116,7 +117,7 @@ export default function DiscussionsPage() {
   const filteredDiscussions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    return discussions.filter((discussion) => {
+    const filtered = discussions.filter((discussion) => {
       const profile = profiles[discussion.user_id];
 
       const matchesTopic =
@@ -132,7 +133,34 @@ export default function DiscussionsPage() {
 
       return matchesTopic && matchesSearch;
     });
-  }, [discussions, profiles, selectedTopic, searchQuery]);
+
+    if (sortMode === "Signal") {
+      return [...filtered].sort((a, b) => {
+        const scoreA =
+          (replyCounts[a.id] ?? 0) * 3 +
+          (bookmarkCounts[a.id] ?? 0) * 5 +
+          (viewCounts[a.id] ?? 0);
+
+        const scoreB =
+          (replyCounts[b.id] ?? 0) * 3 +
+          (bookmarkCounts[b.id] ?? 0) * 5 +
+          (viewCounts[b.id] ?? 0);
+
+        return scoreB - scoreA;
+      });
+    }
+
+    return filtered;
+  }, [
+    discussions,
+    profiles,
+    selectedTopic,
+    searchQuery,
+    sortMode,
+    replyCounts,
+    bookmarkCounts,
+    viewCounts,
+  ]);
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -164,6 +192,30 @@ export default function DiscussionsPage() {
             placeholder="Search discussions, topics, or contributors..."
             className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
           />
+        </div>
+
+        <div className="mb-8 flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setSortMode("Newest")}
+            className={`rounded-full px-4 py-2 text-sm transition ${
+              sortMode === "Newest"
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+            }`}
+          >
+            Newest
+          </button>
+
+          <button
+            onClick={() => setSortMode("Signal")}
+            className={`rounded-full px-4 py-2 text-sm transition ${
+              sortMode === "Signal"
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+            }`}
+          >
+            Signal
+          </button>
         </div>
 
         <div className="mb-10 flex flex-wrap gap-3">
