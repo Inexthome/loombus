@@ -71,6 +71,10 @@ export default function RootLayout({
                   About
                 </Link>
 
+                <Link href="/guidelines" className="transition hover:text-white">
+                  Guidelines
+                </Link>
+
                 {user && (
                   <>
                     <Link href="/following" className="transition hover:text-white">
@@ -124,6 +128,10 @@ export default function RootLayout({
 
                 <Link href="/about">
                   About
+                </Link>
+
+                <Link href="/guidelines">
+                  Guidelines
                 </Link>
 
                 {user && (
