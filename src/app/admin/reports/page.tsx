@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase/client";
 type Report = {
   id: string;
   reason: string;
+  status: string;
   created_at: string;
   discussion_id: string;
   discussions: {
@@ -48,6 +49,7 @@ export default function AdminReportsPage() {
         .select(`
           id,
           reason,
+          status,
           created_at,
           discussion_id,
           discussions (
@@ -71,6 +73,25 @@ export default function AdminReportsPage() {
 
     loadReports();
   }, []);
+
+  async function markReviewed(reportId: string) {
+    const { error } = await supabase
+      .from("reports")
+      .update({ status: "reviewed" })
+      .eq("id", reportId);
+
+    if (error) {
+      return;
+    }
+
+    setReports((current) =>
+      current.map((report) =>
+        report.id === reportId
+          ? { ...report, status: "reviewed" }
+          : report
+      )
+    );
+  }
 
   if (loading) {
     return (
@@ -135,18 +156,33 @@ export default function AdminReportsPage() {
                 {report.discussions?.title ?? "Discussion unavailable"}
               </h2>
 
-              <p className="mb-4 text-zinc-400">
+              <p className="mb-3 text-zinc-400">
                 Reason: {report.reason}
               </p>
 
-              {report.discussions && (
+              <p className="mb-4 text-sm text-zinc-500">
+                Status: {report.status}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-4">
+                {report.discussions && (
                 <a
                   href={`/discussions/${report.discussions.id}`}
                   className="text-sm text-zinc-300 hover:text-white"
                 >
                   View discussion →
                 </a>
-              )}
+                )}
+
+                {report.status !== "reviewed" && (
+                  <button
+                    onClick={() => markReviewed(report.id)}
+                    className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                  >
+                    Mark reviewed
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
