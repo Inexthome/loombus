@@ -21,6 +21,7 @@ type Profile = {
 export default function FollowingPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -68,6 +69,24 @@ export default function FollowingPage() {
 
       for (const profile of profileData ?? []) {
         profileMap[profile.id] = profile;
+      }
+
+      const discussionIds = discussions.map((d) => d.id);
+
+      if (discussionIds.length > 0) {
+        const { data: replyData } = await supabase
+          .from("replies")
+          .select("discussion_id")
+          .in("discussion_id", discussionIds);
+
+        const counts: Record<string, number> = {};
+
+        for (const reply of replyData ?? []) {
+          counts[reply.discussion_id] =
+            (counts[reply.discussion_id] ?? 0) + 1;
+        }
+
+        setReplyCounts(counts);
       }
 
       setProfiles(profileMap);
@@ -135,8 +154,9 @@ export default function FollowingPage() {
                   </p>
                 </a>
 
-                <p className="text-sm text-zinc-600">
-                  by{" "}
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm text-zinc-600">
+                    by{" "}
                   {profile?.username ? (
                     <a
                       href={`/u/${profile.username}`}
@@ -147,8 +167,13 @@ export default function FollowingPage() {
                   ) : (
                     "Loombus member"
                   )}{" "}
-                  · {new Date(discussion.created_at).toLocaleDateString()}
-                </p>
+                    · {new Date(discussion.created_at).toLocaleDateString()}
+                  </p>
+
+                  <p className="text-sm text-zinc-500">
+                    {replyCounts[discussion.id] ?? 0} replies
+                  </p>
+                </div>
               </div>
             );
           })}
