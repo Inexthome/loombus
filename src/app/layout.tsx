@@ -11,12 +11,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
       const { data } = await supabase.auth.getUser();
+
       setUser(data.user ?? null);
+
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", data.user.id)
+          .single();
+
+        setIsAdmin(Boolean(profile?.is_admin));
+      }
     }
 
     loadUser();
@@ -93,6 +105,12 @@ export default function RootLayout({
                       Profile
                     </Link>
 
+                    {isAdmin && (
+                      <Link href="/admin/reports" className="transition hover:text-white">
+                        Reports
+                      </Link>
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="transition hover:text-white"
@@ -151,6 +169,12 @@ export default function RootLayout({
                     <Link href="/profile">
                       Profile
                     </Link>
+
+                    {isAdmin && (
+                      <Link href="/admin/reports">
+                        Reports
+                      </Link>
+                    )}
 
                     <button
                       onClick={handleLogout}
