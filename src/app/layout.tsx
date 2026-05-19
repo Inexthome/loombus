@@ -12,7 +12,18 @@ export default function RootLayout({
 }>) {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  async function loadNotificationCount(userId: string) {
+    const { count } = await supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .is("read_at", null);
+
+    setNotificationCount(count ?? 0);
+  }
 
   useEffect(() => {
     async function loadUser() {
@@ -20,7 +31,13 @@ export default function RootLayout({
 
       setUser(data.user ?? null);
 
+      if (!data.user) {
+        setNotificationCount(0);
+      }
+
       if (data.user) {
+        await loadNotificationCount(data.user.id);
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("is_admin")
@@ -35,8 +52,14 @@ export default function RootLayout({
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
+
+      if (session?.user) {
+        await loadNotificationCount(session.user.id);
+      } else {
+        setNotificationCount(0);
+      }
     });
 
     return () => {
@@ -99,6 +122,11 @@ export default function RootLayout({
 
                     <Link href="/notifications" className="transition hover:text-white">
                       Notifications
+                      {notificationCount > 0 && (
+                        <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
+                          {notificationCount}
+                        </span>
+                      )}
                     </Link>
 
                     <Link href="/create" className="transition hover:text-white">
@@ -168,6 +196,11 @@ export default function RootLayout({
 
                     <Link href="/notifications">
                       Notifications
+                      {notificationCount > 0 && (
+                        <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
+                          {notificationCount}
+                        </span>
+                      )}
                     </Link>
 
                     <Link href="/create">
