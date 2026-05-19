@@ -10,6 +10,13 @@ type Profile = {
   bio: string | null;
 };
 
+type ActivityCounts = {
+  discussions: number;
+  replies: number;
+  saved: number;
+  unreadNotifications: number;
+};
+
 function getMissingProfileFields(profile: Profile | null) {
   const missing = [];
 
@@ -31,6 +38,12 @@ function getMissingProfileFields(profile: Profile | null) {
 export default function DashboardPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [activityCounts, setActivityCounts] = useState<ActivityCounts>({
+    discussions: 0,
+    replies: 0,
+    saved: 0,
+    unreadNotifications: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,13 +57,50 @@ export default function DashboardPage() {
 
       setEmail(data.user.email ?? null);
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, username, bio")
-        .eq("id", data.user.id)
-        .maybeSingle();
+      const [
+        { data: profileData },
+        { count: discussionCount },
+        { count: replyCount },
+        { count: savedCount },
+        { count: unreadNotificationCount },
+      ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("full_name, username, bio")
+          .eq("id", data.user.id)
+          .maybeSingle(),
+
+        supabase
+          .from("discussions")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", data.user.id)
+          .is("deleted_at", null),
+
+        supabase
+          .from("replies")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", data.user.id)
+          .is("deleted_at", null),
+
+        supabase
+          .from("bookmarks")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", data.user.id),
+
+        supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", data.user.id)
+          .is("read_at", null),
+      ]);
 
       setProfile(profileData ?? null);
+      setActivityCounts({
+        discussions: discussionCount ?? 0,
+        replies: replyCount ?? 0,
+        saved: savedCount ?? 0,
+        unreadNotifications: unreadNotificationCount ?? 0,
+      });
       setLoading(false);
     }
 
@@ -75,7 +125,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-3xl text-zinc-400">
+        <div className="mx-auto max-w-4xl text-zinc-400">
           Loading dashboard...
         </div>
       </main>
@@ -84,7 +134,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-4xl">
         <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
           Dashboard
         </p>
@@ -141,6 +191,72 @@ export default function DashboardPage() {
             </p>
           )}
         </div>
+
+        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-5">
+            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              My Activity
+            </p>
+
+            <h2 className="text-2xl font-medium">
+              Your Loombus footprint
+            </h2>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href="/discussions"
+              className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+            >
+              <p className="mb-2 text-sm text-zinc-500">
+                Discussions
+              </p>
+
+              <p className="text-4xl font-semibold">
+                {activityCounts.discussions}
+              </p>
+            </Link>
+
+            <Link
+              href="/discussions"
+              className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+            >
+              <p className="mb-2 text-sm text-zinc-500">
+                Replies
+              </p>
+
+              <p className="text-4xl font-semibold">
+                {activityCounts.replies}
+              </p>
+            </Link>
+
+            <Link
+              href="/saved"
+              className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+            >
+              <p className="mb-2 text-sm text-zinc-500">
+                Saved
+              </p>
+
+              <p className="text-4xl font-semibold">
+                {activityCounts.saved}
+              </p>
+            </Link>
+
+            <Link
+              href="/notifications"
+              className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+            >
+              <p className="mb-2 text-sm text-zinc-500">
+                Unread
+              </p>
+
+              <p className="text-4xl font-semibold">
+                {activityCounts.unreadNotifications}
+              </p>
+            </Link>
+          </div>
+        </section>
 
         <div className="grid gap-4 md:grid-cols-2">
           <Link
