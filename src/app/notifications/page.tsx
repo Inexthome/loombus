@@ -83,7 +83,7 @@ export default function NotificationsPage() {
 
   async function markNotificationIdsRead(ids: string[], userId: string) {
     if (ids.length === 0) {
-      return;
+      return true;
     }
 
     const readAt = new Date().toISOString();
@@ -97,7 +97,7 @@ export default function NotificationsPage() {
 
     if (error) {
       setMessage("Unable to mark notifications as read.");
-      return;
+      return false;
     }
 
     setNotifications((current) =>
@@ -109,6 +109,7 @@ export default function NotificationsPage() {
     );
 
     window.dispatchEvent(new Event("loombus:notifications-changed"));
+    return true;
   }
 
   useEffect(() => {
@@ -212,6 +213,32 @@ export default function NotificationsPage() {
     window.dispatchEvent(new Event("loombus:notifications-changed"));
   }
 
+  async function markAllRead() {
+    if (!currentUserId || working) {
+      return;
+    }
+
+    const unreadIds = notifications
+      .filter((notification) => !notification.read_at)
+      .map((notification) => notification.id);
+
+    if (unreadIds.length === 0) {
+      setMessage("No unread notifications to mark read.");
+      return;
+    }
+
+    setMessage("");
+    setWorking(true);
+
+    const success = await markNotificationIdsRead(unreadIds, currentUserId);
+
+    setWorking(false);
+
+    if (success) {
+      setMessage("All unread notifications marked read.");
+    }
+  }
+
   async function clearReadNotifications() {
     if (!currentUserId || working) {
       return;
@@ -277,6 +304,14 @@ export default function NotificationsPage() {
                   ? "All caught up"
                   : `${unreadCount} unread`}
               </div>
+
+              <button
+                onClick={markAllRead}
+                disabled={working || unreadCount === 0}
+                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                Mark all read
+              </button>
 
               <button
                 onClick={clearReadNotifications}
