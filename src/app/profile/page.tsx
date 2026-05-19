@@ -75,6 +75,19 @@ export default function ProfilePage() {
       return;
     }
 
+    const { data: existingUsername } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", cleanUsername)
+      .neq("id", userData.user.id)
+      .maybeSingle();
+
+    if (existingUsername) {
+      setSaving(false);
+      setMessage("That username is already taken. Please choose another one.");
+      return;
+    }
+
     const { error: profileError } = await supabase.from("profiles").upsert({
       id: userData.user.id,
       full_name: fullName,
@@ -84,6 +97,12 @@ export default function ProfilePage() {
 
     if (profileError) {
       setSaving(false);
+
+      if (profileError.code === "23505") {
+        setMessage("That username is already taken. Please choose another one.");
+        return;
+      }
+
       setMessage(`Error: ${profileError.message}`);
       return;
     }
@@ -153,7 +172,7 @@ export default function ProfilePage() {
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
               />
               <p className="mt-2 text-xs text-zinc-600">
-                Use 2-30 letters, numbers, or underscores. Do not include the @ symbol.
+                Use 2-30 letters, numbers, or underscores. Usernames must be unique and should not include the @ symbol.
               </p>
             </div>
 
