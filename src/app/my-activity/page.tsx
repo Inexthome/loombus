@@ -46,7 +46,7 @@ type ActivityTotals = {
   discussions: number;
   replies: number;
   saved: number;
-  notifications: number;
+  unreadNotifications: number;
 };
 
 export default function MyActivityPage() {
@@ -62,7 +62,7 @@ export default function MyActivityPage() {
     discussions: 0,
     replies: 0,
     saved: 0,
-    notifications: 0,
+    unreadNotifications: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -85,7 +85,7 @@ export default function MyActivityPage() {
         { count: totalDiscussions },
         { count: totalReplies },
         { count: totalSaved },
-        { count: totalNotifications },
+        { count: unreadNotifications },
       ] = await Promise.all([
         supabase
           .from("discussions")
@@ -137,7 +137,8 @@ export default function MyActivityPage() {
         supabase
           .from("notifications")
           .select("*", { count: "exact", head: true })
-          .eq("user_id", userData.user.id),
+          .eq("user_id", userData.user.id)
+          .is("read_at", null),
       ]);
 
       const loadedReplies = (replyData ?? []) as Reply[];
@@ -150,7 +151,7 @@ export default function MyActivityPage() {
         discussions: totalDiscussions ?? 0,
         replies: totalReplies ?? 0,
         saved: totalSaved ?? 0,
-        notifications: totalNotifications ?? 0,
+        unreadNotifications: unreadNotifications ?? 0,
       });
 
       const replyDiscussionIds = [
@@ -315,8 +316,8 @@ export default function MyActivityPage() {
             href="/notifications"
             className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
           >
-            <p className="mb-2 text-sm text-zinc-500">Total notifications</p>
-            <p className="text-4xl font-semibold">{activityTotals.notifications}</p>
+            <p className="mb-2 text-sm text-zinc-500">Unread notifications</p>
+            <p className="text-4xl font-semibold">{activityTotals.unreadNotifications}</p>
           </Link>
         </div>
 
