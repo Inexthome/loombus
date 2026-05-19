@@ -1,11 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+
+type Profile = {
+  full_name: string | null;
+  username: string | null;
+  bio: string | null;
+};
+
+function getMissingProfileFields(profile: Profile | null) {
+  const missing = [];
+
+  if (!profile?.username?.trim()) {
+    missing.push("username");
+  }
+
+  if (!profile?.full_name?.trim()) {
+    missing.push("full name");
+  }
+
+  if (!profile?.bio?.trim()) {
+    missing.push("bio");
+  }
+
+  return missing;
+}
 
 export default function DashboardPage() {
   const [email, setEmail] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,11 +43,26 @@ export default function DashboardPage() {
       }
 
       setEmail(data.user.email ?? null);
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, username, bio")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      setProfile(profileData ?? null);
       setLoading(false);
     }
 
     loadUser();
   }, []);
+
+  const missingProfileFields = useMemo(
+    () => getMissingProfileFields(profile),
+    [profile]
+  );
+
+  const profileComplete = missingProfileFields.length === 0;
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -50,9 +90,39 @@ export default function DashboardPage() {
           Welcome to Loombus.
         </h1>
 
-        <p className="mb-10 text-zinc-400">
+        <p className="mb-8 text-zinc-400">
           Signed in as {email}
         </p>
+
+        {!profileComplete && (
+          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              Profile setup
+            </p>
+
+            <h2 className="mb-3 text-2xl font-medium">
+              Complete your public profile.
+            </h2>
+
+            <p className="mb-5 leading-relaxed text-zinc-400">
+              Add your {missingProfileFields.join(", ")} so other members know
+              who they are reading and interacting with.
+            </p>
+
+            <Link
+              href="/profile"
+              className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+            >
+              Complete Profile
+            </Link>
+          </div>
+        )}
+
+        {profileComplete && (
+          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-400">
+            Your public profile is complete.
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2">
           <Link

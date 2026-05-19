@@ -1,29 +1,81 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+
+type Profile = {
+  full_name: string | null;
+  username: string | null;
+  bio: string | null;
+};
+
+function getMissingProfileFields(profile: Profile | null) {
+  const missing = [];
+
+  if (!profile?.username?.trim()) {
+    missing.push("username");
+  }
+
+  if (!profile?.full_name?.trim()) {
+    missing.push("full name");
+  }
+
+  if (!profile?.bio?.trim()) {
+    missing.push("bio");
+  }
+
+  return missing;
+}
 
 export default function CreatePage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("AI & Society");
   const [body, setBody] = useState("");
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+
+  useEffect(() => {
+    async function loadProfileStatus() {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user) {
+        return;
+      }
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, username, bio")
+        .eq("id", userData.user.id)
+        .maybeSingle();
+
+      setProfile(profileData ?? null);
+    }
+
+    loadProfileStatus();
+  }, []);
+
+  const missingProfileFields = useMemo(
+    () => getMissingProfileFields(profile),
+    [profile]
+  );
+
+  const profileComplete = missingProfileFields.length === 0;
 
   async function handleCreate() {
-    setLoading(true);
+    setPublishing(true);
     setMessage("");
 
     if (!title.trim()) {
       setMessage("Please enter a discussion title.");
-      setLoading(false);
+      setPublishing(false);
       return;
     }
 
     if (!body.trim()) {
       setMessage("Please enter discussion content.");
-      setLoading(false);
+      setPublishing(false);
       return;
     }
 
@@ -51,7 +103,7 @@ export default function CreatePage() {
 
     if (!response.ok) {
       setMessage(result.error ?? "Unable to publish discussion.");
-      setLoading(false);
+      setPublishing(false);
       return;
     }
 
@@ -76,10 +128,30 @@ export default function CreatePage() {
           Create a discussion.
         </h1>
 
-        <p className="mb-12 max-w-2xl leading-relaxed text-zinc-400">
+        <p className="mb-8 max-w-2xl leading-relaxed text-zinc-400">
           Start a thoughtful discussion designed around signal,
           clarity, and meaningful contribution.
         </p>
+
+        {!profileComplete && (
+          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+            <p className="mb-2 text-sm font-medium text-zinc-300">
+              Your profile is not complete yet.
+            </p>
+
+            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
+              You can still publish, but adding your {missingProfileFields.join(", ")}
+              helps other members recognize your contributions.
+            </p>
+
+            <Link
+              href="/profile"
+              className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+            >
+              Complete your profile →
+            </Link>
+          </div>
+        )}
 
         <form className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
           <div>
@@ -135,10 +207,10 @@ export default function CreatePage() {
           <button
             type="button"
             onClick={handleCreate}
-            disabled={loading}
+            disabled={publishing}
             className="rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
           >
-            {loading ? "Publishing..." : "Publish Discussion"}
+            {publishing ? "Publishing..." : "Publish Discussion"}
           </button>
 
           {message && <p className="text-sm text-zinc-400">{message}</p>}
