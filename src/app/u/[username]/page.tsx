@@ -94,54 +94,42 @@ export default function UserProfilePage() {
   async function toggleFollow() {
     setFollowMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
-
-    if (!userData.user) {
-      window.location.href = "/login";
-      return;
-    }
-
     if (!profile) {
       return;
     }
 
-    if (userData.user.id === profile.id) {
-      setFollowMessage("You cannot follow yourself.");
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (!sessionData.session) {
+      window.location.href = "/login";
       return;
     }
 
-    if (isFollowing) {
-      const { error } = await supabase
-        .from("follows")
-        .delete()
-        .eq("follower_id", userData.user.id)
-        .eq("following_id", profile.id);
-
-      if (error) {
-        setFollowMessage("Unable to unfollow.");
-        return;
-      }
-
-      setIsFollowing(false);
-      setFollowerCount((count) => Math.max(0, count - 1));
-      setFollowMessage("Unfollowed.");
-      return;
-    }
-
-    const { error } = await supabase.from("follows").insert({
-      follower_id: userData.user.id,
-      following_id: profile.id,
+    const response = await fetch("/api/follows/toggle", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      },
+      body: JSON.stringify({
+        targetUserId: profile.id,
+      }),
     });
 
-    if (error) {
-      setFollowMessage("Unable to follow.");
+    const result = await response.json();
+
+    if (!response.ok) {
+      setFollowMessage(result.error ?? "Unable to update follow status.");
       return;
     }
 
-    setIsFollowing(true);
-    setFollowerCount((count) => count + 1);
-    setFollowMessage("Following.");
+    setIsFollowing(result.following);
+    setFollowerCount((count) =>
+      result.following ? count + 1 : Math.max(0, count - 1)
+    );
+    setFollowMessage(result.following ? "Following." : "Unfollowed.");
   }
+
 
   if (loading) {
     return (
