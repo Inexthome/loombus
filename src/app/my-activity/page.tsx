@@ -42,6 +42,13 @@ type Notification = {
   created_at: string;
 };
 
+type ActivityTotals = {
+  discussions: number;
+  replies: number;
+  saved: number;
+  notifications: number;
+};
+
 export default function MyActivityPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [replies, setReplies] = useState<Reply[]>([]);
@@ -51,6 +58,12 @@ export default function MyActivityPage() {
   const [removingSavedId, setRemovingSavedId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [activityTotals, setActivityTotals] = useState<ActivityTotals>({
+    discussions: 0,
+    replies: 0,
+    saved: 0,
+    notifications: 0,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,6 +82,10 @@ export default function MyActivityPage() {
         { data: replyData },
         { data: bookmarkData },
         { data: notificationData },
+        { count: totalDiscussions },
+        { count: totalReplies },
+        { count: totalSaved },
+        { count: totalNotifications },
       ] = await Promise.all([
         supabase
           .from("discussions")
@@ -99,6 +116,28 @@ export default function MyActivityPage() {
           .eq("user_id", userData.user.id)
           .order("created_at", { ascending: false })
           .limit(6),
+
+        supabase
+          .from("discussions")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userData.user.id)
+          .is("deleted_at", null),
+
+        supabase
+          .from("replies")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userData.user.id)
+          .is("deleted_at", null),
+
+        supabase
+          .from("bookmarks")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userData.user.id),
+
+        supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userData.user.id),
       ]);
 
       const loadedReplies = (replyData ?? []) as Reply[];
@@ -107,6 +146,12 @@ export default function MyActivityPage() {
       setDiscussions((discussionData ?? []) as Discussion[]);
       setReplies(loadedReplies);
       setNotifications((notificationData ?? []) as Notification[]);
+      setActivityTotals({
+        discussions: totalDiscussions ?? 0,
+        replies: totalReplies ?? 0,
+        saved: totalSaved ?? 0,
+        notifications: totalNotifications ?? 0,
+      });
 
       const replyDiscussionIds = [
         ...new Set(loadedReplies.map((reply) => reply.discussion_id)),
@@ -246,32 +291,32 @@ export default function MyActivityPage() {
             href="/my-discussions"
             className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
           >
-            <p className="mb-2 text-sm text-zinc-500">Recent discussions</p>
-            <p className="text-4xl font-semibold">{discussions.length}</p>
+            <p className="mb-2 text-sm text-zinc-500">Total discussions</p>
+            <p className="text-4xl font-semibold">{activityTotals.discussions}</p>
           </Link>
 
           <Link
             href="/my-replies"
             className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
           >
-            <p className="mb-2 text-sm text-zinc-500">Recent replies</p>
-            <p className="text-4xl font-semibold">{replies.length}</p>
+            <p className="mb-2 text-sm text-zinc-500">Total replies</p>
+            <p className="text-4xl font-semibold">{activityTotals.replies}</p>
           </Link>
 
           <Link
             href="/saved"
             className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
           >
-            <p className="mb-2 text-sm text-zinc-500">Recent saved</p>
-            <p className="text-4xl font-semibold">{savedDiscussions.length}</p>
+            <p className="mb-2 text-sm text-zinc-500">Total saved</p>
+            <p className="text-4xl font-semibold">{activityTotals.saved}</p>
           </Link>
 
           <Link
             href="/notifications"
             className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
           >
-            <p className="mb-2 text-sm text-zinc-500">Recent notifications</p>
-            <p className="text-4xl font-semibold">{notifications.length}</p>
+            <p className="mb-2 text-sm text-zinc-500">Total notifications</p>
+            <p className="text-4xl font-semibold">{activityTotals.notifications}</p>
           </Link>
         </div>
 
