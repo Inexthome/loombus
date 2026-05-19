@@ -147,6 +147,9 @@ export default function RootLayout({
                         </span>
                       )}
                     </Link>
+                    <Link href="/dashboard" className="transition hover:text-white">
+                      Dashboard
+                    </Link>
 
                     <Link href="/create" className="transition hover:text-white">
                       Create
@@ -220,6 +223,9 @@ export default function RootLayout({
                           {notificationCount}
                         </span>
                       )}
+                    </Link>
+                    <Link href="/dashboard">
+                      Dashboard
                     </Link>
 
                     <Link href="/create">
