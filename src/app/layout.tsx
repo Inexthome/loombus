@@ -126,9 +126,15 @@ export default function RootLayout({
             <div className="flex items-center justify-between">
               <Link
                 href="/"
-                className="text-xl font-semibold tracking-tight"
+                className="flex items-center gap-3 text-xl font-semibold tracking-tight"
+                aria-label="Loombus home"
               >
-                Loombus
+                <img
+                  src="/assets/brand/loombus-mark-transparent.png"
+                  alt=""
+                  className="h-8 w-8 object-contain"
+                />
+                <span>Loombus</span>
               </Link>
 
               <button
