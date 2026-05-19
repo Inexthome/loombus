@@ -17,6 +17,7 @@ type Discussion = {
 type Profile = {
   id: string;
   full_name: string | null;
+  username: string | null;
 };
 
 type Reply = {
@@ -51,6 +52,30 @@ function MentionText({ text }: { text: string }) {
         );
       })}
     </>
+  );
+}
+
+function ProfileName({
+  profile,
+  fallback = "Loombus member",
+}: {
+  profile?: Profile | null;
+  fallback?: string;
+}) {
+  const label =
+    profile?.full_name || (profile?.username ? `@${profile.username}` : fallback);
+
+  if (!profile?.username) {
+    return <>{label}</>;
+  }
+
+  return (
+    <Link
+      href={`/u/${profile.username}`}
+      className="text-zinc-400 transition hover:text-white"
+    >
+      {label}
+    </Link>
   );
 }
 
@@ -273,7 +298,7 @@ export default function DiscussionPage() {
         </h1>
 
         <p className="mb-3 text-sm text-zinc-600">
-          by {profile?.full_name ?? "Loombus member"}
+          by <ProfileName profile={profile} />
         </p>
 
         <p className="mb-10 text-xl leading-relaxed text-zinc-300">
@@ -354,7 +379,7 @@ export default function DiscussionPage() {
                 className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
               >
                 <p className="mb-4 text-sm text-zinc-500">
-                  {replyProfiles[reply.user_id]?.full_name ?? "Loombus member"}
+                  <ProfileName profile={replyProfiles[reply.user_id]} />
                 </p>
 
                 <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
