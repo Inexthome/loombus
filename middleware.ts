@@ -6,6 +6,7 @@ const protectedRoutes = [
   "/following",
   "/saved",
   "/profile",
+  "/notifications",
   "/admin",
 ];
 
@@ -33,6 +34,7 @@ export const config = {
     "/following/:path*",
     "/saved/:path*",
     "/profile/:path*",
+    "/notifications/:path*",
     "/admin/:path*",
   ],
 };

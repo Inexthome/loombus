@@ -97,6 +97,10 @@ export default function RootLayout({
                       Saved
                     </Link>
 
+                    <Link href="/notifications" className="transition hover:text-white">
+                      Notifications
+                    </Link>
+
                     <Link href="/create" className="transition hover:text-white">
                       Create
                     </Link>
@@ -160,6 +164,10 @@ export default function RootLayout({
 
                     <Link href="/saved">
                       Saved
+                    </Link>
+
+                    <Link href="/notifications">
+                      Notifications
                     </Link>
 
                     <Link href="/create">
