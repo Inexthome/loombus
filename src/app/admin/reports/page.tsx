@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -202,12 +203,12 @@ export default function AdminReportsPage() {
 
               <div className="flex flex-wrap items-center gap-4">
                 {report.discussions && (
-                <a
+                <Link
                   href={`/discussions/${report.discussions.id}`}
                   className="text-sm text-zinc-300 hover:text-white"
                 >
                   View discussion →
-                </a>
+                </Link>
                 )}
 
                 {report.status !== "reviewed" && (

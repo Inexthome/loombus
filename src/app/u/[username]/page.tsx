@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -203,7 +204,7 @@ export default function UserProfilePage() {
 
         <div className="space-y-6">
           {discussions.map((discussion) => (
-            <a
+            <Link
               key={discussion.id}
               href={`/discussions/${discussion.id}`}
               className="block rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
@@ -219,7 +220,7 @@ export default function UserProfilePage() {
               <p className="line-clamp-2 leading-relaxed text-zinc-400">
                 {discussion.body}
               </p>
-            </a>
+            </Link>
           ))}
 
           {discussions.length === 0 && (

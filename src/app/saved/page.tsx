@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -127,7 +128,7 @@ export default function SavedPage() {
                 key={item.id}
                 className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
               >
-                <a
+                <Link
                   href={`/discussions/${discussion.id}`}
                   className="block transition hover:opacity-90"
                 >
@@ -142,7 +143,7 @@ export default function SavedPage() {
                   <p className="mb-4 line-clamp-2 leading-relaxed text-zinc-400">
                     {discussion.body}
                   </p>
-                </a>
+                </Link>
 
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-sm text-zinc-600">

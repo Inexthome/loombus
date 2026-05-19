@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -49,7 +50,7 @@ export default function PeoplePage() {
 
         <div className="grid gap-6 md:grid-cols-2">
           {profiles.map((profile) => (
-            <a
+            <Link
               key={profile.id}
               href={`/u/${profile.username}`}
               className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
@@ -65,7 +66,7 @@ export default function PeoplePage() {
               <p className="line-clamp-3 leading-relaxed text-zinc-400">
                 {profile.bio || "No bio yet."}
               </p>
-            </a>
+            </Link>
           ))}
         </div>
       </div>
