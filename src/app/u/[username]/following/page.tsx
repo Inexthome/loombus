@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
@@ -29,6 +29,7 @@ export default function FollowListPage() {
 
   const [ownerProfile, setOwnerProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -86,6 +87,22 @@ export default function FollowListPage() {
     MODE === "followers"
       ? "No followers yet."
       : "This member is not following anyone yet.";
+
+  const filteredProfiles = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return profiles;
+    }
+
+    return profiles.filter((profile) => {
+      return (
+        (profile.full_name ?? "").toLowerCase().includes(query) ||
+        (profile.username ?? "").toLowerCase().includes(query) ||
+        (profile.bio ?? "").toLowerCase().includes(query)
+      );
+    });
+  }, [profiles, searchQuery]);
 
   if (loading) {
     return (
@@ -149,6 +166,22 @@ export default function FollowListPage() {
           </div>
         </div>
 
+        {profiles.length > 0 && (
+          <div className="mb-8">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={`Search ${title.toLowerCase()} by name, username, or bio...`}
+              className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+            />
+
+            <p className="mt-3 text-sm text-zinc-600">
+              Showing {filteredProfiles.length} of {profiles.length} {profiles.length === 1 ? "member" : "members"}
+            </p>
+          </div>
+        )}
+
         {profiles.length === 0 ? (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
             <h2 className="mb-3 text-2xl font-medium">
@@ -159,9 +192,19 @@ export default function FollowListPage() {
               Follow connections will appear here.
             </p>
           </div>
+        ) : filteredProfiles.length === 0 ? (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+            <h2 className="mb-3 text-2xl font-medium">
+              No members found.
+            </h2>
+
+            <p className="text-zinc-400">
+              No profiles match your current search.
+            </p>
+          </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {profiles.map((profile) => (
+            {filteredProfiles.map((profile) => (
               <Link
                 key={profile.id}
                 href={profile.username ? `/u/${profile.username}` : "#"}
