@@ -4,31 +4,66 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
-const settingsItems = [
+const settingsSections = [
   {
-    title: "Profile",
-    description: "Edit your public profile, username, bio, and notification preferences.",
-    href: "/profile",
+    title: "Account",
+    items: [
+      {
+        title: "Profile",
+        description: "Edit your public profile, username, full name, and bio.",
+        href: "/profile",
+      },
+      {
+        title: "Notification Settings",
+        description: "Choose which replies, follows, and mentions can notify you.",
+        href: "/profile",
+      },
+    ],
   },
   {
-    title: "My Activity",
-    description: "Review your discussions, replies, saved items, and notifications.",
-    href: "/my-activity",
+    title: "Activity",
+    items: [
+      {
+        title: "My Activity",
+        description: "See your full activity overview in one place.",
+        href: "/my-activity",
+      },
+      {
+        title: "My Discussions",
+        description: "Review the discussions you started.",
+        href: "/my-discussions",
+      },
+      {
+        title: "My Replies",
+        description: "Review the replies you contributed.",
+        href: "/my-replies",
+      },
+      {
+        title: "Saved",
+        description: "Revisit discussions you saved for later.",
+        href: "/saved",
+      },
+      {
+        title: "Notifications",
+        description: "Review unread and read notifications.",
+        href: "/notifications",
+      },
+    ],
   },
   {
-    title: "Notification Settings",
-    description: "Choose which replies, follows, and mentions can notify you.",
-    href: "/profile",
-  },
-  {
-    title: "About Loombus",
-    description: "Read the platform purpose and positioning.",
-    href: "/about",
-  },
-  {
-    title: "Guidelines",
-    description: "Review community standards and contribution expectations.",
-    href: "/guidelines",
+    title: "Platform",
+    items: [
+      {
+        title: "About Loombus",
+        description: "Read the platform purpose and positioning.",
+        href: "/about",
+      },
+      {
+        title: "Guidelines",
+        description: "Review community standards and contribution expectations.",
+        href: "/guidelines",
+      },
+    ],
   },
 ];
 
@@ -80,26 +115,36 @@ export default function SettingsPage() {
           </h1>
 
           <p className="mt-4 max-w-2xl leading-relaxed text-zinc-500">
-            Manage your Loombus profile, activity, notification preferences,
+            Manage your profile, activity, notifications, saved items,
             and platform reference pages from one place.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {settingsItems.map((item) => (
-            <Link
-              key={item.title}
-              href={item.href}
-              className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
-            >
-              <h2 className="mb-3 text-2xl font-medium">
-                {item.title}
+        <div className="space-y-10">
+          {settingsSections.map((section) => (
+            <section key={section.title}>
+              <h2 className="mb-4 text-2xl font-medium">
+                {section.title}
               </h2>
 
-              <p className="leading-relaxed text-zinc-400">
-                {item.description}
-              </p>
-            </Link>
+              <div className="grid gap-6 md:grid-cols-2">
+                {section.items.map((item) => (
+                  <Link
+                    key={item.title}
+                    href={item.href}
+                    className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+                  >
+                    <h3 className="mb-3 text-xl font-medium">
+                      {item.title}
+                    </h3>
+
+                    <p className="leading-relaxed text-zinc-400">
+                      {item.description}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       </div>
