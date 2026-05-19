@@ -185,13 +185,19 @@ export default function UserProfilePage() {
           </p>
 
           <div className="mt-6 flex gap-8 text-sm text-zinc-500">
-            <p>
+            <Link
+              href={`/u/${profile.username}/followers`}
+              className="transition hover:text-white"
+            >
               <span className="text-white">{followerCount}</span> followers
-            </p>
+            </Link>
 
-            <p>
+            <Link
+              href={`/u/${profile.username}/following`}
+              className="transition hover:text-white"
+            >
               <span className="text-white">{followingCount}</span> following
-            </p>
+            </Link>
           </div>
 
           {currentUserId && currentUserId !== profile.id && (
