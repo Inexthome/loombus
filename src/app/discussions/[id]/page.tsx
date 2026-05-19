@@ -89,6 +89,9 @@ export default function DiscussionPage() {
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [replyBody, setReplyBody] = useState("");
   const [postingReply, setPostingReply] = useState(false);
+  const [deletingReplyId, setDeletingReplyId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [bookmarkMessage, setBookmarkMessage] = useState("");
@@ -142,6 +145,8 @@ export default function DiscussionPage() {
 
       const { data: viewerData } = await supabase.auth.getUser();
 
+      setCurrentUserId(viewerData.user?.id ?? null);
+
       await supabase.from("discussion_views").insert({
         discussion_id: id,
         viewer_id: viewerData.user?.id ?? null,
@@ -156,6 +161,14 @@ export default function DiscussionPage() {
           .maybeSingle();
 
         setIsSaved(Boolean(savedData));
+
+        const { data: viewerProfile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", viewerData.user.id)
+          .single();
+
+        setIsAdmin(Boolean(viewerProfile?.is_admin));
       }
 
       setDiscussion(discussionData);
@@ -232,6 +245,50 @@ export default function DiscussionPage() {
       setMessage("Reply posted.");
     } finally {
       setPostingReply(false);
+    }
+  }
+
+  async function handleDeleteReply(replyId: string) {
+    setMessage("");
+
+    if (deletingReplyId) {
+      return;
+    }
+
+    setDeletingReplyId(replyId);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/replies/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          replyId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to delete reply.");
+        return;
+      }
+
+      setReplies((current) =>
+        current.filter((reply) => reply.id !== replyId)
+      );
+      setMessage("Reply deleted.");
+    } finally {
+      setDeletingReplyId(null);
     }
   }
 
@@ -405,20 +462,39 @@ export default function DiscussionPage() {
           </form>
 
           <div className="space-y-6">
-            {replies.map((reply) => (
-              <div
-                key={reply.id}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
-              >
-                <p className="mb-4 text-sm text-zinc-500">
-                  <ProfileName profile={replyProfiles[reply.user_id]} />
-                </p>
+            {replies.map((reply) => {
+              const canDeleteReply =
+                Boolean(currentUserId) &&
+                (reply.user_id === currentUserId || isAdmin);
 
-                <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
-                  <MentionText text={reply.body} />
-                </p>
-              </div>
-            ))}
+              return (
+                <div
+                  key={reply.id}
+                  className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+                >
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm text-zinc-500">
+                      <ProfileName profile={replyProfiles[reply.user_id]} />
+                    </p>
+
+                    {canDeleteReply && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteReply(reply.id)}
+                        disabled={deletingReplyId === reply.id}
+                        className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {deletingReplyId === reply.id ? "Deleting..." : "Delete"}
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
+                    <MentionText text={reply.body} />
+                  </p>
+                </div>
+              );
+            })}
 
             {replies.length === 0 && (
               <p className="text-zinc-500">
