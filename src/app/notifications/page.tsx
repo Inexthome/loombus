@@ -79,6 +79,7 @@ export default function NotificationsPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [working, setWorking] = useState(false);
 
   async function markNotificationIdsRead(ids: string[], userId: string) {
     if (ids.length === 0) {
@@ -170,12 +171,81 @@ export default function NotificationsPage() {
       return;
     }
 
+    setMessage("");
     await markNotificationIdsRead([id], currentUserId);
+  }
+
+  async function deleteNotification(id: string) {
+    if (!currentUserId || working) {
+      return;
+    }
+
+    setMessage("");
+    setWorking(true);
+
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", currentUserId)
+      .eq("id", id);
+
+    setWorking(false);
+
+    if (error) {
+      setMessage("Unable to delete notification.");
+      return;
+    }
+
+    setNotifications((current) =>
+      current.filter((notification) => notification.id !== id)
+    );
+
+    window.dispatchEvent(new Event("loombus:notifications-changed"));
+  }
+
+  async function clearReadNotifications() {
+    if (!currentUserId || working) {
+      return;
+    }
+
+    const readIds = notifications
+      .filter((notification) => notification.read_at)
+      .map((notification) => notification.id);
+
+    if (readIds.length === 0) {
+      setMessage("No read notifications to clear.");
+      return;
+    }
+
+    setMessage("");
+    setWorking(true);
+
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", currentUserId)
+      .in("id", readIds);
+
+    setWorking(false);
+
+    if (error) {
+      setMessage("Unable to clear read notifications.");
+      return;
+    }
+
+    setNotifications((current) =>
+      current.filter((notification) => !readIds.includes(notification.id))
+    );
+
+    setMessage("Read notifications cleared.");
+    window.dispatchEvent(new Event("loombus:notifications-changed"));
   }
 
   const unreadCount = notifications.filter(
     (notification) => !notification.read_at
   ).length;
+
+  const readCount = notifications.length - unreadCount;
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -192,10 +262,20 @@ export default function NotificationsPage() {
           </div>
 
           {!loading && notifications.length > 0 && (
-            <div className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500">
-              {unreadCount === 0
-                ? "All caught up"
-                : `${unreadCount} unread`}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500">
+                {unreadCount === 0
+                  ? "All caught up"
+                  : `${unreadCount} unread`}
+              </div>
+
+              <button
+                onClick={clearReadNotifications}
+                disabled={working || readCount === 0}
+                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                Clear read
+              </button>
             </div>
           )}
         </div>
@@ -270,11 +350,20 @@ export default function NotificationsPage() {
                   {!notification.read_at && (
                     <button
                       onClick={() => markRead(notification.id)}
-                      className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                      disabled={working}
+                      className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                     >
                       Mark read
                     </button>
                   )}
+
+                  <button
+                    onClick={() => deleteNotification(notification.id)}
+                    disabled={working}
+                    className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             );
