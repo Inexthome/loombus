@@ -18,6 +18,8 @@ type SavedDiscussion = {
 
 export default function SavedPage() {
   const [saved, setSaved] = useState<SavedDiscussion[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [removingBookmarkId, setRemovingBookmarkId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -29,6 +31,8 @@ export default function SavedPage() {
         window.location.href = "/login";
         return;
       }
+
+      setCurrentUserId(userData.user.id);
 
       const { data } = await supabase
         .from("bookmarks")
@@ -63,13 +67,22 @@ export default function SavedPage() {
   async function removeBookmark(bookmarkId: string) {
     setMessage("");
 
+    if (!currentUserId || removingBookmarkId) {
+      return;
+    }
+
+    setRemovingBookmarkId(bookmarkId);
+
     const { error } = await supabase
       .from("bookmarks")
       .delete()
-      .eq("id", bookmarkId);
+      .eq("id", bookmarkId)
+      .eq("user_id", currentUserId);
+
+    setRemovingBookmarkId(null);
 
     if (error) {
-      setMessage("Unable to remove bookmark.");
+      setMessage("Unable to remove saved discussion.");
       return;
     }
 
@@ -77,7 +90,7 @@ export default function SavedPage() {
       current.filter((item) => item.id !== bookmarkId)
     );
 
-    setMessage("Bookmark removed.");
+    setMessage("Saved discussion removed.");
   }
 
   return (
@@ -152,9 +165,10 @@ export default function SavedPage() {
 
                   <button
                     onClick={() => removeBookmark(item.id)}
-                    className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                    disabled={removingBookmarkId === item.id}
+                    className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                   >
-                    Remove
+                    {removingBookmarkId === item.id ? "Removing..." : "Remove saved"}
                   </button>
                 </div>
               </div>
