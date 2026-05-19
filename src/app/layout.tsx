@@ -62,7 +62,26 @@ export default function RootLayout({
       }
     });
 
+    async function handleNotificationsChanged() {
+      const { data } = await supabase.auth.getUser();
+
+      if (data.user) {
+        await loadNotificationCount(data.user.id);
+      } else {
+        setNotificationCount(0);
+      }
+    }
+
+    window.addEventListener(
+      "loombus:notifications-changed",
+      handleNotificationsChanged
+    );
+
     return () => {
+      window.removeEventListener(
+        "loombus:notifications-changed",
+        handleNotificationsChanged
+      );
       subscription.unsubscribe();
     };
   }, []);
