@@ -6,7 +6,7 @@ export default function Home() {
         
         <div className="mb-10">
           <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-            Early Prototype
+            Early Access
           </p>
 
           <h1 className="max-w-4xl text-6xl font-semibold leading-tight tracking-tight">
