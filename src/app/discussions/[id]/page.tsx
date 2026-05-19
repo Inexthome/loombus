@@ -90,6 +90,7 @@ export default function DiscussionPage() {
   const [replyBody, setReplyBody] = useState("");
   const [postingReply, setPostingReply] = useState(false);
   const [deletingReplyId, setDeletingReplyId] = useState<string | null>(null);
+  const [reportingReplyId, setReportingReplyId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -340,6 +341,41 @@ export default function DiscussionPage() {
     setReportMessage("Discussion reported.");
   }
 
+  async function handleReportReply(replyId: string) {
+    setReportMessage("");
+
+    if (reportingReplyId) {
+      return;
+    }
+
+    setReportingReplyId(replyId);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const { error } = await supabase.from("reports").insert({
+        reporter_id: userData.user.id,
+        discussion_id: id,
+        reply_id: replyId,
+        reason: "User submitted reply report",
+      });
+
+      if (error) {
+        setReportMessage("Unable to report reply.");
+        return;
+      }
+
+      setReportMessage("Reply reported.");
+    } finally {
+      setReportingReplyId(null);
+    }
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -467,6 +503,9 @@ export default function DiscussionPage() {
                 Boolean(currentUserId) &&
                 (reply.user_id === currentUserId || isAdmin);
 
+              const canReportReply =
+                Boolean(currentUserId) && reply.user_id !== currentUserId;
+
               return (
                 <div
                   key={reply.id}
@@ -476,6 +515,17 @@ export default function DiscussionPage() {
                     <p className="text-sm text-zinc-500">
                       <ProfileName profile={replyProfiles[reply.user_id]} />
                     </p>
+
+                    {canReportReply && (
+                      <button
+                        type="button"
+                        onClick={() => handleReportReply(reply.id)}
+                        disabled={reportingReplyId === reply.id}
+                        className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {reportingReplyId === reply.id ? "Reporting..." : "Report"}
+                      </button>
+                    )}
 
                     {canDeleteReply && (
                       <button
