@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 export default function SignupPage() {
@@ -11,7 +11,13 @@ export default function SignupPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSignup() {
+  async function handleSignup(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -61,7 +67,10 @@ export default function SignupPage() {
           Join a calmer, higher-signal environment for thoughtful discussion.
         </p>
 
-        <form className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <form
+          onSubmit={handleSignup}
+          className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+        >
           <div>
             <label className="mb-2 block text-sm text-zinc-400">
               Full name
@@ -70,6 +79,8 @@ export default function SignupPage() {
             <input
               type="text"
               value={fullName}
+              autoComplete="name"
+              required
               onChange={(e) => setFullName(e.target.value)}
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             />
@@ -83,6 +94,8 @@ export default function SignupPage() {
             <input
               type="email"
               value={email}
+              autoComplete="email"
+              required
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             />
@@ -96,14 +109,15 @@ export default function SignupPage() {
             <input
               type="password"
               value={password}
+              autoComplete="new-password"
+              required
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             />
           </div>
 
           <button
-            type="button"
-            onClick={handleSignup}
+            type="submit"
             disabled={loading}
             className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
           >
