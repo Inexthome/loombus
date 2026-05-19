@@ -139,7 +139,7 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-xl">
+      <div className="mx-auto max-w-5xl">
         <h1 className="mb-6 text-5xl font-semibold tracking-tight">
           Profile
         </h1>
@@ -148,7 +148,8 @@ export default function ProfilePage() {
           Manage your public Loombus profile and notification preferences.
         </p>
 
-        <div className="space-y-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
           <section className="space-y-5">
             <div>
               <h2 className="text-2xl font-medium">
@@ -294,6 +295,31 @@ export default function ProfilePage() {
               {message}
             </p>
           )}
+          </div>
+
+          <aside className="h-fit rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-4 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              Public Preview
+            </p>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+              <p className="mb-3 text-sm text-zinc-500">
+                @{username || "username"}
+              </p>
+
+              <h2 className="mb-3 text-2xl font-medium">
+                {fullName || "Loombus member"}
+              </h2>
+
+              <p className="whitespace-pre-wrap leading-relaxed text-zinc-400">
+                {bio || "Your bio preview will appear here."}
+              </p>
+            </div>
+
+            <p className="mt-4 text-sm leading-relaxed text-zinc-600">
+              This is how your profile card will appear across Loombus.
+            </p>
+          </aside>
         </div>
       </div>
     </main>
