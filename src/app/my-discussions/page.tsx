@@ -12,10 +12,44 @@ type Discussion = {
   created_at: string;
 };
 
+type Profile = {
+  full_name: string | null;
+  username: string | null;
+};
+
+function getProfileInitials(profile: Profile | null) {
+  const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
+
+  const parts = label
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return parts
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "L";
+}
+
+function getProfileDisplayName(profile: Profile | null) {
+  return profile?.full_name || (profile?.username ? `@${profile.username}` : "Loombus member");
+}
+
+function ProfileAvatar({ profile }: { profile: Profile | null }) {
+  return (
+    <span
+      className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-black text-base font-medium text-zinc-300"
+      aria-hidden="true"
+    >
+      {getProfileInitials(profile)}
+    </span>
+  );
+}
+
 export default function MyDiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,6 +60,14 @@ export default function MyDiscussionsPage() {
         window.location.href = "/login";
         return;
       }
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, username")
+        .eq("id", userData.user.id)
+        .maybeSingle();
+
+      setCurrentProfile(profileData ?? null);
 
       const { data } = await supabase
         .from("discussions")
@@ -98,18 +140,34 @@ export default function MyDiscussionsPage() {
           ← Back to dashboard
         </Link>
 
-        <div className="mb-10">
-          <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-            My Activity
-          </p>
+        <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
+              My Activity
+            </p>
 
-          <h1 className="text-5xl font-semibold tracking-tight">
-            My Discussions
-          </h1>
+            <h1 className="text-5xl font-semibold tracking-tight">
+              My Discussions
+            </h1>
 
-          <p className="mt-4 text-zinc-500">
-            Review the discussions you have started on Loombus.
-          </p>
+            <p className="mt-4 text-zinc-500">
+              Review the discussions you have started on Loombus.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+            <ProfileAvatar profile={currentProfile} />
+
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+                Author
+              </p>
+
+              <p className="mt-1 text-sm text-zinc-300">
+                {getProfileDisplayName(currentProfile)}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="mb-6">
