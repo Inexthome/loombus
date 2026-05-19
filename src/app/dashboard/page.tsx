@@ -210,6 +210,23 @@ export default function DashboardPage() {
             >
               View all activity →
             </Link>
+
+            <Link
+              href="/following"
+              className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+            >
+              <p className="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-600">
+                Social Feed
+              </p>
+
+              <h2 className="mb-3 text-xl font-medium">
+                Following Feed →
+              </h2>
+
+              <p className="text-sm leading-relaxed text-zinc-500">
+                See discussions from the people you follow.
+              </p>
+            </Link>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

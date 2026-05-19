@@ -372,6 +372,23 @@ export default function MyActivityPage() {
               My Replies →
             </Link>
 
+            <Link
+              href="/following"
+              className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-700"
+            >
+              <p className="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-600">
+                Social Feed
+              </p>
+
+              <h3 className="text-xl font-medium">
+                Following Feed →
+              </h3>
+
+              <p className="mt-3 text-sm text-zinc-500">
+                See discussions from the people you follow.
+              </p>
+            </Link>
+
             {currentProfile?.username && (
               <>
                 <Link

@@ -155,9 +155,6 @@ export default function ClientLayout({
 
                 {user && (
                   <>
-                    <Link href="/following" className={navLinkClass("/following")}>
-                      Following
-                    </Link>
 
 
                     <Link href="/notifications" className={navLinkClass("/notifications")}>
@@ -223,9 +220,6 @@ export default function ClientLayout({
 
                 {user && (
                   <>
-                    <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
-                      Following
-                    </Link>
 
 
                     <Link href="/notifications" onClick={closeMobileMenu} className={mobileNavLinkClass("/notifications")}>
