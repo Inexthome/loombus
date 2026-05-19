@@ -10,6 +10,10 @@ export default function AdminDashboardPage() {
 
   const [openReports, setOpenReports] = useState(0);
   const [reviewedReports, setReviewedReports] = useState(0);
+  const [discussionReports, setDiscussionReports] = useState(0);
+  const [replyReports, setReplyReports] = useState(0);
+  const [deletedDiscussions, setDeletedDiscussions] = useState(0);
+  const [deletedReplies, setDeletedReplies] = useState(0);
   const [discussionCount, setDiscussionCount] = useState(0);
   const [userCount, setUserCount] = useState(0);
 
@@ -36,7 +40,14 @@ export default function AdminDashboardPage() {
 
       setAuthorized(true);
 
-      const [{ count: open }, { count: reviewed }] = await Promise.all([
+      const [
+        { count: open },
+        { count: reviewed },
+        { count: discussionReportTotal },
+        { count: replyReportTotal },
+        { count: deletedDiscussionTotal },
+        { count: deletedReplyTotal },
+      ] = await Promise.all([
         supabase
           .from("reports")
           .select("*", { count: "exact", head: true })
@@ -46,6 +57,26 @@ export default function AdminDashboardPage() {
           .from("reports")
           .select("*", { count: "exact", head: true })
           .eq("status", "reviewed"),
+
+        supabase
+          .from("reports")
+          .select("*", { count: "exact", head: true })
+          .is("reply_id", null),
+
+        supabase
+          .from("reports")
+          .select("*", { count: "exact", head: true })
+          .not("reply_id", "is", null),
+
+        supabase
+          .from("discussions")
+          .select("*", { count: "exact", head: true })
+          .not("deleted_at", "is", null),
+
+        supabase
+          .from("replies")
+          .select("*", { count: "exact", head: true })
+          .not("deleted_at", "is", null),
       ]);
 
       const [{ count: discussions }, { count: users }] = await Promise.all([
@@ -60,6 +91,10 @@ export default function AdminDashboardPage() {
 
       setOpenReports(open ?? 0);
       setReviewedReports(reviewed ?? 0);
+      setDiscussionReports(discussionReportTotal ?? 0);
+      setReplyReports(replyReportTotal ?? 0);
+      setDeletedDiscussions(deletedDiscussionTotal ?? 0);
+      setDeletedReplies(deletedReplyTotal ?? 0);
       setDiscussionCount(discussions ?? 0);
       setUserCount(users ?? 0);
 
@@ -128,6 +163,46 @@ export default function AdminDashboardPage() {
 
             <h2 className="text-5xl font-semibold">
               {reviewedReports}
+            </h2>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
+              Discussion Reports
+            </p>
+
+            <h2 className="text-5xl font-semibold">
+              {discussionReports}
+            </h2>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
+              Reply Reports
+            </p>
+
+            <h2 className="text-5xl font-semibold">
+              {replyReports}
+            </h2>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
+              Deleted Discussions
+            </p>
+
+            <h2 className="text-5xl font-semibold">
+              {deletedDiscussions}
+            </h2>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
+              Deleted Replies
+            </p>
+
+            <h2 className="text-5xl font-semibold">
+              {deletedReplies}
             </h2>
           </div>
 
