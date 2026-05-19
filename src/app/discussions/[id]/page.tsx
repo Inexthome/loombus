@@ -99,6 +99,8 @@ export default function DiscussionPage() {
   const [message, setMessage] = useState("");
   const [bookmarkMessage, setBookmarkMessage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
+  const [savedBookmarkId, setSavedBookmarkId] = useState<string | null>(null);
+  const [savingBookmark, setSavingBookmark] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
 
   useEffect(() => {
@@ -164,6 +166,7 @@ export default function DiscussionPage() {
           .maybeSingle();
 
         setIsSaved(Boolean(savedData));
+        setSavedBookmarkId(savedData?.id ?? null);
 
         const { data: existingDiscussionReport } = await supabase
           .from("reports")
@@ -324,25 +327,76 @@ export default function DiscussionPage() {
   async function handleBookmark() {
     setBookmarkMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
-
-    if (!userData.user) {
-      window.location.href = "/login";
+    if (savingBookmark) {
       return;
     }
 
-    const { error } = await supabase.from("bookmarks").insert({
-      user_id: userData.user.id,
-      discussion_id: id,
-    });
+    setSavingBookmark(true);
 
-    if (error) {
-      setBookmarkMessage("Already saved or unable to save.");
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const { data: bookmark, error } = await supabase
+        .from("bookmarks")
+        .insert({
+          user_id: userData.user.id,
+          discussion_id: id,
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        setBookmarkMessage("Already saved or unable to save.");
+        return;
+      }
+
+      setIsSaved(true);
+      setSavedBookmarkId(bookmark?.id ?? null);
+      setBookmarkMessage("Discussion saved.");
+    } finally {
+      setSavingBookmark(false);
+    }
+  }
+
+  async function handleRemoveBookmark() {
+    setBookmarkMessage("");
+
+    if (savingBookmark || !savedBookmarkId) {
       return;
     }
 
-    setIsSaved(true);
-    setBookmarkMessage("Discussion saved.");
+    setSavingBookmark(true);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const { error } = await supabase
+        .from("bookmarks")
+        .delete()
+        .eq("id", savedBookmarkId)
+        .eq("user_id", userData.user.id);
+
+      if (error) {
+        setBookmarkMessage("Unable to remove saved discussion.");
+        return;
+      }
+
+      setIsSaved(false);
+      setSavedBookmarkId(null);
+      setBookmarkMessage("Saved discussion removed.");
+    } finally {
+      setSavingBookmark(false);
+    }
   }
 
   async function handleReport() {
@@ -504,17 +558,23 @@ export default function DiscussionPage() {
         </p>
 
         <div className="mb-12 flex flex-wrap items-center gap-4">
-          <button
-            onClick={handleBookmark}
-            disabled={isSaved}
-            className={`rounded-full border px-5 py-3 text-sm transition ${
-              isSaved
-                ? "border-zinc-800 bg-zinc-900 text-zinc-500"
-                : "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
-            }`}
-          >
-            {isSaved ? "Saved" : "Save Discussion"}
-          </button>
+          {isSaved ? (
+            <button
+              onClick={handleRemoveBookmark}
+              disabled={savingBookmark}
+              className="rounded-full border border-zinc-800 bg-zinc-900 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+            >
+              {savingBookmark ? "Removing..." : "Unsave"}
+            </button>
+          ) : (
+            <button
+              onClick={handleBookmark}
+              disabled={savingBookmark}
+              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+            >
+              {savingBookmark ? "Saving..." : "Save Discussion"}
+            </button>
+          )}
 
           <button
             onClick={handleReport}
