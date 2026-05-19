@@ -306,7 +306,7 @@ export default function MyActivityPage() {
           ← Back to dashboard
         </Link>
 
-        <div className="mb-12">
+        <div className="mb-8">
           <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
             My Activity
           </p>
@@ -318,6 +318,42 @@ export default function MyActivityPage() {
           <p className="mt-4 text-zinc-500">
             A consolidated view of your discussions, replies, saved items, and notifications.
           </p>
+        </div>
+
+        <div className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          <p className="mb-4 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Activity shortcuts
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href="/my-discussions"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              My Discussions →
+            </Link>
+
+            <Link
+              href="/my-replies"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              My Replies →
+            </Link>
+
+            <Link
+              href="/saved"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              Saved →
+            </Link>
+
+            <Link
+              href="/notifications"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              Notifications →
+            </Link>
+          </div>
         </div>
 
         <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
