@@ -88,6 +88,7 @@ export default function DiscussionPage() {
   const [replies, setReplies] = useState<Reply[]>([]);
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [replyBody, setReplyBody] = useState("");
+  const [postingReply, setPostingReply] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [bookmarkMessage, setBookmarkMessage] = useState("");
@@ -170,39 +171,68 @@ export default function DiscussionPage() {
   async function handleReply() {
     setMessage("");
 
+    if (postingReply) {
+      return;
+    }
+
     if (!replyBody.trim()) {
       setMessage("Reply cannot be empty.");
       return;
     }
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    setPostingReply(true);
 
-    if (!sessionData.session) {
-      window.location.href = "/login";
-      return;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/replies/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          discussionId: id,
+          body: replyBody,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to post reply.");
+        return;
+      }
+
+      const newReply = result.reply as Reply | undefined;
+
+      if (newReply) {
+        setReplies((current) => [...current, newReply]);
+
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", newReply.user_id)
+          .single();
+
+        if (profileData) {
+          setReplyProfiles((current) => ({
+            ...current,
+            [newReply.user_id]: profileData,
+          }));
+        }
+      }
+
+      setReplyBody("");
+      setMessage("Reply posted.");
+    } finally {
+      setPostingReply(false);
     }
-
-    const response = await fetch("/api/replies/create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionData.session.access_token}`,
-      },
-      body: JSON.stringify({
-        discussionId: id,
-        body: replyBody,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      setMessage(result.error ?? "Unable to post reply.");
-      return;
-    }
-
-    setReplyBody("");
-    window.location.reload();
   }
 
   async function handleBookmark() {
@@ -357,16 +387,18 @@ export default function DiscussionPage() {
               rows={5}
               value={replyBody}
               onChange={(e) => setReplyBody(e.target.value)}
+              disabled={postingReply}
               placeholder="Contribute with clarity, context, and signal... Use @username to mention someone."
-              className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+              className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600"
             />
 
             <button
               type="button"
               onClick={handleReply}
-              className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              disabled={postingReply}
+              className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
             >
-              Post Reply
+              {postingReply ? "Posting..." : "Post Reply"}
             </button>
 
             {message && <p className="mt-4 text-sm text-zinc-400">{message}</p>}
