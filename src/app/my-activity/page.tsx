@@ -253,6 +253,39 @@ export default function MyActivityPage() {
     return "/notifications";
   }
 
+  async function openNotification(notification: Notification) {
+    const href = getNotificationHref(notification);
+
+    if (!notification.read_at && currentUserId) {
+      const readAt = new Date().toISOString();
+
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === notification.id
+            ? { ...item, read_at: readAt }
+            : item
+        )
+      );
+
+      setActivityTotals((current) => ({
+        ...current,
+        unreadNotifications: Math.max(0, current.unreadNotifications - 1),
+      }));
+
+      const { error } = await supabase
+        .from("notifications")
+        .update({ read_at: readAt })
+        .eq("id", notification.id)
+        .eq("user_id", currentUserId);
+
+      if (error) {
+        console.error("Unable to mark notification as read:", error.message);
+      }
+    }
+
+    window.location.href = href;
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -453,10 +486,11 @@ export default function MyActivityPage() {
 
             <div className="space-y-4">
               {notifications.map((notification) => (
-                <Link
+                <button
                   key={notification.id}
-                  href={getNotificationHref(notification)}
-                  className="block rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700"
+                  type="button"
+                  onClick={() => openNotification(notification)}
+                  className="block w-full rounded-2xl border border-zinc-900 bg-black p-4 text-left transition hover:border-zinc-700"
                 >
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     {!notification.read_at && (
@@ -473,7 +507,7 @@ export default function MyActivityPage() {
                   <p className="text-sm leading-relaxed text-zinc-400">
                     {notification.message}
                   </p>
-                </Link>
+                </button>
               ))}
 
               {notifications.length === 0 && (
