@@ -91,6 +91,16 @@ export default function LoginPage() {
           </button>
 
           {message && <p className="text-sm text-zinc-400">{message}</p>}
+
+          <p className="text-center text-sm text-zinc-500">
+            Don’t have an account?{" "}
+            <Link
+              href="/signup"
+              className="text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+            >
+              Create one
+            </Link>
+          </p>
         </form>
       </div>
     </main>

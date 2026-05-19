@@ -167,6 +167,16 @@ export default function SignupPage() {
               {message}
             </p>
           )}
+
+          <p className="text-center text-sm text-zinc-500">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+            >
+              Log in
+            </Link>
+          </p>
           </form>
         )}
       </div>
