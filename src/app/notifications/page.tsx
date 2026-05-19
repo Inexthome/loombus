@@ -21,6 +21,8 @@ type Profile = {
   full_name: string | null;
 };
 
+type NotificationFilter = "all" | "unread" | "read";
+
 function getProfileName(profile: Profile | undefined) {
   return profile?.full_name || profile?.username || "Someone";
 }
@@ -77,6 +79,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [filterMode, setFilterMode] = useState<NotificationFilter>("all");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [working, setWorking] = useState(false);
@@ -283,6 +286,40 @@ export default function NotificationsPage() {
 
   const readCount = notifications.length - unreadCount;
 
+  const filteredNotifications = notifications.filter((notification) => {
+    if (filterMode === "unread") {
+      return !notification.read_at;
+    }
+
+    if (filterMode === "read") {
+      return Boolean(notification.read_at);
+    }
+
+    return true;
+  });
+
+  const filterOptions: {
+    label: string;
+    value: NotificationFilter;
+    count: number;
+  }[] = [
+    {
+      label: "All",
+      value: "all",
+      count: notifications.length,
+    },
+    {
+      label: "Unread",
+      value: "unread",
+      count: unreadCount,
+    },
+    {
+      label: "Read",
+      value: "read",
+      count: readCount,
+    },
+  ];
+
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-4xl">
@@ -330,6 +367,28 @@ export default function NotificationsPage() {
           </div>
         )}
 
+        {!loading && notifications.length > 0 && (
+          <div className="mb-8 flex flex-wrap gap-3">
+            {filterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setFilterMode(option.value)}
+                className={`rounded-full px-4 py-2 text-sm transition ${
+                  filterMode === option.value
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                }`}
+              >
+                {option.label}
+                <span className="ml-2 opacity-70">
+                  {option.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {loading && (
           <p className="text-zinc-500">
             Loading notifications...
@@ -348,8 +407,20 @@ export default function NotificationsPage() {
           </div>
         )}
 
+        {!loading && notifications.length > 0 && filteredNotifications.length === 0 && (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <h2 className="mb-3 text-2xl font-medium">
+              No notifications found.
+            </h2>
+
+            <p className="text-zinc-400">
+              No notifications match the current filter.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-4">
-          {notifications.map((notification) => {
+          {filteredNotifications.map((notification) => {
             const href = getNotificationHref(notification, profiles);
 
             return (
