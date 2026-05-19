@@ -2,6 +2,7 @@
 
 import "./globals.css";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -14,6 +15,27 @@ export default function RootLayout({
   const [isAdmin, setIsAdmin] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  function isActivePath(href: string) {
+    if (href === "/") {
+      return pathname === "/";
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  function navLinkClass(href: string) {
+    return isActivePath(href)
+      ? "text-white transition hover:text-white"
+      : "transition hover:text-white";
+  }
+
+  function mobileNavLinkClass(href: string) {
+    return isActivePath(href)
+      ? "text-white transition hover:text-white"
+      : "text-zinc-400 transition hover:text-white";
+  }
 
   async function loadNotificationCount(userId: string) {
     const { count } = await supabase
@@ -117,11 +139,11 @@ export default function RootLayout({
               </button>
 
               <nav className="hidden items-center gap-6 text-sm text-zinc-400 md:flex">
-                <Link href="/discussions" className="transition hover:text-white">
+                <Link href="/discussions" className={navLinkClass("/discussions")}>
                   Discussions
                 </Link>
 
-                <Link href="/people" className="transition hover:text-white">
+                <Link href="/people" className={navLinkClass("/people")}>
                   People
                 </Link>
 
@@ -129,12 +151,12 @@ export default function RootLayout({
 
                 {user && (
                   <>
-                    <Link href="/following" className="transition hover:text-white">
+                    <Link href="/following" className={navLinkClass("/following")}>
                       Following
                     </Link>
 
 
-                    <Link href="/notifications" className="transition hover:text-white">
+                    <Link href="/notifications" className={navLinkClass("/notifications")}>
                       Notifications
                       {notificationCount > 0 && (
                         <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
@@ -142,20 +164,20 @@ export default function RootLayout({
                         </span>
                       )}
                     </Link>
-                    <Link href="/dashboard" className="transition hover:text-white">
+                    <Link href="/dashboard" className={navLinkClass("/dashboard")}>
                       Dashboard
                     </Link>
-                    <Link href="/settings" className="transition hover:text-white">
+                    <Link href="/settings" className={navLinkClass("/settings")}>
                       Settings
                     </Link>
 
-                    <Link href="/create" className="transition hover:text-white">
+                    <Link href="/create" className={navLinkClass("/create")}>
                       Create
                     </Link>
 
 
                     {isAdmin && (
-                      <Link href="/admin" className="transition hover:text-white">
+                      <Link href="/admin" className={navLinkClass("/admin")}>
                         Admin
                       </Link>
                     )}
@@ -171,11 +193,11 @@ export default function RootLayout({
 
                 {!user && (
                   <>
-                    <Link href="/login" className="transition hover:text-white">
+                    <Link href="/login" className={navLinkClass("/login")}>
                       Login
                     </Link>
 
-                    <Link href="/signup" className="transition hover:text-white">
+                    <Link href="/signup" className={navLinkClass("/signup")}>
                       Sign Up
                     </Link>
                   </>
@@ -185,11 +207,11 @@ export default function RootLayout({
 
             {mobileMenuOpen && (
               <nav className="mt-5 flex flex-col gap-4 border-t border-zinc-900 pt-5 text-sm text-zinc-400 md:hidden">
-                <Link href="/discussions" onClick={closeMobileMenu}>
+                <Link href="/discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/discussions")}>
                   Discussions
                 </Link>
 
-                <Link href="/people" onClick={closeMobileMenu}>
+                <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
                   People
                 </Link>
 
@@ -197,12 +219,12 @@ export default function RootLayout({
 
                 {user && (
                   <>
-                    <Link href="/following" onClick={closeMobileMenu}>
+                    <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
                       Following
                     </Link>
 
 
-                    <Link href="/notifications" onClick={closeMobileMenu}>
+                    <Link href="/notifications" onClick={closeMobileMenu} className={mobileNavLinkClass("/notifications")}>
                       Notifications
                       {notificationCount > 0 && (
                         <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
@@ -210,20 +232,20 @@ export default function RootLayout({
                         </span>
                       )}
                     </Link>
-                    <Link href="/dashboard" onClick={closeMobileMenu}>
+                    <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
                       Dashboard
                     </Link>
-                    <Link href="/settings" onClick={closeMobileMenu}>
+                    <Link href="/settings" onClick={closeMobileMenu} className={mobileNavLinkClass("/settings")}>
                       Settings
                     </Link>
 
-                    <Link href="/create" onClick={closeMobileMenu}>
+                    <Link href="/create" onClick={closeMobileMenu} className={mobileNavLinkClass("/create")}>
                       Create
                     </Link>
 
 
                     {isAdmin && (
-                      <Link href="/admin" onClick={closeMobileMenu}>
+                      <Link href="/admin" onClick={closeMobileMenu} className={mobileNavLinkClass("/admin")}>
                         Admin
                       </Link>
                     )}
@@ -242,11 +264,11 @@ export default function RootLayout({
 
                 {!user && (
                   <>
-                    <Link href="/login" onClick={closeMobileMenu}>
+                    <Link href="/login" onClick={closeMobileMenu} className={mobileNavLinkClass("/login")}>
                       Login
                     </Link>
 
-                    <Link href="/signup" onClick={closeMobileMenu}>
+                    <Link href="/signup" onClick={closeMobileMenu} className={mobileNavLinkClass("/signup")}>
                       Sign Up
                     </Link>
                   </>
