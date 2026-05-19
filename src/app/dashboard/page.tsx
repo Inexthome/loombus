@@ -205,7 +205,7 @@ export default function DashboardPage() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Link
-              href="/discussions"
+              href="/my-discussions"
               className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
             >
               <p className="mb-2 text-sm text-zinc-500">
