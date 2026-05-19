@@ -55,6 +55,38 @@ function MentionText({ text }: { text: string }) {
   );
 }
 
+function getProfileInitials(profile: Profile | undefined | null) {
+  const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
+
+  const parts = label
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return parts
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "L";
+}
+
+function ProfileAvatar({
+  profile,
+  size = "md",
+}: {
+  profile?: Profile | null;
+  size?: "sm" | "md";
+}) {
+  const sizeClass = size === "sm" ? "h-9 w-9 text-xs" : "h-11 w-11 text-sm";
+
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-black font-medium text-zinc-300 ${sizeClass}`}
+      aria-hidden="true"
+    >
+      {getProfileInitials(profile)}
+    </span>
+  );
+}
+
 function ProfileName({
   profile,
   fallback = "Loombus member",
@@ -110,7 +142,6 @@ export default function DiscussionPage() {
         .select("*")
         .eq("id", id)
         .is("deleted_at", null)
-        .is("deleted_at", null)
         .single();
 
       if (discussionError || !discussionData) {
@@ -129,7 +160,6 @@ export default function DiscussionPage() {
         .from("replies")
         .select("*")
         .eq("discussion_id", id)
-        .is("deleted_at", null)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
 
@@ -550,7 +580,12 @@ export default function DiscussionPage() {
         </h1>
 
         <p className="mb-3 text-sm text-zinc-600">
-          by <ProfileName profile={profile} />
+          <span className="inline-flex items-center gap-3">
+              <ProfileAvatar profile={profile} />
+              <span>
+                by <ProfileName profile={profile} />
+              </span>
+            </span>
         </p>
 
         <p className="mb-10 text-xl leading-relaxed text-zinc-300">
@@ -651,7 +686,13 @@ export default function DiscussionPage() {
                 >
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-zinc-500">
-                      <ProfileName profile={replyProfiles[reply.user_id]} />
+                      <span className="inline-flex items-center gap-3">
+                        <ProfileAvatar
+                          profile={replyProfiles[reply.user_id]}
+                          size="sm"
+                        />
+                        <ProfileName profile={replyProfiles[reply.user_id]} />
+                      </span>
                     </p>
 
                     {canReportReply && (
