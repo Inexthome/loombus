@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { ProfileAvatar } from "@/components/profile-avatar";
 
 type Notification = {
   id: string;
@@ -19,6 +20,7 @@ type Profile = {
   id: string;
   username: string | null;
   full_name: string | null;
+  avatar_url: string | null;
 };
 
 type NotificationFilter = "all" | "unread" | "read";
@@ -422,6 +424,9 @@ export default function NotificationsPage() {
         <div className="space-y-4">
           {filteredNotifications.map((notification) => {
             const href = getNotificationHref(notification, profiles);
+            const actorProfile = notification.actor_id
+              ? profiles[notification.actor_id]
+              : undefined;
 
             return (
               <div
@@ -444,13 +449,19 @@ export default function NotificationsPage() {
                   </span>
                 </div>
 
-                <p className="mb-3 text-zinc-300">
-                  {getNotificationMessage(notification, profiles)}
-                </p>
+                <div className="mb-4 flex items-start gap-4">
+                  <ProfileAvatar profile={actorProfile} size="md" />
 
-                <p className="mb-4 text-sm text-zinc-600">
-                  {new Date(notification.created_at).toLocaleString()}
-                </p>
+                  <div className="min-w-0">
+                    <p className="text-zinc-300">
+                      {getNotificationMessage(notification, profiles)}
+                    </p>
+
+                    <p className="mt-2 text-sm text-zinc-600">
+                      {new Date(notification.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
 
                 <div className="flex flex-wrap gap-3">
                   {href && (
