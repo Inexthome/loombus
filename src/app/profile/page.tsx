@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { ProfileAvatar } from "@/components/profile-avatar";
 
 export default function ProfilePage() {
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [repliesEnabled, setRepliesEnabled] = useState(true);
   const [followsEnabled, setFollowsEnabled] = useState(true);
   const [mentionsEnabled, setMentionsEnabled] = useState(true);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -33,6 +36,7 @@ export default function ProfilePage() {
         setFullName(data.full_name ?? "");
         setUsername(data.username ?? "");
         setBio(data.bio ?? "");
+        setAvatarUrl(data.avatar_url ?? "");
       }
 
       const { data: preferences } = await supabase
@@ -80,6 +84,77 @@ export default function ProfilePage() {
     .filter((item) => !item.complete)
     .map((item) => item.label.toLowerCase());
 
+  async function handleAvatarUpload(event: ChangeEvent<HTMLInputElement>) {
+    setMessage("");
+
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setMessage("Please upload an image file.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      setMessage("Avatar image must be 3 MB or smaller.");
+      event.target.value = "";
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const rawExtension = file.name.split(".").pop()?.toLowerCase() || "png";
+      const extension = rawExtension.replace(/[^a-z0-9]/g, "") || "png";
+      const filePath = `${userData.user.id}/avatar-${Date.now()}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        setMessage(`Avatar upload failed: ${uploadError.message}`);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicUrlData.publicUrl;
+
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", userData.user.id);
+
+      if (profileError) {
+        setMessage(`Avatar uploaded, but profile update failed: ${profileError.message}`);
+        return;
+      }
+
+      setAvatarUrl(publicUrl);
+      setMessage("Avatar updated successfully.");
+    } finally {
+      setUploadingAvatar(false);
+      event.target.value = "";
+    }
+  }
+
   async function saveProfile() {
     setMessage("");
     setSaving(true);
@@ -120,6 +195,7 @@ export default function ProfilePage() {
       full_name: fullName,
       username: cleanUsername,
       bio,
+      avatar_url: avatarUrl || null,
     });
 
     if (profileError) {
@@ -220,6 +296,46 @@ export default function ProfilePage() {
 
               <p className="mt-2 text-sm text-zinc-500">
                 This information appears on your Loombus profile.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <ProfileAvatar
+                    profile={{
+                      full_name: fullName,
+                      username,
+                      avatar_url: avatarUrl,
+                    }}
+                    size="xl"
+                  />
+
+                  <div>
+                    <h3 className="text-lg font-medium">
+                      Profile image
+                    </h3>
+
+                    <p className="mt-1 text-sm text-zinc-500">
+                      Upload a square image for the clearest avatar display.
+                    </p>
+                  </div>
+                </div>
+
+                <label className="inline-flex cursor-pointer rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+                  {uploadingAvatar ? "Uploading..." : "Upload Image"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingAvatar}
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              <p className="mt-4 text-xs leading-relaxed text-zinc-600">
+                Supported formats depend on your browser. Keep images under 3 MB.
               </p>
             </div>
 
@@ -368,6 +484,17 @@ export default function ProfilePage() {
               <p className="mb-3 text-sm text-zinc-500">
                 @{username || "username"}
               </p>
+
+              <div className="my-5" aria-label="Profile preview avatar">
+                <ProfileAvatar
+                  profile={{
+                    full_name: fullName,
+                    username,
+                    avatar_url: avatarUrl,
+                  }}
+                  size="xl"
+                />
+              </div>
 
               <h2 className="mb-3 text-2xl font-medium">
                 {fullName || "Loombus member"}

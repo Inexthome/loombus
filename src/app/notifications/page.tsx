@@ -145,7 +145,7 @@ export default function NotificationsPage() {
       if (actorIds.length > 0) {
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("id, username, full_name")
+          .select("id, username, full_name, avatar_url")
           .in("id", actorIds);
 
         const profileMap: Record<string, Profile> = {};

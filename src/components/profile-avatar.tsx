@@ -1,6 +1,7 @@
 type ProfileAvatarProfile = {
   full_name?: string | null;
   username?: string | null;
+  avatar_url?: string | null;
 } | null | undefined;
 
 type ProfileAvatarSize = "sm" | "md" | "lg" | "xl";
@@ -39,12 +40,23 @@ export function ProfileAvatar({
   profile: ProfileAvatarProfile;
   size?: ProfileAvatarSize;
 }) {
+  const avatarUrl = profile?.avatar_url?.trim();
+
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-black font-medium text-zinc-300 ${sizeClasses[size]}`}
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-black font-medium text-zinc-300 ${sizeClasses[size]}`}
       aria-hidden="true"
     >
-      {getProfileInitials(profile)}
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+      ) : (
+        getProfileInitials(profile)
+      )}
     </span>
   );
 }

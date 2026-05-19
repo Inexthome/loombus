@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { ProfileAvatar } from "@/components/profile-avatar";
 
 type Profile = {
   id: string;
   full_name: string;
   username: string;
   bio: string | null;
+  avatar_url: string | null;
 };
 
 type Discussion = {
@@ -158,13 +160,19 @@ export default function UserProfilePage() {
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-4xl">
         <div className="mb-16 rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-          <p className="mb-3 text-sm text-zinc-500">
-            @{profile.username}
-          </p>
+          <div className="mb-6 flex items-center gap-5">
+            <ProfileAvatar profile={profile} size="xl" />
 
-          <h1 className="mb-4 text-5xl font-semibold tracking-tight">
-            {profile.full_name}
-          </h1>
+            <div>
+              <p className="mb-2 text-sm text-zinc-500">
+                @{profile.username}
+              </p>
+
+              <h1 className="text-5xl font-semibold tracking-tight">
+                {profile.full_name}
+              </h1>
+            </div>
+          </div>
 
           <p className="max-w-2xl leading-relaxed text-zinc-400">
             {profile.bio || "No bio added yet."}

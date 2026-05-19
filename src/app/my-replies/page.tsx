@@ -22,6 +22,7 @@ type Discussion = {
 type Profile = {
   full_name: string | null;
   username: string | null;
+  avatar_url: string | null;
 };
 
 export default function MyRepliesPage() {
@@ -42,7 +43,7 @@ export default function MyRepliesPage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("full_name, username")
+        .select("full_name, username, avatar_url")
         .eq("id", userData.user.id)
         .maybeSingle();
 
