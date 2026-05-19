@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { ProfileAvatar } from "@/components/profile-avatar";
 
 type Profile = {
   id: string;
@@ -10,19 +11,6 @@ type Profile = {
   username: string | null;
   bio: string | null;
 };
-
-function getProfileInitials(profile: Profile | undefined) {
-  const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
-
-  const parts = label
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
-
-  return parts
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "L";
-}
 
 export default function PeoplePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -118,9 +106,7 @@ export default function PeoplePage() {
               className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
             >
               <div className="mb-5 flex items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-black text-base font-medium text-zinc-300">
-                  {getProfileInitials(profile)}
-                </div>
+                <ProfileAvatar profile={profile} size="xl" />
 
                 <div className="min-w-0">
                   <h2 className="truncate text-2xl font-medium">

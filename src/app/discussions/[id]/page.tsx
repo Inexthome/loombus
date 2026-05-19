@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { ProfileAvatar } from "@/components/profile-avatar";
 
 type Discussion = {
   id: string;
@@ -52,38 +53,6 @@ function MentionText({ text }: { text: string }) {
         );
       })}
     </>
-  );
-}
-
-function getProfileInitials(profile: Profile | undefined | null) {
-  const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
-
-  const parts = label
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
-
-  return parts
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "L";
-}
-
-function ProfileAvatar({
-  profile,
-  size = "md",
-}: {
-  profile?: Profile | null;
-  size?: "sm" | "md";
-}) {
-  const sizeClass = size === "sm" ? "h-9 w-9 text-xs" : "h-11 w-11 text-sm";
-
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-black font-medium text-zinc-300 ${sizeClass}`}
-      aria-hidden="true"
-    >
-      {getProfileInitials(profile)}
-    </span>
   );
 }
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
 
 type Discussion = {
   id: string;
@@ -53,34 +54,6 @@ type Profile = {
   full_name: string | null;
   username: string | null;
 };
-
-function getProfileInitials(profile: Profile | null) {
-  const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
-
-  const parts = label
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
-
-  return parts
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "L";
-}
-
-function getProfileDisplayName(profile: Profile | null) {
-  return profile?.full_name || (profile?.username ? `@${profile.username}` : "Loombus member");
-}
-
-function ProfileAvatar({ profile }: { profile: Profile | null }) {
-  return (
-    <span
-      className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-black text-base font-medium text-zinc-300"
-      aria-hidden="true"
-    >
-      {getProfileInitials(profile)}
-    </span>
-  );
-}
 
 export default function MyActivityPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
@@ -364,7 +337,7 @@ export default function MyActivityPage() {
           </div>
 
           <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-            <ProfileAvatar profile={currentProfile} />
+            <ProfileAvatar profile={currentProfile} size="xl" />
 
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">

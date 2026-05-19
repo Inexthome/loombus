@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
 
 type Discussion = {
   id: string;
@@ -18,23 +19,6 @@ type Profile = {
   username: string | null;
   full_name: string | null;
 };
-
-function getProfileInitials(profile: Profile | undefined) {
-  const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
-
-  const parts = label
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
-
-  return parts
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "L";
-}
-
-function getProfileDisplayName(profile: Profile | undefined) {
-  return profile?.username ? `@${profile.username}` : "Loombus member";
-}
 
 export default function FollowingPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
@@ -249,9 +233,7 @@ export default function FollowingPage() {
 
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-black text-sm font-medium text-zinc-300">
-                      {getProfileInitials(profile)}
-                    </div>
+                    <ProfileAvatar profile={profile} size="md" />
 
                     <p className="min-w-0 text-sm text-zinc-600">
                       by{" "}
