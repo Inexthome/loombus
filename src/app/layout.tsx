@@ -86,6 +86,10 @@ export default function RootLayout({
     };
   }, []);
 
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     window.location.href = "/";
@@ -181,11 +185,11 @@ export default function RootLayout({
 
             {mobileMenuOpen && (
               <nav className="mt-5 flex flex-col gap-4 border-t border-zinc-900 pt-5 text-sm text-zinc-400 md:hidden">
-                <Link href="/discussions">
+                <Link href="/discussions" onClick={closeMobileMenu}>
                   Discussions
                 </Link>
 
-                <Link href="/people">
+                <Link href="/people" onClick={closeMobileMenu}>
                   People
                 </Link>
 
@@ -193,12 +197,12 @@ export default function RootLayout({
 
                 {user && (
                   <>
-                    <Link href="/following">
+                    <Link href="/following" onClick={closeMobileMenu}>
                       Following
                     </Link>
 
 
-                    <Link href="/notifications">
+                    <Link href="/notifications" onClick={closeMobileMenu}>
                       Notifications
                       {notificationCount > 0 && (
                         <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
@@ -206,26 +210,29 @@ export default function RootLayout({
                         </span>
                       )}
                     </Link>
-                    <Link href="/dashboard">
+                    <Link href="/dashboard" onClick={closeMobileMenu}>
                       Dashboard
                     </Link>
-                    <Link href="/settings">
+                    <Link href="/settings" onClick={closeMobileMenu}>
                       Settings
                     </Link>
 
-                    <Link href="/create">
+                    <Link href="/create" onClick={closeMobileMenu}>
                       Create
                     </Link>
 
 
                     {isAdmin && (
-                      <Link href="/admin">
+                      <Link href="/admin" onClick={closeMobileMenu}>
                         Admin
                       </Link>
                     )}
 
                     <button
-                      onClick={handleLogout}
+                      onClick={async () => {
+                        closeMobileMenu();
+                        await handleLogout();
+                      }}
                       className="text-left"
                     >
                       Logout
@@ -235,11 +242,11 @@ export default function RootLayout({
 
                 {!user && (
                   <>
-                    <Link href="/login">
+                    <Link href="/login" onClick={closeMobileMenu}>
                       Login
                     </Link>
 
-                    <Link href="/signup">
+                    <Link href="/signup" onClick={closeMobileMenu}>
                       Sign Up
                     </Link>
                   </>
