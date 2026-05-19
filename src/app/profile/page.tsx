@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useState } from "react";
+import { type ChangeEvent, type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
 
@@ -155,7 +155,13 @@ export default function ProfilePage() {
     }
   }
 
-  async function saveProfile() {
+  async function saveProfile(event?: FormEvent<HTMLFormElement> | KeyboardEvent<HTMLFormElement>) {
+    event?.preventDefault();
+
+    if (saving) {
+      return;
+    }
+
     setMessage("");
     setSaving(true);
 
@@ -230,6 +236,12 @@ export default function ProfilePage() {
     setMessage("Profile and notification settings updated successfully.");
   }
 
+  function handleProfileFormKeyDown(event: KeyboardEvent<HTMLFormElement>) {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      saveProfile(event);
+    }
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -252,7 +264,11 @@ export default function ProfilePage() {
         </p>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <form
+            onSubmit={saveProfile}
+            onKeyDown={handleProfileFormKeyDown}
+            className="space-y-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+          >
           <section className="rounded-2xl border border-zinc-900 bg-black p-5">
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
@@ -460,20 +476,23 @@ export default function ProfilePage() {
           </section>
 
           <button
-            type="button"
-            onClick={saveProfile}
+            type="submit"
             disabled={saving}
             className="rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
           >
             {saving ? "Saving..." : "Save Profile"}
           </button>
 
+          <p className="text-sm text-zinc-600">
+            Press Cmd+Enter or Ctrl+Enter to save.
+          </p>
+
           {message && (
             <p className="text-sm text-zinc-400">
               {message}
             </p>
           )}
-          </div>
+          </form>
 
           <aside className="h-fit rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
             <p className="mb-4 text-sm uppercase tracking-[0.25em] text-zinc-500">
