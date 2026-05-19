@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 type Reply = {
@@ -21,6 +21,7 @@ type Discussion = {
 export default function MyRepliesPage() {
   const [replies, setReplies] = useState<Reply[]>([]);
   const [discussions, setDiscussions] = useState<Record<string, Discussion>>({});
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,6 +68,24 @@ export default function MyRepliesPage() {
     loadMyReplies();
   }, []);
 
+  const filteredReplies = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return replies;
+    }
+
+    return replies.filter((reply) => {
+      const discussion = discussions[reply.discussion_id];
+
+      return (
+        reply.body.toLowerCase().includes(query) ||
+        (discussion?.title ?? "").toLowerCase().includes(query) ||
+        (discussion?.topic ?? "").toLowerCase().includes(query)
+      );
+    });
+  }, [replies, discussions, searchQuery]);
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -87,7 +106,7 @@ export default function MyRepliesPage() {
           ← Back to dashboard
         </Link>
 
-        <div className="mb-12">
+        <div className="mb-10">
           <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
             My Activity
           </p>
@@ -100,6 +119,20 @@ export default function MyRepliesPage() {
             Review the replies you have contributed across Loombus.
           </p>
         </div>
+
+        <div className="mb-6">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search your replies or related discussions..."
+            className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+          />
+        </div>
+
+        <p className="mb-10 text-sm text-zinc-600">
+          Showing {filteredReplies.length} of {replies.length} replies
+        </p>
 
         {replies.length === 0 && (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
@@ -120,8 +153,20 @@ export default function MyRepliesPage() {
           </div>
         )}
 
+        {replies.length > 0 && filteredReplies.length === 0 && (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+            <h2 className="mb-3 text-2xl font-medium">
+              No replies found.
+            </h2>
+
+            <p className="text-zinc-400">
+              No replies match your current search.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-6">
-          {replies.map((reply) => {
+          {filteredReplies.map((reply) => {
             const discussion = discussions[reply.discussion_id];
             const discussionAvailable = discussion && !discussion.deleted_at;
 

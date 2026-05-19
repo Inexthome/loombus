@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 type Discussion = {
@@ -15,6 +15,7 @@ type Discussion = {
 export default function MyDiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,6 +62,22 @@ export default function MyDiscussionsPage() {
     loadMyDiscussions();
   }, []);
 
+  const filteredDiscussions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return discussions;
+    }
+
+    return discussions.filter((discussion) => {
+      return (
+        discussion.title.toLowerCase().includes(query) ||
+        discussion.topic.toLowerCase().includes(query) ||
+        discussion.body.toLowerCase().includes(query)
+      );
+    });
+  }, [discussions, searchQuery]);
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -81,7 +98,7 @@ export default function MyDiscussionsPage() {
           ← Back to dashboard
         </Link>
 
-        <div className="mb-12">
+        <div className="mb-10">
           <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
             My Activity
           </p>
@@ -94,6 +111,20 @@ export default function MyDiscussionsPage() {
             Review the discussions you have started on Loombus.
           </p>
         </div>
+
+        <div className="mb-6">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search your discussions by title, topic, or body..."
+            className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+          />
+        </div>
+
+        <p className="mb-10 text-sm text-zinc-600">
+          Showing {filteredDiscussions.length} of {discussions.length} discussions
+        </p>
 
         {discussions.length === 0 && (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
@@ -114,8 +145,20 @@ export default function MyDiscussionsPage() {
           </div>
         )}
 
+        {discussions.length > 0 && filteredDiscussions.length === 0 && (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+            <h2 className="mb-3 text-2xl font-medium">
+              No discussions found.
+            </h2>
+
+            <p className="text-zinc-400">
+              No discussions match your current search.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-6">
-          {discussions.map((discussion) => (
+          {filteredDiscussions.map((discussion) => (
             <div
               key={discussion.id}
               className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
