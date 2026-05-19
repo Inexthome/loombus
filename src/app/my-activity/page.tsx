@@ -372,6 +372,44 @@ export default function MyActivityPage() {
               My Replies →
             </Link>
 
+            {currentProfile?.username && (
+              <>
+                <Link
+                  href={`/u/${currentProfile.username}/followers`}
+                  className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-700"
+                >
+                  <p className="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-600">
+                    Social
+                  </p>
+
+                  <h3 className="text-xl font-medium">
+                    Followers →
+                  </h3>
+
+                  <p className="mt-3 text-sm text-zinc-500">
+                    See who follows your public Loombus profile.
+                  </p>
+                </Link>
+
+                <Link
+                  href={`/u/${currentProfile.username}/following`}
+                  className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-700"
+                >
+                  <p className="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-600">
+                    Social
+                  </p>
+
+                  <h3 className="text-xl font-medium">
+                    Following List →
+                  </h3>
+
+                  <p className="mt-3 text-sm text-zinc-500">
+                    See the profiles you follow.
+                  </p>
+                </Link>
+              </>
+            )}
+
             <Link
               href="/saved"
               className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
