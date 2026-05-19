@@ -153,7 +153,7 @@ export default function AdminDashboardPage() {
 
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
 
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
             <h2 className="mb-4 text-3xl font-semibold">
@@ -186,6 +186,23 @@ export default function AdminDashboardPage() {
               className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
             >
               Open Deleted →
+            </Link>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <h2 className="mb-4 text-3xl font-semibold">
+              Deleted Replies
+            </h2>
+
+            <p className="mb-6 leading-relaxed text-zinc-400">
+              Review and restore soft-deleted replies.
+            </p>
+
+            <Link
+              href="/admin/deleted-replies"
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Open Replies →
             </Link>
           </div>
 
