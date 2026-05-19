@@ -8,6 +8,7 @@ type Profile = {
   full_name: string | null;
   username: string | null;
   bio: string | null;
+  avatar_url: string | null;
 };
 
 type ActivityCounts = {
@@ -30,6 +31,10 @@ function getMissingProfileFields(profile: Profile | null) {
 
   if (!profile?.bio?.trim()) {
     missing.push("bio");
+  }
+
+  if (!profile?.avatar_url?.trim()) {
+    missing.push("profile image");
   }
 
   return missing;
@@ -66,7 +71,7 @@ export default function DashboardPage() {
       ] = await Promise.all([
         supabase
           .from("profiles")
-          .select("full_name, username, bio")
+          .select("full_name, username, bio, avatar_url")
           .eq("id", data.user.id)
           .maybeSingle(),
 
@@ -112,8 +117,10 @@ export default function DashboardPage() {
     [profile]
   );
 
+  const totalProfileFields = 4;
+
   const profileCompletionPercent =
-    Math.round(((3 - missingProfileFields.length) / 3) * 100);
+    Math.round(((totalProfileFields - missingProfileFields.length) / totalProfileFields) * 100);
 
   const profileComplete = missingProfileFields.length === 0;
 
