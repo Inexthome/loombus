@@ -64,10 +64,21 @@ export default function ProfilePage() {
       return;
     }
 
+    const cleanUsername = username
+      .replace(/^@+/, "")
+      .trim()
+      .toLowerCase();
+
+    if (!/^[a-z0-9_]{2,30}$/.test(cleanUsername)) {
+      setSaving(false);
+      setMessage("Username must be 2-30 characters and can only use letters, numbers, and underscores.");
+      return;
+    }
+
     const { error: profileError } = await supabase.from("profiles").upsert({
       id: userData.user.id,
       full_name: fullName,
-      username,
+      username: cleanUsername,
       bio,
     });
 
@@ -141,6 +152,9 @@ export default function ProfilePage() {
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
               />
+              <p className="mt-2 text-xs text-zinc-600">
+                Use 2-30 letters, numbers, or underscores. Do not include the @ symbol.
+              </p>
             </div>
 
             <div>
@@ -151,8 +165,15 @@ export default function ProfilePage() {
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="@saint"
+                onChange={(e) =>
+                  setUsername(
+                    e.target.value
+                      .replace(/^@+/, "")
+                      .replace(/[^a-zA-Z0-9_]/g, "")
+                      .toLowerCase()
+                  )
+                }
+                placeholder="saint"
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
               />
             </div>

@@ -3,6 +3,19 @@ import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
 
 const REPLY_COOLDOWN_MS = 10000;
+const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
+
+function extractMentionUsernames(content: string) {
+  const matches = [...content.matchAll(MENTION_PATTERN)];
+
+  return [
+    ...new Set(
+      matches
+        .map((match) => match[2]?.toLowerCase().trim())
+        .filter((username): username is string => Boolean(username))
+    ),
+  ].slice(0, 10);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -140,6 +153,72 @@ export async function POST(request: NextRequest) {
           target_id: discussionId,
           message: `Someone replied to your discussion: ${discussion.title}`,
         });
+      }
+    }
+
+    const mentionedUsernames = extractMentionUsernames(content);
+
+    if (mentionedUsernames.length > 0 && discussion) {
+      const { data: mentionedProfiles } = await supabase
+        .from("profiles")
+        .select("id, username")
+        .in("username", mentionedUsernames);
+
+      const candidateMentionUserIds = [
+        ...new Set(
+          (mentionedProfiles ?? [])
+            .map((profile) => profile.id)
+            .filter((profileId) => {
+              if (!profileId) {
+                return false;
+              }
+
+              if (profileId === user.id) {
+                return false;
+              }
+
+              if (profileId === discussion.user_id) {
+                return false;
+              }
+
+              return true;
+            })
+        ),
+      ];
+
+      if (candidateMentionUserIds.length > 0) {
+        const { data: mentionPreferences } = await supabase
+          .from("notification_preferences")
+          .select("user_id, mentions_enabled")
+          .in("user_id", candidateMentionUserIds);
+
+        const preferenceMap = new Map(
+          (mentionPreferences ?? []).map((preference) => [
+            preference.user_id,
+            preference.mentions_enabled,
+          ])
+        );
+
+        const mentionNotifications = candidateMentionUserIds
+          .filter((mentionedUserId) => preferenceMap.get(mentionedUserId) ?? true)
+          .map((mentionedUserId) => ({
+            user_id: mentionedUserId,
+            actor_id: user.id,
+            type: "mention",
+            target_type: "discussion",
+            target_id: discussionId,
+            message: `Someone mentioned you in a discussion: ${discussion.title}`,
+          }));
+
+        if (mentionNotifications.length > 0) {
+          const { error: mentionError } = await supabase
+            .from("notifications")
+            .insert(mentionNotifications);
+
+          if (mentionError) {
+            console.error("Mention notification failed:", mentionError.message);
+          }
+        }
       }
     }
 
