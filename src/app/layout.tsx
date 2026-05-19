@@ -121,13 +121,7 @@ export default function RootLayout({
                   People
                 </Link>
 
-                <Link href="/about" className="transition hover:text-white">
-                  About
-                </Link>
 
-                <Link href="/guidelines" className="transition hover:text-white">
-                  Guidelines
-                </Link>
 
                 {user && (
                   <>
@@ -150,14 +144,14 @@ export default function RootLayout({
                     <Link href="/dashboard" className="transition hover:text-white">
                       Dashboard
                     </Link>
+                    <Link href="/settings" className="transition hover:text-white">
+                      Settings
+                    </Link>
 
                     <Link href="/create" className="transition hover:text-white">
                       Create
                     </Link>
 
-                    <Link href="/profile" className="transition hover:text-white">
-                      Profile
-                    </Link>
 
                     {isAdmin && (
                       <Link href="/admin" className="transition hover:text-white">
@@ -198,13 +192,7 @@ export default function RootLayout({
                   People
                 </Link>
 
-                <Link href="/about">
-                  About
-                </Link>
 
-                <Link href="/guidelines">
-                  Guidelines
-                </Link>
 
                 {user && (
                   <>
@@ -227,14 +215,14 @@ export default function RootLayout({
                     <Link href="/dashboard">
                       Dashboard
                     </Link>
+                    <Link href="/settings">
+                      Settings
+                    </Link>
 
                     <Link href="/create">
                       Create
                     </Link>
 
-                    <Link href="/profile">
-                      Profile
-                    </Link>
 
                     {isAdmin && (
                       <Link href="/admin">
