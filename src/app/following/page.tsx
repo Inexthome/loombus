@@ -140,7 +140,7 @@ export default function FollowingPage() {
           </h1>
 
           <p className="mt-3 text-zinc-500">
-            Discussions from people you follow.
+            A feed of discussions from the people you follow.
           </p>
         </div>
 
