@@ -19,6 +19,23 @@ type Profile = {
   username: string | null;
 };
 
+function getProfileInitials(profile: Profile | undefined) {
+  const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
+
+  const parts = label
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return parts
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "L";
+}
+
+function getProfileDisplayName(profile: Profile | undefined) {
+  return profile?.username ? `@${profile.username}` : "Loombus member";
+}
+
 export default function DiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -287,22 +304,28 @@ export default function DiscussionsPage() {
                 </Link>
 
                 <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm text-zinc-600">
-                    by{" "}
-                  {profile?.username ? (
-                    <Link
-                      href={`/u/${profile.username}`}
-                      className="text-zinc-400 transition hover:text-white"
-                    >
-                      @{profile.username}
-                    </Link>
-                  ) : (
-                    "Loombus member"
-                  )}{" "}
-                    · {new Date(discussion.created_at).toLocaleDateString()}
-                  </p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-black text-sm font-medium text-zinc-300">
+                      {getProfileInitials(profile)}
+                    </div>
 
-                  <div className="text-right">
+                    <p className="min-w-0 text-sm text-zinc-600">
+                      by{" "}
+                      {profile?.username ? (
+                        <Link
+                          href={`/u/${profile.username}`}
+                          className="text-zinc-400 transition hover:text-white"
+                        >
+                          {getProfileDisplayName(profile)}
+                        </Link>
+                      ) : (
+                        "Loombus member"
+                      )}{" "}
+                      · {new Date(discussion.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <div className="shrink-0 text-right">
                     <p className="text-sm text-zinc-500">
                       {replyCounts[discussion.id] ?? 0} replies ·{" "}
                       {viewCounts[discussion.id] ?? 0} views

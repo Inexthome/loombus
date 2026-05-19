@@ -11,6 +11,19 @@ type Profile = {
   bio: string | null;
 };
 
+function getProfileInitials(profile: Profile | undefined) {
+  const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
+
+  const parts = label
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return parts
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "L";
+}
+
 export default function PeoplePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,13 +117,21 @@ export default function PeoplePage() {
               href={profile.username ? `/u/${profile.username}` : "/people"}
               className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
             >
-              <p className="mb-3 text-sm text-zinc-500">
-                {profile.username ? `@${profile.username}` : "No username yet"}
-              </p>
+              <div className="mb-5 flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-zinc-800 bg-black text-base font-medium text-zinc-300">
+                  {getProfileInitials(profile)}
+                </div>
 
-              <h2 className="mb-3 text-2xl font-medium">
-                {profile.full_name || "Loombus member"}
-              </h2>
+                <div className="min-w-0">
+                  <h2 className="truncate text-2xl font-medium">
+                    {profile.full_name || profile.username || "Loombus member"}
+                  </h2>
+
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {profile.username ? `@${profile.username}` : "No username yet"}
+                  </p>
+                </div>
+              </div>
 
               <p className="line-clamp-3 leading-relaxed text-zinc-400">
                 {profile.bio || "No bio yet."}
