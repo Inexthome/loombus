@@ -155,12 +155,6 @@ export default function NotificationsPage() {
 
       setNotifications(loadedNotifications);
       setLoading(false);
-
-      const unreadIds = loadedNotifications
-        .filter((notification) => !notification.read_at)
-        .map((notification) => notification.id);
-
-      await markNotificationIdsRead(unreadIds, userData.user.id);
     }
 
     loadNotifications();
@@ -173,6 +167,21 @@ export default function NotificationsPage() {
 
     setMessage("");
     await markNotificationIdsRead([id], currentUserId);
+  }
+
+  async function openNotification(notification: Notification, href: string) {
+    if (!currentUserId) {
+      window.location.href = href;
+      return;
+    }
+
+    setMessage("");
+
+    if (!notification.read_at) {
+      await markNotificationIdsRead([notification.id], currentUserId);
+    }
+
+    window.location.href = href;
   }
 
   async function deleteNotification(id: string) {
@@ -341,6 +350,10 @@ export default function NotificationsPage() {
                   {href && (
                     <Link
                       href={href}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        openNotification(notification, href);
+                      }}
                       className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
                     >
                       {getNotificationActionLabel(notification)}
