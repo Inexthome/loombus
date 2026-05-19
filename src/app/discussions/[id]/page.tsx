@@ -327,6 +327,19 @@ export default function DiscussionPage() {
       return;
     }
 
+    const { data: existingReport } = await supabase
+      .from("reports")
+      .select("id")
+      .eq("reporter_id", userData.user.id)
+      .eq("discussion_id", id)
+      .is("reply_id", null)
+      .maybeSingle();
+
+    if (existingReport) {
+      setReportMessage("You already reported this discussion.");
+      return;
+    }
+
     const { error } = await supabase.from("reports").insert({
       reporter_id: userData.user.id,
       discussion_id: id,
@@ -334,6 +347,11 @@ export default function DiscussionPage() {
     });
 
     if (error) {
+      if (error.code === "23505") {
+        setReportMessage("You already reported this discussion.");
+        return;
+      }
+
       setReportMessage("Unable to submit report.");
       return;
     }
@@ -358,6 +376,18 @@ export default function DiscussionPage() {
         return;
       }
 
+      const { data: existingReport } = await supabase
+        .from("reports")
+        .select("id")
+        .eq("reporter_id", userData.user.id)
+        .eq("reply_id", replyId)
+        .maybeSingle();
+
+      if (existingReport) {
+        setReportMessage("You already reported this reply.");
+        return;
+      }
+
       const { error } = await supabase.from("reports").insert({
         reporter_id: userData.user.id,
         discussion_id: id,
@@ -366,6 +396,11 @@ export default function DiscussionPage() {
       });
 
       if (error) {
+        if (error.code === "23505") {
+          setReportMessage("You already reported this reply.");
+          return;
+        }
+
         setReportMessage("Unable to report reply.");
         return;
       }
