@@ -193,14 +193,23 @@ export default function DashboardPage() {
         </div>
 
         <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="mb-5">
-            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-              My Activity
-            </p>
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                My Activity
+              </p>
 
-            <h2 className="text-2xl font-medium">
-              Your Loombus footprint
-            </h2>
+              <h2 className="text-2xl font-medium">
+                Your Loombus footprint
+              </h2>
+            </div>
+
+            <Link
+              href="/my-activity"
+              className="text-sm text-zinc-400 transition hover:text-white"
+            >
+              View all activity →
+            </Link>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
