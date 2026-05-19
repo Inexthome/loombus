@@ -123,14 +123,24 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (discussion && discussion.user_id !== user.id) {
-      await supabase.from("notifications").insert({
-        user_id: discussion.user_id,
-        actor_id: user.id,
-        type: "reply",
-        target_type: "discussion",
-        target_id: discussionId,
-        message: `Someone replied to your discussion: ${discussion.title}`,
-      });
+      const { data: preferences } = await supabase
+        .from("notification_preferences")
+        .select("replies_enabled")
+        .eq("user_id", discussion.user_id)
+        .maybeSingle();
+
+      const repliesEnabled = preferences?.replies_enabled ?? true;
+
+      if (repliesEnabled) {
+        await supabase.from("notifications").insert({
+          user_id: discussion.user_id,
+          actor_id: user.id,
+          type: "reply",
+          target_type: "discussion",
+          target_id: discussionId,
+          message: `Someone replied to your discussion: ${discussion.title}`,
+        });
+      }
     }
 
     return NextResponse.json({ reply });

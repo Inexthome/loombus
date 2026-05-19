@@ -63,29 +63,41 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    await supabase.from("follows").insert({
+    const { error: followError } = await supabase.from("follows").insert({
       follower_id: user.id,
       following_id: targetUserId,
     });
 
-    const { error: notificationError } = await supabase
-      .from("notifications")
-      .insert({
-        user_id: targetUserId,
-        actor_id: user.id,
-        type: "follow",
-        target_type: "profile",
-        target_id: user.id,
-        message: "Someone followed you.",
-      });
-
-    if (notificationError) {
+    if (followError) {
       return NextResponse.json(
-        {
-          error: `Follow created, but notification failed: ${notificationError.message}`,
-        },
+        { error: followError.message },
         { status: 500 }
       );
+    }
+
+    const { data: preferences } = await supabase
+      .from("notification_preferences")
+      .select("follows_enabled")
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+
+    const followsEnabled = preferences?.follows_enabled ?? true;
+
+    if (followsEnabled) {
+      const { error: notificationError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: targetUserId,
+          actor_id: user.id,
+          type: "follow",
+          target_type: "profile",
+          target_id: user.id,
+          message: "Someone followed you.",
+        });
+
+      if (notificationError) {
+        console.error("Follow notification failed:", notificationError.message);
+      }
     }
 
     return NextResponse.json({
