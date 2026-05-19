@@ -35,9 +35,12 @@ type Report = {
   replies: ReplyRef;
 };
 
+type ReportFilter = "all" | "open" | "reviewed" | "discussions" | "replies";
+
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [filterMode, setFilterMode] = useState<ReportFilter>("all");
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [message, setMessage] = useState("");
@@ -243,6 +246,58 @@ export default function AdminReportsPage() {
     return profile?.full_name || profile?.username || "Loombus member";
   }
 
+  const filteredReports = reports.filter((report) => {
+    if (filterMode === "open") {
+      return report.status === "open";
+    }
+
+    if (filterMode === "reviewed") {
+      return report.status === "reviewed";
+    }
+
+    if (filterMode === "discussions") {
+      return !report.reply_id;
+    }
+
+    if (filterMode === "replies") {
+      return Boolean(report.reply_id);
+    }
+
+    return true;
+  });
+
+  const filterOptions: {
+    label: string;
+    value: ReportFilter;
+    count: number;
+  }[] = [
+    {
+      label: "All",
+      value: "all",
+      count: reports.length,
+    },
+    {
+      label: "Open",
+      value: "open",
+      count: reports.filter((report) => report.status === "open").length,
+    },
+    {
+      label: "Reviewed",
+      value: "reviewed",
+      count: reports.filter((report) => report.status === "reviewed").length,
+    },
+    {
+      label: "Discussions",
+      value: "discussions",
+      count: reports.filter((report) => !report.reply_id).length,
+    },
+    {
+      label: "Replies",
+      value: "replies",
+      count: reports.filter((report) => Boolean(report.reply_id)).length,
+    },
+  ];
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -276,9 +331,29 @@ export default function AdminReportsPage() {
           Reports
         </h1>
 
-        <p className="mb-12 text-zinc-500">
+        <p className="mb-8 text-zinc-500">
           Review discussions and replies submitted for moderation.
         </p>
+
+        <div className="mb-10 flex flex-wrap gap-3">
+          {filterOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setFilterMode(option.value)}
+              className={`rounded-full px-4 py-2 text-sm transition ${
+                filterMode === option.value
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+              }`}
+            >
+              {option.label}
+              <span className="ml-2 opacity-70">
+                {option.count}
+              </span>
+            </button>
+          ))}
+        </div>
 
         {message && (
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
@@ -286,20 +361,20 @@ export default function AdminReportsPage() {
           </div>
         )}
 
-        {reports.length === 0 && (
+        {filteredReports.length === 0 && (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
             <h2 className="mb-3 text-2xl font-medium">
-              No reports yet.
+              No reports found.
             </h2>
 
             <p className="text-zinc-400">
-              Reported discussions and replies will appear here.
+              No reports match the current filter.
             </p>
           </div>
         )}
 
         <div className="space-y-6">
-          {reports.map((report) => {
+          {filteredReports.map((report) => {
             const isReplyReport = Boolean(report.reply_id);
 
             return (
