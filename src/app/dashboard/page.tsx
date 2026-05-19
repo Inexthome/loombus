@@ -267,7 +267,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-3">
           <Link
             href="/discussions"
             className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
@@ -285,6 +285,16 @@ export default function DashboardPage() {
             <h2 className="mb-3 text-xl font-medium">Create discussion</h2>
             <p className="text-sm leading-relaxed text-zinc-400">
               Start a structured conversation around a meaningful idea.
+            </p>
+          </Link>
+
+          <Link
+            href="/settings"
+            className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+          >
+            <h2 className="mb-3 text-xl font-medium">Settings</h2>
+            <p className="text-sm leading-relaxed text-zinc-400">
+              Manage your profile, activity, saved items, notifications, and platform links.
             </p>
           </Link>
         </div>
