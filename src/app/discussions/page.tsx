@@ -36,7 +36,6 @@ export default function DiscussionsPage() {
         .from("discussions")
         .select("*")
         .is("deleted_at", null)
-        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
       if (!error && data) {
@@ -221,7 +220,7 @@ export default function DiscussionsPage() {
           </button>
         </div>
 
-        <div className="mb-10 flex flex-wrap gap-3">
+        <div className="mb-6 flex flex-wrap gap-3">
           {topics.map((topic) => (
             <button
               key={topic}
@@ -237,6 +236,12 @@ export default function DiscussionsPage() {
           ))}
         </div>
 
+        {!loading && (
+          <p className="mb-10 text-sm text-zinc-600">
+            Showing {filteredDiscussions.length} of {discussions.length} discussions
+          </p>
+        )}
+
         {loading && (
           <p className="text-zinc-500">
             Loading discussions...
@@ -250,7 +255,7 @@ export default function DiscussionsPage() {
             </h2>
 
             <p className="text-zinc-400">
-              There are currently no discussions in this topic.
+              No discussions match the current search, topic, or sort selection.
             </p>
           </div>
         )}
