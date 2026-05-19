@@ -218,7 +218,7 @@ export default function DashboardPage() {
             </Link>
 
             <Link
-              href="/discussions"
+              href="/my-replies"
               className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
             >
               <p className="mb-2 text-sm text-zinc-500">
