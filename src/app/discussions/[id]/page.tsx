@@ -91,6 +91,8 @@ export default function DiscussionPage() {
   const [postingReply, setPostingReply] = useState(false);
   const [deletingReplyId, setDeletingReplyId] = useState<string | null>(null);
   const [reportingReplyId, setReportingReplyId] = useState<string | null>(null);
+  const [reportedDiscussion, setReportedDiscussion] = useState(false);
+  const [reportedReplyIds, setReportedReplyIds] = useState<string[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -162,6 +164,32 @@ export default function DiscussionPage() {
           .maybeSingle();
 
         setIsSaved(Boolean(savedData));
+
+        const { data: existingDiscussionReport } = await supabase
+          .from("reports")
+          .select("id")
+          .eq("reporter_id", viewerData.user.id)
+          .eq("discussion_id", id)
+          .is("reply_id", null)
+          .maybeSingle();
+
+        setReportedDiscussion(Boolean(existingDiscussionReport));
+
+        const replyIds = (repliesData ?? []).map((reply) => reply.id);
+
+        if (replyIds.length > 0) {
+          const { data: existingReplyReports } = await supabase
+            .from("reports")
+            .select("reply_id")
+            .eq("reporter_id", viewerData.user.id)
+            .in("reply_id", replyIds);
+
+          setReportedReplyIds(
+            (existingReplyReports ?? [])
+              .map((report) => report.reply_id)
+              .filter((replyId): replyId is string => Boolean(replyId))
+          );
+        }
 
         const { data: viewerProfile } = await supabase
           .from("profiles")
@@ -336,6 +364,7 @@ export default function DiscussionPage() {
       .maybeSingle();
 
     if (existingReport) {
+      setReportedDiscussion(true);
       setReportMessage("You already reported this discussion.");
       return;
     }
@@ -348,6 +377,7 @@ export default function DiscussionPage() {
 
     if (error) {
       if (error.code === "23505") {
+        setReportedDiscussion(true);
         setReportMessage("You already reported this discussion.");
         return;
       }
@@ -356,6 +386,7 @@ export default function DiscussionPage() {
       return;
     }
 
+    setReportedDiscussion(true);
     setReportMessage("Discussion reported.");
   }
 
@@ -384,6 +415,9 @@ export default function DiscussionPage() {
         .maybeSingle();
 
       if (existingReport) {
+        setReportedReplyIds((current) =>
+          current.includes(replyId) ? current : [...current, replyId]
+        );
         setReportMessage("You already reported this reply.");
         return;
       }
@@ -397,6 +431,9 @@ export default function DiscussionPage() {
 
       if (error) {
         if (error.code === "23505") {
+          setReportedReplyIds((current) =>
+            current.includes(replyId) ? current : [...current, replyId]
+          );
           setReportMessage("You already reported this reply.");
           return;
         }
@@ -405,6 +442,9 @@ export default function DiscussionPage() {
         return;
       }
 
+      setReportedReplyIds((current) =>
+        current.includes(replyId) ? current : [...current, replyId]
+      );
       setReportMessage("Reply reported.");
     } finally {
       setReportingReplyId(null);
@@ -478,9 +518,10 @@ export default function DiscussionPage() {
 
           <button
             onClick={handleReport}
-            className="rounded-full border border-red-900 px-5 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300"
+            disabled={reportedDiscussion}
+            className="rounded-full border border-red-900 px-5 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
           >
-            Report Discussion
+            {reportedDiscussion ? "Reported" : "Report Discussion"}
           </button>
 
           {(bookmarkMessage || reportMessage) && (
@@ -538,6 +579,8 @@ export default function DiscussionPage() {
                 Boolean(currentUserId) &&
                 (reply.user_id === currentUserId || isAdmin);
 
+              const hasReportedReply = reportedReplyIds.includes(reply.id);
+
               const canReportReply =
                 Boolean(currentUserId) && reply.user_id !== currentUserId;
 
@@ -555,10 +598,14 @@ export default function DiscussionPage() {
                       <button
                         type="button"
                         onClick={() => handleReportReply(reply.id)}
-                        disabled={reportingReplyId === reply.id}
+                        disabled={reportingReplyId === reply.id || hasReportedReply}
                         className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                       >
-                        {reportingReplyId === reply.id ? "Reporting..." : "Report"}
+                        {hasReportedReply
+                          ? "Reported"
+                          : reportingReplyId === reply.id
+                            ? "Reporting..."
+                            : "Report"}
                       </button>
                     )}
 
