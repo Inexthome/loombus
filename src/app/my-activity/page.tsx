@@ -21,8 +21,15 @@ type Reply = {
 };
 
 type Bookmark = {
+  id: string;
   discussion_id: string;
   created_at: string;
+};
+
+type SavedDiscussion = {
+  bookmark_id: string;
+  created_at: string;
+  discussion: Discussion;
 };
 
 type Notification = {
@@ -38,8 +45,11 @@ type Notification = {
 export default function MyActivityPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [replies, setReplies] = useState<Reply[]>([]);
-  const [savedDiscussions, setSavedDiscussions] = useState<Discussion[]>([]);
+  const [savedDiscussions, setSavedDiscussions] = useState<SavedDiscussion[]>([]);
   const [replyDiscussions, setReplyDiscussions] = useState<Record<string, Discussion>>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [removingSavedId, setRemovingSavedId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,6 +61,8 @@ export default function MyActivityPage() {
         window.location.href = "/login";
         return;
       }
+
+      setCurrentUserId(userData.user.id);
 
       const [
         { data: discussionData },
@@ -76,7 +88,7 @@ export default function MyActivityPage() {
 
         supabase
           .from("bookmarks")
-          .select("discussion_id, created_at")
+          .select("id, discussion_id, created_at")
           .eq("user_id", userData.user.id)
           .order("created_at", { ascending: false })
           .limit(6),
@@ -134,9 +146,21 @@ export default function MyActivityPage() {
         );
 
         setSavedDiscussions(
-          savedDiscussionIds
-            .map((discussionId) => savedMap.get(discussionId))
-            .filter((discussion): discussion is Discussion => Boolean(discussion))
+          loadedBookmarks
+            .map((bookmark) => {
+              const discussion = savedMap.get(bookmark.discussion_id);
+
+              if (!discussion) {
+                return null;
+              }
+
+              return {
+                bookmark_id: bookmark.id,
+                created_at: bookmark.created_at,
+                discussion,
+              };
+            })
+            .filter((item): item is SavedDiscussion => Boolean(item))
         );
       }
 
@@ -145,6 +169,35 @@ export default function MyActivityPage() {
 
     loadActivity();
   }, []);
+
+  async function removeSavedDiscussion(bookmarkId: string) {
+    setMessage("");
+
+    if (!currentUserId || removingSavedId) {
+      return;
+    }
+
+    setRemovingSavedId(bookmarkId);
+
+    const { error } = await supabase
+      .from("bookmarks")
+      .delete()
+      .eq("id", bookmarkId)
+      .eq("user_id", currentUserId);
+
+    setRemovingSavedId(null);
+
+    if (error) {
+      setMessage("Unable to remove saved discussion.");
+      return;
+    }
+
+    setSavedDiscussions((current) =>
+      current.filter((item) => item.bookmark_id !== bookmarkId)
+    );
+
+    setMessage("Saved discussion removed.");
+  }
 
   function getNotificationHref(notification: Notification) {
     if (notification.target_type === "discussion" && notification.target_id) {
@@ -222,6 +275,12 @@ export default function MyActivityPage() {
           </Link>
         </div>
 
+        {message && (
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
+            {message}
+          </div>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
@@ -296,16 +355,41 @@ export default function MyActivityPage() {
             </div>
 
             <div className="space-y-4">
-              {savedDiscussions.map((discussion) => (
-                <Link
-                  key={discussion.id}
-                  href={`/discussions/${discussion.id}`}
-                  className="block rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700"
-                >
-                  <p className="mb-2 text-sm text-zinc-500">{discussion.topic}</p>
-                  <h3 className="text-lg font-medium">{discussion.title}</h3>
-                </Link>
-              ))}
+              {savedDiscussions.map((savedItem) => {
+                const discussion = savedItem.discussion;
+
+                return (
+                  <div
+                    key={savedItem.bookmark_id}
+                    className="rounded-2xl border border-zinc-900 bg-black p-4"
+                  >
+                    <Link
+                      href={`/discussions/${discussion.id}`}
+                      className="block transition hover:opacity-90"
+                    >
+                      <p className="mb-2 text-sm text-zinc-500">{discussion.topic}</p>
+                      <h3 className="mb-4 text-lg font-medium">{discussion.title}</h3>
+                    </Link>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs text-zinc-600">
+                        Saved {new Date(savedItem.created_at).toLocaleDateString()}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => removeSavedDiscussion(savedItem.bookmark_id)}
+                        disabled={removingSavedId === savedItem.bookmark_id}
+                        className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {removingSavedId === savedItem.bookmark_id
+                          ? "Removing..."
+                          : "Unsave"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
 
               {savedDiscussions.length === 0 && (
                 <p className="text-sm text-zinc-500">No saved discussions yet.</p>
