@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 type Discussion = {
@@ -23,6 +23,8 @@ export default function FollowingPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
+  const [selectedTopic, setSelectedTopic] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,7 +53,6 @@ export default function FollowingPage() {
         .from("discussions")
         .select("*")
         .is("deleted_at", null)
-        .is("deleted_at", null)
         .in("user_id", followingIds)
         .order("created_at", { ascending: false });
 
@@ -63,15 +64,17 @@ export default function FollowingPage() {
         ...new Set(discussions.map((d) => d.user_id)),
       ];
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("id", uniqueUserIds);
-
       const profileMap: Record<string, Profile> = {};
 
-      for (const profile of profileData ?? []) {
-        profileMap[profile.id] = profile;
+      if (uniqueUserIds.length > 0) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("id", uniqueUserIds);
+
+        for (const profile of profileData ?? []) {
+          profileMap[profile.id] = profile;
+        }
       }
 
       const discussionIds = discussions.map((d) => d.id);
@@ -99,6 +102,32 @@ export default function FollowingPage() {
     loadFollowingFeed();
   }, []);
 
+  const topics = useMemo(() => {
+    const uniqueTopics = [...new Set(discussions.map((discussion) => discussion.topic))];
+    return ["All", ...uniqueTopics];
+  }, [discussions]);
+
+  const filteredDiscussions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return discussions.filter((discussion) => {
+      const profile = profiles[discussion.user_id];
+
+      const matchesTopic =
+        selectedTopic === "All" || discussion.topic === selectedTopic;
+
+      const matchesSearch =
+        !query ||
+        discussion.title.toLowerCase().includes(query) ||
+        discussion.body.toLowerCase().includes(query) ||
+        discussion.topic.toLowerCase().includes(query) ||
+        (profile?.username ?? "").toLowerCase().includes(query) ||
+        (profile?.full_name ?? "").toLowerCase().includes(query);
+
+      return matchesTopic && matchesSearch;
+    });
+  }, [discussions, profiles, selectedTopic, searchQuery]);
+
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-5xl">
@@ -112,6 +141,38 @@ export default function FollowingPage() {
             Discussions from people you follow.
           </p>
         </div>
+
+        <div className="mb-8">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search followed discussions, topics, or contributors..."
+            className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+          />
+        </div>
+
+        <div className="mb-6 flex flex-wrap gap-3">
+          {topics.map((topic) => (
+            <button
+              key={topic}
+              onClick={() => setSelectedTopic(topic)}
+              className={`rounded-full px-4 py-2 text-sm transition ${
+                selectedTopic === topic
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+              }`}
+            >
+              {topic}
+            </button>
+          ))}
+        </div>
+
+        {!loading && (
+          <p className="mb-10 text-sm text-zinc-600">
+            Showing {filteredDiscussions.length} of {discussions.length} followed discussions
+          </p>
+        )}
 
         {loading && (
           <p className="text-zinc-500">
@@ -131,8 +192,20 @@ export default function FollowingPage() {
           </div>
         )}
 
+        {!loading && discussions.length > 0 && filteredDiscussions.length === 0 && (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <h2 className="mb-3 text-2xl font-medium">
+              No followed discussions found.
+            </h2>
+
+            <p className="text-zinc-400">
+              No followed discussions match the current search or topic filter.
+            </p>
+          </div>
+        )}
+
         <div className="space-y-6">
-          {discussions.map((discussion) => {
+          {filteredDiscussions.map((discussion) => {
             const profile = profiles[discussion.user_id];
 
             return (
