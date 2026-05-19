@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -10,7 +10,13 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin() {
+  async function handleLogin(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+
+    if (loading) {
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -48,12 +54,17 @@ export default function LoginPage() {
           Return to your high-signal discussion environment.
         </p>
 
-        <form className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <form
+          onSubmit={handleLogin}
+          className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+        >
           <div>
             <label className="mb-2 block text-sm text-zinc-400">Email</label>
             <input
-              type="email"
+                type="email"
               value={email}
+              autoComplete="email"
+              required
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             />
@@ -64,14 +75,15 @@ export default function LoginPage() {
             <input
               type="password"
               value={password}
+              autoComplete="current-password"
+              required
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             />
           </div>
 
           <button
-            type="button"
-            onClick={handleLogin}
+            type="submit"
             disabled={loading}
             className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
           >
