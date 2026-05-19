@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -213,7 +213,11 @@ export default function DiscussionPage() {
     loadDiscussion();
   }, [id]);
 
-  async function handleReply() {
+  async function handleReply(
+    event?: FormEvent<HTMLFormElement> | KeyboardEvent<HTMLFormElement>
+  ) {
+    event?.preventDefault();
+
     setMessage("");
 
     if (postingReply) {
@@ -277,6 +281,12 @@ export default function DiscussionPage() {
       setMessage("Reply posted.");
     } finally {
       setPostingReply(false);
+    }
+  }
+
+  function handleReplyFormKeyDown(event: KeyboardEvent<HTMLFormElement>) {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      handleReply(event);
     }
   }
 
@@ -612,7 +622,11 @@ export default function DiscussionPage() {
             Replies
           </h2>
 
-          <form className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <form
+            onSubmit={handleReply}
+            onKeyDown={handleReplyFormKeyDown}
+            className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+          >
             <label className="mb-3 block text-sm text-zinc-400">
               Add a thoughtful reply
             </label>
@@ -620,20 +634,26 @@ export default function DiscussionPage() {
             <textarea
               rows={5}
               value={replyBody}
+              required
               onChange={(e) => setReplyBody(e.target.value)}
               disabled={postingReply}
               placeholder="Contribute with clarity, context, and signal... Use @username to mention someone."
               className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600"
             />
 
-            <button
-              type="button"
-              onClick={handleReply}
-              disabled={postingReply}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="submit"
+                disabled={postingReply}
               className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
             >
-              {postingReply ? "Posting..." : "Post Reply"}
-            </button>
+                {postingReply ? "Posting..." : "Post Reply"}
+              </button>
+
+              <p className="text-sm text-zinc-600">
+                Press Cmd+Enter or Ctrl+Enter to reply.
+              </p>
+            </div>
 
             {message && <p className="mt-4 text-sm text-zinc-400">{message}</p>}
           </form>
