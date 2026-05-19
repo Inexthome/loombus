@@ -26,6 +26,34 @@ type Reply = {
   created_at: string;
 };
 
+function MentionText({ text }: { text: string }) {
+  const parts = text.split(/(@[a-zA-Z0-9_]{2,30})/g);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        const match = part.match(/^@([a-zA-Z0-9_]{2,30})$/);
+
+        if (!match) {
+          return <span key={`${part}-${index}`}>{part}</span>;
+        }
+
+        const username = match[1].toLowerCase();
+
+        return (
+          <Link
+            key={`${part}-${index}`}
+            href={`/u/${username}`}
+            className="font-medium text-white underline decoration-zinc-600 underline-offset-4 transition hover:decoration-white"
+          >
+            @{username}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 export default function DiscussionPage() {
   const params = useParams();
   const id = params.id as string;
@@ -304,7 +332,7 @@ export default function DiscussionPage() {
               rows={5}
               value={replyBody}
               onChange={(e) => setReplyBody(e.target.value)}
-              placeholder="Contribute with clarity, context, and signal..."
+              placeholder="Contribute with clarity, context, and signal... Use @username to mention someone."
               className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             />
 
@@ -329,8 +357,8 @@ export default function DiscussionPage() {
                   {replyProfiles[reply.user_id]?.full_name ?? "Loombus member"}
                 </p>
 
-                <p className="leading-relaxed text-zinc-300">
-                  {reply.body}
+                <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
+                  <MentionText text={reply.body} />
                 </p>
               </div>
             ))}
