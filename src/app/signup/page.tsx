@@ -9,6 +9,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [signupComplete, setSignupComplete] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSignup(event?: FormEvent<HTMLFormElement>) {
@@ -20,6 +21,7 @@ export default function SignupPage() {
 
     setLoading(true);
     setMessage("");
+    setSignupComplete(false);
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -44,6 +46,8 @@ export default function SignupPage() {
       });
     }
 
+    setSignupComplete(true);
+    setPassword("");
     setMessage("Signup successful. Check your email to confirm your account.");
     setLoading(false);
   }
@@ -67,10 +71,44 @@ export default function SignupPage() {
           Join a calmer, higher-signal environment for thoughtful discussion.
         </p>
 
-        <form
-          onSubmit={handleSignup}
-          className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
-        >
+        {signupComplete ? (
+          <div className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Account Created
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Check your email to confirm your account.
+              </h2>
+
+              <p className="mt-4 leading-relaxed text-zinc-400">
+                After confirming your email, log in and complete your profile so other Loombus members know who they are reading and interacting with.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+              <p className="text-sm text-zinc-500">
+                Next step
+              </p>
+
+              <p className="mt-2 text-zinc-300">
+                Confirm your email, then log in and finish your profile setup.
+              </p>
+            </div>
+
+            <Link
+              href="/login"
+              className="inline-flex rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200"
+            >
+              Go to Log In
+            </Link>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSignup}
+            className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+          >
           <div>
             <label className="mb-2 block text-sm text-zinc-400">
               Full name
@@ -129,7 +167,8 @@ export default function SignupPage() {
               {message}
             </p>
           )}
-        </form>
+          </form>
+        )}
       </div>
     </main>
   );
