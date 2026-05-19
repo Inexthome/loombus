@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 type Profile = {
@@ -63,7 +63,15 @@ export default function CreatePage() {
 
   const profileComplete = missingProfileFields.length === 0;
 
-  async function handleCreate() {
+  async function handleCreate(
+    event?: FormEvent<HTMLFormElement> | KeyboardEvent<HTMLFormElement>
+  ) {
+    event?.preventDefault();
+
+    if (publishing) {
+      return;
+    }
+
     setPublishing(true);
     setMessage("");
 
@@ -110,6 +118,12 @@ export default function CreatePage() {
     window.location.href = `/discussions/${result.discussion.id}`;
   }
 
+  function handleFormKeyDown(event: KeyboardEvent<HTMLFormElement>) {
+    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+      handleCreate(event);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-3xl">
@@ -153,7 +167,11 @@ export default function CreatePage() {
           </div>
         )}
 
-        <form className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+        <form
+          onSubmit={handleCreate}
+          onKeyDown={handleFormKeyDown}
+          className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-8"
+        >
           <div>
             <label className="mb-2 block text-sm text-zinc-400">
               Discussion Title
@@ -162,6 +180,7 @@ export default function CreatePage() {
             <input
               type="text"
               value={title}
+              required
               onChange={(e) => setTitle(e.target.value)}
               placeholder="How AI changes trust online"
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
@@ -198,20 +217,26 @@ export default function CreatePage() {
             <textarea
               rows={10}
               value={body}
+              required
               onChange={(e) => setBody(e.target.value)}
               placeholder="Write your discussion..."
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             />
           </div>
 
-          <button
-            type="button"
-            onClick={handleCreate}
-            disabled={publishing}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="submit"
+              disabled={publishing}
             className="rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
           >
-            {publishing ? "Publishing..." : "Publish Discussion"}
-          </button>
+              {publishing ? "Publishing..." : "Publish Discussion"}
+            </button>
+
+            <p className="text-sm text-zinc-600">
+              Press Cmd+Enter or Ctrl+Enter to publish.
+            </p>
+          </div>
 
           {message && <p className="text-sm text-zinc-400">{message}</p>}
         </form>
