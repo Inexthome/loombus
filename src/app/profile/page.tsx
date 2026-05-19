@@ -53,6 +53,33 @@ export default function ProfilePage() {
     loadProfile();
   }, []);
 
+  const profileCompletionItems = [
+    {
+      label: "Username",
+      complete: Boolean(username.trim()),
+    },
+    {
+      label: "Full name",
+      complete: Boolean(fullName.trim()),
+    },
+    {
+      label: "Bio",
+      complete: Boolean(bio.trim()),
+    },
+  ];
+
+  const completedProfileItems = profileCompletionItems.filter(
+    (item) => item.complete
+  ).length;
+
+  const profileCompletionPercent = Math.round(
+    (completedProfileItems / profileCompletionItems.length) * 100
+  );
+
+  const missingProfileItems = profileCompletionItems
+    .filter((item) => !item.complete)
+    .map((item) => item.label.toLowerCase());
+
   async function saveProfile() {
     setMessage("");
     setSaving(true);
@@ -150,6 +177,41 @@ export default function ProfilePage() {
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="rounded-2xl border border-zinc-900 bg-black p-5">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                  Profile completion
+                </p>
+
+                <h2 className="text-2xl font-medium">
+                  {profileCompletionPercent}% complete
+                </h2>
+              </div>
+
+              <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
+                {completedProfileItems}/{profileCompletionItems.length}
+              </span>
+            </div>
+
+            <div className="mb-4 h-2 overflow-hidden rounded-full bg-zinc-900">
+              <div
+                className="h-full rounded-full bg-white transition-all"
+                style={{ width: `${profileCompletionPercent}%` }}
+              />
+            </div>
+
+            {missingProfileItems.length > 0 ? (
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Add your {missingProfileItems.join(", ")} to complete your public profile.
+              </p>
+            ) : (
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Your profile is complete and ready to appear across Loombus.
+              </p>
+            )}
+          </section>
+
           <section className="space-y-5">
             <div>
               <h2 className="text-2xl font-medium">

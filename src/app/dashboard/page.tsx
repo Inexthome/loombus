@@ -62,6 +62,9 @@ export default function DashboardPage() {
     [profile]
   );
 
+  const profileCompletionPercent =
+    Math.round(((3 - missingProfileFields.length) / 3) * 100);
+
   const profileComplete = missingProfileFields.length === 0;
 
   async function handleLogout() {
@@ -94,35 +97,50 @@ export default function DashboardPage() {
           Signed in as {email}
         </p>
 
-        {!profileComplete && (
-          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-              Profile setup
-            </p>
+        <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Profile setup
+              </p>
 
-            <h2 className="mb-3 text-2xl font-medium">
-              Complete your public profile.
-            </h2>
+              <h2 className="text-2xl font-medium">
+                {profileComplete ? "Your public profile is complete." : "Complete your public profile."}
+              </h2>
+            </div>
 
-            <p className="mb-5 leading-relaxed text-zinc-400">
-              Add your {missingProfileFields.join(", ")} so other members know
-              who they are reading and interacting with.
-            </p>
-
-            <Link
-              href="/profile"
-              className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
-            >
-              Complete Profile
-            </Link>
+            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
+              {profileCompletionPercent}%
+            </span>
           </div>
-        )}
 
-        {profileComplete && (
-          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-400">
-            Your public profile is complete.
+          <div className="mb-4 h-2 overflow-hidden rounded-full bg-zinc-900">
+            <div
+              className="h-full rounded-full bg-white transition-all"
+              style={{ width: `${profileCompletionPercent}%` }}
+            />
           </div>
-        )}
+
+          {!profileComplete ? (
+            <>
+              <p className="mb-5 leading-relaxed text-zinc-400">
+                Add your {missingProfileFields.join(", ")} so other members know
+                who they are reading and interacting with.
+              </p>
+
+              <Link
+                href="/profile"
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Complete Profile
+              </Link>
+            </>
+          ) : (
+            <p className="text-sm text-zinc-400">
+              Your profile is ready for people, mentions, follows, and discussion attribution.
+            </p>
+          )}
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <Link
