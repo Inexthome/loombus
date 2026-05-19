@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -139,7 +140,7 @@ export default function FollowingPage() {
                 key={discussion.id}
                 className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
               >
-                <a
+                <Link
                   href={`/discussions/${discussion.id}`}
                   className="block"
                 >
@@ -154,18 +155,18 @@ export default function FollowingPage() {
                   <p className="mb-4 line-clamp-2 leading-relaxed text-zinc-400">
                     {discussion.body}
                   </p>
-                </a>
+                </Link>
 
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-sm text-zinc-600">
                     by{" "}
                   {profile?.username ? (
-                    <a
+                    <Link
                       href={`/u/${profile.username}`}
                       className="text-zinc-400 transition hover:text-white"
                     >
                       @{profile.username}
-                    </a>
+                    </Link>
                   ) : (
                     "Loombus member"
                   )}{" "}
