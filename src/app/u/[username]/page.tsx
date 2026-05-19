@@ -32,6 +32,7 @@ export default function UserProfilePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followMessage, setFollowMessage] = useState("");
+  const [followWorking, setFollowWorking] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
@@ -83,7 +84,6 @@ export default function UserProfilePage() {
         .from("discussions")
         .select("*")
         .is("deleted_at", null)
-        .is("deleted_at", null)
         .eq("user_id", profileData.id)
         .order("created_at", { ascending: false });
 
@@ -97,18 +97,21 @@ export default function UserProfilePage() {
   async function toggleFollow() {
     setFollowMessage("");
 
-    if (!profile) {
+    if (!profile || followWorking) {
       return;
     }
 
-    const { data: sessionData } = await supabase.auth.getSession();
+    setFollowWorking(true);
 
-    if (!sessionData.session) {
-      window.location.href = "/login";
-      return;
-    }
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
 
-    const response = await fetch("/api/follows/toggle", {
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/follows/toggle", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -119,18 +122,21 @@ export default function UserProfilePage() {
       }),
     });
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (!response.ok) {
-      setFollowMessage(result.error ?? "Unable to update follow status.");
-      return;
+      if (!response.ok) {
+        setFollowMessage(result.error ?? "Unable to update follow status.");
+        return;
+      }
+
+      setIsFollowing(result.following);
+      setFollowerCount((count) =>
+        result.following ? count + 1 : Math.max(0, count - 1)
+      );
+      setFollowMessage(result.following ? "Following." : "Unfollowed.");
+    } finally {
+      setFollowWorking(false);
     }
-
-    setIsFollowing(result.following);
-    setFollowerCount((count) =>
-      result.following ? count + 1 : Math.max(0, count - 1)
-    );
-    setFollowMessage(result.following ? "Following." : "Unfollowed.");
   }
 
 
@@ -192,9 +198,10 @@ export default function UserProfilePage() {
             <div className="mt-8">
               <button
                 onClick={toggleFollow}
-                className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200"
+                disabled={followWorking}
+                className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
               >
-                {isFollowing ? "Following" : "Follow"}
+                {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
               </button>
 
               {followMessage && (
