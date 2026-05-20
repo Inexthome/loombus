@@ -22,6 +22,11 @@ type Profile = {
   avatar_url: string | null;
 };
 
+type BlockRow = {
+  blocker_id: string;
+  blocked_id: string;
+};
+
 export default function DiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -43,9 +48,29 @@ export default function DiscussionsPage() {
         .order("created_at", { ascending: false });
 
       if (!error && data) {
-        setDiscussions(data);
+        const { data: viewerData } = await supabase.auth.getUser();
+        const hiddenProfileIds = new Set<string>();
 
-        const userIds = [...new Set(data.map((item) => item.user_id))];
+        if (viewerData.user) {
+          const { data: blockRows } = await supabase
+            .from("user_blocks")
+            .select("blocker_id, blocked_id")
+            .or(`blocker_id.eq.${viewerData.user.id},blocked_id.eq.${viewerData.user.id}`);
+
+          for (const block of (blockRows ?? []) as BlockRow[]) {
+            hiddenProfileIds.add(
+              block.blocker_id === viewerData.user.id ? block.blocked_id : block.blocker_id
+            );
+          }
+        }
+
+        const visibleDiscussions = data.filter(
+          (item) => !hiddenProfileIds.has(item.user_id)
+        );
+
+        setDiscussions(visibleDiscussions);
+
+        const userIds = [...new Set(visibleDiscussions.map((item) => item.user_id))];
 
         if (userIds.length > 0) {
           const { data: profileData } = await supabase
@@ -62,17 +87,21 @@ export default function DiscussionsPage() {
           setProfiles(profileMap);
         }
 
-        const discussionIds = data.map((item) => item.id);
+        const discussionIds = visibleDiscussions.map((item) => item.id);
 
         if (discussionIds.length > 0) {
           const { data: replyData } = await supabase
             .from("replies")
-            .select("discussion_id")
+            .select("discussion_id, user_id")
             .in("discussion_id", discussionIds);
 
           const counts: Record<string, number> = {};
 
           for (const reply of replyData ?? []) {
+            if (hiddenProfileIds.has(reply.user_id)) {
+              continue;
+            }
+
             counts[reply.discussion_id] =
               (counts[reply.discussion_id] ?? 0) + 1;
           }

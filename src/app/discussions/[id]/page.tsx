@@ -30,6 +30,11 @@ type Reply = {
   created_at: string;
 };
 
+type BlockRow = {
+  blocker_id: string;
+  blocked_id: string;
+};
+
 function MentionText({ text }: { text: string }) {
   const parts = text.split(/(@[a-zA-Z0-9_]{2,30})/g);
 
@@ -135,7 +140,27 @@ export default function DiscussionPage() {
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
 
-      const replyUserIds = [...new Set((repliesData ?? []).map((reply) => reply.user_id))];
+      const { data: viewerData } = await supabase.auth.getUser();
+      const hiddenProfileIds = new Set<string>();
+
+      if (viewerData.user) {
+        const { data: blockRows } = await supabase
+          .from("user_blocks")
+          .select("blocker_id, blocked_id")
+          .or(`blocker_id.eq.${viewerData.user.id},blocked_id.eq.${viewerData.user.id}`);
+
+        for (const block of (blockRows ?? []) as BlockRow[]) {
+          hiddenProfileIds.add(
+            block.blocker_id === viewerData.user.id ? block.blocked_id : block.blocker_id
+          );
+        }
+      }
+
+      const visibleReplies = (repliesData ?? []).filter(
+        (reply) => !hiddenProfileIds.has(reply.user_id)
+      );
+
+      const replyUserIds = [...new Set(visibleReplies.map((reply) => reply.user_id))];
 
       const replyProfileMap: Record<string, Profile> = {};
 
@@ -149,8 +174,6 @@ export default function DiscussionPage() {
           replyProfileMap[replyProfile.id] = replyProfile;
         }
       }
-
-      const { data: viewerData } = await supabase.auth.getUser();
 
       setCurrentUserId(viewerData.user?.id ?? null);
 
@@ -180,7 +203,7 @@ export default function DiscussionPage() {
 
         setReportedDiscussion(Boolean(existingDiscussionReport));
 
-        const replyIds = (repliesData ?? []).map((reply) => reply.id);
+        const replyIds = visibleReplies.map((reply) => reply.id);
 
         if (replyIds.length > 0) {
           const { data: existingReplyReports } = await supabase
@@ -207,7 +230,7 @@ export default function DiscussionPage() {
 
       setDiscussion(discussionData);
       setProfile(profileData ?? null);
-      setReplies(repliesData ?? []);
+      setReplies(visibleReplies);
       setReplyProfiles(replyProfileMap);
       setLoading(false);
     }

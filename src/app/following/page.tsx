@@ -21,6 +21,11 @@ type Profile = {
   full_name: string | null;
 };
 
+type BlockRow = {
+  blocker_id: string;
+  blocked_id: string;
+};
+
 export default function FollowingPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -38,13 +43,28 @@ export default function FollowingPage() {
         return;
       }
 
+      const { data: blockRows } = await supabase
+        .from("user_blocks")
+        .select("blocker_id, blocked_id")
+        .or(`blocker_id.eq.${userData.user.id},blocked_id.eq.${userData.user.id}`);
+
+      const hiddenProfileIds = new Set<string>();
+
+      for (const block of (blockRows ?? []) as BlockRow[]) {
+        hiddenProfileIds.add(
+          block.blocker_id === userData.user.id ? block.blocked_id : block.blocker_id
+        );
+      }
+
       const { data: follows } = await supabase
         .from("follows")
         .select("following_id")
         .eq("follower_id", userData.user.id);
 
       const followingIds =
-        follows?.map((item) => item.following_id) ?? [];
+        follows
+          ?.map((item) => item.following_id)
+          .filter((id) => !hiddenProfileIds.has(id)) ?? [];
 
       if (followingIds.length === 0) {
         setLoading(false);
