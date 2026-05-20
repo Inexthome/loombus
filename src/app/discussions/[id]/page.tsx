@@ -130,6 +130,7 @@ export default function DiscussionPage() {
   const [summaryMessage, setSummaryMessage] = useState("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
+  const [monthlySummaryUsage, setMonthlySummaryUsage] = useState(0);
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -259,19 +260,37 @@ export default function DiscussionPage() {
           .eq("user_id", viewerData.user.id)
           .maybeSingle();
 
-        setAiEntitlement(
-          viewerIsAdmin
-            ? {
-                tier: "admin",
-                ai_assisted_enabled: true,
-                monthly_summary_limit: 999999,
-              }
-            : entitlementData ?? {
-                tier: "free",
-                ai_assisted_enabled: false,
-                monthly_summary_limit: 0,
-              }
-        );
+        const resolvedEntitlement = viewerIsAdmin
+          ? {
+              tier: "admin",
+              ai_assisted_enabled: true,
+              monthly_summary_limit: 999999,
+            }
+          : entitlementData ?? {
+              tier: "free",
+              ai_assisted_enabled: false,
+              monthly_summary_limit: 0,
+            };
+
+        setAiEntitlement(resolvedEntitlement);
+
+        if (!viewerIsAdmin && resolvedEntitlement.ai_assisted_enabled) {
+          const now = new Date();
+          const monthStart = new Date(
+            Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+          ).toISOString();
+
+          const { count: monthlyUsageCount } = await supabase
+            .from("ai_usage_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", viewerData.user.id)
+            .eq("feature_key", "thread_summary")
+            .eq("cached", false)
+            .eq("success", true)
+            .gte("created_at", monthStart);
+
+          setMonthlySummaryUsage(monthlyUsageCount ?? 0);
+        }
       }
 
       setDiscussion(discussionData);
@@ -398,6 +417,11 @@ export default function DiscussionPage() {
       }
 
       setDiscussionSummary(result.summary ?? null);
+
+      if (!result.cached && typeof result.monthlySummaryUsage === "number") {
+        setMonthlySummaryUsage(result.monthlySummaryUsage);
+      }
+
       setSummaryMessage(result.cached ? "Showing cached summary." : "Summary generated.");
     } finally {
       setGeneratingSummary(false);
@@ -636,6 +660,12 @@ export default function DiscussionPage() {
       ["premium", "admin"].includes(aiEntitlement.tier)
     );
 
+  const monthlySummaryLimit = aiEntitlement?.monthly_summary_limit ?? 0;
+  const monthlySummaryRemaining = Math.max(
+    monthlySummaryLimit - monthlySummaryUsage,
+    0
+  );
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -737,6 +767,21 @@ export default function DiscussionPage() {
                   ? "No summary has been generated yet. Generate one to cache it for future readers."
                   : "AI-assisted summaries are available with the Premium AI-Assisted Layer."}
             </p>
+          )}
+
+          {currentUserId && canUseAiSummary && (
+            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
+              {isAdmin ? (
+                <p>
+                  Admin AI access: unlimited summaries.
+                </p>
+              ) : (
+                <p>
+                  Premium AI usage: {monthlySummaryUsage} of {monthlySummaryLimit} summaries used this month.
+                  {" "}Remaining: {monthlySummaryRemaining}.
+                </p>
+              )}
+            </div>
           )}
 
           {summaryMessage && (
