@@ -181,6 +181,19 @@ export default function DiscussionsPage() {
       return matchesTopic && matchesSearch;
     });
 
+    if (sortMode === "Most replied") {
+      return [...filtered].sort((a, b) => {
+        const replyDifference =
+          (replyCounts[b.id] ?? 0) - (replyCounts[a.id] ?? 0);
+
+        if (replyDifference !== 0) {
+          return replyDifference;
+        }
+
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    }
+
     if (sortMode === "Signal") {
       return [...filtered].sort((a, b) => {
         const scoreA =
@@ -193,7 +206,13 @@ export default function DiscussionsPage() {
           (bookmarkCounts[b.id] ?? 0) * 5 +
           (viewCounts[b.id] ?? 0);
 
-        return scoreB - scoreA;
+        const scoreDifference = scoreB - scoreA;
+
+        if (scoreDifference !== 0) {
+          return scoreDifference;
+        }
+
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
     }
 
@@ -251,6 +270,17 @@ export default function DiscussionsPage() {
             }`}
           >
             Newest
+          </button>
+
+          <button
+            onClick={() => setSortMode("Most replied")}
+            className={`rounded-full px-4 py-2 text-sm transition ${
+              sortMode === "Most replied"
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+            }`}
+          >
+            Most replied
           </button>
 
           <button
