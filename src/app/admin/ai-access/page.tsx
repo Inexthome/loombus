@@ -38,6 +38,8 @@ export default function AdminAiAccessPage() {
   const [usageEvents, setUsageEvents] = useState<UsageEvent[]>([]);
   const [message, setMessage] = useState("");
   const [workingUserId, setWorkingUserId] = useState<string | null>(null);
+  const [grantUsername, setGrantUsername] = useState("");
+  const [grantingPremium, setGrantingPremium] = useState(false);
 
   useEffect(() => {
     async function loadAiAccess() {
@@ -211,6 +213,105 @@ export default function AdminAiAccessPage() {
     });
   }
 
+  async function grantPremiumByUsername(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+
+    if (grantingPremium) {
+      return;
+    }
+
+    const cleanUsername = grantUsername
+      .replace(/^@+/, "")
+      .trim()
+      .toLowerCase();
+
+    if (!cleanUsername) {
+      setMessage("Enter a username to grant Premium AI access.");
+      return;
+    }
+
+    setGrantingPremium(true);
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, username, full_name, avatar_url")
+      .eq("username", cleanUsername)
+      .maybeSingle();
+
+    if (profileError) {
+      setMessage(`Unable to find user: ${profileError.message}`);
+      setGrantingPremium(false);
+      return;
+    }
+
+    if (!profile) {
+      setMessage(`No Loombus profile found for @${cleanUsername}.`);
+      setGrantingPremium(false);
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+
+    const { data: entitlement, error: entitlementError } = await supabase
+      .from("user_ai_entitlements")
+      .upsert(
+        {
+          user_id: profile.id,
+          tier: "premium",
+          ai_assisted_enabled: true,
+          monthly_summary_limit: 50,
+          monthly_writing_limit: 25,
+          monthly_research_limit: 10,
+          monthly_discovery_limit: 25,
+          notes: `Premium AI-Assisted Layer granted by admin for @${cleanUsername}.`,
+          updated_at: updatedAt,
+        },
+        {
+          onConflict: "user_id",
+        }
+      )
+      .select(`
+        user_id,
+        tier,
+        ai_assisted_enabled,
+        monthly_summary_limit,
+        monthly_writing_limit,
+        monthly_research_limit,
+        monthly_discovery_limit,
+        notes,
+        updated_at
+      `)
+      .single();
+
+    if (entitlementError) {
+      setMessage(`Unable to grant Premium AI access: ${entitlementError.message}`);
+      setGrantingPremium(false);
+      return;
+    }
+
+    setProfiles((current) => ({
+      ...current,
+      [profile.id]: profile,
+    }));
+
+    setEntitlements((current) => {
+      const existing = current.some((item) => item.user_id === profile.id);
+
+      if (existing) {
+        return current.map((item) =>
+          item.user_id === profile.id ? (entitlement as AiEntitlement) : item
+        );
+      }
+
+      return [entitlement as AiEntitlement, ...current];
+    });
+
+    setGrantUsername("");
+    setMessage(`Premium AI access granted to @${profile.username ?? cleanUsername}.`);
+    setGrantingPremium(false);
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -268,6 +369,40 @@ export default function AdminAiAccessPage() {
             {message}
           </div>
         )}
+
+        <form
+          onSubmit={grantPremiumByUsername}
+          className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6"
+        >
+          <div className="mb-5">
+            <h2 className="mb-2 text-2xl font-medium">
+              Grant Premium by username
+            </h2>
+
+            <p className="leading-relaxed text-zinc-500">
+              Enter a Loombus username to enable the Premium AI-Assisted Layer
+              with default testing limits.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 md:flex-row">
+            <input
+              type="text"
+              value={grantUsername}
+              onChange={(event) => setGrantUsername(event.target.value)}
+              placeholder="username, for example saint"
+              className="min-w-0 flex-1 rounded-2xl border border-zinc-800 bg-black px-5 py-3 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+            />
+
+            <button
+              type="submit"
+              disabled={grantingPremium}
+              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+            >
+              {grantingPremium ? "Granting..." : "Grant Premium"}
+            </button>
+          </div>
+        </form>
 
         <div className="mb-10 grid gap-6 md:grid-cols-3">
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
