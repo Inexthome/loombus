@@ -5,6 +5,11 @@ import { validateContent } from "@/lib/moderation/content";
 const REPLY_COOLDOWN_MS = 10000;
 const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
 
+type BlockRow = {
+  blocker_id: string;
+  blocked_id: string;
+};
+
 function extractMentionUsernames(content: string) {
   const matches = [...content.matchAll(MENTION_PATTERN)];
 
@@ -15,6 +20,26 @@ function extractMentionUsernames(content: string) {
         .filter((username): username is string => Boolean(username))
     ),
   ].slice(0, 10);
+}
+
+async function getBlockedRelationshipUserIds(
+  supabase: any,
+  userId: string
+) {
+  const { data: blockRows } = await supabase
+    .from("user_blocks")
+    .select("blocker_id, blocked_id")
+    .or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`);
+
+  const blockedRelationshipUserIds = new Set<string>();
+
+  for (const block of (blockRows ?? []) as BlockRow[]) {
+    blockedRelationshipUserIds.add(
+      block.blocker_id === userId ? block.blocked_id : block.blocker_id
+    );
+  }
+
+  return blockedRelationshipUserIds;
 }
 
 export async function POST(request: NextRequest) {
@@ -53,6 +78,11 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
+      supabase,
+      user.id
+    );
 
     const body = await request.json();
 
@@ -135,7 +165,11 @@ export async function POST(request: NextRequest) {
       .eq("id", discussionId)
       .single();
 
-    if (discussion && discussion.user_id !== user.id) {
+    if (
+      discussion &&
+      discussion.user_id !== user.id &&
+      !blockedRelationshipUserIds.has(discussion.user_id)
+    ) {
       const { data: preferences } = await supabase
         .from("notification_preferences")
         .select("replies_enabled")
@@ -178,6 +212,10 @@ export async function POST(request: NextRequest) {
               }
 
               if (profileId === discussion.user_id) {
+                return false;
+              }
+
+              if (blockedRelationshipUserIds.has(profileId)) {
                 return false;
               }
 
