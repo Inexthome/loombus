@@ -198,14 +198,27 @@ export default function CreatePage() {
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             >
               <option>AI & Society</option>
-              <option>Systems</option>
-              <option>Future of Work</option>
-              <option>Psychology</option>
-              <option>Economics</option>
-              <option>Technology</option>
-              <option>Healthcare</option>
-              <option>Education</option>
+              <option>Books & Writing</option>
               <option>Business</option>
+              <option>Culture</option>
+              <option>Education</option>
+              <option>Entrepreneurship</option>
+              <option>Environment</option>
+              <option>Faith & Values</option>
+              <option>Future of Work</option>
+              <option>General</option>
+              <option>Healthcare</option>
+              <option>Law & Justice</option>
+              <option>Local Community</option>
+              <option>Media</option>
+              <option>Money & Finance</option>
+              <option>Parenting & Family</option>
+              <option>Philosophy</option>
+              <option>Politics & Policy</option>
+              <option>Psychology</option>
+              <option>Science</option>
+              <option>Systems</option>
+              <option>Technology</option>
             </select>
           </div>
 
