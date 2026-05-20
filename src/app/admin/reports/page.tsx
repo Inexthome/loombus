@@ -31,11 +31,12 @@ type Report = {
   created_at: string;
   discussion_id: string | null;
   reply_id: string | null;
+  reported_profile_id: string | null;
   discussions: DiscussionRef;
   replies: ReplyRef;
 };
 
-type ReportFilter = "all" | "open" | "reviewed" | "discussions" | "replies";
+type ReportFilter = "all" | "open" | "reviewed" | "discussions" | "replies" | "profiles";
 
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -77,6 +78,7 @@ export default function AdminReportsPage() {
           created_at,
           discussion_id,
           reply_id,
+          reported_profile_id,
           discussions (
             id,
             title,
@@ -104,19 +106,21 @@ export default function AdminReportsPage() {
 
       setReports(normalized);
 
-      const replyUserIds = [
-        ...new Set(
-          normalized
-            .map((report) => report.replies?.user_id)
-            .filter((id): id is string => Boolean(id))
-        ),
-      ];
+      const replyUserIds = normalized
+        .map((report) => report.replies?.user_id)
+        .filter((id): id is string => Boolean(id));
 
-      if (replyUserIds.length > 0) {
+      const reportedProfileIds = normalized
+        .map((report) => report.reported_profile_id)
+        .filter((id): id is string => Boolean(id));
+
+      const profileIds = [...new Set([...replyUserIds, ...reportedProfileIds])];
+
+      if (profileIds.length > 0) {
         const { data: profileData } = await supabase
           .from("profiles")
           .select("id, username, full_name")
-          .in("id", replyUserIds);
+          .in("id", profileIds);
 
         const profileMap: Record<string, Profile> = {};
 
@@ -256,11 +260,15 @@ export default function AdminReportsPage() {
     }
 
     if (filterMode === "discussions") {
-      return !report.reply_id;
+      return !report.reply_id && !report.reported_profile_id;
     }
 
     if (filterMode === "replies") {
       return Boolean(report.reply_id);
+    }
+
+    if (filterMode === "profiles") {
+      return Boolean(report.reported_profile_id);
     }
 
     return true;
@@ -289,12 +297,17 @@ export default function AdminReportsPage() {
     {
       label: "Discussions",
       value: "discussions",
-      count: reports.filter((report) => !report.reply_id).length,
+      count: reports.filter((report) => !report.reply_id && !report.reported_profile_id).length,
     },
     {
       label: "Replies",
       value: "replies",
       count: reports.filter((report) => Boolean(report.reply_id)).length,
+    },
+    {
+      label: "Profiles",
+      value: "profiles",
+      count: reports.filter((report) => Boolean(report.reported_profile_id)).length,
     },
   ];
 
@@ -332,7 +345,7 @@ export default function AdminReportsPage() {
         </h1>
 
         <p className="mb-8 text-zinc-500">
-          Review discussions and replies submitted for moderation.
+          Review discussions, replies, and profiles submitted for moderation.
         </p>
 
         <div className="mb-10 flex flex-wrap gap-3">
@@ -376,6 +389,10 @@ export default function AdminReportsPage() {
         <div className="space-y-6">
           {filteredReports.map((report) => {
             const isReplyReport = Boolean(report.reply_id);
+            const isProfileReport = Boolean(report.reported_profile_id);
+            const reportedProfile = report.reported_profile_id
+              ? profiles[report.reported_profile_id]
+              : null;
 
             return (
               <div
@@ -389,11 +406,17 @@ export default function AdminReportsPage() {
                     </p>
 
                     <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                      {isReplyReport ? "Reply report" : "Discussion report"}
+                      {isProfileReport
+                        ? "Profile report"
+                        : isReplyReport
+                          ? "Reply report"
+                          : "Discussion report"}
                     </p>
 
                     <h2 className="text-2xl font-medium">
-                      {report.discussions?.title ?? "Discussion unavailable"}
+                      {isProfileReport
+                        ? reportedProfile?.full_name || reportedProfile?.username || "Profile unavailable"
+                        : report.discussions?.title ?? "Discussion unavailable"}
                     </h2>
                   </div>
 
@@ -405,6 +428,22 @@ export default function AdminReportsPage() {
                 <p className="mb-3 text-zinc-400">
                   Reason: {report.reason}
                 </p>
+
+                {isProfileReport && (
+                  <div className="mb-4 rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-2 text-sm text-zinc-500">
+                      Reported profile
+                    </p>
+
+                    <p className="leading-relaxed text-zinc-400">
+                      {reportedProfile
+                        ? `${reportedProfile.full_name || "Loombus member"}${
+                            reportedProfile.username ? ` (@${reportedProfile.username})` : ""
+                          }`
+                        : "Profile unavailable."}
+                    </p>
+                  </div>
+                )}
 
                 {isReplyReport && (
                   <div className="mb-4 rounded-2xl border border-zinc-900 bg-black p-4">
@@ -425,7 +464,16 @@ export default function AdminReportsPage() {
                 )}
 
                 <div className="flex flex-wrap items-center gap-4">
-                  {report.discussions && (
+                  {isProfileReport && reportedProfile?.username && (
+                    <Link
+                      href={`/u/${reportedProfile.username}`}
+                      className="text-sm text-zinc-300 hover:text-white"
+                    >
+                      View profile →
+                    </Link>
+                  )}
+
+                  {!isProfileReport && report.discussions && (
                     <Link
                       href={`/discussions/${report.discussions.id}`}
                       className="text-sm text-zinc-300 hover:text-white"
@@ -443,7 +491,7 @@ export default function AdminReportsPage() {
                     </button>
                   )}
 
-                  {!isReplyReport && report.discussions && (
+                  {!isReplyReport && !isProfileReport && report.discussions && (
                     <button
                       onClick={() => softDeleteDiscussion(report.discussions?.id)}
                       className="rounded-full border border-red-900 px-4 py-2 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300"

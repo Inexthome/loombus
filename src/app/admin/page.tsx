@@ -12,6 +12,7 @@ export default function AdminDashboardPage() {
   const [reviewedReports, setReviewedReports] = useState(0);
   const [discussionReports, setDiscussionReports] = useState(0);
   const [replyReports, setReplyReports] = useState(0);
+  const [profileReports, setProfileReports] = useState(0);
   const [deletedDiscussions, setDeletedDiscussions] = useState(0);
   const [deletedReplies, setDeletedReplies] = useState(0);
   const [discussionCount, setDiscussionCount] = useState(0);
@@ -45,6 +46,7 @@ export default function AdminDashboardPage() {
         { count: reviewed },
         { count: discussionReportTotal },
         { count: replyReportTotal },
+        { count: profileReportTotal },
         { count: deletedDiscussionTotal },
         { count: deletedReplyTotal },
       ] = await Promise.all([
@@ -61,12 +63,18 @@ export default function AdminDashboardPage() {
         supabase
           .from("reports")
           .select("*", { count: "exact", head: true })
-          .is("reply_id", null),
+          .is("reply_id", null)
+          .is("reported_profile_id", null),
 
         supabase
           .from("reports")
           .select("*", { count: "exact", head: true })
           .not("reply_id", "is", null),
+
+        supabase
+          .from("reports")
+          .select("*", { count: "exact", head: true })
+          .not("reported_profile_id", "is", null),
 
         supabase
           .from("discussions")
@@ -93,6 +101,7 @@ export default function AdminDashboardPage() {
       setReviewedReports(reviewed ?? 0);
       setDiscussionReports(discussionReportTotal ?? 0);
       setReplyReports(replyReportTotal ?? 0);
+      setProfileReports(profileReportTotal ?? 0);
       setDeletedDiscussions(deletedDiscussionTotal ?? 0);
       setDeletedReplies(deletedReplyTotal ?? 0);
       setDiscussionCount(discussions ?? 0);
@@ -183,6 +192,16 @@ export default function AdminDashboardPage() {
 
             <h2 className="text-5xl font-semibold">
               {replyReports}
+            </h2>
+          </div>
+
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
+              Profile Reports
+            </p>
+
+            <h2 className="text-5xl font-semibold">
+              {profileReports}
             </h2>
           </div>
 

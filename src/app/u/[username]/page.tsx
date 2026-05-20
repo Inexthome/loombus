@@ -32,7 +32,10 @@ export default function UserProfilePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followMessage, setFollowMessage] = useState("");
+  const [reportMessage, setReportMessage] = useState("");
   const [followWorking, setFollowWorking] = useState(false);
+  const [reportWorking, setReportWorking] = useState(false);
+  const [reportedProfile, setReportedProfile] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
@@ -65,6 +68,15 @@ export default function UserProfilePage() {
           .maybeSingle();
 
         setIsFollowing(Boolean(followData));
+
+        const { data: reportData } = await supabase
+          .from("reports")
+          .select("id")
+          .eq("reporter_id", viewerId)
+          .eq("reported_profile_id", profileData.id)
+          .maybeSingle();
+
+        setReportedProfile(Boolean(reportData));
       }
 
       const { count: followerTotal } = await supabase
@@ -136,6 +148,65 @@ export default function UserProfilePage() {
       setFollowMessage(result.following ? "Following." : "Unfollowed.");
     } finally {
       setFollowWorking(false);
+    }
+  }
+
+  async function handleReportProfile() {
+    setReportMessage("");
+
+    if (!profile || reportWorking || reportedProfile) {
+      return;
+    }
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (userData.user.id === profile.id) {
+      setReportMessage("You cannot report your own profile.");
+      return;
+    }
+
+    setReportWorking(true);
+
+    try {
+      const { data: existingReport } = await supabase
+        .from("reports")
+        .select("id")
+        .eq("reporter_id", userData.user.id)
+        .eq("reported_profile_id", profile.id)
+        .maybeSingle();
+
+      if (existingReport) {
+        setReportedProfile(true);
+        setReportMessage("You already reported this profile.");
+        return;
+      }
+
+      const { error } = await supabase.from("reports").insert({
+        reporter_id: userData.user.id,
+        reported_profile_id: profile.id,
+        reason: "User submitted profile report",
+      });
+
+      if (error) {
+        if (error.code === "23505") {
+          setReportedProfile(true);
+          setReportMessage("You already reported this profile.");
+          return;
+        }
+
+        setReportMessage("Unable to report profile.");
+        return;
+      }
+
+      setReportedProfile(true);
+      setReportMessage("Profile reported.");
+    } finally {
+      setReportWorking(false);
     }
   }
 
@@ -217,17 +288,32 @@ export default function UserProfilePage() {
 
           {currentUserId && currentUserId !== profile.id && (
             <div className="mt-8">
-              <button
-                onClick={toggleFollow}
-                disabled={followWorking}
-                className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
-              >
-                {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={toggleFollow}
+                  disabled={followWorking}
+                  className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+                >
+                  {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
+                </button>
 
-              {followMessage && (
+                <button
+                  type="button"
+                  onClick={handleReportProfile}
+                  disabled={reportWorking || reportedProfile}
+                  className="rounded-full border border-red-900 px-6 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                >
+                  {reportedProfile
+                    ? "Reported"
+                    : reportWorking
+                      ? "Reporting..."
+                      : "Report Profile"}
+                </button>
+              </div>
+
+              {(followMessage || reportMessage) && (
                 <p className="mt-4 text-sm text-zinc-500">
-                  {followMessage}
+                  {followMessage || reportMessage}
                 </p>
               )}
             </div>
