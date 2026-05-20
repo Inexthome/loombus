@@ -30,8 +30,11 @@ export default function FollowingPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
+  const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
+  const [bookmarkCounts, setBookmarkCounts] = useState<Record<string, number>>({});
   const [selectedTopic, setSelectedTopic] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortMode, setSortMode] = useState("Newest");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -104,17 +107,49 @@ export default function FollowingPage() {
       if (discussionIds.length > 0) {
         const { data: replyData } = await supabase
           .from("replies")
-          .select("discussion_id")
+          .select("discussion_id, user_id")
           .in("discussion_id", discussionIds);
 
         const counts: Record<string, number> = {};
 
         for (const reply of replyData ?? []) {
+          if (hiddenProfileIds.has(reply.user_id)) {
+            continue;
+          }
+
           counts[reply.discussion_id] =
             (counts[reply.discussion_id] ?? 0) + 1;
         }
 
         setReplyCounts(counts);
+
+        const { data: viewData } = await supabase
+          .from("discussion_views")
+          .select("discussion_id")
+          .in("discussion_id", discussionIds);
+
+        const views: Record<string, number> = {};
+
+        for (const view of viewData ?? []) {
+          views[view.discussion_id] =
+            (views[view.discussion_id] ?? 0) + 1;
+        }
+
+        setViewCounts(views);
+
+        const { data: bookmarkData } = await supabase
+          .from("bookmarks")
+          .select("discussion_id")
+          .in("discussion_id", discussionIds);
+
+        const bookmarks: Record<string, number> = {};
+
+        for (const bookmark of bookmarkData ?? []) {
+          bookmarks[bookmark.discussion_id] =
+            (bookmarks[bookmark.discussion_id] ?? 0) + 1;
+        }
+
+        setBookmarkCounts(bookmarks);
       }
 
       setProfiles(profileMap);
@@ -132,7 +167,7 @@ export default function FollowingPage() {
   const filteredDiscussions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    return discussions.filter((discussion) => {
+    const filtered = discussions.filter((discussion) => {
       const profile = profiles[discussion.user_id];
 
       const matchesTopic =
@@ -148,7 +183,53 @@ export default function FollowingPage() {
 
       return matchesTopic && matchesSearch;
     });
-  }, [discussions, profiles, selectedTopic, searchQuery]);
+
+    if (sortMode === "Most replied") {
+      return [...filtered].sort((a, b) => {
+        const replyDifference =
+          (replyCounts[b.id] ?? 0) - (replyCounts[a.id] ?? 0);
+
+        if (replyDifference !== 0) {
+          return replyDifference;
+        }
+
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    }
+
+    if (sortMode === "Signal") {
+      return [...filtered].sort((a, b) => {
+        const scoreA =
+          (replyCounts[a.id] ?? 0) * 3 +
+          (bookmarkCounts[a.id] ?? 0) * 5 +
+          (viewCounts[a.id] ?? 0);
+
+        const scoreB =
+          (replyCounts[b.id] ?? 0) * 3 +
+          (bookmarkCounts[b.id] ?? 0) * 5 +
+          (viewCounts[b.id] ?? 0);
+
+        const scoreDifference = scoreB - scoreA;
+
+        if (scoreDifference !== 0) {
+          return scoreDifference;
+        }
+
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    }
+
+    return filtered;
+  }, [
+    discussions,
+    profiles,
+    selectedTopic,
+    searchQuery,
+    sortMode,
+    replyCounts,
+    bookmarkCounts,
+    viewCounts,
+  ]);
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -172,6 +253,41 @@ export default function FollowingPage() {
             placeholder="Search followed discussions, topics, or contributors..."
             className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
           />
+        </div>
+
+        <div className="mb-8 flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setSortMode("Newest")}
+            className={`rounded-full px-4 py-2 text-sm transition ${
+              sortMode === "Newest"
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+            }`}
+          >
+            Newest
+          </button>
+
+          <button
+            onClick={() => setSortMode("Most replied")}
+            className={`rounded-full px-4 py-2 text-sm transition ${
+              sortMode === "Most replied"
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+            }`}
+          >
+            Most replied
+          </button>
+
+          <button
+            onClick={() => setSortMode("Signal")}
+            className={`rounded-full px-4 py-2 text-sm transition ${
+              sortMode === "Signal"
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+            }`}
+          >
+            Signal
+          </button>
         </div>
 
         <div className="mb-6 flex flex-wrap gap-3">
@@ -272,9 +388,21 @@ export default function FollowingPage() {
                     </p>
                   </div>
 
-                  <p className="shrink-0 text-sm text-zinc-500">
-                    {replyCounts[discussion.id] ?? 0} replies
-                  </p>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm text-zinc-500">
+                      {replyCounts[discussion.id] ?? 0} replies ·{" "}
+                      {viewCounts[discussion.id] ?? 0} views
+                    </p>
+
+                    <p className="mt-1 text-xs uppercase tracking-wide text-zinc-600">
+                      Signal Score{" "}
+                      {(
+                        (replyCounts[discussion.id] ?? 0) * 3 +
+                        (bookmarkCounts[discussion.id] ?? 0) * 5 +
+                        (viewCounts[discussion.id] ?? 0)
+                      )}
+                    </p>
+                  </div>
                 </div>
               </div>
             );
