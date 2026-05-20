@@ -260,9 +260,10 @@ export default function DiscussionsPage() {
           />
         </div>
 
-        <div className="mb-8 flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setSortMode("Newest")}
+        <div className="mb-8">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setSortMode("Newest")}
             className={`rounded-full px-4 py-2 text-sm transition ${
               sortMode === "Newest"
                 ? "bg-white text-black"
@@ -283,16 +284,22 @@ export default function DiscussionsPage() {
             Most replied
           </button>
 
-          <button
-            onClick={() => setSortMode("Signal")}
-            className={`rounded-full px-4 py-2 text-sm transition ${
-              sortMode === "Signal"
-                ? "bg-white text-black"
-                : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
-            }`}
-          >
-            Signal
-          </button>
+            <button
+              onClick={() => setSortMode("Signal")}
+              className={`rounded-full px-4 py-2 text-sm transition ${
+                sortMode === "Signal"
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+              }`}
+            >
+              Signal
+            </button>
+          </div>
+
+          <p className="mt-3 text-xs leading-relaxed text-zinc-600">
+            Signal Score ranks discussions using replies, saves, and views.
+            Replies count more than views, and saves count the most.
+          </p>
         </div>
 
         <div className="mb-6 flex flex-wrap gap-3">
