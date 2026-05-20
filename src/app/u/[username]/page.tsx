@@ -34,10 +34,14 @@ export default function UserProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followMessage, setFollowMessage] = useState("");
   const [reportMessage, setReportMessage] = useState("");
+  const [blockMessage, setBlockMessage] = useState("");
   const [followWorking, setFollowWorking] = useState(false);
   const [reportWorking, setReportWorking] = useState(false);
+  const [blockWorking, setBlockWorking] = useState(false);
   const [reportedProfile, setReportedProfile] = useState(false);
   const [reportReason, setReportReason] = useState(DEFAULT_REPORT_REASON);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isBlockedByProfile, setIsBlockedByProfile] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
@@ -79,6 +83,24 @@ export default function UserProfilePage() {
           .maybeSingle();
 
         setReportedProfile(Boolean(reportData));
+
+        const { data: ownBlockData } = await supabase
+          .from("user_blocks")
+          .select("id")
+          .eq("blocker_id", viewerId)
+          .eq("blocked_id", profileData.id)
+          .maybeSingle();
+
+        setIsBlocked(Boolean(ownBlockData));
+
+        const { data: incomingBlockData } = await supabase
+          .from("user_blocks")
+          .select("id")
+          .eq("blocker_id", profileData.id)
+          .eq("blocked_id", viewerId)
+          .maybeSingle();
+
+        setIsBlockedByProfile(Boolean(incomingBlockData));
       }
 
       const { count: followerTotal } = await supabase
@@ -110,6 +132,17 @@ export default function UserProfilePage() {
 
   async function toggleFollow() {
     setFollowMessage("");
+    setBlockMessage("");
+
+    if (isBlocked) {
+      setFollowMessage("Unblock this member before following them.");
+      return;
+    }
+
+    if (isBlockedByProfile) {
+      setFollowMessage("You cannot follow this member.");
+      return;
+    }
 
     if (!profile || followWorking) {
       return;
@@ -150,6 +183,57 @@ export default function UserProfilePage() {
       setFollowMessage(result.following ? "Following." : "Unfollowed.");
     } finally {
       setFollowWorking(false);
+    }
+  }
+
+  async function toggleBlock() {
+    setBlockMessage("");
+    setFollowMessage("");
+    setReportMessage("");
+
+    if (!profile || blockWorking) {
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (!sessionData.session) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setBlockWorking(true);
+
+    try {
+      const response = await fetch("/api/blocks/toggle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          targetUserId: profile.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setBlockMessage(result.error ?? "Unable to update block status.");
+        return;
+      }
+
+      setIsBlocked(Boolean(result.blocked));
+
+      if (result.blocked) {
+        setIsFollowing(false);
+        setFollowerCount((count) => (isFollowing ? Math.max(0, count - 1) : count));
+        setBlockMessage("Member blocked. Follow connection removed.");
+      } else {
+        setBlockMessage("Member unblocked.");
+      }
+    } finally {
+      setBlockWorking(false);
     }
   }
 
@@ -290,48 +374,73 @@ export default function UserProfilePage() {
 
           {currentUserId && currentUserId !== profile.id && (
             <div className="mt-8">
-              <div className="flex flex-wrap items-end gap-3">
-                <button
-                  onClick={toggleFollow}
-                  disabled={followWorking}
-                  className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
-                >
-                  {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
-                </button>
+              {isBlockedByProfile ? (
+                <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
+                  You cannot interact with this profile.
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-end gap-3">
+                  {!isBlocked && (
+                    <button
+                      onClick={toggleFollow}
+                      disabled={followWorking}
+                      className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+                    >
+                      {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
+                    </button>
+                  )}
 
-                <label className="flex min-w-64 flex-col text-xs text-zinc-500">
-                  <span className="mb-2">Report reason</span>
+                  {!isBlocked && (
+                    <label className="flex min-w-64 flex-col text-xs text-zinc-500">
+                      <span className="mb-2">Report reason</span>
 
-                  <select
-                    value={reportReason}
-                    onChange={(event) => setReportReason(event.target.value as ReportReason)}
-                    className="rounded-full border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                      <select
+                        value={reportReason}
+                        onChange={(event) => setReportReason(event.target.value as ReportReason)}
+                        className="rounded-full border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                      >
+                        {REPORT_REASONS.map((reason) => (
+                          <option key={reason} value={reason}>
+                            {reason}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+
+                  {!isBlocked && (
+                    <button
+                      type="button"
+                      onClick={handleReportProfile}
+                      disabled={reportWorking || reportedProfile}
+                      className="rounded-full border border-red-900 px-6 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    >
+                      {reportedProfile
+                        ? "Reported"
+                        : reportWorking
+                          ? "Reporting..."
+                          : "Report Profile"}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={toggleBlock}
+                    disabled={blockWorking}
+                    className="rounded-full border border-zinc-800 px-6 py-3 text-sm text-zinc-400 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                   >
-                    {REPORT_REASONS.map((reason) => (
-                      <option key={reason} value={reason}>
-                        {reason}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    {blockWorking
+                      ? "Updating..."
+                      : isBlocked
+                        ? "Unblock User"
+                        : "Block User"}
+                  </button>
+                </div>
+              )}
 
-                <button
-                  type="button"
-                  onClick={handleReportProfile}
-                  disabled={reportWorking || reportedProfile}
-                  className="rounded-full border border-red-900 px-6 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                >
-                  {reportedProfile
-                    ? "Reported"
-                    : reportWorking
-                      ? "Reporting..."
-                      : "Report Profile"}
-                </button>
-              </div>
-
-              {(followMessage || reportMessage) && (
+              {(followMessage || reportMessage || blockMessage) && (
                 <p className="mt-4 text-sm text-zinc-500">
-                  {followMessage || reportMessage}
+                  {followMessage || reportMessage || blockMessage}
                 </p>
               )}
             </div>

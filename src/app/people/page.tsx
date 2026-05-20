@@ -13,9 +13,15 @@ type Profile = {
   bio: string | null;
 };
 
+type BlockRow = {
+  blocker_id: string;
+  blocked_id: string;
+};
+
 export default function PeoplePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [blockedProfileIds, setBlockedProfileIds] = useState<Set<string>>(new Set());
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [workingFollowId, setWorkingFollowId] = useState<string | null>(null);
@@ -52,6 +58,19 @@ export default function PeoplePage() {
         setFollowingIds(
           new Set((follows ?? []).map((follow) => follow.following_id))
         );
+
+        const { data: blockRows } = await supabase
+          .from("user_blocks")
+          .select("blocker_id, blocked_id")
+          .or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`);
+
+        const hiddenIds = new Set<string>();
+
+        for (const block of (blockRows ?? []) as BlockRow[]) {
+          hiddenIds.add(block.blocker_id === viewerId ? block.blocked_id : block.blocker_id);
+        }
+
+        setBlockedProfileIds(hiddenIds);
       }
 
       setLoading(false);
@@ -63,19 +82,22 @@ export default function PeoplePage() {
   const filteredProfiles = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
+    const visibleProfiles = profiles.filter(
+      (profile) => !blockedProfileIds.has(profile.id)
+    );
+
     if (!query) {
-      return profiles;
+      return visibleProfiles;
     }
 
-    return profiles.filter((profile) => {
-
-  return (
+    return visibleProfiles.filter((profile) => {
+      return (
         (profile.username ?? "").toLowerCase().includes(query) ||
         (profile.full_name ?? "").toLowerCase().includes(query) ||
         (profile.bio ?? "").toLowerCase().includes(query)
       );
     });
-  }, [profiles, searchQuery]);
+  }, [profiles, searchQuery, blockedProfileIds]);
 
   async function toggleFollow(
     event: MouseEvent<HTMLButtonElement>,

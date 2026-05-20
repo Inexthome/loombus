@@ -44,6 +44,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { data: viewerBlock } = await supabase
+      .from("user_blocks")
+      .select("id")
+      .eq("blocker_id", user.id)
+      .eq("blocked_id", targetUserId)
+      .maybeSingle();
+
+    if (viewerBlock) {
+      return NextResponse.json(
+        { error: "Unblock this member before following them." },
+        { status: 403 }
+      );
+    }
+
+    const { data: targetBlock } = await supabase
+      .from("user_blocks")
+      .select("id")
+      .eq("blocker_id", targetUserId)
+      .eq("blocked_id", user.id)
+      .maybeSingle();
+
+    if (targetBlock) {
+      return NextResponse.json(
+        { error: "You cannot follow this member." },
+        { status: 403 }
+      );
+    }
+
     const { data: existingFollow } = await supabase
       .from("follows")
       .select("*")
