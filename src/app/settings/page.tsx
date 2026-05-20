@@ -18,6 +18,11 @@ const settingsSections = [
         description: "Choose which replies, follows, and mentions can notify you.",
         href: "/profile",
       },
+      {
+        title: "Blocked Users",
+        description: "Review blocked members and unblock them from one place.",
+        href: "/blocked-users",
+      },
     ],
   },
   {
