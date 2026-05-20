@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
+import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 
 const CREATE_COOLDOWN_MS = 30000;
 
@@ -44,7 +45,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const title = String(body.title ?? "").trim();
-    const topic = String(body.topic ?? "").trim();
+    const requestedTopic = String(body.topic ?? "").trim();
+
+    const topic: DiscussionTopic = DISCUSSION_TOPICS.includes(
+      requestedTopic as DiscussionTopic
+    )
+      ? requestedTopic as DiscussionTopic
+      : "General";
+
     const content = String(body.body ?? "").trim();
 
     if (!title) {
