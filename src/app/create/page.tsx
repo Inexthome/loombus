@@ -9,6 +9,7 @@ type Profile = {
   full_name: string | null;
   username: string | null;
   bio: string | null;
+  avatar_url: string | null;
 };
 
 function getMissingProfileFields(profile: Profile | null) {
@@ -24,6 +25,10 @@ function getMissingProfileFields(profile: Profile | null) {
 
   if (!profile?.bio?.trim()) {
     missing.push("bio");
+  }
+
+  if (!profile?.avatar_url?.trim()) {
+    missing.push("profile image");
   }
 
   return missing;
@@ -47,7 +52,7 @@ export default function CreatePage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("full_name, username, bio")
+        .select("full_name, username, bio, avatar_url")
         .eq("id", userData.user.id)
         .maybeSingle();
 
