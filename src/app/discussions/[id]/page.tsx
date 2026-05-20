@@ -30,6 +30,15 @@ type Reply = {
   created_at: string;
 };
 
+type DiscussionSummary = {
+  id: string;
+  discussion_id: string;
+  summary: string;
+  model_name: string | null;
+  source_reply_count: number;
+  generated_at: string;
+};
+
 type BlockRow = {
   blocker_id: string;
   blocked_id: string;
@@ -111,6 +120,9 @@ export default function DiscussionPage() {
   const [savingBookmark, setSavingBookmark] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
   const [reportReason, setReportReason] = useState(DEFAULT_REPORT_REASON);
+  const [discussionSummary, setDiscussionSummary] = useState<DiscussionSummary | null>(null);
+  const [summaryMessage, setSummaryMessage] = useState("");
+  const [generatingSummary, setGeneratingSummary] = useState(false);
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -139,6 +151,12 @@ export default function DiscussionPage() {
         .eq("discussion_id", id)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
+
+      const { data: summaryData } = await supabase
+        .from("discussion_summaries")
+        .select("id, discussion_id, summary, model_name, source_reply_count, generated_at")
+        .eq("discussion_id", id)
+        .maybeSingle();
 
       const { data: viewerData } = await supabase.auth.getUser();
       const hiddenProfileIds = new Set<string>();
@@ -230,6 +248,7 @@ export default function DiscussionPage() {
 
       setDiscussion(discussionData);
       setProfile(profileData ?? null);
+      setDiscussionSummary(summaryData ?? null);
       setReplies(visibleReplies);
       setReplyProfiles(replyProfileMap);
       setLoading(false);
@@ -312,6 +331,48 @@ export default function DiscussionPage() {
   function handleReplyFormKeyDown(event: KeyboardEvent<HTMLFormElement>) {
     if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
       handleReply(event);
+    }
+  }
+
+  async function handleGenerateSummary() {
+    setSummaryMessage("");
+
+    if (generatingSummary) {
+      return;
+    }
+
+    setGeneratingSummary(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/discussions/summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          discussionId: id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setSummaryMessage(result.error ?? "Unable to generate summary.");
+        return;
+      }
+
+      setDiscussionSummary(result.summary ?? null);
+      setSummaryMessage(result.cached ? "Showing cached summary." : "Summary generated.");
+    } finally {
+      setGeneratingSummary(false);
     }
   }
 
@@ -596,6 +657,57 @@ export default function DiscussionPage() {
         <p className="mb-10 text-xl leading-relaxed text-zinc-300">
           {discussion.body}
         </p>
+
+        <section className="mb-12 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-600">
+                AI-assisted
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Discussion Summary
+              </h2>
+            </div>
+
+            {!discussionSummary && currentUserId && (
+              <button
+                type="button"
+                onClick={handleGenerateSummary}
+                disabled={generatingSummary}
+                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                {generatingSummary ? "Generating..." : "Generate Summary"}
+              </button>
+            )}
+          </div>
+
+          {discussionSummary ? (
+            <>
+              <div className="whitespace-pre-wrap leading-relaxed text-zinc-300">
+                {discussionSummary.summary}
+              </div>
+
+              <p className="mt-4 text-xs text-zinc-600">
+                Generated {new Date(discussionSummary.generated_at).toLocaleString()}
+                {discussionSummary.model_name ? ` · ${discussionSummary.model_name}` : ""}
+                {" "}· {discussionSummary.source_reply_count} replies counted
+              </p>
+            </>
+          ) : (
+            <p className="leading-relaxed text-zinc-500">
+              {currentUserId
+                ? "No summary has been generated yet. Generate one to cache it for future readers."
+                : "Log in to generate an AI-assisted summary for this discussion."}
+            </p>
+          )}
+
+          {summaryMessage && (
+            <p className="mt-4 text-sm text-zinc-500">
+              {summaryMessage}
+            </p>
+          )}
+        </section>
 
         <div className="mb-12 flex flex-wrap items-center gap-4">
           {isSaved ? (
