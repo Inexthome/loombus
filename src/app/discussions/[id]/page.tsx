@@ -129,8 +129,12 @@ export default function DiscussionPage() {
   const [discussionSummary, setDiscussionSummary] = useState<DiscussionSummary | null>(null);
   const [summaryMessage, setSummaryMessage] = useState("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [keyTakeaways, setKeyTakeaways] = useState("");
+  const [takeawaysMessage, setTakeawaysMessage] = useState("");
+  const [generatingTakeaways, setGeneratingTakeaways] = useState(false);
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [monthlySummaryUsage, setMonthlySummaryUsage] = useState(0);
+  const [monthlyTakeawaysUsage, setMonthlyTakeawaysUsage] = useState(0);
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -289,7 +293,17 @@ export default function DiscussionPage() {
             .eq("success", true)
             .gte("created_at", monthStart);
 
+          const { count: monthlyTakeawaysCount } = await supabase
+            .from("ai_usage_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", viewerData.user.id)
+            .eq("feature_key", "key_takeaways")
+            .eq("cached", false)
+            .eq("success", true)
+            .gte("created_at", monthStart);
+
           setMonthlySummaryUsage(monthlyUsageCount ?? 0);
+          setMonthlyTakeawaysUsage(monthlyTakeawaysCount ?? 0);
         }
       }
 
@@ -427,6 +441,65 @@ export default function DiscussionPage() {
       setGeneratingSummary(false);
     }
   }
+
+  async function handleGenerateKeyTakeaways() {
+    setTakeawaysMessage("");
+
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!canUseAiSummary) {
+      setTakeawaysMessage("Premium AI access is required for key takeaways.");
+      return;
+    }
+
+    setGeneratingTakeaways(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!discussion) {
+        setTakeawaysMessage("Discussion is not loaded yet.");
+        return;
+      }
+
+      const response = await fetch("/api/discussions/key-takeaways", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          discussionId: discussion.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setTakeawaysMessage(result.error ?? "Unable to generate key takeaways.");
+        return;
+      }
+
+      setKeyTakeaways(result.takeaways ?? "");
+
+      if (typeof result.monthlyTakeawaysUsage === "number") {
+        setMonthlyTakeawaysUsage(result.monthlyTakeawaysUsage);
+      }
+
+      setTakeawaysMessage("Key takeaways generated.");
+    } finally {
+      setGeneratingTakeaways(false);
+    }
+  }
+
 
   async function handleDeleteReply(replyId: string) {
     setMessage("");
@@ -665,6 +738,10 @@ export default function DiscussionPage() {
     monthlySummaryLimit - monthlySummaryUsage,
     0
   );
+  const monthlyTakeawaysRemaining = Math.max(
+    monthlySummaryLimit - monthlyTakeawaysUsage,
+    0
+  );
 
   if (loading) {
     return (
@@ -722,6 +799,66 @@ export default function DiscussionPage() {
         <p className="mb-10 text-xl leading-relaxed text-zinc-300">
           {discussion.body}
         </p>
+
+        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                Premium AI-Assisted Layer
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Key Takeaways
+              </h2>
+            </div>
+
+            {currentUserId && canUseAiSummary && (
+              <button
+                type="button"
+                onClick={handleGenerateKeyTakeaways}
+                disabled={generatingTakeaways}
+                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                {generatingTakeaways ? "Generating..." : "Generate Key Takeaways"}
+              </button>
+            )}
+          </div>
+
+          {keyTakeaways ? (
+            <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
+              {keyTakeaways}
+            </div>
+          ) : (
+            <p className="leading-relaxed text-zinc-500">
+              {!currentUserId
+                ? "Log in to generate AI-assisted key takeaways for this discussion."
+                : canUseAiSummary
+                  ? "Generate concise key takeaways from the discussion and visible replies."
+                  : "AI-assisted key takeaways are available with the Premium AI-Assisted Layer."}
+            </p>
+          )}
+
+          {currentUserId && canUseAiSummary && (
+            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
+              {isAdmin ? (
+                <p>
+                  Admin AI access: unlimited key takeaways.
+                </p>
+              ) : (
+                <p>
+                  Premium AI key takeaways usage: {monthlyTakeawaysUsage} of {monthlySummaryLimit} used this month.
+                  {" "}Remaining: {monthlyTakeawaysRemaining}.
+                </p>
+              )}
+            </div>
+          )}
+
+          {takeawaysMessage && (
+            <p className="mt-4 text-sm text-zinc-500">
+              {takeawaysMessage}
+            </p>
+          )}
+        </section>
 
         <section className="mb-12 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
