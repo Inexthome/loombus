@@ -28,6 +28,9 @@ type Report = {
   id: string;
   reason: string;
   status: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  resolution_note: string | null;
   created_at: string;
   discussion_id: string | null;
   reply_id: string | null;
@@ -42,6 +45,7 @@ export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [filterMode, setFilterMode] = useState<ReportFilter>("all");
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [message, setMessage] = useState("");
@@ -75,6 +79,9 @@ export default function AdminReportsPage() {
           id,
           reason,
           status,
+          reviewed_by,
+          reviewed_at,
+          resolution_note,
           created_at,
           discussion_id,
           reply_id,
@@ -114,7 +121,11 @@ export default function AdminReportsPage() {
         .map((report) => report.reported_profile_id)
         .filter((id): id is string => Boolean(id));
 
-      const profileIds = [...new Set([...replyUserIds, ...reportedProfileIds])];
+      const reviewerIds = normalized
+        .map((report) => report.reviewed_by)
+        .filter((id): id is string => Boolean(id));
+
+      const profileIds = [...new Set([...replyUserIds, ...reportedProfileIds, ...reviewerIds])];
 
       if (profileIds.length > 0) {
         const { data: profileData } = await supabase
@@ -221,9 +232,24 @@ export default function AdminReportsPage() {
   async function markReviewed(reportId: string) {
     setMessage("");
 
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const reviewedAt = new Date().toISOString();
+    const resolutionNote = (reviewNotes[reportId] ?? "").trim();
+
     const { error } = await supabase
       .from("reports")
-      .update({ status: "reviewed" })
+      .update({
+        status: "reviewed",
+        reviewed_by: userData.user.id,
+        reviewed_at: reviewedAt,
+        resolution_note: resolutionNote || null,
+      })
       .eq("id", reportId);
 
     if (error) {
@@ -234,10 +260,24 @@ export default function AdminReportsPage() {
     setReports((current) =>
       current.map((report) =>
         report.id === reportId
-          ? { ...report, status: "reviewed" }
+          ? {
+              ...report,
+              status: "reviewed",
+              reviewed_by: userData.user.id,
+              reviewed_at: reviewedAt,
+              resolution_note: resolutionNote || null,
+            }
           : report
       )
     );
+
+    setReviewNotes((current) => {
+      const next = { ...current };
+      delete next[reportId];
+      return next;
+    });
+
+    setMessage("Report marked reviewed.");
   }
 
   function getReplyAuthorLabel(reply: ReplyRef) {
@@ -393,6 +433,9 @@ export default function AdminReportsPage() {
             const reportedProfile = report.reported_profile_id
               ? profiles[report.reported_profile_id]
               : null;
+            const reviewerProfile = report.reviewed_by
+              ? profiles[report.reviewed_by]
+              : null;
 
             return (
               <div
@@ -429,6 +472,32 @@ export default function AdminReportsPage() {
                   Reason: {report.reason}
                 </p>
 
+                {(report.reviewed_at || report.reviewed_by || report.resolution_note) && (
+                  <div className="mb-4 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
+                    <p className="mb-2 text-zinc-400">
+                      Review details
+                    </p>
+
+                    {report.reviewed_at && (
+                      <p>
+                        Reviewed: {new Date(report.reviewed_at).toLocaleString()}
+                      </p>
+                    )}
+
+                    {report.reviewed_by && (
+                      <p>
+                        Reviewed by: {reviewerProfile?.full_name || reviewerProfile?.username || "Admin"}
+                      </p>
+                    )}
+
+                    {report.resolution_note && (
+                      <p className="mt-2 whitespace-pre-wrap leading-relaxed">
+                        Note: {report.resolution_note}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {isProfileReport && (
                   <div className="mb-4 rounded-2xl border border-zinc-900 bg-black p-4">
                     <p className="mb-2 text-sm text-zinc-500">
@@ -461,6 +530,27 @@ export default function AdminReportsPage() {
                       </p>
                     )}
                   </div>
+                )}
+
+                {report.status !== "reviewed" && (
+                  <label className="mb-4 block">
+                    <span className="mb-2 block text-sm text-zinc-500">
+                      Resolution note optional
+                    </span>
+
+                    <textarea
+                      value={reviewNotes[report.id] ?? report.resolution_note ?? ""}
+                      onChange={(event) =>
+                        setReviewNotes((current) => ({
+                          ...current,
+                          [report.id]: event.target.value,
+                        }))
+                      }
+                      placeholder="Add how this report was handled before marking it reviewed."
+                      rows={3}
+                      className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-zinc-600"
+                    />
+                  </label>
                 )}
 
                 <div className="flex flex-wrap items-center gap-4">
