@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { DEFAULT_REPORT_REASON, REPORT_REASONS, type ReportReason } from "@/lib/report-reasons";
 
 type Profile = {
   id: string;
@@ -36,6 +37,7 @@ export default function UserProfilePage() {
   const [followWorking, setFollowWorking] = useState(false);
   const [reportWorking, setReportWorking] = useState(false);
   const [reportedProfile, setReportedProfile] = useState(false);
+  const [reportReason, setReportReason] = useState(DEFAULT_REPORT_REASON);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
 
@@ -189,7 +191,7 @@ export default function UserProfilePage() {
       const { error } = await supabase.from("reports").insert({
         reporter_id: userData.user.id,
         reported_profile_id: profile.id,
-        reason: "User submitted profile report",
+        reason: reportReason,
       });
 
       if (error) {
@@ -288,7 +290,7 @@ export default function UserProfilePage() {
 
           {currentUserId && currentUserId !== profile.id && (
             <div className="mt-8">
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap items-end gap-3">
                 <button
                   onClick={toggleFollow}
                   disabled={followWorking}
@@ -296,6 +298,22 @@ export default function UserProfilePage() {
                 >
                   {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
                 </button>
+
+                <label className="flex min-w-64 flex-col text-xs text-zinc-500">
+                  <span className="mb-2">Report reason</span>
+
+                  <select
+                    value={reportReason}
+                    onChange={(event) => setReportReason(event.target.value as ReportReason)}
+                    className="rounded-full border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                  >
+                    {REPORT_REASONS.map((reason) => (
+                      <option key={reason} value={reason}>
+                        {reason}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
                 <button
                   type="button"

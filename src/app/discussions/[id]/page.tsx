@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { DEFAULT_REPORT_REASON, REPORT_REASONS, type ReportReason } from "@/lib/report-reasons";
 import { ProfileAvatar } from "@/components/profile-avatar";
 
 type Discussion = {
@@ -104,6 +105,7 @@ export default function DiscussionPage() {
   const [savedBookmarkId, setSavedBookmarkId] = useState<string | null>(null);
   const [savingBookmark, setSavingBookmark] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
+  const [reportReason, setReportReason] = useState(DEFAULT_REPORT_REASON);
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -436,7 +438,7 @@ export default function DiscussionPage() {
     const { error } = await supabase.from("reports").insert({
       reporter_id: userData.user.id,
       discussion_id: id,
-      reason: "User submitted report",
+      reason: reportReason,
     });
 
     if (error) {
@@ -490,7 +492,7 @@ export default function DiscussionPage() {
         reporter_id: userData.user.id,
         discussion_id: id,
         reply_id: replyId,
-        reason: "User submitted reply report",
+        reason: reportReason,
       });
 
       if (error) {
@@ -598,6 +600,24 @@ export default function DiscussionPage() {
           >
             {reportedDiscussion ? "Reported" : "Report Discussion"}
           </button>
+
+          {currentUserId && (
+            <label className="flex min-w-64 flex-col text-xs text-zinc-500">
+              <span className="mb-2">Report reason</span>
+
+              <select
+                value={reportReason}
+                onChange={(event) => setReportReason(event.target.value as ReportReason)}
+                className="rounded-full border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+              >
+                {REPORT_REASONS.map((reason) => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           {(bookmarkMessage || reportMessage) && (
             <p className="text-sm text-zinc-500">
