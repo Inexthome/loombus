@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 
 type Profile = {
   full_name: string | null;
@@ -30,7 +31,7 @@ function getMissingProfileFields(profile: Profile | null) {
 
 export default function CreatePage() {
   const [title, setTitle] = useState("");
-  const [topic, setTopic] = useState("AI & Society");
+  const [topic, setTopic] = useState<string>(DEFAULT_DISCUSSION_TOPIC);
   const [body, setBody] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [message, setMessage] = useState("");
@@ -197,28 +198,11 @@ export default function CreatePage() {
               onChange={(e) => setTopic(e.target.value)}
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             >
-              <option>AI & Society</option>
-              <option>Books & Writing</option>
-              <option>Business</option>
-              <option>Culture</option>
-              <option>Education</option>
-              <option>Entrepreneurship</option>
-              <option>Environment</option>
-              <option>Faith & Values</option>
-              <option>Future of Work</option>
-              <option>General</option>
-              <option>Healthcare</option>
-              <option>Law & Justice</option>
-              <option>Local Community</option>
-              <option>Media</option>
-              <option>Money & Finance</option>
-              <option>Parenting & Family</option>
-              <option>Philosophy</option>
-              <option>Politics & Policy</option>
-              <option>Psychology</option>
-              <option>Science</option>
-              <option>Systems</option>
-              <option>Technology</option>
+              {DISCUSSION_TOPICS.map((topicOption) => (
+                <option key={topicOption} value={topicOption}>
+                  {topicOption}
+                </option>
+              ))}
             </select>
           </div>
 
