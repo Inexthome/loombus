@@ -30,10 +30,24 @@ export default function FollowListPage() {
   const [ownerProfile, setOwnerProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadFollowList() {
+      const { data: userData } = await supabase.auth.getUser();
+
+      if (!userData.user) {
+        setIsLoggedIn(false);
+        setAuthChecked(true);
+        setLoading(false);
+        return;
+      }
+
+      setIsLoggedIn(true);
+      setAuthChecked(true);
+
       const { data: owner } = await supabase
         .from("profiles")
         .select("id, full_name, username, bio, avatar_url")
@@ -104,11 +118,56 @@ export default function FollowListPage() {
     });
   }, [profiles, searchQuery]);
 
-  if (loading) {
+  if (!authChecked || loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
         <div className="mx-auto max-w-5xl text-zinc-400">
           Loading {title.toLowerCase()}...
+        </div>
+      </main>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <main className="min-h-screen bg-black px-6 py-16 text-white">
+        <div className="mx-auto max-w-3xl">
+          <Link
+            href={`/u/${username}`}
+            className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+          >
+            ← Back to profile
+          </Link>
+
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              Login Required
+            </p>
+
+            <h1 className="mb-4 text-3xl font-medium">
+              Log in to view {title.toLowerCase()}.
+            </h1>
+
+            <p className="mb-6 leading-relaxed text-zinc-400">
+              Follow lists are available to Loombus members only.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/login"
+                className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Log In
+              </Link>
+
+              <Link
+                href="/signup"
+                className="rounded-full border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Create Account
+              </Link>
+            </div>
+          </div>
         </div>
       </main>
     );
