@@ -81,6 +81,7 @@ async function getAiAccess(supabase: any, userId: string) {
       allowed: true,
       tier: "admin",
       isAdmin: true,
+      monthlySummaryLimit: Number.MAX_SAFE_INTEGER,
     };
   }
 
@@ -100,6 +101,29 @@ async function getAiAccess(supabase: any, userId: string) {
     isAdmin: false,
     monthlySummaryLimit: entitlement?.monthly_summary_limit ?? 0,
   };
+}
+
+function getCurrentMonthStart() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+}
+
+async function getMonthlySummaryUsageCount(supabase: any, userId: string) {
+  const { count, error } = await supabase
+    .from("ai_usage_events")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("feature_key", "thread_summary")
+    .eq("cached", false)
+    .eq("success", true)
+    .gte("created_at", getCurrentMonthStart());
+
+  if (error) {
+    console.error("AI usage count failed:", error.message);
+    return 0;
+  }
+
+  return count ?? 0;
 }
 
 async function generateOpenAISummary({
@@ -284,6 +308,35 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const monthlyUsageCount = access.isAdmin
+      ? 0
+      : await getMonthlySummaryUsageCount(supabase, user.id);
+
+    if (!access.isAdmin && monthlyUsageCount >= access.monthlySummaryLimit) {
+      await logAiUsage({
+        supabase,
+        userId: user.id,
+        featureKey: "thread_summary",
+        targetType: "discussion",
+        targetId: discussionId,
+        provider: "openai",
+        modelName: SUMMARY_MODEL,
+        cached: false,
+        success: false,
+        errorMessage: "Monthly Premium AI summary limit reached.",
+      });
+
+      return NextResponse.json(
+        {
+          error: "Monthly Premium AI summary limit reached.",
+          code: "summary_limit_reached",
+          monthlySummaryLimit: access.monthlySummaryLimit,
+          monthlySummaryUsage: monthlyUsageCount,
+        },
+        { status: 429 }
+      );
+    }
+
     let summaryText: string;
 
     try {
@@ -383,12 +436,16 @@ export async function POST(request: NextRequest) {
         model_name: SUMMARY_MODEL,
         source_reply_count: sourceReplyCount,
         access_tier: access.tier,
+        monthly_summary_limit: access.isAdmin ? "unlimited" : access.monthlySummaryLimit,
+        monthly_summary_usage_before_generation: access.isAdmin ? 0 : monthlyUsageCount,
       },
     });
 
     return NextResponse.json({
       summary: insertedSummary as CachedSummary,
       cached: false,
+      monthlySummaryLimit: access.isAdmin ? null : access.monthlySummaryLimit,
+      monthlySummaryUsage: access.isAdmin ? null : monthlyUsageCount + 1,
     });
   } catch (error) {
     console.error(error);
