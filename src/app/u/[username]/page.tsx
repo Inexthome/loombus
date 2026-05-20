@@ -200,6 +200,21 @@ export default function UserProfilePage() {
             </Link>
           </div>
 
+          {!currentUserId && (
+            <div className="mt-8">
+              <Link
+                href="/login"
+                className="inline-flex rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Log in to follow
+              </Link>
+
+              <p className="mt-4 text-sm text-zinc-500">
+                Members can follow contributors and build their Loombus network.
+              </p>
+            </div>
+          )}
+
           {currentUserId && currentUserId !== profile.id && (
             <div className="mt-8">
               <button
