@@ -3,21 +3,96 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
+
+type AuditMetadata = Record<string, unknown> | null;
 
 type AuditLog = {
   id: string;
   action: string;
   target_type: string;
   target_id: string | null;
-  metadata: any;
+  metadata: AuditMetadata;
   created_at: string;
   actor_id: string | null;
 };
+
+type Profile = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+};
+
+const actionLabels: Record<string, string> = {
+  "discussion.created": "Discussion created",
+  "discussion.soft_deleted": "Discussion soft deleted",
+  "discussion.restored": "Discussion restored",
+  "reply.created": "Reply created",
+  "reply.soft_deleted": "Reply soft deleted",
+  "reply.restored": "Reply restored",
+};
+
+const actionDescriptions: Record<string, string> = {
+  "discussion.created": "A member published a new discussion.",
+  "discussion.soft_deleted": "An admin removed a discussion from public view.",
+  "discussion.restored": "An admin restored a previously deleted discussion.",
+  "reply.created": "A member posted a reply.",
+  "reply.soft_deleted": "A reply was removed from public view.",
+  "reply.restored": "An admin restored a previously deleted reply.",
+};
+
+function getActionLabel(action: string) {
+  return actionLabels[action] ?? action.replaceAll(".", " ");
+}
+
+function getActionDescription(action: string) {
+  return actionDescriptions[action] ?? "Platform activity recorded by Loombus.";
+}
+
+function getActionBadgeClass(action: string) {
+  if (action.includes("soft_deleted")) {
+    return "border-red-900 text-red-300";
+  }
+
+  if (action.includes("restored")) {
+    return "border-emerald-900 text-emerald-300";
+  }
+
+  if (action.includes("created")) {
+    return "border-blue-900 text-blue-300";
+  }
+
+  return "border-zinc-700 text-zinc-300";
+}
+
+function formatMetadataValue(value: unknown) {
+  if (value === null || value === undefined) {
+    return "—";
+  }
+
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  return JSON.stringify(value, null, 2);
+}
+
+function getTargetLabel(log: AuditLog) {
+  const targetType = log.target_type || "target";
+
+  if (!log.target_id) {
+    return targetType;
+  }
+
+  return `${targetType} · ${log.target_id}`;
+}
 
 export default function AdminAuditPage() {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
 
   useEffect(() => {
     async function loadLogs() {
@@ -44,11 +119,37 @@ export default function AdminAuditPage() {
 
       const { data } = await supabase
         .from("audit_logs")
-        .select("*")
+        .select("id, action, target_type, target_id, metadata, created_at, actor_id")
         .order("created_at", { ascending: false })
         .limit(100);
 
-      setLogs(data ?? []);
+      const loadedLogs = (data ?? []) as AuditLog[];
+
+      setLogs(loadedLogs);
+
+      const actorIds = [
+        ...new Set(
+          loadedLogs
+            .map((log) => log.actor_id)
+            .filter((id): id is string => Boolean(id))
+        ),
+      ];
+
+      if (actorIds.length > 0) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", actorIds);
+
+        const profileMap: Record<string, Profile> = {};
+
+        for (const item of profileData ?? []) {
+          profileMap[item.id] = item;
+        }
+
+        setProfiles(profileMap);
+      }
+
       setLoading(false);
     }
 
@@ -84,7 +185,6 @@ export default function AdminAuditPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-6xl">
-
         <div className="mb-10 flex items-center justify-between">
           <div>
             <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
@@ -94,6 +194,11 @@ export default function AdminAuditPage() {
             <h1 className="text-5xl font-semibold tracking-tight">
               Audit Logs
             </h1>
+
+            <p className="mt-4 max-w-2xl leading-relaxed text-zinc-500">
+              Review platform activity, moderation actions, actors, targets,
+              timestamps, and supporting metadata.
+            </p>
           </div>
 
           <Link
@@ -105,49 +210,104 @@ export default function AdminAuditPage() {
         </div>
 
         <div className="space-y-4">
-          {logs.map((log) => (
-            <div
-              key={log.id}
-              className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
-            >
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-300">
-                  {log.action}
-                </span>
+          {logs.map((log) => {
+            const actorProfile = log.actor_id ? profiles[log.actor_id] : undefined;
+            const metadataEntries = Object.entries(log.metadata ?? {});
 
-                <span className="text-xs text-zinc-500">
-                  {new Date(log.created_at).toLocaleString()}
-                </span>
+            return (
+              <div
+                key={log.id}
+                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+              >
+                <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="mb-3 flex flex-wrap items-center gap-3">
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs ${getActionBadgeClass(log.action)}`}
+                      >
+                        {getActionLabel(log.action)}
+                      </span>
+
+                      <span className="text-xs text-zinc-500">
+                        {new Date(log.created_at).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <h2 className="text-2xl font-medium">
+                      {getActionDescription(log.action)}
+                    </h2>
+                  </div>
+
+                  <div className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                    {log.target_type || "target"}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-3 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                      Actor
+                    </p>
+
+                    {log.actor_id ? (
+                      <div className="flex items-center gap-3">
+                        <ProfileAvatar profile={actorProfile} size="md" />
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm text-zinc-300">
+                            {getProfileDisplayName(actorProfile, "Unknown actor")}
+                          </p>
+
+                          <p className="truncate text-xs text-zinc-600">
+                            {actorProfile?.username ? `@${actorProfile.username}` : log.actor_id}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-500">
+                        System / unknown actor
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-3 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                      Target
+                    </p>
+
+                    <p className="break-all text-sm text-zinc-300">
+                      {getTargetLabel(log)}
+                    </p>
+                  </div>
+                </div>
+
+                {metadataEntries.length > 0 && (
+                  <div className="mt-4 rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-3 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                      Metadata
+                    </p>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      {metadataEntries.map(([key, value]) => (
+                        <div
+                          key={key}
+                          className="rounded-xl border border-zinc-900 bg-zinc-950 p-3"
+                        >
+                          <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                            {key.replaceAll("_", " ")}
+                          </p>
+
+                          <p className="whitespace-pre-wrap break-words text-sm text-zinc-400">
+                            {formatMetadataValue(value)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              <div className="space-y-2 text-sm text-zinc-400">
-                <p>
-                  <span className="text-zinc-500">Target:</span>{" "}
-                  {log.target_type}
-                </p>
-
-                {log.target_id && (
-                  <p>
-                    <span className="text-zinc-500">Target ID:</span>{" "}
-                    {log.target_id}
-                  </p>
-                )}
-
-                {log.actor_id && (
-                  <p>
-                    <span className="text-zinc-500">Actor:</span>{" "}
-                    {log.actor_id}
-                  </p>
-                )}
-
-                {log.metadata && (
-                  <pre className="overflow-x-auto rounded-xl border border-zinc-800 bg-black p-4 text-xs text-zinc-400">
-{JSON.stringify(log.metadata, null, 2)}
-                  </pre>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {!logs.length && (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-zinc-500">
@@ -155,7 +315,6 @@ export default function AdminAuditPage() {
             </div>
           )}
         </div>
-
       </div>
     </main>
   );
