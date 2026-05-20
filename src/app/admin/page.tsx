@@ -317,6 +317,23 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
 
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+            <h2 className="mb-4 text-3xl font-semibold">
+              AI Access
+            </h2>
+
+            <p className="mb-6 leading-relaxed text-zinc-400">
+              Manage Premium AI-Assisted Layer access and review AI usage.
+            </p>
+
+            <Link
+              href="/admin/ai-access"
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Open AI Access →
+            </Link>
+          </div>
+
         </div>
 
       </div>
