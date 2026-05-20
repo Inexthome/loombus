@@ -30,6 +30,7 @@ export default function DiscussionsPage() {
   const [bookmarkCounts, setBookmarkCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState("All");
+  const [showAllTopics, setShowAllTopics] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState("Newest");
 
@@ -114,14 +115,22 @@ export default function DiscussionsPage() {
     loadDiscussions();
   }, []);
 
-  const topics = useMemo(() => {
-    const officialTopics = [...DISCUSSION_TOPICS];
-    const legacyTopics = discussions
-      .map((discussion) => discussion.topic)
-      .filter((topic) => topic && !officialTopics.includes(topic as typeof DISCUSSION_TOPICS[number]));
-
-    return ["All", ...officialTopics, ...new Set(legacyTopics)];
+  const activeTopics = useMemo(() => {
+    return [...new Set(discussions.map((discussion) => discussion.topic).filter(Boolean))];
   }, [discussions]);
+
+  const topics = useMemo(() => {
+    if (!showAllTopics) {
+      return ["All", ...activeTopics];
+    }
+
+    const officialTopics = [...DISCUSSION_TOPICS];
+    const legacyTopics = activeTopics.filter(
+      (topic) => !officialTopics.includes(topic as typeof DISCUSSION_TOPICS[number])
+    );
+
+    return ["All", ...officialTopics, ...legacyTopics];
+  }, [activeTopics, showAllTopics]);
 
   const filteredDiscussions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -241,6 +250,20 @@ export default function DiscussionsPage() {
               {topic}
             </button>
           ))}
+
+          <button
+            type="button"
+            onClick={() => {
+              if (showAllTopics && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
+                setSelectedTopic("All");
+              }
+
+              setShowAllTopics((current) => !current);
+            }}
+            className="rounded-full border border-zinc-800 bg-black px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-700 hover:text-white"
+          >
+            {showAllTopics ? "Show active topics" : "Show all topics"}
+          </button>
         </div>
 
         {!loading && (
