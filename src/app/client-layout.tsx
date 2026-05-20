@@ -4,6 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import {
+  filterBlockedActorNotifications,
+  getBlockedRelationshipUserIds,
+} from "@/lib/notification-block-filter";
 
 export default function ClientLayout({
   children,
@@ -37,13 +41,20 @@ export default function ClientLayout({
   }
 
   async function loadNotificationCount(userId: string) {
-    const { count } = await supabase
+    const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
+      supabase,
+      userId
+    );
+
+    const { data } = await supabase
       .from("notifications")
-      .select("*", { count: "exact", head: true })
+      .select("id, actor_id")
       .eq("user_id", userId)
       .is("read_at", null);
 
-    setNotificationCount(count ?? 0);
+    setNotificationCount(
+      filterBlockedActorNotifications(data ?? [], blockedRelationshipUserIds).length
+    );
   }
 
   useEffect(() => {

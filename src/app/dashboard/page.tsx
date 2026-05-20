@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import {
+  filterBlockedActorNotifications,
+  getBlockedRelationshipUserIds,
+} from "@/lib/notification-block-filter";
 
 type Profile = {
   full_name: string | null;
@@ -62,12 +66,17 @@ export default function DashboardPage() {
 
       setEmail(data.user.email ?? null);
 
+      const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
+        supabase,
+        data.user.id
+      );
+
       const [
         { data: profileData },
         { count: discussionCount },
         { count: replyCount },
         { count: savedCount },
-        { count: unreadNotificationCount },
+        { data: unreadNotificationData },
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -94,17 +103,22 @@ export default function DashboardPage() {
 
         supabase
           .from("notifications")
-          .select("*", { count: "exact", head: true })
+          .select("id, actor_id")
           .eq("user_id", data.user.id)
           .is("read_at", null),
       ]);
+
+      const visibleUnreadNotifications = filterBlockedActorNotifications(
+        unreadNotificationData ?? [],
+        blockedRelationshipUserIds
+      );
 
       setProfile(profileData ?? null);
       setActivityCounts({
         discussions: discussionCount ?? 0,
         replies: replyCount ?? 0,
         saved: savedCount ?? 0,
-        unreadNotifications: unreadNotificationCount ?? 0,
+        unreadNotifications: visibleUnreadNotifications.length,
       });
       setLoading(false);
     }

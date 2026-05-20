@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import {
+  filterBlockedActorNotifications,
+  getBlockedRelationshipUserIds,
+} from "@/lib/notification-block-filter";
 import { ProfileAvatar } from "@/components/profile-avatar";
 
 type Notification = {
@@ -128,13 +132,21 @@ export default function NotificationsPage() {
 
       setCurrentUserId(userData.user.id);
 
+      const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
+        supabase,
+        userData.user.id
+      );
+
       const { data } = await supabase
         .from("notifications")
         .select("*")
         .eq("user_id", userData.user.id)
         .order("created_at", { ascending: false });
 
-      const loadedNotifications = (data ?? []) as Notification[];
+      const loadedNotifications = filterBlockedActorNotifications(
+        (data ?? []) as Notification[],
+        blockedRelationshipUserIds
+      );
 
       const actorIds = [
         ...new Set(

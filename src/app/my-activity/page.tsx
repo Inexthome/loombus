@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import {
+  filterBlockedActorNotifications,
+  getBlockedRelationshipUserIds,
+} from "@/lib/notification-block-filter";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
 
 type Discussion = {
@@ -35,6 +39,7 @@ type SavedDiscussion = {
 
 type Notification = {
   id: string;
+  actor_id: string | null;
   type: string;
   target_type: string;
   target_id: string | null;
@@ -93,6 +98,11 @@ export default function MyActivityPage() {
 
       setCurrentUserId(userData.user.id);
 
+      const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
+        supabase,
+        userData.user.id
+      );
+
       const [
         { data: discussionData },
         { data: replyData },
@@ -101,7 +111,7 @@ export default function MyActivityPage() {
         { count: totalDiscussions },
         { count: totalReplies },
         { count: totalSaved },
-        { count: unreadNotifications },
+        { data: unreadNotificationData },
       ] = await Promise.all([
         supabase
           .from("discussions")
@@ -128,10 +138,10 @@ export default function MyActivityPage() {
 
         supabase
           .from("notifications")
-          .select("id, type, target_type, target_id, message, read_at, created_at")
+          .select("id, actor_id, type, target_type, target_id, message, read_at, created_at")
           .eq("user_id", userData.user.id)
           .order("created_at", { ascending: false })
-          .limit(6),
+          .limit(20),
 
         supabase
           .from("discussions")
@@ -152,22 +162,30 @@ export default function MyActivityPage() {
 
         supabase
           .from("notifications")
-          .select("*", { count: "exact", head: true })
+          .select("id, actor_id")
           .eq("user_id", userData.user.id)
           .is("read_at", null),
       ]);
 
       const loadedReplies = (replyData ?? []) as Reply[];
       const loadedBookmarks = (bookmarkData ?? []) as Bookmark[];
+      const visibleNotifications = filterBlockedActorNotifications(
+        (notificationData ?? []) as Notification[],
+        blockedRelationshipUserIds
+      ).slice(0, 6);
+      const visibleUnreadNotifications = filterBlockedActorNotifications(
+        unreadNotificationData ?? [],
+        blockedRelationshipUserIds
+      );
 
       setDiscussions((discussionData ?? []) as Discussion[]);
       setReplies(loadedReplies);
-      setNotifications((notificationData ?? []) as Notification[]);
+      setNotifications(visibleNotifications);
       setActivityTotals({
         discussions: totalDiscussions ?? 0,
         replies: totalReplies ?? 0,
         saved: totalSaved ?? 0,
-        unreadNotifications: unreadNotifications ?? 0,
+        unreadNotifications: visibleUnreadNotifications.length,
       });
 
       const replyDiscussionIds = [
