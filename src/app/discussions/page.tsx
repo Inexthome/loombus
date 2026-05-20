@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
 
 type Discussion = {
@@ -114,8 +115,12 @@ export default function DiscussionsPage() {
   }, []);
 
   const topics = useMemo(() => {
-    const uniqueTopics = [...new Set(discussions.map((d) => d.topic))];
-    return ["All", ...uniqueTopics];
+    const officialTopics = [...DISCUSSION_TOPICS];
+    const legacyTopics = discussions
+      .map((discussion) => discussion.topic)
+      .filter((topic) => topic && !officialTopics.includes(topic as typeof DISCUSSION_TOPICS[number]));
+
+    return ["All", ...officialTopics, ...new Set(legacyTopics)];
   }, [discussions]);
 
   const filteredDiscussions = useMemo(() => {
