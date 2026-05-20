@@ -30,6 +30,7 @@ export default function FollowingPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
+  const [latestReplyDates, setLatestReplyDates] = useState<Record<string, string>>({});
   const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   const [bookmarkCounts, setBookmarkCounts] = useState<Record<string, number>>({});
   const [selectedTopic, setSelectedTopic] = useState("All");
@@ -107,10 +108,11 @@ export default function FollowingPage() {
       if (discussionIds.length > 0) {
         const { data: replyData } = await supabase
           .from("replies")
-          .select("discussion_id, user_id")
+          .select("discussion_id, user_id, created_at")
           .in("discussion_id", discussionIds);
 
         const counts: Record<string, number> = {};
+        const latestReplies: Record<string, string> = {};
 
         for (const reply of replyData ?? []) {
           if (hiddenProfileIds.has(reply.user_id)) {
@@ -119,9 +121,19 @@ export default function FollowingPage() {
 
           counts[reply.discussion_id] =
             (counts[reply.discussion_id] ?? 0) + 1;
+
+          const existingLatest = latestReplies[reply.discussion_id];
+
+          if (
+            !existingLatest ||
+            new Date(reply.created_at).getTime() > new Date(existingLatest).getTime()
+          ) {
+            latestReplies[reply.discussion_id] = reply.created_at;
+          }
         }
 
         setReplyCounts(counts);
+        setLatestReplyDates(latestReplies);
 
         const { data: viewData } = await supabase
           .from("discussion_views")
@@ -391,7 +403,13 @@ export default function FollowingPage() {
                       ) : (
                         "Loombus member"
                       )}{" "}
-                      · {new Date(discussion.created_at).toLocaleDateString()}
+                      · Created {new Date(discussion.created_at).toLocaleDateString()}
+                      {latestReplyDates[discussion.id] && (
+                        <>
+                          {" "}· Last active{" "}
+                          {new Date(latestReplyDates[discussion.id]).toLocaleDateString()}
+                        </>
+                      )}
                     </p>
                   </div>
 
