@@ -29,6 +29,79 @@ function clampText(text: string, maxLength: number) {
   return `${text.slice(0, maxLength)}\n\n[Content truncated for summary generation.]`;
 }
 
+async function logAiUsage({
+  supabase,
+  userId,
+  featureKey,
+  targetType,
+  targetId,
+  provider,
+  modelName,
+  cached,
+  success,
+  errorMessage,
+}: {
+  supabase: any;
+  userId: string;
+  featureKey: string;
+  targetType?: string;
+  targetId?: string;
+  provider?: string;
+  modelName?: string;
+  cached?: boolean;
+  success?: boolean;
+  errorMessage?: string;
+}) {
+  const { error } = await supabase.from("ai_usage_events").insert({
+    user_id: userId,
+    feature_key: featureKey,
+    target_type: targetType ?? null,
+    target_id: targetId ?? null,
+    provider: provider ?? null,
+    model_name: modelName ?? null,
+    cached: cached ?? false,
+    success: success ?? true,
+    error_message: errorMessage ?? null,
+  });
+
+  if (error) {
+    console.error("AI usage logging failed:", error.message);
+  }
+}
+
+async function getAiAccess(supabase: any, userId: string) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", userId)
+    .single();
+
+  if (profile?.is_admin) {
+    return {
+      allowed: true,
+      tier: "admin",
+      isAdmin: true,
+    };
+  }
+
+  const { data: entitlement } = await supabase
+    .from("user_ai_entitlements")
+    .select("tier, ai_assisted_enabled, monthly_summary_limit")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const allowed =
+    Boolean(entitlement?.ai_assisted_enabled) &&
+    ["premium", "admin"].includes(entitlement?.tier ?? "");
+
+  return {
+    allowed,
+    tier: entitlement?.tier ?? "free",
+    isAdmin: false,
+    monthlySummaryLimit: entitlement?.monthly_summary_limit ?? 0,
+  };
+}
+
 async function generateOpenAISummary({
   title,
   topic,
@@ -122,8 +195,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const access = await getAiAccess(supabase, user.id);
+
     const body = await request.json();
     const discussionId = String(body.discussionId ?? "").trim();
+
+    if (!access.allowed) {
+      await logAiUsage({
+        supabase,
+        userId: user.id,
+        featureKey: "thread_summary",
+        targetType: "discussion",
+        targetId: discussionId || undefined,
+        provider: "openai",
+        modelName: SUMMARY_MODEL,
+        success: false,
+        errorMessage: "Premium AI access required.",
+      });
+
+      return NextResponse.json(
+        {
+          error: "Premium AI access is required for discussion summaries.",
+          code: "premium_required",
+        },
+        { status: 403 }
+      );
+    }
 
     if (!discussionId) {
       return NextResponse.json(
@@ -169,6 +266,18 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existingSummary) {
+      await logAiUsage({
+        supabase,
+        userId: user.id,
+        featureKey: "thread_summary",
+        targetType: "discussion",
+        targetId: discussionId,
+        provider: "openai",
+        modelName: existingSummary.model_name ?? SUMMARY_MODEL,
+        cached: true,
+        success: true,
+      });
+
       return NextResponse.json({
         summary: existingSummary as CachedSummary,
         cached: true,
@@ -187,6 +296,18 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "AI summary generation failed.";
+
+      await logAiUsage({
+        supabase,
+        userId: user.id,
+        featureKey: "thread_summary",
+        targetType: "discussion",
+        targetId: discussionId,
+        provider: "openai",
+        modelName: SUMMARY_MODEL,
+        success: false,
+        errorMessage: message,
+      });
 
       return NextResponse.json(
         { error: message },
@@ -217,6 +338,18 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (fallbackSummary) {
+        await logAiUsage({
+          supabase,
+          userId: user.id,
+          featureKey: "thread_summary",
+          targetType: "discussion",
+          targetId: discussionId,
+          provider: "openai",
+          modelName: fallbackSummary.model_name ?? SUMMARY_MODEL,
+          cached: true,
+          success: true,
+        });
+
         return NextResponse.json({
           summary: fallbackSummary as CachedSummary,
           cached: true,
@@ -229,6 +362,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await logAiUsage({
+      supabase,
+      userId: user.id,
+      featureKey: "thread_summary",
+      targetType: "discussion",
+      targetId: discussionId,
+      provider: "openai",
+      modelName: SUMMARY_MODEL,
+      cached: false,
+      success: true,
+    });
+
     await supabase.from("audit_logs").insert({
       actor_id: user.id,
       action: "discussion.summary_generated",
@@ -237,6 +382,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         model_name: SUMMARY_MODEL,
         source_reply_count: sourceReplyCount,
+        access_tier: access.tier,
       },
     });
 

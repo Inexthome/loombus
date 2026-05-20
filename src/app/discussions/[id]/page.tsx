@@ -39,6 +39,12 @@ type DiscussionSummary = {
   generated_at: string;
 };
 
+type AiEntitlement = {
+  tier: string;
+  ai_assisted_enabled: boolean;
+  monthly_summary_limit: number;
+};
+
 type BlockRow = {
   blocker_id: string;
   blocked_id: string;
@@ -123,6 +129,7 @@ export default function DiscussionPage() {
   const [discussionSummary, setDiscussionSummary] = useState<DiscussionSummary | null>(null);
   const [summaryMessage, setSummaryMessage] = useState("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -243,7 +250,28 @@ export default function DiscussionPage() {
           .eq("id", viewerData.user.id)
           .single();
 
-        setIsAdmin(Boolean(viewerProfile?.is_admin));
+        const viewerIsAdmin = Boolean(viewerProfile?.is_admin);
+        setIsAdmin(viewerIsAdmin);
+
+        const { data: entitlementData } = await supabase
+          .from("user_ai_entitlements")
+          .select("tier, ai_assisted_enabled, monthly_summary_limit")
+          .eq("user_id", viewerData.user.id)
+          .maybeSingle();
+
+        setAiEntitlement(
+          viewerIsAdmin
+            ? {
+                tier: "admin",
+                ai_assisted_enabled: true,
+                monthly_summary_limit: 999999,
+              }
+            : entitlementData ?? {
+                tier: "free",
+                ai_assisted_enabled: false,
+                monthly_summary_limit: 0,
+              }
+        );
       }
 
       setDiscussion(discussionData);
@@ -601,6 +629,13 @@ export default function DiscussionPage() {
     }
   }
 
+  const canUseAiSummary =
+    isAdmin ||
+    Boolean(
+      aiEntitlement?.ai_assisted_enabled &&
+      ["premium", "admin"].includes(aiEntitlement.tier)
+    );
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -670,7 +705,7 @@ export default function DiscussionPage() {
               </h2>
             </div>
 
-            {!discussionSummary && currentUserId && (
+            {!discussionSummary && currentUserId && canUseAiSummary && (
               <button
                 type="button"
                 onClick={handleGenerateSummary}
@@ -696,9 +731,11 @@ export default function DiscussionPage() {
             </>
           ) : (
             <p className="leading-relaxed text-zinc-500">
-              {currentUserId
-                ? "No summary has been generated yet. Generate one to cache it for future readers."
-                : "Log in to generate an AI-assisted summary for this discussion."}
+              {!currentUserId
+                ? "Log in to generate an AI-assisted summary for this discussion."
+                : canUseAiSummary
+                  ? "No summary has been generated yet. Generate one to cache it for future readers."
+                  : "AI-assisted summaries are available with the Premium AI-Assisted Layer."}
             </p>
           )}
 
