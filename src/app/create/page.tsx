@@ -39,6 +39,8 @@ export default function CreatePage() {
   const [topic, setTopic] = useState<string>(DEFAULT_DISCUSSION_TOPIC);
   const [body, setBody] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const [message, setMessage] = useState("");
   const [publishing, setPublishing] = useState(false);
 
@@ -47,8 +49,12 @@ export default function CreatePage() {
       const { data: userData } = await supabase.auth.getUser();
 
       if (!userData.user) {
+        setIsLoggedIn(false);
+        setAuthChecked(true);
         return;
       }
+
+      setIsLoggedIn(true);
 
       const { data: profileData } = await supabase
         .from("profiles")
@@ -57,6 +63,7 @@ export default function CreatePage() {
         .maybeSingle();
 
       setProfile(profileData ?? null);
+      setAuthChecked(true);
     }
 
     loadProfileStatus();
@@ -153,7 +160,48 @@ export default function CreatePage() {
           clarity, and meaningful contribution.
         </p>
 
-        {!profileComplete && (
+        {!authChecked && (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="text-zinc-400">
+              Checking your account status...
+            </p>
+          </div>
+        )}
+
+        {authChecked && !isLoggedIn && (
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              Login Required
+            </p>
+
+            <h2 className="mb-4 text-2xl font-medium">
+              Log in to create a discussion.
+            </h2>
+
+            <p className="mb-6 leading-relaxed text-zinc-400">
+              You can browse discussions without an account, but you need to log in before starting a new conversation.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/login"
+                className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Log In
+              </Link>
+
+              <Link
+                href="/signup"
+                className="rounded-full border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Create Account
+              </Link>
+            </div>
+          </div>
+        )}
+
+
+        {authChecked && isLoggedIn && !profileComplete && (
           <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
               Your profile is not complete yet.
@@ -173,7 +221,8 @@ export default function CreatePage() {
           </div>
         )}
 
-        <form
+        {authChecked && isLoggedIn && (
+          <form
           onSubmit={handleCreate}
           onKeyDown={handleFormKeyDown}
           className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-8"
@@ -241,7 +290,8 @@ export default function CreatePage() {
           </div>
 
           {message && <p className="text-sm text-zinc-400">{message}</p>}
-        </form>
+          </form>
+        )}
       </div>
     </main>
   );
