@@ -70,6 +70,10 @@ export default function ProfilePage() {
       label: "Bio",
       complete: Boolean(bio.trim()),
     },
+    {
+      label: "Profile image",
+      complete: Boolean(avatarUrl.trim()),
+    },
   ];
 
   const completedProfileItems = profileCompletionItems.filter(
