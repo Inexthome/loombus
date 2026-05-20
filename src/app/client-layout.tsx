@@ -149,18 +149,21 @@ export default function ClientLayout({
               </button>
 
               <nav className="hidden items-center gap-6 text-sm text-zinc-400 md:flex">
-                <Link href="/discussions" className={navLinkClass("/discussions")}>
-                  Discussions
+                <Link href="/" className={navLinkClass("/")}>
+                  Home
                 </Link>
 
-                <Link href="/people" className={navLinkClass("/people")}>
-                  People
+                <Link href="/discussions" className={navLinkClass("/discussions")}>
+                  Discussions
                 </Link>
 
 
 
                 {user && (
                   <>
+                    <Link href="/people" className={navLinkClass("/people")}>
+                      People
+                    </Link>
 
 
                     <Link href="/notifications" className={navLinkClass("/notifications")}>
@@ -214,18 +217,21 @@ export default function ClientLayout({
 
             {mobileMenuOpen && (
               <nav className="mt-5 flex flex-col gap-4 border-t border-zinc-900 pt-5 text-sm text-zinc-400 md:hidden">
-                <Link href="/discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/discussions")}>
-                  Discussions
+                <Link href="/" onClick={closeMobileMenu} className={mobileNavLinkClass("/")}>
+                  Home
                 </Link>
 
-                <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
-                  People
+                <Link href="/discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/discussions")}>
+                  Discussions
                 </Link>
 
 
 
                 {user && (
                   <>
+                    <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
+                      People
+                    </Link>
 
 
                     <Link href="/notifications" onClick={closeMobileMenu} className={mobileNavLinkClass("/notifications")}>
