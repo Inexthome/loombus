@@ -327,6 +327,19 @@ export default function AdminDashboardPage() {
             </p>
 
             <Link
+              href="/admin/labs"
+              className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-600"
+            >
+              <h2 className="mb-3 text-2xl font-medium">
+                Loombus Labs
+              </h2>
+
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Review Premium Plus feature requests and update Labs status.
+              </p>
+            </Link>
+
+            <Link
               href="/admin/ai-access"
               className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
             >
