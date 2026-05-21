@@ -126,6 +126,9 @@ export default function CreatePage() {
   const [qualityCheck, setQualityCheck] = useState("");
   const [qualityCheckMessage, setQualityCheckMessage] = useState("");
   const [generatingQualityCheck, setGeneratingQualityCheck] = useState(false);
+  const [clarityRewrite, setClarityRewrite] = useState("");
+  const [rewriteMessage, setRewriteMessage] = useState("");
+  const [generatingRewrite, setGeneratingRewrite] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
 
@@ -377,6 +380,75 @@ export default function CreatePage() {
     } finally {
       setGeneratingQualityCheck(false);
     }
+  }
+
+  async function runClarityRewrite() {
+    setRewriteMessage("");
+    setClarityRewrite("");
+
+    if (generatingRewrite) {
+      return;
+    }
+
+    if (!canUseQualityCheck) {
+      setRewriteMessage("AI rewrite for clarity requires Premium Plus or Admin access.");
+      return;
+    }
+
+    if (!title.trim()) {
+      setRewriteMessage("Enter a title before running the rewrite.");
+      return;
+    }
+
+    if (!body.trim() || body.trim().length < 8) {
+      setRewriteMessage("Add more discussion content before running the rewrite.");
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (!sessionData.session) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setGeneratingRewrite(true);
+
+    try {
+      const response = await fetch("/api/discussions/rewrite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          title,
+          topic,
+          body,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setRewriteMessage(result.error ?? "Unable to run clarity rewrite.");
+        return;
+      }
+
+      setClarityRewrite(result.rewrite ?? "");
+      setRewriteMessage("Rewrite generated. Review it before applying.");
+    } finally {
+      setGeneratingRewrite(false);
+    }
+  }
+
+  function applyClarityRewrite() {
+    if (!clarityRewrite.trim()) {
+      return;
+    }
+
+    setBody(clarityRewrite);
+    setRewriteMessage("Rewrite applied to editor. Review before publishing.");
   }
 
   async function handleCreate(
@@ -719,6 +791,65 @@ export default function CreatePage() {
               {qualityCheck && (
                 <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
                   {qualityCheck}
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl border border-zinc-800 bg-black p-5">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+                    Premium Plus AI
+                  </p>
+
+                  <h2 className="text-xl font-medium">
+                    Rewrite for clarity
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                    Generate a clearer version of your discussion body. It will
+                    not replace your text unless you apply it.
+                  </p>
+                </div>
+
+                {canUseQualityCheck ? (
+                  <button
+                    type="button"
+                    onClick={runClarityRewrite}
+                    disabled={generatingRewrite || publishing}
+                    className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    {generatingRewrite ? "Rewriting..." : "Generate rewrite"}
+                  </button>
+                ) : (
+                  <Link
+                    href="/premium"
+                    className="w-fit rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Unlock with Premium Plus
+                  </Link>
+                )}
+              </div>
+
+              {rewriteMessage && (
+                <p className="mb-4 text-sm text-zinc-500">
+                  {rewriteMessage}
+                </p>
+              )}
+
+              {clarityRewrite && (
+                <div className="space-y-4">
+                  <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
+                    {clarityRewrite}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={applyClarityRewrite}
+                    className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                  >
+                    Use rewrite
+                  </button>
                 </div>
               )}
             </section>

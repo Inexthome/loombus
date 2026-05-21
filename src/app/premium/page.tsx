@@ -38,7 +38,7 @@ const premiumPlusFeatures: PlanFeature[] = [
     status: "available",
   },
   { label: "AI discussion quality check before posting", status: "available" },
-  { label: "AI rewrite for clarity before posting", status: "planned" },
+  { label: "AI rewrite for clarity before posting", status: "available" },
   { label: "Private notes on saved discussions", status: "available" },
   { label: "Export saved discussions and notes", status: "available" },
   { label: "Longer discussion posts", status: "available" },
