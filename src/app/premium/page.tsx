@@ -37,7 +37,7 @@ const premiumPlusFeatures: PlanFeature[] = [
     label: "Higher included AI usage for summaries, takeaways, viewpoint maps, and thread evolution",
     status: "available",
   },
-  { label: "AI discussion quality check before posting", status: "planned" },
+  { label: "AI discussion quality check before posting", status: "available" },
   { label: "AI rewrite for clarity before posting", status: "planned" },
   { label: "Private notes on saved discussions", status: "available" },
   { label: "Export saved discussions and notes", status: "available" },

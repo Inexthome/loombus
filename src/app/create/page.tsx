@@ -123,12 +123,16 @@ export default function CreatePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [message, setMessage] = useState("");
+  const [qualityCheck, setQualityCheck] = useState("");
+  const [qualityCheckMessage, setQualityCheckMessage] = useState("");
+  const [generatingQualityCheck, setGeneratingQualityCheck] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
 
   const isAdmin = Boolean(profile?.is_admin);
   const canUseDrafts = hasPremiumAccess(entitlement, isAdmin);
   const canUseLongPosts = hasLongPostAccess(entitlement, isAdmin);
+  const canUseQualityCheck = canUseLongPosts;
   const maxDiscussionLength = canUseLongPosts
     ? LONG_DISCUSSION_MAX_LENGTH
     : STANDARD_DISCUSSION_MAX_LENGTH;
@@ -313,6 +317,66 @@ export default function CreatePage() {
     }
 
     setMessage("Draft saved.");
+  }
+
+  async function runQualityCheck() {
+    setQualityCheckMessage("");
+    setQualityCheck("");
+
+    if (generatingQualityCheck) {
+      return;
+    }
+
+    if (!canUseQualityCheck) {
+      setQualityCheckMessage("AI discussion quality check requires Premium Plus or Admin access.");
+      return;
+    }
+
+    if (!title.trim()) {
+      setQualityCheckMessage("Enter a title before running the quality check.");
+      return;
+    }
+
+    if (!body.trim() || body.trim().length < 8) {
+      setQualityCheckMessage("Add more discussion content before running the quality check.");
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (!sessionData.session) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setGeneratingQualityCheck(true);
+
+    try {
+      const response = await fetch("/api/discussions/quality-check", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          title,
+          topic,
+          body,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setQualityCheckMessage(result.error ?? "Unable to run quality check.");
+        return;
+      }
+
+      setQualityCheck(result.qualityCheck ?? "");
+      setQualityCheckMessage("Quality check complete.");
+    } finally {
+      setGeneratingQualityCheck(false);
+    }
   }
 
   async function handleCreate(
@@ -609,6 +673,55 @@ export default function CreatePage() {
                 </p>
               </div>
             </div>
+
+            <section className="rounded-2xl border border-zinc-800 bg-black p-5">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+                    Premium Plus AI
+                  </p>
+
+                  <h2 className="text-xl font-medium">
+                    Discussion quality check
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                    Get concise feedback before posting. This does not rewrite
+                    or publish anything.
+                  </p>
+                </div>
+
+                {canUseQualityCheck ? (
+                  <button
+                    type="button"
+                    onClick={runQualityCheck}
+                    disabled={generatingQualityCheck || publishing}
+                    className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    {generatingQualityCheck ? "Checking..." : "Run quality check"}
+                  </button>
+                ) : (
+                  <Link
+                    href="/premium"
+                    className="w-fit rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Unlock with Premium Plus
+                  </Link>
+                )}
+              </div>
+
+              {qualityCheckMessage && (
+                <p className="mb-4 text-sm text-zinc-500">
+                  {qualityCheckMessage}
+                </p>
+              )}
+
+              {qualityCheck && (
+                <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
+                  {qualityCheck}
+                </div>
+              )}
+            </section>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap gap-3">
