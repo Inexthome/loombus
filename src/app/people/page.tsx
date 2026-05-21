@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type MouseEvent, useEffect, useMemo, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
 
@@ -46,6 +46,29 @@ export default function PeoplePage() {
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const loadingRef = useRef(true);
+
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      if (!loadingRef.current) {
+        return;
+      }
+
+      setMessage((current) =>
+        current || "People took too long to load. Please refresh if the list looks incomplete."
+      );
+      setAuthChecked(true);
+      setLoading(false);
+    }, 10000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   useEffect(() => {
     async function loadProfiles() {

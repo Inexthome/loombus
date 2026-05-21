@@ -54,6 +54,26 @@ function getMissingProfileFields(profile: Profile | null) {
   return missing;
 }
 
+function withDashboardTimeout<T>(
+  promise: PromiseLike<T>,
+  label: string,
+  ms = 8000
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out. Please reload the dashboard.`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
+}
+
 export default function DashboardPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -72,7 +92,10 @@ export default function DashboardPage() {
       setLoadError("");
 
       try {
-        const { data, error: userError } = await supabase.auth.getUser();
+        const { data, error: userError } = await withDashboardTimeout(
+          supabase.auth.getUser(),
+          "Dashboard authentication check"
+        );
 
         if (userError) {
           throw userError;
@@ -85,9 +108,12 @@ export default function DashboardPage() {
 
         setEmail(data.user.email ?? null);
 
-        const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
-          supabase,
-          data.user.id
+        const blockedRelationshipUserIds = await withDashboardTimeout(
+          getBlockedRelationshipUserIds(
+            supabase,
+            data.user.id
+          ),
+          "Dashboard blocked-user check"
         );
 
         const [
@@ -97,7 +123,7 @@ export default function DashboardPage() {
           { count: savedCount, error: savedError },
           { data: unreadNotificationData, error: notificationError },
           { data: entitlementData, error: entitlementError },
-        ] = await Promise.all([
+        ] = await withDashboardTimeout(Promise.all([
           supabase
             .from("profiles")
             .select("full_name, username, bio, avatar_url")
@@ -132,7 +158,9 @@ export default function DashboardPage() {
             .select("tier, ai_assisted_enabled, monthly_summary_limit")
             .eq("user_id", data.user.id)
             .maybeSingle(),
-        ]);
+        ]),
+          "Dashboard activity summary"
+        );
 
         const firstError =
           profileError ||

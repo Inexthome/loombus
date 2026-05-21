@@ -14,6 +14,26 @@ type AiEntitlement = {
   monthly_summary_limit: number;
 };
 
+function withSettingsTimeout<T>(
+  promise: PromiseLike<T>,
+  label: string,
+  ms = 8000
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out. Please reload settings.`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
+}
+
 const settingsSections = [
   {
     title: "Account",
@@ -102,7 +122,10 @@ export default function SettingsPage() {
       setLoadError("");
 
       try {
-        const { data, error: userError } = await supabase.auth.getUser();
+        const { data, error: userError } = await withSettingsTimeout(
+          supabase.auth.getUser(),
+          "Settings authentication check"
+        );
 
         if (userError) {
           throw userError;
@@ -113,17 +136,20 @@ export default function SettingsPage() {
           return;
         }
 
-        const { data: entitlementData, error: entitlementError } = await supabase
-          .from("user_ai_entitlements")
-          .select("tier, ai_assisted_enabled, monthly_summary_limit")
-          .eq("user_id", data.user.id)
-          .maybeSingle();
+        const entitlementResult = await withSettingsTimeout(
+          supabase
+            .from("user_ai_entitlements")
+            .select("tier, ai_assisted_enabled, monthly_summary_limit")
+            .eq("user_id", data.user.id)
+            .maybeSingle(),
+          "Settings subscription check"
+        );
 
-        if (entitlementError) {
-          throw entitlementError;
+        if (entitlementResult.error) {
+          throw entitlementResult.error;
         }
 
-        setAiEntitlement(entitlementData ?? null);
+        setAiEntitlement(entitlementResult.data ?? null);
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Unable to load settings.";
