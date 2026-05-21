@@ -70,7 +70,7 @@ export default function UserProfilePage() {
     async function loadProfile() {
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, full_name, username, bio, avatar_url, creator_website_url, creator_support_url, creator_support_label")
         .eq("username", username)
         .single();
 
