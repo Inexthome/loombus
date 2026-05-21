@@ -4,22 +4,76 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
-export default function AdminDashboardPage() {
-  const [authorized, setAuthorized] = useState(false);
-  const [loading, setLoading] = useState(true);
+type AdminCounts = {
+  totalReports: number;
+  openReports: number;
+  reviewedReports: number;
+  profileReports: number;
+  deletedDiscussions: number;
+  deletedReplies: number;
+  labsRequests: number;
+};
 
-  const [openReports, setOpenReports] = useState(0);
-  const [reviewedReports, setReviewedReports] = useState(0);
-  const [discussionReports, setDiscussionReports] = useState(0);
-  const [replyReports, setReplyReports] = useState(0);
-  const [profileReports, setProfileReports] = useState(0);
-  const [deletedDiscussions, setDeletedDiscussions] = useState(0);
-  const [deletedReplies, setDeletedReplies] = useState(0);
-  const [discussionCount, setDiscussionCount] = useState(0);
-  const [userCount, setUserCount] = useState(0);
+type AdminCardProps = {
+  href: string;
+  title: string;
+  description: string;
+  action: string;
+  count?: number;
+};
+
+function AdminCard({
+  href,
+  title,
+  description,
+  action,
+  count,
+}: AdminCardProps) {
+  return (
+    <Link
+      href={href}
+      className="group flex min-h-[230px] flex-col rounded-3xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-600"
+    >
+      <div>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <h2 className="text-2xl font-medium tracking-tight">
+            {title}
+          </h2>
+
+          {typeof count === "number" && (
+            <span className="shrink-0 rounded-full border border-zinc-800 px-3 py-1 text-sm text-zinc-400">
+              {count}
+            </span>
+          )}
+        </div>
+
+        <p className="max-w-md text-sm leading-6 text-zinc-500">
+          {description}
+        </p>
+      </div>
+
+      <span className="mt-auto inline-flex w-fit items-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition group-hover:border-zinc-500 group-hover:text-white">
+        {action} →
+      </span>
+    </Link>
+  );
+}
+
+export default function AdminDashboardPage() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [counts, setCounts] = useState<AdminCounts>({
+    totalReports: 0,
+    openReports: 0,
+    reviewedReports: 0,
+    profileReports: 0,
+    deletedDiscussions: 0,
+    deletedReplies: 0,
+    labsRequests: 0,
+  });
 
   useEffect(() => {
-    async function loadDashboard() {
+    async function loadAdminDashboard() {
       const { data: userData } = await supabase.auth.getUser();
 
       if (!userData.user) {
@@ -31,108 +85,92 @@ export default function AdminDashboardPage() {
         .from("profiles")
         .select("is_admin")
         .eq("id", userData.user.id)
-        .single();
+        .maybeSingle();
 
       if (!profile?.is_admin) {
-        setAuthorized(false);
-        setLoading(false);
+        setAuthChecked(true);
         return;
       }
 
-      setAuthorized(true);
+      setIsAdmin(true);
 
       const [
-        { count: open },
-        { count: reviewed },
-        { count: discussionReportTotal },
-        { count: replyReportTotal },
-        { count: profileReportTotal },
-        { count: deletedDiscussionTotal },
-        { count: deletedReplyTotal },
+        totalReports,
+        openReports,
+        reviewedReports,
+        profileReports,
+        deletedDiscussions,
+        deletedReplies,
+        labsRequests,
       ] = await Promise.all([
+        supabase
+          .from("reports")
+          .select("*", { count: "exact", head: true }),
         supabase
           .from("reports")
           .select("*", { count: "exact", head: true })
           .eq("status", "open"),
-
         supabase
           .from("reports")
           .select("*", { count: "exact", head: true })
           .eq("status", "reviewed"),
-
-        supabase
-          .from("reports")
-          .select("*", { count: "exact", head: true })
-          .is("reply_id", null)
-          .is("reported_profile_id", null),
-
-        supabase
-          .from("reports")
-          .select("*", { count: "exact", head: true })
-          .not("reply_id", "is", null),
-
         supabase
           .from("reports")
           .select("*", { count: "exact", head: true })
           .not("reported_profile_id", "is", null),
-
         supabase
           .from("discussions")
           .select("*", { count: "exact", head: true })
           .not("deleted_at", "is", null),
-
         supabase
           .from("replies")
           .select("*", { count: "exact", head: true })
           .not("deleted_at", "is", null),
-      ]);
-
-      const [{ count: discussions }, { count: users }] = await Promise.all([
         supabase
-          .from("discussions")
-          .select("*", { count: "exact", head: true }),
-
-        supabase
-          .from("profiles")
+          .from("labs_feature_requests")
           .select("*", { count: "exact", head: true }),
       ]);
 
-      setOpenReports(open ?? 0);
-      setReviewedReports(reviewed ?? 0);
-      setDiscussionReports(discussionReportTotal ?? 0);
-      setReplyReports(replyReportTotal ?? 0);
-      setProfileReports(profileReportTotal ?? 0);
-      setDeletedDiscussions(deletedDiscussionTotal ?? 0);
-      setDeletedReplies(deletedReplyTotal ?? 0);
-      setDiscussionCount(discussions ?? 0);
-      setUserCount(users ?? 0);
+      setCounts({
+        totalReports: totalReports.count ?? 0,
+        openReports: openReports.count ?? 0,
+        reviewedReports: reviewedReports.count ?? 0,
+        profileReports: profileReports.count ?? 0,
+        deletedDiscussions: deletedDiscussions.count ?? 0,
+        deletedReplies: deletedReplies.count ?? 0,
+        labsRequests: labsRequests.count ?? 0,
+      });
 
-      setLoading(false);
+      setAuthChecked(true);
     }
 
-    loadDashboard();
+    loadAdminDashboard();
   }, []);
 
-  if (loading) {
+  if (!authChecked) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-6xl text-zinc-400">
+        <div className="mx-auto max-w-6xl text-zinc-500">
           Loading admin dashboard...
         </div>
       </main>
     );
   }
 
-  if (!authorized) {
+  if (!isAdmin) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-6xl">
-          <h1 className="mb-4 text-5xl font-semibold tracking-tight">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+          <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
+            Admin
+          </p>
+
+          <h1 className="mb-4 text-4xl font-semibold tracking-tight">
             Access denied.
           </h1>
 
-          <p className="text-zinc-400">
-            Admin access is required.
+          <p className="leading-relaxed text-zinc-400">
+            This area is available only to Loombus admin accounts.
           </p>
         </div>
       </main>
@@ -142,213 +180,105 @@ export default function AdminDashboardPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-6xl">
+        <div className="mb-10">
+          <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
+            Admin
+          </p>
 
-        <div className="mb-14">
-          <h1 className="text-5xl font-semibold tracking-tight">
-            Admin Dashboard
+          <h1 className="mb-5 text-5xl font-semibold tracking-tight">
+            Admin dashboard.
           </h1>
 
-          <p className="mt-4 text-zinc-500">
+          <p className="max-w-3xl leading-relaxed text-zinc-400">
             Platform moderation and operational overview.
           </p>
         </div>
 
-        <div className="mb-14 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <section className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm text-zinc-500">
+              Total Reports
+            </p>
+            <p className="text-4xl font-semibold">
+              {counts.totalReports}
+            </p>
+          </div>
 
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm text-zinc-500">
               Open Reports
             </p>
-
-            <h2 className="text-5xl font-semibold">
-              {openReports}
-            </h2>
+            <p className="text-4xl font-semibold">
+              {counts.openReports}
+            </p>
           </div>
 
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm text-zinc-500">
               Reviewed Reports
             </p>
-
-            <h2 className="text-5xl font-semibold">
-              {reviewedReports}
-            </h2>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
-              Discussion Reports
+            <p className="text-4xl font-semibold">
+              {counts.reviewedReports}
             </p>
-
-            <h2 className="text-5xl font-semibold">
-              {discussionReports}
-            </h2>
           </div>
 
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
-              Reply Reports
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm text-zinc-500">
+              Labs Requests
             </p>
-
-            <h2 className="text-5xl font-semibold">
-              {replyReports}
-            </h2>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
-              Profile Reports
+            <p className="text-4xl font-semibold">
+              {counts.labsRequests}
             </p>
-
-            <h2 className="text-5xl font-semibold">
-              {profileReports}
-            </h2>
           </div>
+        </section>
 
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
-              Deleted Discussions
-            </p>
+        <section className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <AdminCard
+            href="/admin/reports"
+            title="Reports"
+            description="Review community-submitted moderation reports for discussions, replies, and profiles."
+            action="Open Reports"
+            count={counts.openReports}
+          />
 
-            <h2 className="text-5xl font-semibold">
-              {deletedDiscussions}
-            </h2>
-          </div>
+          <AdminCard
+            href="/admin/deleted"
+            title="Deleted Discussions"
+            description="Review and restore soft-deleted discussions when needed."
+            action="Open Deleted Discussions"
+            count={counts.deletedDiscussions}
+          />
 
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
-              Deleted Replies
-            </p>
+          <AdminCard
+            href="/admin/deleted-replies"
+            title="Deleted Replies"
+            description="Review and restore soft-deleted replies when needed."
+            action="Open Deleted Replies"
+            count={counts.deletedReplies}
+          />
 
-            <h2 className="text-5xl font-semibold">
-              {deletedReplies}
-            </h2>
-          </div>
+          <AdminCard
+            href="/admin/ai-access"
+            title="AI Access"
+            description="Manage Premium AI-Assisted Layer access and review AI usage."
+            action="Open AI Access"
+          />
 
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
-              Discussions
-            </p>
+          <AdminCard
+            href="/admin/labs"
+            title="Loombus Labs"
+            description="Review Premium Plus feature requests and update Labs status."
+            action="Open Labs"
+            count={counts.labsRequests}
+          />
 
-            <h2 className="text-5xl font-semibold">
-              {discussionCount}
-            </h2>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
-              Users
-            </p>
-
-            <h2 className="text-5xl font-semibold">
-              {userCount}
-            </h2>
-          </div>
-
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
-
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-4 text-3xl font-semibold">
-              Reports
-            </h2>
-
-            <p className="mb-6 leading-relaxed text-zinc-400">
-              Review community-submitted moderation reports.
-            </p>
-
-            <Link
-              href="/admin/reports"
-              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              Open Reports →
-            </Link>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-4 text-3xl font-semibold">
-              Deleted Content
-            </h2>
-
-            <p className="mb-6 leading-relaxed text-zinc-400">
-              Review and restore soft-deleted discussions.
-            </p>
-
-            <Link
-              href="/admin/deleted"
-              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              Open Deleted →
-            </Link>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-4 text-3xl font-semibold">
-              Deleted Replies
-            </h2>
-
-            <p className="mb-6 leading-relaxed text-zinc-400">
-              Review and restore soft-deleted replies.
-            </p>
-
-            <Link
-              href="/admin/deleted-replies"
-              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              Open Replies →
-            </Link>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-4 text-3xl font-semibold">
-              Audit Logs
-            </h2>
-
-            <p className="mb-6 leading-relaxed text-zinc-400">
-              Inspect platform activity and moderation events.
-            </p>
-
-            <Link
-              href="/admin/audit"
-              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              Open Audit →
-            </Link>
-          </div>
-
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-4 text-3xl font-semibold">
-              AI Access
-            </h2>
-
-            <p className="mb-6 leading-relaxed text-zinc-400">
-              Manage Premium AI-Assisted Layer access and review AI usage.
-            </p>
-
-            <Link
-              href="/admin/labs"
-              className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-600"
-            >
-              <h2 className="mb-3 text-2xl font-medium">
-                Loombus Labs
-              </h2>
-
-              <p className="text-sm leading-relaxed text-zinc-500">
-                Review Premium Plus feature requests and update Labs status.
-              </p>
-            </Link>
-
-            <Link
-              href="/admin/ai-access"
-              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              Open AI Access →
-            </Link>
-          </div>
-
-        </div>
-
+          <AdminCard
+            href="/admin/audit"
+            title="Audit Log"
+            description="Review platform activity, moderation actions, actors, targets, and system events."
+            action="Open Audit Log"
+          />
+        </section>
       </div>
     </main>
   );
