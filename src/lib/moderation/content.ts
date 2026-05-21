@@ -1,12 +1,16 @@
-export function validateContent(content: string) {
+export function validateContent(
+  content: string,
+  options: { maxLength?: number } = {}
+) {
   const text = content.trim();
+  const maxLength = options.maxLength ?? 5000;
 
   if (text.length < 8) {
     return "Content is too short.";
   }
 
-  if (text.length > 5000) {
-    return "Content is too long.";
+  if (text.length > maxLength) {
+    return `Content is too long. Maximum length is ${maxLength.toLocaleString()} characters.`;
   }
 
   const repeatedPattern = /(.)\1{14,}/;

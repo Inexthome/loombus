@@ -40,6 +40,9 @@ type EditableDiscussion = {
   edit_count: number | null;
 };
 
+const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
+const LONG_DISCUSSION_MAX_LENGTH = 12000;
+
 function getMissingProfileFields(profile: Profile | null) {
   const missing = [];
 
@@ -70,6 +73,18 @@ function hasPremiumAccess(entitlement: AiEntitlement, isAdmin: boolean) {
   return (
     entitlement?.ai_assisted_enabled === true &&
     entitlement.tier === "premium"
+  );
+}
+
+function hasLongPostAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+  if (isAdmin) {
+    return true;
+  }
+
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    entitlement.tier === "premium" &&
+    (entitlement.monthly_summary_limit ?? 0) > 50
   );
 }
 
@@ -113,6 +128,12 @@ export default function CreatePage() {
 
   const isAdmin = Boolean(profile?.is_admin);
   const canUseDrafts = hasPremiumAccess(entitlement, isAdmin);
+  const canUseLongPosts = hasLongPostAccess(entitlement, isAdmin);
+  const maxDiscussionLength = canUseLongPosts
+    ? LONG_DISCUSSION_MAX_LENGTH
+    : STANDARD_DISCUSSION_MAX_LENGTH;
+  const bodyCharacterCount = body.length;
+  const isBodyOverLimit = bodyCharacterCount > maxDiscussionLength;
   const isEditMode = Boolean(editingDiscussionId);
 
   useEffect(() => {
@@ -314,6 +335,12 @@ export default function CreatePage() {
 
     if (!body.trim()) {
       setMessage("Please enter discussion content.");
+      setPublishing(false);
+      return;
+    }
+
+    if (body.trim().length > maxDiscussionLength) {
+      setMessage(`Discussion content is too long. Your current limit is ${maxDiscussionLength.toLocaleString()} characters.`);
       setPublishing(false);
       return;
     }
@@ -564,17 +591,30 @@ export default function CreatePage() {
                 rows={10}
                 value={body}
                 required
+                maxLength={maxDiscussionLength}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Write your discussion..."
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
               />
+
+              <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
+                <p className={isBodyOverLimit ? "text-red-400" : ""}>
+                  {bodyCharacterCount.toLocaleString()}/{maxDiscussionLength.toLocaleString()} characters
+                </p>
+
+                <p>
+                  {canUseLongPosts
+                    ? "Premium Plus/Admin long-post limit active."
+                    : "Upgrade to Premium Plus for longer discussion posts."}
+                </p>
+              </div>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap gap-3">
                 <button
                   type="submit"
-                  disabled={publishing}
+                  disabled={publishing || isBodyOverLimit}
                   className="rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
                 >
                   {publishing

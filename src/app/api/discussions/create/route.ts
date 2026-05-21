@@ -4,6 +4,34 @@ import { validateContent } from "@/lib/moderation/content";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 
 const CREATE_COOLDOWN_MS = 30000;
+const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
+const LONG_DISCUSSION_MAX_LENGTH = 12000;
+
+type ProfileAccess = {
+  is_admin: boolean | null;
+};
+
+type AiEntitlement = {
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
+};
+
+function hasLongPostAccess(
+  entitlement: AiEntitlement | null,
+  isAdmin: boolean
+) {
+  if (isAdmin) {
+    return true;
+  }
+
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    entitlement.tier === "premium" &&
+    (entitlement.monthly_summary_limit ?? 0) > 50
+  );
+}
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,6 +83,28 @@ export async function POST(request: NextRequest) {
 
     const content = String(body.body ?? "").trim();
 
+    const [{ data: profile }, { data: entitlement }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("user_ai_entitlements")
+        .select("tier, ai_assisted_enabled, monthly_summary_limit")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+
+    const isAdmin = Boolean((profile as ProfileAccess | null)?.is_admin);
+    const canUseLongPosts = hasLongPostAccess(
+      (entitlement ?? null) as AiEntitlement | null,
+      isAdmin
+    );
+    const maxDiscussionLength = canUseLongPosts
+      ? LONG_DISCUSSION_MAX_LENGTH
+      : STANDARD_DISCUSSION_MAX_LENGTH;
+
     if (!title) {
       return NextResponse.json(
         { error: "Please enter a discussion title." },
@@ -69,7 +119,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const moderationError = validateContent(content);
+    const moderationError = validateContent(content, {
+      maxLength: maxDiscussionLength,
+    });
 
     if (moderationError) {
       return NextResponse.json(

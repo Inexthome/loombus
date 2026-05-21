@@ -5,6 +5,8 @@ import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics
 
 const FREE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const PREMIUM_EDIT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
+const LONG_DISCUSSION_MAX_LENGTH = 12000;
 
 type ExistingDiscussion = {
   id: string;
@@ -31,6 +33,21 @@ function hasPremiumEditAccess(entitlement: AiEntitlement | null) {
   return (
     entitlement?.ai_assisted_enabled === true &&
     entitlement.tier === "premium"
+  );
+}
+
+function hasLongPostAccess(
+  entitlement: AiEntitlement | null,
+  isAdmin: boolean
+) {
+  if (isAdmin) {
+    return true;
+  }
+
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    entitlement.tier === "premium" &&
+    (entitlement.monthly_summary_limit ?? 0) > 50
   );
 }
 
@@ -148,15 +165,6 @@ export async function POST(request: NextRequest) {
       ? requestedTopic as DiscussionTopic
       : "General";
 
-    const moderationError = validateContent(content);
-
-    if (moderationError) {
-      return NextResponse.json(
-        { error: moderationError },
-        { status: 400 }
-      );
-    }
-
     const [{ data: profile }, { data: entitlement }, { data: discussion }] =
       await Promise.all([
         supabase
@@ -176,6 +184,29 @@ export async function POST(request: NextRequest) {
           .maybeSingle(),
       ]);
 
+    const isAdmin = Boolean((profile as ProfileAccess | null)?.is_admin);
+    const hasPremiumAccess = hasPremiumEditAccess(
+      (entitlement ?? null) as AiEntitlement | null
+    );
+    const canUseLongPosts = hasLongPostAccess(
+      (entitlement ?? null) as AiEntitlement | null,
+      isAdmin
+    );
+    const maxDiscussionLength = canUseLongPosts
+      ? LONG_DISCUSSION_MAX_LENGTH
+      : STANDARD_DISCUSSION_MAX_LENGTH;
+
+    const moderationError = validateContent(content, {
+      maxLength: maxDiscussionLength,
+    });
+
+    if (moderationError) {
+      return NextResponse.json(
+        { error: moderationError },
+        { status: 400 }
+      );
+    }
+
     const existingDiscussion = discussion as ExistingDiscussion | null;
 
     if (!existingDiscussion || existingDiscussion.deleted_at) {
@@ -185,7 +216,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isAdmin = Boolean((profile as ProfileAccess | null)?.is_admin);
     const isOwner = existingDiscussion.user_id === user.id;
 
     if (!isOwner && !isAdmin) {
@@ -194,10 +224,6 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-
-    const hasPremiumAccess = hasPremiumEditAccess(
-      (entitlement ?? null) as AiEntitlement | null
-    );
 
     if (!isWithinEditWindow(existingDiscussion.created_at, isAdmin, hasPremiumAccess)) {
       return NextResponse.json(
