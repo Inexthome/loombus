@@ -10,6 +10,22 @@ type Profile = {
   username: string | null;
   bio: string | null;
   avatar_url: string | null;
+  is_admin?: boolean | null;
+};
+
+type AiEntitlement = {
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
+} | null;
+
+type DiscussionDraft = {
+  id: string;
+  title: string;
+  topic: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
 };
 
 function getMissingProfileFields(profile: Profile | null) {
@@ -34,15 +50,42 @@ function getMissingProfileFields(profile: Profile | null) {
   return missing;
 }
 
+function hasDraftAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+  if (isAdmin) {
+    return true;
+  }
+
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    entitlement.tier === "premium"
+  );
+}
+
+function getDraftIdFromUrl() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  return new URLSearchParams(window.location.search).get("draft");
+}
+
 export default function CreatePage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState<string>(DEFAULT_DISCUSSION_TOPIC);
   const [body, setBody] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [message, setMessage] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+
+  const isAdmin = Boolean(profile?.is_admin);
+  const canUseDrafts = hasDraftAccess(entitlement, isAdmin);
 
   useEffect(() => {
     async function loadProfileStatus() {
@@ -55,14 +98,55 @@ export default function CreatePage() {
       }
 
       setIsLoggedIn(true);
+      setCurrentUserId(userData.user.id);
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, username, bio, avatar_url")
-        .eq("id", userData.user.id)
-        .maybeSingle();
+      const requestedDraftId = getDraftIdFromUrl();
+
+      const [{ data: profileData }, { data: entitlementData }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("full_name, username, bio, avatar_url, is_admin")
+          .eq("id", userData.user.id)
+          .maybeSingle(),
+        supabase
+          .from("user_ai_entitlements")
+          .select("tier, ai_assisted_enabled, monthly_summary_limit")
+          .eq("user_id", userData.user.id)
+          .maybeSingle(),
+      ]);
 
       setProfile(profileData ?? null);
+      setEntitlement((entitlementData ?? null) as AiEntitlement);
+
+      if (requestedDraftId) {
+        const { data: draftData, error: draftError } = await supabase
+          .from("discussion_drafts")
+          .select("id, title, topic, body, created_at, updated_at")
+          .eq("id", requestedDraftId)
+          .eq("user_id", userData.user.id)
+          .maybeSingle();
+
+        if (draftError) {
+          setMessage(`Unable to load draft: ${draftError.message}`);
+        }
+
+        if (draftData) {
+          const draft = draftData as DiscussionDraft;
+          setDraftId(draft.id);
+          setTitle(draft.title ?? "");
+
+          setTopic(
+            DISCUSSION_TOPICS.includes(draft.topic as typeof DISCUSSION_TOPICS[number])
+              ? draft.topic
+              : DEFAULT_DISCUSSION_TOPIC
+          );
+
+          setBody(draft.body ?? "");
+          setDraftUpdatedAt(draft.updated_at);
+          setMessage("Draft loaded.");
+        }
+      }
+
       setAuthChecked(true);
     }
 
@@ -75,6 +159,66 @@ export default function CreatePage() {
   );
 
   const profileComplete = missingProfileFields.length === 0;
+
+  async function saveDraft() {
+    setMessage("");
+
+    if (!currentUserId || savingDraft) {
+      return;
+    }
+
+    if (!canUseDrafts) {
+      setMessage("Draft mode requires Premium or Admin access.");
+      return;
+    }
+
+    if (!title.trim() && !body.trim()) {
+      setMessage("Add a title or body before saving a draft.");
+      return;
+    }
+
+    setSavingDraft(true);
+
+    const payload = {
+      user_id: currentUserId,
+      title: title.trim(),
+      topic,
+      body: body.trim(),
+    };
+
+    const request = draftId
+      ? supabase
+          .from("discussion_drafts")
+          .update(payload)
+          .eq("id", draftId)
+          .eq("user_id", currentUserId)
+          .select("id, updated_at")
+          .single()
+      : supabase
+          .from("discussion_drafts")
+          .insert(payload)
+          .select("id, updated_at")
+          .single();
+
+    const { data, error } = await request;
+
+    setSavingDraft(false);
+
+    if (error) {
+      setMessage(`Unable to save draft: ${error.message}`);
+      return;
+    }
+
+    const savedDraft = data as { id: string; updated_at: string };
+    setDraftId(savedDraft.id);
+    setDraftUpdatedAt(savedDraft.updated_at);
+
+    if (!draftId && typeof window !== "undefined") {
+      window.history.replaceState(null, "", `/create?draft=${savedDraft.id}`);
+    }
+
+    setMessage("Draft saved.");
+  }
 
   async function handleCreate(
     event?: FormEvent<HTMLFormElement> | KeyboardEvent<HTMLFormElement>
@@ -128,6 +272,14 @@ export default function CreatePage() {
       return;
     }
 
+    if (draftId && currentUserId) {
+      await supabase
+        .from("discussion_drafts")
+        .delete()
+        .eq("id", draftId)
+        .eq("user_id", currentUserId);
+    }
+
     window.location.href = `/discussions/${result.discussion.id}`;
   }
 
@@ -152,7 +304,7 @@ export default function CreatePage() {
         </p>
 
         <h1 className="mb-6 text-5xl font-semibold tracking-tight">
-          Create a discussion.
+          {draftId ? "Edit draft." : "Create a discussion."}
         </h1>
 
         <p className="mb-8 max-w-2xl leading-relaxed text-zinc-400">
@@ -200,7 +352,6 @@ export default function CreatePage() {
           </div>
         )}
 
-
         {authChecked && isLoggedIn && !profileComplete && (
           <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
@@ -221,75 +372,115 @@ export default function CreatePage() {
           </div>
         )}
 
+        {authChecked && isLoggedIn && !canUseDrafts && (
+          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+            <p className="mb-2 text-sm font-medium text-zinc-300">
+              Draft mode is a Premium feature.
+            </p>
+
+            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
+              You can still publish discussions normally. Premium and Admin accounts
+              can save drafts before publishing.
+            </p>
+
+            <Link
+              href="/premium"
+              className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+            >
+              View Premium options →
+            </Link>
+          </div>
+        )}
+
         {authChecked && isLoggedIn && (
           <form
-          onSubmit={handleCreate}
-          onKeyDown={handleFormKeyDown}
-          className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-8"
-        >
-          <div>
-            <label className="mb-2 block text-sm text-zinc-400">
-              Discussion Title
-            </label>
-
-            <input
-              type="text"
-              value={title}
-              required
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="How AI changes trust online"
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-zinc-400">
-              Topic
-            </label>
-
-            <select
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-            >
-              {DISCUSSION_TOPICS.map((topicOption) => (
-                <option key={topicOption} value={topicOption}>
-                  {topicOption}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-zinc-400">
-              Discussion Body
-            </label>
-
-            <textarea
-              rows={10}
-              value={body}
-              required
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Write your discussion..."
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-            />
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="submit"
-              disabled={publishing}
-            className="rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
+            onSubmit={handleCreate}
+            onKeyDown={handleFormKeyDown}
+            className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-8"
           >
-              {publishing ? "Publishing..." : "Publish Discussion"}
-            </button>
+            {draftId && (
+              <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
+                Editing saved draft
+                {draftUpdatedAt ? ` · Updated ${new Date(draftUpdatedAt).toLocaleString()}` : ""}
+              </div>
+            )}
 
-            <p className="text-sm text-zinc-600">
-              Press Cmd+Enter or Ctrl+Enter to publish.
-            </p>
-          </div>
+            <div>
+              <label className="mb-2 block text-sm text-zinc-400">
+                Discussion Title
+              </label>
 
-          {message && <p className="text-sm text-zinc-400">{message}</p>}
+              <input
+                type="text"
+                value={title}
+                required
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="How AI changes trust online"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm text-zinc-400">
+                Topic
+              </label>
+
+              <select
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+              >
+                {DISCUSSION_TOPICS.map((topicOption) => (
+                  <option key={topicOption} value={topicOption}>
+                    {topicOption}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm text-zinc-400">
+                Discussion Body
+              </label>
+
+              <textarea
+                rows={10}
+                value={body}
+                required
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Write your discussion..."
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  disabled={publishing}
+                  className="rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                >
+                  {publishing ? "Publishing..." : "Publish Discussion"}
+                </button>
+
+                {canUseDrafts && (
+                  <button
+                    type="button"
+                    onClick={saveDraft}
+                    disabled={savingDraft || publishing}
+                    className="rounded-full border border-zinc-700 px-6 py-3 text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    {savingDraft ? "Saving..." : "Save Draft"}
+                  </button>
+                )}
+              </div>
+
+              <p className="text-sm text-zinc-600">
+                Press Cmd+Enter or Ctrl+Enter to publish.
+              </p>
+            </div>
+
+            {message && <p className="text-sm text-zinc-400">{message}</p>}
           </form>
         )}
       </div>

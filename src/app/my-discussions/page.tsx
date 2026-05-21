@@ -13,18 +13,53 @@ type Discussion = {
   created_at: string;
 };
 
+type DiscussionDraft = {
+  id: string;
+  title: string;
+  topic: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type Profile = {
   full_name: string | null;
   username: string | null;
   avatar_url: string | null;
+  is_admin?: boolean | null;
 };
+
+type AiEntitlement = {
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
+} | null;
+
+function hasDraftAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+  if (isAdmin) {
+    return true;
+  }
+
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    entitlement.tier === "premium"
+  );
+}
 
 export default function MyDiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
+  const [drafts, setDrafts] = useState<DiscussionDraft[]>([]);
   const [replyCounts, setReplyCounts] = useState<Record<string, number>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
+  const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
+  const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = Boolean(currentProfile?.is_admin);
+  const canUseDrafts = hasDraftAccess(entitlement, isAdmin);
 
   useEffect(() => {
     async function loadMyDiscussions() {
@@ -35,23 +70,50 @@ export default function MyDiscussionsPage() {
         return;
       }
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, username, avatar_url")
-        .eq("id", userData.user.id)
-        .maybeSingle();
+      setCurrentUserId(userData.user.id);
 
-      setCurrentProfile(profileData ?? null);
+      const [{ data: profileData }, { data: entitlementData }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("full_name, username, avatar_url, is_admin")
+          .eq("id", userData.user.id)
+          .maybeSingle(),
+        supabase
+          .from("user_ai_entitlements")
+          .select("tier, ai_assisted_enabled, monthly_summary_limit")
+          .eq("user_id", userData.user.id)
+          .maybeSingle(),
+      ]);
 
-      const { data } = await supabase
-        .from("discussions")
-        .select("id, title, topic, body, created_at")
-        .eq("user_id", userData.user.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      const resolvedProfile = profileData ?? null;
+      const resolvedEntitlement = (entitlementData ?? null) as AiEntitlement;
+      const resolvedCanUseDrafts = hasDraftAccess(
+        resolvedEntitlement,
+        Boolean(resolvedProfile?.is_admin)
+      );
+
+      setCurrentProfile(resolvedProfile);
+      setEntitlement(resolvedEntitlement);
+
+      const [{ data }, { data: draftData }] = await Promise.all([
+        supabase
+          .from("discussions")
+          .select("id, title, topic, body, created_at")
+          .eq("user_id", userData.user.id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false }),
+        resolvedCanUseDrafts
+          ? supabase
+              .from("discussion_drafts")
+              .select("id, title, topic, body, created_at, updated_at")
+              .eq("user_id", userData.user.id)
+              .order("updated_at", { ascending: false })
+          : Promise.resolve({ data: [] }),
+      ]);
 
       const loadedDiscussions = (data ?? []) as Discussion[];
       setDiscussions(loadedDiscussions);
+      setDrafts((draftData ?? []) as DiscussionDraft[]);
 
       const discussionIds = loadedDiscussions.map((discussion) => discussion.id);
 
@@ -93,6 +155,32 @@ export default function MyDiscussionsPage() {
       );
     });
   }, [discussions, searchQuery]);
+
+  async function deleteDraft(draftId: string) {
+    setMessage("");
+
+    if (!currentUserId || deletingDraftId) {
+      return;
+    }
+
+    setDeletingDraftId(draftId);
+
+    const { error } = await supabase
+      .from("discussion_drafts")
+      .delete()
+      .eq("id", draftId)
+      .eq("user_id", currentUserId);
+
+    setDeletingDraftId(null);
+
+    if (error) {
+      setMessage(`Unable to delete draft: ${error.message}`);
+      return;
+    }
+
+    setDrafts((current) => current.filter((draft) => draft.id !== draftId));
+    setMessage("Draft deleted.");
+  }
 
   if (loading) {
     return (
@@ -144,6 +232,108 @@ export default function MyDiscussionsPage() {
           </div>
         </div>
 
+        {message && (
+          <p className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
+            {message}
+          </p>
+        )}
+
+        {!canUseDrafts && (
+          <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <h2 className="mb-2 text-2xl font-medium">
+              Draft mode is a Premium feature.
+            </h2>
+
+            <p className="mb-5 max-w-3xl leading-relaxed text-zinc-500">
+              You can still publish discussions normally. Premium and Admin accounts
+              can save drafts and return to them before publishing.
+            </p>
+
+            <Link
+              href="/premium"
+              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              View Premium options
+            </Link>
+          </section>
+        )}
+
+        {canUseDrafts && (
+          <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+                  Drafts
+                </p>
+
+                <h2 className="text-2xl font-medium">
+                  Saved discussion drafts
+                </h2>
+              </div>
+
+              <Link
+                href="/create"
+                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                New draft
+              </Link>
+            </div>
+
+            {drafts.length === 0 && (
+              <p className="text-sm text-zinc-500">
+                No saved drafts yet.
+              </p>
+            )}
+
+            {drafts.length > 0 && (
+              <div className="space-y-4">
+                {drafts.map((draft) => (
+                  <div
+                    key={draft.id}
+                    className="rounded-2xl border border-zinc-800 bg-black p-5"
+                  >
+                    <p className="mb-2 text-sm text-zinc-500">
+                      {draft.topic}
+                    </p>
+
+                    <h3 className="mb-2 text-xl font-medium">
+                      {draft.title.trim() || "Untitled draft"}
+                    </h3>
+
+                    <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-zinc-500">
+                      {draft.body.trim() || "No draft body yet."}
+                    </p>
+
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-zinc-600">
+                        Updated {new Date(draft.updated_at).toLocaleString()}
+                      </p>
+
+                      <div className="flex flex-wrap gap-3">
+                        <Link
+                          href={`/create?draft=${draft.id}`}
+                          className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                        >
+                          Continue editing
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => deleteDraft(draft.id)}
+                          disabled={deletingDraftId === draft.id}
+                          className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                        >
+                          {deletingDraftId === draft.id ? "Deleting..." : "Delete draft"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         <div className="mb-6">
           <input
             type="text"
@@ -155,7 +345,7 @@ export default function MyDiscussionsPage() {
         </div>
 
         <p className="mb-10 text-sm text-zinc-600">
-          Showing {filteredDiscussions.length} of {discussions.length} discussions
+          Showing {filteredDiscussions.length} of {discussions.length} published discussions
         </p>
 
         {discussions.length === 0 && (
