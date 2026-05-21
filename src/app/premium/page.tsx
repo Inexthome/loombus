@@ -29,7 +29,7 @@ const premiumFeatures: PlanFeature[] = [
   { label: "Custom profile badge: Premium Member", status: "planned" },
   { label: "Better notification controls", status: "available" },
   { label: "Draft mode for discussions", status: "available" },
-  { label: "Extended edit window", status: "planned" },
+  { label: "Extended edit window", status: "available" },
 ];
 
 const premiumPlusFeatures: PlanFeature[] = [

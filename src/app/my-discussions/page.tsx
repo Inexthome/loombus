@@ -11,6 +11,8 @@ type Discussion = {
   topic: string;
   body: string;
   created_at: string;
+  edited_at: string | null;
+  edit_count: number | null;
 };
 
 type DiscussionDraft = {
@@ -98,7 +100,7 @@ export default function MyDiscussionsPage() {
       const [{ data }, { data: draftData }] = await Promise.all([
         supabase
           .from("discussions")
-          .select("id, title, topic, body, created_at")
+          .select("id, title, topic, body, created_at, edited_at, edit_count")
           .eq("user_id", userData.user.id)
           .is("deleted_at", null)
           .order("created_at", { ascending: false }),
@@ -404,9 +406,24 @@ export default function MyDiscussionsPage() {
                   {new Date(discussion.created_at).toLocaleDateString()}
                 </span>
 
-                <span>
-                  {replyCounts[discussion.id] ?? 0} replies
-                </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  {discussion.edited_at && (
+                    <span>
+                      Edited {new Date(discussion.edited_at).toLocaleDateString()}
+                    </span>
+                  )}
+
+                  <span>
+                    {replyCounts[discussion.id] ?? 0} replies
+                  </span>
+
+                  <Link
+                    href={`/create?edit=${discussion.id}`}
+                    className="rounded-full border border-zinc-800 px-4 py-2 text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Edit
+                  </Link>
+                </div>
               </div>
             </div>
           ))}

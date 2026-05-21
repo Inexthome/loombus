@@ -28,6 +28,18 @@ type DiscussionDraft = {
   updated_at: string;
 };
 
+type EditableDiscussion = {
+  id: string;
+  user_id: string;
+  title: string;
+  topic: string;
+  body: string;
+  created_at: string;
+  updated_at: string | null;
+  edited_at: string | null;
+  edit_count: number | null;
+};
+
 function getMissingProfileFields(profile: Profile | null) {
   const missing = [];
 
@@ -50,7 +62,7 @@ function getMissingProfileFields(profile: Profile | null) {
   return missing;
 }
 
-function hasDraftAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+function hasPremiumAccess(entitlement: AiEntitlement, isAdmin: boolean) {
   if (isAdmin) {
     return true;
   }
@@ -61,12 +73,24 @@ function hasDraftAccess(entitlement: AiEntitlement, isAdmin: boolean) {
   );
 }
 
-function getDraftIdFromUrl() {
+function getEditWindowLabel(entitlement: AiEntitlement, isAdmin: boolean) {
+  if (isAdmin) {
+    return "Admin access: no normal edit-window limit";
+  }
+
+  if (hasPremiumAccess(entitlement, false)) {
+    return "Premium edit window: 7 days after publishing";
+  }
+
+  return "Free edit window: 15 minutes after publishing";
+}
+
+function getQueryParam(name: string) {
   if (typeof window === "undefined") {
     return null;
   }
 
-  return new URLSearchParams(window.location.search).get("draft");
+  return new URLSearchParams(window.location.search).get(name);
 }
 
 export default function CreatePage() {
@@ -78,6 +102,9 @@ export default function CreatePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | null>(null);
+  const [editingDiscussionId, setEditingDiscussionId] = useState<string | null>(null);
+  const [editingDiscussionMeta, setEditingDiscussionMeta] =
+    useState<EditableDiscussion | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [message, setMessage] = useState("");
@@ -85,7 +112,8 @@ export default function CreatePage() {
   const [savingDraft, setSavingDraft] = useState(false);
 
   const isAdmin = Boolean(profile?.is_admin);
-  const canUseDrafts = hasDraftAccess(entitlement, isAdmin);
+  const canUseDrafts = hasPremiumAccess(entitlement, isAdmin);
+  const isEditMode = Boolean(editingDiscussionId);
 
   useEffect(() => {
     async function loadProfileStatus() {
@@ -100,7 +128,8 @@ export default function CreatePage() {
       setIsLoggedIn(true);
       setCurrentUserId(userData.user.id);
 
-      const requestedDraftId = getDraftIdFromUrl();
+      const requestedDraftId = getQueryParam("draft");
+      const requestedEditId = getQueryParam("edit");
 
       const [{ data: profileData }, { data: entitlementData }] = await Promise.all([
         supabase
@@ -115,8 +144,48 @@ export default function CreatePage() {
           .maybeSingle(),
       ]);
 
-      setProfile(profileData ?? null);
+      const resolvedProfile = profileData ?? null;
+
+      setProfile(resolvedProfile);
       setEntitlement((entitlementData ?? null) as AiEntitlement);
+
+      if (requestedEditId) {
+        const { data: discussionData, error: discussionError } = await supabase
+          .from("discussions")
+          .select("id, user_id, title, topic, body, created_at, updated_at, edited_at, edit_count")
+          .eq("id", requestedEditId)
+          .is("deleted_at", null)
+          .maybeSingle();
+
+        if (discussionError) {
+          setMessage(`Unable to load discussion for editing: ${discussionError.message}`);
+        }
+
+        if (discussionData) {
+          const discussion = discussionData as EditableDiscussion;
+          const viewerIsAdmin = Boolean(resolvedProfile?.is_admin);
+
+          if (discussion.user_id !== userData.user.id && !viewerIsAdmin) {
+            setMessage("You do not have permission to edit this discussion.");
+          } else {
+            setEditingDiscussionId(discussion.id);
+            setEditingDiscussionMeta(discussion);
+            setTitle(discussion.title ?? "");
+
+            setTopic(
+              DISCUSSION_TOPICS.includes(discussion.topic as typeof DISCUSSION_TOPICS[number])
+                ? discussion.topic
+                : DEFAULT_DISCUSSION_TOPIC
+            );
+
+            setBody(discussion.body ?? "");
+            setMessage("Discussion loaded for editing.");
+          }
+        }
+
+        setAuthChecked(true);
+        return;
+      }
 
       if (requestedDraftId) {
         const { data: draftData, error: draftError } = await supabase
@@ -162,6 +231,11 @@ export default function CreatePage() {
 
   async function saveDraft() {
     setMessage("");
+
+    if (isEditMode) {
+      setMessage("Published edits cannot be saved as drafts from this screen.");
+      return;
+    }
 
     if (!currentUserId || savingDraft) {
       return;
@@ -251,28 +325,41 @@ export default function CreatePage() {
       return;
     }
 
-    const response = await fetch("/api/discussions/create", {
+    const endpoint = isEditMode
+      ? "/api/discussions/update"
+      : "/api/discussions/create";
+
+    const payload = isEditMode
+      ? {
+          discussionId: editingDiscussionId,
+          title,
+          topic,
+          body,
+        }
+      : {
+          title,
+          topic,
+          body,
+        };
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${sessionData.session.access_token}`,
       },
-      body: JSON.stringify({
-        title,
-        topic,
-        body,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
-      setMessage(result.error ?? "Unable to publish discussion.");
+      setMessage(result.error ?? (isEditMode ? "Unable to save changes." : "Unable to publish discussion."));
       setPublishing(false);
       return;
     }
 
-    if (draftId && currentUserId) {
+    if (!isEditMode && draftId && currentUserId) {
       await supabase
         .from("discussion_drafts")
         .delete()
@@ -280,7 +367,8 @@ export default function CreatePage() {
         .eq("user_id", currentUserId);
     }
 
-    window.location.href = `/discussions/${result.discussion.id}`;
+    const discussionId = result.discussion?.id ?? editingDiscussionId;
+    window.location.href = `/discussions/${discussionId}`;
   }
 
   function handleFormKeyDown(event: KeyboardEvent<HTMLFormElement>) {
@@ -293,23 +381,28 @@ export default function CreatePage() {
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-3xl">
         <Link
-          href="/discussions"
+          href={isEditMode && editingDiscussionId ? `/discussions/${editingDiscussionId}` : "/discussions"}
           className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
         >
-          ← Back to discussions
+          ← Back to {isEditMode ? "discussion" : "discussions"}
         </Link>
 
         <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-          New Discussion
+          {isEditMode ? "Edit Discussion" : "New Discussion"}
         </p>
 
         <h1 className="mb-6 text-5xl font-semibold tracking-tight">
-          {draftId ? "Edit draft." : "Create a discussion."}
+          {isEditMode
+            ? "Edit discussion."
+            : draftId
+              ? "Edit draft."
+              : "Create a discussion."}
         </h1>
 
         <p className="mb-8 max-w-2xl leading-relaxed text-zinc-400">
-          Start a thoughtful discussion designed around signal,
-          clarity, and meaningful contribution.
+          {isEditMode
+            ? "Make a clear, accountable update to your published discussion."
+            : "Start a thoughtful discussion designed around signal, clarity, and meaningful contribution."}
         </p>
 
         {!authChecked && (
@@ -327,11 +420,11 @@ export default function CreatePage() {
             </p>
 
             <h2 className="mb-4 text-2xl font-medium">
-              Log in to create a discussion.
+              Log in to create or edit a discussion.
             </h2>
 
             <p className="mb-6 leading-relaxed text-zinc-400">
-              You can browse discussions without an account, but you need to log in before starting a new conversation.
+              You can browse discussions without an account, but you need to log in before starting or editing a conversation.
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -372,7 +465,7 @@ export default function CreatePage() {
           </div>
         )}
 
-        {authChecked && isLoggedIn && !canUseDrafts && (
+        {authChecked && isLoggedIn && !isEditMode && !canUseDrafts && (
           <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
               Draft mode is a Premium feature.
@@ -392,16 +485,40 @@ export default function CreatePage() {
           </div>
         )}
 
+        {authChecked && isLoggedIn && isEditMode && (
+          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+            <p className="mb-2 text-sm font-medium text-zinc-300">
+              Edit window
+            </p>
+
+            <p className="text-sm leading-relaxed text-zinc-500">
+              {getEditWindowLabel(entitlement, isAdmin)}
+              {editingDiscussionMeta?.edited_at
+                ? ` · Last edited ${new Date(editingDiscussionMeta.edited_at).toLocaleString()}`
+                : ""}
+            </p>
+          </div>
+        )}
+
         {authChecked && isLoggedIn && (
           <form
             onSubmit={handleCreate}
             onKeyDown={handleFormKeyDown}
             className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-8"
           >
-            {draftId && (
+            {draftId && !isEditMode && (
               <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
                 Editing saved draft
                 {draftUpdatedAt ? ` · Updated ${new Date(draftUpdatedAt).toLocaleString()}` : ""}
+              </div>
+            )}
+
+            {isEditMode && (
+              <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
+                Editing published discussion
+                {editingDiscussionMeta?.edit_count
+                  ? ` · ${editingDiscussionMeta.edit_count} previous edits`
+                  : ""}
               </div>
             )}
 
@@ -460,10 +577,12 @@ export default function CreatePage() {
                   disabled={publishing}
                   className="rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
                 >
-                  {publishing ? "Publishing..." : "Publish Discussion"}
+                  {publishing
+                    ? isEditMode ? "Saving..." : "Publishing..."
+                    : isEditMode ? "Save Changes" : "Publish Discussion"}
                 </button>
 
-                {canUseDrafts && (
+                {canUseDrafts && !isEditMode && (
                   <button
                     type="button"
                     onClick={saveDraft}
@@ -476,7 +595,7 @@ export default function CreatePage() {
               </div>
 
               <p className="text-sm text-zinc-600">
-                Press Cmd+Enter or Ctrl+Enter to publish.
+                Press Cmd+Enter or Ctrl+Enter to {isEditMode ? "save changes" : "publish"}.
               </p>
             </div>
 
