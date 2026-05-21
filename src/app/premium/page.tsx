@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PremiumCheckoutButton } from "./premium-checkout-button";
 
 const premiumFeatures = [
   {
@@ -60,10 +61,12 @@ export default function PremiumPage() {
               handling are configured.
             </p>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-start gap-3">
+              <PremiumCheckoutButton />
+
               <Link
                 href="/signup"
-                className="rounded-full border border-zinc-600 px-5 py-3 text-sm text-zinc-200 transition hover:border-zinc-400 hover:text-white"
+                className="rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
               >
                 Create an account
               </Link>
@@ -77,8 +80,9 @@ export default function PremiumPage() {
             </div>
 
             <p className="mt-5 text-sm text-zinc-600">
-              Live checkout is not enabled yet. This page prepares the Premium
-              subscription surface before Stripe is wired in.
+              Checkout starts only after Stripe keys and the Premium price ID are
+              configured. Premium access will be activated later through the
+              verified Stripe webhook, not directly from this button.
             </p>
           </div>
 
