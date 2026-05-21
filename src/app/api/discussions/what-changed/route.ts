@@ -34,6 +34,54 @@ function clampText(text: string, maxLength: number) {
   return `${text.slice(0, maxLength)}\n\n[Content truncated for what-changed generation.]`;
 }
 
+function getAiProviderErrorResponse(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("not configured")) {
+    return {
+      status: 503,
+      error: "AI generation is not configured yet.",
+    };
+  }
+
+  if (
+    normalized.includes("quota") ||
+    normalized.includes("billing") ||
+    normalized.includes("insufficient_quota")
+  ) {
+    return {
+      status: 503,
+      error: "AI generation is temporarily unavailable because the AI provider quota or billing needs attention.",
+    };
+  }
+
+  if (
+    normalized.includes("rate limit") ||
+    normalized.includes("too many requests")
+  ) {
+    return {
+      status: 429,
+      error: "AI generation is temporarily rate-limited. Please try again later.",
+    };
+  }
+
+  if (
+    normalized.includes("api key") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("invalid_api_key")
+  ) {
+    return {
+      status: 503,
+      error: "AI generation is temporarily unavailable because the AI provider credentials need attention.",
+    };
+  }
+
+  return {
+    status: 500,
+    error: "AI generation failed. Please try again later.",
+  };
+}
+
 async function logAiUsage({
   supabase,
   userId,
@@ -384,9 +432,11 @@ export async function POST(request: NextRequest) {
         errorMessage: message,
       });
 
+      const aiError = getAiProviderErrorResponse(message);
+
       return NextResponse.json(
-        { error: message },
-        { status: message.includes("not configured") ? 503 : 500 }
+        { error: aiError.error },
+        { status: aiError.status }
       );
     }
 
