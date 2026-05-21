@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import {
   filterBlockedActorNotifications,
@@ -18,6 +18,9 @@ export default function ClientLayout({
   const [isAdmin, setIsAdmin] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const currentUserIdRef = useRef<string | null>(null);
+  const loadingNotificationCountRef = useRef(false);
+  const lastNotificationLoadRef = useRef<{ userId: string; loadedAt: number } | null>(null);
   const pathname = usePathname();
 
   function isActivePath(href: string) {
@@ -40,44 +43,75 @@ export default function ClientLayout({
       : "rounded-xl border border-transparent px-4 py-3 text-zinc-400 transition hover:border-zinc-800 hover:bg-zinc-950 hover:text-white";
   }
 
-  async function loadNotificationCount(userId: string) {
-    const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
-      supabase,
-      userId
-    );
+  async function loadNotificationCount(
+    userId: string,
+    options: { force?: boolean } = {}
+  ) {
+    const now = Date.now();
+    const recentLoad = lastNotificationLoadRef.current;
 
-    const { data } = await supabase
-      .from("notifications")
-      .select("id, actor_id")
-      .eq("user_id", userId)
-      .is("read_at", null);
+    if (
+      !options.force &&
+      recentLoad?.userId === userId &&
+      now - recentLoad.loadedAt < 3000
+    ) {
+      return;
+    }
 
-    setNotificationCount(
-      filterBlockedActorNotifications(data ?? [], blockedRelationshipUserIds).length
-    );
+    if (loadingNotificationCountRef.current) {
+      return;
+    }
+
+    loadingNotificationCountRef.current = true;
+
+    try {
+      const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
+        supabase,
+        userId
+      );
+
+      const { data } = await supabase
+        .from("notifications")
+        .select("id, actor_id")
+        .eq("user_id", userId)
+        .is("read_at", null);
+
+      setNotificationCount(
+        filterBlockedActorNotifications(data ?? [], blockedRelationshipUserIds).length
+      );
+
+      lastNotificationLoadRef.current = {
+        userId,
+        loadedAt: Date.now(),
+      };
+    } finally {
+      loadingNotificationCountRef.current = false;
+    }
   }
 
   useEffect(() => {
     async function loadUser() {
       const { data } = await supabase.auth.getUser();
+      const userId = data.user?.id ?? null;
 
+      currentUserIdRef.current = userId;
       setUser(data.user ?? null);
 
-      if (!data.user) {
+      if (!userId) {
         setNotificationCount(0);
+        setIsAdmin(false);
+        return;
       }
 
-      if (data.user) {
-        await loadNotificationCount(data.user.id);
+      await loadNotificationCount(userId);
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", data.user.id)
-          .single();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", userId)
+        .single();
 
-        setIsAdmin(Boolean(profile?.is_admin));
-      }
+      setIsAdmin(Boolean(profile?.is_admin));
     }
 
     loadUser();
@@ -85,20 +119,37 @@ export default function ClientLayout({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const nextUserId = session?.user?.id ?? null;
+      const previousUserId = currentUserIdRef.current;
+
+      currentUserIdRef.current = nextUserId;
       setUser(session?.user ?? null);
 
-      if (session?.user) {
-        await loadNotificationCount(session.user.id);
-      } else {
+      if (!nextUserId) {
         setNotificationCount(0);
+        setIsAdmin(false);
+        lastNotificationLoadRef.current = null;
+        return;
+      }
+
+      if (nextUserId !== previousUserId) {
+        await loadNotificationCount(nextUserId, { force: true });
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", nextUserId)
+          .single();
+
+        setIsAdmin(Boolean(profile?.is_admin));
       }
     });
 
     async function handleNotificationsChanged() {
-      const { data } = await supabase.auth.getUser();
+      const userId = currentUserIdRef.current;
 
-      if (data.user) {
-        await loadNotificationCount(data.user.id);
+      if (userId) {
+        await loadNotificationCount(userId, { force: true });
       } else {
         setNotificationCount(0);
       }
