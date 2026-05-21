@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PremiumPlanCheckoutButton } from "./premium-checkout-button";
 
 type FeatureStatus = "available" | "planned";
 
@@ -142,17 +141,29 @@ export default function PremiumPage() {
               organization.
             </p>
 
-            <div className="mb-8 flex flex-wrap gap-3">
-              <PremiumPlanCheckoutButton planKey="premium_monthly">
-                Choose Premium Monthly
-              </PremiumPlanCheckoutButton>
+            <div className="mb-8 space-y-3">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500"
+                >
+                  Premium checkout coming soon
+                </button>
 
-              <PremiumPlanCheckoutButton
-                planKey="premium_annual"
-                variant="secondary"
-              >
-                Choose Premium Annual
-              </PremiumPlanCheckoutButton>
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-full border border-zinc-900 px-5 py-3 text-sm text-zinc-600"
+                >
+                  Annual checkout coming soon
+                </button>
+              </div>
+
+              <p className="text-xs leading-relaxed text-zinc-600">
+                Paid checkout will open after live Stripe Price IDs and webhook
+                configuration are fully verified.
+              </p>
             </div>
 
             <FeatureList features={premiumFeatures} />
@@ -172,17 +183,29 @@ export default function PremiumPage() {
               Or $120/year. Built for heavier AI usage now, with advanced tools marked as planned until wired.
             </p>
 
-            <div className="mb-8 flex flex-wrap gap-3">
-              <PremiumPlanCheckoutButton planKey="premium_plus_monthly">
-                Choose Plus Monthly
-              </PremiumPlanCheckoutButton>
+            <div className="mb-8 space-y-3">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500"
+                >
+                  Plus checkout coming soon
+                </button>
 
-              <PremiumPlanCheckoutButton
-                planKey="premium_plus_annual"
-                variant="secondary"
-              >
-                Choose Plus Annual
-              </PremiumPlanCheckoutButton>
+                <button
+                  type="button"
+                  disabled
+                  className="cursor-not-allowed rounded-full border border-zinc-900 px-5 py-3 text-sm text-zinc-600"
+                >
+                  Annual Plus checkout coming soon
+                </button>
+              </div>
+
+              <p className="text-xs leading-relaxed text-zinc-600">
+                Premium Plus checkout will open after live Stripe Price IDs and
+                webhook configuration are fully verified.
+              </p>
             </div>
 
             <FeatureList features={premiumPlusFeatures} />
