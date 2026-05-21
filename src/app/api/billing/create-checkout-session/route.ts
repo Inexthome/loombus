@@ -96,10 +96,18 @@ export async function POST(request: NextRequest) {
       url: session.url,
     });
   } catch (error) {
-    console.error("Stripe checkout session creation failed:", error);
+    const message = error instanceof Error ? error.message : "Unknown checkout error";
+
+    console.error("Stripe checkout session creation failed:", message);
 
     return NextResponse.json(
-      { error: "Unable to start Premium checkout." },
+      {
+        error: "Unable to start Premium checkout.",
+        detail:
+          process.env.NODE_ENV === "production"
+            ? "Check Stripe checkout configuration in Vercel and Stripe."
+            : message,
+      },
       { status: 500 }
     );
   }

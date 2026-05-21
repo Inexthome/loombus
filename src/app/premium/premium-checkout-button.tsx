@@ -24,14 +24,22 @@ export function PremiumCheckoutButton() {
         return;
       }
 
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 20000);
+
       const response = await fetch("/api/billing/create-checkout-session", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${sessionData.session.access_token}`,
         },
+        signal: controller.signal,
       });
 
-      const result = await response.json();
+      window.clearTimeout(timeoutId);
+
+      const result = await response.json().catch(() => ({
+        error: "Checkout returned an unreadable response.",
+      }));
 
       if (!response.ok) {
         setMessage(result.error ?? "Unable to start Premium checkout.");
@@ -44,6 +52,15 @@ export function PremiumCheckoutButton() {
       }
 
       window.location.href = result.url;
+    } catch (error) {
+      const message =
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Checkout request timed out. Please try again, and check the Stripe/Vercel configuration if it continues."
+          : error instanceof Error
+            ? error.message
+            : "Unable to start Premium checkout.";
+
+      setMessage(message);
     } finally {
       setStartingCheckout(false);
     }
