@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const TAKEAWAYS_MODEL =
@@ -8,6 +9,22 @@ const TAKEAWAYS_MODEL =
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const MAX_DISCUSSION_BODY_CHARS = 6000;
 const MAX_REPLY_CHARS = 8000;
+
+type CachedAiOutput = {
+  id: string;
+  discussion_id: string;
+  feature_key: string;
+  output_text: string;
+  model_name: string | null;
+  source_reply_count: number;
+  source_content_hash: string | null;
+  generated_by: string | null;
+  generated_at: string;
+};
+
+function createContentHash(input: string) {
+  return createHash("sha256").update(input).digest("hex");
+}
 
 function clampText(text: string, maxLength: number) {
   if (text.length <= maxLength) {
@@ -255,6 +272,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { data: replyData } = await supabase
+      .from("replies")
+      .select("body, created_at")
+      .eq("discussion_id", discussionId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true })
+      .limit(25);
+
+    const visibleReplies = (replyData ?? []) as { body: string; created_at: string }[];
+    const replies = visibleReplies
+      .map((reply, index) => `Reply ${index + 1}: ${reply.body}`)
+      .join("\n\n");
+
+    const sourceReplyCount = visibleReplies.length;
+    const sourceContent = [
+      discussion.title,
+      discussion.topic,
+      discussion.body,
+      ...visibleReplies.map((reply, index) => `reply_${index + 1}:${reply.body}`),
+    ].join("\n\n");
+
+    const sourceContentHash = createContentHash(sourceContent);
+
+    const { data: existingOutput } = await supabase
+      .from("discussion_ai_outputs")
+      .select("id, discussion_id, feature_key, output_text, model_name, source_reply_count, source_content_hash, generated_by, generated_at")
+      .eq("discussion_id", discussionId)
+      .eq("feature_key", "key_takeaways")
+      .maybeSingle();
+
+    if (
+      existingOutput &&
+      existingOutput.source_content_hash === sourceContentHash
+    ) {
+      await logAiUsage({
+        supabase,
+        userId: user.id,
+        featureKey: "key_takeaways",
+        targetType: "discussion",
+        targetId: discussionId,
+        provider: "openai",
+        modelName: existingOutput.model_name ?? TAKEAWAYS_MODEL,
+        cached: true,
+        success: true,
+      });
+
+      return NextResponse.json({
+        takeaways: (existingOutput as CachedAiOutput).output_text,
+        cached: true,
+        modelName: existingOutput.model_name ?? TAKEAWAYS_MODEL,
+        generatedAt: existingOutput.generated_at,
+        sourceReplyCount: existingOutput.source_reply_count,
+      });
+    }
+
     const monthlyUsageCount = access.isAdmin
       ? 0
       : await getMonthlyKeyTakeawaysUsageCount(supabase, user.id);
@@ -283,18 +355,6 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       );
     }
-
-    const { data: replyData } = await supabase
-      .from("replies")
-      .select("body, created_at")
-      .eq("discussion_id", discussionId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: true })
-      .limit(25);
-
-    const replies = ((replyData ?? []) as { body: string }[])
-      .map((reply, index) => `Reply ${index + 1}: ${reply.body}`)
-      .join("\n\n");
 
     let takeaways: string;
 
@@ -327,6 +387,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const generatedAt = new Date().toISOString();
+
+    const { error: cacheError } = await supabase
+      .from("discussion_ai_outputs")
+      .upsert(
+        {
+          discussion_id: discussionId,
+          feature_key: "key_takeaways",
+          output_text: takeaways,
+          model_name: TAKEAWAYS_MODEL,
+          source_reply_count: sourceReplyCount,
+          source_content_hash: sourceContentHash,
+          generated_by: user.id,
+          generated_at: generatedAt,
+          updated_at: generatedAt,
+        },
+        {
+          onConflict: "discussion_id,feature_key",
+        }
+      );
+
+    if (cacheError) {
+      console.error("AI key takeaways cache write failed:", cacheError.message);
+    }
+
     await logAiUsage({
       supabase,
       userId: user.id,
@@ -347,6 +432,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         model_name: TAKEAWAYS_MODEL,
         access_tier: access.tier,
+        source_reply_count: sourceReplyCount,
+        source_content_hash: sourceContentHash,
         monthly_key_takeaways_limit: access.isAdmin ? "unlimited" : access.monthlyThreadAiLimit,
         monthly_key_takeaways_usage_before_generation: access.isAdmin ? 0 : monthlyUsageCount,
       },
@@ -354,8 +441,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       takeaways,
+      cached: false,
       modelName: TAKEAWAYS_MODEL,
-      generatedAt: new Date().toISOString(),
+      generatedAt,
+      sourceReplyCount,
       monthlyTakeawaysLimit: access.isAdmin ? null : access.monthlyThreadAiLimit,
       monthlyTakeawaysUsage: access.isAdmin ? null : monthlyUsageCount + 1,
     });

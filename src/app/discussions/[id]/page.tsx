@@ -494,7 +494,9 @@ export default function DiscussionPage() {
         setMonthlyTakeawaysUsage(result.monthlyTakeawaysUsage);
       }
 
-      setTakeawaysMessage("Key takeaways generated.");
+      setTakeawaysMessage(
+        result.cached ? "Showing cached key takeaways." : "Key takeaways generated."
+      );
     } finally {
       setGeneratingTakeaways(false);
     }
