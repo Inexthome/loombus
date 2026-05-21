@@ -25,9 +25,17 @@ type Profile = {
 };
 
 type UsageEvent = {
+  id: string;
   user_id: string;
   feature_key: string;
+  target_type: string | null;
+  target_id: string | null;
+  provider: string | null;
+  model_name: string | null;
+  cached: boolean;
   success: boolean;
+  error_message: string | null;
+  created_at: string;
 };
 
 export default function AdminAiAccessPage() {
@@ -40,6 +48,8 @@ export default function AdminAiAccessPage() {
   const [workingUserId, setWorkingUserId] = useState<string | null>(null);
   const [grantUsername, setGrantUsername] = useState("");
   const [grantingPremium, setGrantingPremium] = useState(false);
+  const [usageFeatureFilter, setUsageFeatureFilter] = useState("all");
+  const [usageStatusFilter, setUsageStatusFilter] = useState("all");
 
   useEffect(() => {
     async function loadAiAccess() {
@@ -109,11 +119,51 @@ export default function AdminAiAccessPage() {
 
       const { data: usageData } = await supabase
         .from("ai_usage_events")
-        .select("user_id, feature_key, success")
+        .select(`
+          id,
+          user_id,
+          feature_key,
+          target_type,
+          target_id,
+          provider,
+          model_name,
+          cached,
+          success,
+          error_message,
+          created_at
+        `)
         .order("created_at", { ascending: false })
         .limit(500);
 
-      setUsageEvents((usageData ?? []) as UsageEvent[]);
+      const loadedUsageEvents = (usageData ?? []) as UsageEvent[];
+      setUsageEvents(loadedUsageEvents);
+
+      const usageUserIds = [
+        ...new Set(loadedUsageEvents.map((item) => item.user_id)),
+      ];
+
+      const missingUsageUserIds = usageUserIds.filter(
+        (userId) => !userIds.includes(userId)
+      );
+
+      if (missingUsageUserIds.length > 0) {
+        const { data: usageProfileData } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", missingUsageUserIds);
+
+        const usageProfileMap: Record<string, Profile> = {};
+
+        for (const profile of (usageProfileData ?? []) as Profile[]) {
+          usageProfileMap[profile.id] = profile;
+        }
+
+        setProfiles((current) => ({
+          ...current,
+          ...usageProfileMap,
+        }));
+      }
+
       setLoading(false);
     }
 
@@ -148,6 +198,46 @@ export default function AdminAiAccessPage() {
 
     return usage;
   }, [usageEvents]);
+
+  const usageFeatureOptions = useMemo(() => {
+    return [...new Set(usageEvents.map((event) => event.feature_key))].sort();
+  }, [usageEvents]);
+
+  const filteredUsageEvents = useMemo(() => {
+    return usageEvents.filter((event) => {
+      if (
+        usageFeatureFilter !== "all" &&
+        event.feature_key !== usageFeatureFilter
+      ) {
+        return false;
+      }
+
+      if (usageStatusFilter === "success" && !event.success) {
+        return false;
+      }
+
+      if (usageStatusFilter === "failed" && event.success) {
+        return false;
+      }
+
+      if (usageStatusFilter === "cached" && !event.cached) {
+        return false;
+      }
+
+      if (usageStatusFilter === "generated" && event.cached) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [usageEvents, usageFeatureFilter, usageStatusFilter]);
+
+  function formatFeatureKey(featureKey: string) {
+    return featureKey
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
 
   async function updateEntitlement(
     userId: string,
@@ -441,6 +531,167 @@ export default function AdminAiAccessPage() {
             </h2>
           </div>
         </div>
+
+        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+                Diagnostics
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Recent AI usage events
+              </h2>
+
+              <p className="mt-3 max-w-2xl leading-relaxed text-zinc-500">
+                Review Premium AI activity, cache usage, failures, provider details,
+                and raw provider errors for admin troubleshooting.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 md:min-w-72">
+              <select
+                value={usageFeatureFilter}
+                onChange={(event) => setUsageFeatureFilter(event.target.value)}
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+              >
+                <option value="all">All features</option>
+                {usageFeatureOptions.map((featureKey) => (
+                  <option key={featureKey} value={featureKey}>
+                    {formatFeatureKey(featureKey)}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={usageStatusFilter}
+                onChange={(event) => setUsageStatusFilter(event.target.value)}
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+              >
+                <option value="all">All statuses</option>
+                <option value="success">Successful</option>
+                <option value="failed">Failed</option>
+                <option value="cached">Cached</option>
+                <option value="generated">Generated</option>
+              </select>
+            </div>
+          </div>
+
+          {filteredUsageEvents.length === 0 ? (
+            <div className="rounded-2xl border border-zinc-900 bg-black p-5 text-zinc-500">
+              No AI usage events match the current filters.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-wide text-zinc-600">
+                  <tr className="border-b border-zinc-900">
+                    <th className="py-3 pr-4 font-medium">User</th>
+                    <th className="py-3 pr-4 font-medium">Feature</th>
+                    <th className="py-3 pr-4 font-medium">Status</th>
+                    <th className="py-3 pr-4 font-medium">Provider</th>
+                    <th className="py-3 pr-4 font-medium">Target</th>
+                    <th className="py-3 pr-4 font-medium">Created</th>
+                    <th className="py-3 font-medium">Error</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredUsageEvents.slice(0, 100).map((event) => {
+                    const profile = profiles[event.user_id];
+
+                    return (
+                      <tr
+                        key={event.id}
+                        className="border-b border-zinc-900 align-top text-zinc-400"
+                      >
+                        <td className="py-4 pr-4">
+                          {profile ? (
+                            <div className="flex items-center gap-3">
+                              <ProfileAvatar profile={profile} />
+
+                              <div>
+                                <p className="text-zinc-200">
+                                  {getProfileDisplayName(profile)}
+                                </p>
+
+                                {profile.username && (
+                                  <p className="text-xs text-zinc-600">
+                                    @{profile.username}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="font-mono text-xs text-zinc-600">
+                              {event.user_id.slice(0, 8)}...
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-300">
+                            {formatFeatureKey(event.feature_key)}
+                          </span>
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          <div className="space-y-1">
+                            <p className={event.success ? "text-emerald-400" : "text-red-400"}>
+                              {event.success ? "Success" : "Failed"}
+                            </p>
+
+                            <p className="text-xs text-zinc-600">
+                              {event.cached ? "Cached" : "Generated"}
+                            </p>
+                          </div>
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          <div className="space-y-1">
+                            <p>{event.provider ?? "—"}</p>
+                            <p className="text-xs text-zinc-600">
+                              {event.model_name ?? "No model"}
+                            </p>
+                          </div>
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          {event.target_type === "discussion" && event.target_id ? (
+                            <Link
+                              href={`/discussions/${event.target_id}`}
+                              className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
+                            >
+                              Open discussion
+                            </Link>
+                          ) : (
+                            <span className="text-zinc-600">
+                              {event.target_type ?? "—"}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-4 pr-4 text-xs text-zinc-600">
+                          {new Date(event.created_at).toLocaleString()}
+                        </td>
+
+                        <td className="max-w-sm py-4">
+                          {event.error_message ? (
+                            <p className="whitespace-pre-wrap break-words text-xs text-red-300">
+                              {event.error_message}
+                            </p>
+                          ) : (
+                            <span className="text-zinc-700">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         {entitlements.length === 0 ? (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-zinc-500">
