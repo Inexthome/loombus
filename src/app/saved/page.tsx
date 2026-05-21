@@ -8,6 +8,8 @@ type SavedDiscussion = {
   id: string;
   created_at: string;
   collection_id: string | null;
+  private_note: string | null;
+  private_note_updated_at: string | null;
   discussions: {
     id: string;
     title: string;
@@ -40,6 +42,22 @@ function hasCollectionAccess(entitlement: AiEntitlement) {
   return entitlement.tier === "premium" || entitlement.tier === "admin";
 }
 
+function hasPrivateNotesAccess(entitlement: AiEntitlement) {
+  if (!entitlement) {
+    return false;
+  }
+
+  if (entitlement.tier === "admin") {
+    return true;
+  }
+
+  return (
+    entitlement.ai_assisted_enabled === true &&
+    entitlement.tier === "premium" &&
+    (entitlement.monthly_summary_limit ?? 0) > 50
+  );
+}
+
 export default function SavedPage() {
   const [saved, setSaved] = useState<SavedDiscussion[]>([]);
   const [collections, setCollections] = useState<BookmarkCollection[]>([]);
@@ -47,14 +65,17 @@ export default function SavedPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState("all");
   const [newCollectionName, setNewCollectionName] = useState("");
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [creatingCollection, setCreatingCollection] = useState(false);
   const [removingBookmarkId, setRemovingBookmarkId] = useState<string | null>(null);
   const [movingBookmarkId, setMovingBookmarkId] = useState<string | null>(null);
+  const [savingNoteId, setSavingNoteId] = useState<string | null>(null);
   const [deletingCollectionId, setDeletingCollectionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
   const canUseCollections = hasCollectionAccess(entitlement);
+  const canUsePrivateNotes = hasPrivateNotesAccess(entitlement);
 
   useEffect(() => {
     async function loadSaved() {
@@ -88,6 +109,8 @@ export default function SavedPage() {
             id,
             created_at,
             collection_id,
+            private_note,
+            private_note_updated_at,
             discussions (
               id,
               title,
@@ -106,12 +129,20 @@ export default function SavedPage() {
       const normalized = (bookmarkData ?? []).map((item) => ({
         ...item,
         collection_id: item.collection_id ?? null,
+        private_note: item.private_note ?? null,
+        private_note_updated_at: item.private_note_updated_at ?? null,
         discussions: Array.isArray(item.discussions)
           ? item.discussions[0] ?? null
           : item.discussions,
       })) as SavedDiscussion[];
 
       setSaved(normalized);
+      setNoteDrafts(
+        normalized.reduce<Record<string, string>>((drafts, item) => {
+          drafts[item.id] = item.private_note ?? "";
+          return drafts;
+        }, {})
+      );
       setLoading(false);
     }
 
@@ -284,6 +315,61 @@ export default function SavedPage() {
     setMessage("Saved folder deleted. Its saved discussions were moved to Unfiled.");
   }
 
+  async function savePrivateNote(bookmarkId: string) {
+    setMessage("");
+
+    if (!currentUserId || savingNoteId) {
+      return;
+    }
+
+    if (!canUsePrivateNotes) {
+      setMessage("Private notes require Premium Plus or Admin access.");
+      return;
+    }
+
+    const cleanNote = (noteDrafts[bookmarkId] ?? "").trim();
+    setSavingNoteId(bookmarkId);
+
+    const { data, error } = await supabase
+      .from("bookmarks")
+      .update({
+        private_note: cleanNote || null,
+      })
+      .eq("id", bookmarkId)
+      .eq("user_id", currentUserId)
+      .select("id, private_note, private_note_updated_at")
+      .single();
+
+    setSavingNoteId(null);
+
+    if (error) {
+      setMessage(`Unable to save private note: ${error.message}`);
+      return;
+    }
+
+    const updatedNote = data?.private_note ?? null;
+    const updatedAt = data?.private_note_updated_at ?? null;
+
+    setSaved((current) =>
+      current.map((item) =>
+        item.id === bookmarkId
+          ? {
+              ...item,
+              private_note: updatedNote,
+              private_note_updated_at: updatedAt,
+            }
+          : item
+      )
+    );
+
+    setNoteDrafts((current) => ({
+      ...current,
+      [bookmarkId]: updatedNote ?? "",
+    }));
+
+    setMessage(updatedNote ? "Private note saved." : "Private note cleared.");
+  }
+
   async function removeBookmark(bookmarkId: string) {
     setMessage("");
 
@@ -344,6 +430,19 @@ export default function SavedPage() {
             <p className="max-w-3xl leading-relaxed text-zinc-500">
               You can still save and remove discussions on the Free plan. Premium and
               Admin accounts can organize saved discussions into folders.
+            </p>
+          </div>
+        )}
+
+        {!loading && canUseCollections && !canUsePrivateNotes && (
+          <div className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <h2 className="mb-2 text-2xl font-medium">
+              Private notes are a Premium Plus feature.
+            </h2>
+
+            <p className="max-w-3xl leading-relaxed text-zinc-500">
+              Your saved folders are available. Upgrade to Premium Plus or use Admin
+              access to add private notes to saved discussions.
             </p>
           </div>
         )}
@@ -501,6 +600,51 @@ export default function SavedPage() {
                     {discussion.body}
                   </p>
                 </Link>
+
+                {canUsePrivateNotes && (
+                  <div className="mb-5 rounded-2xl border border-zinc-900 bg-black/40 p-4">
+                    <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <label className="text-sm font-medium text-zinc-300">
+                        Private note
+                      </label>
+
+                      {item.private_note_updated_at && (
+                        <p className="text-xs text-zinc-600">
+                          Updated {new Date(item.private_note_updated_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+
+                    <textarea
+                      value={noteDrafts[item.id] ?? ""}
+                      onChange={(event) =>
+                        setNoteDrafts((current) => ({
+                          ...current,
+                          [item.id]: event.target.value,
+                        }))
+                      }
+                      maxLength={1000}
+                      rows={3}
+                      placeholder="Add a private note for why this discussion matters..."
+                      className="mb-3 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-zinc-600"
+                    />
+
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-zinc-600">
+                        {(noteDrafts[item.id] ?? "").length}/1000 characters
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={() => savePrivateNote(item.id)}
+                        disabled={savingNoteId === item.id}
+                        className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {savingNoteId === item.id ? "Saving..." : "Save note"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <p className="text-sm text-zinc-600">
