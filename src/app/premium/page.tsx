@@ -180,7 +180,7 @@ export default function PremiumPage() {
             </div>
 
             <p className="mb-6 text-sm text-zinc-500">
-              Or $120/year. Built for heavier AI usage now, with advanced tools marked as planned until wired.
+              Or $120/year. Built for heavier AI usage, Labs access, creator tools, exports, longer posts, and pre-posting AI support.
             </p>
 
             <div className="mb-8 space-y-3">
