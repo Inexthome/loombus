@@ -23,6 +23,23 @@ type Discussion = {
   created_at: string;
 };
 
+type ProfileBadge = {
+  key: "premium" | "premium_plus" | "admin";
+  label: string;
+};
+
+function getBadgeClassName(badge: ProfileBadge) {
+  if (badge.key === "admin") {
+    return "border-sky-800 bg-sky-950/40 text-sky-300";
+  }
+
+  if (badge.key === "premium_plus") {
+    return "border-violet-800 bg-violet-950/40 text-violet-300";
+  }
+
+  return "border-emerald-800 bg-emerald-950/40 text-emerald-300";
+}
+
 export default function UserProfilePage() {
   const params = useParams();
   const username = params.username as string;
@@ -44,6 +61,7 @@ export default function UserProfilePage() {
   const [isBlockedByProfile, setIsBlockedByProfile] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [profileBadge, setProfileBadge] = useState<ProfileBadge | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -59,6 +77,24 @@ export default function UserProfilePage() {
       }
 
       setProfile(profileData);
+
+      const badgeResponse = await fetch("/api/profiles/badges", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          profileIds: [profileData.id],
+        }),
+      });
+
+      if (badgeResponse.ok) {
+        const badgeResult = (await badgeResponse.json()) as {
+          badges?: Record<string, ProfileBadge>;
+        };
+
+        setProfileBadge(badgeResult.badges?.[profileData.id] ?? null);
+      }
 
       const { data: userData } = await supabase.auth.getUser();
       const viewerId = userData.user?.id ?? null;
@@ -327,9 +363,19 @@ export default function UserProfilePage() {
             <ProfileAvatar profile={profile} size="xl" />
 
             <div>
-              <p className="mb-2 text-sm text-zinc-500">
-                @{profile.username}
-              </p>
+              <div className="mb-2 flex flex-wrap items-center gap-3">
+                <p className="text-sm text-zinc-500">
+                  @{profile.username}
+                </p>
+
+                {profileBadge && (
+                  <span
+                    className={`rounded-full border px-3 py-1 text-xs font-medium ${getBadgeClassName(profileBadge)}`}
+                  >
+                    {profileBadge.label}
+                  </span>
+                )}
+              </div>
 
               <h1 className="text-5xl font-semibold tracking-tight">
                 {profile.full_name}

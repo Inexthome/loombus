@@ -18,10 +18,28 @@ type BlockRow = {
   blocked_id: string;
 };
 
+type ProfileBadge = {
+  key: "premium" | "premium_plus" | "admin";
+  label: string;
+};
+
+function getBadgeClassName(badge: ProfileBadge) {
+  if (badge.key === "admin") {
+    return "border-sky-800 bg-sky-950/40 text-sky-300";
+  }
+
+  if (badge.key === "premium_plus") {
+    return "border-violet-800 bg-violet-950/40 text-violet-300";
+  }
+
+  return "border-emerald-800 bg-emerald-950/40 text-emerald-300";
+}
+
 export default function PeoplePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [blockedProfileIds, setBlockedProfileIds] = useState<Set<string>>(new Set());
+  const [profileBadges, setProfileBadges] = useState<Record<string, ProfileBadge>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [workingFollowId, setWorkingFollowId] = useState<string | null>(null);
@@ -47,7 +65,28 @@ export default function PeoplePage() {
         .select("*")
         .order("full_name", { ascending: true });
 
-      setProfiles(data ?? []);
+      const loadedProfiles = data ?? [];
+      setProfiles(loadedProfiles);
+
+      if (loadedProfiles.length > 0) {
+        const badgeResponse = await fetch("/api/profiles/badges", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            profileIds: loadedProfiles.map((profile) => profile.id),
+          }),
+        });
+
+        if (badgeResponse.ok) {
+          const badgeResult = (await badgeResponse.json()) as {
+            badges?: Record<string, ProfileBadge>;
+          };
+
+          setProfileBadges(badgeResult.badges ?? {});
+        }
+      }
 
       if (viewerId) {
         const { data: follows } = await supabase
@@ -286,6 +325,7 @@ export default function PeoplePage() {
             const isSelf = currentUserId === profile.id;
             const isFollowing = followingIds.has(profile.id);
             const isWorking = workingFollowId === profile.id;
+            const badge = profileBadges[profile.id];
 
             return (
               <Link
@@ -302,9 +342,19 @@ export default function PeoplePage() {
                         {profile.full_name || profile.username || "Loombus member"}
                       </h2>
 
-                      <p className="mt-1 text-sm text-zinc-500">
-                        {profile.username ? `@${profile.username}` : "No username yet"}
-                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <p className="text-sm text-zinc-500">
+                          {profile.username ? `@${profile.username}` : "No username yet"}
+                        </p>
+
+                        {badge && (
+                          <span
+                            className={`rounded-full border px-2.5 py-1 text-[0.7rem] font-medium ${getBadgeClassName(badge)}`}
+                          >
+                            {badge.label}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
