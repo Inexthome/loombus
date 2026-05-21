@@ -23,7 +23,7 @@ const premiumFeatures: PlanFeature[] = [
   { label: "Thread Evolution / What Changed", status: "available" },
   { label: "Viewpoint Map / Disagreement Mapping", status: "available" },
   { label: "Higher monthly AI usage limit", status: "available" },
-  { label: "Advanced discussion filters", status: "planned" },
+  { label: "Advanced discussion filters", status: "available" },
   { label: "Saved folders / collections", status: "available" },
   { label: "Personal reading history", status: "available" },
   { label: "Custom profile badge: Premium Member", status: "planned" },

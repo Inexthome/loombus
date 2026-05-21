@@ -26,6 +26,86 @@ type BlockRow = {
   blocked_id: string;
 };
 
+type AiEntitlement = {
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
+} | null;
+
+type AdvancedFilterMode =
+  | "All activity"
+  | "Has replies"
+  | "Has saves"
+  | "High signal"
+  | "Recently active";
+
+const ADVANCED_FILTERS: AdvancedFilterMode[] = [
+  "All activity",
+  "Has replies",
+  "Has saves",
+  "High signal",
+  "Recently active",
+];
+
+function hasAdvancedFilterAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+  if (isAdmin) {
+    return true;
+  }
+
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    entitlement.tier === "premium"
+  );
+}
+
+function getSignalScore(
+  discussionId: string,
+  replyCounts: Record<string, number>,
+  bookmarkCounts: Record<string, number>,
+  viewCounts: Record<string, number>
+) {
+  return (
+    (replyCounts[discussionId] ?? 0) * 3 +
+    (bookmarkCounts[discussionId] ?? 0) * 5 +
+    (viewCounts[discussionId] ?? 0)
+  );
+}
+
+function matchesAdvancedFilter(
+  discussion: Discussion,
+  advancedFilter: AdvancedFilterMode,
+  replyCounts: Record<string, number>,
+  bookmarkCounts: Record<string, number>,
+  viewCounts: Record<string, number>,
+  latestReplyDates: Record<string, string>
+) {
+  if (advancedFilter === "All activity") {
+    return true;
+  }
+
+  if (advancedFilter === "Has replies") {
+    return (replyCounts[discussion.id] ?? 0) > 0;
+  }
+
+  if (advancedFilter === "Has saves") {
+    return (bookmarkCounts[discussion.id] ?? 0) > 0;
+  }
+
+  if (advancedFilter === "High signal") {
+    return getSignalScore(
+      discussion.id,
+      replyCounts,
+      bookmarkCounts,
+      viewCounts
+    ) >= 5;
+  }
+
+  const latestActivity = latestReplyDates[discussion.id] ?? discussion.created_at;
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+  return new Date(latestActivity).getTime() >= sevenDaysAgo;
+}
+
 export default function FollowingPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -36,7 +116,13 @@ export default function FollowingPage() {
   const [selectedTopic, setSelectedTopic] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState("Newest");
+  const [advancedFilter, setAdvancedFilter] =
+    useState<AdvancedFilterMode>("All activity");
+  const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const canUseAdvancedFilters = hasAdvancedFilterAccess(aiEntitlement, isAdmin);
 
   useEffect(() => {
     async function loadFollowingFeed() {
@@ -46,6 +132,23 @@ export default function FollowingPage() {
         window.location.href = "/login";
         return;
       }
+
+      const [{ data: viewerProfile }, { data: entitlementData }] =
+        await Promise.all([
+          supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", userData.user.id)
+            .maybeSingle(),
+          supabase
+            .from("user_ai_entitlements")
+            .select("tier, ai_assisted_enabled, monthly_summary_limit")
+            .eq("user_id", userData.user.id)
+            .maybeSingle(),
+        ]);
+
+      setIsAdmin(Boolean(viewerProfile?.is_admin));
+      setAiEntitlement((entitlementData ?? null) as AiEntitlement);
 
       const { data: blockRows } = await supabase
         .from("user_blocks")
@@ -179,6 +282,10 @@ export default function FollowingPage() {
   const filteredDiscussions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
+    const activeAdvancedFilter = canUseAdvancedFilters
+      ? advancedFilter
+      : "All activity";
+
     const filtered = discussions.filter((discussion) => {
       const profile = profiles[discussion.user_id];
 
@@ -193,7 +300,16 @@ export default function FollowingPage() {
         (profile?.username ?? "").toLowerCase().includes(query) ||
         (profile?.full_name ?? "").toLowerCase().includes(query);
 
-      return matchesTopic && matchesSearch;
+      const matchesAdvanced = matchesAdvancedFilter(
+        discussion,
+        activeAdvancedFilter,
+        replyCounts,
+        bookmarkCounts,
+        viewCounts,
+        latestReplyDates
+      );
+
+      return matchesTopic && matchesSearch && matchesAdvanced;
     });
 
     if (sortMode === "Most replied") {
@@ -238,9 +354,12 @@ export default function FollowingPage() {
     selectedTopic,
     searchQuery,
     sortMode,
+    advancedFilter,
+    canUseAdvancedFilters,
     replyCounts,
     bookmarkCounts,
     viewCounts,
+    latestReplyDates,
   ]);
 
   return (
@@ -309,6 +428,52 @@ export default function FollowingPage() {
           </p>
         </div>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+                Advanced filters
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Refine your following feed
+              </h2>
+            </div>
+
+            {!canUseAdvancedFilters && (
+              <Link
+                href="/premium"
+                className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+              >
+                Unlock with Premium
+              </Link>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {ADVANCED_FILTERS.map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                onClick={() => setAdvancedFilter(filter)}
+                disabled={!canUseAdvancedFilters && filter !== "All activity"}
+                className={`rounded-full border px-4 py-2 text-sm transition ${
+                  advancedFilter === filter
+                    ? "border-zinc-400 text-white"
+                    : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
+                } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+
+          <p className="mt-4 text-xs leading-relaxed text-zinc-600">
+            Premium filters use replies, saves, Signal Score, and recent activity
+            to surface stronger discussions from people you follow.
+          </p>
+        </section>
+
         <div className="mb-6 flex flex-wrap gap-3">
           {topics.map((topic) => (
             <button
@@ -356,7 +521,7 @@ export default function FollowingPage() {
             </h2>
 
             <p className="text-zinc-400">
-              No followed discussions match the current search or topic filter.
+              No followed discussions match the current search, topic, or advanced filter selection.
             </p>
           </div>
         )}
@@ -421,10 +586,11 @@ export default function FollowingPage() {
 
                     <p className="mt-1 text-xs uppercase tracking-wide text-zinc-600">
                       Signal Score{" "}
-                      {(
-                        (replyCounts[discussion.id] ?? 0) * 3 +
-                        (bookmarkCounts[discussion.id] ?? 0) * 5 +
-                        (viewCounts[discussion.id] ?? 0)
+                      {getSignalScore(
+                        discussion.id,
+                        replyCounts,
+                        bookmarkCounts,
+                        viewCounts
                       )}
                     </p>
                   </div>
