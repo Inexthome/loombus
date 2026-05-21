@@ -34,6 +34,26 @@ type AiEntitlement = {
   monthly_summary_limit: number | null;
 } | null;
 
+type ExportFormat = "markdown" | "json";
+
+function getSafeExportDate() {
+  return new Date().toISOString().replace(/[:.]/g, "-");
+}
+
+function downloadTextFile(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
 function hasCollectionAccess(entitlement: AiEntitlement) {
   if (!entitlement?.ai_assisted_enabled) {
     return false;
@@ -71,11 +91,13 @@ export default function SavedPage() {
   const [movingBookmarkId, setMovingBookmarkId] = useState<string | null>(null);
   const [savingNoteId, setSavingNoteId] = useState<string | null>(null);
   const [deletingCollectionId, setDeletingCollectionId] = useState<string | null>(null);
+  const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
   const canUseCollections = hasCollectionAccess(entitlement);
   const canUsePrivateNotes = hasPrivateNotesAccess(entitlement);
+  const canExportSavedNotes = canUsePrivateNotes;
 
   useEffect(() => {
     async function loadSaved() {
@@ -166,6 +188,13 @@ export default function SavedPage() {
 
     return counts;
   }, [saved]);
+
+  const collectionNameById = useMemo(() => {
+    return collections.reduce<Record<string, string>>((map, collection) => {
+      map[collection.id] = collection.name;
+      return map;
+    }, {});
+  }, [collections]);
 
   const filteredSaved = useMemo(() => {
     if (selectedCollectionId === "all") {
@@ -370,6 +399,113 @@ export default function SavedPage() {
     setMessage(updatedNote ? "Private note saved." : "Private note cleared.");
   }
 
+  function exportSavedDiscussions(format: ExportFormat) {
+    setMessage("");
+
+    if (!canExportSavedNotes) {
+      setMessage("Exporting saved discussions and notes requires Premium Plus or Admin access.");
+      return;
+    }
+
+    const exportItems = saved
+      .map((item) => {
+        const discussion = item.discussions;
+
+        if (!discussion) {
+          return null;
+        }
+
+        return {
+          bookmark_id: item.id,
+          discussion_id: discussion.id,
+          title: discussion.title,
+          topic: discussion.topic,
+          body: discussion.body,
+          discussion_created_at: discussion.created_at,
+          saved_at: item.created_at,
+          collection:
+            item.collection_id
+              ? collectionNameById[item.collection_id] ?? "Unknown folder"
+              : "Unfiled",
+          private_note: noteDrafts[item.id]?.trim() || item.private_note || "",
+          private_note_updated_at: item.private_note_updated_at,
+          url:
+            typeof window !== "undefined"
+              ? `${window.location.origin}/discussions/${discussion.id}`
+              : `/discussions/${discussion.id}`,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+    if (exportItems.length === 0) {
+      setMessage("There are no saved discussions to export.");
+      return;
+    }
+
+    setExportingFormat(format);
+
+    try {
+      const timestamp = getSafeExportDate();
+
+      if (format === "json") {
+        downloadTextFile(
+          `loombus-saved-discussions-${timestamp}.json`,
+          JSON.stringify(
+            {
+              exported_at: new Date().toISOString(),
+              item_count: exportItems.length,
+              items: exportItems,
+            },
+            null,
+            2
+          ),
+          "application/json;charset=utf-8"
+        );
+
+        setMessage("Saved discussions exported as JSON.");
+        return;
+      }
+
+      const markdown = [
+        "# Loombus Saved Discussions",
+        "",
+        `Exported: ${new Date().toLocaleString()}`,
+        `Items: ${exportItems.length}`,
+        "",
+        ...exportItems.flatMap((item, index) => [
+          `## ${index + 1}. ${item.title}`,
+          "",
+          `- Topic: ${item.topic}`,
+          `- Folder: ${item.collection}`,
+          `- Saved: ${new Date(item.saved_at).toLocaleString()}`,
+          `- Discussion created: ${new Date(item.discussion_created_at).toLocaleString()}`,
+          `- URL: ${item.url}`,
+          "",
+          "### Discussion",
+          "",
+          item.body,
+          "",
+          "### Private note",
+          "",
+          item.private_note || "_No private note._",
+          "",
+          "---",
+          "",
+        ]),
+      ].join("\n");
+
+      downloadTextFile(
+        `loombus-saved-discussions-${timestamp}.md`,
+        markdown,
+        "text/markdown;charset=utf-8"
+      );
+
+      setMessage("Saved discussions exported as Markdown.");
+    } finally {
+      setExportingFormat(null);
+    }
+  }
+
   async function removeBookmark(bookmarkId: string) {
     setMessage("");
 
@@ -442,9 +578,50 @@ export default function SavedPage() {
 
             <p className="max-w-3xl leading-relaxed text-zinc-500">
               Your saved folders are available. Upgrade to Premium Plus or use Admin
-              access to add private notes to saved discussions.
+              access to add private notes and export saved discussions.
             </p>
           </div>
+        )}
+
+        {canExportSavedNotes && (
+          <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+                  Premium Plus export
+                </p>
+
+                <h2 className="text-2xl font-medium">
+                  Export saved discussions and notes
+                </h2>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => exportSavedDiscussions("markdown")}
+                  disabled={Boolean(exportingFormat)}
+                  className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                >
+                  {exportingFormat === "markdown" ? "Exporting..." : "Export Markdown"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => exportSavedDiscussions("json")}
+                  disabled={Boolean(exportingFormat)}
+                  className="rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                >
+                  {exportingFormat === "json" ? "Exporting..." : "Export JSON"}
+                </button>
+              </div>
+            </div>
+
+            <p className="max-w-3xl text-sm leading-relaxed text-zinc-500">
+              Export includes saved discussion text, folder names, saved dates,
+              links, and your private notes.
+            </p>
+          </section>
         )}
 
         {canUseCollections && (
