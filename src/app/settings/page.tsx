@@ -95,24 +95,42 @@ const settingsSections = [
 export default function SettingsPage() {
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     async function requireUser() {
-      const { data } = await supabase.auth.getUser();
+      setLoadError("");
 
-      if (!data.user) {
-        window.location.href = "/login";
-        return;
+      try {
+        const { data, error: userError } = await supabase.auth.getUser();
+
+        if (userError) {
+          throw userError;
+        }
+
+        if (!data.user) {
+          window.location.replace("/login");
+          return;
+        }
+
+        const { data: entitlementData, error: entitlementError } = await supabase
+          .from("user_ai_entitlements")
+          .select("tier, ai_assisted_enabled, monthly_summary_limit")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+
+        if (entitlementError) {
+          throw entitlementError;
+        }
+
+        setAiEntitlement(entitlementData ?? null);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to load settings.";
+        setLoadError(message);
+      } finally {
+        setLoading(false);
       }
-
-      const { data: entitlementData } = await supabase
-        .from("user_ai_entitlements")
-        .select("tier, ai_assisted_enabled, monthly_summary_limit")
-        .eq("user_id", data.user.id)
-        .maybeSingle();
-
-      setAiEntitlement(entitlementData ?? null);
-      setLoading(false);
     }
 
     requireUser();
@@ -126,6 +144,30 @@ export default function SettingsPage() {
       <main className="min-h-screen bg-black px-6 py-16 text-white">
         <div className="mx-auto max-w-5xl text-zinc-400">
           Loading settings...
+        </div>
+      </main>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <main className="min-h-screen bg-black px-6 py-16 text-white">
+        <div className="mx-auto max-w-5xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <h1 className="mb-3 text-2xl font-medium">
+            Settings could not load.
+          </h1>
+
+          <p className="mb-5 text-sm leading-relaxed text-zinc-500">
+            {loadError}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+          >
+            Reload settings
+          </button>
         </div>
       </main>
     );

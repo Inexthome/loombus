@@ -31,8 +31,16 @@ export default function LoginPage() {
       return;
     }
 
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (!sessionData.session) {
+      setMessage("Login succeeded, but the browser session was not ready. Please try again.");
+      setLoading(false);
+      return;
+    }
+
     setMessage("Login successful.");
-    window.location.href = "/dashboard";
+    window.location.replace("/dashboard");
   }
 
   return (

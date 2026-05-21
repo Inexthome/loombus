@@ -65,81 +65,107 @@ export default function DashboardPage() {
   });
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     async function loadUser() {
-      const { data } = await supabase.auth.getUser();
+      setLoadError("");
 
-      if (!data.user) {
-        window.location.href = "/login";
-        return;
+      try {
+        const { data, error: userError } = await supabase.auth.getUser();
+
+        if (userError) {
+          throw userError;
+        }
+
+        if (!data.user) {
+          window.location.replace("/login");
+          return;
+        }
+
+        setEmail(data.user.email ?? null);
+
+        const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
+          supabase,
+          data.user.id
+        );
+
+        const [
+          { data: profileData, error: profileError },
+          { count: discussionCount, error: discussionError },
+          { count: replyCount, error: replyError },
+          { count: savedCount, error: savedError },
+          { data: unreadNotificationData, error: notificationError },
+          { data: entitlementData, error: entitlementError },
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("full_name, username, bio, avatar_url")
+            .eq("id", data.user.id)
+            .maybeSingle(),
+
+          supabase
+            .from("discussions")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", data.user.id)
+            .is("deleted_at", null),
+
+          supabase
+            .from("replies")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", data.user.id)
+            .is("deleted_at", null),
+
+          supabase
+            .from("bookmarks")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", data.user.id),
+
+          supabase
+            .from("notifications")
+            .select("id, actor_id")
+            .eq("user_id", data.user.id)
+            .is("read_at", null),
+
+          supabase
+            .from("user_ai_entitlements")
+            .select("tier, ai_assisted_enabled, monthly_summary_limit")
+            .eq("user_id", data.user.id)
+            .maybeSingle(),
+        ]);
+
+        const firstError =
+          profileError ||
+          discussionError ||
+          replyError ||
+          savedError ||
+          notificationError ||
+          entitlementError;
+
+        if (firstError) {
+          throw firstError;
+        }
+
+        const visibleUnreadNotifications = filterBlockedActorNotifications(
+          unreadNotificationData ?? [],
+          blockedRelationshipUserIds
+        );
+
+        setProfile(profileData ?? null);
+        setAiEntitlement(entitlementData ?? null);
+        setActivityCounts({
+          discussions: discussionCount ?? 0,
+          replies: replyCount ?? 0,
+          saved: savedCount ?? 0,
+          unreadNotifications: visibleUnreadNotifications.length,
+        });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Unable to load dashboard.";
+        setLoadError(message);
+      } finally {
+        setLoading(false);
       }
-
-      setEmail(data.user.email ?? null);
-
-      const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
-        supabase,
-        data.user.id
-      );
-
-      const [
-        { data: profileData },
-        { count: discussionCount },
-        { count: replyCount },
-        { count: savedCount },
-        { data: unreadNotificationData },
-        { data: entitlementData },
-      ] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("full_name, username, bio, avatar_url")
-          .eq("id", data.user.id)
-          .maybeSingle(),
-
-        supabase
-          .from("discussions")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", data.user.id)
-          .is("deleted_at", null),
-
-        supabase
-          .from("replies")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", data.user.id)
-          .is("deleted_at", null),
-
-        supabase
-          .from("bookmarks")
-          .select("*", { count: "exact", head: true })
-          .eq("user_id", data.user.id),
-
-        supabase
-          .from("notifications")
-          .select("id, actor_id")
-          .eq("user_id", data.user.id)
-          .is("read_at", null),
-
-        supabase
-          .from("user_ai_entitlements")
-          .select("tier, ai_assisted_enabled, monthly_summary_limit")
-          .eq("user_id", data.user.id)
-          .maybeSingle(),
-      ]);
-
-      const visibleUnreadNotifications = filterBlockedActorNotifications(
-        unreadNotificationData ?? [],
-        blockedRelationshipUserIds
-      );
-
-      setProfile(profileData ?? null);
-      setAiEntitlement(entitlementData ?? null);
-      setActivityCounts({
-        discussions: discussionCount ?? 0,
-        replies: replyCount ?? 0,
-        saved: savedCount ?? 0,
-        unreadNotifications: visibleUnreadNotifications.length,
-      });
-      setLoading(false);
     }
 
     loadUser();
@@ -170,6 +196,30 @@ export default function DashboardPage() {
       <main className="min-h-screen bg-black px-6 py-16 text-white">
         <div className="mx-auto max-w-4xl text-zinc-400">
           Loading dashboard...
+        </div>
+      </main>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <main className="min-h-screen bg-black px-6 py-16 text-white">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <h1 className="mb-3 text-2xl font-medium">
+            Dashboard could not load.
+          </h1>
+
+          <p className="mb-5 text-sm leading-relaxed text-zinc-500">
+            {loadError}
+          </p>
+
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+          >
+            Reload dashboard
+          </button>
         </div>
       </main>
     );
