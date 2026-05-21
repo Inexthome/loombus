@@ -13,6 +13,13 @@ const PREMIUM_LIMITS = {
   monthly_discovery_limit: 25,
 };
 
+const PREMIUM_PLUS_LIMITS = {
+  monthly_summary_limit: 150,
+  monthly_writing_limit: 75,
+  monthly_research_limit: 30,
+  monthly_discovery_limit: 75,
+};
+
 function getStripe() {
   if (!STRIPE_SECRET_KEY) {
     throw new Error("STRIPE_SECRET_KEY is not configured.");
@@ -38,17 +45,37 @@ function getSupabaseAdmin() {
   );
 }
 
-async function activatePremiumForUser(userId: string, note: string) {
+function getLimitsForPlan(planKey: string | null | undefined) {
+  if (planKey?.startsWith("premium_plus")) {
+    return PREMIUM_PLUS_LIMITS;
+  }
+
+  return PREMIUM_LIMITS;
+}
+
+function getPlanLabel(planKey: string | null | undefined) {
+  if (planKey === "premium_annual") return "Premium Annual";
+  if (planKey === "premium_plus_monthly") return "Premium Plus Monthly";
+  if (planKey === "premium_plus_annual") return "Premium Plus Annual";
+  return "Premium Monthly";
+}
+
+async function activatePremiumForUser(
+  userId: string,
+  note: string,
+  planKey?: string | null
+) {
   const supabase = getSupabaseAdmin();
   const updatedAt = new Date().toISOString();
+  const limits = getLimitsForPlan(planKey);
 
   const { error } = await supabase.from("user_ai_entitlements").upsert(
     {
       user_id: userId,
       tier: "premium",
       ai_assisted_enabled: true,
-      ...PREMIUM_LIMITS,
-      notes: note,
+      ...limits,
+      notes: `${note} Plan: ${getPlanLabel(planKey)}.`,
       updated_at: updatedAt,
     },
     {
@@ -91,16 +118,23 @@ function getUserIdFromCheckoutSession(session: Stripe.Checkout.Session) {
   return session.metadata?.user_id ?? session.client_reference_id ?? null;
 }
 
+function getPlanKeyFromCheckoutSession(session: Stripe.Checkout.Session) {
+  return session.metadata?.plan_key ?? null;
+}
+
 function getUserIdFromSubscription(subscription: Stripe.Subscription) {
   return subscription.metadata?.user_id ?? null;
 }
 
+function getPlanKeyFromSubscription(subscription: Stripe.Subscription) {
+  return subscription.metadata?.plan_key ?? null;
+}
+
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  if (session.mode !== "subscription") {
-    return;
-  }
+  if (session.mode !== "subscription") return;
 
   const userId = getUserIdFromCheckoutSession(session);
+  const planKey = getPlanKeyFromCheckoutSession(session);
 
   if (!userId) {
     console.warn("Stripe checkout session completed without user_id metadata:", session.id);
@@ -118,7 +152,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     if (["active", "trialing"].includes(subscription.status)) {
       await activatePremiumForUser(
         userId,
-        `Premium AI-Assisted Layer activated from Stripe checkout session ${session.id}.`
+        `Premium AI-Assisted Layer activated from Stripe checkout session ${session.id}.`,
+        planKey
       );
     }
 
@@ -127,12 +162,14 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
   await activatePremiumForUser(
     userId,
-    `Premium AI-Assisted Layer activated from Stripe checkout session ${session.id}.`
+    `Premium AI-Assisted Layer activated from Stripe checkout session ${session.id}.`,
+    planKey
   );
 }
 
 async function handleSubscriptionChanged(subscription: Stripe.Subscription) {
   const userId = getUserIdFromSubscription(subscription);
+  const planKey = getPlanKeyFromSubscription(subscription);
 
   if (!userId) {
     console.warn("Stripe subscription event missing user_id metadata:", subscription.id);
@@ -142,7 +179,8 @@ async function handleSubscriptionChanged(subscription: Stripe.Subscription) {
   if (["active", "trialing"].includes(subscription.status)) {
     await activatePremiumForUser(
       userId,
-      `Premium AI-Assisted Layer active from Stripe subscription ${subscription.id} with status ${subscription.status}.`
+      `Premium AI-Assisted Layer active from Stripe subscription ${subscription.id} with status ${subscription.status}.`,
+      planKey
     );
     return;
   }
@@ -223,9 +261,7 @@ export async function POST(request: NextRequest) {
         break;
     }
 
-    return NextResponse.json({
-      received: true,
-    });
+    return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Stripe webhook handling failed:", error);
 
