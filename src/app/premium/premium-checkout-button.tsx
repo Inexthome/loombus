@@ -42,7 +42,11 @@ export function PremiumCheckoutButton() {
       }));
 
       if (!response.ok) {
-        setMessage(result.error ?? "Unable to start Premium checkout.");
+        setMessage(
+          result.detail
+            ? `${result.error ?? "Unable to start Premium checkout."} ${result.detail}`
+            : result.error ?? "Unable to start Premium checkout."
+        );
         return;
       }
 

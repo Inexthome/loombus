@@ -98,15 +98,46 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown checkout error";
 
-    console.error("Stripe checkout session creation failed:", message);
+    const stripeError =
+      error && typeof error === "object" && "type" in error
+        ? String((error as { type?: unknown }).type ?? "")
+        : "";
+
+    const stripeCode =
+      error && typeof error === "object" && "code" in error
+        ? String((error as { code?: unknown }).code ?? "")
+        : "";
+
+    let safeDetail = "Check Stripe checkout configuration in Vercel and Stripe.";
+
+    if (stripeError === "StripeAuthenticationError") {
+      safeDetail = "Stripe rejected the secret key. Check STRIPE_SECRET_KEY in Vercel.";
+    } else if (
+      stripeError === "StripeInvalidRequestError" &&
+      message.toLowerCase().includes("no such price")
+    ) {
+      safeDetail =
+        "Stripe could not find the Premium price. Check STRIPE_PREMIUM_PRICE_ID and make sure it is from the same Stripe mode as the secret key.";
+    } else if (
+      stripeError === "StripeInvalidRequestError" &&
+      message.toLowerCase().includes("recurring")
+    ) {
+      safeDetail =
+        "The Premium price must be a recurring subscription price, not a one-time price.";
+    } else if (stripeCode) {
+      safeDetail = `Stripe checkout failed with code: ${stripeCode}. Check the Stripe price and key configuration.`;
+    }
+
+    console.error("Stripe checkout session creation failed:", {
+      type: stripeError || "unknown",
+      code: stripeCode || "unknown",
+      message,
+    });
 
     return NextResponse.json(
       {
         error: "Unable to start Premium checkout.",
-        detail:
-          process.env.NODE_ENV === "production"
-            ? "Check Stripe checkout configuration in Vercel and Stripe."
-            : message,
+        detail: safeDetail,
       },
       { status: 500 }
     );
