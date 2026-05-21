@@ -13,6 +13,9 @@ type Profile = {
   username: string;
   bio: string | null;
   avatar_url: string | null;
+  creator_website_url: string | null;
+  creator_support_url: string | null;
+  creator_support_label: string | null;
 };
 
 type Discussion = {
@@ -386,6 +389,32 @@ export default function UserProfilePage() {
           <p className="max-w-2xl leading-relaxed text-zinc-400">
             {profile.bio || "No bio added yet."}
           </p>
+
+          {(profile.creator_website_url || profile.creator_support_url) && (
+            <div className="mt-6 flex flex-wrap gap-3">
+              {profile.creator_website_url && (
+                <a
+                  href={profile.creator_website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                >
+                  Website
+                </a>
+              )}
+
+              {profile.creator_support_url && (
+                <a
+                  href={profile.creator_support_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                >
+                  {profile.creator_support_label || "Support"}
+                </a>
+              )}
+            </div>
+          )}
 
           <div className="mt-6 flex gap-8 text-sm text-zinc-500">
             <Link

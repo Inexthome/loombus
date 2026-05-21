@@ -43,7 +43,7 @@ const premiumPlusFeatures: PlanFeature[] = [
   { label: "Export saved discussions and notes", status: "available" },
   { label: "Longer discussion posts", status: "available" },
   { label: "Priority feature access", status: "planned" },
-  { label: "Optional creator/supporter profile tools", status: "planned" },
+  { label: "Optional creator/supporter profile tools", status: "available" },
 ];
 
 function FeatureList({ features }: { features: PlanFeature[] }) {
