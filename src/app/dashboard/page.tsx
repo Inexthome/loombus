@@ -92,26 +92,28 @@ export default function DashboardPage() {
       setLoadError("");
 
       try {
-        const { data, error: userError } = await withDashboardTimeout(
-          supabase.auth.getUser(),
-          "Dashboard authentication check"
+        const { data, error: sessionError } = await withDashboardTimeout(
+          supabase.auth.getSession(),
+          "Dashboard session check"
         );
 
-        if (userError) {
-          throw userError;
+        if (sessionError) {
+          throw sessionError;
         }
 
-        if (!data.user) {
+        const sessionUser = data.session?.user ?? null;
+
+        if (!sessionUser) {
           window.location.replace("/login");
           return;
         }
 
-        setEmail(data.user.email ?? null);
+        setEmail(sessionUser.email ?? null);
 
         const blockedRelationshipUserIds = await withDashboardTimeout(
           getBlockedRelationshipUserIds(
             supabase,
-            data.user.id
+            sessionUser.id
           ),
           "Dashboard blocked-user check"
         );
@@ -127,36 +129,36 @@ export default function DashboardPage() {
           supabase
             .from("profiles")
             .select("full_name, username, bio, avatar_url")
-            .eq("id", data.user.id)
+            .eq("id", sessionUser.id)
             .maybeSingle(),
 
           supabase
             .from("discussions")
             .select("*", { count: "exact", head: true })
-            .eq("user_id", data.user.id)
+            .eq("user_id", sessionUser.id)
             .is("deleted_at", null),
 
           supabase
             .from("replies")
             .select("*", { count: "exact", head: true })
-            .eq("user_id", data.user.id)
+            .eq("user_id", sessionUser.id)
             .is("deleted_at", null),
 
           supabase
             .from("bookmarks")
             .select("*", { count: "exact", head: true })
-            .eq("user_id", data.user.id),
+            .eq("user_id", sessionUser.id),
 
           supabase
             .from("notifications")
             .select("id, actor_id")
-            .eq("user_id", data.user.id)
+            .eq("user_id", sessionUser.id)
             .is("read_at", null),
 
           supabase
             .from("user_ai_entitlements")
             .select("tier, ai_assisted_enabled, monthly_summary_limit")
-            .eq("user_id", data.user.id)
+            .eq("user_id", sessionUser.id)
             .maybeSingle(),
         ]),
           "Dashboard activity summary"

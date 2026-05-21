@@ -177,9 +177,8 @@ export default function ClientLayout({
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    window.location.href = "/";
+  function handleLogout() {
+    window.location.href = "/logout";
   }
 
   return (

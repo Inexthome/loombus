@@ -122,16 +122,18 @@ export default function SettingsPage() {
       setLoadError("");
 
       try {
-        const { data, error: userError } = await withSettingsTimeout(
-          supabase.auth.getUser(),
-          "Settings authentication check"
+        const { data, error: sessionError } = await withSettingsTimeout(
+          supabase.auth.getSession(),
+          "Settings session check"
         );
 
-        if (userError) {
-          throw userError;
+        if (sessionError) {
+          throw sessionError;
         }
 
-        if (!data.user) {
+        const sessionUser = data.session?.user ?? null;
+
+        if (!sessionUser) {
           window.location.replace("/login");
           return;
         }
@@ -140,7 +142,7 @@ export default function SettingsPage() {
           supabase
             .from("user_ai_entitlements")
             .select("tier, ai_assisted_enabled, monthly_summary_limit")
-            .eq("user_id", data.user.id)
+            .eq("user_id", sessionUser.id)
             .maybeSingle(),
           "Settings subscription check"
         );
