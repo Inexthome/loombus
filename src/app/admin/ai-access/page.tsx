@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
+import {
+  getAiUsageLabel,
+  getSubscriptionDisplay,
+  getSubscriptionDisplayKey,
+} from "@/lib/subscription-plans";
 
 type AiEntitlement = {
   user_id: string;
@@ -37,6 +42,55 @@ type UsageEvent = {
   error_message: string | null;
   created_at: string;
 };
+
+type AdminPlanKey = "premium" | "premium_plus" | "admin";
+
+const ADMIN_PLAN_LIMITS: Record<AdminPlanKey, Partial<AiEntitlement>> = {
+  premium: {
+    tier: "premium",
+    ai_assisted_enabled: true,
+    monthly_summary_limit: 50,
+    monthly_writing_limit: 25,
+    monthly_research_limit: 10,
+    monthly_discovery_limit: 25,
+    notes: "Premium plan set by admin.",
+  },
+  premium_plus: {
+    tier: "premium",
+    ai_assisted_enabled: true,
+    monthly_summary_limit: 150,
+    monthly_writing_limit: 75,
+    monthly_research_limit: 30,
+    monthly_discovery_limit: 75,
+    notes:
+      "Premium Plus plan set by admin. Stored as tier=premium with higher monthly limits until the Premium Plus migration is added.",
+  },
+  admin: {
+    tier: "admin",
+    ai_assisted_enabled: true,
+    monthly_summary_limit: 999999,
+    monthly_writing_limit: 999999,
+    monthly_research_limit: 999999,
+    monthly_discovery_limit: 999999,
+    notes: "Admin AI access set by admin.",
+  },
+};
+
+function getPlanTextClass(planKey: ReturnType<typeof getSubscriptionDisplayKey>) {
+  if (planKey === "admin") {
+    return "text-sky-400";
+  }
+
+  if (planKey === "premium_plus") {
+    return "text-violet-400";
+  }
+
+  if (planKey === "premium") {
+    return "text-emerald-400";
+  }
+
+  return "text-zinc-500";
+}
 
 export default function AdminAiAccessPage() {
   const [authorized, setAuthorized] = useState(false);
@@ -282,14 +336,15 @@ export default function AdminAiAccessPage() {
   }
 
   async function setPremium(userId: string) {
-    await updateEntitlement(userId, {
-      tier: "premium",
-      ai_assisted_enabled: true,
-      monthly_summary_limit: 50,
-      monthly_writing_limit: 25,
-      monthly_research_limit: 10,
-      monthly_discovery_limit: 25,
-    });
+    await updateEntitlement(userId, ADMIN_PLAN_LIMITS.premium);
+  }
+
+  async function setPremiumPlus(userId: string) {
+    await updateEntitlement(userId, ADMIN_PLAN_LIMITS.premium_plus);
+  }
+
+  async function setAdmin(userId: string) {
+    await updateEntitlement(userId, ADMIN_PLAN_LIMITS.admin);
   }
 
   async function setFree(userId: string) {
@@ -470,8 +525,8 @@ export default function AdminAiAccessPage() {
             </h2>
 
             <p className="leading-relaxed text-zinc-500">
-              Enter a Loombus username to enable the Premium AI-Assisted Layer
-              with default testing limits.
+              Enter a Loombus username to enable Premium with the 50-action monthly limit.
+              Use the plan controls below to set Premium Plus or Admin access.
             </p>
           </div>
 
@@ -707,9 +762,14 @@ export default function AdminAiAccessPage() {
                 failed: 0,
               };
               const isWorking = workingUserId === entitlement.user_id;
+              const planKey = getSubscriptionDisplayKey(entitlement);
+              const planDisplay = getSubscriptionDisplay(entitlement);
+              const usageLabel = getAiUsageLabel(entitlement);
               const isPremium =
                 entitlement.ai_assisted_enabled &&
-                ["premium", "admin"].includes(entitlement.tier);
+                ["premium", "premium_plus", "admin"].includes(planKey);
+              const isPremiumPlus = planKey === "premium_plus";
+              const isAdmin = planKey === "admin";
 
               return (
                 <div
@@ -735,10 +795,28 @@ export default function AdminAiAccessPage() {
                       <button
                         type="button"
                         onClick={() => setPremium(entitlement.user_id)}
-                        disabled={isWorking || isPremium}
+                        disabled={isWorking || planKey === "premium"}
                         className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                       >
                         {isWorking ? "Updating..." : "Set Premium"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPremiumPlus(entitlement.user_id)}
+                        disabled={isWorking || isPremiumPlus}
+                        className="rounded-full border border-zinc-700 px-4 py-2 text-xs text-zinc-300 transition hover:border-violet-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {isWorking ? "Updating..." : "Set Premium Plus"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setAdmin(entitlement.user_id)}
+                        disabled={isWorking || isAdmin}
+                        className="rounded-full border border-zinc-700 px-4 py-2 text-xs text-zinc-300 transition hover:border-sky-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {isWorking ? "Updating..." : "Set Admin"}
                       </button>
 
                       <button
@@ -759,7 +837,7 @@ export default function AdminAiAccessPage() {
                       </p>
 
                       <p className="text-zinc-300">
-                        {entitlement.tier}
+                        {planDisplay.label}
                       </p>
                     </div>
 
@@ -768,7 +846,7 @@ export default function AdminAiAccessPage() {
                         AI enabled
                       </p>
 
-                      <p className={isPremium ? "text-emerald-400" : "text-zinc-500"}>
+                      <p className={getPlanTextClass(planKey)}>
                         {entitlement.ai_assisted_enabled ? "Enabled" : "Disabled"}
                       </p>
                     </div>
@@ -779,7 +857,7 @@ export default function AdminAiAccessPage() {
                       </p>
 
                       <p className="text-zinc-300">
-                        {entitlement.monthly_summary_limit}/month
+                        {usageLabel}
                       </p>
                     </div>
 
