@@ -7,6 +7,10 @@ import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
+import {
+  getAiUsageLabel,
+  getSubscriptionDisplay,
+} from "@/lib/subscription-plans";
 
 type Profile = {
   full_name: string | null;
@@ -20,6 +24,12 @@ type ActivityCounts = {
   replies: number;
   saved: number;
   unreadNotifications: number;
+};
+
+type AiEntitlement = {
+  tier: string;
+  ai_assisted_enabled: boolean;
+  monthly_summary_limit: number;
 };
 
 function getMissingProfileFields(profile: Profile | null) {
@@ -53,6 +63,7 @@ export default function DashboardPage() {
     saved: 0,
     unreadNotifications: 0,
   });
+  const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -77,6 +88,7 @@ export default function DashboardPage() {
         { count: replyCount },
         { count: savedCount },
         { data: unreadNotificationData },
+        { data: entitlementData },
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -106,6 +118,12 @@ export default function DashboardPage() {
           .select("id, actor_id")
           .eq("user_id", data.user.id)
           .is("read_at", null),
+
+        supabase
+          .from("user_ai_entitlements")
+          .select("tier, ai_assisted_enabled, monthly_summary_limit")
+          .eq("user_id", data.user.id)
+          .maybeSingle(),
       ]);
 
       const visibleUnreadNotifications = filterBlockedActorNotifications(
@@ -114,6 +132,7 @@ export default function DashboardPage() {
       );
 
       setProfile(profileData ?? null);
+      setAiEntitlement(entitlementData ?? null);
       setActivityCounts({
         discussions: discussionCount ?? 0,
         replies: replyCount ?? 0,
@@ -137,6 +156,9 @@ export default function DashboardPage() {
     Math.round(((totalProfileFields - missingProfileFields.length) / totalProfileFields) * 100);
 
   const profileComplete = missingProfileFields.length === 0;
+
+  const subscriptionDisplay = getSubscriptionDisplay(aiEntitlement);
+  const aiUsageLabel = getAiUsageLabel(aiEntitlement);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -167,6 +189,39 @@ export default function DashboardPage() {
         <p className="mb-8 text-zinc-400">
           Signed in as {email}
         </p>
+
+        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Subscription
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                {subscriptionDisplay.label}
+              </h2>
+            </div>
+
+            <span className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300">
+              {subscriptionDisplay.badge}
+            </span>
+          </div>
+
+          <p className="mb-3 leading-relaxed text-zinc-400">
+            {subscriptionDisplay.description}
+          </p>
+
+          <p className="mb-5 text-sm text-zinc-500">
+            Included AI usage: {aiUsageLabel}
+          </p>
+
+          <Link
+            href={subscriptionDisplay.href}
+            className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+          >
+            {subscriptionDisplay.nextAction}
+          </Link>
+        </section>
 
         <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-4 flex items-center justify-between gap-4">

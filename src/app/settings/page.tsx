@@ -3,6 +3,16 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import {
+  getAiUsageLabel,
+  getSubscriptionDisplay,
+} from "@/lib/subscription-plans";
+
+type AiEntitlement = {
+  tier: string;
+  ai_assisted_enabled: boolean;
+  monthly_summary_limit: number;
+};
 
 const settingsSections = [
   {
@@ -78,6 +88,7 @@ const settingsSections = [
 ];
 
 export default function SettingsPage() {
+  const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -89,11 +100,21 @@ export default function SettingsPage() {
         return;
       }
 
+      const { data: entitlementData } = await supabase
+        .from("user_ai_entitlements")
+        .select("tier, ai_assisted_enabled, monthly_summary_limit")
+        .eq("user_id", data.user.id)
+        .maybeSingle();
+
+      setAiEntitlement(entitlementData ?? null);
       setLoading(false);
     }
 
     requireUser();
   }, []);
+
+  const subscriptionDisplay = getSubscriptionDisplay(aiEntitlement);
+  const aiUsageLabel = getAiUsageLabel(aiEntitlement);
 
   if (loading) {
     return (
@@ -129,6 +150,39 @@ export default function SettingsPage() {
             and platform reference pages from one place.
           </p>
         </div>
+
+        <section className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Current plan
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                {subscriptionDisplay.label}
+              </h2>
+            </div>
+
+            <span className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300">
+              {subscriptionDisplay.badge}
+            </span>
+          </div>
+
+          <p className="mb-3 leading-relaxed text-zinc-400">
+            {subscriptionDisplay.description}
+          </p>
+
+          <p className="mb-5 text-sm text-zinc-500">
+            Included AI usage: {aiUsageLabel}
+          </p>
+
+          <Link
+            href={subscriptionDisplay.href}
+            className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+          >
+            {subscriptionDisplay.nextAction}
+          </Link>
+        </section>
 
         <div className="space-y-10">
           {settingsSections.map((section) => (
