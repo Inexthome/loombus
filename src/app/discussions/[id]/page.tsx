@@ -132,9 +132,13 @@ export default function DiscussionPage() {
   const [keyTakeaways, setKeyTakeaways] = useState("");
   const [takeawaysMessage, setTakeawaysMessage] = useState("");
   const [generatingTakeaways, setGeneratingTakeaways] = useState(false);
+  const [whatChanged, setWhatChanged] = useState("");
+  const [whatChangedMessage, setWhatChangedMessage] = useState("");
+  const [generatingWhatChanged, setGeneratingWhatChanged] = useState(false);
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [monthlySummaryUsage, setMonthlySummaryUsage] = useState(0);
   const [monthlyTakeawaysUsage, setMonthlyTakeawaysUsage] = useState(0);
+  const [monthlyWhatChangedUsage, setMonthlyWhatChangedUsage] = useState(0);
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -302,8 +306,18 @@ export default function DiscussionPage() {
             .eq("success", true)
             .gte("created_at", monthStart);
 
+          const { count: monthlyWhatChangedCount } = await supabase
+            .from("ai_usage_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", viewerData.user.id)
+            .eq("feature_key", "what_changed")
+            .eq("cached", false)
+            .eq("success", true)
+            .gte("created_at", monthStart);
+
           setMonthlySummaryUsage(monthlyUsageCount ?? 0);
           setMonthlyTakeawaysUsage(monthlyTakeawaysCount ?? 0);
+          setMonthlyWhatChangedUsage(monthlyWhatChangedCount ?? 0);
         }
       }
 
@@ -502,6 +516,66 @@ export default function DiscussionPage() {
     }
   }
 
+
+  async function handleGenerateWhatChanged() {
+    setWhatChangedMessage("");
+
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!canUseAiSummary) {
+      setWhatChangedMessage("Premium AI access is required for what-changed analysis.");
+      return;
+    }
+
+    setGeneratingWhatChanged(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!discussion) {
+        setWhatChangedMessage("Discussion is not loaded yet.");
+        return;
+      }
+
+      const response = await fetch("/api/discussions/what-changed", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          discussionId: discussion.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setWhatChangedMessage(result.error ?? "Unable to generate what-changed analysis.");
+        return;
+      }
+
+      setWhatChanged(result.whatChanged ?? "");
+
+      if (typeof result.monthlyWhatChangedUsage === "number") {
+        setMonthlyWhatChangedUsage(result.monthlyWhatChangedUsage);
+      }
+
+      setWhatChangedMessage(
+        result.cached ? "Showing cached what-changed analysis." : "What-changed analysis generated."
+      );
+    } finally {
+      setGeneratingWhatChanged(false);
+    }
+  }
 
   async function handleDeleteReply(replyId: string) {
     setMessage("");
@@ -744,6 +818,10 @@ export default function DiscussionPage() {
     monthlySummaryLimit - monthlyTakeawaysUsage,
     0
   );
+  const monthlyWhatChangedRemaining = Math.max(
+    monthlySummaryLimit - monthlyWhatChangedUsage,
+    0
+  );
 
   if (loading) {
     return (
@@ -801,6 +879,66 @@ export default function DiscussionPage() {
         <p className="mb-10 text-xl leading-relaxed text-zinc-300">
           {discussion.body}
         </p>
+
+        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                Premium AI-Assisted Layer
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                What Changed in This Thread
+              </h2>
+            </div>
+
+            {currentUserId && canUseAiSummary && (
+              <button
+                type="button"
+                onClick={handleGenerateWhatChanged}
+                disabled={generatingWhatChanged}
+                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                {generatingWhatChanged ? "Generating..." : "Generate What Changed"}
+              </button>
+            )}
+          </div>
+
+          {whatChanged ? (
+            <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
+              {whatChanged}
+            </div>
+          ) : (
+            <p className="leading-relaxed text-zinc-500">
+              {!currentUserId
+                ? "Log in to generate what changed in this thread."
+                : canUseAiSummary
+                  ? "Generate a concise view of how replies changed or expanded the original discussion."
+                  : "What-changed analysis is available with the Premium AI-Assisted Layer."}
+            </p>
+          )}
+
+          {currentUserId && canUseAiSummary && (
+            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
+              {isAdmin ? (
+                <p>
+                  Admin AI access: unlimited what-changed analyses.
+                </p>
+              ) : (
+                <p>
+                  Premium AI what-changed usage: {monthlyWhatChangedUsage} of {monthlySummaryLimit} used this month.
+                  {" "}Remaining: {monthlyWhatChangedRemaining}.
+                </p>
+              )}
+            </div>
+          )}
+
+          {whatChangedMessage && (
+            <p className="mt-4 text-sm text-zinc-500">
+              {whatChangedMessage}
+            </p>
+          )}
+        </section>
 
         <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
