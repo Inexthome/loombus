@@ -880,11 +880,26 @@ export default function DiscussionPage() {
           {discussion.body}
         </p>
 
+        <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+            Premium AI-Assisted Layer
+          </p>
+
+          <h2 className="text-3xl font-semibold tracking-tight">
+            Premium AI Tools
+          </h2>
+
+          <p className="mt-3 max-w-2xl leading-relaxed text-zinc-500">
+            Use AI to understand the strongest points, key shifts, and summary
+            of this discussion without adding noise to the thread.
+          </p>
+        </div>
+
         <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                Premium AI-Assisted Layer
+                Thread Evolution
               </p>
 
               <h2 className="text-2xl font-medium">
@@ -944,7 +959,7 @@ export default function DiscussionPage() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                Premium AI-Assisted Layer
+                High-Signal Takeaways
               </p>
 
               <h2 className="text-2xl font-medium">
