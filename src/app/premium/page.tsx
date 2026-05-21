@@ -1,48 +1,66 @@
 import Link from "next/link";
 import { PremiumPlanCheckoutButton } from "./premium-checkout-button";
 
-const freeFeatures = [
-  "Read public discussions",
-  "Create discussions",
-  "Reply to discussions",
-  "Follow people",
-  "Basic public profile",
-  "Save/bookmark discussions",
-  "Basic notifications",
+type FeatureStatus = "available" | "planned";
+
+type PlanFeature = {
+  label: string;
+  status: FeatureStatus;
+};
+
+const freeFeatures: PlanFeature[] = [
+  { label: "Read public discussions", status: "available" },
+  { label: "Create discussions", status: "available" },
+  { label: "Reply to discussions", status: "available" },
+  { label: "Follow people", status: "available" },
+  { label: "Basic public profile", status: "available" },
+  { label: "Save/bookmark discussions", status: "available" },
+  { label: "Basic notifications", status: "available" },
 ];
 
-const premiumFeatures = [
-  "AI discussion summaries",
-  "AI key takeaways",
-  "Higher monthly AI usage limit",
-  "Advanced discussion filters",
-  "Saved folders / collections",
-  "Personal reading history",
-  "Custom profile badge: Premium Member",
-  "Early access to new features",
-  "Better notification controls",
-  "Draft mode for discussions",
-  "Extended edit window",
+const premiumFeatures: PlanFeature[] = [
+  { label: "AI discussion summaries", status: "available" },
+  { label: "AI key takeaways", status: "available" },
+  { label: "Thread Evolution / What Changed", status: "available" },
+  { label: "Viewpoint Map / Disagreement Mapping", status: "available" },
+  { label: "Higher monthly AI usage limit", status: "available" },
+  { label: "Advanced discussion filters", status: "planned" },
+  { label: "Saved folders / collections", status: "planned" },
+  { label: "Personal reading history", status: "planned" },
+  { label: "Custom profile badge: Premium Member", status: "planned" },
+  { label: "Better notification controls", status: "planned" },
+  { label: "Draft mode for discussions", status: "planned" },
+  { label: "Extended edit window", status: "planned" },
 ];
 
-const premiumPlusFeatures = [
-  "More AI summaries and key takeaways",
-  "AI discussion quality check before posting",
-  "AI rewrite for clarity before posting",
-  "Private notes on saved discussions",
-  "Export saved discussions and notes",
-  "Longer discussion posts",
-  "Priority feature access",
-  "Optional creator/supporter profile tools",
+const premiumPlusFeatures: PlanFeature[] = [
+  {
+    label: "Higher included AI usage for summaries, takeaways, viewpoint maps, and thread evolution",
+    status: "available",
+  },
+  { label: "AI discussion quality check before posting", status: "planned" },
+  { label: "AI rewrite for clarity before posting", status: "planned" },
+  { label: "Private notes on saved discussions", status: "planned" },
+  { label: "Export saved discussions and notes", status: "planned" },
+  { label: "Longer discussion posts", status: "planned" },
+  { label: "Priority feature access", status: "planned" },
+  { label: "Optional creator/supporter profile tools", status: "planned" },
 ];
 
-function FeatureList({ features }: { features: string[] }) {
+function FeatureList({ features }: { features: PlanFeature[] }) {
   return (
     <ul className="space-y-3 text-sm leading-relaxed text-zinc-400">
       {features.map((feature) => (
-        <li key={feature} className="flex gap-3">
+        <li key={feature.label} className="flex gap-3">
           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-500" />
-          <span>{feature}</span>
+          <span className="flex flex-wrap items-center gap-2">
+            <span>{feature.label}</span>
+            {feature.status === "planned" && (
+              <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-zinc-500">
+                Planned
+              </span>
+            )}
+          </span>
         </li>
       ))}
     </ul>
@@ -66,6 +84,11 @@ export default function PremiumPage() {
             Loombus gives every member core discussion access, with Premium
             tiers for stronger AI assistance, better organization, and deeper
             reading tools.
+          </p>
+
+          <p className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-500">
+            Features marked <span className="text-zinc-300">Planned</span> are roadmap items
+            and will be built/wired before they are treated as active subscription benefits.
           </p>
         </div>
 
@@ -146,7 +169,7 @@ export default function PremiumPage() {
             </div>
 
             <p className="mb-6 text-sm text-zinc-500">
-              Or $120/year. Built for heavier AI usage and advanced tools.
+              Or $120/year. Built for heavier AI usage now, with advanced tools marked as planned until wired.
             </p>
 
             <div className="mb-8 flex flex-wrap gap-3">
