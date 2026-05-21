@@ -143,6 +143,7 @@ export default function DiscussionPage() {
   const [monthlyTakeawaysUsage, setMonthlyTakeawaysUsage] = useState(0);
   const [monthlyWhatChangedUsage, setMonthlyWhatChangedUsage] = useState(0);
   const [monthlyDisagreementUsage, setMonthlyDisagreementUsage] = useState(0);
+  const [openPremiumAiTool, setOpenPremiumAiTool] = useState("whatChanged");
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -973,7 +974,7 @@ export default function DiscussionPage() {
           </p>
         </div>
 
-        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-4 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
@@ -985,7 +986,7 @@ export default function DiscussionPage() {
               </h2>
             </div>
 
-            {currentUserId && canUseAiSummary && (
+            {openPremiumAiTool === "whatChanged" && currentUserId && canUseAiSummary && (
               <button
                 type="button"
                 onClick={handleGenerateWhatChanged}
@@ -996,6 +997,21 @@ export default function DiscussionPage() {
               </button>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() =>
+              setOpenPremiumAiTool((current) =>
+                current === "whatChanged" ? "" : "whatChanged"
+              )
+            }
+            className="mb-4 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+          >
+            {openPremiumAiTool === "whatChanged" ? "Hide tool" : "Open tool"}
+          </button>
+
+          {openPremiumAiTool === "whatChanged" && (
+            <>
+
 
           {whatChanged ? (
             <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
@@ -1031,9 +1047,12 @@ export default function DiscussionPage() {
               {whatChangedMessage}
             </p>
           )}
+        
+            </>
+          )}
         </section>
 
-        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-4 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
@@ -1045,7 +1064,7 @@ export default function DiscussionPage() {
               </h2>
             </div>
 
-            {currentUserId && canUseAiSummary && (
+            {openPremiumAiTool === "disagreementMap" && currentUserId && canUseAiSummary && (
               <button
                 type="button"
                 onClick={handleGenerateDisagreementMap}
@@ -1056,6 +1075,21 @@ export default function DiscussionPage() {
               </button>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() =>
+              setOpenPremiumAiTool((current) =>
+                current === "disagreementMap" ? "" : "disagreementMap"
+              )
+            }
+            className="mb-4 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+          >
+            {openPremiumAiTool === "disagreementMap" ? "Hide tool" : "Open tool"}
+          </button>
+
+          {openPremiumAiTool === "disagreementMap" && (
+            <>
+
 
           {disagreementMap ? (
             <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
@@ -1091,9 +1125,12 @@ export default function DiscussionPage() {
               {disagreementMessage}
             </p>
           )}
+        
+            </>
+          )}
         </section>
 
-        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-4 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
@@ -1105,7 +1142,7 @@ export default function DiscussionPage() {
               </h2>
             </div>
 
-            {currentUserId && canUseAiSummary && (
+            {openPremiumAiTool === "keyTakeaways" && currentUserId && canUseAiSummary && (
               <button
                 type="button"
                 onClick={handleGenerateKeyTakeaways}
@@ -1116,6 +1153,21 @@ export default function DiscussionPage() {
               </button>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() =>
+              setOpenPremiumAiTool((current) =>
+                current === "keyTakeaways" ? "" : "keyTakeaways"
+              )
+            }
+            className="mb-4 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+          >
+            {openPremiumAiTool === "keyTakeaways" ? "Hide tool" : "Open tool"}
+          </button>
+
+          {openPremiumAiTool === "keyTakeaways" && (
+            <>
+
 
           {keyTakeaways ? (
             <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
@@ -1151,6 +1203,9 @@ export default function DiscussionPage() {
               {takeawaysMessage}
             </p>
           )}
+        
+            </>
+          )}
         </section>
 
         <section className="mb-12 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
@@ -1176,6 +1231,21 @@ export default function DiscussionPage() {
               </button>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() =>
+              setOpenPremiumAiTool((current) =>
+                current === "summary" ? "" : "summary"
+              )
+            }
+            className="mb-4 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+          >
+            {openPremiumAiTool === "summary" ? "Hide tool" : "Open tool"}
+          </button>
+
+          {openPremiumAiTool === "summary" && (
+            <>
+
 
           {discussionSummary ? (
             <>
@@ -1199,7 +1269,7 @@ export default function DiscussionPage() {
             </p>
           )}
 
-          {currentUserId && canUseAiSummary && (
+          {openPremiumAiTool === "summary" && currentUserId && canUseAiSummary && (
             <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
               {isAdmin ? (
                 <p>
@@ -1218,6 +1288,9 @@ export default function DiscussionPage() {
             <p className="mt-4 text-sm text-zinc-500">
               {summaryMessage}
             </p>
+          )}
+        
+            </>
           )}
         </section>
 
