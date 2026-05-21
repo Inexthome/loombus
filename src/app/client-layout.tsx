@@ -167,6 +167,12 @@ export default function ClientLayout({
                 <Link href="/discussions" className={navLinkClass("/discussions")}>
                   Discussions
                 </Link>
+                <Link
+                  href="/premium"
+                  className="transition hover:text-white"
+                >
+                  Premium
+                </Link>
 
 
 
@@ -234,6 +240,12 @@ export default function ClientLayout({
 
                 <Link href="/discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/discussions")}>
                   Discussions
+                </Link>
+                <Link
+                  href="/premium"
+                  className="transition hover:text-white"
+                >
+                  Premium
                 </Link>
 
 

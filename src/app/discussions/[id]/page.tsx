@@ -1023,7 +1023,17 @@ export default function DiscussionPage() {
                 ? "Log in to generate what changed in this thread."
                 : canUseAiSummary
                   ? "Generate a concise view of how replies changed or expanded the original discussion."
-                  : "What-changed analysis is available with the Premium AI-Assisted Layer."}
+                  : (
+                    <>
+                      What-changed analysis is available with the Premium AI-Assisted Layer.{" "}
+                      <Link
+                        href="/premium"
+                        className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
+                      >
+                        View Premium
+                      </Link>
+                    </>
+                  )}
             </p>
           )}
 
@@ -1101,7 +1111,17 @@ export default function DiscussionPage() {
                 ? "Log in to generate a neutral disagreement map for this discussion."
                 : canUseAiSummary
                   ? "Map real disagreement, different assumptions, and unresolved questions without picking a winner."
-                  : "Disagreement mapping is available with the Premium AI-Assisted Layer."}
+                  : (
+                    <>
+                      Disagreement mapping is available with the Premium AI-Assisted Layer.{" "}
+                      <Link
+                        href="/premium"
+                        className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
+                      >
+                        View Premium
+                      </Link>
+                    </>
+                  )}
             </p>
           )}
 
@@ -1179,7 +1199,17 @@ export default function DiscussionPage() {
                 ? "Log in to generate AI-assisted key takeaways for this discussion."
                 : canUseAiSummary
                   ? "Generate concise key takeaways from the discussion and visible replies."
-                  : "AI-assisted key takeaways are available with the Premium AI-Assisted Layer."}
+                  : (
+                    <>
+                      AI-assisted key takeaways are available with the Premium AI-Assisted Layer.{" "}
+                      <Link
+                        href="/premium"
+                        className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
+                      >
+                        View Premium
+                      </Link>
+                    </>
+                  )}
             </p>
           )}
 
@@ -1265,7 +1295,17 @@ export default function DiscussionPage() {
                 ? "Log in to generate an AI-assisted summary for this discussion."
                 : canUseAiSummary
                   ? "No summary has been generated yet. Generate one to cache it for future readers."
-                  : "AI-assisted summaries are available with the Premium AI-Assisted Layer."}
+                  : (
+                    <>
+                      AI-assisted summaries are available with the Premium AI-Assisted Layer.{" "}
+                      <Link
+                        href="/premium"
+                        className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
+                      >
+                        View Premium
+                      </Link>
+                    </>
+                  )}
             </p>
           )}
 

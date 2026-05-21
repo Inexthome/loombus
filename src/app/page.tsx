@@ -36,6 +36,13 @@ export default function Home() {
             Explore Discussions
           </Link>
 
+          <Link
+            href="/premium"
+            className="rounded-full border border-zinc-700 px-6 py-3 text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+          >
+            View Premium
+          </Link>
+
         </div>
 
         <div className="mt-32 grid gap-8 md:grid-cols-3">

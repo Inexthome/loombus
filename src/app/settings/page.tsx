@@ -64,6 +64,11 @@ const settingsSections = [
         href: "/about",
       },
       {
+        title: "Premium",
+        description: "Review Loombus Premium AI subscription options and checkout access.",
+        href: "/premium",
+      },
+      {
         title: "Guidelines",
         description: "Review community standards and contribution expectations.",
         href: "/guidelines",
