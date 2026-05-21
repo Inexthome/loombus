@@ -25,7 +25,7 @@ const premiumFeatures: PlanFeature[] = [
   { label: "Higher monthly AI usage limit", status: "available" },
   { label: "Advanced discussion filters", status: "planned" },
   { label: "Saved folders / collections", status: "available" },
-  { label: "Personal reading history", status: "planned" },
+  { label: "Personal reading history", status: "available" },
   { label: "Custom profile badge: Premium Member", status: "planned" },
   { label: "Better notification controls", status: "planned" },
   { label: "Draft mode for discussions", status: "planned" },

@@ -59,6 +59,11 @@ const settingsSections = [
         href: "/saved",
       },
       {
+        title: "Reading History",
+        description: "Revisit discussions you opened recently.",
+        href: "/reading-history",
+      },
+      {
         title: "Notifications",
         description: "Review unread and read notifications.",
         href: "/notifications",
