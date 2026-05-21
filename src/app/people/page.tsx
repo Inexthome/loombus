@@ -5,26 +5,6 @@ import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
 
-function withPeopleTimeout<T>(
-  promise: PromiseLike<T>,
-  label: string,
-  ms = 8000
-): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error(`${label} timed out. Please reload People.`));
-    }, ms);
-  });
-
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  });
-}
-
 type Profile = {
   id: string;
   full_name: string | null;
@@ -92,17 +72,8 @@ export default function PeoplePage() {
 
   useEffect(() => {
     async function loadProfiles() {
-      const { data: sessionData, error: sessionError } = await withPeopleTimeout(
-        supabase.auth.getSession(),
-        "People session check"
-      );
-
-      if (sessionError) {
-        throw sessionError;
-      }
-
-      const sessionUser = sessionData.session?.user ?? null;
-      const viewerId = sessionUser?.id ?? null;
+      const { data: userData } = await supabase.auth.getUser();
+      const viewerId = userData.user?.id ?? null;
 
       setCurrentUserId(viewerId);
       setAuthChecked(true);
@@ -150,13 +121,10 @@ export default function PeoplePage() {
           new Set((follows ?? []).map((follow) => follow.following_id))
         );
 
-        const { data: blockRows } = await withPeopleTimeout(
-          supabase
-            .from("user_blocks")
-            .select("blocker_id, blocked_id")
-            .or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`),
-          "People blocked-user check"
-        );
+        const { data: blockRows } = await supabase
+          .from("user_blocks")
+          .select("blocker_id, blocked_id")
+          .or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`);
 
         const hiddenIds = new Set<string>();
 
