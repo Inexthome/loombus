@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import {
   filterBlockedActorNotifications,
@@ -28,6 +28,28 @@ type Profile = {
 };
 
 type NotificationFilter = "all" | "unread" | "read";
+type NotificationTypeFilter = "all" | "reply" | "mention" | "follow";
+type NotificationSortMode = "newest" | "oldest";
+
+type AiEntitlement = {
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
+} | null;
+
+function hasAdvancedNotificationAccess(
+  entitlement: AiEntitlement,
+  isAdmin: boolean
+) {
+  if (isAdmin) {
+    return true;
+  }
+
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    entitlement.tier === "premium"
+  );
+}
 
 function getProfileName(profile: Profile | undefined) {
   return profile?.full_name || profile?.username || "Someone";
@@ -86,9 +108,18 @@ export default function NotificationsPage() {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<NotificationFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<NotificationTypeFilter>("all");
+  const [sortMode, setSortMode] = useState<NotificationSortMode>("newest");
+  const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [working, setWorking] = useState(false);
+
+  const canUseAdvancedControls = hasAdvancedNotificationAccess(
+    aiEntitlement,
+    isAdmin
+  );
 
   async function markNotificationIdsRead(ids: string[], userId: string) {
     if (ids.length === 0) {
@@ -131,6 +162,22 @@ export default function NotificationsPage() {
       }
 
       setCurrentUserId(userData.user.id);
+
+      const [{ data: profileData }, { data: entitlementData }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", userData.user.id)
+          .maybeSingle(),
+        supabase
+          .from("user_ai_entitlements")
+          .select("tier, ai_assisted_enabled, monthly_summary_limit")
+          .eq("user_id", userData.user.id)
+          .maybeSingle(),
+      ]);
+
+      setIsAdmin(Boolean(profileData?.is_admin));
+      setAiEntitlement((entitlementData ?? null) as AiEntitlement);
 
       const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
         supabase,
@@ -300,17 +347,42 @@ export default function NotificationsPage() {
 
   const readCount = notifications.length - unreadCount;
 
-  const filteredNotifications = notifications.filter((notification) => {
-    if (filterMode === "unread") {
-      return !notification.read_at;
-    }
+  const filteredNotifications = useMemo(() => {
+    const activeTypeFilter = canUseAdvancedControls ? typeFilter : "all";
+    const activeSortMode = canUseAdvancedControls ? sortMode : "newest";
 
-    if (filterMode === "read") {
-      return Boolean(notification.read_at);
-    }
+    const filtered = notifications.filter((notification) => {
+      if (filterMode === "unread" && notification.read_at) {
+        return false;
+      }
 
-    return true;
-  });
+      if (filterMode === "read" && !notification.read_at) {
+        return false;
+      }
+
+      if (
+        activeTypeFilter !== "all" &&
+        notification.type !== activeTypeFilter
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      const aTime = new Date(a.created_at).getTime();
+      const bTime = new Date(b.created_at).getTime();
+
+      return activeSortMode === "oldest" ? aTime - bTime : bTime - aTime;
+    });
+  }, [
+    notifications,
+    filterMode,
+    typeFilter,
+    sortMode,
+    canUseAdvancedControls,
+  ]);
 
   const filterOptions: {
     label: string;
@@ -403,6 +475,92 @@ export default function NotificationsPage() {
           </div>
         )}
 
+        {!loading && notifications.length > 0 && (
+          <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+                  Advanced notification controls
+                </p>
+
+                <h2 className="text-2xl font-medium">
+                  Filter notifications by signal
+                </h2>
+              </div>
+
+              {!canUseAdvancedControls && (
+                <Link
+                  href="/premium"
+                  className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                >
+                  Unlock with Premium
+                </Link>
+              )}
+            </div>
+
+            <div className="mb-5">
+              <p className="mb-3 text-sm text-zinc-500">
+                Type filter
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                {[
+                  ["all", "All types"],
+                  ["reply", "Replies"],
+                  ["mention", "Mentions"],
+                  ["follow", "Follows"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setTypeFilter(value as NotificationTypeFilter)}
+                    disabled={!canUseAdvancedControls && value !== "all"}
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                      typeFilter === value
+                        ? "border-zinc-400 text-white"
+                        : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
+                    } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-sm text-zinc-500">
+                Sort order
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                {[
+                  ["newest", "Newest first"],
+                  ["oldest", "Oldest first"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSortMode(value as NotificationSortMode)}
+                    disabled={!canUseAdvancedControls && value !== "newest"}
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                      sortMode === value
+                        ? "border-zinc-400 text-white"
+                        : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
+                    } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="mt-5 text-xs leading-relaxed text-zinc-600">
+              Premium controls let you isolate replies, mentions, follows, and
+              review notifications from newest or oldest first.
+            </p>
+          </section>
+        )}
+
         {loading && (
           <p className="text-zinc-500">
             Loading notifications...
@@ -428,7 +586,7 @@ export default function NotificationsPage() {
             </h2>
 
             <p className="text-zinc-400">
-              No notifications match the current filter.
+              No notifications match the current filters.
             </p>
           </div>
         )}

@@ -27,7 +27,7 @@ const premiumFeatures: PlanFeature[] = [
   { label: "Saved folders / collections", status: "available" },
   { label: "Personal reading history", status: "available" },
   { label: "Custom profile badge: Premium Member", status: "planned" },
-  { label: "Better notification controls", status: "planned" },
+  { label: "Better notification controls", status: "available" },
   { label: "Draft mode for discussions", status: "planned" },
   { label: "Extended edit window", status: "planned" },
 ];
