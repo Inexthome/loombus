@@ -131,14 +131,21 @@ export default function PremiumPage() {
               Premium
             </p>
 
+            <p className="mb-2 text-sm uppercase tracking-wide text-emerald-400">
+              Early Access pricing
+            </p>
+
             <div className="mb-2 flex items-end gap-2">
               <span className="text-5xl font-semibold">$7</span>
               <span className="pb-2 text-zinc-500">/ month</span>
             </div>
 
-            <p className="mb-6 text-sm text-zinc-500">
-              Or $70/year. Best starting plan for AI-assisted reading and
-              organization.
+            <p className="mb-2 text-sm text-zinc-400">
+              Early Access annual: $70/year
+            </p>
+
+            <p className="mb-6 text-sm leading-relaxed text-zinc-500">
+              Standard: $9/month or $90/year. You save $2/month or $20/year during Early Access.
             </p>
 
             <div className="mb-8 space-y-3">
@@ -174,13 +181,25 @@ export default function PremiumPage() {
               Premium Plus
             </p>
 
+            <p className="mb-2 text-sm uppercase tracking-wide text-emerald-400">
+              Early Access pricing
+            </p>
+
             <div className="mb-2 flex items-end gap-2">
               <span className="text-5xl font-semibold">$12</span>
               <span className="pb-2 text-zinc-500">/ month</span>
             </div>
 
-            <p className="mb-6 text-sm text-zinc-500">
-              Or $120/year. Built for heavier AI usage, Labs access, creator tools, exports, longer posts, and pre-posting AI support.
+            <p className="mb-2 text-sm text-zinc-400">
+              Early Access annual: $120/year
+            </p>
+
+            <p className="mb-2 text-sm leading-relaxed text-zinc-500">
+              Standard: $15/month or $150/year. You save $3/month or $30/year during Early Access.
+            </p>
+
+            <p className="mb-6 text-sm leading-relaxed text-zinc-500">
+              Built for heavier AI usage, Labs access, creator tools, exports, longer posts, and pre-posting AI support.
             </p>
 
             <div className="mb-8 space-y-3">
@@ -226,7 +245,7 @@ export default function PremiumPage() {
 
             <div>
               <div className="mb-4 flex items-end gap-2">
-                <span className="text-4xl font-semibold">$3</span>
+                <span className="text-4xl font-semibold">$5</span>
                 <span className="pb-1 text-zinc-500">
                   for 25 additional AI actions
                 </span>
