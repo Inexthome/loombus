@@ -135,10 +135,14 @@ export default function DiscussionPage() {
   const [whatChanged, setWhatChanged] = useState("");
   const [whatChangedMessage, setWhatChangedMessage] = useState("");
   const [generatingWhatChanged, setGeneratingWhatChanged] = useState(false);
+  const [disagreementMap, setDisagreementMap] = useState("");
+  const [disagreementMessage, setDisagreementMessage] = useState("");
+  const [generatingDisagreement, setGeneratingDisagreement] = useState(false);
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [monthlySummaryUsage, setMonthlySummaryUsage] = useState(0);
   const [monthlyTakeawaysUsage, setMonthlyTakeawaysUsage] = useState(0);
   const [monthlyWhatChangedUsage, setMonthlyWhatChangedUsage] = useState(0);
+  const [monthlyDisagreementUsage, setMonthlyDisagreementUsage] = useState(0);
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -315,9 +319,19 @@ export default function DiscussionPage() {
             .eq("success", true)
             .gte("created_at", monthStart);
 
+          const { count: monthlyDisagreementCount } = await supabase
+            .from("ai_usage_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", viewerData.user.id)
+            .eq("feature_key", "disagreement_map")
+            .eq("cached", false)
+            .eq("success", true)
+            .gte("created_at", monthStart);
+
           setMonthlySummaryUsage(monthlyUsageCount ?? 0);
           setMonthlyTakeawaysUsage(monthlyTakeawaysCount ?? 0);
           setMonthlyWhatChangedUsage(monthlyWhatChangedCount ?? 0);
+          setMonthlyDisagreementUsage(monthlyDisagreementCount ?? 0);
         }
       }
 
@@ -577,6 +591,66 @@ export default function DiscussionPage() {
     }
   }
 
+  async function handleGenerateDisagreementMap() {
+    setDisagreementMessage("");
+
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!canUseAiSummary) {
+      setDisagreementMessage("Premium AI access is required for disagreement mapping.");
+      return;
+    }
+
+    setGeneratingDisagreement(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!discussion) {
+        setDisagreementMessage("Discussion is not loaded yet.");
+        return;
+      }
+
+      const response = await fetch("/api/discussions/disagreement-map", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          discussionId: discussion.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setDisagreementMessage(result.error ?? "Unable to generate disagreement map.");
+        return;
+      }
+
+      setDisagreementMap(result.disagreementMap ?? "");
+
+      if (typeof result.monthlyDisagreementUsage === "number") {
+        setMonthlyDisagreementUsage(result.monthlyDisagreementUsage);
+      }
+
+      setDisagreementMessage(
+        result.cached ? "Showing cached disagreement map." : "Disagreement map generated."
+      );
+    } finally {
+      setGeneratingDisagreement(false);
+    }
+  }
+
   async function handleDeleteReply(replyId: string) {
     setMessage("");
 
@@ -822,6 +896,10 @@ export default function DiscussionPage() {
     monthlySummaryLimit - monthlyWhatChangedUsage,
     0
   );
+  const monthlyDisagreementRemaining = Math.max(
+    monthlySummaryLimit - monthlyDisagreementUsage,
+    0
+  );
 
   if (loading) {
     return (
@@ -951,6 +1029,66 @@ export default function DiscussionPage() {
           {whatChangedMessage && (
             <p className="mt-4 text-sm text-zinc-500">
               {whatChangedMessage}
+            </p>
+          )}
+        </section>
+
+        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                Viewpoint Map
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Disagreement Mapping
+              </h2>
+            </div>
+
+            {currentUserId && canUseAiSummary && (
+              <button
+                type="button"
+                onClick={handleGenerateDisagreementMap}
+                disabled={generatingDisagreement}
+                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                {generatingDisagreement ? "Generating..." : "Generate Disagreement Map"}
+              </button>
+            )}
+          </div>
+
+          {disagreementMap ? (
+            <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
+              {disagreementMap}
+            </div>
+          ) : (
+            <p className="leading-relaxed text-zinc-500">
+              {!currentUserId
+                ? "Log in to generate a neutral disagreement map for this discussion."
+                : canUseAiSummary
+                  ? "Map real disagreement, different assumptions, and unresolved questions without picking a winner."
+                  : "Disagreement mapping is available with the Premium AI-Assisted Layer."}
+            </p>
+          )}
+
+          {currentUserId && canUseAiSummary && (
+            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
+              {isAdmin ? (
+                <p>
+                  Admin AI access: unlimited disagreement maps.
+                </p>
+              ) : (
+                <p>
+                  Premium AI disagreement map usage: {monthlyDisagreementUsage} of {monthlySummaryLimit} used this month.
+                  {" "}Remaining: {monthlyDisagreementRemaining}.
+                </p>
+              )}
+            </div>
+          )}
+
+          {disagreementMessage && (
+            <p className="mt-4 text-sm text-zinc-500">
+              {disagreementMessage}
             </p>
           )}
         </section>
