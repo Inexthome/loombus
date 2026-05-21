@@ -9,6 +9,26 @@ import {
 } from "@/lib/notification-block-filter";
 import { ProfileAvatar } from "@/components/profile-avatar";
 
+function withNotificationsTimeout<T>(
+  promise: PromiseLike<T>,
+  label: string,
+  ms = 8000
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out. Please reload Notifications.`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
+}
+
 type Notification = {
   id: string;
   actor_id: string | null;
@@ -176,25 +196,34 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     async function loadNotifications() {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: sessionData, error: sessionError } = await withNotificationsTimeout(
+        supabase.auth.getSession(),
+        "Notifications session check"
+      );
 
-      if (!userData.user) {
-        window.location.href = "/login";
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      const sessionUser = sessionData.session?.user ?? null;
+
+      if (!sessionUser) {
+        window.location.replace("/login");
         return;
       }
 
-      setCurrentUserId(userData.user.id);
+      setCurrentUserId(sessionUser.id);
 
       const [{ data: profileData }, { data: entitlementData }] = await Promise.all([
         supabase
           .from("profiles")
           .select("is_admin")
-          .eq("id", userData.user.id)
+          .eq("id", sessionUser.id)
           .maybeSingle(),
         supabase
           .from("user_ai_entitlements")
           .select("tier, ai_assisted_enabled, monthly_summary_limit")
-          .eq("user_id", userData.user.id)
+          .eq("user_id", sessionUser.id)
           .maybeSingle(),
       ]);
 
@@ -203,13 +232,13 @@ export default function NotificationsPage() {
 
       const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
         supabase,
-        userData.user.id
+        sessionUser.id
       );
 
       const { data } = await supabase
         .from("notifications")
         .select("*")
-        .eq("user_id", userData.user.id)
+        .eq("user_id", sessionUser.id)
         .order("created_at", { ascending: false });
 
       const loadedNotifications = filterBlockedActorNotifications(
