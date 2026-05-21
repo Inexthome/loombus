@@ -4,6 +4,11 @@ import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import {
+  getAiUsageLabel,
+  getSubscriptionDisplay,
+  getSubscriptionDisplayKey,
+} from "@/lib/subscription-plans";
 import { DEFAULT_REPORT_REASON, REPORT_REASONS, type ReportReason } from "@/lib/report-reasons";
 import { ProfileAvatar } from "@/components/profile-avatar";
 
@@ -480,7 +485,7 @@ export default function DiscussionPage() {
     }
 
     if (!canUseAiSummary) {
-      setTakeawaysMessage("Premium AI access is required for key takeaways.");
+      setTakeawaysMessage("This tool requires Premium or Premium Plus access. Choose a plan to unlock it.");
       return;
     }
 
@@ -541,7 +546,7 @@ export default function DiscussionPage() {
     }
 
     if (!canUseAiSummary) {
-      setWhatChangedMessage("Premium AI access is required for what-changed analysis.");
+      setWhatChangedMessage("This tool requires Premium or Premium Plus access. Choose a plan to unlock it.");
       return;
     }
 
@@ -601,7 +606,7 @@ export default function DiscussionPage() {
     }
 
     if (!canUseAiSummary) {
-      setDisagreementMessage("Premium AI access is required for disagreement mapping.");
+      setDisagreementMessage("This tool requires Premium or Premium Plus access. Choose a plan to unlock it.");
       return;
     }
 
@@ -877,12 +882,13 @@ export default function DiscussionPage() {
     }
   }
 
-  const canUseAiSummary =
-    isAdmin ||
-    Boolean(
-      aiEntitlement?.ai_assisted_enabled &&
-      ["premium", "admin"].includes(aiEntitlement.tier)
-    );
+  const subscriptionDisplayKey = getSubscriptionDisplayKey(aiEntitlement);
+  const subscriptionDisplay = getSubscriptionDisplay(aiEntitlement);
+  const aiUsageLabel = getAiUsageLabel(aiEntitlement);
+
+  const canUseAiSummary = ["premium", "premium_plus", "admin"].includes(
+    subscriptionDisplayKey
+  );
 
   const monthlySummaryLimit = aiEntitlement?.monthly_summary_limit ?? 0;
   const monthlySummaryRemaining = Math.max(
@@ -972,6 +978,12 @@ export default function DiscussionPage() {
             Use AI to understand the strongest points, key shifts, and summary
             of this discussion without adding noise to the thread.
           </p>
+
+          {currentUserId && (
+            <p className="mt-4 text-sm text-zinc-500">
+              Current plan: {subscriptionDisplay.label}. Included AI usage: {aiUsageLabel}.
+            </p>
+          )}
         </div>
 
         <section className="mb-4 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
@@ -1025,7 +1037,7 @@ export default function DiscussionPage() {
                   ? "Generate a concise view of how replies changed or expanded the original discussion."
                   : (
                     <>
-                      What-changed analysis is available with the Premium AI-Assisted Layer.{" "}
+                      What-changed analysis is available with Premium or Premium Plus.{" "}
                       <Link
                         href="/premium"
                         className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
@@ -1045,7 +1057,7 @@ export default function DiscussionPage() {
                 </p>
               ) : (
                 <p>
-                  Premium AI what-changed usage: {monthlyWhatChangedUsage} of {monthlySummaryLimit} used this month.
+                  {subscriptionDisplay.label} AI what-changed usage: {monthlyWhatChangedUsage} of {monthlySummaryLimit} used this month.
                   {" "}Remaining: {monthlyWhatChangedRemaining}.
                 </p>
               )}
@@ -1113,7 +1125,7 @@ export default function DiscussionPage() {
                   ? "Map real disagreement, different assumptions, and unresolved questions without picking a winner."
                   : (
                     <>
-                      Disagreement mapping is available with the Premium AI-Assisted Layer.{" "}
+                      Disagreement mapping is available with Premium or Premium Plus.{" "}
                       <Link
                         href="/premium"
                         className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
@@ -1133,7 +1145,7 @@ export default function DiscussionPage() {
                 </p>
               ) : (
                 <p>
-                  Premium AI disagreement map usage: {monthlyDisagreementUsage} of {monthlySummaryLimit} used this month.
+                  {subscriptionDisplay.label} AI disagreement map usage: {monthlyDisagreementUsage} of {monthlySummaryLimit} used this month.
                   {" "}Remaining: {monthlyDisagreementRemaining}.
                 </p>
               )}
@@ -1201,7 +1213,7 @@ export default function DiscussionPage() {
                   ? "Generate concise key takeaways from the discussion and visible replies."
                   : (
                     <>
-                      AI-assisted key takeaways are available with the Premium AI-Assisted Layer.{" "}
+                      AI-assisted key takeaways are available with Premium or Premium Plus.{" "}
                       <Link
                         href="/premium"
                         className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
@@ -1221,7 +1233,7 @@ export default function DiscussionPage() {
                 </p>
               ) : (
                 <p>
-                  Premium AI key takeaways usage: {monthlyTakeawaysUsage} of {monthlySummaryLimit} used this month.
+                  {subscriptionDisplay.label} AI key takeaways usage: {monthlyTakeawaysUsage} of {monthlySummaryLimit} used this month.
                   {" "}Remaining: {monthlyTakeawaysRemaining}.
                 </p>
               )}
@@ -1297,7 +1309,7 @@ export default function DiscussionPage() {
                   ? "No summary has been generated yet. Generate one to cache it for future readers."
                   : (
                     <>
-                      AI-assisted summaries are available with the Premium AI-Assisted Layer.{" "}
+                      AI-assisted summaries are available with Premium or Premium Plus.{" "}
                       <Link
                         href="/premium"
                         className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
@@ -1317,7 +1329,7 @@ export default function DiscussionPage() {
                 </p>
               ) : (
                 <p>
-                  Premium AI usage: {monthlySummaryUsage} of {monthlySummaryLimit} summaries used this month.
+                  {subscriptionDisplay.label} AI summary usage: {monthlySummaryUsage} of {monthlySummaryLimit} summaries used this month.
                   {" "}Remaining: {monthlySummaryRemaining}.
                 </p>
               )}
