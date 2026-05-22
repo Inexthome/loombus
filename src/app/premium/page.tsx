@@ -86,14 +86,14 @@ export default function PremiumPage() {
             reading tools.
           </p>
 
-          <p className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-500">
+          <p className="mt-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 text-sm leading-relaxed text-zinc-500 shadow-2xl shadow-black/30">
             Features marked <span className="text-zinc-300">Planned</span> are roadmap items
             and will be built/wired before they are treated as active subscription benefits.
           </p>
         </div>
 
         <section className="mb-12 grid gap-6 lg:grid-cols-3">
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
               Free
             </p>
@@ -111,14 +111,14 @@ export default function PremiumPage() {
             <div className="mb-8 flex flex-wrap gap-3">
               <Link
                 href="/signup"
-                className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
                 Choose Free
               </Link>
 
               <Link
                 href="/login"
-                className="rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                className="inline-flex rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
               >
                 Log in
               </Link>
@@ -127,7 +127,7 @@ export default function PremiumPage() {
             <FeatureList features={freeFeatures} />
           </div>
 
-          <div className="rounded-3xl border border-zinc-600 bg-zinc-950 p-8 shadow-2xl shadow-white/5">
+          <div className="rounded-3xl border border-zinc-600 bg-zinc-950 p-8 shadow-2xl shadow-white/10">
             <p className="mb-3 text-sm uppercase tracking-wide text-zinc-400">
               Premium
             </p>
@@ -169,7 +169,7 @@ export default function PremiumPage() {
             <FeatureList features={premiumFeatures} />
           </div>
 
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
               Premium Plus
             </p>
@@ -216,7 +216,7 @@ export default function PremiumPage() {
           </div>
         </section>
 
-        <section className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+        <section className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
           <div className="grid gap-8 md:grid-cols-[0.9fr_1.1fr]">
             <div>
               <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
@@ -250,7 +250,7 @@ export default function PremiumPage() {
           </div>
         </section>
 
-        <section className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+        <section className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
           <div className="grid gap-8 md:grid-cols-[0.9fr_1.1fr]">
             <div>
               <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
@@ -277,7 +277,7 @@ export default function PremiumPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+        <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
           <h2 className="mb-3 text-2xl font-medium">
             Built for signal over noise
           </h2>
