@@ -90,35 +90,78 @@ export default function ClientLayout({
   }
 
   useEffect(() => {
-    async function loadUser() {
-      const { data } = await supabase.auth.getUser();
-      const userId = data.user?.id ?? null;
+    let isMounted = true;
 
-      currentUserIdRef.current = userId;
-      setUser(data.user ?? null);
+    async function loadAdminStatus(userId: string) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", userId)
+          .single();
 
-      if (!userId) {
-        setNotificationCount(0);
-        setIsAdmin(false);
-        return;
+        if (isMounted && currentUserIdRef.current === userId) {
+          setIsAdmin(Boolean(profile?.is_admin));
+        }
+      } catch (error) {
+        console.error("Unable to load admin status.", error);
+
+        if (isMounted && currentUserIdRef.current === userId) {
+          setIsAdmin(false);
+        }
       }
+    }
 
-      await loadNotificationCount(userId);
+    async function refreshAuthenticatedNavState(
+      userId: string,
+      options: { forceNotifications?: boolean } = {}
+    ) {
+      await Promise.allSettled([
+        loadNotificationCount(userId, {
+          force: Boolean(options.forceNotifications),
+        }),
+        loadAdminStatus(userId),
+      ]);
+    }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", userId)
-        .single();
+    async function loadUser() {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const userId = data.user?.id ?? null;
 
-      setIsAdmin(Boolean(profile?.is_admin));
+        if (!isMounted) {
+          return;
+        }
+
+        currentUserIdRef.current = userId;
+        setUser(data.user ?? null);
+
+        if (!userId) {
+          setNotificationCount(0);
+          setIsAdmin(false);
+          lastNotificationLoadRef.current = null;
+          return;
+        }
+
+        await refreshAuthenticatedNavState(userId);
+      } catch (error) {
+        console.error("Unable to load layout auth state.", error);
+
+        if (isMounted) {
+          currentUserIdRef.current = null;
+          setUser(null);
+          setNotificationCount(0);
+          setIsAdmin(false);
+          lastNotificationLoadRef.current = null;
+        }
+      }
     }
 
     loadUser();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       const nextUserId = session?.user?.id ?? null;
       const previousUserId = currentUserIdRef.current;
 
@@ -133,23 +176,21 @@ export default function ClientLayout({
       }
 
       if (nextUserId !== previousUserId) {
-        await loadNotificationCount(nextUserId, { force: true });
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", nextUserId)
-          .single();
-
-        setIsAdmin(Boolean(profile?.is_admin));
+        setTimeout(() => {
+          void refreshAuthenticatedNavState(nextUserId, {
+            forceNotifications: true,
+          });
+        }, 0);
       }
     });
 
-    async function handleNotificationsChanged() {
+    function handleNotificationsChanged() {
       const userId = currentUserIdRef.current;
 
       if (userId) {
-        await loadNotificationCount(userId, { force: true });
+        setTimeout(() => {
+          void loadNotificationCount(userId, { force: true });
+        }, 0);
       } else {
         setNotificationCount(0);
       }
@@ -161,6 +202,7 @@ export default function ClientLayout({
     );
 
     return () => {
+      isMounted = false;
       window.removeEventListener(
         "loombus:notifications-changed",
         handleNotificationsChanged
