@@ -18,7 +18,9 @@ export default function ClientLayout({
   const [isAdmin, setIsAdmin] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const currentUserIdRef = useRef<string | null>(null);
+  const moreMenuRef = useRef<HTMLDivElement | null>(null);
   const loadingNotificationCountRef = useRef(false);
   const lastNotificationLoadRef = useRef<{ userId: string; loadedAt: number } | null>(null);
   const pathname = usePathname();
@@ -215,9 +217,32 @@ export default function ClientLayout({
     setMobileMenuOpen(false);
   }
 
+  function closeMoreMenu() {
+    setMoreMenuOpen(false);
+  }
+
   useEffect(() => {
     setMobileMenuOpen(false);
+    setMoreMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (!moreMenuRef.current) {
+        return;
+      }
+
+      if (!moreMenuRef.current.contains(event.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      window.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, []);
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -253,22 +278,23 @@ export default function ClientLayout({
               </button>
 
               <nav className="hidden items-center gap-5 text-sm text-zinc-400 md:flex">
-                <Link href="/" className={navLinkClass("/")}>
+                <Link href="/" onClick={closeMoreMenu} className={navLinkClass("/")}>
                   Home
                 </Link>
 
                 <Link
                   href="/create"
+                  onClick={closeMoreMenu}
                   className="rounded-full bg-white px-4 py-2 font-medium text-black transition hover:bg-zinc-200"
                 >
                   Create
                 </Link>
 
-                <Link href="/discussions" className={navLinkClass("/discussions")}>
+                <Link href="/discussions" onClick={closeMoreMenu} className={navLinkClass("/discussions")}>
                   Discussions
                 </Link>
 
-                <Link href="/notifications" className={navLinkClass("/notifications")}>
+                <Link href="/notifications" onClick={closeMoreMenu} className={navLinkClass("/notifications")}>
                   Notifications
                   {notificationCount > 0 && (
                     <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
@@ -277,51 +303,65 @@ export default function ClientLayout({
                   )}
                 </Link>
 
-                <details className="relative">
-                  <summary className="cursor-pointer list-none rounded-full border border-zinc-800 px-4 py-2 text-zinc-300 transition hover:border-zinc-600 hover:text-white">
+                <div
+                  ref={moreMenuRef}
+                  className="relative"
+                  onMouseLeave={() => setMoreMenuOpen(false)}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setMoreMenuOpen((current) => !current)}
+                    aria-expanded={moreMenuOpen}
+                    className="rounded-full border border-zinc-800 px-4 py-2 text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                  >
                     More
-                  </summary>
+                  </button>
 
-                  <div className="absolute right-0 z-50 mt-3 w-56 rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl">
-                    <Link href="/people" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                      People
-                    </Link>
-                    <Link href="/following" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                      Following
-                    </Link>
-                    <Link href="/dashboard" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                      Dashboard
-                    </Link>
-                    <Link href="/saved" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                      Saved
-                    </Link>
-                    <Link href="/my-activity" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                      My Activity
-                    </Link>
-                    <Link href="/profile" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                      Profile
-                    </Link>
-                    <Link href="/settings" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                      Settings
-                    </Link>
-                    <Link href="/premium" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                      Premium
-                    </Link>
-
-                    {isAdmin && (
-                      <Link href="/admin" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                        Admin
+                  {moreMenuOpen && (
+                    <div className="absolute right-0 z-50 mt-3 w-56 rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl">
+                      <Link href="/people" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        People
                       </Link>
-                    )}
+                      <Link href="/following" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Following
+                      </Link>
+                      <Link href="/dashboard" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Dashboard
+                      </Link>
+                      <Link href="/saved" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Saved
+                      </Link>
+                      <Link href="/my-activity" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        My Activity
+                      </Link>
+                      <Link href="/profile" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Profile
+                      </Link>
+                      <Link href="/settings" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Settings
+                      </Link>
+                      <Link href="/premium" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Premium
+                      </Link>
 
-                    <button
-                      onClick={handleLogout}
-                      className="mt-2 block w-full rounded-xl border border-zinc-800 px-4 py-3 text-left text-zinc-400 transition hover:border-zinc-700 hover:bg-zinc-900 hover:text-white"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </details>
+                      {isAdmin && (
+                        <Link href="/admin" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                          Admin
+                        </Link>
+                      )}
+
+                      <button
+                        onClick={async () => {
+                          closeMoreMenu();
+                          await handleLogout();
+                        }}
+                        className="mt-2 block w-full rounded-xl border border-zinc-800 px-4 py-3 text-left text-zinc-400 transition hover:border-zinc-700 hover:bg-zinc-900 hover:text-white"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
               </nav>
             </div>
 
