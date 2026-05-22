@@ -1,65 +1,68 @@
+import Link from "next/link";
+import { PageHeader, PageShell, Panel } from "@/components/ui";
+
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-4xl">
+    <PageShell width="lg">
+      <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white">
+        ← Back to Loombus
+      </Link>
 
-        <div className="mb-16">
-          <h1 className="text-5xl font-semibold tracking-tight">
-            About Loombus
-          </h1>
-
-          <p className="mt-6 max-w-3xl text-xl leading-relaxed text-zinc-400">
+      <PageHeader
+        eyebrow="About"
+        title="About Loombus"
+        description={
+          <>
             Loombus is a signal-first discussion platform designed for thoughtful
             conversations, durable knowledge, and meaningful contribution.
+          </>
+        }
+      />
+
+      <div className="space-y-8">
+        <Panel>
+          <h2 className="mb-4 text-2xl font-semibold text-white">
+            Our philosophy
+          </h2>
+
+          <p className="leading-relaxed text-zinc-400">
+            Most platforms optimize for addiction, outrage, virality, and
+            endless engagement loops. Loombus is being built around a different
+            idea: thoughtful discussions and valuable insights should outlive
+            trends, algorithms, and noise.
           </p>
-        </div>
+        </Panel>
 
-        <div className="space-y-12">
+        <Panel>
+          <h2 className="mb-6 text-2xl font-semibold text-white">
+            What Loombus values
+          </h2>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-4 text-3xl font-semibold">
-              Our philosophy
-            </h2>
+          <div className="grid gap-3 text-zinc-400 md:grid-cols-2">
+            <p>• Thoughtful discussions over reactive posting</p>
+            <p>• Signal over virality</p>
+            <p>• Long-term knowledge over short-term engagement</p>
+            <p>• Credibility and contribution over popularity</p>
+            <p>• Discovery through substance, not manipulation</p>
+            <p>• Safer tools for cleaner community dialogue</p>
+          </div>
+        </Panel>
 
-            <p className="leading-relaxed text-zinc-400">
-              Most platforms optimize for addiction, outrage, virality, and
-              endless engagement loops. Loombus is being built around a different
-              idea: that thoughtful discussions and valuable insights should
-              outlive trends, algorithms, and noise.
-            </p>
-          </section>
+        <Panel>
+          <h2 className="mb-6 text-2xl font-semibold text-white">
+            What Loombus is not
+          </h2>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-6 text-3xl font-semibold">
-              What Loombus values
-            </h2>
-
-            <div className="space-y-4 text-zinc-400">
-              <p>• Thoughtful discussions over reactive posting</p>
-              <p>• Signal over virality</p>
-              <p>• Long-term knowledge over short-term engagement</p>
-              <p>• Credibility and contribution over popularity</p>
-              <p>• Discovery through substance, not manipulation</p>
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-6 text-3xl font-semibold">
-              What Loombus is not
-            </h2>
-
-            <div className="space-y-4 text-zinc-400">
-              <p>• Not an outrage engine</p>
-              <p>• Not optimized for doom scrolling</p>
-              <p>• Not designed around vanity metrics</p>
-              <p>• Not focused on algorithmic addiction loops</p>
-              <p>• Not intended to reward low-effort noise</p>
-            </div>
-          </section>
-
-        </div>
-
+          <div className="grid gap-3 text-zinc-400 md:grid-cols-2">
+            <p>• Not an outrage engine</p>
+            <p>• Not optimized for doom scrolling</p>
+            <p>• Not designed around vanity metrics</p>
+            <p>• Not focused on algorithmic addiction loops</p>
+            <p>• Not intended to reward low-effort noise</p>
+            <p>• Not a replacement for judgment, safety, or legal advice</p>
+          </div>
+        </Panel>
       </div>
-    </main>
+    </PageShell>
   );
 }
