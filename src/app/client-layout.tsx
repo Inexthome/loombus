@@ -226,6 +226,7 @@ export default function ClientLayout({
 
   return (
     <div className="min-h-screen bg-black text-white antialiased">
+        {user && (
         <header className="border-b border-zinc-900">
           <div className="mx-auto max-w-6xl px-6 py-5">
 
@@ -243,15 +244,18 @@ export default function ClientLayout({
                 <span>Loombus</span>
               </Link>
 
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-expanded={mobileMenuOpen}
-                aria-label="Toggle navigation menu"
-                className="rounded-lg border border-zinc-800 px-3 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white md:hidden"
-              >
-                Menu
-              </button>
+              {user && (
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  aria-expanded={mobileMenuOpen}
+                  aria-label="Toggle navigation menu"
+                  className="rounded-lg border border-zinc-800 px-3 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white md:hidden"
+                >
+                  Menu
+                </button>
+              )}
 
+              {user && (
               <nav className="hidden items-center gap-6 text-sm text-zinc-400 md:flex">
                 <Link href="/" className={navLinkClass("/")}>
                   Home
@@ -323,9 +327,10 @@ export default function ClientLayout({
                   </>
                 )}
               </nav>
+              )}
             </div>
 
-            {mobileMenuOpen && (
+            {mobileMenuOpen && user && (
               <nav className="mt-5 flex flex-col gap-4 border-t border-zinc-900 pt-5 text-sm text-zinc-400 md:hidden">
                 <Link href="/" onClick={closeMobileMenu} className={mobileNavLinkClass("/")}>
                   Home
@@ -404,6 +409,7 @@ export default function ClientLayout({
 
           </div>
         </header>
+        )}
 
         {children}
     </div>
