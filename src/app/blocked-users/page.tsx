@@ -153,7 +153,7 @@ export default function BlockedUsersPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl text-zinc-400">
+        <div className="mx-auto max-w-6xl text-zinc-400">
           Loading blocked users...
         </div>
       </main>
@@ -162,7 +162,7 @@ export default function BlockedUsersPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <Link
           href="/settings"
           className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
@@ -175,7 +175,7 @@ export default function BlockedUsersPage() {
             Privacy
           </p>
 
-          <h1 className="text-5xl font-semibold tracking-tight">
+          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
             Blocked Users
           </h1>
 
@@ -186,13 +186,13 @@ export default function BlockedUsersPage() {
         </div>
 
         {message && (
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
+          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-400 shadow-2xl shadow-black/30">
             {message}
           </div>
         )}
 
         {blockedProfiles.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No blocked users.
             </h2>
@@ -202,7 +202,7 @@ export default function BlockedUsersPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-5 lg:grid-cols-2">
             {blockedProfiles.map((item) => {
               const profile = item.profile;
               const isWorking = workingProfileId === profile.id;
@@ -210,7 +210,7 @@ export default function BlockedUsersPage() {
               return (
                 <div
                   key={item.block_id}
-                  className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+                  className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30"
                 >
                   <div className="mb-5 flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-4">
