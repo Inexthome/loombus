@@ -1,39 +1,31 @@
 import Link from "next/link";
+import { LegalReviewNotice, PageHeader, PageShell, Panel } from "@/components/ui";
 
 const supportEmail = "support@loombus.com";
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-4xl">
+    <PageShell width="lg">
         <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white">
           ← Back to Loombus
         </Link>
 
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-          Legal
-        </p>
+      <PageHeader
+        eyebrow="Legal"
+        title="Terms of Service"
+        description={
+          <>
+            These Terms of Service govern your access to and use of Loombus. By
+            creating an account, accessing Loombus, posting content, using Premium
+            features, or otherwise using the platform, you agree to these Terms.
+          </>
+        }
+      />
 
-        <h1 className="mb-6 text-5xl font-semibold tracking-tight">
-          Terms of Service
-        </h1>
+      <LegalReviewNotice label="Terms of Service" />
 
-        <p className="mb-10 max-w-3xl leading-relaxed text-zinc-400">
-          These Terms of Service govern your access to and use of Loombus. By
-          creating an account, accessing Loombus, posting content, using Premium
-          features, or otherwise using the platform, you agree to these Terms.
-        </p>
-
-        <div className="mb-10 rounded-2xl border border-amber-900/60 bg-amber-950/20 p-5 text-sm leading-relaxed text-amber-200">
-          <p>
-            Important: These Terms are a platform-protection draft for Loombus
-            and should be reviewed by a qualified attorney before broad public
-            launch, paid subscription enforcement, or large-scale user growth.
-          </p>
-        </div>
-
-        <div className="space-y-8 leading-relaxed text-zinc-400">
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+      <div className="space-y-8 leading-relaxed text-zinc-400">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               1. The Loombus Service
             </h2>
@@ -53,9 +45,9 @@ export default function TermsPage() {
               access levels, account tools, AI features, moderation systems, or
               availability.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               2. Eligibility and Accounts
             </h2>
@@ -75,9 +67,9 @@ export default function TermsPage() {
               your account. Loombus is not responsible for losses caused by your
               failure to secure your account.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               3. User Content and User Responsibility
             </h2>
@@ -103,9 +95,9 @@ export default function TermsPage() {
               claims, third-party links, third-party conduct, or user
               interactions. Any reliance on user content is at your own risk.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               4. License You Grant to Loombus
             </h2>
@@ -134,9 +126,9 @@ export default function TermsPage() {
               voluntarily provide without obligation, restriction, or
               compensation.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               5. AI-Assisted Features
             </h2>
@@ -161,9 +153,9 @@ export default function TermsPage() {
               Loombus is not responsible for decisions, actions, losses,
               disputes, or damages arising from reliance on AI-assisted outputs.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               6. Prohibited Conduct
             </h2>
@@ -186,9 +178,9 @@ export default function TermsPage() {
               <li>attempting to evade suspensions, restrictions, rate limits, or access controls;</li>
               <li>using Loombus in a way that creates legal, regulatory, security, operational, or reputational risk for Loombus, its owner, users, or service providers.</li>
             </ul>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               7. Moderation, Enforcement, and Account Restrictions
             </h2>
@@ -211,9 +203,9 @@ export default function TermsPage() {
               comply with law, enforce these Terms, protect users, respond to
               support requests, prevent fraud or abuse, or protect the platform.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               8. Paid Features and Premium Services
             </h2>
@@ -233,9 +225,9 @@ export default function TermsPage() {
               feature availability, specific AI output quality, visibility,
               audience growth, revenue, or any particular result.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               9. Privacy, Cookies, and Security
             </h2>
@@ -252,9 +244,9 @@ export default function TermsPage() {
               that you use Loombus at your own risk and are responsible for
               keeping your account credentials secure.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               10. Intellectual Property and Copyright
             </h2>
@@ -279,9 +271,9 @@ export default function TermsPage() {
               </a>{" "}
               with enough detail for Loombus to review the issue.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               11. Third-Party Services
             </h2>
@@ -293,9 +285,9 @@ export default function TermsPage() {
               is not responsible for third-party services, outages, decisions,
               policies, data practices, pricing, errors, or conduct.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               12. Disclaimers
             </h2>
@@ -315,9 +307,9 @@ export default function TermsPage() {
               merchantability, fitness for a particular purpose,
               non-infringement, accuracy, availability, and security.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               13. Limitation of Liability
             </h2>
@@ -348,9 +340,9 @@ export default function TermsPage() {
               Nothing in these Terms excludes or limits liability that cannot be
               excluded or limited under applicable law.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               14. Indemnification
             </h2>
@@ -367,9 +359,9 @@ export default function TermsPage() {
               negligence, or misconduct; or your attempt to bypass, disrupt, or
               misuse the service.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               15. Disputes, Governing Law, and Venue
             </h2>
@@ -404,9 +396,9 @@ export default function TermsPage() {
               after the event giving rise to the claim, or the claim is
               permanently barred.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               16. Changes to These Terms
             </h2>
@@ -417,9 +409,9 @@ export default function TermsPage() {
               users. Your continued use of Loombus after updated Terms become
               effective means you accept the updated Terms.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               17. Contact
             </h2>
@@ -438,9 +430,8 @@ export default function TermsPage() {
             <p className="mt-4 text-sm text-zinc-600">
               Effective date: May 22, 2026
             </p>
-          </section>
-        </div>
+        </Panel>
       </div>
-    </main>
+    </PageShell>
   );
 }
