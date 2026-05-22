@@ -146,6 +146,30 @@ export default function LoginPage() {
 
           {message && <p className="text-sm text-zinc-400">{message}</p>}
 
+          <p className="text-xs leading-relaxed text-zinc-600">
+            By logging in or continuing with Google, you agree to the{" "}
+            <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
+              Terms
+            </Link>
+            ,{" "}
+            <Link href="/privacy" className="text-zinc-400 underline-offset-4 hover:underline">
+              Privacy Policy
+            </Link>
+            ,{" "}
+            <Link href="/cookies" className="text-zinc-400 underline-offset-4 hover:underline">
+              Cookie Use
+            </Link>
+            ,{" "}
+            <Link href="/guidelines" className="text-zinc-400 underline-offset-4 hover:underline">
+              Community Guidelines
+            </Link>
+            , and{" "}
+            <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">
+              Safety
+            </Link>
+            .
+          </p>
+
           <p className="text-center text-sm text-zinc-500">
             Don’t have an account?{" "}
             <Link

@@ -76,6 +76,30 @@ export default function Home() {
           >
             Create Account
           </Link>
+
+          <p className="pt-3 text-xs leading-relaxed text-zinc-600">
+            By creating an account or continuing with Google, you agree to the{" "}
+            <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
+              Terms
+            </Link>
+            ,{" "}
+            <Link href="/privacy" className="text-zinc-400 underline-offset-4 hover:underline">
+              Privacy Policy
+            </Link>
+            ,{" "}
+            <Link href="/cookies" className="text-zinc-400 underline-offset-4 hover:underline">
+              Cookie Use
+            </Link>
+            ,{" "}
+            <Link href="/guidelines" className="text-zinc-400 underline-offset-4 hover:underline">
+              Community Guidelines
+            </Link>
+            , and{" "}
+            <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">
+              Safety
+            </Link>
+            .
+          </p>
         </div>
 
         {message && (
