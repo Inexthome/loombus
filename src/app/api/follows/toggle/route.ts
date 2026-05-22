@@ -49,6 +49,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (user.id === targetUserId) {
+      return NextResponse.json(
+        { error: "You cannot follow yourself." },
+        { status: 400 }
+      );
+    }
+
     const cooldownSince = new Date(
       Date.now() - ACTION_COOLDOWN_SECONDS * 1000
     ).toISOString();
@@ -75,12 +82,6 @@ export async function POST(request: NextRequest) {
       target_id: targetUserId,
     });
 
-    if (user.id === targetUserId) {
-      return NextResponse.json(
-        { error: "You cannot follow yourself." },
-        { status: 400 }
-      );
-    }
 
     const { data: viewerBlock } = await supabase
       .from("user_blocks")
