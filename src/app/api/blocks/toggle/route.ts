@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+const ACTION_COOLDOWN_SECONDS = 5;
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -45,6 +47,32 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const cooldownSince = new Date(
+      Date.now() - ACTION_COOLDOWN_SECONDS * 1000
+    ).toISOString();
+
+    const { data: recentAction } = await supabase
+      .from("action_rate_events")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("action_key", "block_toggle")
+      .gte("created_at", cooldownSince)
+      .limit(1)
+      .maybeSingle();
+
+    if (recentAction) {
+      return NextResponse.json(
+        { error: "Please wait before changing block status again." },
+        { status: 429 }
+      );
+    }
+
+    await supabase.from("action_rate_events").insert({
+      user_id: user.id,
+      action_key: "block_toggle",
+      target_id: targetUserId,
+    });
 
     if (user.id === targetUserId) {
       return NextResponse.json(
