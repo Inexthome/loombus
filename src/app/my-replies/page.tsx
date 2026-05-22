@@ -105,7 +105,7 @@ export default function MyRepliesPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl text-zinc-400">
+        <div className="mx-auto max-w-6xl text-zinc-400">
           Loading your replies...
         </div>
       </main>
@@ -114,7 +114,7 @@ export default function MyRepliesPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
           className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
@@ -128,7 +128,7 @@ export default function MyRepliesPage() {
               My Activity
             </p>
 
-            <h1 className="text-5xl font-semibold tracking-tight">
+            <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
               My Replies
             </h1>
 
@@ -197,7 +197,7 @@ export default function MyRepliesPage() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {filteredReplies.map((reply) => {
             const discussion = discussions[reply.discussion_id];
             const discussionAvailable = discussion && !discussion.deleted_at;
@@ -205,7 +205,7 @@ export default function MyRepliesPage() {
             return (
               <div
                 key={reply.id}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+                className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30"
               >
                 <div className="mb-4">
                   <p className="mb-2 text-sm text-zinc-500">
