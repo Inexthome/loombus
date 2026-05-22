@@ -640,7 +640,7 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && notifications.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No notifications yet.
             </h2>
@@ -652,7 +652,7 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && notifications.length > 0 && filteredNotifications.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No notifications found.
             </h2>
