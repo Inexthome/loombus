@@ -13,6 +13,15 @@ type Profile = {
   bio: string | null;
 };
 
+type FollowCounts = Record<
+  string,
+  {
+    followers: number;
+    following: number;
+  }
+>;
+
+
 type BlockRow = {
   blocker_id: string;
   blocked_id: string;
@@ -38,6 +47,7 @@ function getBadgeClassName(badge: ProfileBadge) {
 export default function PeoplePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [followCounts, setFollowCounts] = useState<FollowCounts>({});
   const [blockedProfileIds, setBlockedProfileIds] = useState<Set<string>>(new Set());
   const [profileBadges, setProfileBadges] = useState<Record<string, ProfileBadge>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -164,9 +174,54 @@ export default function PeoplePage() {
         }
 
         setBlockedProfileIds(hiddenIds);
-        setLoading(false);
 
-        void loadProfileBadges(loadedProfiles.map((profile) => profile.id));
+        const visibleProfileIds = loadedProfiles.map((profile) => profile.id);
+        const nextFollowCounts: FollowCounts = Object.fromEntries(
+          visibleProfileIds.map((profileId) => [
+            profileId,
+            { followers: 0, following: 0 },
+          ])
+        );
+
+        if (visibleProfileIds.length > 0) {
+          const [followersResult, followingResult] = await Promise.all([
+            supabase
+              .from("follows")
+              .select("following_id")
+              .in("following_id", visibleProfileIds),
+            supabase
+              .from("follows")
+              .select("follower_id")
+              .in("follower_id", visibleProfileIds),
+          ]);
+
+          if (followersResult.error || followingResult.error) {
+            console.error(
+              "Unable to load People follow counts.",
+              followersResult.error ?? followingResult.error
+            );
+          } else {
+            (followersResult.data ?? []).forEach((row) => {
+              const profileId = (row as { following_id: string | null }).following_id;
+
+              if (profileId && nextFollowCounts[profileId]) {
+                nextFollowCounts[profileId].followers += 1;
+              }
+            });
+
+            (followingResult.data ?? []).forEach((row) => {
+              const profileId = (row as { follower_id: string | null }).follower_id;
+
+              if (profileId && nextFollowCounts[profileId]) {
+                nextFollowCounts[profileId].following += 1;
+              }
+            });
+          }
+        }
+
+        setFollowCounts(nextFollowCounts);
+        setLoading(false);
+        void loadProfileBadges(visibleProfileIds);
       } catch (error) {
         console.error("Unable to load people.", error);
 
@@ -424,6 +479,11 @@ export default function PeoplePage() {
                       </div>
                     </div>
                   </div>
+
+                  <p className="mt-4 text-xs text-zinc-500">
+                    {(followCounts[profile.id]?.followers ?? 0).toLocaleString()} followers ·{" "}
+                    {(followCounts[profile.id]?.following ?? 0).toLocaleString()} following
+                  </p>
 
                   {isSelf ? (
                     <span className="shrink-0 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500">
