@@ -306,7 +306,6 @@ export default function ClientLayout({
                 <div
                   ref={moreMenuRef}
                   className="relative"
-                  onMouseLeave={() => setMoreMenuOpen(false)}
                 >
                   <button
                     type="button"
