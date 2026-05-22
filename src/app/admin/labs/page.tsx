@@ -186,48 +186,65 @@ export default function AdminLabsPage() {
     }
 
     const nextStatus = statusDrafts[requestId];
-    const nextNote = (noteDrafts[requestId] ?? "").trim();
+    const nextAdminNote = noteDrafts[requestId] ?? "";
 
     if (!nextStatus) {
-      setMessage("Choose a status before saving.");
+      setMessage("Choose a status before updating this Labs request.");
       return;
     }
 
     setWorkingRequestId(requestId);
 
-    const { data, error } = await supabase
-      .from("labs_feature_requests")
-      .update({
-        status: nextStatus,
-        admin_note: nextNote || null,
-        reviewed_by: currentUserId,
-      })
-      .eq("id", requestId)
-      .select("id, user_id, title, description, status, admin_note, reviewed_by, reviewed_at, created_at, updated_at")
-      .single();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    setWorkingRequestId(null);
-
-    if (error) {
-      setMessage(`Unable to update request: ${error.message}`);
+    if (!accessToken) {
+      setWorkingRequestId(null);
+      window.location.href = "/login";
       return;
     }
 
-    const updated = data as LabsFeatureRequestRow;
+    let result: { request?: LabsFeatureRequestRow; error?: string } = {};
+
+    try {
+      const response = await fetch("/api/admin/labs/requests", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          requestId,
+          status: nextStatus,
+          adminNote: nextAdminNote,
+        }),
+      });
+
+      result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setWorkingRequestId(null);
+        setMessage(result.error ?? "Unable to update Labs request.");
+        return;
+      }
+    } catch {
+      setWorkingRequestId(null);
+      setMessage("Unable to update Labs request.");
+      return;
+    }
+
+    setWorkingRequestId(null);
+
+    if (!result.request) {
+      setMessage("Labs request updated, but the response was incomplete. Refresh to confirm.");
+      return;
+    }
 
     setRequests((current) =>
-      current.map((request) => (request.id === requestId ? updated : request))
+      current.map((request) =>
+        request.id === requestId ? (result.request as LabsFeatureRequestRow) : request
+      )
     );
-
-    setStatusDrafts((current) => ({
-      ...current,
-      [requestId]: updated.status,
-    }));
-
-    setNoteDrafts((current) => ({
-      ...current,
-      [requestId]: updated.admin_note ?? "",
-    }));
 
     setMessage("Labs request updated.");
   }
@@ -235,24 +252,47 @@ export default function AdminLabsPage() {
   async function deleteRequest(requestId: string) {
     setMessage("");
 
-    if (workingRequestId) {
+    if (!currentUserId || workingRequestId) {
       return;
     }
 
     setWorkingRequestId(requestId);
 
-    const { error } = await supabase
-      .from("labs_feature_requests")
-      .delete()
-      .eq("id", requestId);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    setWorkingRequestId(null);
-
-    if (error) {
-      setMessage(`Unable to delete request: ${error.message}`);
+    if (!accessToken) {
+      setWorkingRequestId(null);
+      window.location.href = "/login";
       return;
     }
 
+    let result: { error?: string } = {};
+
+    try {
+      const response = await fetch("/api/admin/labs/requests", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ requestId }),
+      });
+
+      result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setWorkingRequestId(null);
+        setMessage(result.error ?? "Unable to delete Labs request.");
+        return;
+      }
+    } catch {
+      setWorkingRequestId(null);
+      setMessage("Unable to delete Labs request.");
+      return;
+    }
+
+    setWorkingRequestId(null);
     setRequests((current) => current.filter((request) => request.id !== requestId));
     setMessage("Labs request deleted.");
   }

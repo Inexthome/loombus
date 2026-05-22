@@ -163,24 +163,51 @@ export default function LabsPage() {
 
     setSubmitting(true);
 
-    const { data, error } = await supabase
-      .from("labs_feature_requests")
-      .insert({
-        user_id: currentUserId,
-        title: cleanTitle,
-        description: cleanDescription,
-      })
-      .select("id, user_id, title, description, status, admin_note, reviewed_at, created_at, updated_at")
-      .single();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    setSubmitting(false);
-
-    if (error) {
-      setMessage(`Unable to submit feature request: ${error.message}`);
+    if (!accessToken) {
+      setSubmitting(false);
+      window.location.href = "/login";
       return;
     }
 
-    setRequests((current) => [data as LabsFeatureRequest, ...current]);
+    let result: { request?: LabsFeatureRequest; error?: string } = {};
+
+    try {
+      const response = await fetch("/api/labs/requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          title: cleanTitle,
+          description: cleanDescription,
+        }),
+      });
+
+      result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setSubmitting(false);
+        setMessage(result.error ?? "Unable to submit feature request.");
+        return;
+      }
+    } catch {
+      setSubmitting(false);
+      setMessage("Unable to submit feature request.");
+      return;
+    }
+
+    setSubmitting(false);
+
+    if (!result.request) {
+      setMessage("Labs request submitted, but the response was incomplete. Refresh to confirm.");
+      return;
+    }
+
+    setRequests((current) => [result.request as LabsFeatureRequest, ...current]);
     setTitle("");
     setDescription("");
     setMessage("Feature request submitted to Loombus Labs.");
