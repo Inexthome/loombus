@@ -71,74 +71,118 @@ export default function PeoplePage() {
   }, []);
 
   useEffect(() => {
-    async function loadProfiles() {
-      const { data: userData } = await supabase.auth.getUser();
-      const viewerId = userData.user?.id ?? null;
+    let isMounted = true;
 
-      setCurrentUserId(viewerId);
-      setAuthChecked(true);
-
-      if (!viewerId) {
-        setLoading(false);
+    async function loadProfileBadges(profileIds: string[]) {
+      if (profileIds.length === 0) {
         return;
       }
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("full_name", { ascending: true });
-
-      const loadedProfiles = data ?? [];
-      setProfiles(loadedProfiles);
-
-      if (loadedProfiles.length > 0) {
+      try {
         const badgeResponse = await fetch("/api/profiles/badges", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            profileIds: loadedProfiles.map((profile) => profile.id),
-          }),
+          body: JSON.stringify({ profileIds }),
         });
 
-        if (badgeResponse.ok) {
-          const badgeResult = (await badgeResponse.json()) as {
-            badges?: Record<string, ProfileBadge>;
-          };
+        if (!badgeResponse.ok || !isMounted) {
+          return;
+        }
 
+        const badgeResult = (await badgeResponse.json()) as {
+          badges?: Record<string, ProfileBadge>;
+        };
+
+        if (isMounted) {
           setProfileBadges(badgeResult.badges ?? {});
         }
+      } catch (error) {
+        console.error("Unable to load profile badges.", error);
       }
+    }
 
-      if (viewerId) {
-        const { data: follows } = await supabase
-          .from("follows")
-          .select("following_id")
-          .eq("follower_id", viewerId);
+    async function loadProfiles() {
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        const viewerId = userData.user?.id ?? null;
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCurrentUserId(viewerId);
+        setAuthChecked(true);
+
+        if (!viewerId) {
+          setLoading(false);
+          return;
+        }
+
+        const [profilesResult, followsResult, blocksResult] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, full_name, username, avatar_url, bio")
+            .order("full_name", { ascending: true }),
+          supabase
+            .from("follows")
+            .select("following_id")
+            .eq("follower_id", viewerId),
+          supabase
+            .from("user_blocks")
+            .select("blocker_id, blocked_id")
+            .or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`),
+        ]);
+
+        const firstError =
+          profilesResult.error || followsResult.error || blocksResult.error;
+
+        if (firstError) {
+          throw firstError;
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        const loadedProfiles = (profilesResult.data ?? []) as Profile[];
+        setProfiles(loadedProfiles);
 
         setFollowingIds(
-          new Set((follows ?? []).map((follow) => follow.following_id))
+          new Set(
+            (followsResult.data ?? []).map((follow) => follow.following_id)
+          )
         );
-
-        const { data: blockRows } = await supabase
-          .from("user_blocks")
-          .select("blocker_id, blocked_id")
-          .or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`);
 
         const hiddenIds = new Set<string>();
 
-        for (const block of (blockRows ?? []) as BlockRow[]) {
-          hiddenIds.add(block.blocker_id === viewerId ? block.blocked_id : block.blocker_id);
+        for (const block of (blocksResult.data ?? []) as BlockRow[]) {
+          hiddenIds.add(
+            block.blocker_id === viewerId ? block.blocked_id : block.blocker_id
+          );
         }
 
         setBlockedProfileIds(hiddenIds);
-      }
+        setLoading(false);
 
-      setLoading(false);
+        void loadProfileBadges(loadedProfiles.map((profile) => profile.id));
+      } catch (error) {
+        console.error("Unable to load people.", error);
+
+        if (isMounted) {
+          setMessage("People could not load. Please refresh and try again.");
+          setAuthChecked(true);
+          setLoading(false);
+        }
+      }
     }
 
     loadProfiles();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const filteredProfiles = useMemo(() => {

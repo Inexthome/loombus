@@ -175,61 +175,26 @@ export default function NotificationsClientPage() {
   }, []);
 
   useEffect(() => {
-    async function loadNotifications() {
-      const { data: userData } = await supabase.auth.getUser();
+    let isMounted = true;
 
-      if (!userData.user) {
-        window.location.href = "/login";
+    async function loadActorProfiles(actorIds: string[]) {
+      if (actorIds.length === 0) {
         return;
       }
 
-      setCurrentUserId(userData.user.id);
-
-      const [{ data: profileData }, { data: entitlementData }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", userData.user.id)
-          .maybeSingle(),
-        supabase
-          .from("user_ai_entitlements")
-          .select("tier, ai_assisted_enabled, monthly_summary_limit")
-          .eq("user_id", userData.user.id)
-          .maybeSingle(),
-      ]);
-
-      setIsAdmin(Boolean(profileData?.is_admin));
-      setAiEntitlement((entitlementData ?? null) as AiEntitlement);
-
-      const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
-        supabase,
-        userData.user.id
-      );
-
-      const { data } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_id", userData.user.id)
-        .order("created_at", { ascending: false });
-
-      const loadedNotifications = filterBlockedActorNotifications(
-        (data ?? []) as Notification[],
-        blockedRelationshipUserIds
-      );
-
-      const actorIds = [
-        ...new Set(
-          loadedNotifications
-            .map((notification) => notification.actor_id)
-            .filter((id): id is string => Boolean(id))
-        ),
-      ];
-
-      if (actorIds.length > 0) {
-        const { data: profileData } = await supabase
+      try {
+        const { data: profileData, error } = await supabase
           .from("profiles")
           .select("id, username, full_name, avatar_url")
           .in("id", actorIds);
+
+        if (error) {
+          throw error;
+        }
+
+        if (!isMounted) {
+          return;
+        }
 
         const profileMap: Record<string, Profile> = {};
 
@@ -238,13 +203,98 @@ export default function NotificationsClientPage() {
         }
 
         setProfiles(profileMap);
+      } catch (error) {
+        console.error("Unable to load notification actor profiles.", error);
       }
+    }
 
-      setNotifications(loadedNotifications);
-      setLoading(false);
+    async function loadNotifications() {
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+
+        if (!userData.user) {
+          window.location.href = "/login";
+          return;
+        }
+
+        const userId = userData.user.id;
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCurrentUserId(userId);
+
+        const [
+          profileResult,
+          entitlementResult,
+          blockedRelationshipUserIds,
+          notificationsResult,
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", userId)
+            .maybeSingle(),
+          supabase
+            .from("user_ai_entitlements")
+            .select("tier, ai_assisted_enabled, monthly_summary_limit")
+            .eq("user_id", userId)
+            .maybeSingle(),
+          getBlockedRelationshipUserIds(supabase, userId),
+          supabase
+            .from("notifications")
+            .select("id, actor_id, type, target_type, target_id, message, read_at, created_at")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false }),
+        ]);
+
+        const firstError =
+          profileResult.error || entitlementResult.error || notificationsResult.error;
+
+        if (firstError) {
+          throw firstError;
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setIsAdmin(Boolean(profileResult.data?.is_admin));
+        setAiEntitlement((entitlementResult.data ?? null) as AiEntitlement);
+
+        const loadedNotifications = filterBlockedActorNotifications(
+          (notificationsResult.data ?? []) as Notification[],
+          blockedRelationshipUserIds
+        );
+
+        setNotifications(loadedNotifications);
+        setLoading(false);
+
+        const actorIds = [
+          ...new Set(
+            loadedNotifications
+              .map((notification) => notification.actor_id)
+              .filter((id): id is string => Boolean(id))
+          ),
+        ];
+
+        void loadActorProfiles(actorIds);
+      } catch (error) {
+        console.error("Unable to load notifications.", error);
+
+        if (isMounted) {
+          setMessage("Notifications could not load. Please refresh and try again.");
+          setLoading(false);
+        }
+      }
     }
 
     loadNotifications();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   async function markRead(id: string) {
