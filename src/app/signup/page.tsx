@@ -101,7 +101,7 @@ export default function SignupPage() {
         </p>
 
         {!signupComplete && (
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
             <button
               type="button"
               onClick={handleGoogleSignup}
@@ -120,7 +120,7 @@ export default function SignupPage() {
         )}
 
         {signupComplete ? (
-          <div className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                 Account Created
@@ -155,7 +155,7 @@ export default function SignupPage() {
         ) : (
           <form
             onSubmit={handleSignup}
-            className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+            className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
           >
           <div>
             <label className="mb-2 block text-sm text-zinc-400">
@@ -216,7 +216,7 @@ export default function SignupPage() {
             </p>
           )}
 
-          <p className="text-xs leading-relaxed text-zinc-600">
+          <p className="text-xs leading-relaxed text-zinc-500">
             By creating an account or continuing with Google, you agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
@@ -240,7 +240,7 @@ export default function SignupPage() {
             .
           </p>
 
-          <p className="text-center text-sm text-zinc-500">
+          <p className="pt-1 text-center text-sm text-zinc-500">
             Already have an account?{" "}
             <Link
               href="/login"

@@ -91,7 +91,7 @@ export default function LoginPage() {
           Return to your high-signal discussion environment.
         </p>
 
-        <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
           <button
             type="button"
             onClick={handleGoogleLogin}
@@ -110,7 +110,7 @@ export default function LoginPage() {
 
         <form
           onSubmit={handleLogin}
-          className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+          className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
         >
           <div>
             <label className="mb-2 block text-sm text-zinc-400">Email</label>
@@ -146,7 +146,7 @@ export default function LoginPage() {
 
           {message && <p className="text-sm text-zinc-400">{message}</p>}
 
-          <p className="text-xs leading-relaxed text-zinc-600">
+          <p className="text-xs leading-relaxed text-zinc-500">
             By logging in or continuing with Google, you agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
@@ -170,7 +170,7 @@ export default function LoginPage() {
             .
           </p>
 
-          <p className="text-center text-sm text-zinc-500">
+          <p className="pt-1 text-center text-sm text-zinc-500">
             Don’t have an account?{" "}
             <Link
               href="/signup"

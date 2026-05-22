@@ -146,11 +146,11 @@ export default function Home() {
   if (authState === "checking") {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <section className="mx-auto flex min-h-[70vh] max-w-xl flex-col items-center justify-center text-center">
+        <section className="mx-auto flex min-h-[72vh] max-w-xl flex-col items-center justify-center text-center">
           <img
             src="/assets/brand/loombus-mark-transparent.png"
             alt=""
-            className="mb-6 h-16 w-16 object-contain"
+            className="mb-6 h-14 w-14 object-contain"
           />
 
           <p className="text-zinc-500">Loading Loombus...</p>
@@ -163,7 +163,7 @@ export default function Home() {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
         <section className="mx-auto max-w-6xl">
-          <div className="mb-12">
+          <div className="mb-10">
             <p className="mb-4 text-sm uppercase tracking-[0.35em] text-zinc-500">
               Member Home
             </p>
@@ -184,12 +184,12 @@ export default function Home() {
             )}
           </div>
 
-          <div className="mb-10 grid gap-5 md:grid-cols-3">
+          <div className="mb-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {memberCards.map((card) => (
               <Link
                 key={card.href}
                 href={card.href}
-                className={`rounded-3xl border p-6 transition hover:border-zinc-600 ${
+                className={`rounded-3xl border p-6 transition hover:-translate-y-0.5 hover:border-zinc-600 ${
                   card.primary
                     ? "border-zinc-500 bg-white text-black hover:bg-zinc-200"
                     : "border-zinc-800 bg-zinc-950 text-white hover:bg-zinc-900"
@@ -210,7 +210,7 @@ export default function Home() {
             ))}
           </div>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Platform focus
             </p>
@@ -232,11 +232,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <section className="mx-auto flex min-h-[70vh] max-w-xl flex-col items-center justify-center text-center">
+      <section className="mx-auto flex min-h-[72vh] max-w-xl flex-col items-center justify-center text-center">
         <img
           src="/assets/brand/loombus-mark-transparent.png"
           alt=""
-          className="mb-6 h-16 w-16 object-contain"
+          className="mb-6 h-14 w-14 object-contain"
         />
 
         <p className="mb-4 text-sm uppercase tracking-[0.35em] text-zinc-500">
@@ -247,12 +247,12 @@ export default function Home() {
           Signal over noise.
         </h1>
 
-        <p className="mb-10 max-w-lg leading-relaxed text-zinc-400">
+        <p className="mb-10 max-w-lg text-lg leading-relaxed text-zinc-400">
           A high-signal discussion platform for thoughtful conversations,
           sharper ideas, and cleaner community dialogue.
         </p>
 
-        <div className="w-full space-y-3">
+        <div className="w-full rounded-3xl border border-zinc-900 bg-zinc-950/60 p-5 shadow-2xl shadow-black/30 space-y-3">
           <button
             type="button"
             onClick={() => signUpWithProvider("google")}
@@ -275,7 +275,7 @@ export default function Home() {
             Create Account
           </Link>
 
-          <p className="pt-3 text-xs leading-relaxed text-zinc-600">
+          <p className="pt-3 text-xs leading-relaxed text-zinc-500">
             By creating an account or continuing with Google, you agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
@@ -306,7 +306,7 @@ export default function Home() {
           </p>
         )}
 
-        <p className="mt-8 text-sm text-zinc-500">
+        <p className="mt-7 text-sm text-zinc-500">
           Already have an account?{" "}
           <Link href="/login" className="text-zinc-200 underline-offset-4 hover:underline">
             Sign in
@@ -314,7 +314,7 @@ export default function Home() {
         </p>
       </section>
 
-      <footer className="mx-auto mt-10 flex max-w-4xl flex-col items-center justify-between gap-4 border-t border-zinc-900 pt-8 text-sm text-zinc-600 md:flex-row">
+      <footer className="mx-auto mt-12 flex max-w-5xl flex-col items-center justify-between gap-4 border-t border-zinc-900 pt-8 text-sm text-zinc-600 md:flex-row">
         <p>© {new Date().getFullYear()} Loombus. All rights reserved.</p>
 
         <nav className="flex flex-wrap justify-center gap-4">
