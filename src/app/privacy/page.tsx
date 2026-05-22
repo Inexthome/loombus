@@ -1,41 +1,32 @@
 import Link from "next/link";
+import { LegalReviewNotice, PageHeader, PageShell, Panel } from "@/components/ui";
 
 const supportEmail = "support@loombus.com";
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-4xl">
+    <PageShell width="lg">
         <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white">
           ← Back to Loombus
         </Link>
 
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-          Legal
-        </p>
+      <PageHeader
+        eyebrow="Legal"
+        title="Privacy Policy"
+        description={
+          <>
+            This Privacy Policy explains how Loombus may collect, use, store,
+            disclose, and protect information connected to the platform. By using
+            Loombus, creating an account, posting content, using Premium features,
+            or contacting support, you agree to this Privacy Policy.
+          </>
+        }
+      />
 
-        <h1 className="mb-6 text-5xl font-semibold tracking-tight">
-          Privacy Policy
-        </h1>
+      <LegalReviewNotice label="Privacy Policy" />
 
-        <p className="mb-10 max-w-3xl leading-relaxed text-zinc-400">
-          This Privacy Policy explains how Loombus may collect, use, store,
-          disclose, and protect information connected to the platform. By using
-          Loombus, creating an account, posting content, using Premium features,
-          or contacting support, you agree to this Privacy Policy.
-        </p>
-
-        <div className="mb-10 rounded-2xl border border-amber-900/60 bg-amber-950/20 p-5 text-sm leading-relaxed text-amber-200">
-          <p>
-            Important: This Privacy Policy is a platform-protection draft for
-            Loombus and should be reviewed by a qualified attorney before broad
-            public launch, paid subscription enforcement, or large-scale user
-            growth.
-          </p>
-        </div>
-
-        <div className="space-y-8 leading-relaxed text-zinc-400">
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+      <div className="space-y-8 leading-relaxed text-zinc-400">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               1. Information We Collect
             </h2>
@@ -55,9 +46,9 @@ export default function PrivacyPage() {
               <li>technical information, such as device/browser information, session data, cookies, IP-related information, logs, diagnostics, and security events;</li>
               <li>support information, such as messages, screenshots, issue descriptions, and communications sent to support.</li>
             </ul>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               2. Account Login and Authentication
             </h2>
@@ -75,9 +66,9 @@ export default function PrivacyPage() {
               accounts, protect access, detect unauthorized activity, and keep
               logged-in features available only to authorized users.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               3. How We Use Information
             </h2>
@@ -98,9 +89,9 @@ export default function PrivacyPage() {
               <li>measure reliability, diagnose errors, improve performance, and maintain platform infrastructure;</li>
               <li>comply with legal obligations, enforce Loombus terms, and protect Loombus, users, service providers, and the public.</li>
             </ul>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               4. User Content and Visibility
             </h2>
@@ -118,9 +109,9 @@ export default function PrivacyPage() {
               information that you do not want others to see or that you do not
               have permission to share.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               5. AI-Assisted Features
             </h2>
@@ -140,9 +131,9 @@ export default function PrivacyPage() {
               secrets, medical details, financial account details, or information
               you are not authorized to process through AI-assisted tools.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               6. Cookies and Similar Technologies
             </h2>
@@ -159,9 +150,9 @@ export default function PrivacyPage() {
               required cookies or storage may affect login, account access,
               Premium features, security controls, and platform functionality.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               7. When We Share Information
             </h2>
@@ -187,9 +178,9 @@ export default function PrivacyPage() {
               marketing, or data-sharing practices that require additional user
               notice, this Privacy Policy should be updated.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               8. Safety, Moderation, and Legal Protection
             </h2>
@@ -207,9 +198,9 @@ export default function PrivacyPage() {
               admin actions, audit logs, and related metadata may be stored and
               reviewed to protect the platform and users.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               9. Data Retention
             </h2>
@@ -230,9 +221,9 @@ export default function PrivacyPage() {
               prevention, billing, dispute resolution, or platform integrity
               needs.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               10. Your Choices and Controls
             </h2>
@@ -254,9 +245,9 @@ export default function PrivacyPage() {
               for privacy-related questions or requests. Loombus may need to
               verify your identity before processing certain requests.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               11. Security
             </h2>
@@ -274,9 +265,9 @@ export default function PrivacyPage() {
               email account, avoiding suspicious links, and keeping your account
               access secure.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               12. Children and Minors
             </h2>
@@ -288,9 +279,9 @@ export default function PrivacyPage() {
               appropriate consent, Loombus may delete the information and
               restrict the account.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               13. International Users
             </h2>
@@ -302,9 +293,9 @@ export default function PrivacyPage() {
               States or other locations where Loombus or its service providers
               operate.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               14. Changes to This Privacy Policy
             </h2>
@@ -315,9 +306,9 @@ export default function PrivacyPage() {
               communicated. Your continued use of Loombus after an update means
               you accept the updated policy.
             </p>
-          </section>
+        </Panel>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+        <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
               15. Contact
             </h2>
@@ -336,9 +327,8 @@ export default function PrivacyPage() {
             <p className="mt-4 text-sm text-zinc-600">
               Effective date: May 22, 2026
             </p>
-          </section>
-        </div>
+        </Panel>
       </div>
-    </main>
+    </PageShell>
   );
 }
