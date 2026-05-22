@@ -11,6 +11,7 @@ export default function SignupPage() {
   const [message, setMessage] = useState("");
   const [signupComplete, setSignupComplete] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleSignup(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -52,6 +53,34 @@ export default function SignupPage() {
     setLoading(false);
   }
 
+  async function handleGoogleSignup() {
+    if (loading || googleLoading) {
+      return;
+    }
+
+    setMessage("");
+    setGoogleLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) {
+        setMessage(`Google signup error: ${error.message}`);
+        setGoogleLoading(false);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to start Google signup.";
+      setMessage(`Google signup error: ${message}`);
+      setGoogleLoading(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-xl">
@@ -70,6 +99,25 @@ export default function SignupPage() {
         <p className="mb-10 leading-relaxed text-zinc-400">
           Join a calmer, higher-signal environment for thoughtful discussion.
         </p>
+
+        {!signupComplete && (
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <button
+              type="button"
+              onClick={handleGoogleSignup}
+              disabled={loading || googleLoading}
+              className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {googleLoading ? "Opening Google..." : "Sign up with Google"}
+            </button>
+
+            <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
+              <span className="h-px flex-1 bg-zinc-900" />
+              Or create with email
+              <span className="h-px flex-1 bg-zinc-900" />
+            </div>
+          </div>
+        )}
 
         {signupComplete ? (
           <div className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
