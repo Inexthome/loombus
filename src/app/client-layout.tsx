@@ -226,11 +226,10 @@ export default function ClientLayout({
 
   return (
     <div className="min-h-screen bg-black text-white antialiased">
-        {user && (
+      {user && (
         <header className="border-b border-zinc-900">
           <div className="mx-auto max-w-6xl px-6 py-5">
-
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <Link
                 href="/"
                 className="flex items-center gap-3 text-xl font-semibold tracking-tight"
@@ -244,174 +243,167 @@ export default function ClientLayout({
                 <span>Loombus</span>
               </Link>
 
-              {user && (
-                <button
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  aria-expanded={mobileMenuOpen}
-                  aria-label="Toggle navigation menu"
-                  className="rounded-lg border border-zinc-800 px-3 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white md:hidden"
-                >
-                  Menu
-                </button>
-              )}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-expanded={mobileMenuOpen}
+                aria-label="Toggle navigation menu"
+                className="rounded-lg border border-zinc-800 px-3 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white md:hidden"
+              >
+                Menu
+              </button>
 
-              {user && (
-              <nav className="hidden items-center gap-6 text-sm text-zinc-400 md:flex">
+              <nav className="hidden items-center gap-5 text-sm text-zinc-400 md:flex">
                 <Link href="/" className={navLinkClass("/")}>
                   Home
+                </Link>
+
+                <Link
+                  href="/create"
+                  className="rounded-full bg-white px-4 py-2 font-medium text-black transition hover:bg-zinc-200"
+                >
+                  Create
                 </Link>
 
                 <Link href="/discussions" className={navLinkClass("/discussions")}>
                   Discussions
                 </Link>
-                <Link
-                  href="/premium"
-                  className="transition hover:text-white"
-                >
-                  Premium
+
+                <Link href="/notifications" className={navLinkClass("/notifications")}>
+                  Notifications
+                  {notificationCount > 0 && (
+                    <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
+                      {notificationCount}
+                    </span>
+                  )}
                 </Link>
 
+                <details className="relative">
+                  <summary className="cursor-pointer list-none rounded-full border border-zinc-800 px-4 py-2 text-zinc-300 transition hover:border-zinc-600 hover:text-white">
+                    More
+                  </summary>
 
-
-                {user && (
-                  <>
-                    <Link href="/people" className={navLinkClass("/people")}>
+                  <div className="absolute right-0 z-50 mt-3 w-56 rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl">
+                    <Link href="/people" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                       People
                     </Link>
-
-
-                    <Link href="/notifications" className={navLinkClass("/notifications")}>
-                      Notifications
-                      {notificationCount > 0 && (
-                        <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
-                          {notificationCount}
-                        </span>
-                      )}
+                    <Link href="/following" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      Following
                     </Link>
-                    <Link href="/dashboard" className={navLinkClass("/dashboard")}>
+                    <Link href="/dashboard" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                       Dashboard
                     </Link>
-                    <Link href="/settings" className={navLinkClass("/settings")}>
+                    <Link href="/saved" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      Saved
+                    </Link>
+                    <Link href="/my-activity" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      My Activity
+                    </Link>
+                    <Link href="/profile" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      Profile
+                    </Link>
+                    <Link href="/settings" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                       Settings
                     </Link>
-
-                    <Link href="/create" className={navLinkClass("/create")}>
-                      Create
+                    <Link href="/premium" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      Premium
                     </Link>
 
-
                     {isAdmin && (
-                      <Link href="/admin" className={navLinkClass("/admin")}>
+                      <Link href="/admin" className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         Admin
                       </Link>
                     )}
 
                     <button
                       onClick={handleLogout}
-                      className="transition hover:text-white"
+                      className="mt-2 block w-full rounded-xl border border-zinc-800 px-4 py-3 text-left text-zinc-400 transition hover:border-zinc-700 hover:bg-zinc-900 hover:text-white"
                     >
                       Logout
                     </button>
-                  </>
-                )}
-
-                {!user && (
-                  <>
-                    <Link href="/login" className={navLinkClass("/login")}>
-                      Login
-                    </Link>
-
-                    <Link href="/signup" className={navLinkClass("/signup")}>
-                      Sign Up
-                    </Link>
-                  </>
-                )}
+                  </div>
+                </details>
               </nav>
-              )}
             </div>
 
-            {mobileMenuOpen && user && (
-              <nav className="mt-5 flex flex-col gap-4 border-t border-zinc-900 pt-5 text-sm text-zinc-400 md:hidden">
+            {mobileMenuOpen && (
+              <nav className="mt-5 flex flex-col gap-3 border-t border-zinc-900 pt-5 text-sm text-zinc-400 md:hidden">
                 <Link href="/" onClick={closeMobileMenu} className={mobileNavLinkClass("/")}>
                   Home
+                </Link>
+
+                <Link href="/create" onClick={closeMobileMenu} className="rounded-xl bg-white px-4 py-3 text-black transition hover:bg-zinc-200">
+                  Create
                 </Link>
 
                 <Link href="/discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/discussions")}>
                   Discussions
                 </Link>
-                <Link
-                  href="/premium"
-                  className="transition hover:text-white"
-                >
+
+                <Link href="/notifications" onClick={closeMobileMenu} className={mobileNavLinkClass("/notifications")}>
+                  Notifications
+                  {notificationCount > 0 && (
+                    <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
+                      {notificationCount}
+                    </span>
+                  )}
+                </Link>
+
+                <div className="my-2 border-t border-zinc-900" />
+
+                <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
+                  People
+                </Link>
+
+                <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
+                  Following
+                </Link>
+
+                <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
+                  Dashboard
+                </Link>
+
+                <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
+                  Saved
+                </Link>
+
+                <Link href="/my-activity" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-activity")}>
+                  My Activity
+                </Link>
+
+                <Link href="/profile" onClick={closeMobileMenu} className={mobileNavLinkClass("/profile")}>
+                  Profile
+                </Link>
+
+                <Link href="/settings" onClick={closeMobileMenu} className={mobileNavLinkClass("/settings")}>
+                  Settings
+                </Link>
+
+                <Link href="/premium" onClick={closeMobileMenu} className={mobileNavLinkClass("/premium")}>
                   Premium
                 </Link>
 
-
-
-                {user && (
-                  <>
-                    <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
-                      People
-                    </Link>
-
-
-                    <Link href="/notifications" onClick={closeMobileMenu} className={mobileNavLinkClass("/notifications")}>
-                      Notifications
-                      {notificationCount > 0 && (
-                        <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
-                          {notificationCount}
-                        </span>
-                      )}
-                    </Link>
-                    <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
-                      Dashboard
-                    </Link>
-                    <Link href="/settings" onClick={closeMobileMenu} className={mobileNavLinkClass("/settings")}>
-                      Settings
-                    </Link>
-
-                    <Link href="/create" onClick={closeMobileMenu} className={mobileNavLinkClass("/create")}>
-                      Create
-                    </Link>
-
-
-                    {isAdmin && (
-                      <Link href="/admin" onClick={closeMobileMenu} className={mobileNavLinkClass("/admin")}>
-                        Admin
-                      </Link>
-                    )}
-
-                    <button
-                      onClick={async () => {
-                        closeMobileMenu();
-                        await handleLogout();
-                      }}
-                      className="text-left"
-                    >
-                      Logout
-                    </button>
-                  </>
+                {isAdmin && (
+                  <Link href="/admin" onClick={closeMobileMenu} className={mobileNavLinkClass("/admin")}>
+                    Admin
+                  </Link>
                 )}
 
-                {!user && (
-                  <>
-                    <Link href="/login" onClick={closeMobileMenu} className={mobileNavLinkClass("/login")}>
-                      Login
-                    </Link>
-
-                    <Link href="/signup" onClick={closeMobileMenu} className={mobileNavLinkClass("/signup")}>
-                      Sign Up
-                    </Link>
-                  </>
-                )}
+                <button
+                  onClick={async () => {
+                    closeMobileMenu();
+                    await handleLogout();
+                  }}
+                  className="rounded-xl border border-zinc-800 px-4 py-3 text-left text-zinc-400 transition hover:border-zinc-700 hover:bg-zinc-950 hover:text-white"
+                >
+                  Logout
+                </button>
               </nav>
             )}
-
           </div>
         </header>
-        )}
+      )}
 
-        {children}
+      {children}
     </div>
   );
 }
