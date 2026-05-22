@@ -168,7 +168,7 @@ export default function SettingsClientPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl text-zinc-400">
+        <div className="mx-auto max-w-6xl text-zinc-400">
           Loading settings...
         </div>
       </main>
@@ -178,7 +178,7 @@ export default function SettingsClientPage() {
   if (loadError) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mx-auto max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
           <h1 className="mb-3 text-2xl font-medium">
             Settings could not load.
           </h1>
@@ -190,7 +190,7 @@ export default function SettingsClientPage() {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
           >
             Reload settings
           </button>
@@ -201,7 +201,7 @@ export default function SettingsClientPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
           className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
@@ -209,12 +209,12 @@ export default function SettingsClientPage() {
           ← Back to dashboard
         </Link>
 
-        <div className="mb-12">
+        <div className="mb-10">
           <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
             Account
           </p>
 
-          <h1 className="text-5xl font-semibold tracking-tight">
+          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
             Settings
           </h1>
 
@@ -224,7 +224,7 @@ export default function SettingsClientPage() {
           </p>
         </div>
 
-        <section className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -257,7 +257,7 @@ export default function SettingsClientPage() {
           </Link>
         </section>
 
-        <div className="space-y-10">
+        <div className="space-y-8">
           {settingsSections.map((section) => (
             <section key={section.title}>
               <h2 className="mb-4 text-2xl font-medium">
