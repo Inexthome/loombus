@@ -23,6 +23,14 @@ function hasCreatorToolsAccess(entitlement: AiEntitlement, isAdmin: boolean) {
   );
 }
 
+const MAX_AVATAR_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+
+const ALLOWED_AVATAR_FILE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
 function isValidOptionalUrl(value: string) {
   const clean = value.trim();
 
@@ -144,16 +152,15 @@ export default function ProfilePage() {
     if (!file) {
       return;
     }
-
-    if (!file.type.startsWith("image/")) {
-      setMessage("Please upload an image file.");
-      event.target.value = "";
+    if (!ALLOWED_AVATAR_FILE_TYPES.has(file.type)) {
+      setMessage("Profile image must be a JPG, PNG, or WebP file.");
+      event.currentTarget.value = "";
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      setMessage("Avatar image must be 3 MB or smaller.");
-      event.target.value = "";
+    if (file.size > MAX_AVATAR_FILE_SIZE_BYTES) {
+      setMessage("Profile image must be 2 MB or smaller.");
+      event.currentTarget.value = "";
       return;
     }
 
