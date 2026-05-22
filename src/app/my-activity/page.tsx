@@ -346,7 +346,7 @@ export default function MyActivityPage() {
               My Activity
             </p>
 
-            <h1 className="text-5xl font-semibold tracking-tight">
+            <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
               Activity Overview
             </h1>
 
@@ -502,7 +502,7 @@ export default function MyActivityPage() {
         )}
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <div className="mb-5 flex items-center justify-between gap-4">
               <h2 className="text-2xl font-medium">My Discussions</h2>
               <Link href="/my-discussions" className="text-sm text-zinc-400 hover:text-white">
@@ -531,7 +531,7 @@ export default function MyActivityPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <div className="mb-5 flex items-center justify-between gap-4">
               <h2 className="text-2xl font-medium">My Replies</h2>
               <Link href="/my-replies" className="text-sm text-zinc-400 hover:text-white">
@@ -566,7 +566,7 @@ export default function MyActivityPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <div className="mb-5 flex items-center justify-between gap-4">
               <h2 className="text-2xl font-medium">Saved</h2>
               <Link href="/saved" className="text-sm text-zinc-400 hover:text-white">
@@ -617,7 +617,7 @@ export default function MyActivityPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <div className="mb-5 flex items-center justify-between gap-4">
               <h2 className="text-2xl font-medium">Notifications</h2>
               <Link href="/notifications" className="text-sm text-zinc-400 hover:text-white">
