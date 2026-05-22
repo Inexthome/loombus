@@ -537,7 +537,7 @@ export default function SavedPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="mb-4 text-5xl font-semibold tracking-tight">
@@ -725,7 +725,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               Nothing saved yet.
             </h2>
@@ -737,7 +737,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length > 0 && filteredSaved.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No saved discussions in this folder.
             </h2>
@@ -748,7 +748,7 @@ export default function SavedPage() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {filteredSaved.map((item) => {
             const discussion = item.discussions;
 
@@ -759,7 +759,7 @@ export default function SavedPage() {
             return (
               <div
                 key={item.id}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+                className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30"
               >
                 <Link
                   href={`/discussions/${discussion.id}`}
