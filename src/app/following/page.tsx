@@ -364,10 +364,10 @@ export default function FollowingPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
 
-        <div className="mb-12">
-          <h1 className="text-5xl font-semibold tracking-tight">
+        <div className="mb-10">
+          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
             Following
           </h1>
 
@@ -503,7 +503,7 @@ export default function FollowingPage() {
         )}
 
         {!loading && discussions.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No followed discussions yet.
             </h2>
@@ -515,7 +515,7 @@ export default function FollowingPage() {
         )}
 
         {!loading && discussions.length > 0 && filteredDiscussions.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No followed discussions found.
             </h2>
@@ -526,7 +526,7 @@ export default function FollowingPage() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {filteredDiscussions.map((discussion) => {
             const profile = profiles[discussion.user_id];
 
