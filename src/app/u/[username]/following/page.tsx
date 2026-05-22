@@ -121,7 +121,7 @@ export default function FollowListPage() {
   if (!authChecked || loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl text-zinc-400">
+        <div className="mx-auto max-w-6xl text-zinc-400">
           Loading {title.toLowerCase()}...
         </div>
       </main>
@@ -139,7 +139,7 @@ export default function FollowListPage() {
             ← Back to profile
           </Link>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Login Required
             </p>
@@ -176,8 +176,8 @@ export default function FollowListPage() {
   if (!ownerProfile) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl">
-          <h1 className="text-5xl font-semibold tracking-tight">
+        <div className="mx-auto max-w-6xl">
+          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
             User not found.
           </h1>
         </div>
@@ -187,7 +187,7 @@ export default function FollowListPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <Link
           href={`/u/${ownerProfile.username}`}
           className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
@@ -201,7 +201,7 @@ export default function FollowListPage() {
               @{ownerProfile.username}
             </p>
 
-            <h1 className="text-5xl font-semibold tracking-tight">
+            <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
               {title}
             </h1>
 
@@ -210,7 +210,7 @@ export default function FollowListPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+          <div className="flex items-center gap-3 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
             <ProfileAvatar profile={ownerProfile} size="xl" />
 
             <div>
@@ -242,7 +242,7 @@ export default function FollowListPage() {
         )}
 
         {profiles.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               {emptyText}
             </h2>
@@ -252,7 +252,7 @@ export default function FollowListPage() {
             </p>
           </div>
         ) : filteredProfiles.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No members found.
             </h2>
@@ -262,12 +262,12 @@ export default function FollowListPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-5 lg:grid-cols-2">
             {filteredProfiles.map((profile) => (
               <Link
                 key={profile.id}
                 href={profile.username ? `/u/${profile.username}` : "#"}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+                className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30 transition hover:-translate-y-0.5 hover:border-zinc-700"
               >
                 <div className="mb-5 flex items-center gap-4">
                   <ProfileAvatar profile={profile} size="xl" />
