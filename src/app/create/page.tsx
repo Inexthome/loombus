@@ -569,7 +569,7 @@ export default function CreatePage() {
         </p>
 
         {!authChecked && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <p className="text-zinc-400">
               Checking your account status...
             </p>
@@ -577,7 +577,7 @@ export default function CreatePage() {
         )}
 
         {authChecked && !isLoggedIn && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Login Required
             </p>
@@ -846,7 +846,7 @@ export default function CreatePage() {
                   <button
                     type="button"
                     onClick={applyClarityRewrite}
-                    className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                    className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
                   >
                     Use rewrite
                   </button>
