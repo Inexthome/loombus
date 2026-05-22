@@ -222,7 +222,7 @@ export default function DashboardClientPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-4xl text-zinc-400">
+        <div className="mx-auto max-w-6xl text-zinc-400">
           Loading dashboard...
         </div>
       </main>
@@ -232,7 +232,7 @@ export default function DashboardClientPage() {
   if (loadError) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mx-auto max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
           <h1 className="mb-3 text-2xl font-medium">
             Dashboard could not load.
           </h1>
@@ -244,7 +244,7 @@ export default function DashboardClientPage() {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
           >
             Reload dashboard
           </button>
@@ -255,7 +255,7 @@ export default function DashboardClientPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-6xl">
         <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
           Dashboard
         </p>
