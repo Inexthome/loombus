@@ -189,7 +189,7 @@ export default function LabsPage() {
   if (!authChecked || loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl text-zinc-500">
+        <div className="mx-auto max-w-6xl text-zinc-500">
           Loading Loombus Labs...
         </div>
       </main>
@@ -257,7 +257,7 @@ export default function LabsPage() {
             Loombus Labs
           </p>
 
-          <h1 className="mb-5 text-5xl font-semibold tracking-tight">
+          <h1 className="mb-5 text-5xl font-semibold tracking-tight md:text-6xl">
             Priority feature access.
           </h1>
 
@@ -350,13 +350,13 @@ export default function LabsPage() {
               </form>
 
               {message && (
-                <p className="mt-5 rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-400">
+                <p className="mt-5 rounded-3xl border border-zinc-800 bg-black p-5 text-sm text-zinc-400">
                   {message}
                 </p>
               )}
             </section>
 
-            <aside className="space-y-6">
+            <aside className="space-y-5">
               <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
                 <h2 className="mb-4 text-2xl font-medium">
                   Labs benefits
@@ -413,7 +413,7 @@ export default function LabsPage() {
                 {requests.map((request) => (
                   <article
                     key={request.id}
-                    className="rounded-2xl border border-zinc-800 bg-black p-5"
+                    className="rounded-3xl border border-zinc-800 bg-black p-6"
                   >
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
