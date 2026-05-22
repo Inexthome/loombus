@@ -105,14 +105,29 @@ export default function Home() {
         <p>© {new Date().getFullYear()} Loombus. All rights reserved.</p>
 
         <nav className="flex flex-wrap justify-center gap-4">
+          <Link href="/about" className="transition hover:text-zinc-300">
+            About
+          </Link>
+          <Link href="/guidelines" className="transition hover:text-zinc-300">
+            Guidelines
+          </Link>
+          <Link href="/safety" className="transition hover:text-zinc-300">
+            Safety
+          </Link>
           <Link href="/terms" className="transition hover:text-zinc-300">
-            Terms of Service
+            Terms
           </Link>
           <Link href="/privacy" className="transition hover:text-zinc-300">
-            Privacy Policy
+            Privacy
           </Link>
           <Link href="/cookies" className="transition hover:text-zinc-300">
-            Cookie Use
+            Cookies
+          </Link>
+          <Link href="/accessibility" className="transition hover:text-zinc-300">
+            Accessibility
+          </Link>
+          <Link href="/contact" className="transition hover:text-zinc-300">
+            Contact
           </Link>
         </nav>
       </footer>
