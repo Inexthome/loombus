@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
-type OAuthProvider = "google" | "apple";
+type OAuthProvider = "google";
 
 export default function Home() {
   const [message, setMessage] = useState("");
@@ -24,7 +24,7 @@ export default function Home() {
 
       if (error) {
         setMessage(
-          `${provider === "google" ? "Google" : "Apple"} sign up is not available yet. Please create an account with email instead.`
+          "Google sign up is not available yet. Please create an account with email instead."
         );
       }
     } finally {
@@ -62,15 +62,6 @@ export default function Home() {
             className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => signUpWithProvider("apple")}
-            disabled={Boolean(workingProvider)}
-            className="w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}
           </button>
 
           <div className="flex items-center gap-3 py-2 text-xs uppercase tracking-[0.2em] text-zinc-700">
