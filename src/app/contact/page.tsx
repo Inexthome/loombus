@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+const supportEmail = "support@loombus.com";
+
 export default function ContactPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -19,14 +21,33 @@ export default function ContactPage() {
         <div className="space-y-5 leading-relaxed text-zinc-400">
           <p>
             For account questions, safety concerns, platform feedback, or support
-            requests, contact Loombus through the official support channel once
-            it is published.
+            requests, contact Loombus at{" "}
+            <a
+              href={`mailto:${supportEmail}`}
+              className="text-zinc-200 underline-offset-4 hover:underline"
+            >
+              {supportEmail}
+            </a>
+            .
           </p>
 
           <p>
-            This page is a starter contact page and should be updated with the
-            final support email or contact form before broad public launch.
+            Include your account email, a clear description of the issue, and any
+            relevant links or screenshots so the request can be reviewed faster.
           </p>
+
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+            <p className="mb-3 text-sm uppercase tracking-[0.2em] text-zinc-500">
+              Support email
+            </p>
+
+            <a
+              href={`mailto:${supportEmail}`}
+              className="inline-flex rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+            >
+              Email {supportEmail}
+            </a>
+          </div>
         </div>
       </div>
     </main>
