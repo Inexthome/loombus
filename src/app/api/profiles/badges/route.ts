@@ -6,6 +6,11 @@ import {
   type AiEntitlementLike,
 } from "@/lib/subscription-plans";
 
+const MAX_PROFILE_BADGE_LOOKUP_IDS = 50;
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 type BadgeResponse = {
   key: "premium" | "premium_plus" | "admin";
   label: string;
@@ -17,18 +22,31 @@ export async function POST(request: NextRequest) {
       profileIds?: unknown;
     };
 
+    if (body.profileIds !== undefined && !Array.isArray(body.profileIds)) {
+      return NextResponse.json(
+        { error: "profileIds must be an array." },
+        {
+          status: 400,
+          headers: { "Cache-Control": "no-store" },
+        }
+      );
+    }
+
     const profileIds = Array.isArray(body.profileIds)
       ? [
           ...new Set(
             body.profileIds
               .map((value) => String(value ?? "").trim())
-              .filter(Boolean)
+              .filter((value) => UUID_PATTERN.test(value))
           ),
-        ].slice(0, 100)
+        ].slice(0, MAX_PROFILE_BADGE_LOOKUP_IDS)
       : [];
 
     if (profileIds.length === 0) {
-      return NextResponse.json({ badges: {} });
+      return NextResponse.json(
+        { badges: {} },
+        { headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -36,7 +54,10 @@ export async function POST(request: NextRequest) {
     if (!serviceKey) {
       return NextResponse.json(
         { error: "Profile badge service is not configured." },
-        { status: 503 }
+        {
+          status: 503,
+          headers: { "Cache-Control": "no-store" },
+        }
       );
     }
 
@@ -59,7 +80,10 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json(
         { error: "Unable to load profile badges." },
-        { status: 500 }
+        {
+          status: 500,
+          headers: { "Cache-Control": "no-store" },
+        }
       );
     }
 
@@ -80,11 +104,17 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    return NextResponse.json({ badges });
+    return NextResponse.json(
+      { badges },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch {
     return NextResponse.json(
       { error: "Unexpected server error." },
-      { status: 500 }
+      {
+        status: 500,
+        headers: { "Cache-Control": "no-store" },
+      }
     );
   }
 }
