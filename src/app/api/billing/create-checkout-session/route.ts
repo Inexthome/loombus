@@ -61,6 +61,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
+    const token = authHeader.replace("Bearer ", "");
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      }
+    );
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
+      return NextResponse.json({ error: "Invalid session." }, { status: 401 });
+    }
+
     const body = (await request.json().catch(() => ({}))) as {
       planKey?: string;
     };
@@ -90,29 +113,6 @@ export async function POST(request: NextRequest) {
         },
         { status: 503 }
       );
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    );
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      return NextResponse.json({ error: "Invalid session." }, { status: 401 });
     }
 
     const origin =
