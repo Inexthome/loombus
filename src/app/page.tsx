@@ -1,14 +1,125 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 type OAuthProvider = "google";
+type HomeAuthState = "checking" | "logged_out" | "logged_in";
+
+function withTimeout<T>(
+  promise: PromiseLike<T>,
+  label: string,
+  ms = 5000
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} timed out.`));
+    }, ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
+}
+
+const memberCards = [
+  {
+    title: "Create",
+    description: "Start a structured, high-signal discussion.",
+    href: "/create",
+    primary: true,
+  },
+  {
+    title: "Discussions",
+    description: "Browse the full discussion feed.",
+    href: "/discussions",
+  },
+  {
+    title: "People",
+    description: "Find thoughtful contributors across Loombus.",
+    href: "/people",
+  },
+  {
+    title: "Notifications",
+    description: "Review replies, follows, and account activity.",
+    href: "/notifications",
+  },
+  {
+    title: "Dashboard",
+    description: "View your profile status, subscription, and activity summary.",
+    href: "/dashboard",
+  },
+  {
+    title: "Following",
+    description: "See discussions from people you follow.",
+    href: "/following",
+  },
+  {
+    title: "Saved",
+    description: "Return to discussions you saved.",
+    href: "/saved",
+  },
+  {
+    title: "My Activity",
+    description: "View your discussions, replies, saves, and notifications.",
+    href: "/my-activity",
+  },
+  {
+    title: "Settings",
+    description: "Manage your account, profile, and platform tools.",
+    href: "/settings",
+  },
+];
 
 export default function Home() {
+  const [authState, setAuthState] = useState<HomeAuthState>("checking");
+  const [email, setEmail] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function checkAuthState() {
+      try {
+        const { data, error } = await withTimeout(
+          supabase.auth.getUser(),
+          "Home authentication check"
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (error || !data.user) {
+          setEmail(null);
+          setAuthState("logged_out");
+          return;
+        }
+
+        setEmail(data.user.email ?? null);
+        setAuthState("logged_in");
+      } catch (error) {
+        console.error("Unable to check home authentication state.", error);
+
+        if (isMounted) {
+          setEmail(null);
+          setAuthState("logged_out");
+        }
+      }
+    }
+
+    checkAuthState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function signUpWithProvider(provider: OAuthProvider) {
     setMessage("");
@@ -30,6 +141,93 @@ export default function Home() {
     } finally {
       setWorkingProvider(null);
     }
+  }
+
+  if (authState === "checking") {
+    return (
+      <main className="min-h-screen bg-black px-6 py-16 text-white">
+        <section className="mx-auto flex min-h-[70vh] max-w-xl flex-col items-center justify-center text-center">
+          <img
+            src="/assets/brand/loombus-mark-transparent.png"
+            alt=""
+            className="mb-6 h-16 w-16 object-contain"
+          />
+
+          <p className="text-zinc-500">Loading Loombus...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (authState === "logged_in") {
+    return (
+      <main className="min-h-screen bg-black px-6 py-16 text-white">
+        <section className="mx-auto max-w-6xl">
+          <div className="mb-12">
+            <p className="mb-4 text-sm uppercase tracking-[0.35em] text-zinc-500">
+              Member Home
+            </p>
+
+            <h1 className="mb-5 text-5xl font-semibold tracking-tight md:text-6xl">
+              Welcome back to Loombus.
+            </h1>
+
+            <p className="max-w-3xl leading-relaxed text-zinc-400">
+              Continue your discussions, find people, create something useful,
+              or manage your account from one organized home screen.
+            </p>
+
+            {email && (
+              <p className="mt-5 text-sm text-zinc-600">
+                Signed in as {email}
+              </p>
+            )}
+          </div>
+
+          <div className="mb-10 grid gap-5 md:grid-cols-3">
+            {memberCards.map((card) => (
+              <Link
+                key={card.href}
+                href={card.href}
+                className={`rounded-3xl border p-6 transition hover:border-zinc-600 ${
+                  card.primary
+                    ? "border-zinc-500 bg-white text-black hover:bg-zinc-200"
+                    : "border-zinc-800 bg-zinc-950 text-white hover:bg-zinc-900"
+                }`}
+              >
+                <h2 className="mb-3 text-2xl font-semibold">
+                  {card.title}
+                </h2>
+
+                <p
+                  className={`text-sm leading-relaxed ${
+                    card.primary ? "text-zinc-700" : "text-zinc-500"
+                  }`}
+                >
+                  {card.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              Platform focus
+            </p>
+
+            <h2 className="mb-3 text-2xl font-medium">
+              Keep the signal high.
+            </h2>
+
+            <p className="max-w-3xl leading-relaxed text-zinc-400">
+              Loombus is built for thoughtful discussion, useful contribution,
+              and cleaner community dialogue. Create with purpose, reply with
+              clarity, and use the safety tools when needed.
+            </p>
+          </section>
+        </section>
+      </main>
+    );
   }
 
   return (
