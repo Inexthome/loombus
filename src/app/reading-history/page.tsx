@@ -154,7 +154,7 @@ export default function ReadingHistoryPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
@@ -192,7 +192,7 @@ export default function ReadingHistoryPage() {
 
             <Link
               href="/premium"
-              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
             >
               View Premium options
             </Link>
@@ -247,7 +247,7 @@ export default function ReadingHistoryPage() {
               </section>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-5">
               {history.map((item) => (
                 <article
                   key={item.discussion_id}
