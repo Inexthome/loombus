@@ -187,7 +187,7 @@ export default function MyDiscussionsPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl text-zinc-400">
+        <div className="mx-auto max-w-6xl text-zinc-400">
           Loading your discussions...
         </div>
       </main>
@@ -196,7 +196,7 @@ export default function MyDiscussionsPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
           className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
@@ -210,7 +210,7 @@ export default function MyDiscussionsPage() {
               My Activity
             </p>
 
-            <h1 className="text-5xl font-semibold tracking-tight">
+            <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
               My Discussions
             </h1>
 
@@ -253,7 +253,7 @@ export default function MyDiscussionsPage() {
 
             <Link
               href="/premium"
-              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
             >
               View Premium options
             </Link>
@@ -381,7 +381,7 @@ export default function MyDiscussionsPage() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {filteredDiscussions.map((discussion) => (
             <div
               key={discussion.id}
