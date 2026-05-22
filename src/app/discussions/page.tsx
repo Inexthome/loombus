@@ -361,10 +361,10 @@ export default function DiscussionsPage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-5xl font-semibold tracking-tight">
+            <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
               Discussions
             </h1>
 
@@ -375,7 +375,7 @@ export default function DiscussionsPage() {
 
           <Link
             href="/create"
-            className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+            className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
           >
             Create Discussion
           </Link>
@@ -522,7 +522,7 @@ export default function DiscussionsPage() {
         )}
 
         {!loading && filteredDiscussions.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No discussions found.
             </h2>
@@ -533,7 +533,7 @@ export default function DiscussionsPage() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {filteredDiscussions.map((discussion) => {
             const profile = profiles[discussion.user_id];
 
