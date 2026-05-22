@@ -339,7 +339,7 @@ export default function UserProfilePage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-4xl text-zinc-400">
+        <div className="mx-auto max-w-6xl text-zinc-400">
           Loading profile...
         </div>
       </main>
@@ -349,8 +349,8 @@ export default function UserProfilePage() {
   if (!profile) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-4xl">
-          <h1 className="text-5xl font-semibold tracking-tight">
+        <div className="mx-auto max-w-6xl">
+          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
             User not found.
           </h1>
         </div>
@@ -360,7 +360,7 @@ export default function UserProfilePage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-16 rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
           <div className="mb-6 flex items-center gap-5">
             <ProfileAvatar profile={profile} size="xl" />
@@ -380,7 +380,7 @@ export default function UserProfilePage() {
                 )}
               </div>
 
-              <h1 className="text-5xl font-semibold tracking-tight">
+              <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
                 {profile.full_name}
               </h1>
             </div>
@@ -397,7 +397,7 @@ export default function UserProfilePage() {
                   href={profile.creator_website_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                  className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
                 >
                   Website
                 </a>
@@ -408,7 +408,7 @@ export default function UserProfilePage() {
                   href={profile.creator_support_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                  className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
                 >
                   {profile.creator_support_label || "Support"}
                 </a>
@@ -450,7 +450,7 @@ export default function UserProfilePage() {
           {currentUserId && currentUserId !== profile.id && (
             <div className="mt-8">
               {isBlockedByProfile ? (
-                <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
+                <div className="rounded-3xl border border-zinc-800 bg-black p-5 text-sm text-zinc-500">
                   You cannot interact with this profile.
                 </div>
               ) : (
@@ -526,12 +526,12 @@ export default function UserProfilePage() {
           Discussions
         </h2>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           {discussions.map((discussion) => (
             <Link
               key={discussion.id}
               href={`/discussions/${discussion.id}`}
-              className="block rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+              className="block rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30 transition hover:-translate-y-0.5 hover:border-zinc-700"
             >
               <p className="mb-3 text-sm text-zinc-500">
                 {discussion.topic}
