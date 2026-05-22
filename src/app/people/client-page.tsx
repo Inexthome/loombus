@@ -276,7 +276,7 @@ export default function PeoplePage() {
   if (!authChecked || loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-6xl">
           <p className="text-zinc-500">
             Loading people...
           </p>
@@ -296,7 +296,7 @@ export default function PeoplePage() {
             ← Back to discussions
           </Link>
 
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Login Required
             </p>
@@ -332,9 +332,9 @@ export default function PeoplePage() {
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <div className="mb-10">
-          <h1 className="text-5xl font-semibold tracking-tight">
+          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
             People
           </h1>
 
@@ -376,7 +376,7 @@ export default function PeoplePage() {
         )}
 
         {!loading && filteredProfiles.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No members found.
             </h2>
@@ -387,7 +387,7 @@ export default function PeoplePage() {
           </div>
         )}
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-5 lg:grid-cols-2">
           {filteredProfiles.map((profile) => {
             const isSelf = currentUserId === profile.id;
             const isFollowing = followingIds.has(profile.id);
