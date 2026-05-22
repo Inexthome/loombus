@@ -948,7 +948,7 @@ export default function DiscussionPage() {
           {discussion.topic}
         </p>
 
-        <h1 className="mb-6 text-5xl font-semibold tracking-tight">
+        <h1 className="mb-6 text-5xl font-semibold tracking-tight md:text-6xl">
           {discussion.title}
         </h1>
 
@@ -1250,7 +1250,7 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-12 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-600">
@@ -1359,7 +1359,7 @@ export default function DiscussionPage() {
             <button
               onClick={handleBookmark}
               disabled={savingBookmark}
-              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
             >
               {savingBookmark ? "Saving..." : "Save Discussion"}
             </button>
@@ -1398,7 +1398,7 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <div className="mb-16 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
           <h2 className="mb-6 text-xl font-medium">
             AI Summary
           </h2>
@@ -1417,7 +1417,7 @@ export default function DiscussionPage() {
           <form
             onSubmit={handleReply}
             onKeyDown={handleReplyFormKeyDown}
-            className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+            className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30"
           >
             <label className="mb-3 block text-sm text-zinc-400">
               Add a thoughtful reply
@@ -1437,7 +1437,7 @@ export default function DiscussionPage() {
               <button
                 type="submit"
                 disabled={postingReply}
-              className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+              className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
             >
                 {postingReply ? "Posting..." : "Post Reply"}
               </button>
@@ -1450,7 +1450,7 @@ export default function DiscussionPage() {
             {message && <p className="mt-4 text-sm text-zinc-400">{message}</p>}
           </form>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             {replies.map((reply) => {
               const canDeleteReply =
                 Boolean(currentUserId) &&
@@ -1464,7 +1464,7 @@ export default function DiscussionPage() {
               return (
                 <div
                   key={reply.id}
-                  className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+                  className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30"
                 >
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-zinc-500">
