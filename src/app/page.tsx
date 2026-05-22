@@ -27,52 +27,80 @@ function withTimeout<T>(
   });
 }
 
-const memberCards = [
+const memberSections = [
   {
-    title: "Create",
-    description: "Start a structured, high-signal discussion.",
-    href: "/create",
-    primary: true,
+    heading: "Create and read",
+    description: "Start new discussions, browse the feed, or catch up on people you follow.",
+    cards: [
+      {
+        title: "Create",
+        description: "Start a structured, high-signal discussion.",
+        href: "/create",
+        primary: true,
+      },
+      {
+        title: "Discussions",
+        description: "Browse the full discussion feed.",
+        href: "/discussions",
+      },
+      {
+        title: "Following",
+        description: "See discussions from people you follow.",
+        href: "/following",
+      },
+    ],
   },
   {
-    title: "Discussions",
-    description: "Browse the full discussion feed.",
-    href: "/discussions",
+    heading: "Community",
+    description: "Find people, review notifications, and return to saved discussions.",
+    cards: [
+      {
+        title: "People",
+        description: "Find thoughtful contributors across Loombus.",
+        href: "/people",
+      },
+      {
+        title: "Notifications",
+        description: "Review replies, follows, and account activity.",
+        href: "/notifications",
+      },
+      {
+        title: "Saved",
+        description: "Return to discussions you saved.",
+        href: "/saved",
+      },
+    ],
   },
   {
-    title: "People",
-    description: "Find thoughtful contributors across Loombus.",
-    href: "/people",
-  },
-  {
-    title: "Notifications",
-    description: "Review replies, follows, and account activity.",
-    href: "/notifications",
-  },
-  {
-    title: "Dashboard",
-    description: "View your profile status, subscription, and activity summary.",
-    href: "/dashboard",
-  },
-  {
-    title: "Following",
-    description: "See discussions from people you follow.",
-    href: "/following",
-  },
-  {
-    title: "Saved",
-    description: "Return to discussions you saved.",
-    href: "/saved",
-  },
-  {
-    title: "My Activity",
-    description: "View your discussions, replies, saves, and notifications.",
-    href: "/my-activity",
-  },
-  {
-    title: "Settings",
-    description: "Manage your account, profile, and platform tools.",
-    href: "/settings",
+    heading: "Your account",
+    description: "Manage your activity, profile, settings, and subscription tools.",
+    cards: [
+      {
+        title: "Dashboard",
+        description: "View your profile status, subscription, and activity summary.",
+        href: "/dashboard",
+      },
+      {
+        title: "My Activity",
+        description: "View your discussions, replies, saves, and notifications.",
+        href: "/my-activity",
+      },
+      {
+        title: "Profile",
+        description: "Edit your public profile and member identity.",
+        href: "/profile",
+      },
+      {
+        title: "Settings",
+        description: "Manage your account, profile, and platform tools.",
+        href: "/settings",
+      },
+      {
+        title: "Premium",
+        description: "Review subscription features and AI-assisted tools.",
+        href: "/premium",
+      },
+    ],
   },
 ];
 
@@ -184,29 +212,48 @@ export default function Home() {
             )}
           </div>
 
-          <div className="mb-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {memberCards.map((card) => (
-              <Link
-                key={card.href}
-                href={card.href}
-                className={`rounded-3xl border p-6 transition hover:-translate-y-0.5 hover:border-zinc-600 ${
-                  card.primary
-                    ? "border-zinc-500 bg-white text-black hover:bg-zinc-200"
-                    : "border-zinc-800 bg-zinc-950 text-white hover:bg-zinc-900"
-                }`}
+          <div className="mb-10 space-y-8">
+            {memberSections.map((section) => (
+              <section
+                key={section.heading}
+                className="rounded-3xl border border-zinc-900 bg-zinc-950/40 p-5"
               >
-                <h2 className="mb-3 text-2xl font-semibold">
-                  {card.title}
-                </h2>
+                <div className="mb-5">
+                  <h2 className="text-2xl font-semibold tracking-tight">
+                    {section.heading}
+                  </h2>
 
-                <p
-                  className={`text-sm leading-relaxed ${
-                    card.primary ? "text-zinc-700" : "text-zinc-500"
-                  }`}
-                >
-                  {card.description}
-                </p>
-              </Link>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
+                    {section.description}
+                  </p>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {section.cards.map((card) => (
+                    <Link
+                      key={card.href}
+                      href={card.href}
+                      className={`rounded-3xl border p-6 transition hover:-translate-y-0.5 hover:border-zinc-600 ${
+                        card.primary
+                          ? "border-zinc-500 bg-white text-black hover:bg-zinc-200"
+                          : "border-zinc-800 bg-black/40 text-white hover:bg-zinc-900"
+                      }`}
+                    >
+                      <h3 className="mb-3 text-xl font-semibold">
+                        {card.title}
+                      </h3>
+
+                      <p
+                        className={`text-sm leading-relaxed ${
+                          card.primary ? "text-zinc-700" : "text-zinc-500"
+                        }`}
+                      >
+                        {card.description}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
 
