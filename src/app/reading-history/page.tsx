@@ -186,16 +186,58 @@ export default function ReadingHistoryPage() {
             </h2>
 
             <p className="mb-6 max-w-3xl leading-relaxed text-zinc-500">
-              You can still read discussions on the Free plan. Premium and Admin
-              accounts can keep a personal history of recently viewed discussions.
+              You can still read, reply, save, and follow discussions on the Free
+              plan. Premium and Admin accounts can keep a personal history of
+              recently viewed discussions so useful threads are easier to revisit.
             </p>
 
-            <Link
-              href="/premium"
-              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              View Premium options
-            </Link>
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Revisit useful threads
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Keep track of discussions you opened but did not finish reading.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Continue thinking
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Return to conversations when you are ready to reply, save, or compare ideas.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Build a reading trail
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Use history as a lightweight trail of what has caught your attention.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/premium"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                View Premium options
+              </Link>
+
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Browse discussions
+              </Link>
+            </div>
           </section>
         )}
 
@@ -241,9 +283,58 @@ export default function ReadingHistoryPage() {
                   No reading history yet.
                 </h2>
 
-                <p className="text-zinc-500">
-                  Open discussions while logged in, then return here to revisit them.
+                <p className="mb-6 max-w-3xl text-zinc-500">
+                  Open discussions while logged in, then return here to revisit
+                  threads that deserve more attention.
                 </p>
+
+                <div className="mb-6 grid gap-4 md:grid-cols-3">
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-2 text-sm font-medium text-zinc-300">
+                      Browse by signal
+                    </p>
+
+                    <p className="text-sm leading-relaxed text-zinc-600">
+                      Start with active, high-signal, or topic-filtered discussions.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-2 text-sm font-medium text-zinc-300">
+                      Open what matters
+                    </p>
+
+                    <p className="text-sm leading-relaxed text-zinc-600">
+                      Your history fills as you open discussions that are worth returning to.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-2 text-sm font-medium text-zinc-300">
+                      Save the best
+                    </p>
+
+                    <p className="text-sm leading-relaxed text-zinc-600">
+                      Use Save for threads that should become part of your personal library.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <Link
+                    href="/discussions"
+                    className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+                  >
+                    Browse discussions
+                  </Link>
+
+                  <Link
+                    href="/following"
+                    className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                  >
+                    Open following feed
+                  </Link>
+                </div>
               </section>
             )}
 
