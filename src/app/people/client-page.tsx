@@ -398,6 +398,54 @@ export default function PeoplePage() {
           </p>
         </div>
 
+        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Finding people
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Follow contributors for signal, not noise.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Loombus works best when you follow people whose discussions, replies,
+            and areas of interest help you think more clearly. Start small and
+            build a network around useful contribution.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Read the bio
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Look for interests, experience, projects, or discussion themes that match what you care about.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Check contribution style
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Follow people who add context, questions, examples, or better framing.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Keep the feed useful
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Your following feed should help you revisit thoughtful contributors, not chase popularity.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
           <label className="mb-3 block text-sm text-zinc-400">
             Search members
