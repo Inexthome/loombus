@@ -55,24 +55,31 @@ export default function DeletedContentPage() {
   }, []);
 
   async function restoreDiscussion(id: string) {
-    await supabase
-      .from("discussions")
-      .update({
-        deleted_at: null,
-        deleted_by: null,
-        deletion_reason: null,
-      })
-      .eq("id", id);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    const { data: userData } = await supabase.auth.getUser();
+    if (!accessToken) {
+      window.location.href = "/login";
+      return;
+    }
 
-    if (userData.user) {
-      await supabase.from("audit_logs").insert({
-        actor_id: userData.user.id,
-        action: "discussion.restored",
-        target_type: "discussion",
-        target_id: id,
-      });
+    const response = await fetch("/api/admin/moderation/actions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        action: "restore_discussion",
+        discussionId: id,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      console.error(result.error ?? "Unable to restore discussion.");
+      return;
     }
 
     setDiscussions((current) =>

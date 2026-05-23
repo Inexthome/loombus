@@ -123,33 +123,33 @@ export default function DeletedRepliesPage() {
     setMessage("");
     setRestoringId(replyId);
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    if (!userData.user) {
+    if (!accessToken) {
       window.location.href = "/login";
       return;
     }
 
-    const { error } = await supabase
-      .from("replies")
-      .update({
-        deleted_at: null,
-        deleted_by: null,
-      })
-      .eq("id", replyId);
+    const response = await fetch("/api/admin/moderation/actions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        action: "restore_reply",
+        replyId,
+      }),
+    });
 
-    if (error) {
-      setMessage(`Unable to restore reply: ${error.message}`);
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to restore reply.");
       setRestoringId(null);
       return;
     }
-
-    await supabase.from("audit_logs").insert({
-      actor_id: userData.user.id,
-      action: "reply.restored",
-      target_type: "reply",
-      target_id: replyId,
-    });
 
     setReplies((current) => current.filter((reply) => reply.id !== replyId));
     setMessage("Reply restored.");

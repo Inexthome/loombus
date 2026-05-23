@@ -155,36 +155,32 @@ export default function AdminReportsPage() {
 
     setMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    if (!userData.user) {
+    if (!accessToken) {
       window.location.href = "/login";
       return;
     }
 
-    const { error } = await supabase
-      .from("discussions")
-      .update({
-        deleted_at: new Date().toISOString(),
-        deleted_by: userData.user.id,
-        deletion_reason: "Admin moderation action",
-      })
-      .eq("id", discussionId);
+    const response = await fetch("/api/admin/moderation/actions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        action: "soft_delete_discussion",
+        discussionId,
+      }),
+    });
 
-    if (error) {
-      setMessage(`Unable to soft delete discussion: ${error.message}`);
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to soft delete discussion.");
       return;
     }
-
-    await supabase.from("audit_logs").insert({
-      actor_id: userData.user.id,
-      action: "discussion.soft_deleted",
-      target_type: "discussion",
-      target_id: discussionId,
-      metadata: {
-        reason: "Admin moderation action",
-      },
-    });
 
     setReports((current) =>
       current.filter((report) => report.discussion_id !== discussionId)
@@ -232,30 +228,42 @@ export default function AdminReportsPage() {
   async function markReviewed(reportId: string) {
     setMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    if (!userData.user) {
+    if (!accessToken) {
       window.location.href = "/login";
       return;
     }
 
-    const reviewedAt = new Date().toISOString();
     const resolutionNote = (reviewNotes[reportId] ?? "").trim();
 
-    const { error } = await supabase
-      .from("reports")
-      .update({
-        status: "reviewed",
-        reviewed_by: userData.user.id,
-        reviewed_at: reviewedAt,
-        resolution_note: resolutionNote || null,
-      })
-      .eq("id", reportId);
+    const response = await fetch("/api/admin/moderation/actions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        action: "mark_report_reviewed",
+        reportId,
+        resolutionNote,
+      }),
+    });
 
-    if (error) {
-      setMessage(`Unable to mark reviewed: ${error.message}`);
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to mark reviewed.");
       return;
     }
+
+    const reviewedBy =
+      typeof result.reviewedBy === "string" ? result.reviewedBy : null;
+    const reviewedAt =
+      typeof result.reviewedAt === "string" ? result.reviewedAt : new Date().toISOString();
+    const savedResolutionNote =
+      typeof result.resolutionNote === "string" ? result.resolutionNote : null;
 
     setReports((current) =>
       current.map((report) =>
@@ -263,9 +271,9 @@ export default function AdminReportsPage() {
           ? {
               ...report,
               status: "reviewed",
-              reviewed_by: userData.user.id,
+              reviewed_by: reviewedBy,
               reviewed_at: reviewedAt,
-              resolution_note: resolutionNote || null,
+              resolution_note: savedResolutionNote,
             }
           : report
       )
