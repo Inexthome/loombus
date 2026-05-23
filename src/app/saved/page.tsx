@@ -632,6 +632,54 @@ export default function SavedPage() {
           </Link>
         </div>
 
+        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Saved discussions guide
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Save what is worth returning to.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Saved discussions should become your personal reading shelf. Use it
+            for threads you want to revisit, compare, cite, or organize into
+            future ideas.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Save for a reason
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Save discussions with useful framing, strong replies, research value, or ideas you may build on later.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Revisit your thinking
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Return to saved threads when you want to reply better, compare viewpoints, or continue learning.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Organize when needed
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Premium folders and Premium Plus notes help when your saved list becomes a working library.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {!loading && !canUseCollections && (
           <div className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
             <h2 className="mb-2 text-2xl font-medium">
