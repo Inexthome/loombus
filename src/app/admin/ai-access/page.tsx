@@ -305,29 +305,52 @@ export default function AdminAiAccessPage() {
 
     setWorkingUserId(userId);
 
-    const { error } = await supabase
-      .from("user_ai_entitlements")
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    if (error) {
-      setMessage(`Unable to update AI access: ${error.message}`);
+    if (!accessToken) {
+      setWorkingUserId(null);
+      window.location.href = "/login";
+      return;
+    }
+
+    let result: { entitlement?: AiEntitlement; error?: string } = {};
+
+    try {
+      const response = await fetch("/api/admin/ai-access/entitlements", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          userId,
+          updates,
+        }),
+      });
+
+      result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to update AI access.");
+        setWorkingUserId(null);
+        return;
+      }
+    } catch {
+      setMessage("Unable to update AI access.");
+      setWorkingUserId(null);
+      return;
+    }
+
+    if (!result.entitlement) {
+      setMessage("AI access updated, but the response was incomplete. Refresh to confirm.");
       setWorkingUserId(null);
       return;
     }
 
     setEntitlements((current) =>
       current.map((item) =>
-        item.user_id === userId
-          ? {
-              ...item,
-              ...updates,
-              updated_at: new Date().toISOString(),
-            }
-          : item
+        item.user_id === userId ? (result.entitlement as AiEntitlement) : item
       )
     );
 
@@ -378,62 +401,54 @@ export default function AdminAiAccessPage() {
 
     setGrantingPremium(true);
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id, username, full_name, avatar_url")
-      .eq("username", cleanUsername)
-      .maybeSingle();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    if (profileError) {
-      setMessage(`Unable to find user: ${profileError.message}`);
+    if (!accessToken) {
       setGrantingPremium(false);
+      window.location.href = "/login";
       return;
     }
 
-    if (!profile) {
-      setMessage(`No Loombus profile found for @${cleanUsername}.`);
-      setGrantingPremium(false);
-      return;
-    }
+    let result: {
+      entitlement?: AiEntitlement;
+      profile?: Profile;
+      error?: string;
+    } = {};
 
-    const updatedAt = new Date().toISOString();
-
-    const { data: entitlement, error: entitlementError } = await supabase
-      .from("user_ai_entitlements")
-      .upsert(
-        {
-          user_id: profile.id,
-          tier: "premium",
-          ai_assisted_enabled: true,
-          monthly_summary_limit: 50,
-          monthly_writing_limit: 25,
-          monthly_research_limit: 10,
-          monthly_discovery_limit: 25,
-          notes: `Premium AI-Assisted Layer granted by admin for @${cleanUsername}.`,
-          updated_at: updatedAt,
+    try {
+      const response = await fetch("/api/admin/ai-access/entitlements", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
         },
-        {
-          onConflict: "user_id",
-        }
-      )
-      .select(`
-        user_id,
-        tier,
-        ai_assisted_enabled,
-        monthly_summary_limit,
-        monthly_writing_limit,
-        monthly_research_limit,
-        monthly_discovery_limit,
-        notes,
-        updated_at
-      `)
-      .single();
+        body: JSON.stringify({
+          username: cleanUsername,
+        }),
+      });
 
-    if (entitlementError) {
-      setMessage(`Unable to grant Premium AI access: ${entitlementError.message}`);
+      result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to grant Premium AI access.");
+        setGrantingPremium(false);
+        return;
+      }
+    } catch {
+      setMessage("Unable to grant Premium AI access.");
       setGrantingPremium(false);
       return;
     }
+
+    if (!result.entitlement || !result.profile) {
+      setMessage("Premium AI access was updated, but the response was incomplete. Refresh to confirm.");
+      setGrantingPremium(false);
+      return;
+    }
+
+    const profile = result.profile;
+    const entitlement = result.entitlement;
 
     setProfiles((current) => ({
       ...current,
@@ -445,11 +460,11 @@ export default function AdminAiAccessPage() {
 
       if (existing) {
         return current.map((item) =>
-          item.user_id === profile.id ? (entitlement as AiEntitlement) : item
+          item.user_id === profile.id ? entitlement : item
         );
       }
 
-      return [entitlement as AiEntitlement, ...current];
+      return [entitlement, ...current];
     });
 
     setGrantUsername("");
