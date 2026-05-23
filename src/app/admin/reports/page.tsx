@@ -396,6 +396,55 @@ export default function AdminReportsPage() {
           Review discussions, replies, and profiles submitted for moderation.
         </p>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Review workflow
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Triage reports before taking action.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Use this queue to separate open reports, reviewed reports, discussion
+            reports, reply reports, and profile reports. Open the reported item,
+            add a resolution note when helpful, then mark reviewed or remove
+            content only when the moderation decision is clear.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                1. Inspect context
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Open the discussion, reply, or profile before acting so the report is reviewed in context.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                2. Record outcome
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Add a short resolution note when the decision may matter later for appeals or pattern review.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                3. Act carefully
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Mark reviewed for no action, or soft delete only when content should leave public view.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="mb-10 flex flex-wrap gap-3">
           {filterOptions.map((option) => (
             <button
@@ -428,9 +477,18 @@ export default function AdminReportsPage() {
               No reports found.
             </h2>
 
-            <p className="text-zinc-400">
-              No reports match the current filter.
+            <p className="mb-5 max-w-2xl text-zinc-400">
+              No reports match the current filter. Switch back to all reports to
+              review the full moderation queue.
             </p>
+
+            <button
+              type="button"
+              onClick={() => setFilterMode("all")}
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Show all reports
+            </button>
           </div>
         )}
 
