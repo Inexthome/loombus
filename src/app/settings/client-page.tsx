@@ -108,6 +108,16 @@ const settingsSections = [
         description: "Review community standards and contribution expectations.",
         href: "/guidelines",
       },
+      {
+        title: "Safety",
+        description: "Review safety expectations, reporting, blocking, and enforcement.",
+        href: "/safety",
+      },
+      {
+        title: "Contact",
+        description: "Get help with support, safety concerns, accessibility, or account questions.",
+        href: "/contact",
+      },
     ],
   },
 ];

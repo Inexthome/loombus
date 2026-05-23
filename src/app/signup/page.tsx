@@ -230,6 +230,10 @@ export default function SignupPage() {
             <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">
               Safety
             </Link>
+
+            <Link href="/contact" className="text-zinc-400 underline-offset-4 hover:underline">
+              Contact
+            </Link>
             .
           </p>
 
