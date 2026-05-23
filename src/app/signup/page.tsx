@@ -40,13 +40,6 @@ export default function SignupPage() {
       return;
     }
 
-    if (data.user) {
-      await supabase.from("profiles").insert({
-        id: data.user.id,
-        full_name: fullName,
-      });
-    }
-
     setSignupComplete(true);
     setPassword("");
     setMessage("Signup successful. Check your email to confirm your account.");
