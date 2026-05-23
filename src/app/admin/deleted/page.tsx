@@ -17,6 +17,8 @@ export default function DeletedContentPage() {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     async function loadDeleted() {
@@ -55,10 +57,14 @@ export default function DeletedContentPage() {
   }, []);
 
   async function restoreDiscussion(id: string) {
+    setMessage("");
+    setRestoringId(id);
+
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
 
     if (!accessToken) {
+      setRestoringId(null);
       window.location.href = "/login";
       return;
     }
@@ -78,13 +84,16 @@ export default function DeletedContentPage() {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      console.error(result.error ?? "Unable to restore discussion.");
+      setMessage(result.error ?? "Unable to restore discussion.");
+      setRestoringId(null);
       return;
     }
 
     setDiscussions((current) =>
       current.filter((discussion) => discussion.id !== id)
     );
+    setMessage("Discussion restored.");
+    setRestoringId(null);
   }
 
   if (loading) {
@@ -136,6 +145,60 @@ export default function DeletedContentPage() {
           </Link>
         </div>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Restore review
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Restore discussions only after context review.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Restoring a deleted discussion returns it to public visibility. Review
+            the title, topic, body, deletion time, and deletion reason before
+            reversing a moderation action.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Check the reason
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Use the deletion reason and audit context to understand why it was removed.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Re-read the content
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Confirm the discussion is safe and appropriate before it returns to public view.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Restore deliberately
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Restore only when the original removal was mistaken or no longer necessary.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {message && (
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
+            {message}
+          </div>
+        )}
+
         <div className="space-y-6">
           {discussions.map((discussion) => (
             <div
@@ -155,9 +218,10 @@ export default function DeletedContentPage() {
 
                 <button
                   onClick={() => restoreDiscussion(discussion.id)}
-                  className="rounded-full border border-emerald-800 px-4 py-2 text-sm text-emerald-400 transition hover:border-emerald-600 hover:text-emerald-300"
+                  disabled={restoringId === discussion.id}
+                  className="rounded-full border border-emerald-800 px-4 py-2 text-sm text-emerald-400 transition hover:border-emerald-600 hover:text-emerald-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                 >
-                  Restore
+                  {restoringId === discussion.id ? "Restoring..." : "Restore"}
                 </button>
               </div>
 
@@ -183,8 +247,15 @@ export default function DeletedContentPage() {
           ))}
 
           {!discussions.length && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-zinc-500">
-              No deleted discussions.
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+              <h2 className="mb-3 text-2xl font-medium">
+                No deleted discussions.
+              </h2>
+
+              <p className="max-w-2xl text-zinc-500">
+                Soft-deleted discussions will appear here when an admin removes
+                them from public view. Restored discussions leave this queue.
+              </p>
             </div>
           )}
         </div>

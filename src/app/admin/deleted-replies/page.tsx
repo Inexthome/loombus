@@ -210,6 +210,54 @@ export default function DeletedRepliesPage() {
           </Link>
         </div>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Reply restore review
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Restore replies only when the moderation reversal is clear.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Restoring a deleted reply makes it visible again inside its discussion.
+            Review the reply body, author, parent discussion, deletion time, and
+            surrounding context before reversing the action.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Check the thread
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Open the parent discussion to understand the reply in context.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Review the author
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Look for patterns when the same account appears in multiple moderation events.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Restore carefully
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Restore only when the reply should return to the public conversation.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {message && (
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
             {message}
@@ -279,8 +327,15 @@ export default function DeletedRepliesPage() {
           })}
 
           {!replies.length && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-zinc-500">
-              No deleted replies.
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+              <h2 className="mb-3 text-2xl font-medium">
+                No deleted replies.
+              </h2>
+
+              <p className="max-w-2xl text-zinc-500">
+                Soft-deleted replies will appear here when a member or admin
+                removes them from public discussion. Restored replies leave this queue.
+              </p>
             </div>
           )}
         </div>
