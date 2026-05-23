@@ -196,17 +196,33 @@ export default function ProfilePage() {
 
       const publicUrl = publicUrlData.publicUrl;
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: publicUrl })
-        .eq("id", userData.user.id);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      if (profileError) {
-        setMessage(`Avatar uploaded, but profile update failed: ${profileError.message}`);
+      if (!accessToken) {
+        window.location.href = "/login";
         return;
       }
 
-      setAvatarUrl(publicUrl);
+      const response = await fetch("/api/profile/avatar", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          avatarUrl: publicUrl,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Avatar uploaded, but profile update failed.");
+        return;
+      }
+
+      setAvatarUrl(result.avatarUrl ?? publicUrl);
       setMessage("Avatar updated successfully.");
     } finally {
       setUploadingAvatar(false);
@@ -224,13 +240,6 @@ export default function ProfilePage() {
     setMessage("");
     setSaving(true);
 
-    const { data: userData } = await supabase.auth.getUser();
-
-    if (!userData.user) {
-      window.location.href = "/login";
-      return;
-    }
-
     const cleanUsername = username
       .replace(/^@+/, "")
       .trim()
@@ -239,19 +248,6 @@ export default function ProfilePage() {
     if (!/^[a-z0-9_]{2,30}$/.test(cleanUsername)) {
       setSaving(false);
       setMessage("Username must be 2-30 characters and can only use letters, numbers, and underscores.");
-      return;
-    }
-
-    const { data: existingUsername } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("username", cleanUsername)
-      .neq("id", userData.user.id)
-      .maybeSingle();
-
-    if (existingUsername) {
-      setSaving(false);
-      setMessage("That username is already taken. Please choose another one.");
       return;
     }
 
@@ -282,47 +278,51 @@ export default function ProfilePage() {
       return;
     }
 
-    const { error: profileError } = await supabase.from("profiles").upsert({
-      id: userData.user.id,
-      full_name: fullName,
-      username: cleanUsername,
-      bio,
-      avatar_url: avatarUrl || null,
-      creator_website_url: cleanCreatorWebsiteUrl || null,
-      creator_support_url: cleanCreatorSupportUrl || null,
-      creator_support_label: cleanCreatorSupportLabel || null,
-    });
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    if (profileError) {
+    if (!accessToken) {
+      setSaving(false);
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          fullName,
+          username: cleanUsername,
+          bio,
+          avatarUrl: avatarUrl || null,
+          creatorWebsiteUrl: cleanCreatorWebsiteUrl,
+          creatorSupportUrl: cleanCreatorSupportUrl,
+          creatorSupportLabel: cleanCreatorSupportLabel,
+          repliesEnabled,
+          followsEnabled,
+          mentionsEnabled,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
       setSaving(false);
 
-      if (profileError.code === "23505") {
-        setMessage("That username is already taken. Please choose another one.");
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to save profile.");
         return;
       }
 
-      setMessage(`Error: ${profileError.message}`);
-      return;
+      setUsername(result.profile?.username ?? cleanUsername);
+      setMessage("Profile and notification settings updated successfully.");
+    } catch {
+      setSaving(false);
+      setMessage("Unable to save profile.");
     }
-
-    const { error: preferencesError } = await supabase
-      .from("notification_preferences")
-      .upsert({
-        user_id: userData.user.id,
-        replies_enabled: repliesEnabled,
-        follows_enabled: followsEnabled,
-        mentions_enabled: mentionsEnabled,
-        updated_at: new Date().toISOString(),
-      });
-
-    setSaving(false);
-
-    if (preferencesError) {
-      setMessage(`Profile saved, but notification settings failed: ${preferencesError.message}`);
-      return;
-    }
-
-    setMessage("Profile and notification settings updated successfully.");
   }
 
   function handleProfileFormKeyDown(event: KeyboardEvent<HTMLFormElement>) {
@@ -440,7 +440,7 @@ export default function ProfilePage() {
               </div>
 
               <p className="mt-4 text-xs leading-relaxed text-zinc-600">
-                Supported formats depend on your browser. Keep images under 3 MB.
+                Supported formats depend on your browser. Keep images under 2 MB.
               </p>
             </div>
 
