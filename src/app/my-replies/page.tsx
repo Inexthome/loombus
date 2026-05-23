@@ -167,21 +167,64 @@ export default function MyRepliesPage() {
         </p>
 
         {replies.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
             <h2 className="mb-3 text-2xl font-medium">
               You have not replied to any discussions yet.
             </h2>
 
-            <p className="mb-6 text-zinc-400">
-              Join a discussion and contribute with clarity, context, and signal.
+            <p className="mb-6 max-w-3xl text-zinc-400">
+              Replies are where your perspective becomes part of the conversation.
+              Start with one useful contribution: context, an example, experience,
+              a counterpoint, or a sharper question.
             </p>
 
-            <Link
-              href="/discussions"
-              className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
-            >
-              Explore Discussions
-            </Link>
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Add context
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Explain what the discussion is missing or what background would help.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Share experience
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Add a real example, lesson, or observation that other readers can use.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Improve the framing
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Ask a better question, offer a counterpoint, or clarify the tradeoff.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Find a discussion to reply to
+              </Link>
+
+              <Link
+                href="/following"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Check following feed
+              </Link>
+            </div>
           </div>
         )}
 
@@ -191,9 +234,18 @@ export default function MyRepliesPage() {
               No replies found.
             </h2>
 
-            <p className="text-zinc-400">
-              No replies match your current search.
+            <p className="mb-5 text-zinc-400">
+              No replies match your current search. Try a broader word, topic, or
+              discussion title.
             </p>
+
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Clear search
+            </button>
           </div>
         )}
 
