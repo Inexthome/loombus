@@ -551,26 +551,98 @@ export default function FollowingPage() {
         )}
 
         {!loading && discussions.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No followed discussions yet.
             </h2>
 
-            <p className="text-zinc-400">
-              Follow contributors to build a more personalized signal feed.
+            <p className="mb-6 max-w-3xl text-zinc-400">
+              Your following feed fills when you follow contributors who publish
+              discussions. Start with people whose profile, topics, or reply style
+              gives you useful signal.
             </p>
+
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Find contributors
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Browse people and follow members whose work or questions are worth revisiting.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Follow for signal
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Choose people who add context, examples, useful replies, or thoughtful discussions.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Shape over time
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Adjust who you follow as your interests and the quality of your feed change.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/people"
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Find people to follow
+              </Link>
+
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Browse public discussions
+              </Link>
+            </div>
           </div>
         )}
 
         {!loading && discussions.length > 0 && filteredDiscussions.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No followed discussions found.
             </h2>
 
-            <p className="text-zinc-400">
-              No followed discussions match the current search, topic, or advanced filter selection.
+            <p className="mb-6 max-w-3xl text-zinc-400">
+              No followed discussions match the current search, topic, or filter.
+              Broaden the search or browse all discussions to find new people worth following.
             </p>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedTopic("All");
+                  setAdvancedFilter("All activity");
+                }}
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Clear filters
+              </button>
+
+              <Link
+                href="/people"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Find more people
+              </Link>
+            </div>
           </div>
         )}
 
