@@ -381,6 +381,54 @@ export default function DiscussionsPage() {
           </Link>
         </div>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Finding signal
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Browse with a purpose.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Use topics, search, sort controls, and Signal Score to find discussions
+            worth reading carefully. A useful reply usually adds context, evidence,
+            experience, a counterpoint, or a clearer framing.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Start with topics
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Filter by a subject area first, then use search when you know what you are looking for.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Sort for intent
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Use Newest for fresh posts, Most replied for active threads, and Signal for stronger engagement.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Reply with value
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Add something another reader can use: examples, experience, questions, or better structure.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="mb-8">
           <input
             type="text"
