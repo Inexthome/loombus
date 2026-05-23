@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
+import { logAuditEvent } from "@/lib/audit-log";
 
 const FREE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const PREMIUM_EDIT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -264,7 +265,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await supabase.from("audit_logs").insert({
+    await logAuditEvent({
       actor_id: user.id,
       action: "discussion.updated",
       target_type: "discussion",

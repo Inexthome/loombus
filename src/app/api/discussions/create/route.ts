@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
+import { logAuditEvent } from "@/lib/audit-log";
 
 const CREATE_COOLDOWN_MS = 30000;
 const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await supabase.from("audit_logs").insert({
+    await logAuditEvent({
       actor_id: user.id,
       action: "discussion.created",
       target_type: "discussion",

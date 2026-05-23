@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logAuditEvent } from "@/lib/audit-log";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -104,7 +105,7 @@ export async function PATCH(request: NextRequest) {
     return jsonError(error.message || "Unable to update Labs request.", 400);
   }
 
-  await supabase.from("audit_logs").insert({
+  await logAuditEvent({
     actor_id: user.id,
     action: "labs.request_updated",
     target_type: "labs_feature_request",
@@ -149,7 +150,7 @@ export async function DELETE(request: NextRequest) {
     return jsonError(error.message || "Unable to delete Labs request.", 400);
   }
 
-  await supabase.from("audit_logs").insert({
+  await logAuditEvent({
     actor_id: user.id,
     action: "labs.request_deleted",
     target_type: "labs_feature_request",

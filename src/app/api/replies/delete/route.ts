@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logAuditEvent } from "@/lib/audit-log";
 
 export async function POST(request: NextRequest) {
   try {
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await supabase.from("audit_logs").insert({
+    await logAuditEvent({
       actor_id: user.id,
       action: "reply.soft_deleted",
       target_type: "reply",

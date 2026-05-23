@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logAuditEvent } from "@/lib/audit-log";
 
 type AdminProfileRow = {
   is_admin: boolean | null;
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
       return jsonError(error.message || "Unable to restore discussion.", 400);
     }
 
-    await supabase.from("audit_logs").insert({
+    await logAuditEvent({
       actor_id: user.id,
       action: "discussion.restored",
       target_type: "discussion",
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
       return jsonError(error.message || "Unable to restore reply.", 400);
     }
 
-    await supabase.from("audit_logs").insert({
+    await logAuditEvent({
       actor_id: user.id,
       action: "reply.restored",
       target_type: "reply",
@@ -172,7 +173,7 @@ export async function POST(request: NextRequest) {
       return jsonError(error.message || "Unable to soft delete discussion.", 400);
     }
 
-    await supabase.from("audit_logs").insert({
+    await logAuditEvent({
       actor_id: user.id,
       action: "discussion.soft_deleted",
       target_type: "discussion",
@@ -214,7 +215,7 @@ export async function POST(request: NextRequest) {
       return jsonError(error.message || "Unable to mark report reviewed.", 400);
     }
 
-    await supabase.from("audit_logs").insert({
+    await logAuditEvent({
       actor_id: user.id,
       action: "report.reviewed",
       target_type: "report",

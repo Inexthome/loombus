@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logAuditEvent } from "@/lib/audit-log";
 import {
   createContentHash,
   getAiAccess,
@@ -349,7 +350,7 @@ export async function POST(request: NextRequest) {
       success: true,
     });
 
-    await supabase.from("audit_logs").insert({
+    await logAuditEvent({
       actor_id: user.id,
       action: "discussion.summary_generated",
       target_type: "discussion",

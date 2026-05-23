@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
+import { logAuditEvent } from "@/lib/audit-log";
 
 const REPLY_COOLDOWN_MS = 10000;
 const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await supabase.from("audit_logs").insert({
+    await logAuditEvent({
       actor_id: user.id,
       action: "reply.created",
       target_type: "reply",
