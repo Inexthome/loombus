@@ -655,6 +655,56 @@ export default function CreatePage() {
           </div>
         )}
 
+        {authChecked && isLoggedIn && !isEditMode && (
+          <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              First discussion guide
+            </p>
+
+            <h2 className="mb-4 text-2xl font-medium">
+              Start with signal.
+            </h2>
+
+            <p className="mb-5 text-sm leading-relaxed text-zinc-500">
+              A strong Loombus discussion usually gives people something specific
+              to respond to: a question, a claim, a useful observation, or a
+              problem worth thinking through.
+            </p>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  1. Make the title clear
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Let readers know the exact idea or question before they open it.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  2. Add context
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Explain what prompted the thought and why it matters.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  3. Invite useful replies
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Ask for examples, counterpoints, experience, or a better framing.
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
+
         {authChecked && isLoggedIn && isEditMode && (
           <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
