@@ -688,26 +688,105 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && notifications.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No notifications yet.
             </h2>
 
-            <p className="text-zinc-400">
-              Replies, follows, and other activity will appear here.
+            <p className="mb-6 max-w-3xl text-zinc-400">
+              Notifications appear when people reply, mention you, follow you, or
+              interact with activity connected to your contributions. The best way
+              to make this page useful is to participate where people can respond.
             </p>
+
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Start a discussion
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Create a focused thread so other members have something clear to reply to.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Join conversations
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Reply with context, examples, experience, or a useful counterpoint.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Make yourself recognizable
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  A complete profile helps people recognize and follow your contributions.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/create"
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Create a discussion
+              </Link>
+
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Browse discussions
+              </Link>
+
+              <Link
+                href="/profile"
+                className="inline-flex rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+              >
+                Review profile
+              </Link>
+            </div>
           </div>
         )}
 
         {!loading && notifications.length > 0 && filteredNotifications.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No notifications found.
             </h2>
 
-            <p className="text-zinc-400">
-              No notifications match the current filters.
+            <p className="mb-6 max-w-3xl text-zinc-400">
+              No notifications match the current filters. Broaden the view or
+              return to all notifications to review everything connected to you.
             </p>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterMode("all");
+                  setTypeFilter("all");
+                  setSortMode("newest");
+                }}
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Clear filters
+              </button>
+
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Browse discussions
+              </Link>
+            </div>
           </div>
         )}
 
