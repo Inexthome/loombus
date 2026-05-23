@@ -474,6 +474,13 @@ export default function MyActivityPage() {
             >
               Notifications →
             </Link>
+
+            <Link
+              href="/reading-history"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              Reading History →
+            </Link>
           </div>
         </div>
 
