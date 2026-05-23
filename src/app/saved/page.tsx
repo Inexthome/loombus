@@ -848,26 +848,94 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               Nothing saved yet.
             </h2>
 
-            <p className="text-zinc-400">
-              Save discussions that are worth revisiting.
+            <p className="mb-6 max-w-3xl text-zinc-400">
+              Save discussions that are worth revisiting, comparing, citing, or
+              building on later. Your saved list becomes more useful when it is
+              intentional.
             </p>
+
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Start with signal
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Save threads with strong framing, useful replies, or ideas worth returning to.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Build a library
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Treat saved discussions as a working shelf for research, planning, and future replies.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Revisit often
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Return to saved threads when you want to compare viewpoints or continue thinking.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Browse discussions to save
+              </Link>
+
+              <Link
+                href="/following"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Open following feed
+              </Link>
+            </div>
           </div>
         )}
 
         {!loading && saved.length > 0 && filteredSaved.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
               No saved discussions in this folder.
             </h2>
 
-            <p className="text-zinc-400">
-              Move saved discussions into this folder from the saved list.
+            <p className="mb-6 max-w-3xl text-zinc-400">
+              This folder is empty. Move saved discussions here when they share a
+              theme, project, topic, or reading priority.
             </p>
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedCollectionId("all")}
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Show all saved
+              </button>
+
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Browse more discussions
+              </Link>
+            </div>
           </div>
         )}
 
