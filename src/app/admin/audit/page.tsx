@@ -209,6 +209,55 @@ export default function AdminAuditPage() {
           </Link>
         </div>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Audit review guide
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Use audit logs as the moderation record trail.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Audit logs help reconstruct what happened, who acted, what target
+            was affected, and which metadata was recorded. Use this page when
+            reviewing moderation history, restore decisions, disputed actions,
+            or unusual platform activity.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Follow the actor
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Start with who performed the action, then compare that actor with related reports or restores.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Check the target
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Use the target type and ID to connect the event to a discussion, reply, profile, or system object.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Read metadata
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Metadata can explain why the action happened and preserve context for later review.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="space-y-4">
           {logs.map((log) => {
             const actorProfile = log.actor_id ? profiles[log.actor_id] : undefined;
@@ -310,8 +359,32 @@ export default function AdminAuditPage() {
           })}
 
           {!logs.length && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8 text-zinc-500">
-              No audit logs yet.
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+              <h2 className="mb-3 text-2xl font-medium">
+                No audit logs yet.
+              </h2>
+
+              <p className="mb-6 max-w-2xl text-zinc-500">
+                Audit events will appear here after tracked platform actions are
+                recorded, such as moderation actions, restores, created content,
+                or AI-assisted admin-relevant events.
+              </p>
+
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/admin/reports"
+                  className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                >
+                  Open reports
+                </Link>
+
+                <Link
+                  href="/admin"
+                  className="inline-flex rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Back to admin
+                </Link>
+              </div>
             </div>
           )}
         </div>
