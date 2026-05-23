@@ -283,48 +283,38 @@ export default function UserProfilePage() {
       return;
     }
 
-    const { data: userData } = await supabase.auth.getUser();
-
-    if (!userData.user) {
-      window.location.href = "/login";
-      return;
-    }
-
-    if (userData.user.id === profile.id) {
-      setReportMessage("You cannot report your own profile.");
-      return;
-    }
-
     setReportWorking(true);
 
     try {
-      const { data: existingReport } = await supabase
-        .from("reports")
-        .select("id")
-        .eq("reporter_id", userData.user.id)
-        .eq("reported_profile_id", profile.id)
-        .maybeSingle();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      if (existingReport) {
-        setReportedProfile(true);
-        setReportMessage("You already reported this profile.");
+      if (!accessToken) {
+        window.location.href = "/login";
         return;
       }
 
-      const { error } = await supabase.from("reports").insert({
-        reporter_id: userData.user.id,
-        reported_profile_id: profile.id,
-        reason: reportReason,
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          targetType: "profile",
+          profileId: profile.id,
+          reason: reportReason,
+        }),
       });
 
-      if (error) {
-        if (error.code === "23505") {
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (response.status === 409) {
           setReportedProfile(true);
-          setReportMessage("You already reported this profile.");
-          return;
         }
 
-        setReportMessage("Unable to report profile.");
+        setReportMessage(result.error ?? "Unable to report profile.");
         return;
       }
 

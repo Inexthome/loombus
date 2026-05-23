@@ -792,41 +792,35 @@ export default function DiscussionPage() {
   async function handleReport() {
     setReportMessage("");
 
-    const { data: userData } = await supabase.auth.getUser();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    if (!userData.user) {
+    if (!accessToken) {
       window.location.href = "/login";
       return;
     }
 
-    const { data: existingReport } = await supabase
-      .from("reports")
-      .select("id")
-      .eq("reporter_id", userData.user.id)
-      .eq("discussion_id", id)
-      .is("reply_id", null)
-      .maybeSingle();
-
-    if (existingReport) {
-      setReportedDiscussion(true);
-      setReportMessage("You already reported this discussion.");
-      return;
-    }
-
-    const { error } = await supabase.from("reports").insert({
-      reporter_id: userData.user.id,
-      discussion_id: id,
-      reason: reportReason,
+    const response = await fetch("/api/reports", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        targetType: "discussion",
+        discussionId: id,
+        reason: reportReason,
+      }),
     });
 
-    if (error) {
-      if (error.code === "23505") {
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (response.status === 409) {
         setReportedDiscussion(true);
-        setReportMessage("You already reported this discussion.");
-        return;
       }
 
-      setReportMessage("Unable to submit report.");
+      setReportMessage(result.error ?? "Unable to submit report.");
       return;
     }
 
@@ -844,45 +838,38 @@ export default function DiscussionPage() {
     setReportingReplyId(replyId);
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      if (!userData.user) {
+      if (!accessToken) {
         window.location.href = "/login";
         return;
       }
 
-      const { data: existingReport } = await supabase
-        .from("reports")
-        .select("id")
-        .eq("reporter_id", userData.user.id)
-        .eq("reply_id", replyId)
-        .maybeSingle();
-
-      if (existingReport) {
-        setReportedReplyIds((current) =>
-          current.includes(replyId) ? current : [...current, replyId]
-        );
-        setReportMessage("You already reported this reply.");
-        return;
-      }
-
-      const { error } = await supabase.from("reports").insert({
-        reporter_id: userData.user.id,
-        discussion_id: id,
-        reply_id: replyId,
-        reason: reportReason,
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          targetType: "reply",
+          discussionId: id,
+          replyId,
+          reason: reportReason,
+        }),
       });
 
-      if (error) {
-        if (error.code === "23505") {
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (response.status === 409) {
           setReportedReplyIds((current) =>
             current.includes(replyId) ? current : [...current, replyId]
           );
-          setReportMessage("You already reported this reply.");
-          return;
         }
 
-        setReportMessage("Unable to report reply.");
+        setReportMessage(result.error ?? "Unable to report reply.");
         return;
       }
 
