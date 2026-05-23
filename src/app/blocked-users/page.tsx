@@ -185,6 +185,54 @@ export default function BlockedUsersPage() {
           </p>
         </div>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Block management guide
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Use blocking to protect your feed and comfort.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Blocking helps limit unwanted interaction and keeps blocked or blocking
+            members out of key social surfaces. You can unblock later if the situation
+            changes.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Limit interaction
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Use blocking when a member is unwanted, disruptive, or not useful for your Loombus experience.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Keep reports separate
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                If content may violate rules, report the discussion, reply, or profile instead of only blocking.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Revisit later
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                This page gives you one place to review blocked members and unblock when appropriate.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {message && (
           <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-400 shadow-2xl shadow-black/30">
             {message}
@@ -197,9 +245,26 @@ export default function BlockedUsersPage() {
               No blocked users.
             </h2>
 
-            <p className="text-zinc-400">
+            <p className="mb-6 max-w-2xl text-zinc-400">
               Members you block will appear here so you can manage them later.
+              You do not need to block anyone unless it helps protect your experience.
             </p>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/people"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Browse people
+              </Link>
+
+              <Link
+                href="/settings"
+                className="inline-flex rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+              >
+                Back to settings
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="grid gap-5 lg:grid-cols-2">
