@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createNotification } from "@/lib/notifications";
 
 const ACTION_COOLDOWN_SECONDS = 5;
 
@@ -151,16 +152,14 @@ export async function POST(request: NextRequest) {
     const followsEnabled = preferences?.follows_enabled ?? true;
 
     if (followsEnabled) {
-      const { error: notificationError } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: targetUserId,
-          actor_id: user.id,
-          type: "follow",
-          target_type: "profile",
-          target_id: user.id,
-          message: "Someone followed you.",
-        });
+      const { error: notificationError } = await createNotification({
+        user_id: targetUserId,
+        actor_id: user.id,
+        type: "follow",
+        target_type: "profile",
+        target_id: user.id,
+        message: "Someone followed you.",
+      });
 
       if (notificationError) {
         console.error("Follow notification failed:", notificationError.message);

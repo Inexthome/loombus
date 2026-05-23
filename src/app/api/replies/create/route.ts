@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
 import { logAuditEvent } from "@/lib/audit-log";
+import { createNotification, createNotifications } from "@/lib/notifications";
 
 const REPLY_COOLDOWN_MS = 10000;
 const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
       const repliesEnabled = preferences?.replies_enabled ?? true;
 
       if (repliesEnabled) {
-        await supabase.from("notifications").insert({
+        const { error: notificationError } = await createNotification({
           user_id: discussion.user_id,
           actor_id: user.id,
           type: "reply",
@@ -188,6 +189,10 @@ export async function POST(request: NextRequest) {
           target_id: discussionId,
           message: `Someone replied to your discussion: ${discussion.title}`,
         });
+
+        if (notificationError) {
+          console.error("Reply notification failed:", notificationError.message);
+        }
       }
     }
 
@@ -250,9 +255,7 @@ export async function POST(request: NextRequest) {
           }));
 
         if (mentionNotifications.length > 0) {
-          const { error: mentionError } = await supabase
-            .from("notifications")
-            .insert(mentionNotifications);
+          const { error: mentionError } = await createNotifications(mentionNotifications);
 
           if (mentionError) {
             console.error("Mention notification failed:", mentionError.message);
