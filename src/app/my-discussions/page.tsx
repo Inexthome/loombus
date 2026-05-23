@@ -298,9 +298,22 @@ export default function MyDiscussionsPage() {
             </div>
 
             {drafts.length === 0 && (
-              <p className="text-sm text-zinc-500">
-                No saved drafts yet.
-              </p>
+              <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  No saved drafts yet.
+                </p>
+
+                <p className="mb-4 text-sm leading-relaxed text-zinc-600">
+                  Use drafts when an idea needs more structure before publishing.
+                </p>
+
+                <Link
+                  href="/create"
+                  className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+                >
+                  Start a new draft →
+                </Link>
+              </div>
             )}
 
             {drafts.length > 0 && (
@@ -367,21 +380,62 @@ export default function MyDiscussionsPage() {
         </p>
 
         {discussions.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
             <h2 className="mb-3 text-2xl font-medium">
               You have not started any discussions yet.
             </h2>
 
-            <p className="mb-6 text-zinc-400">
-              Start a structured conversation around a meaningful idea.
+            <p className="mb-6 max-w-3xl text-zinc-400">
+              Start with one clear question, claim, or useful observation. A good first discussion gives people a specific idea to respond to.
             </p>
 
-            <Link
-              href="/create"
-              className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
-            >
-              Create Discussion
-            </Link>
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Choose one idea
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Keep the topic focused so replies can go deeper instead of wider.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Add useful context
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Explain what prompted the thought, what you have noticed, or why it matters.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Invite better replies
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Ask for examples, counterpoints, experience, or a sharper framing.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/create"
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Create your first discussion
+              </Link>
+
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Browse examples
+              </Link>
+            </div>
           </div>
         )}
 
