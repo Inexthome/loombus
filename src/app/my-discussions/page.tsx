@@ -167,16 +167,32 @@ export default function MyDiscussionsPage() {
 
     setDeletingDraftId(draftId);
 
-    const { error } = await supabase
-      .from("discussion_drafts")
-      .delete()
-      .eq("id", draftId)
-      .eq("user_id", currentUserId);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      setDeletingDraftId(null);
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch("/api/discussion-drafts", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        draftId,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
 
     setDeletingDraftId(null);
 
-    if (error) {
-      setMessage(`Unable to delete draft: ${error.message}`);
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to delete draft.");
       return;
     }
 

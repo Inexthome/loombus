@@ -281,37 +281,39 @@ export default function CreatePage() {
 
     setSavingDraft(true);
 
-    const payload = {
-      user_id: currentUserId,
-      title: title.trim(),
-      topic,
-      body: body.trim(),
-    };
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    const request = draftId
-      ? supabase
-          .from("discussion_drafts")
-          .update(payload)
-          .eq("id", draftId)
-          .eq("user_id", currentUserId)
-          .select("id, updated_at")
-          .single()
-      : supabase
-          .from("discussion_drafts")
-          .insert(payload)
-          .select("id, updated_at")
-          .single();
-
-    const { data, error } = await request;
-
-    setSavingDraft(false);
-
-    if (error) {
-      setMessage(`Unable to save draft: ${error.message}`);
+    if (!accessToken) {
+      setSavingDraft(false);
+      window.location.href = "/login";
       return;
     }
 
-    const savedDraft = data as { id: string; updated_at: string };
+    const response = await fetch("/api/discussion-drafts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        draftId,
+        title,
+        topic,
+        body,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setSavingDraft(false);
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to save draft.");
+      return;
+    }
+
+    const savedDraft = result.draft as { id: string; updated_at: string };
     setDraftId(savedDraft.id);
     setDraftUpdatedAt(savedDraft.updated_at);
 
@@ -522,12 +524,17 @@ export default function CreatePage() {
       return;
     }
 
-    if (!isEditMode && draftId && currentUserId) {
-      await supabase
-        .from("discussion_drafts")
-        .delete()
-        .eq("id", draftId)
-        .eq("user_id", currentUserId);
+    if (!isEditMode && draftId) {
+      await fetch("/api/discussion-drafts", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          draftId,
+        }),
+      });
     }
 
     const discussionId = result.discussion?.id ?? editingDiscussionId;
