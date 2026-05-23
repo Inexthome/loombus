@@ -7,6 +7,7 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  insertDiscussionSummary,
 } from "@/lib/premium-ai";
 
 const SUMMARY_MODEL = process.env.OPENAI_SUMMARY_MODEL || "gpt-4o-mini";
@@ -291,20 +292,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: insertedSummary, error: insertError } = await supabase
-      .from("discussion_summaries")
-      .insert({
-        discussion_id: discussionId,
-        summary: summaryText,
-        model_name: SUMMARY_MODEL,
-        source_reply_count: sourceReplyCount,
-        source_content_hash: sourceContentHash,
-        generated_by: user.id,
-        generated_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select("id, discussion_id, summary, model_name, source_reply_count, source_content_hash, generated_by, generated_at")
-      .single();
+    const generatedAt = new Date().toISOString();
+
+    const { data: insertedSummary, error: insertError } = await insertDiscussionSummary({
+      discussion_id: discussionId,
+      summary: summaryText,
+      model_name: SUMMARY_MODEL,
+      source_reply_count: sourceReplyCount,
+      source_content_hash: sourceContentHash,
+      generated_by: user.id,
+      generated_at: generatedAt,
+      updated_at: generatedAt,
+    });
 
     if (insertError) {
       const { data: fallbackSummary } = await supabase

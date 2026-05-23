@@ -7,6 +7,7 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  upsertDiscussionAiOutput,
 } from "@/lib/premium-ai";
 
 const DISAGREEMENT_MODEL =
@@ -315,24 +316,17 @@ export async function POST(request: NextRequest) {
 
     const generatedAt = new Date().toISOString();
 
-    const { error: cacheError } = await supabase
-      .from("discussion_ai_outputs")
-      .upsert(
-        {
-          discussion_id: discussionId,
-          feature_key: "disagreement_map",
-          output_text: disagreementMap,
-          model_name: DISAGREEMENT_MODEL,
-          source_reply_count: sourceReplyCount,
-          source_content_hash: sourceContentHash,
-          generated_by: user.id,
-          generated_at: generatedAt,
-          updated_at: generatedAt,
-        },
-        {
-          onConflict: "discussion_id,feature_key",
-        }
-      );
+    const { error: cacheError } = await upsertDiscussionAiOutput({
+      discussion_id: discussionId,
+      feature_key: "disagreement_map",
+      output_text: disagreementMap,
+      model_name: DISAGREEMENT_MODEL,
+      source_reply_count: sourceReplyCount,
+      source_content_hash: sourceContentHash,
+      generated_by: user.id,
+      generated_at: generatedAt,
+      updated_at: generatedAt,
+    });
 
     if (cacheError) {
       console.error("AI disagreement map cache write failed:", cacheError.message);
