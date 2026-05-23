@@ -711,29 +711,34 @@ export default function DiscussionPage() {
     setSavingBookmark(true);
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      if (!userData.user) {
+      if (!accessToken) {
         window.location.href = "/login";
         return;
       }
 
-      const { data: bookmark, error } = await supabase
-        .from("bookmarks")
-        .insert({
-          user_id: userData.user.id,
-          discussion_id: id,
-        })
-        .select("id")
-        .single();
+      const response = await fetch("/api/bookmarks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          discussionId: id,
+        }),
+      });
 
-      if (error) {
-        setBookmarkMessage("Already saved or unable to save.");
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setBookmarkMessage(result.error ?? "Already saved or unable to save.");
         return;
       }
 
       setIsSaved(true);
-      setSavedBookmarkId(bookmark?.id ?? null);
+      setSavedBookmarkId(result.bookmark?.id ?? null);
       setBookmarkMessage("Discussion saved.");
     } finally {
       setSavingBookmark(false);
@@ -750,21 +755,29 @@ export default function DiscussionPage() {
     setSavingBookmark(true);
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      if (!userData.user) {
+      if (!accessToken) {
         window.location.href = "/login";
         return;
       }
 
-      const { error } = await supabase
-        .from("bookmarks")
-        .delete()
-        .eq("id", savedBookmarkId)
-        .eq("user_id", userData.user.id);
+      const response = await fetch("/api/bookmarks", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          bookmarkId: savedBookmarkId,
+        }),
+      });
 
-      if (error) {
-        setBookmarkMessage("Unable to remove saved discussion.");
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setBookmarkMessage(result.error ?? "Unable to remove saved discussion.");
         return;
       }
 

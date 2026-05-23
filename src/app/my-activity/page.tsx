@@ -259,16 +259,32 @@ export default function MyActivityPage() {
 
     setRemovingSavedId(bookmarkId);
 
-    const { error } = await supabase
-      .from("bookmarks")
-      .delete()
-      .eq("id", bookmarkId)
-      .eq("user_id", currentUserId);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      setRemovingSavedId(null);
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch("/api/bookmarks", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        bookmarkId,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
 
     setRemovingSavedId(null);
 
-    if (error) {
-      setMessage("Unable to remove saved discussion.");
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to remove saved discussion.");
       return;
     }
 

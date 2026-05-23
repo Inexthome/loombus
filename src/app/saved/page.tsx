@@ -230,23 +230,36 @@ export default function SavedPage() {
 
     setCreatingCollection(true);
 
-    const { data, error } = await supabase
-      .from("bookmark_collections")
-      .insert({
-        user_id: currentUserId,
-        name: cleanName,
-      })
-      .select("id, user_id, name, description, created_at, updated_at")
-      .single();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    setCreatingCollection(false);
-
-    if (error) {
-      setMessage(`Unable to create folder: ${error.message}`);
+    if (!accessToken) {
+      setCreatingCollection(false);
+      window.location.href = "/login";
       return;
     }
 
-    const created = data as BookmarkCollection;
+    const response = await fetch("/api/bookmarks/collections", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        name: cleanName,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setCreatingCollection(false);
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to create folder.");
+      return;
+    }
+
+    const created = result.collection as BookmarkCollection;
     setCollections((current) => [...current, created]);
     setSelectedCollectionId(created.id);
     setNewCollectionName("");
@@ -268,16 +281,33 @@ export default function SavedPage() {
     const nextCollectionId = collectionId === "unfiled" ? null : collectionId;
     setMovingBookmarkId(bookmarkId);
 
-    const { error } = await supabase
-      .from("bookmarks")
-      .update({ collection_id: nextCollectionId })
-      .eq("id", bookmarkId)
-      .eq("user_id", currentUserId);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      setMovingBookmarkId(null);
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch("/api/bookmarks/move", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        bookmarkId,
+        collectionId: nextCollectionId,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
 
     setMovingBookmarkId(null);
 
-    if (error) {
-      setMessage(`Unable to move saved discussion: ${error.message}`);
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to move saved discussion.");
       return;
     }
 
@@ -309,16 +339,32 @@ export default function SavedPage() {
 
     setDeletingCollectionId(collectionId);
 
-    const { error } = await supabase
-      .from("bookmark_collections")
-      .delete()
-      .eq("id", collectionId)
-      .eq("user_id", currentUserId);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      setDeletingCollectionId(null);
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch("/api/bookmarks/collections", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        collectionId,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
 
     setDeletingCollectionId(null);
 
-    if (error) {
-      setMessage(`Unable to delete folder: ${error.message}`);
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to delete folder.");
       return;
     }
 
@@ -359,25 +405,38 @@ export default function SavedPage() {
     const cleanNote = (noteDrafts[bookmarkId] ?? "").trim();
     setSavingNoteId(bookmarkId);
 
-    const { data, error } = await supabase
-      .from("bookmarks")
-      .update({
-        private_note: cleanNote || null,
-      })
-      .eq("id", bookmarkId)
-      .eq("user_id", currentUserId)
-      .select("id, private_note, private_note_updated_at")
-      .single();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
 
-    setSavingNoteId(null);
-
-    if (error) {
-      setMessage(`Unable to save private note: ${error.message}`);
+    if (!accessToken) {
+      setSavingNoteId(null);
+      window.location.href = "/login";
       return;
     }
 
-    const updatedNote = data?.private_note ?? null;
-    const updatedAt = data?.private_note_updated_at ?? null;
+    const response = await fetch("/api/bookmarks/note", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        bookmarkId,
+        note: cleanNote,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setSavingNoteId(null);
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to save private note.");
+      return;
+    }
+
+    const updatedNote = result.bookmark?.private_note ?? null;
+    const updatedAt = result.bookmark?.private_note_updated_at ?? null;
 
     setSaved((current) =>
       current.map((item) =>
@@ -515,16 +574,32 @@ export default function SavedPage() {
 
     setRemovingBookmarkId(bookmarkId);
 
-    const { error } = await supabase
-      .from("bookmarks")
-      .delete()
-      .eq("id", bookmarkId)
-      .eq("user_id", currentUserId);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      setRemovingBookmarkId(null);
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch("/api/bookmarks", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        bookmarkId,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
 
     setRemovingBookmarkId(null);
 
-    if (error) {
-      setMessage("Unable to remove saved discussion.");
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to remove saved discussion.");
       return;
     }
 
