@@ -542,7 +542,22 @@ export default function MyActivityPage() {
               ))}
 
               {discussions.length === 0 && (
-                <p className="text-sm text-zinc-500">No discussions yet.</p>
+                <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+                  <p className="mb-2 text-sm font-medium text-zinc-300">
+                    No discussions yet.
+                  </p>
+
+                  <p className="mb-4 text-sm leading-relaxed text-zinc-600">
+                    Start one clear question, claim, or idea so people have something useful to respond to.
+                  </p>
+
+                  <Link
+                    href="/create"
+                    className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+                  >
+                    Create your first discussion →
+                  </Link>
+                </div>
               )}
             </div>
           </section>
@@ -577,7 +592,22 @@ export default function MyActivityPage() {
               })}
 
               {replies.length === 0 && (
-                <p className="text-sm text-zinc-500">No replies yet.</p>
+                <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+                  <p className="mb-2 text-sm font-medium text-zinc-300">
+                    No replies yet.
+                  </p>
+
+                  <p className="mb-4 text-sm leading-relaxed text-zinc-600">
+                    Join a discussion with context, examples, experience, or a useful counterpoint.
+                  </p>
+
+                  <Link
+                    href="/discussions"
+                    className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+                  >
+                    Find a discussion to join →
+                  </Link>
+                </div>
               )}
             </div>
           </section>
@@ -628,7 +658,22 @@ export default function MyActivityPage() {
               })}
 
               {savedDiscussions.length === 0 && (
-                <p className="text-sm text-zinc-500">No saved discussions yet.</p>
+                <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+                  <p className="mb-2 text-sm font-medium text-zinc-300">
+                    No saved discussions yet.
+                  </p>
+
+                  <p className="mb-4 text-sm leading-relaxed text-zinc-600">
+                    Save discussions that are worth revisiting, comparing, citing, or building on later.
+                  </p>
+
+                  <Link
+                    href="/discussions"
+                    className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+                  >
+                    Browse discussions to save →
+                  </Link>
+                </div>
               )}
             </div>
           </section>
@@ -668,7 +713,22 @@ export default function MyActivityPage() {
               ))}
 
               {notifications.length === 0 && (
-                <p className="text-sm text-zinc-500">No notifications yet.</p>
+                <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+                  <p className="mb-2 text-sm font-medium text-zinc-300">
+                    No notifications yet.
+                  </p>
+
+                  <p className="mb-4 text-sm leading-relaxed text-zinc-600">
+                    Notifications appear when people reply, follow, or interact with activity connected to you.
+                  </p>
+
+                  <Link
+                    href="/profile"
+                    className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+                  >
+                    Review notification settings →
+                  </Link>
+                </div>
               )}
             </div>
           </section>
