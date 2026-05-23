@@ -214,6 +214,52 @@ export default function DashboardClientPage() {
   const subscriptionDisplay = getSubscriptionDisplay(aiEntitlement);
   const aiUsageLabel = getAiUsageLabel(aiEntitlement);
 
+  const gettingStartedSteps = [
+    {
+      title: "Complete your profile",
+      description: profileComplete
+        ? "Your profile has the basics people need to recognize your contributions."
+        : `Add your ${missingProfileFields.join(", ")} so members know who they are reading.`,
+      href: "/profile",
+      action: profileComplete ? "Review profile" : "Complete profile",
+      complete: profileComplete,
+    },
+    {
+      title: "Create your first discussion",
+      description:
+        activityCounts.discussions > 0
+          ? "You have started contributing original discussions."
+          : "Start with one clear question, claim, or idea that invites thoughtful replies.",
+      href: "/create",
+      action: activityCounts.discussions > 0 ? "Create another" : "Create discussion",
+      complete: activityCounts.discussions > 0,
+    },
+    {
+      title: "Join a discussion",
+      description:
+        activityCounts.replies > 0
+          ? "You have replied to an existing discussion."
+          : "Reply to one discussion with context, evidence, or a useful perspective.",
+      href: "/discussions",
+      action: activityCounts.replies > 0 ? "Browse discussions" : "Find a discussion",
+      complete: activityCounts.replies > 0,
+    },
+    {
+      title: "Save something worth revisiting",
+      description:
+        activityCounts.saved > 0
+          ? "You have saved discussions for later."
+          : "Use Save on discussions that are useful for future reading or research.",
+      href: "/discussions",
+      action: activityCounts.saved > 0 ? "Open saved" : "Explore discussions",
+      complete: activityCounts.saved > 0,
+    },
+  ];
+
+  const gettingStartedCompleteCount = gettingStartedSteps.filter(
+    (step) => step.complete
+  ).length;
+
   async function handleLogout() {
     await supabase.auth.signOut();
     window.location.href = "/";
@@ -267,6 +313,63 @@ export default function DashboardClientPage() {
         <p className="mb-8 text-zinc-400">
           Signed in as {email}
         </p>
+
+        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Getting started
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Build your Loombus foundation.
+              </h2>
+            </div>
+
+            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
+              {gettingStartedCompleteCount}/{gettingStartedSteps.length} complete
+            </span>
+          </div>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            A strong first setup helps other members understand who you are,
+            what you contribute, and which discussions are worth returning to.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {gettingStartedSteps.map((step) => (
+              <Link
+                key={step.title}
+                href={step.href}
+                className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+              >
+                <div className="mb-3 flex items-start justify-between gap-4">
+                  <h3 className="text-lg font-medium">
+                    {step.title}
+                  </h3>
+
+                  <span
+                    className={`shrink-0 rounded-full border px-3 py-1 text-xs ${
+                      step.complete
+                        ? "border-emerald-900 text-emerald-400"
+                        : "border-zinc-800 text-zinc-500"
+                    }`}
+                  >
+                    {step.complete ? "Done" : "Next"}
+                  </span>
+                </div>
+
+                <p className="mb-4 text-sm leading-relaxed text-zinc-500">
+                  {step.description}
+                </p>
+
+                <span className="text-sm text-zinc-300">
+                  {step.action} →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
