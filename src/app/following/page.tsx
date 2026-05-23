@@ -376,6 +376,54 @@ export default function FollowingPage() {
           </p>
         </div>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Following feed guide
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Shape your feed around useful contributors.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Your following feed is built from people you choose to follow. Keep it
+            focused by following contributors who consistently add context,
+            thoughtful questions, useful examples, or better framing.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Follow selectively
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Start with a small group of contributors whose thinking you want to revisit.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Use activity as a signal
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Sort and filter the feed to find active, replied-to, or higher-signal discussions.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Adjust over time
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Unfollow when a feed stops being useful. The goal is clarity, not volume.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="mb-8">
           <input
             type="text"
