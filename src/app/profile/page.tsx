@@ -352,6 +352,54 @@ export default function ProfilePage() {
           Manage your public Loombus profile and notification preferences.
         </p>
 
+        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Profile setup guide
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Help people understand who they are reading.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Your profile does not need to be long. A clear name, username, image,
+            and short bio are enough to make your discussions and replies easier
+            to trust and remember.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Use a recognizable identity
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Use the public name and username you are comfortable being known by on Loombus.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Add useful context
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                A short bio can mention your interests, expertise, projects, or what you like discussing.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Set notification comfort
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Choose whether replies, follows, and mentions should notify you before you get more active.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <form
             onSubmit={saveProfile}
