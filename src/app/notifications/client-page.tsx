@@ -519,6 +519,54 @@ export default function NotificationsClientPage() {
           )}
         </div>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Notifications guide
+          </p>
+
+          <h2 className="mb-4 text-2xl font-medium">
+            Keep up without getting pulled off course.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Notifications help you return to replies, follows, and mentions that
+            matter. Use unread status for what needs attention, then mark read or
+            clear older items when they stop being useful.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Prioritize unread
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Start with unread notifications so you can respond to current activity first.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Open the source
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Use each notification as a path back to the discussion or profile that caused it.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-sm font-medium text-zinc-300">
+                Clean up read items
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-600">
+                Mark items read when handled, and clear read notifications when the list gets noisy.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {message && (
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
             {message}
