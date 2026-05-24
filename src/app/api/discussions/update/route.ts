@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 import { logAuditEvent } from "@/lib/audit-log";
+import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 
 const FREE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const PREMIUM_EDIT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -22,6 +23,9 @@ type ExistingDiscussion = {
 
 type ProfileAccess = {
   is_admin: boolean | null;
+  account_status: string | null;
+  enforcement_reason: string | null;
+  suspended_until: string | null;
 };
 
 type AiEntitlement = {
@@ -170,7 +174,7 @@ export async function POST(request: NextRequest) {
       await Promise.all([
         supabase
           .from("profiles")
-          .select("is_admin")
+          .select("is_admin, account_status, enforcement_reason, suspended_until")
           .eq("id", user.id)
           .maybeSingle(),
         supabase
@@ -185,7 +189,20 @@ export async function POST(request: NextRequest) {
           .maybeSingle(),
       ]);
 
-    const isAdmin = Boolean((profile as ProfileAccess | null)?.is_admin);
+    const profileAccess = (profile ?? null) as ProfileAccess | null;
+    const enforcement = getAccountEnforcementResult(profileAccess);
+
+    if (!enforcement.allowed) {
+      return NextResponse.json(
+        {
+          error: enforcement.errorMessage,
+          code: enforcement.code,
+        },
+        { status: 403 }
+      );
+    }
+
+    const isAdmin = Boolean(profileAccess?.is_admin);
     const hasPremiumAccess = hasPremiumEditAccess(
       (entitlement ?? null) as AiEntitlement | null
     );

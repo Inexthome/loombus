@@ -1,8 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DEFAULT_REPORT_REASON, REPORT_REASONS } from "@/lib/report-reasons";
+import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 
 type ReportTargetType = "discussion" | "reply" | "profile";
+
+type ProfileAccess = {
+  account_status: string | null;
+  enforcement_reason: string | null;
+  suspended_until: string | null;
+};
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -68,6 +75,20 @@ export async function POST(request: NextRequest) {
 
   if (userError || !user) {
     return jsonError("Unauthorized.", 401);
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("account_status, enforcement_reason, suspended_until")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const enforcement = getAccountEnforcementResult(
+    (profile ?? null) as ProfileAccess | null
+  );
+
+  if (!enforcement.allowed) {
+    return jsonError(enforcement.errorMessage ?? "Account restricted.", 403);
   }
 
   const body = await request.json().catch(() => null);

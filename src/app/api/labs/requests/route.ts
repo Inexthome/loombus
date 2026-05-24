@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { createClient } from "@supabase/supabase-js";
 
 const LABS_SUBMISSION_COOLDOWN_MS = 30_000;
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("is_admin, account_status, enforcement_reason, suspended_until")
     .eq("id", user.id)
     .maybeSingle<LabsProfileRow>();
 

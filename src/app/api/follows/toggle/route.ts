@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createNotification } from "@/lib/notifications";
+import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+
+type ProfileAccess = {
+  account_status: string | null;
+  enforcement_reason: string | null;
+  suspended_until: string | null;
+};
 
 const ACTION_COOLDOWN_SECONDS = 5;
 
@@ -29,6 +36,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Unauthorized." },
         { status: 401 }
+      );
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("account_status, enforcement_reason, suspended_until")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const enforcement = getAccountEnforcementResult(
+      (profile ?? null) as ProfileAccess | null
+    );
+
+    if (!enforcement.allowed) {
+      return NextResponse.json(
+        {
+          error: enforcement.errorMessage,
+          code: enforcement.code,
+        },
+        { status: 403 }
       );
     }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
 import { logAuditEvent } from "@/lib/audit-log";
+import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { createNotification, createNotifications } from "@/lib/notifications";
 
 const REPLY_COOLDOWN_MS = 10000;
@@ -10,6 +11,12 @@ const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
 type BlockRow = {
   blocker_id: string;
   blocked_id: string;
+};
+
+type ProfileAccess = {
+  account_status: string | null;
+  enforcement_reason: string | null;
+  suspended_until: string | null;
 };
 
 function extractMentionUsernames(content: string) {
@@ -78,6 +85,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Invalid session." },
         { status: 401 }
+      );
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("account_status, enforcement_reason, suspended_until")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const enforcement = getAccountEnforcementResult(
+      (profile ?? null) as ProfileAccess | null
+    );
+
+    if (!enforcement.allowed) {
+      return NextResponse.json(
+        {
+          error: enforcement.errorMessage,
+          code: enforcement.code,
+        },
+        { status: 403 }
       );
     }
 
