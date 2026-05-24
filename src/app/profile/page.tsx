@@ -344,6 +344,13 @@ export default function ProfilePage() {
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-6xl">
+        <Link
+          href="/settings"
+          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+        >
+          ← Back to settings
+        </Link>
+
         <h1 className="mb-6 text-5xl font-semibold tracking-tight">
           Profile
         </h1>

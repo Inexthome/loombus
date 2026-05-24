@@ -351,6 +351,13 @@ export default function UserProfilePage() {
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-6xl">
+        <Link
+          href="/people"
+          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+        >
+          ← Back to people
+        </Link>
+
         <div className="mb-16 rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
           <div className="mb-6 flex items-center gap-5">
             <ProfileAvatar profile={profile} size="xl" />

@@ -625,6 +625,13 @@ export default function AdminReportsPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-5xl">
+        <Link
+          href="/admin"
+          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+        >
+          ← Back to admin
+        </Link>
+
         <h1 className="mb-6 text-5xl font-semibold tracking-tight">
           Reports
         </h1>
