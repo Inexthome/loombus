@@ -1,4 +1,4 @@
-type AccountStatus = "active" | "warned" | "suspended" | "banned";
+type AccountStatus = "active" | "warned" | "suspended" | "banned" | "deactivated" | "deletion_requested";
 
 type AccountEnforcementProfile = {
   account_status: string | null;
@@ -10,7 +10,7 @@ export type AccountEnforcementResult = {
   allowed: boolean;
   status: AccountStatus;
   errorMessage?: string;
-  code?: "account_suspended" | "account_banned";
+  code?: "account_suspended" | "account_banned" | "account_deactivated" | "account_deletion_requested";
 };
 
 function normalizeAccountStatus(status: string | null | undefined): AccountStatus {
@@ -18,7 +18,9 @@ function normalizeAccountStatus(status: string | null | undefined): AccountStatu
     status === "active" ||
     status === "warned" ||
     status === "suspended" ||
-    status === "banned"
+    status === "banned" ||
+    status === "deactivated" ||
+    status === "deletion_requested"
   ) {
     return status;
   }
@@ -57,6 +59,20 @@ function formatBanMessage(profile: AccountEnforcementProfile) {
   return "Your Loombus account is banned.";
 }
 
+function formatDeactivatedMessage(profile: AccountEnforcementProfile) {
+  const reason = profile.enforcement_reason?.trim();
+
+  if (reason) {
+    return `Your Loombus account is deactivated. Reason: ${reason}`;
+  }
+
+  return "Your Loombus account is deactivated.";
+}
+
+function formatDeletionRequestedMessage() {
+  return "Your Loombus account has an open deletion request. Account actions are restricted while the request is pending.";
+}
+
 export function getAccountEnforcementResult(
   profile: AccountEnforcementProfile | null
 ): AccountEnforcementResult {
@@ -86,6 +102,24 @@ export function getAccountEnforcementResult(
       status,
       code: "account_suspended",
       errorMessage: formatSuspensionMessage(profile),
+    };
+  }
+
+  if (status === "deactivated") {
+    return {
+      allowed: false,
+      status,
+      code: "account_deactivated",
+      errorMessage: formatDeactivatedMessage(profile),
+    };
+  }
+
+  if (status === "deletion_requested") {
+    return {
+      allowed: false,
+      status,
+      code: "account_deletion_requested",
+      errorMessage: formatDeletionRequestedMessage(),
     };
   }
 

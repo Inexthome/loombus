@@ -35,6 +35,8 @@ const actionLabels: Record<string, string> = {
   "account.suspended": "Account suspended",
   "account.banned": "Account banned",
   "account.restored": "Account restored",
+  "account.deactivated": "Account deactivated",
+  "account.deletion_requested": "Account deletion requested",
 };
 
 const actionDescriptions: Record<string, string> = {
@@ -48,6 +50,8 @@ const actionDescriptions: Record<string, string> = {
   "account.suspended": "An admin temporarily suspended a member account.",
   "account.banned": "An admin banned a member account.",
   "account.restored": "An admin restored a member account to active status.",
+  "account.deactivated": "A member deactivated their account.",
+  "account.deletion_requested": "A member requested account deletion.",
 };
 
 function getActionLabel(action: string) {
@@ -65,6 +69,14 @@ function getActionBadgeClass(action: string) {
 
   if (action.includes("banned")) {
     return "border-red-900 text-red-300";
+  }
+
+  if (action.includes("deletion_requested")) {
+    return "border-violet-800 text-violet-300";
+  }
+
+  if (action.includes("deactivated")) {
+    return "border-zinc-700 text-zinc-300";
   }
 
   if (action.includes("suspended")) {

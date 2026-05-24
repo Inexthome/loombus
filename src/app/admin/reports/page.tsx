@@ -49,7 +49,7 @@ function getReportStatusClass(status: string) {
   return REPORT_STATUS_CLASSES[normalizeReportStatus(status)];
 }
 
-type AccountStatus = "active" | "warned" | "suspended" | "banned";
+type AccountStatus = "active" | "warned" | "suspended" | "banned" | "deactivated" | "deletion_requested";
 
 type AccountEnforcementAction =
   | "warn_user"
@@ -62,6 +62,8 @@ const ACCOUNT_STATUS_LABELS: Record<AccountStatus, string> = {
   warned: "Warned",
   suspended: "Suspended",
   banned: "Banned",
+  deactivated: "Deactivated",
+  deletion_requested: "Deletion requested",
 };
 
 const ACCOUNT_STATUS_CLASSES: Record<AccountStatus, string> = {
@@ -69,6 +71,8 @@ const ACCOUNT_STATUS_CLASSES: Record<AccountStatus, string> = {
   warned: "border-sky-800 text-sky-300",
   suspended: "border-amber-800 text-amber-300",
   banned: "border-red-900 text-red-300",
+  deactivated: "border-zinc-700 text-zinc-300",
+  deletion_requested: "border-violet-800 text-violet-300",
 };
 
 function normalizeAccountStatus(status: string | null | undefined): AccountStatus {
@@ -76,7 +80,9 @@ function normalizeAccountStatus(status: string | null | undefined): AccountStatu
     status === "active" ||
     status === "warned" ||
     status === "suspended" ||
-    status === "banned"
+    status === "banned" ||
+    status === "deactivated" ||
+    status === "deletion_requested"
   ) {
     return status;
   }
