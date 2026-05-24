@@ -214,7 +214,7 @@ export default function AdminDashboardPage() {
 
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
             <p className="mb-2 text-sm text-zinc-500">
-              Open Reports
+              New Reports
             </p>
             <p className="text-4xl font-semibold">
               {counts.openReports}
@@ -223,7 +223,7 @@ export default function AdminDashboardPage() {
 
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
             <p className="mb-2 text-sm text-zinc-500">
-              Reviewed Reports
+              Dismissed Reports
             </p>
             <p className="text-4xl font-semibold">
               {counts.dismissedReports}
@@ -245,7 +245,7 @@ export default function AdminDashboardPage() {
             href="/admin/reports"
             title="Reports"
             description="Review community-submitted moderation reports for discussions, replies, and profiles."
-            action="Open Reports"
+            action="New Reports"
             count={counts.openReports}
           />
 
