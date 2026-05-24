@@ -56,6 +56,7 @@ export default function MyDiscussionsPage() {
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
   const [deletingDraftId, setDeletingDraftId] = useState<string | null>(null);
+  const [deletingDiscussionId, setDeletingDiscussionId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -198,6 +199,58 @@ export default function MyDiscussionsPage() {
 
     setDrafts((current) => current.filter((draft) => draft.id !== draftId));
     setMessage("Draft deleted.");
+  }
+
+  async function deleteDiscussion(discussionId: string) {
+    setMessage("");
+
+    if (!currentUserId || deletingDiscussionId) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Delete this discussion? It will leave public view, but moderation and audit records will be preserved."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingDiscussionId(discussionId);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      setDeletingDiscussionId(null);
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch("/api/discussions/delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        discussionId,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setDeletingDiscussionId(null);
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to delete discussion.");
+      return;
+    }
+
+    setDiscussions((current) =>
+      current.filter((discussion) => discussion.id !== discussionId)
+    );
+    setMessage("Discussion deleted.");
   }
 
   if (loading) {
@@ -493,6 +546,15 @@ export default function MyDiscussionsPage() {
                   >
                     Edit
                   </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => deleteDiscussion(discussion.id)}
+                    disabled={deletingDiscussionId === discussion.id}
+                    className="rounded-full border border-zinc-800 px-4 py-2 text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    {deletingDiscussionId === discussion.id ? "Deleting..." : "Delete"}
+                  </button>
                 </div>
               </div>
             </div>
