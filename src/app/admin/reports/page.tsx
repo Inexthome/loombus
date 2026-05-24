@@ -4,6 +4,52 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
+type ReportStatus = "new" | "reviewing" | "dismissed" | "actioned";
+
+const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
+  new: "New",
+  reviewing: "Reviewing",
+  dismissed: "Dismissed",
+  actioned: "Actioned",
+};
+
+const REPORT_STATUS_CLASSES: Record<ReportStatus, string> = {
+  new: "border-zinc-700 text-zinc-300",
+  reviewing: "border-sky-800 text-sky-300",
+  dismissed: "border-emerald-900 text-emerald-300",
+  actioned: "border-amber-800 text-amber-300",
+};
+
+function normalizeReportStatus(status: string): ReportStatus {
+  if (
+    status === "new" ||
+    status === "reviewing" ||
+    status === "dismissed" ||
+    status === "actioned"
+  ) {
+    return status;
+  }
+
+  if (status === "open") {
+    return "new";
+  }
+
+  if (status === "reviewed") {
+    return "dismissed";
+  }
+
+  return "new";
+}
+
+function getReportStatusLabel(status: string) {
+  return REPORT_STATUS_LABELS[normalizeReportStatus(status)];
+}
+
+function getReportStatusClass(status: string) {
+  return REPORT_STATUS_CLASSES[normalizeReportStatus(status)];
+}
+
+
 type DiscussionRef = {
   id: string;
   title: string;
@@ -31,6 +77,10 @@ type Report = {
   reviewed_by: string | null;
   reviewed_at: string | null;
   resolution_note: string | null;
+  status_updated_by: string | null;
+  status_updated_at: string | null;
+  actioned_by: string | null;
+  actioned_at: string | null;
   created_at: string;
   discussion_id: string | null;
   reply_id: string | null;
@@ -39,7 +89,15 @@ type Report = {
   replies: ReplyRef;
 };
 
-type ReportFilter = "all" | "open" | "reviewed" | "discussions" | "replies" | "profiles";
+type ReportFilter =
+  | "all"
+  | "new"
+  | "reviewing"
+  | "dismissed"
+  | "actioned"
+  | "discussions"
+  | "replies"
+  | "profiles";
 
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -82,6 +140,10 @@ export default function AdminReportsPage() {
           reviewed_by,
           reviewed_at,
           resolution_note,
+          status_updated_by,
+          status_updated_at,
+          actioned_by,
+          actioned_at,
           created_at,
           discussion_id,
           reply_id,
@@ -225,7 +287,10 @@ export default function AdminReportsPage() {
     setMessage("Reply soft deleted.");
   }
 
-  async function markReviewed(reportId: string) {
+  async function updateReportStatus(
+    reportId: string,
+    action: "set_report_reviewing" | "dismiss_report" | "mark_report_actioned"
+  ) {
     setMessage("");
 
     const { data: sessionData } = await supabase.auth.getSession();
@@ -245,7 +310,7 @@ export default function AdminReportsPage() {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        action: "mark_report_reviewed",
+        action,
         reportId,
         resolutionNote,
       }),
@@ -254,14 +319,24 @@ export default function AdminReportsPage() {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      setMessage(result.error ?? "Unable to mark reviewed.");
+      setMessage(result.error ?? "Unable to update report status.");
       return;
     }
 
+    const nextStatus =
+      typeof result.status === "string" ? normalizeReportStatus(result.status) : "new";
+    const statusUpdatedBy =
+      typeof result.statusUpdatedBy === "string" ? result.statusUpdatedBy : null;
+    const statusUpdatedAt =
+      typeof result.statusUpdatedAt === "string" ? result.statusUpdatedAt : new Date().toISOString();
     const reviewedBy =
       typeof result.reviewedBy === "string" ? result.reviewedBy : null;
     const reviewedAt =
-      typeof result.reviewedAt === "string" ? result.reviewedAt : new Date().toISOString();
+      typeof result.reviewedAt === "string" ? result.reviewedAt : null;
+    const actionedBy =
+      typeof result.actionedBy === "string" ? result.actionedBy : null;
+    const actionedAt =
+      typeof result.actionedAt === "string" ? result.actionedAt : null;
     const savedResolutionNote =
       typeof result.resolutionNote === "string" ? result.resolutionNote : null;
 
@@ -270,9 +345,13 @@ export default function AdminReportsPage() {
         report.id === reportId
           ? {
               ...report,
-              status: "reviewed",
+              status: nextStatus,
+              status_updated_by: statusUpdatedBy,
+              status_updated_at: statusUpdatedAt,
               reviewed_by: reviewedBy,
               reviewed_at: reviewedAt,
+              actioned_by: actionedBy,
+              actioned_at: actionedAt,
               resolution_note: savedResolutionNote,
             }
           : report
@@ -285,7 +364,13 @@ export default function AdminReportsPage() {
       return next;
     });
 
-    setMessage("Report marked reviewed.");
+    setMessage(
+      nextStatus === "reviewing"
+        ? "Report marked reviewing."
+        : nextStatus === "dismissed"
+          ? "Report dismissed."
+          : "Report marked actioned."
+    );
   }
 
   function getReplyAuthorLabel(reply: ReplyRef) {
@@ -299,12 +384,13 @@ export default function AdminReportsPage() {
   }
 
   const filteredReports = reports.filter((report) => {
-    if (filterMode === "open") {
-      return report.status === "open";
-    }
-
-    if (filterMode === "reviewed") {
-      return report.status === "reviewed";
+    if (
+      filterMode === "new" ||
+      filterMode === "reviewing" ||
+      filterMode === "dismissed" ||
+      filterMode === "actioned"
+    ) {
+      return normalizeReportStatus(report.status) === filterMode;
     }
 
     if (filterMode === "discussions") {
@@ -333,14 +419,24 @@ export default function AdminReportsPage() {
       count: reports.length,
     },
     {
-      label: "Open",
-      value: "open",
-      count: reports.filter((report) => report.status === "open").length,
+      label: "New",
+      value: "new",
+      count: reports.filter((report) => normalizeReportStatus(report.status) === "new").length,
     },
     {
-      label: "Reviewed",
-      value: "reviewed",
-      count: reports.filter((report) => report.status === "reviewed").length,
+      label: "Reviewing",
+      value: "reviewing",
+      count: reports.filter((report) => normalizeReportStatus(report.status) === "reviewing").length,
+    },
+    {
+      label: "Dismissed",
+      value: "dismissed",
+      count: reports.filter((report) => normalizeReportStatus(report.status) === "dismissed").length,
+    },
+    {
+      label: "Actioned",
+      value: "actioned",
+      count: reports.filter((report) => normalizeReportStatus(report.status) === "actioned").length,
     },
     {
       label: "Discussions",
@@ -406,10 +502,10 @@ export default function AdminReportsPage() {
           </h2>
 
           <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            Use this queue to separate open reports, reviewed reports, discussion
-            reports, reply reports, and profile reports. Open the reported item,
-            add a resolution note when helpful, then mark reviewed or remove
-            content only when the moderation decision is clear.
+            Use this queue to separate new, reviewing, dismissed, and actioned
+            reports across discussions, replies, and profiles. Open the reported
+            item, add a resolution note when helpful, then dismiss the report or
+            mark it actioned when a moderation decision is clear.
           </p>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -439,7 +535,7 @@ export default function AdminReportsPage() {
               </p>
 
               <p className="text-sm leading-relaxed text-zinc-600">
-                Mark reviewed for no action, or soft delete only when content should leave public view.
+                Dismiss reports when no action is needed, or mark actioned when content is removed from public view.
               </p>
             </div>
           </div>
@@ -529,8 +625,8 @@ export default function AdminReportsPage() {
                     </h2>
                   </div>
 
-                  <p className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
-                    {report.status}
+                  <p className={`rounded-full border px-3 py-1 text-xs ${getReportStatusClass(report.status)}`}>
+                    {getReportStatusLabel(report.status)}
                   </p>
                 </div>
 
@@ -538,11 +634,22 @@ export default function AdminReportsPage() {
                   Reason: {report.reason}
                 </p>
 
-                {(report.reviewed_at || report.reviewed_by || report.resolution_note) && (
+                {(report.status_updated_at ||
+                  report.reviewed_at ||
+                  report.actioned_at ||
+                  report.reviewed_by ||
+                  report.actioned_by ||
+                  report.resolution_note) && (
                   <div className="mb-4 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
                     <p className="mb-2 text-zinc-400">
                       Review details
                     </p>
+
+                    {report.status_updated_at && (
+                      <p>
+                        Status updated: {new Date(report.status_updated_at).toLocaleString()}
+                      </p>
+                    )}
 
                     {report.reviewed_at && (
                       <p>
@@ -553,6 +660,12 @@ export default function AdminReportsPage() {
                     {report.reviewed_by && (
                       <p>
                         Reviewed by: {reviewerProfile?.full_name || reviewerProfile?.username || "Admin"}
+                      </p>
+                    )}
+
+                    {report.actioned_at && (
+                      <p>
+                        Actioned: {new Date(report.actioned_at).toLocaleString()}
                       </p>
                     )}
 
@@ -598,7 +711,8 @@ export default function AdminReportsPage() {
                   </div>
                 )}
 
-                {report.status !== "reviewed" && (
+                {normalizeReportStatus(report.status) !== "dismissed" &&
+                  normalizeReportStatus(report.status) !== "actioned" && (
                   <label className="mb-4 block">
                     <span className="mb-2 block text-sm text-zinc-500">
                       Resolution note optional
@@ -637,15 +751,35 @@ export default function AdminReportsPage() {
                       View discussion →
                     </Link>
                   )}
-
-                  {report.status !== "reviewed" && (
+                  {normalizeReportStatus(report.status) === "new" && (
                     <button
-                      onClick={() => markReviewed(report.id)}
-                      className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                      onClick={() => updateReportStatus(report.id, "set_report_reviewing")}
+                      className="rounded-full border border-sky-900 px-4 py-2 text-sm text-sky-300 transition hover:border-sky-700 hover:text-sky-200"
                     >
-                      Mark reviewed
+                      Start review
                     </button>
                   )}
+
+                  {(normalizeReportStatus(report.status) === "new" ||
+                    normalizeReportStatus(report.status) === "reviewing") && (
+                    <button
+                      onClick={() => updateReportStatus(report.id, "dismiss_report")}
+                      className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                    >
+                      Dismiss report
+                    </button>
+                  )}
+
+                  {(normalizeReportStatus(report.status) === "new" ||
+                    normalizeReportStatus(report.status) === "reviewing") && (
+                    <button
+                      onClick={() => updateReportStatus(report.id, "mark_report_actioned")}
+                      className="rounded-full border border-amber-800 px-4 py-2 text-sm text-amber-300 transition hover:border-amber-600 hover:text-amber-200"
+                    >
+                      Mark actioned
+                    </button>
+                  )}
+
 
                   {!isReplyReport && !isProfileReport && report.discussions && (
                     <button

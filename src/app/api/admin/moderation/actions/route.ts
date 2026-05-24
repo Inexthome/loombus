@@ -10,7 +10,9 @@ type ModerationAction =
   | "restore_discussion"
   | "restore_reply"
   | "soft_delete_discussion"
-  | "mark_report_reviewed";
+  | "set_report_reviewing"
+  | "dismiss_report"
+  | "mark_report_actioned";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -186,7 +188,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, deletedAt });
   }
 
-  if (action === "mark_report_reviewed") {
+  if (
+    action === "set_report_reviewing" ||
+    action === "dismiss_report" ||
+    action === "mark_report_actioned"
+  ) {
     const reportId = body?.reportId;
     const resolutionNote =
       typeof body?.resolutionNote === "string" ? body.resolutionNote.trim() : "";
@@ -199,36 +205,68 @@ export async function POST(request: NextRequest) {
       return jsonError("Resolution note is too long.", 400);
     }
 
-    const reviewedAt = new Date().toISOString();
+    const now = new Date().toISOString();
+
+    const status =
+      action === "set_report_reviewing"
+        ? "reviewing"
+        : action === "dismiss_report"
+          ? "dismissed"
+          : "actioned";
+
+    const updatePayload: Record<string, string | null> = {
+      status,
+      status_updated_by: user.id,
+      status_updated_at: now,
+      resolution_note: resolutionNote || null,
+    };
+
+    if (status === "dismissed") {
+      updatePayload.reviewed_by = user.id;
+      updatePayload.reviewed_at = now;
+    }
+
+    if (status === "actioned") {
+      updatePayload.reviewed_by = user.id;
+      updatePayload.reviewed_at = now;
+      updatePayload.actioned_by = user.id;
+      updatePayload.actioned_at = now;
+    }
 
     const { error } = await supabase
       .from("reports")
-      .update({
-        status: "reviewed",
-        reviewed_by: user.id,
-        reviewed_at: reviewedAt,
-        resolution_note: resolutionNote || null,
-      })
+      .update(updatePayload)
       .eq("id", reportId);
 
     if (error) {
-      return jsonError(error.message || "Unable to mark report reviewed.", 400);
+      return jsonError(error.message || "Unable to update report status.", 400);
     }
 
     await logAuditEvent({
       actor_id: user.id,
-      action: "report.reviewed",
+      action:
+        status === "reviewing"
+          ? "report.reviewing"
+          : status === "dismissed"
+            ? "report.dismissed"
+            : "report.actioned",
       target_type: "report",
       target_id: reportId,
       metadata: {
+        status,
         has_resolution_note: Boolean(resolutionNote),
       },
     });
 
     return NextResponse.json({
       ok: true,
-      reviewedBy: user.id,
-      reviewedAt,
+      status,
+      statusUpdatedBy: user.id,
+      statusUpdatedAt: now,
+      reviewedBy: status === "reviewing" ? null : user.id,
+      reviewedAt: status === "reviewing" ? null : now,
+      actionedBy: status === "actioned" ? user.id : null,
+      actionedAt: status === "actioned" ? now : null,
       resolutionNote: resolutionNote || null,
     });
   }

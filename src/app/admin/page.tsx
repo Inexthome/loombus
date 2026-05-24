@@ -7,7 +7,8 @@ import { supabase } from "@/lib/supabase/client";
 type AdminCounts = {
   totalReports: number;
   openReports: number;
-  reviewedReports: number;
+  dismissedReports: number;
+  actionedReports: number;
   profileReports: number;
   deletedDiscussions: number;
   deletedReplies: number;
@@ -65,7 +66,8 @@ export default function AdminDashboardPage() {
   const [counts, setCounts] = useState<AdminCounts>({
     totalReports: 0,
     openReports: 0,
-    reviewedReports: 0,
+    dismissedReports: 0,
+    actionedReports: 0,
     profileReports: 0,
     deletedDiscussions: 0,
     deletedReplies: 0,
@@ -97,7 +99,8 @@ export default function AdminDashboardPage() {
       const [
         totalReports,
         openReports,
-        reviewedReports,
+        dismissedReports,
+          actionedReports,
         profileReports,
         deletedDiscussions,
         deletedReplies,
@@ -109,11 +112,15 @@ export default function AdminDashboardPage() {
         supabase
           .from("reports")
           .select("*", { count: "exact", head: true })
-          .eq("status", "open"),
+          .eq("status", "new"),
         supabase
           .from("reports")
           .select("*", { count: "exact", head: true })
-          .eq("status", "reviewed"),
+          .eq("status", "dismissed"),
+        supabase
+          .from("reports")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "actioned"),
         supabase
           .from("reports")
           .select("*", { count: "exact", head: true })
@@ -134,7 +141,8 @@ export default function AdminDashboardPage() {
       setCounts({
         totalReports: totalReports.count ?? 0,
         openReports: openReports.count ?? 0,
-        reviewedReports: reviewedReports.count ?? 0,
+        dismissedReports: dismissedReports.count ?? 0,
+        actionedReports: actionedReports.count ?? 0,
         profileReports: profileReports.count ?? 0,
         deletedDiscussions: deletedDiscussions.count ?? 0,
         deletedReplies: deletedReplies.count ?? 0,
@@ -218,7 +226,7 @@ export default function AdminDashboardPage() {
               Reviewed Reports
             </p>
             <p className="text-4xl font-semibold">
-              {counts.reviewedReports}
+              {counts.dismissedReports}
             </p>
           </div>
 
