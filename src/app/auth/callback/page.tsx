@@ -12,35 +12,62 @@ function getSafeNext(value: string | null) {
   return value;
 }
 
+async function waitForSession(maxAttempts = 20) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const { data } = await supabase.auth.getSession();
+
+    if (data.session) {
+      return data.session;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  return null;
+}
+
 export default function AuthCallbackPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     async function completeAuthCallback() {
       const params = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(
+        window.location.hash.startsWith("#")
+          ? window.location.hash.slice(1)
+          : window.location.hash
+      );
+
       const code = params.get("code");
       const next = getSafeNext(params.get("next"));
 
-      if (!code) {
-        const { data } = await supabase.auth.getSession();
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-        if (data.session) {
-          window.location.replace(next);
+        if (error) {
+          setErrorMessage(error.message);
           return;
         }
 
-        setErrorMessage("The sign-in callback was missing an authorization code. Please try signing in again.");
+        window.location.replace(next);
         return;
       }
 
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      const hashHasSession =
+        hashParams.has("access_token") ||
+        hashParams.has("refresh_token") ||
+        hashParams.has("provider_token");
 
-      if (error) {
-        setErrorMessage(error.message);
+      const existingSession = await waitForSession(hashHasSession ? 30 : 12);
+
+      if (existingSession) {
+        window.location.replace(next);
         return;
       }
 
-      window.location.replace(next);
+      setErrorMessage(
+        "Loombus could not finish the Google sign-in session. Please return to login and try again."
+      );
     }
 
     completeAuthCallback();
