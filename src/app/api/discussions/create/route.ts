@@ -4,6 +4,7 @@ import { validateContent } from "@/lib/moderation/content";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { createNotifications } from "@/lib/notifications";
 
 const CREATE_COOLDOWN_MS = 30000;
 const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
@@ -21,6 +22,31 @@ type AiEntitlement = {
   ai_assisted_enabled: boolean | null;
   monthly_summary_limit: number | null;
 };
+
+type BlockRow = {
+  blocker_id: string;
+  blocked_id: string;
+};
+
+async function getBlockedRelationshipUserIds(
+  supabase: any,
+  userId: string
+) {
+  const { data: blockRows } = await supabase
+    .from("user_blocks")
+    .select("blocker_id, blocked_id")
+    .or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`);
+
+  const blockedRelationshipUserIds = new Set<string>();
+
+  for (const block of (blockRows ?? []) as BlockRow[]) {
+    blockedRelationshipUserIds.add(
+      block.blocker_id === userId ? block.blocked_id : block.blocker_id
+    );
+  }
+
+  return blockedRelationshipUserIds;
+}
 
 function hasLongPostAccess(
   entitlement: AiEntitlement | null,
@@ -196,6 +222,68 @@ export async function POST(request: NextRequest) {
         title,
       },
     });
+
+    const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
+      supabase,
+      user.id
+    );
+
+    const { data: followerRows } = await supabase
+      .from("follows")
+      .select("follower_id")
+      .eq("following_id", user.id);
+
+    const candidateFollowerIds = [
+      ...new Set(
+        (followerRows ?? [])
+          .map((follow) => follow.follower_id)
+          .filter((followerId): followerId is string => {
+            if (!followerId || followerId === user.id) {
+              return false;
+            }
+
+            return !blockedRelationshipUserIds.has(followerId);
+          })
+      ),
+    ];
+
+    if (candidateFollowerIds.length > 0) {
+      const { data: followerPreferences } = await supabase
+        .from("notification_preferences")
+        .select("user_id, followed_discussions_enabled")
+        .in("user_id", candidateFollowerIds);
+
+      const preferenceMap = new Map(
+        (followerPreferences ?? []).map((preference) => [
+          preference.user_id,
+          preference.followed_discussions_enabled,
+        ])
+      );
+
+      const followerNotifications = candidateFollowerIds
+        .filter((followerId) => preferenceMap.get(followerId) ?? true)
+        .map((followerId) => ({
+          user_id: followerId,
+          actor_id: user.id,
+          type: "followed_discussion",
+          target_type: "discussion",
+          target_id: discussion.id,
+          message: `Someone you follow published a new discussion: ${title}`,
+        }));
+
+      if (followerNotifications.length > 0) {
+        const { error: followerNotificationError } = await createNotifications(
+          followerNotifications
+        );
+
+        if (followerNotificationError) {
+          console.error(
+            "Followed discussion notifications failed:",
+            followerNotificationError.message
+          );
+        }
+      }
+    }
 
     return NextResponse.json({ discussion });
   } catch {

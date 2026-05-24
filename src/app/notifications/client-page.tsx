@@ -28,7 +28,13 @@ type Profile = {
 };
 
 type NotificationFilter = "all" | "unread" | "read";
-type NotificationTypeFilter = "all" | "reply" | "mention" | "follow";
+type NotificationTypeFilter =
+  | "all"
+  | "reply"
+  | "mention"
+  | "follow"
+  | "followed_discussion"
+  | "followed_reply";
 type NotificationSortMode = "newest" | "oldest";
 
 type AiEntitlement = {
@@ -629,6 +635,8 @@ export default function NotificationsClientPage() {
                   ["reply", "Replies"],
                   ["mention", "Mentions"],
                   ["follow", "Follows"],
+                  ["followed_discussion", "Followed discussions"],
+                  ["followed_reply", "Followed replies"],
                 ].map(([value, label]) => (
                   <button
                     key={value}

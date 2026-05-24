@@ -113,6 +113,14 @@ export async function POST(request: NextRequest) {
     typeof source.followsEnabled === "boolean" ? source.followsEnabled : true;
   const mentionsEnabled =
     typeof source.mentionsEnabled === "boolean" ? source.mentionsEnabled : true;
+  const followedDiscussionsEnabled =
+    typeof source.followedDiscussionsEnabled === "boolean"
+      ? source.followedDiscussionsEnabled
+      : true;
+  const followedRepliesEnabled =
+    typeof source.followedRepliesEnabled === "boolean"
+      ? source.followedRepliesEnabled
+      : false;
 
   if (!/^[a-z0-9_]{2,30}$/.test(username)) {
     return jsonError(
@@ -191,6 +199,8 @@ export async function POST(request: NextRequest) {
       replies_enabled: repliesEnabled,
       follows_enabled: followsEnabled,
       mentions_enabled: mentionsEnabled,
+      followed_discussions_enabled: followedDiscussionsEnabled,
+      followed_replies_enabled: followedRepliesEnabled,
       updated_at: new Date().toISOString(),
     });
 

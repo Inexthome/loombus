@@ -194,6 +194,8 @@ export async function POST(request: NextRequest) {
       .eq("id", discussionId)
       .single();
 
+    const alreadyNotifiedUserIds = new Set<string>();
+
     if (
       discussion &&
       discussion.user_id !== user.id &&
@@ -219,6 +221,8 @@ export async function POST(request: NextRequest) {
 
         if (notificationError) {
           console.error("Reply notification failed:", notificationError.message);
+        } else {
+          alreadyNotifiedUserIds.add(discussion.user_id);
         }
       }
     }
@@ -272,20 +276,91 @@ export async function POST(request: NextRequest) {
 
         const mentionNotifications = candidateMentionUserIds
           .filter((mentionedUserId) => preferenceMap.get(mentionedUserId) ?? true)
-          .map((mentionedUserId) => ({
-            user_id: mentionedUserId,
-            actor_id: user.id,
-            type: "mention",
-            target_type: "discussion",
-            target_id: discussionId,
-            message: `Someone mentioned you in a discussion: ${discussion.title}`,
-          }));
+          .map((mentionedUserId) => {
+            alreadyNotifiedUserIds.add(mentionedUserId);
+
+            return {
+              user_id: mentionedUserId,
+              actor_id: user.id,
+              type: "mention",
+              target_type: "discussion",
+              target_id: discussionId,
+              message: `Someone mentioned you in a discussion: ${discussion.title}`,
+            };
+          });
 
         if (mentionNotifications.length > 0) {
           const { error: mentionError } = await createNotifications(mentionNotifications);
 
           if (mentionError) {
             console.error("Mention notification failed:", mentionError.message);
+          }
+        }
+      }
+    }
+
+    if (discussion) {
+      const { data: followerRows } = await supabase
+        .from("follows")
+        .select("follower_id")
+        .eq("following_id", user.id);
+
+      const candidateFollowerIds = [
+        ...new Set(
+          (followerRows ?? [])
+            .map((follow) => follow.follower_id)
+            .filter((followerId): followerId is string => {
+              if (!followerId || followerId === user.id) {
+                return false;
+              }
+
+              if (alreadyNotifiedUserIds.has(followerId)) {
+                return false;
+              }
+
+              if (blockedRelationshipUserIds.has(followerId)) {
+                return false;
+              }
+
+              return true;
+            })
+        ),
+      ];
+
+      if (candidateFollowerIds.length > 0) {
+        const { data: followerPreferences } = await supabase
+          .from("notification_preferences")
+          .select("user_id, followed_replies_enabled")
+          .in("user_id", candidateFollowerIds);
+
+        const preferenceMap = new Map(
+          (followerPreferences ?? []).map((preference) => [
+            preference.user_id,
+            preference.followed_replies_enabled,
+          ])
+        );
+
+        const followerReplyNotifications = candidateFollowerIds
+          .filter((followerId) => preferenceMap.get(followerId) ?? false)
+          .map((followerId) => ({
+            user_id: followerId,
+            actor_id: user.id,
+            type: "followed_reply",
+            target_type: "discussion",
+            target_id: discussionId,
+            message: `Someone you follow replied to a discussion: ${discussion.title}`,
+          }));
+
+        if (followerReplyNotifications.length > 0) {
+          const { error: followerReplyError } = await createNotifications(
+            followerReplyNotifications
+          );
+
+          if (followerReplyError) {
+            console.error(
+              "Followed reply notifications failed:",
+              followerReplyError.message
+            );
           }
         }
       }

@@ -54,6 +54,8 @@ export default function ProfilePage() {
   const [repliesEnabled, setRepliesEnabled] = useState(true);
   const [followsEnabled, setFollowsEnabled] = useState(true);
   const [mentionsEnabled, setMentionsEnabled] = useState(true);
+  const [followedDiscussionsEnabled, setFollowedDiscussionsEnabled] = useState(true);
+  const [followedRepliesEnabled, setFollowedRepliesEnabled] = useState(false);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,7 +97,7 @@ export default function ProfilePage() {
 
       const { data: preferences } = await supabase
         .from("notification_preferences")
-        .select("replies_enabled, follows_enabled, mentions_enabled")
+        .select("replies_enabled, follows_enabled, mentions_enabled, followed_discussions_enabled, followed_replies_enabled")
         .eq("user_id", userData.user.id)
         .maybeSingle();
 
@@ -103,6 +105,8 @@ export default function ProfilePage() {
         setRepliesEnabled(preferences.replies_enabled ?? true);
         setFollowsEnabled(preferences.follows_enabled ?? true);
         setMentionsEnabled(preferences.mentions_enabled ?? true);
+        setFollowedDiscussionsEnabled(preferences.followed_discussions_enabled ?? true);
+        setFollowedRepliesEnabled(preferences.followed_replies_enabled ?? false);
       }
 
       setLoading(false);
@@ -305,6 +309,8 @@ export default function ProfilePage() {
           repliesEnabled,
           followsEnabled,
           mentionsEnabled,
+          followedDiscussionsEnabled,
+          followedRepliesEnabled,
         }),
       });
 
@@ -702,6 +708,42 @@ export default function ProfilePage() {
                   type="checkbox"
                   checked={mentionsEnabled}
                   onChange={(e) => setMentionsEnabled(e.target.checked)}
+                  className="mt-1 h-5 w-5"
+                />
+              </label>
+
+              <label className="flex items-start justify-between gap-4 rounded-2xl border border-zinc-900 bg-black p-4">
+                <span>
+                  <span className="block text-sm font-medium text-zinc-200">
+                    People I follow: new discussions
+                  </span>
+                  <span className="mt-1 block text-sm text-zinc-500">
+                    Notify me when someone I follow publishes a new discussion.
+                  </span>
+                </span>
+
+                <input
+                  type="checkbox"
+                  checked={followedDiscussionsEnabled}
+                  onChange={(e) => setFollowedDiscussionsEnabled(e.target.checked)}
+                  className="mt-1 h-5 w-5"
+                />
+              </label>
+
+              <label className="flex items-start justify-between gap-4 rounded-2xl border border-zinc-900 bg-black p-4">
+                <span>
+                  <span className="block text-sm font-medium text-zinc-200">
+                    People I follow: replies
+                  </span>
+                  <span className="mt-1 block text-sm text-zinc-500">
+                    Optional. Notify me when someone I follow posts a reply.
+                  </span>
+                </span>
+
+                <input
+                  type="checkbox"
+                  checked={followedRepliesEnabled}
+                  onChange={(e) => setFollowedRepliesEnabled(e.target.checked)}
                   className="mt-1 h-5 w-5"
                 />
               </label>
