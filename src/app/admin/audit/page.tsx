@@ -31,6 +31,10 @@ const actionLabels: Record<string, string> = {
   "reply.created": "Reply created",
   "reply.soft_deleted": "Reply soft deleted",
   "reply.restored": "Reply restored",
+  "account.warned": "Account warned",
+  "account.suspended": "Account suspended",
+  "account.banned": "Account banned",
+  "account.restored": "Account restored",
 };
 
 const actionDescriptions: Record<string, string> = {
@@ -40,6 +44,10 @@ const actionDescriptions: Record<string, string> = {
   "reply.created": "A member posted a reply.",
   "reply.soft_deleted": "A reply was removed from public view.",
   "reply.restored": "An admin restored a previously deleted reply.",
+  "account.warned": "An admin warned a member account.",
+  "account.suspended": "An admin temporarily suspended a member account.",
+  "account.banned": "An admin banned a member account.",
+  "account.restored": "An admin restored a member account to active status.",
 };
 
 function getActionLabel(action: string) {
@@ -53,6 +61,18 @@ function getActionDescription(action: string) {
 function getActionBadgeClass(action: string) {
   if (action.includes("soft_deleted")) {
     return "border-red-900 text-red-300";
+  }
+
+  if (action.includes("banned")) {
+    return "border-red-900 text-red-300";
+  }
+
+  if (action.includes("suspended")) {
+    return "border-amber-800 text-amber-300";
+  }
+
+  if (action.includes("warned")) {
+    return "border-sky-800 text-sky-300";
   }
 
   if (action.includes("restored")) {

@@ -49,6 +49,49 @@ function getReportStatusClass(status: string) {
   return REPORT_STATUS_CLASSES[normalizeReportStatus(status)];
 }
 
+type AccountStatus = "active" | "warned" | "suspended" | "banned";
+
+type AccountEnforcementAction =
+  | "warn_user"
+  | "suspend_user"
+  | "ban_user"
+  | "restore_user";
+
+const ACCOUNT_STATUS_LABELS: Record<AccountStatus, string> = {
+  active: "Active",
+  warned: "Warned",
+  suspended: "Suspended",
+  banned: "Banned",
+};
+
+const ACCOUNT_STATUS_CLASSES: Record<AccountStatus, string> = {
+  active: "border-emerald-900 text-emerald-300",
+  warned: "border-sky-800 text-sky-300",
+  suspended: "border-amber-800 text-amber-300",
+  banned: "border-red-900 text-red-300",
+};
+
+function normalizeAccountStatus(status: string | null | undefined): AccountStatus {
+  if (
+    status === "active" ||
+    status === "warned" ||
+    status === "suspended" ||
+    status === "banned"
+  ) {
+    return status;
+  }
+
+  return "active";
+}
+
+function getAccountStatusLabel(status: string | null | undefined) {
+  return ACCOUNT_STATUS_LABELS[normalizeAccountStatus(status)];
+}
+
+function getAccountStatusClass(status: string | null | undefined) {
+  return ACCOUNT_STATUS_CLASSES[normalizeAccountStatus(status)];
+}
+
 
 type DiscussionRef = {
   id: string;
@@ -68,6 +111,11 @@ type Profile = {
   id: string;
   username: string | null;
   full_name: string | null;
+  account_status: string | null;
+  enforcement_reason: string | null;
+  enforcement_note: string | null;
+  enforced_at: string | null;
+  suspended_until: string | null;
 };
 
 type Report = {
@@ -104,6 +152,10 @@ export default function AdminReportsPage() {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [filterMode, setFilterMode] = useState<ReportFilter>("all");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [enforcementReasons, setEnforcementReasons] = useState<Record<string, string>>({});
+  const [enforcementNotes, setEnforcementNotes] = useState<Record<string, string>>({});
+  const [suspensionDays, setSuspensionDays] = useState<Record<string, string>>({});
+  const [enforcingProfileId, setEnforcingProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [message, setMessage] = useState("");
@@ -192,7 +244,7 @@ export default function AdminReportsPage() {
       if (profileIds.length > 0) {
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("id, username, full_name")
+          .select("id, username, full_name, account_status, enforcement_reason, enforcement_note, enforced_at, suspended_until")
           .in("id", profileIds);
 
         const profileMap: Record<string, Profile> = {};
@@ -371,6 +423,89 @@ export default function AdminReportsPage() {
           ? "Report dismissed."
           : "Report marked actioned."
     );
+  }
+
+  async function updateAccountEnforcement(
+    profileId: string,
+    action: AccountEnforcementAction
+  ) {
+    setMessage("");
+    setEnforcingProfileId(profileId);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const currentReason = enforcementReasons[profileId]?.trim();
+      const enforcementReason =
+        currentReason || "Moderation action from profile report review";
+      const enforcementNote = enforcementNotes[profileId]?.trim() ?? "";
+
+      const daysValue = Number(suspensionDays[profileId] || "7");
+      const suspensionDurationDays =
+        Number.isFinite(daysValue) && daysValue > 0 ? daysValue : 7;
+
+      const suspendedUntil =
+        action === "suspend_user"
+          ? new Date(Date.now() + suspensionDurationDays * 24 * 60 * 60 * 1000).toISOString()
+          : null;
+
+      const response = await fetch("/api/admin/moderation/actions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          action,
+          targetUserId: profileId,
+          enforcementReason: action === "restore_user" ? "" : enforcementReason,
+          enforcementNote,
+          suspendedUntil,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to update account enforcement.");
+        return;
+      }
+
+      setProfiles((current) => ({
+        ...current,
+        [profileId]: {
+          ...current[profileId],
+          account_status:
+            typeof result.accountStatus === "string" ? result.accountStatus : "active",
+          enforcement_reason:
+            typeof result.enforcementReason === "string" ? result.enforcementReason : null,
+          enforcement_note:
+            typeof result.enforcementNote === "string" ? result.enforcementNote : null,
+          enforced_at:
+            typeof result.enforcedAt === "string" ? result.enforcedAt : new Date().toISOString(),
+          suspended_until:
+            typeof result.suspendedUntil === "string" ? result.suspendedUntil : null,
+        },
+      }));
+
+      setMessage(
+        action === "warn_user"
+          ? "Account warned."
+          : action === "suspend_user"
+            ? "Account suspended."
+            : action === "ban_user"
+              ? "Account banned."
+              : "Account restored to active."
+      );
+    } finally {
+      setEnforcingProfileId(null);
+    }
   }
 
   function getReplyAuthorLabel(reply: ReplyRef) {
@@ -690,6 +825,130 @@ export default function AdminReportsPage() {
                           }`
                         : "Profile unavailable."}
                     </p>
+
+                    {reportedProfile && (
+                      <div className="mt-4 rounded-2xl border border-zinc-900 bg-zinc-950 p-4">
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="mb-2 text-sm text-zinc-500">
+                              Account enforcement
+                            </p>
+
+                            <p className={`inline-flex rounded-full border px-3 py-1 text-xs ${getAccountStatusClass(reportedProfile.account_status)}`}>
+                              {getAccountStatusLabel(reportedProfile.account_status)}
+                            </p>
+                          </div>
+
+                          {reportedProfile.enforced_at && (
+                            <p className="text-xs text-zinc-600">
+                              Updated {new Date(reportedProfile.enforced_at).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+
+                        {reportedProfile.enforcement_reason && (
+                          <p className="mb-3 text-sm text-zinc-500">
+                            Reason: {reportedProfile.enforcement_reason}
+                          </p>
+                        )}
+
+                        {reportedProfile.suspended_until && (
+                          <p className="mb-3 text-sm text-zinc-500">
+                            Suspended until: {new Date(reportedProfile.suspended_until).toLocaleString()}
+                          </p>
+                        )}
+
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <label className="block text-xs text-zinc-500">
+                            <span className="mb-2 block">Enforcement reason</span>
+                            <input
+                              type="text"
+                              value={enforcementReasons[reportedProfile.id] ?? report.reason}
+                              onChange={(event) =>
+                                setEnforcementReasons((current) => ({
+                                  ...current,
+                                  [reportedProfile.id]: event.target.value,
+                                }))
+                              }
+                              maxLength={240}
+                              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+                            />
+                          </label>
+
+                          <label className="block text-xs text-zinc-500">
+                            <span className="mb-2 block">Suspension days</span>
+                            <input
+                              type="number"
+                              min={1}
+                              value={suspensionDays[reportedProfile.id] ?? "7"}
+                              onChange={(event) =>
+                                setSuspensionDays((current) => ({
+                                  ...current,
+                                  [reportedProfile.id]: event.target.value,
+                                }))
+                              }
+                              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+                            />
+                          </label>
+                        </div>
+
+                        <label className="mt-3 block text-xs text-zinc-500">
+                          <span className="mb-2 block">Enforcement note optional</span>
+                          <textarea
+                            value={enforcementNotes[reportedProfile.id] ?? ""}
+                            onChange={(event) =>
+                              setEnforcementNotes((current) => ({
+                                ...current,
+                                [reportedProfile.id]: event.target.value,
+                              }))
+                            }
+                            rows={2}
+                            maxLength={2000}
+                            className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+                          />
+                        </label>
+
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={() => updateAccountEnforcement(reportedProfile.id, "warn_user")}
+                            disabled={enforcingProfileId === reportedProfile.id}
+                            className="rounded-full border border-sky-900 px-4 py-2 text-sm text-sky-300 transition hover:border-sky-700 hover:text-sky-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          >
+                            Warn user
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => updateAccountEnforcement(reportedProfile.id, "suspend_user")}
+                            disabled={enforcingProfileId === reportedProfile.id}
+                            className="rounded-full border border-amber-800 px-4 py-2 text-sm text-amber-300 transition hover:border-amber-600 hover:text-amber-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          >
+                            Suspend user
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => updateAccountEnforcement(reportedProfile.id, "ban_user")}
+                            disabled={enforcingProfileId === reportedProfile.id}
+                            className="rounded-full border border-red-900 px-4 py-2 text-sm text-red-300 transition hover:border-red-700 hover:text-red-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          >
+                            Ban user
+                          </button>
+
+                          {normalizeAccountStatus(reportedProfile.account_status) !== "active" && (
+                            <button
+                              type="button"
+                              onClick={() => updateAccountEnforcement(reportedProfile.id, "restore_user")}
+                              disabled={enforcingProfileId === reportedProfile.id}
+                              className="rounded-full border border-emerald-900 px-4 py-2 text-sm text-emerald-300 transition hover:border-emerald-700 hover:text-emerald-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                            >
+                              Restore active
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

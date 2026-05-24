@@ -12,7 +12,11 @@ type ModerationAction =
   | "soft_delete_discussion"
   | "set_report_reviewing"
   | "dismiss_report"
-  | "mark_report_actioned";
+  | "mark_report_actioned"
+  | "warn_user"
+  | "suspend_user"
+  | "ban_user"
+  | "restore_user";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -46,6 +50,28 @@ function isValidUuid(value: unknown): value is string {
       value
     )
   );
+}
+
+function getCleanText(value: unknown, maxLength: number) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim().slice(0, maxLength);
+}
+
+function getSuspendedUntil(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) {
+    return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  }
+
+  const timestamp = new Date(value).getTime();
+
+  if (!Number.isFinite(timestamp) || timestamp <= Date.now()) {
+    return null;
+  }
+
+  return new Date(timestamp).toISOString();
 }
 
 async function requireAdmin(supabase: ReturnType<typeof getSupabaseForRequest>) {
@@ -268,6 +294,104 @@ export async function POST(request: NextRequest) {
       actionedBy: status === "actioned" ? user.id : null,
       actionedAt: status === "actioned" ? now : null,
       resolutionNote: resolutionNote || null,
+    });
+  }
+
+  if (
+    action === "warn_user" ||
+    action === "suspend_user" ||
+    action === "ban_user" ||
+    action === "restore_user"
+  ) {
+    const targetUserId = body?.targetUserId;
+    const enforcementReason = getCleanText(body?.enforcementReason, 240);
+    const enforcementNote = getCleanText(body?.enforcementNote, 2000);
+
+    if (!isValidUuid(targetUserId)) {
+      return jsonError("Invalid target user id.", 400);
+    }
+
+    if (targetUserId === user.id) {
+      return jsonError("You cannot enforce your own account.", 400);
+    }
+
+    if (action !== "restore_user" && !enforcementReason) {
+      return jsonError("Enforcement reason is required.", 400);
+    }
+
+    const suspendedUntil =
+      action === "suspend_user" ? getSuspendedUntil(body?.suspendedUntil) : null;
+
+    if (action === "suspend_user" && !suspendedUntil) {
+      return jsonError("Suspension end time must be in the future.", 400);
+    }
+
+    const now = new Date().toISOString();
+
+    const accountStatus =
+      action === "warn_user"
+        ? "warned"
+        : action === "suspend_user"
+          ? "suspended"
+          : action === "ban_user"
+            ? "banned"
+            : "active";
+
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("id, account_status")
+      .eq("id", targetUserId)
+      .maybeSingle();
+
+    if (!targetProfile) {
+      return jsonError("Target profile not found.", 404);
+    }
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        account_status: accountStatus,
+        enforcement_reason: action === "restore_user" ? null : enforcementReason,
+        enforcement_note: enforcementNote || null,
+        enforced_by: user.id,
+        enforced_at: now,
+        suspended_until: suspendedUntil,
+      })
+      .eq("id", targetUserId);
+
+    if (error) {
+      return jsonError(error.message || "Unable to update account enforcement.", 400);
+    }
+
+    await logAuditEvent({
+      actor_id: user.id,
+      action:
+        accountStatus === "warned"
+          ? "account.warned"
+          : accountStatus === "suspended"
+            ? "account.suspended"
+            : accountStatus === "banned"
+              ? "account.banned"
+              : "account.restored",
+      target_type: "profile",
+      target_id: targetUserId,
+      metadata: {
+        previous_status: targetProfile.account_status,
+        account_status: accountStatus,
+        enforcement_reason: action === "restore_user" ? null : enforcementReason,
+        has_enforcement_note: Boolean(enforcementNote),
+        suspended_until: suspendedUntil,
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      accountStatus,
+      enforcementReason: action === "restore_user" ? null : enforcementReason,
+      enforcementNote: enforcementNote || null,
+      enforcedBy: user.id,
+      enforcedAt: now,
+      suspendedUntil,
     });
   }
 
