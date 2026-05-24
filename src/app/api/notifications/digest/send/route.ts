@@ -187,7 +187,7 @@ async function sendEmailWithResend(args: {
   return { ok: true, error: null };
 }
 
-export async function POST(request: NextRequest) {
+async function runDigest(request: NextRequest) {
   const configuredSecret = process.env.DIGEST_CRON_SECRET;
   const providedSecret =
     request.headers.get("x-digest-cron-secret") ??
@@ -326,4 +326,13 @@ export async function POST(request: NextRequest) {
     sent: results.filter((result) => result.sent).length,
     results,
   });
+}
+
+
+export async function GET(request: NextRequest) {
+  return runDigest(request);
+}
+
+export async function POST(request: NextRequest) {
+  return runDigest(request);
 }
