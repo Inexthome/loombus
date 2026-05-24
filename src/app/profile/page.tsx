@@ -56,6 +56,8 @@ export default function ProfilePage() {
   const [mentionsEnabled, setMentionsEnabled] = useState(true);
   const [followedDiscussionsEnabled, setFollowedDiscussionsEnabled] = useState(true);
   const [followedRepliesEnabled, setFollowedRepliesEnabled] = useState(false);
+  const [emailDigestEnabled, setEmailDigestEnabled] = useState(false);
+  const [emailDigestFrequency, setEmailDigestFrequency] = useState("weekly");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,7 +99,7 @@ export default function ProfilePage() {
 
       const { data: preferences } = await supabase
         .from("notification_preferences")
-        .select("replies_enabled, follows_enabled, mentions_enabled, followed_discussions_enabled, followed_replies_enabled")
+        .select("replies_enabled, follows_enabled, mentions_enabled, followed_discussions_enabled, followed_replies_enabled, email_digest_enabled, email_digest_frequency")
         .eq("user_id", userData.user.id)
         .maybeSingle();
 
@@ -107,6 +109,10 @@ export default function ProfilePage() {
         setMentionsEnabled(preferences.mentions_enabled ?? true);
         setFollowedDiscussionsEnabled(preferences.followed_discussions_enabled ?? true);
         setFollowedRepliesEnabled(preferences.followed_replies_enabled ?? false);
+        setEmailDigestEnabled(preferences.email_digest_enabled ?? false);
+        setEmailDigestFrequency(
+          preferences.email_digest_frequency === "daily" ? "daily" : "weekly"
+        );
       }
 
       setLoading(false);
@@ -311,6 +317,8 @@ export default function ProfilePage() {
           mentionsEnabled,
           followedDiscussionsEnabled,
           followedRepliesEnabled,
+          emailDigestEnabled,
+          emailDigestFrequency,
         }),
       });
 
@@ -747,6 +755,39 @@ export default function ProfilePage() {
                   className="mt-1 h-5 w-5"
                 />
               </label>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <label className="mb-4 flex items-start justify-between gap-4">
+                  <span>
+                    <span className="block text-sm font-medium text-zinc-200">
+                      Email digest
+                    </span>
+                    <span className="mt-1 block text-sm text-zinc-500">
+                      Send me a daily or weekly summary of recent Loombus notifications.
+                    </span>
+                  </span>
+
+                  <input
+                    type="checkbox"
+                    checked={emailDigestEnabled}
+                    onChange={(e) => setEmailDigestEnabled(e.target.checked)}
+                    className="mt-1 h-5 w-5"
+                  />
+                </label>
+
+                <label className="block text-sm text-zinc-500">
+                  <span className="mb-2 block">Digest frequency</span>
+                  <select
+                    value={emailDigestFrequency}
+                    onChange={(event) => setEmailDigestFrequency(event.target.value)}
+                    disabled={!emailDigestEnabled}
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    <option value="weekly">Weekly</option>
+                    <option value="daily">Daily</option>
+                  </select>
+                </label>
+              </div>
             </div>
           </section>
 

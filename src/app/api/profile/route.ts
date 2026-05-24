@@ -121,6 +121,10 @@ export async function POST(request: NextRequest) {
     typeof source.followedRepliesEnabled === "boolean"
       ? source.followedRepliesEnabled
       : false;
+  const emailDigestEnabled =
+    typeof source.emailDigestEnabled === "boolean" ? source.emailDigestEnabled : false;
+  const emailDigestFrequency =
+    source.emailDigestFrequency === "daily" ? "daily" : "weekly";
 
   if (!/^[a-z0-9_]{2,30}$/.test(username)) {
     return jsonError(
@@ -201,6 +205,8 @@ export async function POST(request: NextRequest) {
       mentions_enabled: mentionsEnabled,
       followed_discussions_enabled: followedDiscussionsEnabled,
       followed_replies_enabled: followedRepliesEnabled,
+      email_digest_enabled: emailDigestEnabled,
+      email_digest_frequency: emailDigestFrequency,
       updated_at: new Date().toISOString(),
     });
 
