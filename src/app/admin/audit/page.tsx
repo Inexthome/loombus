@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
 
@@ -108,11 +108,48 @@ function getTargetLabel(log: AuditLog) {
   return `${targetType} · ${log.target_id}`;
 }
 
+function isTestAuditLog(log: AuditLog) {
+  const metadata = log.metadata ?? {};
+
+  return (
+    metadata.test === true ||
+    metadata.is_test === true ||
+    metadata.source === "test" ||
+    metadata.environment === "test" ||
+    log.action.includes(".test") ||
+    log.target_type === "test"
+  );
+}
+
+function getLogSearchText(log: AuditLog, actorProfile: Profile | undefined) {
+  return [
+    log.action,
+    getActionLabel(log.action),
+    getActionDescription(log.action),
+    log.target_type,
+    log.target_id,
+    log.actor_id,
+    actorProfile?.username,
+    actorProfile?.full_name,
+    JSON.stringify(log.metadata ?? {}),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
 export default function AdminAuditPage() {
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [actionFilter, setActionFilter] = useState("all");
+  const [actorFilter, setActorFilter] = useState("all");
+  const [targetTypeFilter, setTargetTypeFilter] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [showTestRecords, setShowTestRecords] = useState(false);
 
   useEffect(() => {
     async function loadLogs() {
@@ -175,6 +212,100 @@ export default function AdminAuditPage() {
 
     loadLogs();
   }, []);
+
+  const actionOptions = useMemo(
+    () => [...new Set(logs.map((log) => log.action).filter(Boolean))].sort(),
+    [logs]
+  );
+
+  const targetTypeOptions = useMemo(
+    () => [...new Set(logs.map((log) => log.target_type).filter(Boolean))].sort(),
+    [logs]
+  );
+
+  const actorOptions = useMemo(
+    () =>
+      [
+        ...new Set(
+          logs
+            .map((log) => log.actor_id)
+            .filter((actorId): actorId is string => Boolean(actorId))
+        ),
+      ].sort((a, b) => {
+        const profileA = profiles[a];
+        const profileB = profiles[b];
+
+        return getProfileDisplayName(profileA, a).localeCompare(
+          getProfileDisplayName(profileB, b)
+        );
+      }),
+    [logs, profiles]
+  );
+
+  const filteredLogs = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const startTime = startDate
+      ? new Date(`${startDate}T00:00:00`).getTime()
+      : null;
+    const endTime = endDate
+      ? new Date(`${endDate}T23:59:59`).getTime()
+      : null;
+
+    return logs.filter((log) => {
+      if (!showTestRecords && isTestAuditLog(log)) {
+        return false;
+      }
+
+      if (actionFilter !== "all" && log.action !== actionFilter) {
+        return false;
+      }
+
+      if (actorFilter !== "all" && log.actor_id !== actorFilter) {
+        return false;
+      }
+
+      if (targetTypeFilter !== "all" && log.target_type !== targetTypeFilter) {
+        return false;
+      }
+
+      const logTime = new Date(log.created_at).getTime();
+
+      if (startTime && logTime < startTime) {
+        return false;
+      }
+
+      if (endTime && logTime > endTime) {
+        return false;
+      }
+
+      if (query) {
+        const actorProfile = log.actor_id ? profiles[log.actor_id] : undefined;
+        return getLogSearchText(log, actorProfile).includes(query);
+      }
+
+      return true;
+    });
+  }, [
+    logs,
+    profiles,
+    searchQuery,
+    actionFilter,
+    actorFilter,
+    targetTypeFilter,
+    startDate,
+    endDate,
+    showTestRecords,
+  ]);
+
+  function clearFilters() {
+    setSearchQuery("");
+    setActionFilter("all");
+    setActorFilter("all");
+    setTargetTypeFilter("all");
+    setStartDate("");
+    setEndDate("");
+    setShowTestRecords(false);
+  }
 
   if (loading) {
     return (
@@ -278,8 +409,130 @@ export default function AdminAuditPage() {
           </div>
         </section>
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Audit filters
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Narrow the moderation record.
+              </h2>
+            </div>
+
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Clear filters
+            </button>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <label className="block text-sm text-zinc-500">
+              <span className="mb-2 block">Search</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search action, actor, target, metadata..."
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+              />
+            </label>
+
+            <label className="block text-sm text-zinc-500">
+              <span className="mb-2 block">Action</span>
+              <select
+                value={actionFilter}
+                onChange={(event) => setActionFilter(event.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+              >
+                <option value="all">All actions</option>
+                {actionOptions.map((action) => (
+                  <option key={action} value={action}>
+                    {getActionLabel(action)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block text-sm text-zinc-500">
+              <span className="mb-2 block">Actor</span>
+              <select
+                value={actorFilter}
+                onChange={(event) => setActorFilter(event.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+              >
+                <option value="all">All actors</option>
+                {actorOptions.map((actorId) => {
+                  const actorProfile = profiles[actorId];
+
+                  return (
+                    <option key={actorId} value={actorId}>
+                      {getProfileDisplayName(actorProfile, actorId)}
+                      {actorProfile?.username ? ` (@${actorProfile.username})` : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+
+            <label className="block text-sm text-zinc-500">
+              <span className="mb-2 block">Target type</span>
+              <select
+                value={targetTypeFilter}
+                onChange={(event) => setTargetTypeFilter(event.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+              >
+                <option value="all">All target types</option>
+                {targetTypeOptions.map((targetType) => (
+                  <option key={targetType} value={targetType}>
+                    {targetType}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block text-sm text-zinc-500">
+              <span className="mb-2 block">Start date</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+              />
+            </label>
+
+            <label className="block text-sm text-zinc-500">
+              <span className="mb-2 block">End date</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(event) => setEndDate(event.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+              />
+            </label>
+          </div>
+
+          <label className="mt-5 flex items-center gap-3 text-sm text-zinc-500">
+            <input
+              type="checkbox"
+              checked={showTestRecords}
+              onChange={(event) => setShowTestRecords(event.target.checked)}
+              className="h-4 w-4"
+            />
+            Show test records when metadata marks an audit event as test data
+          </label>
+
+          <p className="mt-4 text-sm text-zinc-600">
+            Showing {filteredLogs.length} of {logs.length} audit records.
+          </p>
+        </section>
+
         <div className="space-y-4">
-          {logs.map((log) => {
+          {filteredLogs.map((log) => {
             const actorProfile = log.actor_id ? profiles[log.actor_id] : undefined;
             const metadataEntries = Object.entries(log.metadata ?? {});
 
@@ -378,25 +631,35 @@ export default function AdminAuditPage() {
             );
           })}
 
-          {!logs.length && (
+          {!filteredLogs.length && (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
               <h2 className="mb-3 text-2xl font-medium">
-                No audit logs yet.
+                {logs.length ? "No audit logs match these filters." : "No audit logs yet."}
               </h2>
 
               <p className="mb-6 max-w-2xl text-zinc-500">
-                Audit events will appear here after tracked platform actions are
-                recorded, such as moderation actions, restores, created content,
-                or AI-assisted admin-relevant events.
+                {logs.length
+                  ? "Adjust or clear the current filters to review more audit records."
+                  : "Audit events will appear here after tracked platform actions are recorded, such as moderation actions, restores, created content, or AI-assisted admin-relevant events."}
               </p>
 
               <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/admin/reports"
-                  className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                >
-                  Open reports
-                </Link>
+                {logs.length ? (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                  >
+                    Clear filters
+                  </button>
+                ) : (
+                  <Link
+                    href="/admin/reports"
+                    className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                  >
+                    Open reports
+                  </Link>
+                )}
 
                 <Link
                   href="/admin"
