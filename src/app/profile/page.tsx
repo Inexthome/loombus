@@ -568,8 +568,7 @@ export default function ProfilePage() {
 
             {!canUseCreatorTools && (
               <div className="rounded-2xl border border-zinc-900 bg-black p-4 text-sm leading-relaxed text-zinc-500">
-                Creator/supporter profile links require Premium Plus or Admin access.
-                You can leave these fields blank and still save your basic profile.
+                Creator/supporter tools are locked for Free accounts. Creator website links, support links, and custom support labels require Premium Plus or Admin access. You can still save your basic profile without these fields.
               </div>
             )}
 
@@ -581,10 +580,11 @@ export default function ProfilePage() {
               <input
                 type="url"
                 value={creatorWebsiteUrl}
+                disabled={!canUseCreatorTools}
                 onChange={(event) => setCreatorWebsiteUrl(event.target.value)}
                 placeholder="https://example.com"
                 maxLength={240}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-700 disabled:placeholder:text-zinc-800"
               />
 
               <p className="mt-2 text-xs text-zinc-600">
@@ -600,10 +600,11 @@ export default function ProfilePage() {
               <input
                 type="url"
                 value={creatorSupportUrl}
+                disabled={!canUseCreatorTools}
                 onChange={(event) => setCreatorSupportUrl(event.target.value)}
                 placeholder="https://buymeacoffee.com/yourname"
                 maxLength={240}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-700 disabled:placeholder:text-zinc-800"
               />
 
               <p className="mt-2 text-xs text-zinc-600">
@@ -619,10 +620,11 @@ export default function ProfilePage() {
               <input
                 type="text"
                 value={creatorSupportLabel}
+                disabled={!canUseCreatorTools}
                 onChange={(event) => setCreatorSupportLabel(event.target.value)}
                 placeholder="Support my work"
                 maxLength={40}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-700 disabled:placeholder:text-zinc-800"
               />
 
               <p className="mt-2 text-xs text-zinc-600">
