@@ -524,9 +524,9 @@ export default function DiscussionsPage() {
   return (
     <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
               Discussions
             </h1>
 
@@ -537,13 +537,13 @@ export default function DiscussionsPage() {
 
           <Link
             href="/create"
-            className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+            className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 sm:w-fit"
           >
             Create Discussion
           </Link>
         </div>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Finding signal
           </p>
@@ -591,14 +591,14 @@ export default function DiscussionsPage() {
           </div>
         </section>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                 Topic discovery
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Choose a lane before scrolling.
               </h2>
 
@@ -616,7 +616,7 @@ export default function DiscussionsPage() {
             </button>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {topicDiscoveryItems.map(({ topic, description }) => (
               <Link
                 key={topic}
@@ -719,14 +719,14 @@ export default function DiscussionsPage() {
           </p>
         </div>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
                 Advanced filters
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Refine by discussion signal
               </h2>
             </div>
@@ -858,7 +858,7 @@ export default function DiscussionsPage() {
             return (
               <div
                 key={discussion.id}
-                className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
+                className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20 transition hover:border-zinc-700 sm:p-6"
               >
                 <Link
                   href={`/discussions/${discussion.id}`}
@@ -876,11 +876,11 @@ export default function DiscussionsPage() {
                     </span>
                   </div>
 
-                  <h2 className="mb-3 text-2xl font-medium transition group-hover:text-white">
+                  <h2 className="mb-3 text-xl font-medium transition group-hover:text-white sm:text-2xl">
                     {discussion.title}
                   </h2>
 
-                  <p className="mb-5 line-clamp-3 leading-relaxed text-zinc-400">
+                  <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
                     {discussion.body}
                   </p>
 
