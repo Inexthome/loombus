@@ -12,6 +12,8 @@ type Discussion = {
   topic: string;
   body: string;
   created_at: string;
+  discussion_status?: "open" | "resolved" | null;
+  resolved_at?: string | null;
 };
 
 type Profile = {
@@ -56,6 +58,16 @@ function hasAdvancedFilterAccess(entitlement: AiEntitlement, isAdmin: boolean) {
     entitlement?.ai_assisted_enabled === true &&
     entitlement.tier === "premium"
   );
+}
+
+function getDiscussionStatusLabel(discussion: Discussion) {
+  return discussion.discussion_status === "resolved" ? "Resolved" : "Open";
+}
+
+function getDiscussionStatusClassName(discussion: Discussion) {
+  return discussion.discussion_status === "resolved"
+    ? "border-emerald-800 bg-emerald-950/30 text-emerald-300"
+    : "border-zinc-800 bg-zinc-950 text-zinc-400";
 }
 
 function getSignalScore(
@@ -719,9 +731,17 @@ export default function FollowingPage() {
                   href={`/discussions/${discussion.id}`}
                   className="block"
                 >
-                  <p className="mb-3 text-sm text-zinc-500">
-                    {discussion.topic}
-                  </p>
+                  <div className="mb-3 flex flex-wrap items-center gap-3">
+                    <p className="text-sm text-zinc-500">
+                      {discussion.topic}
+                    </p>
+
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-medium ${getDiscussionStatusClassName(discussion)}`}
+                    >
+                      {getDiscussionStatusLabel(discussion)}
+                    </span>
+                  </div>
 
                   <h2 className="mb-3 text-2xl font-medium">
                     {discussion.title}
