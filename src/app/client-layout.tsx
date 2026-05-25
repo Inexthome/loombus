@@ -559,23 +559,38 @@ export default function ClientLayout({
         >
           <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
             <Link href="/" onClick={closeMobileMenu} className={appTabClass("/")}>
-              <span className="text-base leading-none">⌂</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3.5 11.5 12 4l8.5 7.5" />
+                <path d="M5.5 10.5V20h13v-9.5" />
+                <path d="M9.5 20v-6h5v6" />
+              </svg>
               <span className="truncate">Home</span>
             </Link>
 
             <Link href="/create" onClick={closeMobileMenu} className={appTabClass("/create")}>
-              <span className="text-base leading-none">＋</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+              </svg>
               <span className="truncate">Create</span>
             </Link>
 
             <Link href="/discussions" onClick={closeMobileMenu} className={appTabClass("/discussions")}>
-              <span className="text-base leading-none">◌</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 6.5h14" />
+                <path d="M5 12h10" />
+                <path d="M5 17.5h7" />
+                <path d="M17 15.5 20 18.5 17 21.5" />
+              </svg>
               <span className="truncate">Discuss</span>
             </Link>
 
             <Link href="/notifications" onClick={closeMobileMenu} className={appTabClass("/notifications")}>
-              <span className="relative text-base leading-none">
-                ◇
+              <span className="relative">
+                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                  <path d="M10 21h4" />
+                </svg>
                 {notificationCount > 0 && (
                   <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-white px-1 text-[10px] leading-4 text-black">
                     {notificationCount > 9 ? "9+" : notificationCount}
@@ -591,7 +606,11 @@ export default function ClientLayout({
               aria-expanded={mobileMenuOpen}
               className={appMenuButtonClass()}
             >
-              <span className="text-base leading-none">☰</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+                <path d="M5 7h14" />
+                <path d="M5 12h14" />
+                <path d="M5 17h14" />
+              </svg>
               <span className="truncate">Menu</span>
             </button>
           </div>
