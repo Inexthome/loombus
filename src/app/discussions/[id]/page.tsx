@@ -1788,17 +1788,6 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <div className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-12 sm:p-7">
-          <h2 className="mb-6 text-xl font-medium">
-            AI Summary
-          </h2>
-
-          <p className="leading-relaxed text-zinc-400">
-            AI summaries will be generated here later. For now, this section
-            reserves space for the platform intelligence layer.
-          </p>
-        </div>
-
         {relatedDiscussions.length > 0 && (
           <div className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-12 sm:p-7">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
