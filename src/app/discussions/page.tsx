@@ -506,7 +506,9 @@ export default function DiscussionsPage() {
 
   const hasActiveDiscussionFilters = activeFilterLabels.length > 0;
 
-  const topicDiscoveryItems = DISCUSSION_TOPICS.slice(0, 12).map((topic) => ({
+  const topicDiscoveryItems = (
+    showAllTopics ? DISCUSSION_TOPICS : DISCUSSION_TOPICS.slice(0, 12)
+  ).map((topic) => ({
     topic,
     description: getTopicDiscoveryDescription(topic),
   }));
@@ -606,10 +608,10 @@ export default function DiscussionsPage() {
 
             <button
               type="button"
-              onClick={() => setShowAllTopics(true)}
+              onClick={() => setShowAllTopics((current) => !current)}
               className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
             >
-              Show all topics
+              {showAllTopics ? "Show fewer topics" : "Show all topics"}
             </button>
           </div>
 
