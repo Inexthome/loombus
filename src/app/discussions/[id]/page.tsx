@@ -1267,7 +1267,7 @@ export default function DiscussionPage() {
       <div className="mx-auto max-w-3xl">
         <Link
           href="/discussions"
-          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+          className="mb-6 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to discussions
         </Link>
@@ -1287,7 +1287,7 @@ export default function DiscussionPage() {
           ))}
         </div>
 
-        <h1 className="mb-5 text-4xl font-semibold tracking-tight md:text-6xl">
+        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
           {discussion.title}
         </h1>
 
@@ -1328,20 +1328,20 @@ export default function DiscussionPage() {
           </div>
         </div>
 
-        <p className="mb-10 text-xl leading-relaxed text-zinc-300">
+        <p className="mb-7 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
           {discussion.body}
         </p>
 
-        <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <div className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-6 sm:p-6">
           <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
             Premium AI-Assisted Layer
           </p>
 
-          <h2 className="text-3xl font-semibold tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             Premium AI Tools
           </h2>
 
-          <p className="mt-3 max-w-2xl leading-relaxed text-zinc-500">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
             Use AI to understand the strongest points, key shifts, and summary
             of this discussion without adding noise to the thread.
           </p>
@@ -1353,14 +1353,14 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <section className="mb-4 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-3 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-4 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
                 Thread Evolution
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 What Changed in This Thread
               </h2>
             </div>
@@ -1397,7 +1397,7 @@ export default function DiscussionPage() {
               {whatChanged}
             </div>
           ) : (
-            <p className="leading-relaxed text-zinc-500">
+            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
               {!currentUserId
                 ? "Log in to generate what changed in this thread."
                 : canUseAiSummary
@@ -1441,14 +1441,14 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-4 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-3 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-4 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
                 Viewpoint Map
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Disagreement Mapping
               </h2>
             </div>
@@ -1485,7 +1485,7 @@ export default function DiscussionPage() {
               {disagreementMap}
             </div>
           ) : (
-            <p className="leading-relaxed text-zinc-500">
+            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
               {!currentUserId
                 ? "Log in to generate a neutral disagreement map for this discussion."
                 : canUseAiSummary
@@ -1529,14 +1529,14 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-4 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-3 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-4 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
                 High-Signal Takeaways
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Key Takeaways
               </h2>
             </div>
@@ -1573,7 +1573,7 @@ export default function DiscussionPage() {
               {keyTakeaways}
             </div>
           ) : (
-            <p className="leading-relaxed text-zinc-500">
+            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
               {!currentUserId
                 ? "Log in to generate AI-assisted key takeaways for this discussion."
                 : canUseAiSummary
@@ -1617,14 +1617,14 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-600">
                 AI-assisted
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Discussion Summary
               </h2>
             </div>
@@ -1669,7 +1669,7 @@ export default function DiscussionPage() {
               </p>
             </>
           ) : (
-            <p className="leading-relaxed text-zinc-500">
+            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
               {!currentUserId
                 ? "Log in to generate an AI-assisted summary for this discussion."
                 : canUseAiSummary
@@ -1713,7 +1713,7 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <div className="mb-12 flex flex-wrap items-center gap-4">
+        <div className="mb-8 flex flex-col items-stretch gap-3 sm:mb-12 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
           {canManageDiscussionStatus && (
             <button
               type="button"
@@ -1749,7 +1749,7 @@ export default function DiscussionPage() {
             <button
               onClick={handleBookmark}
               disabled={savingBookmark}
-              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
             >
               {savingBookmark ? "Saving..." : "Save Discussion"}
             </button>
@@ -1764,7 +1764,7 @@ export default function DiscussionPage() {
           </button>
 
           {currentUserId && (
-            <label className="flex min-w-64 flex-col text-xs text-zinc-500">
+            <label className="flex min-w-0 flex-col text-xs text-zinc-500 sm:min-w-64">
               <span className="mb-2">Report reason</span>
 
               <select
@@ -1788,7 +1788,7 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <div className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+        <div className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-12 sm:p-7">
           <h2 className="mb-6 text-xl font-medium">
             AI Summary
           </h2>
@@ -1800,7 +1800,7 @@ export default function DiscussionPage() {
         </div>
 
         {relatedDiscussions.length > 0 && (
-          <div className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-12 sm:p-7">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
@@ -1856,7 +1856,7 @@ export default function DiscussionPage() {
             id="reply-form"
             onSubmit={handleReply}
             onKeyDown={handleReplyFormKeyDown}
-            className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30"
+            className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7"
           >
             <label className="mb-3 block text-sm text-zinc-400">
               Add a thoughtful reply
@@ -1912,7 +1912,7 @@ export default function DiscussionPage() {
           </form>
 
           {pinnedReply && (
-            <section className="mb-6 rounded-3xl border border-amber-900 bg-amber-950/20 p-7 shadow-2xl shadow-black/30">
+            <section className="mb-6 rounded-3xl border border-amber-900 bg-amber-950/20 p-5 shadow-2xl shadow-black/30 sm:p-7">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">
