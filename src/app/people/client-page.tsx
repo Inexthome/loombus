@@ -328,6 +328,13 @@ export default function PeoplePage() {
     }
   }
 
+  const activePeopleSearch = searchQuery.trim();
+  const hasActivePeopleSearch = activePeopleSearch.length > 0;
+
+  function resetPeopleSearch() {
+    setSearchQuery("");
+  }
+
   if (!authChecked || loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -446,25 +453,52 @@ export default function PeoplePage() {
           </div>
         </section>
 
-        <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-          <label className="mb-3 block text-sm text-zinc-400">
-            Search members
-          </label>
+        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex-1">
+              <label htmlFor="people-search" className="mb-3 block text-sm font-medium text-zinc-300">
+                Search members
+              </label>
 
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search by username, name, or bio..."
-            className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-          />
+              <input
+                id="people-search"
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by username, name, bio, interests, or projects..."
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+              />
+            </div>
+
+            {hasActivePeopleSearch && (
+              <button
+                type="button"
+                onClick={resetPeopleSearch}
+                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {hasActivePeopleSearch ? (
+              <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
+                Search: “{activePeopleSearch}”
+              </span>
+            ) : (
+              <p className="text-sm text-zinc-600">
+                Search scans usernames, names, and bios so you can find contributors by interest or context.
+              </p>
+            )}
+          </div>
 
           {!loading && (
             <p className="mt-3 text-sm text-zinc-600">
               Showing {filteredProfiles.length} of {profiles.length} members
             </p>
           )}
-        </div>
+        </section>
 
         {message && (
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
@@ -484,9 +518,35 @@ export default function PeoplePage() {
               No members found.
             </h2>
 
-            <p className="text-zinc-400">
-              Try searching by a different name, username, or keyword.
+            <p className="max-w-2xl text-zinc-400">
+              No visible members match the current search. Try a broader term, browse public discussions first, or return to onboarding for suggested topic lanes.
             </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              {hasActivePeopleSearch && (
+                <button
+                  type="button"
+                  onClick={resetPeopleSearch}
+                  className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+                >
+                  Clear search
+                </button>
+              )}
+
+              <Link
+                href="/discussions"
+                className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Browse discussions
+              </Link>
+
+              <Link
+                href="/onboarding"
+                className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Open setup guide
+              </Link>
+            </div>
           </div>
         )}
 
