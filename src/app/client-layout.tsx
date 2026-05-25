@@ -19,6 +19,7 @@ export default function ClientLayout({
   const [notificationCount, setNotificationCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [bottomNavHidden, setBottomNavHidden] = useState(false);
   const currentUserIdRef = useRef<string | null>(null);
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
   const loadingNotificationCountRef = useRef(false);
@@ -247,6 +248,45 @@ export default function ClientLayout({
   }, [pathname]);
 
   useEffect(() => {
+    if (!user) {
+      setBottomNavHidden(false);
+      return;
+    }
+
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    function updateBottomNavVisibility() {
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - lastScrollY;
+
+      if (mobileMenuOpen || currentScrollY < 80) {
+        setBottomNavHidden(false);
+      } else if (scrollDelta > 8) {
+        setBottomNavHidden(true);
+      } else if (scrollDelta < -8) {
+        setBottomNavHidden(false);
+      }
+
+      lastScrollY = currentScrollY;
+      ticking = false;
+    }
+
+    function handleScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(updateBottomNavVisibility);
+        ticking = true;
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [mobileMenuOpen, user]);
+
+  useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
       if (!moreMenuRef.current) {
         return;
@@ -469,7 +509,9 @@ export default function ClientLayout({
       {user && (
         <nav
           aria-label="Mobile app navigation"
-          className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-900 bg-black/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-2xl shadow-black/60 backdrop-blur md:hidden"
+          className={`fixed inset-x-0 bottom-0 z-50 border-t border-zinc-900 bg-black/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-2xl shadow-black/60 backdrop-blur transition-transform duration-300 md:hidden ${
+            bottomNavHidden && !mobileMenuOpen ? "translate-y-full" : "translate-y-0"
+          }`}
         >
           <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
             <Link href="/" onClick={closeMobileMenu} className={appTabClass("/")}>
