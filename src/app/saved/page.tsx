@@ -84,6 +84,7 @@ export default function SavedPage() {
   const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState("all");
+  const [savedSearchQuery, setSavedSearchQuery] = useState("");
   const [newCollectionName, setNewCollectionName] = useState("");
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [creatingCollection, setCreatingCollection] = useState(false);
@@ -196,17 +197,48 @@ export default function SavedPage() {
     }, {});
   }, [collections]);
 
+  const selectedCollectionLabel =
+    selectedCollectionId === "all"
+      ? "All saved"
+      : selectedCollectionId === "unfiled"
+        ? "Unfiled"
+        : collectionNameById[selectedCollectionId] ?? "Selected folder";
+
   const filteredSaved = useMemo(() => {
-    if (selectedCollectionId === "all") {
-      return saved;
+    const collectionFiltered =
+      selectedCollectionId === "all"
+        ? saved
+        : selectedCollectionId === "unfiled"
+          ? saved.filter((item) => !item.collection_id)
+          : saved.filter((item) => item.collection_id === selectedCollectionId);
+
+    const query = savedSearchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return collectionFiltered;
     }
 
-    if (selectedCollectionId === "unfiled") {
-      return saved.filter((item) => !item.collection_id);
-    }
+    return collectionFiltered.filter((item) => {
+      const discussion = item.discussions;
+      const note = noteDrafts[item.id] ?? item.private_note ?? "";
 
-    return saved.filter((item) => item.collection_id === selectedCollectionId);
-  }, [saved, selectedCollectionId]);
+      return (
+        (discussion?.title ?? "").toLowerCase().includes(query) ||
+        (discussion?.topic ?? "").toLowerCase().includes(query) ||
+        (discussion?.body ?? "").toLowerCase().includes(query) ||
+        note.toLowerCase().includes(query)
+      );
+    });
+  }, [saved, selectedCollectionId, savedSearchQuery, noteDrafts]);
+
+  const activeSavedSearch = savedSearchQuery.trim();
+  const hasActiveSavedSearch = activeSavedSearch.length > 0;
+  const hasActiveSavedFilters = hasActiveSavedSearch || selectedCollectionId !== "all";
+
+  function resetSavedFilters() {
+    setSavedSearchQuery("");
+    setSelectedCollectionId("all");
+  }
 
   async function createCollection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -788,6 +820,73 @@ export default function SavedPage() {
           </p>
         )}
 
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex-1">
+              <label htmlFor="saved-search" className="mb-2 block text-sm font-medium text-zinc-300">
+                Search saved discussions
+              </label>
+
+              <input
+                id="saved-search"
+                type="text"
+                value={savedSearchQuery}
+                onChange={(event) => setSavedSearchQuery(event.target.value)}
+                placeholder="Search saved titles, topics, bodies, or private notes..."
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+              />
+            </div>
+
+            {hasActiveSavedFilters && (
+              <button
+                type="button"
+                onClick={resetSavedFilters}
+                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Clear search and filters
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {selectedCollectionId !== "all" && (
+              <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
+                Folder: {selectedCollectionLabel}
+              </span>
+            )}
+
+            {hasActiveSavedSearch && (
+              <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
+                Search: “{activeSavedSearch}”
+              </span>
+            )}
+
+            {!hasActiveSavedFilters && (
+              <p className="text-sm text-zinc-600">
+                Search scans saved discussion titles, topics, bodies, and private notes when available.
+              </p>
+            )}
+          </div>
+
+          {!loading && (
+            <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <p className="text-sm text-zinc-600">
+                Showing {filteredSaved.length} of {saved.length} saved discussions
+              </p>
+
+              {hasActiveSavedFilters && (
+                <button
+                  type="button"
+                  onClick={resetSavedFilters}
+                  className="w-fit text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+                >
+                  Reset view
+                </button>
+              )}
+            </div>
+          )}
+        </section>
+
         <div className="mb-8 flex flex-wrap gap-3">
           <button
             type="button"
@@ -905,6 +1004,20 @@ export default function SavedPage() {
               >
                 Open following feed
               </Link>
+
+              <Link
+                href="/people"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Find people
+              </Link>
+
+              <Link
+                href="/onboarding"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Open setup guide
+              </Link>
             </div>
           </div>
         )}
@@ -912,19 +1025,27 @@ export default function SavedPage() {
         {!loading && saved.length > 0 && filteredSaved.length === 0 && (
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
             <h2 className="mb-3 text-2xl font-medium">
-              No saved discussions in this folder.
+              No saved discussions found.
             </h2>
 
             <p className="mb-6 max-w-3xl text-zinc-400">
-              This folder is empty. Move saved discussions here when they share a
-              theme, project, topic, or reading priority.
+              No saved discussions match the current folder or search. Try clearing the filters,
+              using a broader search term, or browsing more discussions to save.
             </p>
 
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => setSelectedCollectionId("all")}
+                onClick={resetSavedFilters}
                 className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Clear search and filters
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedCollectionId("all")}
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
                 Show all saved
               </button>
