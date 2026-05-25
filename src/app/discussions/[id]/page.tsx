@@ -23,6 +23,9 @@ type Discussion = {
   edited_at?: string | null;
   edited_by?: string | null;
   edit_count?: number | null;
+  discussion_status?: "open" | "resolved" | null;
+  resolved_at?: string | null;
+  resolved_by?: string | null;
 };
 
 type Profile = {
@@ -159,6 +162,8 @@ export default function DiscussionPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusWorking, setStatusWorking] = useState(false);
   const [bookmarkMessage, setBookmarkMessage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
   const [savedBookmarkId, setSavedBookmarkId] = useState<string | null>(null);
@@ -750,6 +755,64 @@ export default function DiscussionPage() {
     }
   }
 
+  async function updateDiscussionStatus(nextStatus: "open" | "resolved") {
+    setStatusMessage("");
+
+    if (!discussion || !currentUserId || statusWorking) {
+      return;
+    }
+
+    setStatusWorking(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/discussions/status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          discussionId: discussion.id,
+          status: nextStatus,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setStatusMessage(result.error ?? "Unable to update discussion status.");
+        return;
+      }
+
+      setDiscussion((current) =>
+        current
+          ? {
+              ...current,
+              discussion_status: result.discussion?.discussion_status ?? nextStatus,
+              resolved_at: result.discussion?.resolved_at ?? null,
+              resolved_by: result.discussion?.resolved_by ?? null,
+            }
+          : current
+      );
+
+      setStatusMessage(
+        nextStatus === "resolved"
+          ? "Discussion marked resolved."
+          : "Discussion reopened."
+      );
+    } finally {
+      setStatusWorking(false);
+    }
+  }
+
   async function handleBookmark() {
     setBookmarkMessage("");
 
@@ -935,6 +998,12 @@ export default function DiscussionPage() {
   const subscriptionDisplay = getSubscriptionDisplay(aiEntitlement);
   const aiUsageLabel = getAiUsageLabel(aiEntitlement);
   const discussionEditLabel = discussion ? getDiscussionEditLabel(discussion) : null;
+  const discussionStatus =
+    discussion?.discussion_status === "resolved" ? "resolved" : "open";
+  const canManageDiscussionStatus =
+    Boolean(currentUserId) &&
+    Boolean(discussion) &&
+    (discussion?.user_id === currentUserId || isAdmin);
 
   const canUseAiSummary = ["premium", "premium_plus", "admin"].includes(
     subscriptionDisplayKey
@@ -1018,6 +1087,22 @@ export default function DiscussionPage() {
             {discussionEditLabel && (
               <span className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-400">
                 {discussionEditLabel}
+              </span>
+            )}
+
+            <span
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium ${
+                discussionStatus === "resolved"
+                  ? "border-emerald-800 bg-emerald-950/30 text-emerald-300"
+                  : "border-zinc-800 bg-zinc-950 text-zinc-400"
+              }`}
+            >
+              {discussionStatus === "resolved" ? "Resolved" : "Open for replies"}
+            </span>
+
+            {discussion.resolved_at && (
+              <span className="text-xs text-zinc-600">
+                Resolved {new Date(discussion.resolved_at).toLocaleString()}
               </span>
             )}
           </div>
@@ -1409,6 +1494,29 @@ export default function DiscussionPage() {
         </section>
 
         <div className="mb-12 flex flex-wrap items-center gap-4">
+          {canManageDiscussionStatus && (
+            <button
+              type="button"
+              onClick={() =>
+                updateDiscussionStatus(
+                  discussionStatus === "resolved" ? "open" : "resolved"
+                )
+              }
+              disabled={statusWorking}
+              className={`rounded-full border px-5 py-3 text-sm transition disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 ${
+                discussionStatus === "resolved"
+                  ? "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                  : "border-emerald-800 text-emerald-300 hover:border-emerald-600 hover:text-emerald-200"
+              }`}
+            >
+              {statusWorking
+                ? "Updating..."
+                : discussionStatus === "resolved"
+                  ? "Reopen Discussion"
+                  : "Mark Resolved"}
+            </button>
+          )}
+
           {isSaved ? (
             <button
               onClick={handleRemoveBookmark}
@@ -1453,9 +1561,9 @@ export default function DiscussionPage() {
             </label>
           )}
 
-          {(bookmarkMessage || reportMessage) && (
+          {(statusMessage || bookmarkMessage || reportMessage) && (
             <p className="text-sm text-zinc-500">
-              {bookmarkMessage || reportMessage}
+              {statusMessage || bookmarkMessage || reportMessage}
             </p>
           )}
         </div>
