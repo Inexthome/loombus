@@ -591,16 +591,16 @@ export default function CreatePage() {
       <div className="mx-auto max-w-3xl">
         <Link
           href={isEditMode && editingDiscussionId ? `/discussions/${editingDiscussionId}` : "/discussions"}
-          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+          className="mb-6 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to {isEditMode ? "discussion" : "discussions"}
         </Link>
 
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
+        <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500 sm:text-sm sm:tracking-[0.3em]">
           {isEditMode ? "Edit Discussion" : "New Discussion"}
         </p>
 
-        <h1 className="mb-5 text-4xl font-semibold tracking-tight md:text-5xl">
+        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
           {isEditMode
             ? "Edit discussion."
             : draftId
@@ -608,7 +608,7 @@ export default function CreatePage() {
               : "Create a discussion."}
         </h1>
 
-        <p className="mb-8 max-w-2xl leading-relaxed text-zinc-400">
+        <p className="mb-6 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
           {isEditMode
             ? "Make a clear, accountable update to your published discussion."
             : "Start a thoughtful discussion designed around signal, clarity, and meaningful contribution."}
@@ -628,7 +628,7 @@ export default function CreatePage() {
               Login Required
             </p>
 
-            <h2 className="mb-4 text-2xl font-medium">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               Log in to create or edit a discussion.
             </h2>
 
@@ -636,7 +636,7 @@ export default function CreatePage() {
               You can browse discussions without an account, but you need to log in before starting or editing a conversation.
             </p>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
               <Link
                 href="/login"
                 className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200"
@@ -655,7 +655,7 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && !profileComplete && (
-          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
               Your profile is not complete yet.
             </p>
@@ -675,7 +675,7 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && !isEditMode && !canUseDrafts && (
-          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
               Draft mode is a Premium feature.
             </p>
@@ -695,22 +695,22 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && !isEditMode && (
-          <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               First discussion guide
             </p>
 
-            <h2 className="mb-4 text-2xl font-medium">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               Start with signal.
             </h2>
 
-            <p className="mb-5 text-sm leading-relaxed text-zinc-500">
+            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
               A strong Loombus discussion usually gives people something specific
               to respond to: a question, a claim, a useful observation, or a
               problem worth thinking through.
             </p>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   1. Make the title clear
@@ -745,7 +745,7 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && isEditMode && (
-          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
               Edit window
             </p>
@@ -763,7 +763,7 @@ export default function CreatePage() {
           <form
             onSubmit={handleCreate}
             onKeyDown={handleFormKeyDown}
-            className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-8"
+            className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:space-y-6 sm:p-8"
           >
             {draftId && !isEditMode && (
               <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
@@ -792,7 +792,7 @@ export default function CreatePage() {
                 required
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="How AI changes trust online"
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               />
             </div>
 
@@ -804,7 +804,7 @@ export default function CreatePage() {
               <select
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               >
                 {DISCUSSION_TOPICS.map((topicOption) => (
                   <option key={topicOption} value={topicOption}>
@@ -824,7 +824,7 @@ export default function CreatePage() {
                 value={tagsInput}
                 onChange={(event) => setTagsInput(event.target.value)}
                 placeholder="AI ethics, publishing, startups"
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
               />
 
               <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
@@ -846,13 +846,13 @@ export default function CreatePage() {
               </label>
 
               <textarea
-                rows={10}
+                rows={8}
                 value={body}
                 required
                 maxLength={maxDiscussionLength}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="Write your discussion..."
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               />
 
               <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
@@ -868,14 +868,14 @@ export default function CreatePage() {
               </div>
             </div>
 
-            <section className="rounded-2xl border border-zinc-800 bg-black p-5">
+            <section className="rounded-2xl border border-zinc-800 bg-black p-4 sm:p-5">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
                     Premium Plus AI
                   </p>
 
-                  <h2 className="text-xl font-medium">
+                  <h2 className="text-lg font-medium sm:text-xl">
                     Discussion quality check
                   </h2>
 
@@ -890,14 +890,14 @@ export default function CreatePage() {
                     type="button"
                     onClick={runQualityCheck}
                     disabled={generatingQualityCheck || publishing}
-                    className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
                   >
                     {generatingQualityCheck ? "Checking..." : "Run quality check"}
                   </button>
                 ) : (
                   <Link
                     href="/premium"
-                    className="w-fit rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                    className="w-full rounded-full border border-zinc-800 px-5 py-3 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white sm:w-fit"
                   >
                     Unlock with Premium Plus
                   </Link>
@@ -917,14 +917,14 @@ export default function CreatePage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-zinc-800 bg-black p-5">
+            <section className="rounded-2xl border border-zinc-800 bg-black p-4 sm:p-5">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
                     Premium Plus AI
                   </p>
 
-                  <h2 className="text-xl font-medium">
+                  <h2 className="text-lg font-medium sm:text-xl">
                     Rewrite for clarity
                   </h2>
 
@@ -939,14 +939,14 @@ export default function CreatePage() {
                     type="button"
                     onClick={runClarityRewrite}
                     disabled={generatingRewrite || publishing}
-                    className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
                   >
                     {generatingRewrite ? "Rewriting..." : "Generate rewrite"}
                   </button>
                 ) : (
                   <Link
                     href="/premium"
-                    className="w-fit rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                    className="w-full rounded-full border border-zinc-800 px-5 py-3 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white sm:w-fit"
                   >
                     Unlock with Premium Plus
                   </Link>
@@ -968,7 +968,7 @@ export default function CreatePage() {
                   <button
                     type="button"
                     onClick={applyClarityRewrite}
-                    className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                    className="inline-flex w-full justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
                   >
                     Use rewrite
                   </button>
@@ -977,11 +977,11 @@ export default function CreatePage() {
             </section>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-wrap gap-3">
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
                 <button
                   type="submit"
                   disabled={publishing || isBodyOverLimit}
-                  className="rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                  className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50 sm:w-fit"
                 >
                   {publishing
                     ? isEditMode ? "Saving..." : "Publishing..."
@@ -993,7 +993,7 @@ export default function CreatePage() {
                     type="button"
                     onClick={saveDraft}
                     disabled={savingDraft || publishing}
-                    className="rounded-full border border-zinc-700 px-6 py-3 text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    className="w-full rounded-full border border-zinc-700 px-6 py-3 text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
                   >
                     {savingDraft ? "Saving..." : "Save Draft"}
                   </button>
