@@ -408,20 +408,20 @@ export default function FollowingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
 
-        <div className="mb-10">
-          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
+        <div className="mb-7 sm:mb-10">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
             Following
           </h1>
 
-          <p className="mt-3 text-zinc-500">
+          <p className="mt-3 text-sm leading-relaxed text-zinc-500 sm:text-base">
             A feed of discussions from the people you follow.
           </p>
         </div>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-6 hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-6 md:block">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Following feed guide
           </p>
@@ -469,7 +469,7 @@ export default function FollowingPage() {
           </div>
         </section>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+        <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="following-search" className="mb-2 block text-sm font-medium text-zinc-300">
@@ -482,7 +482,7 @@ export default function FollowingPage() {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search followed titles, bodies, topics, or contributors..."
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600 sm:px-5 sm:py-4"
               />
             </div>
 
@@ -490,7 +490,7 @@ export default function FollowingPage() {
               <button
                 type="button"
                 onClick={resetFollowingFilters}
-                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="w-full rounded-full border border-zinc-700 px-5 py-3 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
               >
                 Clear search and filters
               </button>
@@ -515,8 +515,8 @@ export default function FollowingPage() {
           </div>
         </section>
 
-        <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               onClick={() => setSortMode("Newest")}
             className={`rounded-full px-4 py-2 text-sm transition ${
@@ -557,14 +557,14 @@ export default function FollowingPage() {
           </p>
         </div>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
                 Advanced filters
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Refine your following feed
               </h2>
             </div>
@@ -579,14 +579,14 @@ export default function FollowingPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {ADVANCED_FILTERS.map((filter) => (
               <button
                 key={filter}
                 type="button"
                 onClick={() => setAdvancedFilter(filter)}
                 disabled={!canUseAdvancedFilters && filter !== "All activity"}
-                className={`rounded-full border px-4 py-2 text-sm transition ${
+                className={`rounded-full border px-3 py-2 text-xs transition sm:px-4 sm:text-sm ${
                   advancedFilter === filter
                     ? "border-zinc-400 text-white"
                     : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
@@ -603,7 +603,7 @@ export default function FollowingPage() {
           </p>
         </section>
 
-        <div className="mb-6 flex flex-wrap gap-3">
+        <div className="mb-5 flex flex-wrap gap-2 sm:mb-6 sm:gap-3">
           {topics.map((topic) => (
             <button
               key={topic}
@@ -644,18 +644,18 @@ export default function FollowingPage() {
         )}
 
         {!loading && discussions.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
-            <h2 className="mb-3 text-2xl font-medium">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-8">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No followed discussions yet.
             </h2>
 
-            <p className="mb-6 max-w-3xl text-zinc-400">
+            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
               Your following feed fills when you follow contributors who publish
               discussions. Start with people whose profile, topics, or reply style
               gives you useful signal.
             </p>
 
-            <div className="mb-6 grid gap-4 md:grid-cols-3">
+            <div className="mb-5 grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   Find contributors
@@ -687,7 +687,7 @@ export default function FollowingPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <Link
                 href="/people"
                 className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
@@ -706,17 +706,17 @@ export default function FollowingPage() {
         )}
 
         {!loading && discussions.length > 0 && filteredDiscussions.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
-            <h2 className="mb-3 text-2xl font-medium">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-8">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No followed discussions found.
             </h2>
 
-            <p className="mb-6 max-w-3xl text-zinc-400">
+            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
               No followed discussions match the current search, topic, or filter.
               Broaden the search or browse all discussions to find new people worth following.
             </p>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={resetFollowingFilters}
@@ -742,34 +742,50 @@ export default function FollowingPage() {
             return (
               <div
                 key={discussion.id}
-                className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
+                className="group overflow-hidden rounded-[1.75rem] border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
               >
                 <Link
                   href={`/discussions/${discussion.id}`}
-                  className="block"
+                  className="block p-4 sm:p-6"
                 >
-                  <div className="mb-4 flex flex-wrap items-center gap-3">
-                    <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">
-                      {discussion.topic}
-                    </p>
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="mb-2 inline-flex rounded-full border border-zinc-800 bg-black px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                        {discussion.topic}
+                      </p>
 
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-medium ${getDiscussionStatusClassName(discussion)}`}
-                    >
-                      {getDiscussionStatusLabel(discussion)}
-                    </span>
+                      <span
+                        className={`ml-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-medium ${getDiscussionStatusClassName(discussion)}`}
+                      >
+                        {getDiscussionStatusLabel(discussion)}
+                      </span>
+                    </div>
+
+                    <div className="shrink-0 rounded-2xl border border-zinc-800 bg-black px-3 py-2 text-right">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-600">
+                        Signal
+                      </p>
+                      <p className="text-lg font-semibold text-white">
+                        {getSignalScore(
+                          discussion.id,
+                          replyCounts,
+                          bookmarkCounts,
+                          viewCounts
+                        )}
+                      </p>
+                    </div>
                   </div>
 
-                  <h2 className="mb-3 text-2xl font-medium transition group-hover:text-white">
+                  <h2 className="mb-3 text-lg font-semibold leading-snug tracking-tight transition group-hover:text-white sm:text-2xl">
                     {discussion.title}
                   </h2>
 
-                  <p className="mb-5 line-clamp-3 leading-relaxed text-zinc-400">
+                  <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
                     {discussion.body}
                   </p>
 
                   {discussionTags[discussion.id]?.length > 0 && (
-                    <div className="mb-5 flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {discussionTags[discussion.id].map((tag) => (
                         <span
                           key={`${discussion.id}-${tag}`}
@@ -782,47 +798,64 @@ export default function FollowingPage() {
                   )}
                 </Link>
 
-                <div className="flex flex-col gap-4 border-t border-zinc-900 pt-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
+                <div className="border-t border-zinc-900 bg-black/30 p-4">
+                  <div className="mb-4 flex min-w-0 items-center gap-3">
                     <ProfileAvatar profile={profile} size="md" />
 
-                    <p className="min-w-0 text-sm text-zinc-600">
-                      by{" "}
-                      {profile?.username ? (
-                        <Link
-                          href={`/u/${profile.username}`}
-                          className="text-zinc-400 transition hover:text-white"
-                        >
-                          {getProfileDisplayName(profile)}
-                        </Link>
-                      ) : (
-                        "Loombus member"
-                      )}{" "}
-                      · Created {new Date(discussion.created_at).toLocaleDateString()}
-                      {latestReplyDates[discussion.id] && (
-                        <>
-                          {" "}· Last active{" "}
-                          {new Date(latestReplyDates[discussion.id]).toLocaleDateString()}
-                        </>
-                      )}
-                    </p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-zinc-500">
+                        by{" "}
+                        {profile?.username ? (
+                          <Link
+                            href={`/u/${profile.username}`}
+                            className="text-zinc-300 transition hover:text-white"
+                          >
+                            {getProfileDisplayName(profile)}
+                          </Link>
+                        ) : (
+                          "Loombus member"
+                        )}
+                      </p>
+
+                      <p className="mt-1 truncate text-xs text-zinc-700">
+                        Created {new Date(discussion.created_at).toLocaleDateString()}
+                        {latestReplyDates[discussion.id] && (
+                          <>
+                            {" "}· Active{" "}
+                            {new Date(latestReplyDates[discussion.id]).toLocaleDateString()}
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="shrink-0 rounded-2xl border border-zinc-900 bg-black px-4 py-3 text-left md:text-right">
-                    <p className="text-sm text-zinc-500">
-                      {replyCounts[discussion.id] ?? 0} replies ·{" "}
-                      {viewCounts[discussion.id] ?? 0} views
-                    </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                      <p className="text-sm font-semibold text-zinc-200">
+                        {replyCounts[discussion.id] ?? 0}
+                      </p>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                        Replies
+                      </p>
+                    </div>
 
-                    <p className="mt-1 text-xs uppercase tracking-wide text-zinc-600">
-                      Signal Score{" "}
-                      {getSignalScore(
-                        discussion.id,
-                        replyCounts,
-                        bookmarkCounts,
-                        viewCounts
-                      )}
-                    </p>
+                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                      <p className="text-sm font-semibold text-zinc-200">
+                        {bookmarkCounts[discussion.id] ?? 0}
+                      </p>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                        Saves
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                      <p className="text-sm font-semibold text-zinc-200">
+                        {viewCounts[discussion.id] ?? 0}
+                      </p>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                        Views
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
