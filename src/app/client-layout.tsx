@@ -248,6 +248,19 @@ export default function ClientLayout({
   }, [pathname]);
 
   useEffect(() => {
+    if (!mobileMenuOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
     if (!user) {
       setBottomNavHidden(false);
       return;
@@ -468,80 +481,6 @@ export default function ClientLayout({
               </nav>
             </div>
 
-            {mobileMenuOpen && (
-              <nav className="mt-5 flex flex-col gap-3 border-t border-zinc-900 pt-5 text-sm text-zinc-400 md:hidden">
-                <Link href="/" onClick={closeMobileMenu} className={mobileNavLinkClass("/")}>
-                  Home
-                </Link>
-
-                <Link href="/create" onClick={closeMobileMenu} className="rounded-xl bg-white px-4 py-3 text-black transition hover:bg-zinc-200">
-                  Create
-                </Link>
-
-                <Link href="/discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/discussions")}>
-                  Discussions
-                </Link>
-
-                <Link href="/notifications" onClick={closeMobileMenu} className={mobileNavLinkClass("/notifications")}>
-                  Notifications
-                  {notificationCount > 0 && (
-                    <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
-                      {notificationCount}
-                    </span>
-                  )}
-                </Link>
-
-                <div className="my-2 border-t border-zinc-900" />
-
-                <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
-                  People
-                </Link>
-
-                <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
-                  Following
-                </Link>
-
-                <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
-                  Dashboard
-                </Link>
-
-                <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
-                  Saved
-                </Link>
-
-                <Link href="/my-activity" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-activity")}>
-                  My Activity
-                </Link>
-
-                <Link href="/profile" onClick={closeMobileMenu} className={mobileNavLinkClass("/profile")}>
-                  Profile
-                </Link>
-
-                <Link href="/settings" onClick={closeMobileMenu} className={mobileNavLinkClass("/settings")}>
-                  Settings
-                </Link>
-
-                <Link href="/premium" onClick={closeMobileMenu} className={mobileNavLinkClass("/premium")}>
-                  Premium
-                </Link>
-
-                {isAdmin && (
-                  <Link href="/admin" onClick={closeMobileMenu} className={mobileNavLinkClass("/admin")}>
-                    Admin
-                  </Link>
-                )}
-
-                <button
-                  onClick={async () => {
-                    closeMobileMenu();
-                    await handleLogout();
-                  }}
-                  className="rounded-xl border border-zinc-800 px-4 py-3 text-left text-zinc-400 transition hover:border-zinc-700 hover:bg-zinc-950 hover:text-white"
-                >
-                  Logout
-                </button>
-              </nav>
-            )}
           </div>
         </header>
       )}
@@ -549,6 +488,135 @@ export default function ClientLayout({
       <div className={user ? "pb-24 md:pb-0" : ""}>
         {children}
       </div>
+
+      {user && mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/80 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md md:hidden"
+          onClick={closeMobileMenu}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile app menu panel"
+            className="mx-auto flex max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-6.75rem)] max-w-md flex-col overflow-y-auto rounded-[2rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/70"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3 border-b border-zinc-900 pb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Loombus menu
+                </p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">
+                  Move with signal.
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                className="rounded-full border border-zinc-800 px-3 py-2 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="grid gap-3">
+              <section>
+                <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                  Primary
+                </p>
+
+                <div className="grid gap-2">
+                  <Link href="/" onClick={closeMobileMenu} className={mobileNavLinkClass("/")}>
+                    Home
+                  </Link>
+
+                  <Link href="/create" onClick={closeMobileMenu} className="rounded-xl bg-white px-4 py-3 text-black transition hover:bg-zinc-200">
+                    Create
+                  </Link>
+
+                  <Link href="/discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/discussions")}>
+                    Discussions
+                  </Link>
+
+                  <Link href="/notifications" onClick={closeMobileMenu} className={mobileNavLinkClass("/notifications")}>
+                    Notifications
+                    {notificationCount > 0 && (
+                      <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
+                        {notificationCount}
+                      </span>
+                    )}
+                  </Link>
+                </div>
+              </section>
+
+              <section>
+                <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                  Discovery
+                </p>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
+                    People
+                  </Link>
+
+                  <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
+                    Following
+                  </Link>
+
+                  <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
+                    Saved
+                  </Link>
+
+                  <Link href="/my-activity" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-activity")}>
+                    My Activity
+                  </Link>
+                </div>
+              </section>
+
+              <section>
+                <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                  Account
+                </p>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
+                    Dashboard
+                  </Link>
+
+                  <Link href="/profile" onClick={closeMobileMenu} className={mobileNavLinkClass("/profile")}>
+                    Profile
+                  </Link>
+
+                  <Link href="/settings" onClick={closeMobileMenu} className={mobileNavLinkClass("/settings")}>
+                    Settings
+                  </Link>
+
+                  <Link href="/premium" onClick={closeMobileMenu} className={mobileNavLinkClass("/premium")}>
+                    Premium
+                  </Link>
+
+                  {isAdmin && (
+                    <Link href="/admin" onClick={closeMobileMenu} className={mobileNavLinkClass("/admin")}>
+                      Admin
+                    </Link>
+                  )}
+                </div>
+              </section>
+
+              <button
+                onClick={async () => {
+                  closeMobileMenu();
+                  await handleLogout();
+                }}
+                className="mt-2 rounded-2xl border border-zinc-800 px-4 py-3 text-left text-sm text-zinc-400 transition hover:border-zinc-700 hover:bg-black hover:text-white"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {user && (
         <nav
