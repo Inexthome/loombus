@@ -124,7 +124,7 @@ export default function OnboardingPage() {
   const suggestedTopics = DISCUSSION_TOPICS.slice(0, 8);
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-6 py-10">
+    <main data-loombus-onboarding className="min-h-screen bg-zinc-50 px-6 py-10">
       <div className="mx-auto max-w-6xl">
         <div className="rounded-[2rem] border border-zinc-200 bg-white p-8 shadow-sm md:p-10">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">

@@ -164,3 +164,87 @@ html[data-loombus-theme] input::placeholder,
 html[data-loombus-theme] textarea::placeholder {
   color: var(--loombus-text-subtle) !important;
 }
+
+/* Page-scoped dark polish for the setup guide.
+   Light mode keeps the original bright onboarding design. */
+html[data-loombus-theme="dark"] [data-loombus-onboarding] {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .bg-white {
+  background-color: #09090b !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .bg-zinc-50,
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .bg-zinc-100 {
+  background-color: #18181b !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .border-zinc-200,
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .border-zinc-300 {
+  border-color: #27272a !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .text-zinc-950 {
+  color: #ffffff !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .text-zinc-800,
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .text-zinc-700,
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .text-zinc-600,
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .text-zinc-500 {
+  color: #a1a1aa !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-onboarding] a.bg-zinc-950,
+html[data-loombus-theme="dark"] [data-loombus-onboarding] button.bg-zinc-950 {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-onboarding] .bg-white\/10 {
+  background-color: rgb(255 255 255 / 0.08) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] [data-loombus-onboarding] {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .bg-white {
+    background-color: #09090b !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .bg-zinc-50,
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .bg-zinc-100 {
+    background-color: #18181b !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .border-zinc-200,
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .border-zinc-300 {
+    border-color: #27272a !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .text-zinc-950 {
+    color: #ffffff !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .text-zinc-800,
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .text-zinc-700,
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .text-zinc-600,
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .text-zinc-500 {
+    color: #a1a1aa !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-onboarding] a.bg-zinc-950,
+  html[data-loombus-theme="system"] [data-loombus-onboarding] button.bg-zinc-950 {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-onboarding] .bg-white\/10 {
+    background-color: rgb(255 255 255 / 0.08) !important;
+  }
+}
