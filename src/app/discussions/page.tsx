@@ -110,6 +110,10 @@ function matchesAdvancedFilter(
 function getTopicDiscoveryDescription(topic: string) {
   const normalized = topic.toLowerCase();
 
+  if (normalized.includes("faith") || normalized.includes("values")) {
+    return "Belief, principle, ethics, purpose, and the values behind decisions.";
+  }
+
   if (normalized.includes("ai")) {
     return "Artificial intelligence, platforms, automation, and how intelligence changes society.";
   }
@@ -118,8 +122,12 @@ function getTopicDiscoveryDescription(topic: string) {
     return "Books, authorship, publishing, reading, and long-form ideas worth developing.";
   }
 
-  if (normalized.includes("business") || normalized.includes("entrepreneur")) {
-    return "Companies, building, ownership, markets, and founder-level decisions.";
+  if (normalized.includes("entrepreneur")) {
+    return "Founders, building, risk, ownership, and turning ideas into durable ventures.";
+  }
+
+  if (normalized.includes("business")) {
+    return "Companies, ownership, markets, strategy, and practical business decisions.";
   }
 
   if (normalized.includes("culture")) {
@@ -128,10 +136,6 @@ function getTopicDiscoveryDescription(topic: string) {
 
   if (normalized.includes("education")) {
     return "Learning, schools, skills, self-education, and intellectual development.";
-  }
-
-  if (normalized.includes("faith") || normalized.includes("values")) {
-    return "Belief, principle, ethics, purpose, and the values behind decisions.";
   }
 
   if (normalized.includes("work")) {
@@ -146,8 +150,25 @@ function getTopicDiscoveryDescription(topic: string) {
     return "Systems, tools, infrastructure, and technical change with real-world impact.";
   }
 
+  if (normalized.includes("healthcare")) {
+    return "Health systems, care access, patient experience, medicine, and public health tradeoffs.";
+  }
+
+  if (normalized.includes("law") || normalized.includes("justice")) {
+    return "Rights, fairness, courts, accountability, and the systems that shape justice.";
+  }
+
+  if (normalized.includes("environment")) {
+    return "Climate, land, energy, stewardship, resilience, and environmental tradeoffs.";
+  }
+
+  if (normalized.includes("general")) {
+    return "Open-ended discussions that still aim for depth, context, and useful signal.";
+  }
+
   return `Focused conversations about ${topic.toLowerCase()} with depth, context, and signal.`;
 }
+
 
 export default function DiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
