@@ -19,6 +19,10 @@ type Discussion = {
   topic: string;
   body: string;
   created_at: string;
+  updated_at?: string | null;
+  edited_at?: string | null;
+  edited_by?: string | null;
+  edit_count?: number | null;
 };
 
 type Profile = {
@@ -90,6 +94,26 @@ function MentionText({ text }: { text: string }) {
       })}
     </>
   );
+}
+
+function getDiscussionEditLabel(discussion: Discussion) {
+  if (!discussion.edited_at && !discussion.edit_count) {
+    return null;
+  }
+
+  const parts: string[] = [];
+
+  if (discussion.edited_at) {
+    parts.push(`Last edited ${new Date(discussion.edited_at).toLocaleString()}`);
+  }
+
+  if (discussion.edit_count) {
+    parts.push(
+      `${discussion.edit_count} ${discussion.edit_count === 1 ? "edit" : "edits"}`
+    );
+  }
+
+  return parts.join(" · ");
 }
 
 function ProfileName({
@@ -910,6 +934,7 @@ export default function DiscussionPage() {
   const subscriptionDisplayKey = getSubscriptionDisplayKey(aiEntitlement);
   const subscriptionDisplay = getSubscriptionDisplay(aiEntitlement);
   const aiUsageLabel = getAiUsageLabel(aiEntitlement);
+  const discussionEditLabel = discussion ? getDiscussionEditLabel(discussion) : null;
 
   const canUseAiSummary = ["premium", "premium_plus", "admin"].includes(
     subscriptionDisplayKey
@@ -977,14 +1002,26 @@ export default function DiscussionPage() {
           {discussion.title}
         </h1>
 
-        <p className="mb-3 text-sm text-zinc-600">
+        <div className="mb-6 flex flex-col gap-3 text-sm text-zinc-600">
           <span className="inline-flex items-center gap-3">
-              <ProfileAvatar profile={profile} />
-              <span>
-                by <ProfileName profile={profile} />
-              </span>
+            <ProfileAvatar profile={profile} />
+            <span>
+              by <ProfileName profile={profile} />
             </span>
-        </p>
+          </span>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <span>
+              Started {new Date(discussion.created_at).toLocaleString()}
+            </span>
+
+            {discussionEditLabel && (
+              <span className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-400">
+                {discussionEditLabel}
+              </span>
+            )}
+          </div>
+        </div>
 
         <p className="mb-10 text-xl leading-relaxed text-zinc-300">
           {discussion.body}
