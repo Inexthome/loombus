@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
+import { normalizeDiscussionTags } from "@/lib/discussion-tags";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 
@@ -142,6 +143,17 @@ export async function POST(request: NextRequest) {
     const title = String(body.title ?? "").trim();
     const requestedTopic = String(body.topic ?? "").trim();
     const content = String(body.body ?? "").trim();
+    const hasTagPayload = Object.prototype.hasOwnProperty.call(body, "tags");
+    const tagResult = normalizeDiscussionTags(hasTagPayload ? body.tags : []);
+
+    if (tagResult.error) {
+      return NextResponse.json(
+        { error: tagResult.error },
+        { status: 400 }
+      );
+    }
+
+    const discussionTags = tagResult.tags;
 
     if (!discussionId) {
       return NextResponse.json(
@@ -282,6 +294,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (hasTagPayload) {
+      const { error: deleteTagsError } = await supabase
+        .from("discussion_tags")
+        .delete()
+        .eq("discussion_id", discussionId);
+
+      if (deleteTagsError) {
+        return NextResponse.json(
+          { error: deleteTagsError.message || "Unable to update discussion tags." },
+          { status: 500 }
+        );
+      }
+
+      if (discussionTags.length > 0) {
+        const { error: insertTagsError } = await supabase
+          .from("discussion_tags")
+          .insert(
+            discussionTags.map((tag) => ({
+              discussion_id: discussionId,
+              tag,
+              created_by: user.id,
+            }))
+          );
+
+        if (insertTagsError) {
+          return NextResponse.json(
+            { error: insertTagsError.message || "Unable to save discussion tags." },
+            { status: 500 }
+          );
+        }
+      }
+    }
+
     await logAuditEvent({
       actor_id: user.id,
       action: "discussion.updated",
@@ -293,7 +338,9 @@ export async function POST(request: NextRequest) {
           title,
           topic,
           body: content,
+          tags: hasTagPayload ? discussionTags : undefined,
         },
+        tags_updated: hasTagPayload,
         edit_window: getEditWindowLabel(isAdmin, hasPremiumAccess),
         edited_as_admin: isAdmin && !isOwner,
       },

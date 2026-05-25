@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
+import { normalizeDiscussionTags } from "@/lib/discussion-tags";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { createNotifications } from "@/lib/notifications";
@@ -113,6 +114,37 @@ export async function POST(request: NextRequest) {
       : "General";
 
     const content = String(body.body ?? "").trim();
+    const tagResult = normalizeDiscussionTags(body.tags);
+
+    if (tagResult.error) {
+      return NextResponse.json(
+        { error: tagResult.error },
+        { status: 400 }
+      );
+    }
+
+    const discussionTags = tagResult.tags;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const tagSupabase =
+      discussionTags.length > 0 && serviceKey
+        ? createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            serviceKey,
+            {
+              auth: {
+                autoRefreshToken: false,
+                persistSession: false,
+              },
+            }
+          )
+        : null;
+
+    if (discussionTags.length > 0 && !tagSupabase) {
+      return NextResponse.json(
+        { error: "Discussion tag service is not configured." },
+        { status: 503 }
+      );
+    }
 
     const [{ data: profile }, { data: entitlement }] = await Promise.all([
       supabase
@@ -212,6 +244,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (discussionTags.length > 0 && tagSupabase) {
+      const { error: tagError } = await tagSupabase
+        .from("discussion_tags")
+        .insert(
+          discussionTags.map((tag) => ({
+            discussion_id: discussion.id,
+            tag,
+            created_by: user.id,
+          }))
+        );
+
+      if (tagError) {
+        return NextResponse.json(
+          { error: "Discussion was created, but tags could not be saved." },
+          { status: 500 }
+        );
+      }
+    }
+
     await logAuditEvent({
       actor_id: user.id,
       action: "discussion.created",
@@ -220,6 +271,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         topic,
         title,
+        tags: discussionTags,
       },
     });
 
