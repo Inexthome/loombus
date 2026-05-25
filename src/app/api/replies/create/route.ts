@@ -19,6 +19,24 @@ type ProfileAccess = {
   suspended_until: string | null;
 };
 
+type ReferencedReply = {
+  id: string;
+  user_id: string;
+  discussion_id: string;
+  body: string;
+  deleted_at: string | null;
+};
+
+function getQuotedExcerpt(content: string) {
+  const normalized = content.trim().replace(/\s+/g, " ");
+
+  if (normalized.length <= 280) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, 277).trim()}...`;
+}
+
 function extractMentionUsernames(content: string) {
   const matches = [...content.matchAll(MENTION_PATTERN)];
 
@@ -117,6 +135,9 @@ export async function POST(request: NextRequest) {
 
     const discussionId = String(body.discussionId ?? "").trim();
     const content = String(body.body ?? "").trim();
+    const referencedReplyId = String(
+      body.referencedReplyId ?? body.referenced_reply_id ?? ""
+    ).trim();
 
     if (!discussionId) {
       return NextResponse.json(
@@ -139,6 +160,46 @@ export async function POST(request: NextRequest) {
         { error: moderationError },
         { status: 400 }
       );
+    }
+
+    let referencedReply: ReferencedReply | null = null;
+
+    if (referencedReplyId) {
+      const { data: referencedReplyData, error: referencedReplyError } = await supabase
+        .from("replies")
+        .select("id, user_id, discussion_id, body, deleted_at")
+        .eq("id", referencedReplyId)
+        .maybeSingle();
+
+      referencedReply = (referencedReplyData ?? null) as ReferencedReply | null;
+
+      if (referencedReplyError || !referencedReply || referencedReply.deleted_at) {
+        return NextResponse.json(
+          { error: "Referenced reply not found." },
+          { status: 404 }
+        );
+      }
+
+      if (referencedReply.discussion_id !== discussionId) {
+        return NextResponse.json(
+          { error: "Referenced reply does not belong to this discussion." },
+          { status: 400 }
+        );
+      }
+
+      if (referencedReply.user_id === user.id) {
+        return NextResponse.json(
+          { error: "Respond to another member's point instead of referencing your own reply." },
+          { status: 400 }
+        );
+      }
+
+      if (blockedRelationshipUserIds.has(referencedReply.user_id)) {
+        return NextResponse.json(
+          { error: "You cannot respond to a point from a member you have blocked or who has blocked you." },
+          { status: 403 }
+        );
+      }
     }
 
     const cooldownSince = new Date(
@@ -185,6 +246,7 @@ export async function POST(request: NextRequest) {
       target_id: reply.id,
       metadata: {
         discussion_id: discussionId,
+        referenced_reply_id: referencedReply?.id ?? null,
       },
     });
 
