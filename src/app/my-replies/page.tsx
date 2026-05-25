@@ -102,6 +102,13 @@ export default function MyRepliesPage() {
     });
   }, [replies, discussions, searchQuery]);
 
+  const activeMyRepliesSearch = searchQuery.trim();
+  const hasActiveMyRepliesSearch = activeMyRepliesSearch.length > 0;
+
+  function resetMyRepliesSearch() {
+    setSearchQuery("");
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -152,19 +159,62 @@ export default function MyRepliesPage() {
           </div>
         </div>
 
-        <div className="mb-6">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search your replies or related discussions..."
-            className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
-          />
-        </div>
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex-1">
+              <label htmlFor="my-replies-search" className="mb-2 block text-sm font-medium text-zinc-300">
+                Search your replies
+              </label>
 
-        <p className="mb-10 text-sm text-zinc-600">
-          Showing {filteredReplies.length} of {replies.length} replies
-        </p>
+              <input
+                id="my-replies-search"
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search reply text, discussion titles, or topics..."
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+              />
+            </div>
+
+            {hasActiveMyRepliesSearch && (
+              <button
+                type="button"
+                onClick={resetMyRepliesSearch}
+                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {hasActiveMyRepliesSearch ? (
+              <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
+                Search: “{activeMyRepliesSearch}”
+              </span>
+            ) : (
+              <p className="text-sm text-zinc-600">
+                Search scans your reply text plus the original discussion titles and topics.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-sm text-zinc-600">
+            Showing {filteredReplies.length} of {replies.length} replies
+          </p>
+
+          {hasActiveMyRepliesSearch && (
+            <button
+              type="button"
+              onClick={resetMyRepliesSearch}
+              className="w-fit text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+            >
+              Reset view
+            </button>
+          )}
+        </div>
 
         {replies.length === 0 && (
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
@@ -224,6 +274,20 @@ export default function MyRepliesPage() {
               >
                 Check following feed
               </Link>
+
+              <Link
+                href="/people"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Find people
+              </Link>
+
+              <Link
+                href="/onboarding"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Open setup guide
+              </Link>
             </div>
           </div>
         )}
@@ -234,18 +298,27 @@ export default function MyRepliesPage() {
               No replies found.
             </h2>
 
-            <p className="mb-5 text-zinc-400">
-              No replies match your current search. Try a broader word, topic, or
-              discussion title.
+            <p className="mb-6 max-w-2xl text-zinc-400">
+              No replies match your current search. Try a broader word, topic,
+              or discussion title, or browse discussions to find where to contribute next.
             </p>
 
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              Clear search
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={resetMyRepliesSearch}
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Clear search
+              </button>
+
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Browse discussions
+              </Link>
+            </div>
           </div>
         )}
 
