@@ -860,34 +860,50 @@ export default function DiscussionsPage() {
             return (
               <div
                 key={discussion.id}
-                className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20 transition hover:border-zinc-700 sm:p-6"
+                className="group overflow-hidden rounded-[1.75rem] border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
               >
                 <Link
                   href={`/discussions/${discussion.id}`}
-                  className="block"
+                  className="block p-4 sm:p-6"
                 >
-                  <div className="mb-4 flex flex-wrap items-center gap-3">
-                    <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">
-                      {discussion.topic}
-                    </p>
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="mb-2 inline-flex rounded-full border border-zinc-800 bg-black px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                        {discussion.topic}
+                      </p>
 
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-medium ${getDiscussionStatusClassName(discussion)}`}
-                    >
-                      {getDiscussionStatusLabel(discussion)}
-                    </span>
+                      <span
+                        className={`ml-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-medium ${getDiscussionStatusClassName(discussion)}`}
+                      >
+                        {getDiscussionStatusLabel(discussion)}
+                      </span>
+                    </div>
+
+                    <div className="shrink-0 rounded-2xl border border-zinc-800 bg-black px-3 py-2 text-right">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-600">
+                        Signal
+                      </p>
+                      <p className="text-lg font-semibold text-white">
+                        {getSignalScore(
+                          discussion.id,
+                          replyCounts,
+                          bookmarkCounts,
+                          viewCounts
+                        )}
+                      </p>
+                    </div>
                   </div>
 
-                  <h2 className="mb-3 text-xl font-medium transition group-hover:text-white sm:text-2xl">
+                  <h2 className="mb-3 text-lg font-semibold leading-snug tracking-tight transition group-hover:text-white sm:text-2xl">
                     {discussion.title}
                   </h2>
 
-                  <p className="mb-5 line-clamp-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+                  <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
                     {discussion.body}
                   </p>
 
                   {discussionTags[discussion.id]?.length > 0 && (
-                    <div className="mb-5 flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {discussionTags[discussion.id].map((tag) => (
                         <span
                           key={`${discussion.id}-${tag}`}
@@ -900,47 +916,64 @@ export default function DiscussionsPage() {
                   )}
                 </Link>
 
-                <div className="flex flex-col gap-4 border-t border-zinc-900 pt-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
+                <div className="border-t border-zinc-900 bg-black/30 p-4">
+                  <div className="mb-4 flex min-w-0 items-center gap-3">
                     <ProfileAvatar profile={profile} size="md" />
 
-                    <p className="min-w-0 text-sm text-zinc-600">
-                      by{" "}
-                      {profile?.username ? (
-                        <Link
-                          href={`/u/${profile.username}`}
-                          className="text-zinc-400 transition hover:text-white"
-                        >
-                          {getProfileDisplayName(profile)}
-                        </Link>
-                      ) : (
-                        "Loombus member"
-                      )}{" "}
-                      · Created {new Date(discussion.created_at).toLocaleDateString()}
-                      {latestReplyDates[discussion.id] && (
-                        <>
-                          {" "}· Last active{" "}
-                          {new Date(latestReplyDates[discussion.id]).toLocaleDateString()}
-                        </>
-                      )}
-                    </p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-zinc-500">
+                        by{" "}
+                        {profile?.username ? (
+                          <Link
+                            href={`/u/${profile.username}`}
+                            className="text-zinc-300 transition hover:text-white"
+                          >
+                            {getProfileDisplayName(profile)}
+                          </Link>
+                        ) : (
+                          "Loombus member"
+                        )}
+                      </p>
+
+                      <p className="mt-1 truncate text-xs text-zinc-700">
+                        Created {new Date(discussion.created_at).toLocaleDateString()}
+                        {latestReplyDates[discussion.id] && (
+                          <>
+                            {" "}· Active{" "}
+                            {new Date(latestReplyDates[discussion.id]).toLocaleDateString()}
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="shrink-0 rounded-2xl border border-zinc-900 bg-black px-4 py-3 text-left md:text-right">
-                    <p className="text-sm text-zinc-500">
-                      {replyCounts[discussion.id] ?? 0} replies ·{" "}
-                      {viewCounts[discussion.id] ?? 0} views
-                    </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                      <p className="text-sm font-semibold text-zinc-200">
+                        {replyCounts[discussion.id] ?? 0}
+                      </p>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                        Replies
+                      </p>
+                    </div>
 
-                    <p className="mt-1 text-xs uppercase tracking-wide text-zinc-600">
-                      Signal Score{" "}
-                      {getSignalScore(
-                        discussion.id,
-                        replyCounts,
-                        bookmarkCounts,
-                        viewCounts
-                      )}
-                    </p>
+                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                      <p className="text-sm font-semibold text-zinc-200">
+                        {bookmarkCounts[discussion.id] ?? 0}
+                      </p>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                        Saves
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                      <p className="text-sm font-semibold text-zinc-200">
+                        {viewCounts[discussion.id] ?? 0}
+                      </p>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                        Views
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
