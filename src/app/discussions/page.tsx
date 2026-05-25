@@ -276,6 +276,52 @@ export default function DiscussionsPage() {
     return ["All", ...officialTopics, ...legacyTopics];
   }, [activeTopics, showAllTopics]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const topicParam = params.get("topic");
+
+    if (!topicParam) {
+      return;
+    }
+
+    const officialTopic = DISCUSSION_TOPICS.find(
+      (topic) => topic.toLowerCase() === topicParam.toLowerCase()
+    );
+    const activeTopic = activeTopics.find(
+      (topic) => topic.toLowerCase() === topicParam.toLowerCase()
+    );
+    const matchedTopic = officialTopic ?? activeTopic;
+
+    if (!matchedTopic) {
+      return;
+    }
+
+    setSelectedTopic(matchedTopic);
+
+    if (!activeTopics.includes(matchedTopic)) {
+      setShowAllTopics(true);
+    }
+  }, [activeTopics]);
+
+  function setTopicFilter(topic: string) {
+    setSelectedTopic(topic);
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (topic === "All") {
+      params.delete("topic");
+    } else {
+      params.set("topic", topic);
+    }
+
+    const queryString = params.toString();
+    const nextUrl = queryString
+      ? `${window.location.pathname}?${queryString}`
+      : window.location.pathname;
+
+    window.history.replaceState(null, "", nextUrl);
+  }
+
   const filteredDiscussions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -531,7 +577,7 @@ export default function DiscussionsPage() {
           {topics.map((topic) => (
             <button
               key={topic}
-              onClick={() => setSelectedTopic(topic)}
+              onClick={() => setTopicFilter(topic)}
               className={`rounded-full px-4 py-2 text-sm transition ${
                 selectedTopic === topic
                   ? "bg-white text-black"
@@ -546,7 +592,7 @@ export default function DiscussionsPage() {
             type="button"
             onClick={() => {
               if (showAllTopics && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
-                setSelectedTopic("All");
+                setTopicFilter("All");
               }
 
               setShowAllTopics((current) => !current);

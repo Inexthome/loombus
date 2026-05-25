@@ -249,7 +249,7 @@ export default function OnboardingPage() {
             {suggestedTopics.map((topic) => (
               <Link
                 key={topic}
-                href="/discussions"
+                href={`/discussions?topic=${encodeURIComponent(topic)}`}
                 className="rounded-full border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-bold text-zinc-700 transition hover:border-zinc-950 hover:bg-white hover:text-zinc-950"
               >
                 {topic}
