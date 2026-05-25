@@ -508,7 +508,7 @@ export default function DiscussionsPage() {
   const hasActiveDiscussionFilters = activeFilterLabels.length > 0;
 
   const topicDiscoveryItems = (
-    showAllTopicDiscovery ? DISCUSSION_TOPICS : DISCUSSION_TOPICS.slice(0, 12)
+    showAllTopicDiscovery ? DISCUSSION_TOPICS : []
   ).map((topic) => ({
     topic,
     description: getTopicDiscoveryDescription(topic),
@@ -616,19 +616,21 @@ export default function DiscussionsPage() {
             </button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {topicDiscoveryItems.map(({ topic, description }) => (
-              <Link
-                key={topic}
-                href={`/discussions?topic=${encodeURIComponent(topic)}`}
-                onClick={() => setTopicFilter(topic)}
-                className="rounded-2xl border border-zinc-800 bg-black p-4 transition hover:border-zinc-600 hover:bg-zinc-900"
-              >
-                <p className="text-sm font-medium text-white">{topic}</p>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">{description}</p>
-              </Link>
-            ))}
-          </div>
+          {showAllTopicDiscovery && (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {topicDiscoveryItems.map(({ topic, description }) => (
+                <Link
+                  key={topic}
+                  href={`/discussions?topic=${encodeURIComponent(topic)}`}
+                  onClick={() => setTopicFilter(topic)}
+                  className="rounded-2xl border border-zinc-800 bg-black p-4 transition hover:border-zinc-600 hover:bg-zinc-900"
+                >
+                  <p className="text-sm font-medium text-white">{topic}</p>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600">{description}</p>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
