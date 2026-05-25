@@ -26,6 +26,9 @@ type Discussion = {
   discussion_status?: "open" | "resolved" | null;
   resolved_at?: string | null;
   resolved_by?: string | null;
+  pinned_reply_id?: string | null;
+  pinned_at?: string | null;
+  pinned_by?: string | null;
 };
 
 type Profile = {
@@ -189,6 +192,8 @@ export default function DiscussionPage() {
   const [message, setMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [statusWorking, setStatusWorking] = useState(false);
+  const [pinMessage, setPinMessage] = useState("");
+  const [pinWorkingReplyId, setPinWorkingReplyId] = useState<string | null>(null);
   const [bookmarkMessage, setBookmarkMessage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
   const [savedBookmarkId, setSavedBookmarkId] = useState<string | null>(null);
@@ -857,6 +862,61 @@ export default function DiscussionPage() {
     }
   }
 
+  async function updatePinnedReply(replyId: string, unpin = false) {
+    setPinMessage("");
+
+    if (!discussion || !currentUserId || pinWorkingReplyId) {
+      return;
+    }
+
+    setPinWorkingReplyId(replyId || "unpin");
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/discussions/pin-reply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          discussionId: discussion.id,
+          replyId,
+          unpin,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setPinMessage(result.error ?? "Unable to update pinned reply.");
+        return;
+      }
+
+      setDiscussion((current) =>
+        current
+          ? {
+              ...current,
+              pinned_reply_id: result.discussion?.pinned_reply_id ?? null,
+              pinned_at: result.discussion?.pinned_at ?? null,
+              pinned_by: result.discussion?.pinned_by ?? null,
+            }
+          : current
+      );
+
+      setPinMessage(unpin ? "Reply unpinned." : "Reply pinned.");
+    } finally {
+      setPinWorkingReplyId(null);
+    }
+  }
+
   async function updateDiscussionStatus(nextStatus: "open" | "resolved") {
     setStatusMessage("");
 
@@ -1106,6 +1166,12 @@ export default function DiscussionPage() {
     Boolean(currentUserId) &&
     Boolean(discussion) &&
     (discussion?.user_id === currentUserId || isAdmin);
+  const pinnedReply = discussion?.pinned_reply_id
+    ? replies.find((reply) => reply.id === discussion.pinned_reply_id) ?? null
+    : null;
+  const visibleReplies = discussion?.pinned_reply_id
+    ? replies.filter((reply) => reply.id !== discussion.pinned_reply_id)
+    : replies;
 
   const canUseAiSummary = ["premium", "premium_plus", "admin"].includes(
     subscriptionDisplayKey
@@ -1663,9 +1729,9 @@ export default function DiscussionPage() {
             </label>
           )}
 
-          {(statusMessage || bookmarkMessage || reportMessage) && (
+          {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
             <p className="text-sm text-zinc-500">
-              {statusMessage || bookmarkMessage || reportMessage}
+              {pinMessage || statusMessage || bookmarkMessage || reportMessage}
             </p>
           )}
         </div>
@@ -1770,8 +1836,60 @@ export default function DiscussionPage() {
             {message && <p className="mt-4 text-sm text-zinc-400">{message}</p>}
           </form>
 
+          {pinnedReply && (
+            <section className="mb-6 rounded-3xl border border-amber-900 bg-amber-950/20 p-7 shadow-2xl shadow-black/30">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">
+                    Pinned reply
+                  </p>
+
+                  <p className="mt-2 text-sm text-zinc-500">
+                    Highlighted by the discussion author or an admin.
+                    {discussion.pinned_at
+                      ? ` Pinned ${new Date(discussion.pinned_at).toLocaleString()}.`
+                      : ""}
+                  </p>
+                </div>
+
+                {canManageDiscussionStatus && (
+                  <button
+                    type="button"
+                    onClick={() => updatePinnedReply(pinnedReply.id, true)}
+                    disabled={pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"}
+                    className="rounded-full border border-amber-800 px-3 py-1.5 text-xs text-amber-300 transition hover:border-amber-600 hover:text-amber-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    {pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"
+                      ? "Updating..."
+                      : "Unpin"}
+                  </button>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-amber-900/60 bg-black/30 p-5">
+                <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-zinc-500">
+                  <ProfileAvatar
+                    profile={replyProfiles[pinnedReply.user_id]}
+                    size="sm"
+                  />
+                  <ProfileName profile={replyProfiles[pinnedReply.user_id]} />
+                </div>
+
+                <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
+                  <MentionText text={pinnedReply.body} />
+                </p>
+
+                {getReplyEditLabel(pinnedReply) && (
+                  <p className="mt-4 text-xs text-zinc-600">
+                    {getReplyEditLabel(pinnedReply)}
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+
           <div className="space-y-5">
-            {replies.map((reply) => {
+            {visibleReplies.map((reply) => {
               const canEditReply =
                 Boolean(currentUserId) &&
                 (reply.user_id === currentUserId || isAdmin);
@@ -1815,6 +1933,26 @@ export default function DiscussionPage() {
                             : reportingReplyId === reply.id
                               ? "Reporting..."
                               : "Report"}
+                        </button>
+                      )}
+
+                      {canManageDiscussionStatus && !isEditingReply && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updatePinnedReply(
+                              reply.id,
+                              discussion?.pinned_reply_id === reply.id
+                            )
+                          }
+                          disabled={Boolean(pinWorkingReplyId)}
+                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-amber-700 hover:text-amber-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                        >
+                          {pinWorkingReplyId === reply.id
+                            ? "Updating..."
+                            : discussion?.pinned_reply_id === reply.id
+                              ? "Unpin"
+                              : "Pin reply"}
                         </button>
                       )}
 
@@ -1898,6 +2036,12 @@ export default function DiscussionPage() {
             {replies.length === 0 && (
               <p className="text-zinc-500">
                 No replies yet. Be the first to contribute.
+              </p>
+            )}
+
+            {replies.length > 0 && visibleReplies.length === 0 && pinnedReply && (
+              <p className="text-zinc-500">
+                The only reply in this discussion is currently pinned above.
               </p>
             )}
           </div>
