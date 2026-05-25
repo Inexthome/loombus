@@ -108,6 +108,7 @@ export default function Home() {
   const [authState, setAuthState] = useState<HomeAuthState>("checking");
   const [email, setEmail] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
 
   useEffect(() => {
@@ -151,6 +152,11 @@ export default function Home() {
 
   async function signUpWithProvider(provider: OAuthProvider) {
     setMessage("");
+    if (!ageConfirmed) {
+      setMessage("You must confirm that you are at least 13 years old to create a Loombus account.");
+      return;
+    }
+
     setWorkingProvider(provider);
 
     try {
@@ -303,7 +309,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => signUpWithProvider("google")}
-            disabled={Boolean(workingProvider)}
+            disabled={Boolean(workingProvider) || !ageConfirmed}
             className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}
@@ -322,8 +328,21 @@ export default function Home() {
             Create Account
           </Link>
 
+          <label className="mt-5 flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-400">
+            <input
+              type="checkbox"
+              checked={ageConfirmed}
+              onChange={(event) => setAgeConfirmed(event.target.checked)}
+              className="mt-1 h-5 w-5"
+            />
+
+            <span>
+              I confirm that I am at least 13 years old. Loombus is not available to children under 13.
+            </span>
+          </label>
+
           <p className="pt-3 text-xs leading-relaxed text-zinc-500">
-            By creating an account or continuing with Google, you agree to the{" "}
+            By creating an account or continuing with Google, you confirm that you are at least 13 years old and agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
             </Link>
