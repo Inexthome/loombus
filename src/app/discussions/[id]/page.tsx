@@ -40,6 +40,10 @@ type Reply = {
   user_id: string;
   body: string;
   created_at: string;
+  updated_at?: string | null;
+  edited_at?: string | null;
+  edited_by?: string | null;
+  edit_count?: number | null;
 };
 
 type RelatedDiscussion = {
@@ -99,6 +103,24 @@ function MentionText({ text }: { text: string }) {
   );
 }
 
+function getReplyEditLabel(reply: Reply) {
+  if (!reply.edited_at && !reply.edit_count) {
+    return null;
+  }
+
+  const parts: string[] = [];
+
+  if (reply.edited_at) {
+    parts.push(`Edited ${new Date(reply.edited_at).toLocaleString()}`);
+  }
+
+  if (reply.edit_count) {
+    parts.push(`${reply.edit_count} ${reply.edit_count === 1 ? "edit" : "edits"}`);
+  }
+
+  return parts.join(" · ");
+}
+
 function getDiscussionEditLabel(discussion: Discussion) {
   if (!discussion.edited_at && !discussion.edit_count) {
     return null;
@@ -154,6 +176,9 @@ export default function DiscussionPage() {
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [replyBody, setReplyBody] = useState("");
   const [postingReply, setPostingReply] = useState(false);
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editingReplyBody, setEditingReplyBody] = useState("");
+  const [updatingReplyId, setUpdatingReplyId] = useState<string | null>(null);
   const [deletingReplyId, setDeletingReplyId] = useState<string | null>(null);
   const [reportingReplyId, setReportingReplyId] = useState<string | null>(null);
   const [reportedDiscussion, setReportedDiscussion] = useState(false);
@@ -708,6 +733,83 @@ export default function DiscussionPage() {
       );
     } finally {
       setGeneratingDisagreement(false);
+    }
+  }
+
+  function startReplyEdit(reply: Reply) {
+    setMessage("");
+    setEditingReplyId(reply.id);
+    setEditingReplyBody(reply.body);
+  }
+
+  function cancelReplyEdit() {
+    setEditingReplyId(null);
+    setEditingReplyBody("");
+  }
+
+  async function handleUpdateReply(replyId: string) {
+    setMessage("");
+
+    if (!editingReplyBody.trim()) {
+      setMessage("Please enter a reply.");
+      return;
+    }
+
+    if (updatingReplyId) {
+      return;
+    }
+
+    setUpdatingReplyId(replyId);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/replies/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          replyId,
+          body: editingReplyBody,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to update reply.");
+        return;
+      }
+
+      const updatedReply = result.reply as Reply;
+
+      setReplies((current) =>
+        current.map((reply) =>
+          reply.id === replyId
+            ? {
+                ...reply,
+                body: updatedReply.body,
+                updated_at: updatedReply.updated_at ?? null,
+                edited_at: updatedReply.edited_at ?? null,
+                edited_by: updatedReply.edited_by ?? null,
+                edit_count: updatedReply.edit_count ?? reply.edit_count ?? 0,
+              }
+            : reply
+        )
+      );
+
+      setEditingReplyId(null);
+      setEditingReplyBody("");
+      setMessage("Reply updated.");
+    } finally {
+      setUpdatingReplyId(null);
     }
   }
 
@@ -1670,9 +1772,14 @@ export default function DiscussionPage() {
 
           <div className="space-y-5">
             {replies.map((reply) => {
-              const canDeleteReply =
+              const canEditReply =
                 Boolean(currentUserId) &&
                 (reply.user_id === currentUserId || isAdmin);
+
+              const canDeleteReply = canEditReply;
+
+              const isEditingReply = editingReplyId === reply.id;
+              const replyEditLabel = getReplyEditLabel(reply);
 
               const hasReportedReply = reportedReplyIds.includes(reply.id);
 
@@ -1695,36 +1802,95 @@ export default function DiscussionPage() {
                       </span>
                     </p>
 
-                    {canReportReply && (
-                      <button
-                        type="button"
-                        onClick={() => handleReportReply(reply.id)}
-                        disabled={reportingReplyId === reply.id || hasReportedReply}
-                        className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                      >
-                        {hasReportedReply
-                          ? "Reported"
-                          : reportingReplyId === reply.id
-                            ? "Reporting..."
-                            : "Report"}
-                      </button>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {canReportReply && (
+                        <button
+                          type="button"
+                          onClick={() => handleReportReply(reply.id)}
+                          disabled={reportingReplyId === reply.id || hasReportedReply}
+                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                        >
+                          {hasReportedReply
+                            ? "Reported"
+                            : reportingReplyId === reply.id
+                              ? "Reporting..."
+                              : "Report"}
+                        </button>
+                      )}
 
-                    {canDeleteReply && (
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteReply(reply.id)}
-                        disabled={deletingReplyId === reply.id}
-                        className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                      >
-                        {deletingReplyId === reply.id ? "Deleting..." : "Delete"}
-                      </button>
-                    )}
+                      {canEditReply && !isEditingReply && (
+                        <button
+                          type="button"
+                          onClick={() => startReplyEdit(reply)}
+                          disabled={Boolean(editingReplyId) || updatingReplyId === reply.id}
+                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                        >
+                          Edit
+                        </button>
+                      )}
+
+                      {canDeleteReply && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteReply(reply.id)}
+                          disabled={deletingReplyId === reply.id || isEditingReply}
+                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                        >
+                          {deletingReplyId === reply.id ? "Deleting..." : "Delete"}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
-                    <MentionText text={reply.body} />
-                  </p>
+                  {isEditingReply ? (
+                    <div className="space-y-3">
+                      <textarea
+                        value={editingReplyBody}
+                        onChange={(event) => setEditingReplyBody(event.target.value)}
+                        rows={5}
+                        maxLength={5000}
+                        className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm leading-relaxed text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-zinc-600"
+                      />
+
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <p className="text-xs text-zinc-600">
+                          {editingReplyBody.length}/5000 characters
+                        </p>
+
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={cancelReplyEdit}
+                            disabled={updatingReplyId === reply.id}
+                            className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          >
+                            Cancel
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateReply(reply.id)}
+                            disabled={updatingReplyId === reply.id}
+                            className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          >
+                            {updatingReplyId === reply.id ? "Saving..." : "Save edit"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
+                        <MentionText text={reply.body} />
+                      </p>
+
+                      {replyEditLabel && (
+                        <p className="mt-4 text-xs text-zinc-600">
+                          {replyEditLabel}
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
               );
             })}
