@@ -106,7 +106,19 @@ html[data-loombus-theme] .bg-zinc-50 {
 }
 
 html[data-loombus-theme] .bg-white {
+  background-color: var(--loombus-surface) !important;
+}
+
+html[data-loombus-theme] .bg-white.text-black,
+html[data-loombus-theme] .bg-white .text-black {
   background-color: var(--loombus-primary-bg) !important;
+  color: var(--loombus-primary-text) !important;
+}
+
+html[data-loombus-theme] .bg-zinc-950.text-white,
+html[data-loombus-theme] .bg-black.text-white {
+  background-color: var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
 }
 
 html[data-loombus-theme] .text-white,
@@ -125,6 +137,11 @@ html[data-loombus-theme] .text-zinc-800 {
 
 html[data-loombus-theme] .text-black {
   color: var(--loombus-primary-text) !important;
+}
+
+html[data-loombus-theme] .bg-zinc-950.text-white .text-white,
+html[data-loombus-theme] .bg-black.text-white .text-white {
+  color: var(--loombus-text) !important;
 }
 
 html[data-loombus-theme] .border-zinc-950,
