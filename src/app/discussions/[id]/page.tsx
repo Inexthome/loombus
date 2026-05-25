@@ -176,6 +176,7 @@ export default function DiscussionPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   const [relatedDiscussions, setRelatedDiscussions] = useState<RelatedDiscussion[]>([]);
+  const [discussionTags, setDiscussionTags] = useState<string[]>([]);
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [replyBody, setReplyBody] = useState("");
   const [postingReply, setPostingReply] = useState(false);
@@ -231,6 +232,7 @@ export default function DiscussionPage() {
       if (discussionError || !discussionData) {
         setDiscussion(null);
         setRelatedDiscussions([]);
+        setDiscussionTags([]);
         setLoading(false);
         return;
       }
@@ -253,6 +255,12 @@ export default function DiscussionPage() {
         .select("id, discussion_id, summary, model_name, source_reply_count, generated_at")
         .eq("discussion_id", id)
         .maybeSingle();
+
+      const { data: tagData } = await supabase
+        .from("discussion_tags")
+        .select("tag")
+        .eq("discussion_id", id)
+        .order("tag", { ascending: true });
 
       const { data: relatedData } = await supabase
         .from("discussions")
@@ -429,6 +437,7 @@ export default function DiscussionPage() {
       setDiscussionSummary(summaryData ?? null);
       setReplies(visibleReplies);
       setRelatedDiscussions(visibleRelatedDiscussions);
+      setDiscussionTags((tagData ?? []).map((row: { tag: string }) => row.tag));
       setReplyProfiles(replyProfileMap);
       setLoading(false);
     }
@@ -1231,9 +1240,20 @@ export default function DiscussionPage() {
           ← Back to discussions
         </Link>
 
-        <p className="mb-4 text-sm text-zinc-500">
-          {discussion.topic}
-        </p>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">
+            {discussion.topic}
+          </p>
+
+          {discussionTags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-zinc-500"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
 
         <h1 className="mb-6 text-5xl font-semibold tracking-tight md:text-6xl">
           {discussion.title}
