@@ -108,10 +108,33 @@ function getQueryParam(name: string) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
+function getTagInputItems(value: string) {
+  return [
+    ...new Set(
+      value
+        .split(",")
+        .map((tag) => tag.trim().replace(/^#+/, "").replace(/\s+/g, " "))
+        .filter(Boolean)
+        .map((tag) => tag.slice(0, 40))
+    ),
+  ].slice(0, 5);
+}
+
+function getTagInputHelper(value: string) {
+  const tags = getTagInputItems(value);
+
+  if (tags.length === 0) {
+    return "Optional. Add up to 5 tags separated by commas.";
+  }
+
+  return `${tags.length}/5 tags: ${tags.join(", ")}`;
+}
+
 export default function CreatePage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState<string>(DEFAULT_DISCUSSION_TOPIC);
   const [body, setBody] = useState("");
+  const [tagsInput, setTagsInput] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -141,6 +164,7 @@ export default function CreatePage() {
     : STANDARD_DISCUSSION_MAX_LENGTH;
   const bodyCharacterCount = body.length;
   const isBodyOverLimit = bodyCharacterCount > maxDiscussionLength;
+  const tagInputHelper = getTagInputHelper(tagsInput);
   const isEditMode = Boolean(editingDiscussionId);
 
   useEffect(() => {
@@ -207,7 +231,19 @@ export default function CreatePage() {
             );
 
             setBody(discussion.body ?? "");
-            setMessage("Discussion loaded for editing.");
+
+            const { data: tagRows, error: tagError } = await supabase
+              .from("discussion_tags")
+              .select("tag")
+              .eq("discussion_id", discussion.id)
+              .order("tag", { ascending: true });
+
+            if (tagError) {
+              setMessage(`Discussion loaded, but tags could not load: ${tagError.message}`);
+            } else {
+              setTagsInput((tagRows ?? []).map((row: { tag: string }) => row.tag).join(", "));
+              setMessage("Discussion loaded for editing.");
+            }
           }
         }
 
@@ -239,6 +275,7 @@ export default function CreatePage() {
           );
 
           setBody(draft.body ?? "");
+          setTagsInput("");
           setDraftUpdatedAt(draft.updated_at);
           setMessage("Draft loaded.");
         }
@@ -500,11 +537,13 @@ export default function CreatePage() {
           title,
           topic,
           body,
+          tags: tagsInput,
         }
       : {
           title,
           topic,
           body,
+          tags: tagsInput,
         };
 
     const response = await fetch(endpoint, {
@@ -773,6 +812,32 @@ export default function CreatePage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm text-zinc-400">
+                Optional Tags
+              </label>
+
+              <input
+                type="text"
+                value={tagsInput}
+                onChange={(event) => setTagsInput(event.target.value)}
+                placeholder="AI ethics, publishing, startups"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+              />
+
+              <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
+                <p>
+                  {tagInputHelper}
+                </p>
+
+                {!isEditMode && draftId && (
+                  <p>
+                    Tags are saved when publishing, not while saving drafts.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div>
