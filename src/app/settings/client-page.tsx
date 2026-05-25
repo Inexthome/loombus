@@ -429,7 +429,7 @@ export default function SettingsClientPage() {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            className="inline-flex w-full justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
           >
             Reload settings
           </button>
@@ -443,33 +443,33 @@ export default function SettingsClientPage() {
       <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
-          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+          className="mb-6 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to dashboard
         </Link>
 
-        <div className="mb-10">
-          <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
+        <div className="mb-7 sm:mb-10">
+          <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500 sm:text-sm sm:tracking-[0.3em]">
             Account
           </p>
 
-          <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
             Settings
           </h1>
 
-          <p className="mt-4 max-w-2xl leading-relaxed text-zinc-500">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:mt-4 sm:text-base">
             Manage your profile, activity, notifications, saved items,
             and platform reference pages from one place.
           </p>
         </div>
 
-        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
-          <div className="mb-5">
-            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+        <section className="mb-7 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7">
+          <div className="mb-4 sm:mb-5">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:text-sm sm:tracking-[0.25em]">
               Appearance
             </p>
 
-            <h2 className="text-2xl font-medium">
+            <h2 className="text-xl font-medium sm:text-2xl">
               Display mode
             </h2>
 
@@ -478,7 +478,7 @@ export default function SettingsClientPage() {
             </p>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-2 sm:gap-3 md:grid-cols-3">
             {appearanceOptions.map((option) => (
               <button
                 key={option.value}
@@ -502,14 +502,14 @@ export default function SettingsClientPage() {
           </div>
         </section>
 
-        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
-          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <section className="mb-7 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:mb-5 sm:flex-row sm:justify-between sm:gap-4">
             <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:text-sm sm:tracking-[0.25em]">
                 Current plan
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 {subscriptionDisplay.label}
               </h2>
             </div>
@@ -519,7 +519,7 @@ export default function SettingsClientPage() {
             </span>
           </div>
 
-          <p className="mb-3 leading-relaxed text-zinc-400">
+          <p className="mb-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
             {subscriptionDisplay.description}
           </p>
 
@@ -529,31 +529,31 @@ export default function SettingsClientPage() {
 
           <Link
             href={subscriptionDisplay.href}
-            className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            className="inline-flex w-full justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
           >
             {subscriptionDisplay.nextAction}
           </Link>
         </section>
 
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {settingsSections.map((section) => (
             <section key={section.title}>
-              <h2 className="mb-4 text-2xl font-medium">
+              <h2 className="mb-3 text-xl font-medium sm:mb-4 sm:text-2xl">
                 {section.title}
               </h2>
 
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
                 {section.items.map((item) => (
                   <Link
                     key={item.title}
                     href={item.href}
-                    className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+                    className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-700 sm:p-6"
                   >
-                    <h3 className="mb-3 text-xl font-medium">
+                    <h3 className="mb-2 text-lg font-medium sm:mb-3 sm:text-xl">
                       {item.title}
                     </h3>
 
-                    <p className="leading-relaxed text-zinc-400">
+                    <p className="text-sm leading-relaxed text-zinc-400 sm:text-base">
                       {item.description}
                     </p>
                   </Link>
@@ -563,12 +563,12 @@ export default function SettingsClientPage() {
           ))}
         </div>
 
-        <section className="mt-10 rounded-3xl border border-red-950 bg-red-950/10 p-7 shadow-2xl shadow-black/30">
+        <section className="mt-8 rounded-3xl border border-red-950 bg-red-950/10 p-5 shadow-2xl shadow-black/30 sm:mt-10 sm:p-7">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-red-400">
             Account controls
           </p>
 
-          <h2 className="mb-4 text-2xl font-medium">
+          <h2 className="mb-3 text-xl font-medium sm:mb-4 sm:text-2xl">
             Deactivate or request deletion.
           </h2>
 
@@ -594,9 +594,9 @@ export default function SettingsClientPage() {
             </div>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
-              <h3 className="mb-3 text-xl font-medium">
+          <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
+              <h3 className="mb-2 text-lg font-medium sm:mb-3 sm:text-xl">
                 Deactivate account
               </h3>
 
@@ -611,7 +611,7 @@ export default function SettingsClientPage() {
                   type="text"
                   value={deactivateConfirmation}
                   onChange={(event) => setDeactivateConfirmation(event.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-zinc-300 outline-none focus:border-zinc-600"
                 />
               </label>
 
@@ -619,14 +619,14 @@ export default function SettingsClientPage() {
                 type="button"
                 onClick={deactivateAccount}
                 disabled={accountActionWorking || profileAccount?.account_status === "deactivated"}
-                className="rounded-full border border-red-900 px-5 py-3 text-sm text-red-300 transition hover:border-red-700 hover:text-red-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className="w-full rounded-full border border-red-900 px-5 py-3 text-sm text-red-300 transition hover:border-red-700 hover:text-red-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
               >
                 {accountActionWorking ? "Working..." : "Deactivate account"}
               </button>
             </div>
 
-            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
-              <h3 className="mb-3 text-xl font-medium">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
+              <h3 className="mb-2 text-lg font-medium sm:mb-3 sm:text-xl">
                 Request account deletion
               </h3>
 
@@ -642,7 +642,7 @@ export default function SettingsClientPage() {
                   onChange={(event) => setDeleteReason(event.target.value)}
                   rows={3}
                   maxLength={2000}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-zinc-300 outline-none focus:border-zinc-600"
                 />
               </label>
 
@@ -652,7 +652,7 @@ export default function SettingsClientPage() {
                   type="text"
                   value={deleteConfirmation}
                   onChange={(event) => setDeleteConfirmation(event.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600"
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-zinc-300 outline-none focus:border-zinc-600"
                 />
               </label>
 
@@ -660,7 +660,7 @@ export default function SettingsClientPage() {
                 type="button"
                 onClick={requestAccountDeletion}
                 disabled={accountActionWorking || Boolean(deletionRequest)}
-                className="rounded-full border border-red-900 px-5 py-3 text-sm text-red-300 transition hover:border-red-700 hover:text-red-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className="w-full rounded-full border border-red-900 px-5 py-3 text-sm text-red-300 transition hover:border-red-700 hover:text-red-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
               >
                 {accountActionWorking ? "Working..." : "Request account deletion"}
               </button>
