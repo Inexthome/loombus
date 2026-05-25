@@ -266,3 +266,55 @@ html[data-loombus-theme="dark"] [data-loombus-onboarding] .bg-white\/10 {
     background-color: rgb(255 255 255 / 0.08) !important;
   }
 }
+
+/* Restore Tailwind hover utilities under the Appearance theme layer.
+   The theme layer uses !important to override hardcoded dark classes, so hover
+   utilities also need explicit themed rules to remain interactive. */
+html[data-loombus-theme] .hover\:text-white:hover {
+  color: var(--loombus-text) !important;
+}
+
+html[data-loombus-theme] .hover\:text-zinc-300:hover,
+html[data-loombus-theme] .hover\:text-zinc-200:hover {
+  color: var(--loombus-text-strong) !important;
+}
+
+html[data-loombus-theme] .hover\:text-black:hover {
+  color: var(--loombus-primary-text) !important;
+}
+
+html[data-loombus-theme] .hover\:border-white:hover {
+  border-color: var(--loombus-text) !important;
+}
+
+html[data-loombus-theme] .hover\:border-zinc-700:hover,
+html[data-loombus-theme] .hover\:border-zinc-600:hover,
+html[data-loombus-theme] .hover\:border-zinc-500:hover,
+html[data-loombus-theme] .hover\:border-zinc-400:hover {
+  border-color: var(--loombus-text-muted) !important;
+}
+
+html[data-loombus-theme] .hover\:bg-zinc-950:hover,
+html[data-loombus-theme] .hover\:bg-zinc-900:hover,
+html[data-loombus-theme] .hover\:bg-zinc-800:hover {
+  background-color: var(--loombus-surface-strong) !important;
+}
+
+html[data-loombus-theme] .hover\:bg-black\/50:hover,
+html[data-loombus-theme] .hover\:bg-black\/40:hover {
+  background-color: var(--loombus-surface-strong) !important;
+}
+
+html[data-loombus-theme] .hover\:bg-white:hover,
+html[data-loombus-theme] .hover\:bg-zinc-200:hover {
+  background-color: var(--loombus-primary-bg) !important;
+  color: var(--loombus-primary-text) !important;
+}
+
+html[data-loombus-theme] .hover\:decoration-white:hover {
+  text-decoration-color: var(--loombus-text) !important;
+}
+
+html[data-loombus-theme] .hover\:opacity-90:hover {
+  opacity: 0.9 !important;
+}
