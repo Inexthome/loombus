@@ -1,11 +1,19 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
 
 const siteUrl = "https://loombus.com";
 const siteTitle = "Loombus";
 const siteDescription = "A high-signal discussion platform for thoughtful conversations.";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#000000",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -15,6 +23,15 @@ export const metadata: Metadata = {
   },
   description: siteDescription,
   applicationName: siteTitle,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: siteTitle,
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
     title: siteTitle,
     description: siteDescription,
