@@ -522,11 +522,11 @@ export default function DiscussionsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="mb-8 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
+            <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
               Discussions
             </h1>
 
@@ -820,7 +820,7 @@ export default function DiscussionsPage() {
         )}
 
         {!loading && filteredDiscussions.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
             <h2 className="mb-3 text-2xl font-medium">
               No discussions found.
             </h2>

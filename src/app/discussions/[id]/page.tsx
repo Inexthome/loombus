@@ -1238,7 +1238,7 @@ export default function DiscussionPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-3xl text-zinc-400">
           Loading discussion...
         </div>
@@ -1248,7 +1248,7 @@ export default function DiscussionPage() {
 
   if (!discussion) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-3xl">
           <h1 className="mb-6 text-4xl font-semibold">
             Discussion not found.
@@ -1263,7 +1263,7 @@ export default function DiscussionPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-3xl">
         <Link
           href="/discussions"
@@ -1287,7 +1287,7 @@ export default function DiscussionPage() {
           ))}
         </div>
 
-        <h1 className="mb-6 text-5xl font-semibold tracking-tight md:text-6xl">
+        <h1 className="mb-5 text-4xl font-semibold tracking-tight md:text-6xl">
           {discussion.title}
         </h1>
 
@@ -2008,7 +2008,7 @@ export default function DiscussionPage() {
               return (
                 <div
                   key={reply.id}
-                  className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30"
+                  className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7"
                 >
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-zinc-500">

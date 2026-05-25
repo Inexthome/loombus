@@ -406,7 +406,7 @@ export default function SettingsClientPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl text-zinc-400">
           Loading settings...
         </div>
@@ -416,7 +416,7 @@ export default function SettingsClientPage() {
 
   if (loadError) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
           <h1 className="mb-3 text-2xl font-medium">
             Settings could not load.
@@ -439,7 +439,7 @@ export default function SettingsClientPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
@@ -453,7 +453,7 @@ export default function SettingsClientPage() {
             Account
           </p>
 
-          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
+          <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
             Settings
           </h1>
 

@@ -587,7 +587,7 @@ export default function CreatePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-3xl">
         <Link
           href={isEditMode && editingDiscussionId ? `/discussions/${editingDiscussionId}` : "/discussions"}
@@ -600,7 +600,7 @@ export default function CreatePage() {
           {isEditMode ? "Edit Discussion" : "New Discussion"}
         </p>
 
-        <h1 className="mb-6 text-5xl font-semibold tracking-tight">
+        <h1 className="mb-5 text-4xl font-semibold tracking-tight md:text-5xl">
           {isEditMode
             ? "Edit discussion."
             : draftId
@@ -615,7 +615,7 @@ export default function CreatePage() {
         </p>
 
         {!authChecked && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
             <p className="text-zinc-400">
               Checking your account status...
             </p>
@@ -623,7 +623,7 @@ export default function CreatePage() {
         )}
 
         {authChecked && !isLoggedIn && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Login Required
             </p>

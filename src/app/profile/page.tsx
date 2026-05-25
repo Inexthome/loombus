@@ -347,7 +347,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-xl text-zinc-400">
           Loading profile...
         </div>
@@ -356,7 +356,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <Link
           href="/settings"
@@ -365,7 +365,7 @@ export default function ProfilePage() {
           ← Back to settings
         </Link>
 
-        <h1 className="mb-6 text-5xl font-semibold tracking-tight">
+        <h1 className="mb-5 text-4xl font-semibold tracking-tight md:text-5xl">
           Profile
         </h1>
 
