@@ -159,6 +159,13 @@ export default function MyDiscussionsPage() {
     });
   }, [discussions, searchQuery]);
 
+  const activeMyDiscussionsSearch = searchQuery.trim();
+  const hasActiveMyDiscussionsSearch = activeMyDiscussionsSearch.length > 0;
+
+  function resetMyDiscussionsSearch() {
+    setSearchQuery("");
+  }
+
   async function deleteDraft(draftId: string) {
     setMessage("");
 
@@ -418,19 +425,62 @@ export default function MyDiscussionsPage() {
           </section>
         )}
 
-        <div className="mb-6">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search your discussions by title, topic, or body..."
-            className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
-          />
-        </div>
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex-1">
+              <label htmlFor="my-discussions-search" className="mb-2 block text-sm font-medium text-zinc-300">
+                Search your published discussions
+              </label>
 
-        <p className="mb-10 text-sm text-zinc-600">
-          Showing {filteredDiscussions.length} of {discussions.length} published discussions
-        </p>
+              <input
+                id="my-discussions-search"
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search your titles, topics, or discussion bodies..."
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+              />
+            </div>
+
+            {hasActiveMyDiscussionsSearch && (
+              <button
+                type="button"
+                onClick={resetMyDiscussionsSearch}
+                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {hasActiveMyDiscussionsSearch ? (
+              <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
+                Search: “{activeMyDiscussionsSearch}”
+              </span>
+            ) : (
+              <p className="text-sm text-zinc-600">
+                Search scans the discussions you published by title, topic, and body.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <p className="text-sm text-zinc-600">
+            Showing {filteredDiscussions.length} of {discussions.length} published discussions
+          </p>
+
+          {hasActiveMyDiscussionsSearch && (
+            <button
+              type="button"
+              onClick={resetMyDiscussionsSearch}
+              className="w-fit text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+            >
+              Reset view
+            </button>
+          )}
+        </div>
 
         {discussions.length === 0 && (
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
@@ -488,6 +538,13 @@ export default function MyDiscussionsPage() {
               >
                 Browse examples
               </Link>
+
+              <Link
+                href="/onboarding"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Open setup guide
+              </Link>
             </div>
           </div>
         )}
@@ -498,9 +555,27 @@ export default function MyDiscussionsPage() {
               No discussions found.
             </h2>
 
-            <p className="text-zinc-400">
-              No discussions match your current search.
+            <p className="max-w-2xl text-zinc-400">
+              No published discussions match your current search. Try a broader term,
+              clear the search, or start a new discussion if the idea is not published yet.
             </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={resetMyDiscussionsSearch}
+                className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Clear search
+              </button>
+
+              <Link
+                href="/create"
+                className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Start another discussion
+              </Link>
+            </div>
           </div>
         )}
 
