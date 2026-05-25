@@ -192,7 +192,8 @@ export default function DiscussionsPage() {
   const [discussionTags, setDiscussionTags] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState("All");
-  const [showAllTopics, setShowAllTopics] = useState(false);
+  const [showAllTopicDiscovery, setShowAllTopicDiscovery] = useState(false);
+  const [showAllTopicFilters, setShowAllTopicFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState("Newest");
   const [advancedFilter, setAdvancedFilter] =
@@ -356,7 +357,7 @@ export default function DiscussionsPage() {
   }, [discussions]);
 
   const topics = useMemo(() => {
-    if (!showAllTopics) {
+    if (!showAllTopicFilters) {
       return ["All", ...activeTopics];
     }
 
@@ -366,7 +367,7 @@ export default function DiscussionsPage() {
     );
 
     return ["All", ...officialTopics, ...legacyTopics];
-  }, [activeTopics, showAllTopics]);
+  }, [activeTopics, showAllTopicFilters]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -391,7 +392,7 @@ export default function DiscussionsPage() {
     setSelectedTopic(matchedTopic);
 
     if (!activeTopics.includes(matchedTopic)) {
-      setShowAllTopics(true);
+      setShowAllTopicFilters(true);
     }
   }, [activeTopics]);
 
@@ -507,7 +508,7 @@ export default function DiscussionsPage() {
   const hasActiveDiscussionFilters = activeFilterLabels.length > 0;
 
   const topicDiscoveryItems = (
-    showAllTopics ? DISCUSSION_TOPICS : DISCUSSION_TOPICS.slice(0, 12)
+    showAllTopicDiscovery ? DISCUSSION_TOPICS : DISCUSSION_TOPICS.slice(0, 12)
   ).map((topic) => ({
     topic,
     description: getTopicDiscoveryDescription(topic),
@@ -608,10 +609,10 @@ export default function DiscussionsPage() {
 
             <button
               type="button"
-              onClick={() => setShowAllTopics((current) => !current)}
+              onClick={() => setShowAllTopicDiscovery((current) => !current)}
               className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
             >
-              {showAllTopics ? "Show fewer topics" : "Show all topics"}
+              {showAllTopicDiscovery ? "Show fewer topics" : "Show all topics"}
             </button>
           </div>
 
@@ -782,15 +783,15 @@ export default function DiscussionsPage() {
           <button
             type="button"
             onClick={() => {
-              if (showAllTopics && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
+              if (showAllTopicFilters && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
                 setTopicFilter("All");
               }
 
-              setShowAllTopics((current) => !current);
+              setShowAllTopicFilters((current) => !current);
             }}
             className="rounded-full border border-zinc-800 bg-black px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-700 hover:text-white"
           >
-            {showAllTopics ? "Show active topics" : "Show all topics"}
+            {showAllTopicFilters ? "Show active topics" : "Show all topics"}
           </button>
         </div>
 
