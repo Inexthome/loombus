@@ -337,7 +337,7 @@ export default function PeoplePage() {
 
   if (!authChecked || loading) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl">
           <p className="text-zinc-500">
             Loading people...
@@ -349,39 +349,39 @@ export default function PeoplePage() {
 
   if (!currentUserId) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-3xl">
           <Link
             href="/discussions"
-            className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+            className="mb-6 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
           >
             ← Back to discussions
           </Link>
 
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Login Required
             </p>
 
-            <h1 className="mb-4 text-3xl font-medium">
+            <h1 className="mb-3 text-2xl font-medium sm:text-3xl">
               Log in to view People.
             </h1>
 
-            <p className="mb-6 leading-relaxed text-zinc-400">
+            <p className="mb-5 text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
               The People directory is available to Loombus members only.
             </p>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
                 href="/login"
-                className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200"
+                className="rounded-full bg-white px-6 py-3 text-center text-sm text-black transition hover:bg-zinc-200"
               >
                 Log In
               </Link>
 
               <Link
                 href="/signup"
-                className="rounded-full border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="rounded-full border border-zinc-700 px-6 py-3 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
                 Create Account
               </Link>
@@ -393,24 +393,24 @@ export default function PeoplePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-10">
-          <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
+        <div className="mb-7 sm:mb-10">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
             People
           </h1>
 
-          <p className="mt-3 text-zinc-500">
+          <p className="mt-3 text-sm leading-relaxed text-zinc-500 sm:text-base">
             Discover thoughtful contributors across Loombus.
           </p>
         </div>
 
-        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Finding people
           </p>
 
-          <h2 className="mb-4 text-2xl font-medium">
+          <h2 className="mb-3 text-xl font-medium sm:mb-4 sm:text-2xl">
             Follow contributors for signal, not noise.
           </h2>
 
@@ -420,7 +420,7 @@ export default function PeoplePage() {
             build a network around useful contribution.
           </p>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl border border-zinc-900 bg-black p-4">
               <p className="mb-2 text-sm font-medium text-zinc-300">
                 Read the bio
@@ -453,7 +453,7 @@ export default function PeoplePage() {
           </div>
         </section>
 
-        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="people-search" className="mb-3 block text-sm font-medium text-zinc-300">
@@ -466,7 +466,7 @@ export default function PeoplePage() {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search by username, name, bio, interests, or projects..."
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
               />
             </div>
 
@@ -474,7 +474,7 @@ export default function PeoplePage() {
               <button
                 type="button"
                 onClick={resetPeopleSearch}
-                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="w-full rounded-full border border-zinc-700 px-5 py-3 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
               >
                 Clear search
               </button>
@@ -513,16 +513,16 @@ export default function PeoplePage() {
         )}
 
         {!loading && filteredProfiles.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
-            <h2 className="mb-3 text-2xl font-medium">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No members found.
             </h2>
 
-            <p className="max-w-2xl text-zinc-400">
+            <p className="max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
               No visible members match the current search. Try a broader term, browse public discussions first, or return to onboarding for suggested topic lanes.
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row sm:flex-wrap">
               {hasActivePeopleSearch && (
                 <button
                   type="button"
@@ -550,7 +550,7 @@ export default function PeoplePage() {
           </div>
         )}
 
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-3 sm:gap-5 lg:grid-cols-2">
           {filteredProfiles.map((profile) => {
             const isSelf = currentUserId === profile.id;
             const isFollowing = followingIds.has(profile.id);
@@ -561,14 +561,14 @@ export default function PeoplePage() {
               <Link
                 key={profile.id}
                 href={profile.username ? `/u/${profile.username}` : "/people"}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+                className="group overflow-hidden rounded-[1.5rem] border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
               >
-                <div className="mb-5 flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 items-center gap-4">
+                <div className="p-4 sm:p-6">
+                  <div className="mb-4 flex items-start gap-3">
                     <ProfileAvatar profile={profile} size="xl" />
 
-                    <div className="min-w-0">
-                      <h2 className="truncate text-2xl font-medium">
+                    <div className="min-w-0 flex-1">
+                      <h2 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
                         {profile.full_name || profile.username || "Loombus member"}
                       </h2>
 
@@ -588,13 +588,34 @@ export default function PeoplePage() {
                     </div>
                   </div>
 
-                  <p className="mt-4 text-xs text-zinc-500">
-                    {(followCounts[profile.id]?.followers ?? 0).toLocaleString()} followers ·{" "}
-                    {(followCounts[profile.id]?.following ?? 0).toLocaleString()} following
+                  <p className="line-clamp-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+                    {profile.bio || "No bio yet."}
                   </p>
+                </div>
+
+                <div className="border-t border-zinc-900 bg-black/30 p-4">
+                  <div className="mb-3 grid grid-cols-2 gap-2">
+                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                      <p className="text-sm font-semibold text-zinc-200">
+                        {(followCounts[profile.id]?.followers ?? 0).toLocaleString()}
+                      </p>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                        Followers
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                      <p className="text-sm font-semibold text-zinc-200">
+                        {(followCounts[profile.id]?.following ?? 0).toLocaleString()}
+                      </p>
+                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                        Following
+                      </p>
+                    </div>
+                  </div>
 
                   {isSelf ? (
-                    <span className="shrink-0 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500">
+                    <span className="block rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500">
                       You
                     </span>
                   ) : (
@@ -602,7 +623,7 @@ export default function PeoplePage() {
                       type="button"
                       onClick={(event) => toggleFollow(event, profile)}
                       disabled={isWorking}
-                      className={`shrink-0 rounded-full px-4 py-2 text-sm transition disabled:cursor-not-allowed ${
+                      className={`block w-full rounded-full px-4 py-2 text-center text-sm transition disabled:cursor-not-allowed ${
                         isFollowing
                           ? "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
                           : "bg-white text-black hover:bg-zinc-200"
@@ -612,10 +633,6 @@ export default function PeoplePage() {
                     </button>
                   )}
                 </div>
-
-                <p className="line-clamp-3 leading-relaxed text-zinc-400">
-                  {profile.bio || "No bio yet."}
-                </p>
               </Link>
             );
           })}
