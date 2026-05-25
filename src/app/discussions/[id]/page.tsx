@@ -1407,8 +1407,46 @@ export default function DiscussionPage() {
           )}
         </div>
 
+        <nav
+          aria-label="Discussion reader actions"
+          className="mb-6 grid grid-cols-3 gap-2 rounded-3xl border border-zinc-900 bg-black/40 p-2 sm:mb-10"
+        >
+          <a
+            href="#reply-form"
+            className="rounded-2xl bg-white px-3 py-3 text-center text-sm font-medium text-black transition hover:bg-zinc-200"
+          >
+            Reply
+          </a>
 
-        <div className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-6 sm:p-6">
+          <a
+            href="#replies"
+            className="rounded-2xl border border-zinc-800 px-3 py-3 text-center text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+          >
+            Replies
+          </a>
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpenPremiumAiTool((current) => current || "summary");
+
+              window.setTimeout(() => {
+                document.getElementById("intelligence-layer")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }, 0);
+            }}
+            className="rounded-2xl border border-zinc-800 px-3 py-3 text-center text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+          >
+            AI tools
+          </button>
+        </nav>
+
+        <div
+          id="intelligence-layer"
+          className="mb-5 scroll-mt-24 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-6 sm:p-6"
+        >
           <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
             Premium AI-Assisted Layer
           </p>
@@ -1837,8 +1875,8 @@ export default function DiscussionPage() {
           </div>
         )}
 
-        <div>
-          <h2 className="mb-8 text-2xl font-medium">
+        <div id="replies" className="scroll-mt-24">
+          <h2 className="mb-6 text-xl font-medium sm:mb-8 sm:text-2xl">
             Replies
           </h2>
 
