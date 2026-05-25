@@ -267,7 +267,7 @@ export default function DashboardClientPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+      <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl text-zinc-400">
           Loading dashboard...
         </div>
@@ -277,7 +277,7 @@ export default function DashboardClientPage() {
 
   if (loadError) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+      <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
           <h1 className="mb-3 text-2xl font-medium">
             Dashboard could not load.
@@ -300,28 +300,28 @@ export default function DashboardClientPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
           Dashboard
         </p>
 
-        <h1 className="mb-5 text-4xl font-semibold tracking-tight md:text-5xl">
+        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
           Welcome to Loombus.
         </h1>
 
-        <p className="mb-8 text-zinc-400">
+        <p className="mb-6 text-sm text-zinc-400 sm:text-base">
           Signed in as {email}
         </p>
 
-        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                 Getting started
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Build your Loombus foundation.
               </h2>
             </div>
@@ -331,7 +331,7 @@ export default function DashboardClientPage() {
             </span>
           </div>
 
-          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
             A strong first setup helps other members understand who you are,
             what you contribute, and which discussions are worth returning to.
           </p>
@@ -341,10 +341,10 @@ export default function DashboardClientPage() {
               <Link
                 key={step.title}
                 href={step.href}
-                className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+                className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
               >
-                <div className="mb-3 flex items-start justify-between gap-4">
-                  <h3 className="text-lg font-medium">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h3 className="text-base font-medium sm:text-lg">
                     {step.title}
                   </h3>
 
@@ -371,14 +371,14 @@ export default function DashboardClientPage() {
           </div>
         </section>
 
-        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                 Subscription
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 {subscriptionDisplay.label}
               </h2>
             </div>
@@ -404,14 +404,14 @@ export default function DashboardClientPage() {
           </Link>
         </section>
 
-        <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+          <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                 Profile setup
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 {profileComplete ? "Your public profile is complete." : "Complete your public profile."}
               </h2>
             </div>
@@ -449,14 +449,14 @@ export default function DashboardClientPage() {
           )}
         </div>
 
-        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                 My Activity
               </p>
 
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Your Loombus footprint
               </h2>
             </div>
@@ -489,52 +489,52 @@ export default function DashboardClientPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Link
               href="/my-discussions"
-              className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+              className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
             >
               <p className="mb-2 text-sm text-zinc-500">
                 Discussions
               </p>
 
-              <p className="text-4xl font-semibold">
+              <p className="text-3xl font-semibold sm:text-4xl">
                 {activityCounts.discussions}
               </p>
             </Link>
 
             <Link
               href="/my-replies"
-              className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+              className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
             >
               <p className="mb-2 text-sm text-zinc-500">
                 Replies
               </p>
 
-              <p className="text-4xl font-semibold">
+              <p className="text-3xl font-semibold sm:text-4xl">
                 {activityCounts.replies}
               </p>
             </Link>
 
             <Link
               href="/saved"
-              className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+              className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
             >
               <p className="mb-2 text-sm text-zinc-500">
                 Saved
               </p>
 
-              <p className="text-4xl font-semibold">
+              <p className="text-3xl font-semibold sm:text-4xl">
                 {activityCounts.saved}
               </p>
             </Link>
 
             <Link
               href="/notifications"
-              className="rounded-2xl border border-zinc-900 bg-black p-5 transition hover:border-zinc-700"
+              className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
             >
               <p className="mb-2 text-sm text-zinc-500">
                 Unread
               </p>
 
-              <p className="text-4xl font-semibold">
+              <p className="text-3xl font-semibold sm:text-4xl">
                 {activityCounts.unreadNotifications}
               </p>
             </Link>

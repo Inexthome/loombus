@@ -356,8 +356,8 @@ export default function ClientLayout({
   return (
     <div className="min-h-screen bg-black text-white antialiased">
       {user && (
-        <header className="border-b border-zinc-900">
-          <div className="mx-auto max-w-6xl px-6 py-5">
+        <header className="border-b border-zinc-900 pt-[env(safe-area-inset-top)]">
+          <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-5">
             <div className="flex items-center justify-between gap-4">
               <Link
                 href="/"
@@ -367,9 +367,9 @@ export default function ClientLayout({
                 <img
                   src="/assets/brand/loombus-mark-transparent.png"
                   alt=""
-                  className="h-8 w-8 object-contain"
+                  className="h-7 w-7 object-contain sm:h-8 sm:w-8"
                 />
-                <span>Loombus</span>
+                <span className="text-lg sm:text-xl">Loombus</span>
               </Link>
 
               <button
