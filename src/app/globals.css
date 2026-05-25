@@ -318,3 +318,57 @@ html[data-loombus-theme] .hover\:decoration-white:hover {
 html[data-loombus-theme] .hover\:opacity-90:hover {
   opacity: 0.9 !important;
 }
+
+/* Restore Loombus clickable lift motion.
+   Home already used hover:-translate-y-0.5. This brings the same subtle
+   interaction back to internal cards and pill buttons without editing every page. */
+@media (hover: hover) and (pointer: fine) {
+  html[data-loombus-theme] a.rounded-xl,
+  html[data-loombus-theme] a.rounded-2xl,
+  html[data-loombus-theme] a.rounded-3xl,
+  html[data-loombus-theme] a.rounded-full,
+  html[data-loombus-theme] button.rounded-xl,
+  html[data-loombus-theme] button.rounded-2xl,
+  html[data-loombus-theme] button.rounded-3xl,
+  html[data-loombus-theme] button.rounded-full {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform !important;
+    transition-duration: 180ms !important;
+    transition-timing-function: ease-out !important;
+  }
+
+  html[data-loombus-theme] a.rounded-xl:hover,
+  html[data-loombus-theme] a.rounded-2xl:hover,
+  html[data-loombus-theme] a.rounded-3xl:hover,
+  html[data-loombus-theme] a.rounded-full:hover,
+  html[data-loombus-theme] button.rounded-xl:hover:not(:disabled),
+  html[data-loombus-theme] button.rounded-2xl:hover:not(:disabled),
+  html[data-loombus-theme] button.rounded-3xl:hover:not(:disabled),
+  html[data-loombus-theme] button.rounded-full:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+  }
+
+  html[data-loombus-theme] a.rounded-xl:active,
+  html[data-loombus-theme] a.rounded-2xl:active,
+  html[data-loombus-theme] a.rounded-3xl:active,
+  html[data-loombus-theme] a.rounded-full:active,
+  html[data-loombus-theme] button.rounded-xl:active:not(:disabled),
+  html[data-loombus-theme] button.rounded-2xl:active:not(:disabled),
+  html[data-loombus-theme] button.rounded-3xl:active:not(:disabled),
+  html[data-loombus-theme] button.rounded-full:active:not(:disabled) {
+    transform: translateY(0) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-loombus-theme] a.rounded-xl,
+  html[data-loombus-theme] a.rounded-2xl,
+  html[data-loombus-theme] a.rounded-3xl,
+  html[data-loombus-theme] a.rounded-full,
+  html[data-loombus-theme] button.rounded-xl,
+  html[data-loombus-theme] button.rounded-2xl,
+  html[data-loombus-theme] button.rounded-3xl,
+  html[data-loombus-theme] button.rounded-full {
+    transition-duration: 0ms !important;
+    transform: none !important;
+  }
+}
