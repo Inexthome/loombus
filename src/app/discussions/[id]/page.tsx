@@ -47,6 +47,8 @@ type Reply = {
   edited_at?: string | null;
   edited_by?: string | null;
   edit_count?: number | null;
+  referenced_reply_id?: string | null;
+  quoted_excerpt?: string | null;
 };
 
 type RelatedDiscussion = {
@@ -104,6 +106,17 @@ function MentionText({ text }: { text: string }) {
       })}
     </>
   );
+}
+
+function getReplyReferencePreview(reply: Reply) {
+  const source = reply.quoted_excerpt || reply.body;
+  const normalized = source.trim().replace(/\s+/g, " ");
+
+  if (normalized.length <= 280) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, 277).trim()}...`;
 }
 
 function getReplyEditLabel(reply: Reply) {
@@ -179,6 +192,7 @@ export default function DiscussionPage() {
   const [discussionTags, setDiscussionTags] = useState<string[]>([]);
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [replyBody, setReplyBody] = useState("");
+  const [referencedReply, setReferencedReply] = useState<Reply | null>(null);
   const [postingReply, setPostingReply] = useState(false);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [editingReplyBody, setEditingReplyBody] = useState("");
@@ -445,6 +459,22 @@ export default function DiscussionPage() {
     loadDiscussion();
   }, [id]);
 
+  function startRespondToPoint(reply: Reply) {
+    setMessage("");
+    setReferencedReply(reply);
+
+    window.setTimeout(() => {
+      document.getElementById("reply-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 0);
+  }
+
+  function clearReferencedReply() {
+    setReferencedReply(null);
+  }
+
   async function handleReply(
     event?: FormEvent<HTMLFormElement> | KeyboardEvent<HTMLFormElement>
   ) {
@@ -480,6 +510,7 @@ export default function DiscussionPage() {
         body: JSON.stringify({
           discussionId: id,
           body: replyBody,
+          referencedReplyId: referencedReply?.id ?? undefined,
         }),
       });
 
@@ -510,6 +541,7 @@ export default function DiscussionPage() {
       }
 
       setReplyBody("");
+      setReferencedReply(null);
       setMessage("Reply posted.");
     } finally {
       setPostingReply(false);
@@ -1821,6 +1853,7 @@ export default function DiscussionPage() {
           </h2>
 
           <form
+            id="reply-form"
             onSubmit={handleReply}
             onKeyDown={handleReplyFormKeyDown}
             className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30"
@@ -1828,6 +1861,28 @@ export default function DiscussionPage() {
             <label className="mb-3 block text-sm text-zinc-400">
               Add a thoughtful reply
             </label>
+
+            {referencedReply && (
+              <div className="mb-4 rounded-2xl border border-zinc-800 bg-black p-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
+                    Responding to a point
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={clearReferencedReply}
+                    className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <p className="text-sm leading-relaxed text-zinc-400">
+                  “{getReplyReferencePreview(referencedReply)}”
+                </p>
+              </div>
+            )}
 
             <textarea
               rows={5}
@@ -1872,18 +1927,30 @@ export default function DiscussionPage() {
                   </p>
                 </div>
 
-                {canManageDiscussionStatus && (
-                  <button
-                    type="button"
-                    onClick={() => updatePinnedReply(pinnedReply.id, true)}
-                    disabled={pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"}
-                    className="rounded-full border border-amber-800 px-3 py-1.5 text-xs text-amber-300 transition hover:border-amber-600 hover:text-amber-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                  >
-                    {pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"
-                      ? "Updating..."
-                      : "Unpin"}
-                  </button>
-                )}
+                <div className="flex flex-wrap gap-2">
+                  {currentUserId && pinnedReply.user_id !== currentUserId && (
+                    <button
+                      type="button"
+                      onClick={() => startRespondToPoint(pinnedReply)}
+                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                    >
+                      Respond to point
+                    </button>
+                  )}
+
+                  {canManageDiscussionStatus && (
+                    <button
+                      type="button"
+                      onClick={() => updatePinnedReply(pinnedReply.id, true)}
+                      disabled={pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"}
+                      className="rounded-full border border-amber-800 px-3 py-1.5 text-xs text-amber-300 transition hover:border-amber-600 hover:text-amber-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    >
+                      {pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"
+                        ? "Updating..."
+                        : "Unpin"}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="rounded-2xl border border-amber-900/60 bg-black/30 p-5">
@@ -1894,6 +1961,18 @@ export default function DiscussionPage() {
                   />
                   <ProfileName profile={replyProfiles[pinnedReply.user_id]} />
                 </div>
+
+                {pinnedReply.quoted_excerpt && (
+                  <div className="mb-4 rounded-2xl border border-zinc-800 bg-black/40 p-4">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-zinc-600">
+                      Responding to a point
+                    </p>
+
+                    <p className="text-sm leading-relaxed text-zinc-500">
+                      “{pinnedReply.quoted_excerpt}”
+                    </p>
+                  </div>
+                )}
 
                 <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
                   <MentionText text={pinnedReply.body} />
@@ -1921,8 +2000,10 @@ export default function DiscussionPage() {
 
               const hasReportedReply = reportedReplyIds.includes(reply.id);
 
-              const canReportReply =
+              const canRespondToPoint =
                 Boolean(currentUserId) && reply.user_id !== currentUserId;
+
+              const canReportReply = canRespondToPoint;
 
               return (
                 <div
@@ -1941,6 +2022,17 @@ export default function DiscussionPage() {
                     </p>
 
                     <div className="flex flex-wrap items-center gap-2">
+                      {canRespondToPoint && !isEditingReply && (
+                        <button
+                          type="button"
+                          onClick={() => startRespondToPoint(reply)}
+                          disabled={Boolean(editingReplyId)}
+                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                        >
+                          Respond to point
+                        </button>
+                      )}
+
                       {canReportReply && (
                         <button
                           type="button"
