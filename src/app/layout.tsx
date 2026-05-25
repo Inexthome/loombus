@@ -49,8 +49,24 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="bg-black text-white antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (() => {
+                try {
+                  const stored = window.localStorage.getItem("loombus:appearance");
+                  const allowed = ["system", "dark", "light"];
+                  const mode = allowed.includes(stored || "") ? stored : "system";
+                  document.documentElement.dataset.loombusTheme = mode || "system";
+                } catch {
+                  document.documentElement.dataset.loombusTheme = "system";
+                }
+              })();
+            `,
+          }}
+        />
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

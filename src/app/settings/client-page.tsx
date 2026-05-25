@@ -25,6 +25,54 @@ type DeletionRequest = {
   requested_at: string;
 };
 
+type AppearanceMode = "system" | "dark" | "light";
+
+const APPEARANCE_STORAGE_KEY = "loombus:appearance";
+
+const appearanceOptions: {
+  value: AppearanceMode;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "system",
+    label: "System",
+    description: "Match your device appearance automatically.",
+  },
+  {
+    value: "dark",
+    label: "Dark",
+    description: "Use the original dark Loombus interface.",
+  },
+  {
+    value: "light",
+    label: "Light",
+    description: "Use a brighter interface where supported.",
+  },
+];
+
+function applyAppearanceMode(mode: AppearanceMode) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.documentElement.dataset.loombusTheme = mode;
+}
+
+function getStoredAppearanceMode(): AppearanceMode {
+  if (typeof window === "undefined") {
+    return "system";
+  }
+
+  const stored = window.localStorage.getItem(APPEARANCE_STORAGE_KEY);
+
+  if (stored === "dark" || stored === "light" || stored === "system") {
+    return stored;
+  }
+
+  return "system";
+}
+
 function withSettingsTimeout<T>(
   promise: PromiseLike<T>,
   label: string,
@@ -145,10 +193,17 @@ export default function SettingsClientPage() {
   const [deactivateConfirmation, setDeactivateConfirmation] = useState("");
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleteReason, setDeleteReason] = useState("");
+  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("system");
   const [accountActionMessage, setAccountActionMessage] = useState("");
   const [accountActionWorking, setAccountActionWorking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    const storedAppearanceMode = getStoredAppearanceMode();
+    setAppearanceMode(storedAppearanceMode);
+    applyAppearanceMode(storedAppearanceMode);
+  }, []);
 
   useEffect(() => {
     async function requireUser() {
@@ -215,6 +270,12 @@ export default function SettingsClientPage() {
 
   const subscriptionDisplay = getSubscriptionDisplay(aiEntitlement);
   const aiUsageLabel = getAiUsageLabel(aiEntitlement);
+
+  function updateAppearanceMode(mode: AppearanceMode) {
+    setAppearanceMode(mode);
+    window.localStorage.setItem(APPEARANCE_STORAGE_KEY, mode);
+    applyAppearanceMode(mode);
+  }
 
   async function deactivateAccount() {
     setAccountActionMessage("");
@@ -381,6 +442,45 @@ export default function SettingsClientPage() {
             and platform reference pages from one place.
           </p>
         </div>
+
+        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+          <div className="mb-5">
+            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              Appearance
+            </p>
+
+            <h2 className="text-2xl font-medium">
+              Display mode
+            </h2>
+
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+              Choose how Loombus looks on this device. System follows your browser or operating system setting.
+            </p>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            {appearanceOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => updateAppearanceMode(option.value)}
+                className={`rounded-2xl border p-4 text-left transition ${
+                  appearanceMode === option.value
+                    ? "border-zinc-400 bg-black text-white"
+                    : "border-zinc-800 bg-black text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                <span className="block text-sm font-medium">
+                  {option.label}
+                </span>
+
+                <span className="mt-2 block text-sm leading-6 text-zinc-500">
+                  {option.description}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
 
         <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-4">

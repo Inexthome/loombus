@@ -24,3 +24,126 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Loombus appearance system
+   The product was originally built mostly with dark Tailwind utility classes.
+   These variable-backed overrides allow Settings to switch between Dark, Light,
+   and System without rewriting every page component at once. */
+:root,
+html[data-loombus-theme="dark"],
+html[data-loombus-theme="system"] {
+  color-scheme: dark;
+  --loombus-page-bg: #000000;
+  --loombus-surface: #09090b;
+  --loombus-surface-strong: #18181b;
+  --loombus-surface-muted: #27272a;
+  --loombus-border: #27272a;
+  --loombus-border-muted: #18181b;
+  --loombus-text: #ffffff;
+  --loombus-text-strong: #f4f4f5;
+  --loombus-text-muted: #a1a1aa;
+  --loombus-text-subtle: #71717a;
+  --loombus-primary-bg: #ffffff;
+  --loombus-primary-text: #000000;
+}
+
+html[data-loombus-theme="light"] {
+  color-scheme: light;
+  --loombus-page-bg: #f4f4f5;
+  --loombus-surface: #ffffff;
+  --loombus-surface-strong: #fafafa;
+  --loombus-surface-muted: #e4e4e7;
+  --loombus-border: #d4d4d8;
+  --loombus-border-muted: #e4e4e7;
+  --loombus-text: #09090b;
+  --loombus-text-strong: #18181b;
+  --loombus-text-muted: #52525b;
+  --loombus-text-subtle: #71717a;
+  --loombus-primary-bg: #09090b;
+  --loombus-primary-text: #ffffff;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] {
+    color-scheme: light;
+    --loombus-page-bg: #f4f4f5;
+    --loombus-surface: #ffffff;
+    --loombus-surface-strong: #fafafa;
+    --loombus-surface-muted: #e4e4e7;
+    --loombus-border: #d4d4d8;
+    --loombus-border-muted: #e4e4e7;
+    --loombus-text: #09090b;
+    --loombus-text-strong: #18181b;
+    --loombus-text-muted: #52525b;
+    --loombus-text-subtle: #71717a;
+    --loombus-primary-bg: #09090b;
+    --loombus-primary-text: #ffffff;
+  }
+}
+
+html[data-loombus-theme] body,
+html[data-loombus-theme] .bg-black {
+  background-color: var(--loombus-page-bg) !important;
+}
+
+html[data-loombus-theme] .bg-zinc-950,
+html[data-loombus-theme] .bg-zinc-950\/40,
+html[data-loombus-theme] .bg-black\/30,
+html[data-loombus-theme] .bg-black\/40,
+html[data-loombus-theme] .bg-black\/50 {
+  background-color: var(--loombus-surface) !important;
+}
+
+html[data-loombus-theme] .bg-zinc-900,
+html[data-loombus-theme] .bg-zinc-900\/40 {
+  background-color: var(--loombus-surface-strong) !important;
+}
+
+html[data-loombus-theme] .bg-zinc-800,
+html[data-loombus-theme] .bg-zinc-100,
+html[data-loombus-theme] .bg-zinc-50 {
+  background-color: var(--loombus-surface-muted) !important;
+}
+
+html[data-loombus-theme] .bg-white {
+  background-color: var(--loombus-primary-bg) !important;
+}
+
+html[data-loombus-theme] .text-white,
+html[data-loombus-theme] .text-zinc-950 {
+  color: var(--loombus-text) !important;
+}
+
+html[data-loombus-theme] .text-zinc-300,
+html[data-loombus-theme] .text-zinc-400,
+html[data-loombus-theme] .text-zinc-500,
+html[data-loombus-theme] .text-zinc-600,
+html[data-loombus-theme] .text-zinc-700,
+html[data-loombus-theme] .text-zinc-800 {
+  color: var(--loombus-text-muted) !important;
+}
+
+html[data-loombus-theme] .text-black {
+  color: var(--loombus-primary-text) !important;
+}
+
+html[data-loombus-theme] .border-zinc-950,
+html[data-loombus-theme] .border-zinc-900,
+html[data-loombus-theme] .border-zinc-800,
+html[data-loombus-theme] .border-zinc-700,
+html[data-loombus-theme] .border-zinc-600,
+html[data-loombus-theme] .border-zinc-300,
+html[data-loombus-theme] .border-zinc-200 {
+  border-color: var(--loombus-border) !important;
+}
+
+html[data-loombus-theme] input,
+html[data-loombus-theme] textarea,
+html[data-loombus-theme] select {
+  color: var(--loombus-text) !important;
+}
+
+html[data-loombus-theme] input::placeholder,
+html[data-loombus-theme] textarea::placeholder {
+  color: var(--loombus-text-subtle) !important;
+}
