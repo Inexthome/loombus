@@ -9,7 +9,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [signupComplete, setSignupComplete] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -23,6 +22,10 @@ export default function SignupPage() {
 
     setMessage("");
     setSignupComplete(false);
+
+    const ageConfirmed = window.confirm(
+      "Loombus is not available to children under 13. Please confirm that you are at least 13 years old to create an account."
+    );
 
     if (!ageConfirmed) {
       setMessage("You must confirm that you are at least 13 years old to create a Loombus account.");
@@ -59,6 +62,10 @@ export default function SignupPage() {
     }
 
     setMessage("");
+
+    const ageConfirmed = window.confirm(
+      "Loombus is not available to children under 13. Please confirm that you are at least 13 years old to sign up with Google."
+    );
 
     if (!ageConfirmed) {
       setMessage("You must confirm that you are at least 13 years old to sign up with Google.");
@@ -111,7 +118,7 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={handleGoogleSignup}
-              disabled={loading || googleLoading || !ageConfirmed}
+              disabled={loading || googleLoading}
               className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {googleLoading ? "Opening Google..." : "Sign up with Google"}
@@ -208,23 +215,9 @@ export default function SignupPage() {
             />
           </div>
 
-          <label className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-black p-4 text-sm leading-relaxed text-zinc-400">
-            <input
-              type="checkbox"
-              checked={ageConfirmed}
-              onChange={(event) => setAgeConfirmed(event.target.checked)}
-              className="mt-1 h-5 w-5"
-              required
-            />
-
-            <span>
-              I confirm that I am at least 13 years old. Loombus is not available to children under 13.
-            </span>
-          </label>
-
           <button
             type="submit"
-            disabled={loading || !ageConfirmed}
+            disabled={loading}
             className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Creating account..." : "Create Account"}
