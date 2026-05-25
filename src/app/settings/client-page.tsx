@@ -178,6 +178,26 @@ const settingsSections = [
         href: "/safety",
       },
       {
+        title: "Privacy",
+        description: "Review how Loombus handles account, platform, AI, and usage information.",
+        href: "/privacy",
+      },
+      {
+        title: "Terms",
+        description: "Review the terms for using Loombus.",
+        href: "/terms",
+      },
+      {
+        title: "Cookies",
+        description: "Review cookie and similar technology information.",
+        href: "/cookies",
+      },
+      {
+        title: "Accessibility",
+        description: "Review accessibility support and feedback options.",
+        href: "/accessibility",
+      },
+      {
         title: "Contact",
         description: "Get help with support, safety concerns, accessibility, or account questions.",
         href: "/contact",
