@@ -232,7 +232,7 @@ export default function DiscussionPage() {
   const [monthlyTakeawaysUsage, setMonthlyTakeawaysUsage] = useState(0);
   const [monthlyWhatChangedUsage, setMonthlyWhatChangedUsage] = useState(0);
   const [monthlyDisagreementUsage, setMonthlyDisagreementUsage] = useState(0);
-  const [openPremiumAiTool, setOpenPremiumAiTool] = useState("whatChanged");
+  const [openPremiumAiTool, setOpenPremiumAiTool] = useState("");
 
   useEffect(() => {
     async function loadDiscussion() {
@@ -1332,6 +1332,82 @@ export default function DiscussionPage() {
           {discussion.body}
         </p>
 
+        <div className="mb-6 flex flex-col items-stretch gap-3 rounded-3xl border border-zinc-900 bg-black/30 p-4 sm:mb-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:p-0 sm:border-0 sm:bg-transparent">
+          {canManageDiscussionStatus && (
+            <button
+              type="button"
+              onClick={() =>
+                updateDiscussionStatus(
+                  discussionStatus === "resolved" ? "open" : "resolved"
+                )
+              }
+              disabled={statusWorking}
+              className={`rounded-full border px-5 py-3 text-sm transition disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 ${
+                discussionStatus === "resolved"
+                  ? "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                  : "border-emerald-800 text-emerald-300 hover:border-emerald-600 hover:text-emerald-200"
+              }`}
+            >
+              {statusWorking
+                ? "Updating..."
+                : discussionStatus === "resolved"
+                  ? "Reopen Discussion"
+                  : "Mark Resolved"}
+            </button>
+          )}
+
+          {isSaved ? (
+            <button
+              onClick={handleRemoveBookmark}
+              disabled={savingBookmark}
+              className="rounded-full border border-zinc-800 bg-zinc-900 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+            >
+              {savingBookmark ? "Removing..." : "Unsave"}
+            </button>
+          ) : (
+            <button
+              onClick={handleBookmark}
+              disabled={savingBookmark}
+              className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+            >
+              {savingBookmark ? "Saving..." : "Save Discussion"}
+            </button>
+          )}
+
+          <button
+            onClick={handleReport}
+            disabled={reportedDiscussion}
+            className="rounded-full border border-red-900 px-5 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+          >
+            {reportedDiscussion ? "Reported" : "Report Discussion"}
+          </button>
+
+          {currentUserId && (
+            <label className="flex min-w-0 flex-col text-xs text-zinc-500 sm:min-w-64">
+              <span className="mb-2">Report reason</span>
+
+              <select
+                value={reportReason}
+                onChange={(event) => setReportReason(event.target.value as ReportReason)}
+                className="rounded-full border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+              >
+                {REPORT_REASONS.map((reason) => (
+                  <option key={reason} value={reason}>
+                    {reason}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
+            <p className="text-sm text-zinc-500">
+              {pinMessage || statusMessage || bookmarkMessage || reportMessage}
+            </p>
+          )}
+        </div>
+
+
         <div className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-6 sm:p-6">
           <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
             Premium AI-Assisted Layer
@@ -1712,81 +1788,6 @@ export default function DiscussionPage() {
             </>
           )}
         </section>
-
-        <div className="mb-8 flex flex-col items-stretch gap-3 sm:mb-12 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-          {canManageDiscussionStatus && (
-            <button
-              type="button"
-              onClick={() =>
-                updateDiscussionStatus(
-                  discussionStatus === "resolved" ? "open" : "resolved"
-                )
-              }
-              disabled={statusWorking}
-              className={`rounded-full border px-5 py-3 text-sm transition disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 ${
-                discussionStatus === "resolved"
-                  ? "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
-                  : "border-emerald-800 text-emerald-300 hover:border-emerald-600 hover:text-emerald-200"
-              }`}
-            >
-              {statusWorking
-                ? "Updating..."
-                : discussionStatus === "resolved"
-                  ? "Reopen Discussion"
-                  : "Mark Resolved"}
-            </button>
-          )}
-
-          {isSaved ? (
-            <button
-              onClick={handleRemoveBookmark}
-              disabled={savingBookmark}
-              className="rounded-full border border-zinc-800 bg-zinc-900 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-            >
-              {savingBookmark ? "Removing..." : "Unsave"}
-            </button>
-          ) : (
-            <button
-              onClick={handleBookmark}
-              disabled={savingBookmark}
-              className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-            >
-              {savingBookmark ? "Saving..." : "Save Discussion"}
-            </button>
-          )}
-
-          <button
-            onClick={handleReport}
-            disabled={reportedDiscussion}
-            className="rounded-full border border-red-900 px-5 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-          >
-            {reportedDiscussion ? "Reported" : "Report Discussion"}
-          </button>
-
-          {currentUserId && (
-            <label className="flex min-w-0 flex-col text-xs text-zinc-500 sm:min-w-64">
-              <span className="mb-2">Report reason</span>
-
-              <select
-                value={reportReason}
-                onChange={(event) => setReportReason(event.target.value as ReportReason)}
-                className="rounded-full border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
-              >
-                {REPORT_REASONS.map((reason) => (
-                  <option key={reason} value={reason}>
-                    {reason}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
-            <p className="text-sm text-zinc-500">
-              {pinMessage || statusMessage || bookmarkMessage || reportMessage}
-            </p>
-          )}
-        </div>
 
         {relatedDiscussions.length > 0 && (
           <div className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-12 sm:p-7">
