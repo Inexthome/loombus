@@ -110,6 +110,11 @@ const settingsSections = [
         href: "/about",
       },
       {
+        title: "Loombus Setup Guide",
+        description: "Review profile setup, topic lanes, people discovery, and first-discussion guidance.",
+        href: "/onboarding",
+      },
+      {
         title: "Premium",
         description: "Review Loombus Premium AI subscription options and checkout access.",
         href: "/premium",
