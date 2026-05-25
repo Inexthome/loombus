@@ -189,6 +189,7 @@ export default function DiscussionsPage() {
   const [latestReplyDates, setLatestReplyDates] = useState<Record<string, string>>({});
   const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   const [bookmarkCounts, setBookmarkCounts] = useState<Record<string, number>>({});
+  const [discussionTags, setDiscussionTags] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState("All");
   const [showAllTopics, setShowAllTopics] = useState(false);
@@ -325,6 +326,22 @@ export default function DiscussionsPage() {
           }
 
           setBookmarkCounts(bookmarks);
+
+          const { data: tagData } = await supabase
+            .from("discussion_tags")
+            .select("discussion_id, tag")
+            .in("discussion_id", discussionIds);
+
+          const tagMap: Record<string, string[]> = {};
+
+          for (const row of tagData ?? []) {
+            tagMap[row.discussion_id] = [
+              ...(tagMap[row.discussion_id] ?? []),
+              row.tag,
+            ];
+          }
+
+          setDiscussionTags(tagMap);
         }
       }
 
@@ -863,6 +880,19 @@ export default function DiscussionsPage() {
                   <p className="mb-5 line-clamp-3 leading-relaxed text-zinc-400">
                     {discussion.body}
                   </p>
+
+                  {discussionTags[discussion.id]?.length > 0 && (
+                    <div className="mb-5 flex flex-wrap gap-2">
+                      {discussionTags[discussion.id].map((tag) => (
+                        <span
+                          key={`${discussion.id}-${tag}`}
+                          className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs text-zinc-500"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </Link>
 
                 <div className="flex flex-col gap-4 border-t border-zinc-900 pt-4 md:flex-row md:items-center md:justify-between">
