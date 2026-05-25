@@ -200,6 +200,154 @@ export default function Home() {
     return (
       <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
         <section className="mx-auto max-w-6xl">
+          <div className="md:hidden">
+            {/* Mobile Signal Hub */}
+            <section className="mb-5 rounded-[2rem] border border-zinc-800 bg-gradient-to-b from-zinc-950 to-black p-5 shadow-2xl shadow-black/40">
+              <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500">
+                Signal Hub
+              </p>
+
+              <h1 className="mb-3 text-3xl font-semibold tracking-tight">
+                What matters now.
+              </h1>
+
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Create, read, reply, and return to the highest-signal parts of Loombus.
+              </p>
+
+              {email && (
+                <p className="mt-4 truncate text-xs text-zinc-700">
+                  {email}
+                </p>
+              )}
+            </section>
+
+            <section className="mb-5">
+              <Link
+                href="/create"
+                className="block rounded-[1.75rem] border border-zinc-500 bg-white p-5 text-black shadow-2xl shadow-black/30 active:scale-[0.99]"
+              >
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600">
+                  Start signal
+                </p>
+
+                <h2 className="text-2xl font-semibold tracking-tight">
+                  Create a discussion
+                </h2>
+
+                <p className="mt-2 text-sm leading-relaxed text-zinc-700">
+                  Turn a clear thought, question, or claim into a focused thread.
+                </p>
+              </Link>
+            </section>
+
+            <section className="mb-5 grid grid-cols-2 gap-3">
+              <Link
+                href="/discussions"
+                className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 active:scale-[0.99]"
+              >
+                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Read
+                </p>
+                <h2 className="text-lg font-semibold">Discussions</h2>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                  Browse focused conversations.
+                </p>
+              </Link>
+
+              <Link
+                href="/notifications"
+                className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 active:scale-[0.99]"
+              >
+                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Return
+                </p>
+                <h2 className="text-lg font-semibold">Alerts</h2>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                  See replies, follows, and mentions.
+                </p>
+              </Link>
+
+              <Link
+                href="/following"
+                className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 active:scale-[0.99]"
+              >
+                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  People
+                </p>
+                <h2 className="text-lg font-semibold">Following</h2>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                  Follow selective signal.
+                </p>
+              </Link>
+
+              <Link
+                href="/saved"
+                className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 active:scale-[0.99]"
+              >
+                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Memory
+                </p>
+                <h2 className="text-lg font-semibold">Saved</h2>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                  Revisit what is worth keeping.
+                </p>
+              </Link>
+            </section>
+
+            <section className="mb-5 rounded-[1.75rem] border border-zinc-800 bg-zinc-950/70 p-4">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+                    Today’s direction
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold">
+                    More signal. Less drift.
+                  </h2>
+                </div>
+
+                <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                  v1
+                </span>
+              </div>
+
+              <div className="grid gap-2">
+                <Link
+                  href="/dashboard"
+                  className="rounded-2xl border border-zinc-900 bg-black p-3 text-sm text-zinc-300"
+                >
+                  Dashboard → account, plan, and activity status
+                </Link>
+
+                <Link
+                  href="/profile"
+                  className="rounded-2xl border border-zinc-900 bg-black p-3 text-sm text-zinc-300"
+                >
+                  Profile → public identity and notification comfort
+                </Link>
+
+                <Link
+                  href="/settings"
+                  className="rounded-2xl border border-zinc-900 bg-black p-3 text-sm text-zinc-300"
+                >
+                  Settings → account, legal, safety, and platform controls
+                </Link>
+              </div>
+            </section>
+
+            <section className="rounded-[1.75rem] border border-zinc-900 bg-black p-4">
+              <p className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                Loombus principle
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-400">
+                The goal is not endless scrolling. The goal is cleaner thinking,
+                better replies, and conversations worth returning to.
+              </p>
+            </section>
+          </div>
+
+          <div className="hidden md:block">
           <div className="mb-7 sm:mb-10">
             <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500 sm:text-sm sm:tracking-[0.35em]">
               Member Home
@@ -281,6 +429,8 @@ export default function Home() {
               clarity, and use the safety tools when needed.
             </p>
           </section>
+          </div>
+
         </section>
       </main>
     );
