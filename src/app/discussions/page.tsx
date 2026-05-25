@@ -107,6 +107,48 @@ function matchesAdvancedFilter(
   return new Date(latestActivity).getTime() >= sevenDaysAgo;
 }
 
+function getTopicDiscoveryDescription(topic: string) {
+  const normalized = topic.toLowerCase();
+
+  if (normalized.includes("ai")) {
+    return "Artificial intelligence, platforms, automation, and how intelligence changes society.";
+  }
+
+  if (normalized.includes("book") || normalized.includes("writing")) {
+    return "Books, authorship, publishing, reading, and long-form ideas worth developing.";
+  }
+
+  if (normalized.includes("business") || normalized.includes("entrepreneur")) {
+    return "Companies, building, ownership, markets, and founder-level decisions.";
+  }
+
+  if (normalized.includes("culture")) {
+    return "Social behavior, media, values, identity, and how people make meaning.";
+  }
+
+  if (normalized.includes("education")) {
+    return "Learning, schools, skills, self-education, and intellectual development.";
+  }
+
+  if (normalized.includes("faith") || normalized.includes("values")) {
+    return "Belief, principle, ethics, purpose, and the values behind decisions.";
+  }
+
+  if (normalized.includes("work")) {
+    return "Careers, labor, productivity, leadership, and the future of work.";
+  }
+
+  if (normalized.includes("politics") || normalized.includes("policy")) {
+    return "Policy, governance, institutions, civic tradeoffs, and public decision-making.";
+  }
+
+  if (normalized.includes("technology") || normalized.includes("systems")) {
+    return "Systems, tools, infrastructure, and technical change with real-world impact.";
+  }
+
+  return `Focused conversations about ${topic.toLowerCase()} with depth, context, and signal.`;
+}
+
 export default function DiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -414,6 +456,11 @@ export default function DiscussionsPage() {
 
   const hasActiveDiscussionFilters = activeFilterLabels.length > 0;
 
+  const topicDiscoveryItems = DISCUSSION_TOPICS.slice(0, 12).map((topic) => ({
+    topic,
+    description: getTopicDiscoveryDescription(topic),
+  }));
+
   function resetDiscussionFilters() {
     setSearchQuery("");
     setTopicFilter("All");
@@ -488,6 +535,46 @@ export default function DiscussionsPage() {
                 Add something another reader can use: examples, experience, questions, or better structure.
               </p>
             </div>
+          </div>
+        </section>
+
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Topic discovery
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Choose a lane before scrolling.
+              </h2>
+
+              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                Loombus works best when readers start with a focused lane. Pick a topic to narrow the feed into conversations that match your intent.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAllTopics(true)}
+              className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+            >
+              Show all topics
+            </button>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {topicDiscoveryItems.map(({ topic, description }) => (
+              <Link
+                key={topic}
+                href={`/discussions?topic=${encodeURIComponent(topic)}`}
+                onClick={() => setTopicFilter(topic)}
+                className="rounded-2xl border border-zinc-800 bg-black p-4 transition hover:border-zinc-600 hover:bg-zinc-900"
+              >
+                <p className="text-sm font-medium text-white">{topic}</p>
+                <p className="mt-2 text-sm leading-6 text-zinc-600">{description}</p>
+              </Link>
+            ))}
           </div>
         </section>
 
