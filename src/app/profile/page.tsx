@@ -360,20 +360,20 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-6xl">
         <Link
           href="/settings"
-          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+          className="mb-6 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to settings
         </Link>
 
-        <h1 className="mb-5 text-4xl font-semibold tracking-tight md:text-5xl">
+        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
           Profile
         </h1>
 
-        <p className="mb-8 text-zinc-400">
+        <p className="mb-6 text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
           Manage your public Loombus profile and notification preferences.
         </p>
 
-        <section className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Profile setup guide
           </p>
@@ -421,20 +421,20 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-6">
           <form
             onSubmit={saveProfile}
             onKeyDown={handleProfileFormKeyDown}
-            className="space-y-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+            className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:space-y-8 sm:p-6"
           >
-          <section className="rounded-2xl border border-zinc-900 bg-black p-5">
-            <div className="mb-4 flex items-center justify-between gap-4">
+          <section className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
+            <div className="mb-4 flex items-start justify-between gap-3 sm:items-center sm:gap-4">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                   Profile completion
                 </p>
 
-                <h2 className="text-2xl font-medium">
+                <h2 className="text-xl font-medium sm:text-2xl">
                   {profileCompletionPercent}% complete
                 </h2>
               </div>
@@ -462,9 +462,9 @@ export default function ProfilePage() {
             )}
           </section>
 
-          <section className="space-y-5">
+          <section className="space-y-4 sm:space-y-5">
             <div>
-              <h2 className="text-2xl font-medium">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Public profile
               </h2>
 
@@ -473,9 +473,9 @@ export default function ProfilePage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-4">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <ProfileAvatar
                     profile={{
                       full_name: fullName,
@@ -496,7 +496,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <label className="inline-flex cursor-pointer rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white">
+                <label className="inline-flex w-full cursor-pointer justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit">
                   {uploadingAvatar ? "Uploading..." : "Upload Image"}
                   <input
                     type="file"
@@ -522,7 +522,7 @@ export default function ProfilePage() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               />
               <p className="mt-2 text-xs text-zinc-600">
                 Use 2-30 letters, numbers, or underscores. Usernames must be unique and should not include the @ symbol.
@@ -546,7 +546,7 @@ export default function ProfilePage() {
                   )
                 }
                 placeholder="saint"
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               />
             </div>
 
@@ -560,15 +560,15 @@ export default function ProfilePage() {
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="Write a short introduction..."
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               />
             </div>
           </section>
 
-          <section className="space-y-5 border-t border-zinc-900 pt-8">
+          <section className="space-y-4 border-t border-zinc-900 pt-6 sm:space-y-5 sm:pt-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h2 className="text-2xl font-medium">
+                <h2 className="text-xl font-medium sm:text-2xl">
                   Creator / supporter tools
                 </h2>
 
@@ -605,7 +605,7 @@ export default function ProfilePage() {
                 onChange={(event) => setCreatorWebsiteUrl(event.target.value)}
                 placeholder="https://example.com"
                 maxLength={240}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-700 disabled:placeholder:text-zinc-800"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-700 disabled:placeholder:text-zinc-800"
               />
 
               <p className="mt-2 text-xs text-zinc-600">
@@ -625,7 +625,7 @@ export default function ProfilePage() {
                 onChange={(event) => setCreatorSupportUrl(event.target.value)}
                 placeholder="https://buymeacoffee.com/yourname"
                 maxLength={240}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-700 disabled:placeholder:text-zinc-800"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-700 disabled:placeholder:text-zinc-800"
               />
 
               <p className="mt-2 text-xs text-zinc-600">
@@ -645,7 +645,7 @@ export default function ProfilePage() {
                 onChange={(event) => setCreatorSupportLabel(event.target.value)}
                 placeholder="Support my work"
                 maxLength={40}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-700 disabled:placeholder:text-zinc-800"
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-700 disabled:placeholder:text-zinc-800"
               />
 
               <p className="mt-2 text-xs text-zinc-600">
@@ -654,9 +654,9 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          <section className="border-t border-zinc-900 pt-8">
-            <div className="mb-5">
-              <h2 className="text-2xl font-medium">
+          <section className="border-t border-zinc-900 pt-6 sm:pt-8">
+            <div className="mb-4 sm:mb-5">
+              <h2 className="text-xl font-medium sm:text-2xl">
                 Notification settings
               </h2>
 
@@ -666,7 +666,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-4">
-              <label className="flex items-start justify-between gap-4 rounded-2xl border border-zinc-900 bg-black p-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     Replies
@@ -684,7 +684,7 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <label className="flex items-start justify-between gap-4 rounded-2xl border border-zinc-900 bg-black p-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     Follows
@@ -702,7 +702,7 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <label className="flex items-start justify-between gap-4 rounded-2xl border border-zinc-900 bg-black p-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     Mentions
@@ -720,7 +720,7 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <label className="flex items-start justify-between gap-4 rounded-2xl border border-zinc-900 bg-black p-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     People I follow: new discussions
@@ -738,7 +738,7 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <label className="flex items-start justify-between gap-4 rounded-2xl border border-zinc-900 bg-black p-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     People I follow: replies
@@ -794,7 +794,7 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+            className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-fit"
           >
             {saving ? "Saving..." : "Save Profile"}
           </button>
@@ -810,17 +810,17 @@ export default function ProfilePage() {
           )}
           </form>
 
-          <aside className="h-fit rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
+          <aside className="h-fit rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6">
             <p className="mb-4 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Public Preview
             </p>
 
-            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
               <p className="mb-3 text-sm text-zinc-500">
                 @{username || "username"}
               </p>
 
-              <div className="my-5" aria-label="Profile preview avatar">
+              <div className="my-4 sm:my-5" aria-label="Profile preview avatar">
                 <ProfileAvatar
                   profile={{
                     full_name: fullName,
@@ -831,11 +831,11 @@ export default function ProfilePage() {
                 />
               </div>
 
-              <h2 className="mb-3 text-2xl font-medium">
+              <h2 className="mb-3 text-xl font-medium sm:text-2xl">
                 {fullName || "Loombus member"}
               </h2>
 
-              <p className="whitespace-pre-wrap leading-relaxed text-zinc-400">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-400 sm:text-base">
                 {bio || "Your bio preview will appear here."}
               </p>
 
