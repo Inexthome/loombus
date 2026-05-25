@@ -182,7 +182,7 @@ export default function Home() {
 
   if (authState === "checking") {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
         <section className="mx-auto flex min-h-[72vh] max-w-xl flex-col items-center justify-center text-center">
           <img
             src="/assets/brand/loombus-mark-transparent.png"
@@ -198,37 +198,37 @@ export default function Home() {
 
   if (authState === "logged_in") {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
         <section className="mx-auto max-w-6xl">
-          <div className="mb-10">
-            <p className="mb-4 text-sm uppercase tracking-[0.35em] text-zinc-500">
+          <div className="mb-7 sm:mb-10">
+            <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500 sm:text-sm sm:tracking-[0.35em]">
               Member Home
             </p>
 
-            <h1 className="mb-5 text-5xl font-semibold tracking-tight md:text-6xl">
+            <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
               Welcome back to Loombus.
             </h1>
 
-            <p className="max-w-3xl leading-relaxed text-zinc-400">
+            <p className="max-w-3xl text-sm leading-relaxed text-zinc-400 sm:text-base">
               Continue your discussions, find people, create something useful,
               or manage your account from one organized home screen.
             </p>
 
             {email && (
-              <p className="mt-5 text-sm text-zinc-600">
+              <p className="mt-4 text-sm text-zinc-600 sm:mt-5">
                 Signed in as {email}
               </p>
             )}
           </div>
 
-          <div className="mb-10 space-y-8">
+          <div className="mb-8 space-y-5 sm:mb-10 sm:space-y-8">
             {memberSections.map((section) => (
               <section
                 key={section.heading}
-                className="rounded-3xl border border-zinc-900 bg-zinc-950/40 p-5"
+                className="rounded-3xl border border-zinc-900 bg-zinc-950/40 p-4 sm:p-5"
               >
-                <div className="mb-5">
-                  <h2 className="text-2xl font-semibold tracking-tight">
+                <div className="mb-4 sm:mb-5">
+                  <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
                     {section.heading}
                   </h2>
 
@@ -237,18 +237,18 @@ export default function Home() {
                   </p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                   {section.cards.map((card) => (
                     <Link
                       key={card.href}
                       href={card.href}
-                      className={`rounded-3xl border p-6 transition hover:-translate-y-0.5 hover:border-zinc-600 ${
+                      className={`rounded-2xl border p-4 transition hover:-translate-y-0.5 hover:border-zinc-600 sm:p-6 ${
                         card.primary
                           ? "border-zinc-500 bg-white text-black hover:bg-zinc-200"
                           : "border-zinc-800 bg-black/40 text-white hover:bg-zinc-900"
                       }`}
                     >
-                      <h3 className="mb-3 text-xl font-semibold">
+                      <h3 className="mb-2 text-lg font-semibold sm:mb-3 sm:text-xl">
                         {card.title}
                       </h3>
 
@@ -266,16 +266,16 @@ export default function Home() {
             ))}
           </div>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7">
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-7">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Platform focus
             </p>
 
-            <h2 className="mb-3 text-2xl font-medium">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               Keep the signal high.
             </h2>
 
-            <p className="max-w-3xl leading-relaxed text-zinc-400">
+            <p className="max-w-3xl text-sm leading-relaxed text-zinc-400 sm:text-base">
               Loombus is built for thoughtful discussion, useful contribution,
               and cleaner community dialogue. Create with purpose, reply with
               clarity, and use the safety tools when needed.
@@ -287,7 +287,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
       <section className="mx-auto flex min-h-[72vh] max-w-xl flex-col items-center justify-center text-center">
         <img
           src="/assets/brand/loombus-mark-transparent.png"
@@ -295,11 +295,11 @@ export default function Home() {
           className="mb-6 h-14 w-14 object-contain"
         />
 
-        <p className="mb-4 text-sm uppercase tracking-[0.35em] text-zinc-500">
+        <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500 sm:text-sm sm:tracking-[0.35em]">
           Loombus
         </p>
 
-        <h1 className="mb-5 text-5xl font-semibold tracking-tight md:text-6xl">
+        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
           Signal over noise.
         </h1>
 
