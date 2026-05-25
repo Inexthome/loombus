@@ -487,20 +487,20 @@ export default function NotificationsClientPage() {
   return (
     <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="mb-4 text-5xl font-semibold tracking-tight">
+            <h1 className="mb-3 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
               Notifications
             </h1>
 
-            <p className="text-zinc-500">
+            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
               Updates from conversations and activity connected to you.
             </p>
           </div>
 
           {!loading && notifications.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500">
+            <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+              <div className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500">
                 {unreadCount === 0
                   ? "All caught up"
                   : `${unreadCount} unread`}
@@ -509,7 +509,7 @@ export default function NotificationsClientPage() {
               <button
                 onClick={markAllRead}
                 disabled={working || unreadCount === 0}
-                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
               >
                 Mark all read
               </button>
@@ -517,7 +517,7 @@ export default function NotificationsClientPage() {
               <button
                 onClick={clearReadNotifications}
                 disabled={working || readCount === 0}
-                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
               >
                 Clear read
               </button>
@@ -525,7 +525,7 @@ export default function NotificationsClientPage() {
           )}
         </div>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+        <section className="mb-6 hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-6 md:block">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Notifications guide
           </p>
@@ -580,7 +580,7 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && notifications.length > 0 && (
-          <div className="mb-8 flex flex-wrap gap-3">
+          <div className="mb-5 grid grid-cols-3 gap-2 sm:mb-8 sm:flex sm:flex-wrap sm:gap-3">
             {filterOptions.map((option) => (
               <button
                 key={option.value}
@@ -602,14 +602,14 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && notifications.length > 0 && (
-          <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
                   Advanced notification controls
                 </p>
 
-                <h2 className="text-2xl font-medium">
+                <h2 className="text-xl font-medium sm:text-2xl">
                   Filter notifications by signal
                 </h2>
               </div>
@@ -629,7 +629,7 @@ export default function NotificationsClientPage() {
                 Type filter
               </p>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {[
                   ["all", "All types"],
                   ["reply", "Replies"],
@@ -643,7 +643,7 @@ export default function NotificationsClientPage() {
                     type="button"
                     onClick={() => setTypeFilter(value as NotificationTypeFilter)}
                     disabled={!canUseAdvancedControls && value !== "all"}
-                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                    className={`rounded-full border px-3 py-2 text-xs transition sm:px-4 sm:text-sm ${
                       typeFilter === value
                         ? "border-zinc-400 text-white"
                         : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
@@ -660,7 +660,7 @@ export default function NotificationsClientPage() {
                 Sort order
               </p>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {[
                   ["newest", "Newest first"],
                   ["oldest", "Oldest first"],
@@ -670,7 +670,7 @@ export default function NotificationsClientPage() {
                     type="button"
                     onClick={() => setSortMode(value as NotificationSortMode)}
                     disabled={!canUseAdvancedControls && value !== "newest"}
-                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                    className={`rounded-full border px-3 py-2 text-xs transition sm:px-4 sm:text-sm ${
                       sortMode === value
                         ? "border-zinc-400 text-white"
                         : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
@@ -690,24 +690,24 @@ export default function NotificationsClientPage() {
         )}
 
         {loading && (
-          <p className="text-zinc-500">
+          <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
             Loading notifications...
           </p>
         )}
 
         {!loading && notifications.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
-            <h2 className="mb-3 text-2xl font-medium">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-8">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No notifications yet.
             </h2>
 
-            <p className="mb-6 max-w-3xl text-zinc-400">
+            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
               Notifications appear when people reply, mention you, follow you, or
               interact with activity connected to your contributions. The best way
               to make this page useful is to participate where people can respond.
             </p>
 
-            <div className="mb-6 grid gap-4 md:grid-cols-3">
+            <div className="mb-5 grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   Start a discussion
@@ -739,24 +739,24 @@ export default function NotificationsClientPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
                 href="/create"
-                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+                className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
               >
                 Create a discussion
               </Link>
 
               <Link
                 href="/discussions"
-                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
                 Browse discussions
               </Link>
 
               <Link
                 href="/profile"
-                className="inline-flex rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                className="inline-flex justify-center rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
               >
                 Review profile
               </Link>
@@ -765,17 +765,17 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && notifications.length > 0 && filteredNotifications.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
-            <h2 className="mb-3 text-2xl font-medium">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-8">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No notifications found.
             </h2>
 
-            <p className="mb-6 max-w-3xl text-zinc-400">
+            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
               No notifications match the current filters. Broaden the view or
               return to all notifications to review everything connected to you.
             </p>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <button
                 type="button"
                 onClick={() => {
@@ -783,14 +783,14 @@ export default function NotificationsClientPage() {
                   setTypeFilter("all");
                   setSortMode("newest");
                 }}
-                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+                className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
               >
                 Clear filters
               </button>
 
               <Link
                 href="/discussions"
-                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
                 Browse discussions
               </Link>
@@ -798,7 +798,7 @@ export default function NotificationsClientPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredNotifications.map((notification) => {
             const href = getNotificationHref(notification, profiles);
             const actorProfile = notification.actor_id
@@ -826,11 +826,11 @@ export default function NotificationsClientPage() {
                   </span>
                 </div>
 
-                <div className="mb-4 flex items-start gap-4">
+                <div className="mb-4 flex items-start gap-3 sm:gap-4">
                   <ProfileAvatar profile={actorProfile} size="md" />
 
                   <div className="min-w-0">
-                    <p className="text-zinc-300">
+                    <p className="text-sm leading-relaxed text-zinc-300 sm:text-base">
                       {getNotificationMessage(notification, profiles)}
                     </p>
 
@@ -840,7 +840,7 @@ export default function NotificationsClientPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   {href && (
                     <Link
                       href={href}
@@ -848,7 +848,7 @@ export default function NotificationsClientPage() {
                         event.preventDefault();
                         openNotification(notification, href);
                       }}
-                      className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                      className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
                     >
                       {getNotificationActionLabel(notification)}
                     </Link>
@@ -858,7 +858,7 @@ export default function NotificationsClientPage() {
                     <button
                       onClick={() => markRead(notification.id)}
                       disabled={working}
-                      className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                     >
                       Mark read
                     </button>
@@ -867,7 +867,7 @@ export default function NotificationsClientPage() {
                   <button
                     onClick={() => deleteNotification(notification.id)}
                     disabled={working}
-                    className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                   >
                     Delete
                   </button>
