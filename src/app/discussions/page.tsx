@@ -405,6 +405,22 @@ export default function DiscussionsPage() {
     latestReplyDates,
   ]);
 
+  const activeFilterLabels = [
+    searchQuery.trim() ? `Search: “${searchQuery.trim()}”` : "",
+    selectedTopic !== "All" ? `Topic: ${selectedTopic}` : "",
+    sortMode !== "Newest" ? `Sort: ${sortMode}` : "",
+    advancedFilter !== "All activity" ? `Filter: ${advancedFilter}` : "",
+  ].filter(Boolean);
+
+  const hasActiveDiscussionFilters = activeFilterLabels.length > 0;
+
+  function resetDiscussionFilters() {
+    setSearchQuery("");
+    setTopicFilter("All");
+    setSortMode("Newest");
+    setAdvancedFilter("All activity");
+  }
+
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-6xl">
@@ -475,15 +491,51 @@ export default function DiscussionsPage() {
           </div>
         </section>
 
-        <div className="mb-8">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search discussions, topics, or contributors..."
-            className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
-          />
-        </div>
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex-1">
+              <label htmlFor="discussion-search" className="mb-2 block text-sm font-medium text-zinc-300">
+                Search discussions
+              </label>
+
+              <input
+                id="discussion-search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search titles, bodies, topics, or contributors..."
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+              />
+            </div>
+
+            {hasActiveDiscussionFilters && (
+              <button
+                type="button"
+                onClick={resetDiscussionFilters}
+                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Clear search and filters
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {activeFilterLabels.length > 0 ? (
+              activeFilterLabels.map((label) => (
+                <span
+                  key={label}
+                  className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400"
+                >
+                  {label}
+                </span>
+              ))
+            ) : (
+              <p className="text-sm text-zinc-600">
+                Search scans discussion titles, bodies, topics, and contributor names.
+              </p>
+            )}
+          </div>
+        </section>
 
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-3">
@@ -604,9 +656,21 @@ export default function DiscussionsPage() {
         </div>
 
         {!loading && (
-          <p className="mb-10 text-sm text-zinc-600">
-            Showing {filteredDiscussions.length} of {discussions.length} discussions
-          </p>
+          <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <p className="text-sm text-zinc-600">
+              Showing {filteredDiscussions.length} of {discussions.length} discussions
+            </p>
+
+            {hasActiveDiscussionFilters && (
+              <button
+                type="button"
+                onClick={resetDiscussionFilters}
+                className="w-fit text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+              >
+                Reset view
+              </button>
+            )}
+          </div>
         )}
 
         {loading && (
@@ -621,9 +685,29 @@ export default function DiscussionsPage() {
               No discussions found.
             </h2>
 
-            <p className="text-zinc-400">
+            <p className="max-w-2xl text-zinc-400">
               No discussions match the current search, topic, sort, or advanced filter selection.
+              Try clearing the filters, using a broader search term, or starting a new discussion in this topic.
             </p>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              {hasActiveDiscussionFilters && (
+                <button
+                  type="button"
+                  onClick={resetDiscussionFilters}
+                  className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+                >
+                  Clear filters
+                </button>
+              )}
+
+              <Link
+                href="/create"
+                className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Start a discussion
+              </Link>
+            </div>
           </div>
         )}
 
