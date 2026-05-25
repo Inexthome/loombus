@@ -1731,7 +1731,7 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7">
+        <section className="mb-6 rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-600">
@@ -1772,7 +1772,7 @@ export default function DiscussionPage() {
 
           {discussionSummary ? (
             <>
-              <div className="whitespace-pre-wrap leading-relaxed text-zinc-300">
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
                 {discussionSummary.summary}
               </div>
 
@@ -1884,7 +1884,7 @@ export default function DiscussionPage() {
             id="reply-form"
             onSubmit={handleReply}
             onKeyDown={handleReplyFormKeyDown}
-            className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7"
+            className="mb-6 rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7"
           >
             <label className="mb-3 block text-sm text-zinc-400">
               Add a thoughtful reply
@@ -1919,14 +1919,14 @@ export default function DiscussionPage() {
               onChange={(e) => setReplyBody(e.target.value)}
               disabled={postingReply}
               placeholder="Contribute with clarity, context, and signal... Use @username to mention someone."
-              className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600"
+              className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600"
             />
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="submit"
                 disabled={postingReply}
-              className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+              className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-fit"
             >
                 {postingReply ? "Posting..." : "Post Reply"}
               </button>
@@ -1940,8 +1940,8 @@ export default function DiscussionPage() {
           </form>
 
           {pinnedReply && (
-            <section className="mb-6 rounded-3xl border border-amber-900 bg-amber-950/20 p-5 shadow-2xl shadow-black/30 sm:p-7">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <section className="mb-5 rounded-[1.5rem] border border-amber-900 bg-amber-950/20 p-4 shadow-2xl shadow-black/30 sm:mb-6 sm:p-7">
+              <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">
                     Pinned reply
@@ -1981,7 +1981,7 @@ export default function DiscussionPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-amber-900/60 bg-black/30 p-5">
+              <div className="rounded-2xl border border-amber-900/60 bg-black/30 p-4 sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center gap-3 text-sm text-zinc-500">
                   <ProfileAvatar
                     profile={replyProfiles[pinnedReply.user_id]}
@@ -2002,7 +2002,7 @@ export default function DiscussionPage() {
                   </div>
                 )}
 
-                <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
                   <MentionText text={pinnedReply.body} />
                 </p>
 
@@ -2015,7 +2015,7 @@ export default function DiscussionPage() {
             </section>
           )}
 
-          <div className="space-y-5">
+          <div className="space-y-3 sm:space-y-5">
             {visibleReplies.map((reply) => {
               const canEditReply =
                 Boolean(currentUserId) &&
@@ -2036,9 +2036,9 @@ export default function DiscussionPage() {
               return (
                 <div
                   key={reply.id}
-                  className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7"
+                  className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:p-7"
                 >
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                     <p className="text-sm text-zinc-500">
                       <span className="inline-flex items-center gap-3">
                         <ProfileAvatar
@@ -2049,13 +2049,13 @@ export default function DiscussionPage() {
                       </span>
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
                       {canRespondToPoint && !isEditingReply && (
                         <button
                           type="button"
                           onClick={() => startRespondToPoint(reply)}
                           disabled={Boolean(editingReplyId)}
-                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                         >
                           Respond to point
                         </button>
@@ -2066,7 +2066,7 @@ export default function DiscussionPage() {
                           type="button"
                           onClick={() => handleReportReply(reply.id)}
                           disabled={reportingReplyId === reply.id || hasReportedReply}
-                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                         >
                           {hasReportedReply
                             ? "Reported"
@@ -2086,7 +2086,7 @@ export default function DiscussionPage() {
                             )
                           }
                           disabled={Boolean(pinWorkingReplyId)}
-                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-amber-700 hover:text-amber-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-amber-700 hover:text-amber-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                         >
                           {pinWorkingReplyId === reply.id
                             ? "Updating..."
@@ -2101,7 +2101,7 @@ export default function DiscussionPage() {
                           type="button"
                           onClick={() => startReplyEdit(reply)}
                           disabled={Boolean(editingReplyId) || updatingReplyId === reply.id}
-                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                         >
                           Edit
                         </button>
@@ -2112,7 +2112,7 @@ export default function DiscussionPage() {
                           type="button"
                           onClick={() => handleDeleteReply(reply.id)}
                           disabled={deletingReplyId === reply.id || isEditingReply}
-                          className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                         >
                           {deletingReplyId === reply.id ? "Deleting..." : "Delete"}
                         </button>
@@ -2127,7 +2127,7 @@ export default function DiscussionPage() {
                         onChange={(event) => setEditingReplyBody(event.target.value)}
                         rows={5}
                         maxLength={5000}
-                        className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm leading-relaxed text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-zinc-600"
+                        className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base leading-relaxed text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-zinc-600"
                       />
 
                       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2158,7 +2158,7 @@ export default function DiscussionPage() {
                     </div>
                   ) : (
                     <>
-                      <p className="whitespace-pre-wrap leading-relaxed text-zinc-300">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
                         <MentionText text={reply.body} />
                       </p>
 
