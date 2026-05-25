@@ -336,6 +336,16 @@ export default function MyActivityPage() {
     window.location.href = href;
   }
 
+  const hasAnyActivity =
+    activityTotals.discussions > 0 ||
+    activityTotals.replies > 0 ||
+    activityTotals.saved > 0 ||
+    activityTotals.unreadNotifications > 0 ||
+    discussions.length > 0 ||
+    replies.length > 0 ||
+    savedDiscussions.length > 0 ||
+    notifications.length > 0;
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -524,6 +534,85 @@ export default function MyActivityPage() {
           </div>
         )}
 
+        {!hasAnyActivity && (
+          <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
+            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              Activity starter
+            </p>
+
+            <h2 className="mb-4 text-2xl font-medium">
+              Build your first activity trail.
+            </h2>
+
+            <p className="mb-6 max-w-3xl leading-relaxed text-zinc-400">
+              Your activity page becomes useful after you start a discussion, reply to someone,
+              save a thread, or follow contributors. Start with one intentional action.
+            </p>
+
+            <div className="mb-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Start with signal
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Create one focused discussion that gives people something specific to respond to.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Join before posting
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Reply to an existing discussion with context, examples, or a useful counterpoint.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Save what matters
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Save discussions worth revisiting so Loombus becomes a useful thinking trail.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/create"
+                className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+              >
+                Start first discussion
+              </Link>
+
+              <Link
+                href="/discussions"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Browse discussions
+              </Link>
+
+              <Link
+                href="/people"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Find people
+              </Link>
+
+              <Link
+                href="/onboarding"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Open setup guide
+              </Link>
+            </div>
+          </section>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-2">
           <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
             <div className="mb-5 flex items-center justify-between gap-4">
@@ -558,12 +647,21 @@ export default function MyActivityPage() {
                     Start one clear question, claim, or idea so people have something useful to respond to.
                   </p>
 
-                  <Link
-                    href="/create"
-                    className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
-                  >
-                    Create your first discussion →
-                  </Link>
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href="/create"
+                      className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+                    >
+                      Create your first discussion →
+                    </Link>
+
+                    <Link
+                      href="/onboarding"
+                      className="text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+                    >
+                      Open setup guide →
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -674,12 +772,21 @@ export default function MyActivityPage() {
                     Save discussions that are worth revisiting, comparing, citing, or building on later.
                   </p>
 
-                  <Link
-                    href="/discussions"
-                    className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
-                  >
-                    Browse discussions to save →
-                  </Link>
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href="/discussions"
+                      className="text-sm text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+                    >
+                      Browse discussions to save →
+                    </Link>
+
+                    <Link
+                      href="/following"
+                      className="text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+                    >
+                      Open following feed →
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
