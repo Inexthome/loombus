@@ -725,14 +725,14 @@ export default function FollowingPage() {
             return (
               <div
                 key={discussion.id}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+                className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
               >
                 <Link
                   href={`/discussions/${discussion.id}`}
                   className="block"
                 >
-                  <div className="mb-3 flex flex-wrap items-center gap-3">
-                    <p className="text-sm text-zinc-500">
+                  <div className="mb-4 flex flex-wrap items-center gap-3">
+                    <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">
                       {discussion.topic}
                     </p>
 
@@ -743,16 +743,16 @@ export default function FollowingPage() {
                     </span>
                   </div>
 
-                  <h2 className="mb-3 text-2xl font-medium">
+                  <h2 className="mb-3 text-2xl font-medium transition group-hover:text-white">
                     {discussion.title}
                   </h2>
 
-                  <p className="mb-4 line-clamp-2 leading-relaxed text-zinc-400">
+                  <p className="mb-5 line-clamp-3 leading-relaxed text-zinc-400">
                     {discussion.body}
                   </p>
                 </Link>
 
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-4 border-t border-zinc-900 pt-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
                     <ProfileAvatar profile={profile} size="md" />
 
@@ -778,7 +778,7 @@ export default function FollowingPage() {
                     </p>
                   </div>
 
-                  <div className="shrink-0 text-right">
+                  <div className="shrink-0 rounded-2xl border border-zinc-900 bg-black px-4 py-3 text-left md:text-right">
                     <p className="text-sm text-zinc-500">
                       {replyCounts[discussion.id] ?? 0} replies ·{" "}
                       {viewCounts[discussion.id] ?? 0} views
