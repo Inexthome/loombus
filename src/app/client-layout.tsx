@@ -45,6 +45,26 @@ export default function ClientLayout({
       : "rounded-xl border border-transparent px-4 py-3 text-zinc-400 transition hover:border-zinc-800 hover:bg-zinc-950 hover:text-white";
   }
 
+  function appTabClass(href: string) {
+    const active =
+      pathname === href || (href !== "/" && pathname.startsWith(href));
+
+    return `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition ${
+      active
+        ? "bg-white text-black"
+        : "text-zinc-500 hover:bg-zinc-900 hover:text-white"
+    }`;
+  }
+
+  function appMenuButtonClass() {
+    return `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition ${
+      mobileMenuOpen
+        ? "bg-white text-black"
+        : "text-zinc-500 hover:bg-zinc-900 hover:text-white"
+    }`;
+  }
+
+
   async function loadNotificationCount(
     userId: string,
     options: { force?: boolean } = {}
@@ -442,7 +462,55 @@ export default function ClientLayout({
         </header>
       )}
 
-      {children}
+      <div className={user ? "pb-24 md:pb-0" : ""}>
+        {children}
+      </div>
+
+      {user && (
+        <nav
+          aria-label="Mobile app navigation"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-900 bg-black/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-2xl shadow-black/60 backdrop-blur md:hidden"
+        >
+          <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
+            <Link href="/" onClick={closeMobileMenu} className={appTabClass("/")}>
+              <span className="text-base leading-none">⌂</span>
+              <span className="truncate">Home</span>
+            </Link>
+
+            <Link href="/create" onClick={closeMobileMenu} className={appTabClass("/create")}>
+              <span className="text-base leading-none">＋</span>
+              <span className="truncate">Create</span>
+            </Link>
+
+            <Link href="/discussions" onClick={closeMobileMenu} className={appTabClass("/discussions")}>
+              <span className="text-base leading-none">◌</span>
+              <span className="truncate">Discuss</span>
+            </Link>
+
+            <Link href="/notifications" onClick={closeMobileMenu} className={appTabClass("/notifications")}>
+              <span className="relative text-base leading-none">
+                ◇
+                {notificationCount > 0 && (
+                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-white px-1 text-[10px] leading-4 text-black">
+                    {notificationCount > 9 ? "9+" : notificationCount}
+                  </span>
+                )}
+              </span>
+              <span className="truncate">Alerts</span>
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              aria-expanded={mobileMenuOpen}
+              className={appMenuButtonClass()}
+            >
+              <span className="text-base leading-none">☰</span>
+              <span className="truncate">Menu</span>
+            </button>
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
