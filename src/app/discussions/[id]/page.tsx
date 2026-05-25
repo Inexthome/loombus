@@ -35,6 +35,15 @@ type Reply = {
   created_at: string;
 };
 
+type RelatedDiscussion = {
+  id: string;
+  user_id: string;
+  title: string;
+  topic: string;
+  created_at: string;
+};
+
+
 type DiscussionSummary = {
   id: string;
   discussion_id: string;
@@ -114,6 +123,7 @@ export default function DiscussionPage() {
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
+  const [relatedDiscussions, setRelatedDiscussions] = useState<RelatedDiscussion[]>([]);
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [replyBody, setReplyBody] = useState("");
   const [postingReply, setPostingReply] = useState(false);
@@ -161,6 +171,7 @@ export default function DiscussionPage() {
 
       if (discussionError || !discussionData) {
         setDiscussion(null);
+        setRelatedDiscussions([]);
         setLoading(false);
         return;
       }
@@ -184,6 +195,15 @@ export default function DiscussionPage() {
         .eq("discussion_id", id)
         .maybeSingle();
 
+      const { data: relatedData } = await supabase
+        .from("discussions")
+        .select("id, user_id, title, topic, created_at")
+        .eq("topic", discussionData.topic)
+        .neq("id", id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
       const { data: viewerData } = await supabase.auth.getUser();
       const hiddenProfileIds = new Set<string>();
 
@@ -202,6 +222,10 @@ export default function DiscussionPage() {
 
       const visibleReplies = (repliesData ?? []).filter(
         (reply) => !hiddenProfileIds.has(reply.user_id)
+      );
+
+      const visibleRelatedDiscussions = ((relatedData ?? []) as RelatedDiscussion[]).filter(
+        (item) => !hiddenProfileIds.has(item.user_id)
       );
 
       const replyUserIds = [...new Set(visibleReplies.map((reply) => reply.user_id))];
@@ -345,6 +369,7 @@ export default function DiscussionPage() {
       setProfile(profileData ?? null);
       setDiscussionSummary(summaryData ?? null);
       setReplies(visibleReplies);
+      setRelatedDiscussions(visibleRelatedDiscussions);
       setReplyProfiles(replyProfileMap);
       setLoading(false);
     }
@@ -1408,6 +1433,54 @@ export default function DiscussionPage() {
             reserves space for the platform intelligence layer.
           </p>
         </div>
+
+        {relatedDiscussions.length > 0 && (
+          <div className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
+                  Related discussions
+                </p>
+                <h2 className="mt-2 text-2xl font-medium text-white">
+                  Keep reading in {discussion.topic}
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+                  Continue into nearby conversations instead of stopping at one thread.
+                </p>
+              </div>
+
+              <Link
+                href={`/discussions?topic=${encodeURIComponent(discussion.topic)}`}
+                className="inline-flex rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                View topic
+              </Link>
+            </div>
+
+            <div className="grid gap-3">
+              {relatedDiscussions.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/discussions/${item.id}`}
+                  className="rounded-2xl border border-zinc-800 bg-black/30 p-4 transition hover:border-zinc-600 hover:bg-black/50"
+                >
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
+                        {item.topic}
+                      </p>
+                      <h3 className="mt-2 text-base font-medium text-white">{item.title}</h3>
+                    </div>
+
+                    <p className="text-xs text-zinc-500">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div>
           <h2 className="mb-8 text-2xl font-medium">
