@@ -219,9 +219,9 @@ export default function DashboardClientPage() {
       title: "Complete your profile",
       description: profileComplete
         ? "Your profile has the basics people need to recognize your contributions."
-        : `Add your ${missingProfileFields.join(", ")} so members know who they are reading.`,
-      href: "/profile",
-      action: profileComplete ? "Review profile" : "Complete profile",
+        : `Use the new member setup guide to add your ${missingProfileFields.join(", ")} and understand what to do next.`,
+      href: profileComplete ? "/profile" : "/onboarding",
+      action: profileComplete ? "Review profile" : "Open setup guide",
       complete: profileComplete,
     },
     {
