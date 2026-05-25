@@ -253,20 +253,37 @@ export default function ClientLayout({
       return;
     }
 
-    let lastScrollY = window.scrollY;
+    function getScrollY() {
+      return (
+        window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0
+      );
+    }
+
+    let lastScrollY = getScrollY();
+    let touchStartY: number | null = null;
     let ticking = false;
 
-    function updateBottomNavVisibility() {
-      const currentScrollY = window.scrollY;
-      const scrollDelta = currentScrollY - lastScrollY;
-
+    function setNavVisibilityFromDelta(currentScrollY: number, scrollDelta: number) {
       if (mobileMenuOpen || currentScrollY < 80) {
         setBottomNavHidden(false);
-      } else if (scrollDelta > 8) {
+        return;
+      }
+
+      if (scrollDelta > 8) {
         setBottomNavHidden(true);
       } else if (scrollDelta < -8) {
         setBottomNavHidden(false);
       }
+    }
+
+    function updateBottomNavVisibility() {
+      const currentScrollY = getScrollY();
+      const scrollDelta = currentScrollY - lastScrollY;
+
+      setNavVisibilityFromDelta(currentScrollY, scrollDelta);
 
       lastScrollY = currentScrollY;
       ticking = false;
@@ -279,10 +296,37 @@ export default function ClientLayout({
       }
     }
 
+    function handleTouchStart(event: TouchEvent) {
+      touchStartY = event.touches[0]?.clientY ?? null;
+    }
+
+    function handleTouchMove(event: TouchEvent) {
+      if (touchStartY === null) {
+        return;
+      }
+
+      const currentTouchY = event.touches[0]?.clientY ?? touchStartY;
+      const touchDelta = touchStartY - currentTouchY;
+      const currentScrollY = getScrollY();
+
+      setNavVisibilityFromDelta(currentScrollY, touchDelta);
+    }
+
+    function handleTouchEnd() {
+      lastScrollY = getScrollY();
+      touchStartY = null;
+    }
+
     window.addEventListener("scroll", handleScroll, { passive: true });
+    document.addEventListener("touchstart", handleTouchStart, { passive: true });
+    document.addEventListener("touchmove", handleTouchMove, { passive: true });
+    document.addEventListener("touchend", handleTouchEnd, { passive: true });
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
     };
   }, [mobileMenuOpen, user]);
 
