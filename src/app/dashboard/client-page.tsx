@@ -8,6 +8,7 @@ import {
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
 import {
+import { ProgressiveGuide } from "@/components/progressive-guide";
   getAiUsageLabel,
   getSubscriptionDisplay,
 } from "@/lib/subscription-plans";
@@ -314,6 +315,14 @@ export default function DashboardClientPage() {
           Signed in as {email}
         </p>
 
+        <ProgressiveGuide
+          storageKey="loombus-guide-dashboard-getting-started-v1"
+          eyebrow="Guide"
+          title="Getting started"
+          description="Review your setup steps when you need them."
+          collapsedClassName="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6"
+          autoCollapse={gettingStartedCompleteCount === gettingStartedSteps.length}
+        >
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
             <div>
@@ -370,6 +379,8 @@ export default function DashboardClientPage() {
             ))}
           </div>
         </section>
+
+        </ProgressiveGuide>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">

@@ -8,6 +8,7 @@ import {
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { ProgressiveGuide } from "@/components/progressive-guide";
 
 type Notification = {
   id: string;
@@ -525,7 +526,15 @@ export default function NotificationsClientPage() {
           )}
         </div>
 
-        <section className="mb-6 hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-6 md:block">
+        <ProgressiveGuide
+          storageKey="loombus-guide-notifications-v1"
+          eyebrow="Guide"
+          title="Notifications guide"
+          description="Reopen this when you want help managing alerts without distraction."
+          collapsedClassName="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6"
+          defaultCollapsed
+        >
+        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Notifications guide
           </p>
@@ -572,6 +581,8 @@ export default function NotificationsClientPage() {
             </div>
           </div>
         </section>
+
+        </ProgressiveGuide>
 
         {message && (
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">

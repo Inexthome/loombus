@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
+import { ProgressiveGuide } from "@/components/progressive-guide";
 
 type Discussion = {
   id: string;
@@ -543,6 +544,13 @@ export default function DiscussionsPage() {
           </Link>
         </div>
 
+        <ProgressiveGuide
+          storageKey="loombus-guide-discussions-finding-signal-v1"
+          eyebrow="Guide"
+          title="Finding signal"
+          description="Reopen this when you want help browsing with more intent."
+          collapsedClassName="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6"
+        >
         <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Finding signal
@@ -590,6 +598,8 @@ export default function DiscussionsPage() {
             </div>
           </div>
         </section>
+
+        </ProgressiveGuide>
 
         <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">

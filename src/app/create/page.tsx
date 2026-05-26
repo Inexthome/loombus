@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import { ProgressiveGuide } from "@/components/progressive-guide";
 
 type Profile = {
   full_name: string | null;
@@ -695,7 +696,14 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && !isEditMode && (
-          <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
+          <ProgressiveGuide
+          storageKey="loombus-guide-create-first-discussion-v1"
+          eyebrow="Guide"
+          title="First discussion guide"
+          description="Reopen this when you want help shaping a high-signal post."
+          collapsedClassName="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5"
+        >
+        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               First discussion guide
             </p>
@@ -743,6 +751,8 @@ export default function CreatePage() {
             </div>
           </section>
         )}
+
+        </ProgressiveGuide>
 
         {authChecked && isLoggedIn && isEditMode && (
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
