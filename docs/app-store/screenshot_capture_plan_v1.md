@@ -115,3 +115,28 @@ android-05-alerts-inbox.png
 android-06-people-discovery.png
 android-07-following-feed.png
 android-08-menu-overlay.png
+
+```
+
+## Next steps
+
+1. Capture iOS screenshots from Xcode Simulator.
+2. Capture Android screenshots from Android Emulator.
+3. Store raw screenshots outside git first.
+4. Review screenshots for private data, test data, admin-only controls, and unclear placeholder content.
+5. Use final approved screenshots for App Store Connect and Google Play Console.
+
+## Current screenshot priority
+
+Start with iOS phone screenshots first, because the iOS simulator setup is already working.
+
+Recommended first pass:
+
+1. Home / Signal Hub
+2. Discussions feed
+3. Discussion detail reader
+4. Create composer
+5. Alerts inbox
+6. People discovery
+7. Following Signal feed
+8. Menu overlay
