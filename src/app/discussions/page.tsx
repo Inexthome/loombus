@@ -1,3 +1,4 @@
+import { ProgressiveGuide } from "@/components/progressive-guide";
 "use client";
 
 import Link from "next/link";
@@ -5,7 +6,6 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
-import { ProgressiveGuide } from "@/components/progressive-guide";
 
 type Discussion = {
   id: string;

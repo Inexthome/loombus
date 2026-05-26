@@ -1,10 +1,10 @@
+import { ProgressiveGuide } from "@/components/progressive-guide";
 "use client";
 
 import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
-import { ProgressiveGuide } from "@/components/progressive-guide";
 
 type Profile = {
   full_name: string | null;
@@ -750,9 +750,8 @@ export default function CreatePage() {
               </div>
             </div>
           </section>
+          </ProgressiveGuide>
         )}
-
-        </ProgressiveGuide>
 
         {authChecked && isLoggedIn && isEditMode && (
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">

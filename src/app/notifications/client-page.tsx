@@ -1,3 +1,4 @@
+import { ProgressiveGuide } from "@/components/progressive-guide";
 "use client";
 
 import Link from "next/link";
@@ -8,7 +9,6 @@ import {
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
 import { ProfileAvatar } from "@/components/profile-avatar";
-import { ProgressiveGuide } from "@/components/progressive-guide";
 
 type Notification = {
   id: string;
