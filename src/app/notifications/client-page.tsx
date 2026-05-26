@@ -1,5 +1,6 @@
-import { ProgressiveGuide } from "@/components/progressive-guide";
 "use client";
+
+import { ProgressiveGuide } from "@/components/progressive-guide";
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
