@@ -253,6 +253,9 @@ export default function DiscussionPage() {
   const [discussionTags, setDiscussionTags] = useState<string[]>([]);
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [replyBody, setReplyBody] = useState("");
+  const [replySuggestions, setReplySuggestions] = useState("");
+  const [replySuggestionsMessage, setReplySuggestionsMessage] = useState("");
+  const [generatingReplySuggestions, setGeneratingReplySuggestions] = useState(false);
   const [referencedReply, setReferencedReply] = useState<Reply | null>(null);
   const [postingReply, setPostingReply] = useState(false);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
@@ -709,6 +712,73 @@ export default function DiscussionPage() {
 
     void loadAiOutputRatings(discussion.id);
   }, [currentUserId, discussion?.id]);
+  async function handleGenerateReplySuggestions() {
+    if (generatingReplySuggestions) {
+      return;
+    }
+
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!canUseAiSummary) {
+      setReplySuggestionsMessage(
+        "AI reply suggestions require Premium or Premium Plus access."
+      );
+      return;
+    }
+
+    if (!discussion?.id) {
+      setReplySuggestionsMessage("Discussion is still loading.");
+      return;
+    }
+
+    setGeneratingReplySuggestions(true);
+    setReplySuggestionsMessage("");
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      setGeneratingReplySuggestions(false);
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/discussions/reply-suggestions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          discussionId: discussion.id,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setReplySuggestionsMessage(
+          result.error ?? "Unable to generate reply suggestions."
+        );
+        setGeneratingReplySuggestions(false);
+        return;
+      }
+
+      setReplySuggestions(result.replySuggestions ?? "");
+      setReplySuggestionsMessage(
+        "Reply targets generated. Use them as prompts for your own thinking."
+      );
+    } catch {
+      setReplySuggestionsMessage("Unable to generate reply suggestions.");
+    } finally {
+      setGeneratingReplySuggestions(false);
+    }
+  }
+
 
 
   async function handleGenerateSummary() {
