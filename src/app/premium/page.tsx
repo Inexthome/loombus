@@ -266,9 +266,15 @@ export default function PremiumPage() {
                 thread-evolution actions without changing subscription tiers.
               </p>
 
+              <div className="mt-6 flex flex-wrap gap-3">
+                <PremiumPlanCheckoutButton planKey="extra_ai_pack">
+                  Buy Extra AI Pack
+                </PremiumPlanCheckoutButton>
+              </div>
+
               <p className="mt-4 text-sm text-zinc-600">
-                Extra AI Pack checkout will be wired separately because it is a
-                one-time add-on, not a subscription plan.
+                Extra AI Pack is a one-time add-on. Credits are fulfilled after
+                Stripe checkout succeeds.
               </p>
             </div>
           </div>

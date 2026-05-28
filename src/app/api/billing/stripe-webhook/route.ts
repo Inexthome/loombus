@@ -5,6 +5,7 @@ import Stripe from "stripe";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const EXTRA_AI_PACK_CREDITS = 25;
 
 const PREMIUM_LIMITS = {
   monthly_summary_limit: 50,
@@ -65,7 +66,12 @@ function getPlanLabel(planKey: string | null | undefined) {
   if (planKey === "premium_annual") return "Premium Annual";
   if (planKey === "premium_plus_monthly") return "Premium Plus Monthly";
   if (planKey === "premium_plus_annual") return "Premium Plus Annual";
+  if (planKey === "extra_ai_pack") return "Extra AI Pack";
   return "Premium Monthly";
+}
+
+function isExtraAiPackPlan(planKey: string | null | undefined) {
+  return planKey === "extra_ai_pack";
 }
 
 async function activatePremiumForUser(
@@ -163,6 +169,14 @@ function getSubscriptionIdFromCheckoutSession(session: Stripe.Checkout.Session) 
   return session.subscription?.id ?? null;
 }
 
+function getPaymentIntentIdFromCheckoutSession(session: Stripe.Checkout.Session) {
+  if (typeof session.payment_intent === "string") {
+    return session.payment_intent;
+  }
+
+  return session.payment_intent?.id ?? null;
+}
+
 function getCustomerIdFromSubscription(subscription: Stripe.Subscription) {
   if (typeof subscription.customer === "string") {
     return subscription.customer;
@@ -196,9 +210,95 @@ function getPlanKeyFromSubscription(subscription: Stripe.Subscription) {
   return subscription.metadata?.plan_key ?? null;
 }
 
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  if (session.mode !== "subscription") return;
+async function ensureExtraAiPackPurchaseLedger({
+  supabase,
+  packId,
+  userId,
+  checkoutSessionId,
+}: {
+  supabase: any;
+  packId: string;
+  userId: string;
+  checkoutSessionId: string;
+}) {
+  const { data: existingLedger } = await (supabase.from("ai_extra_credit_ledger") as any)
+    .select("id")
+    .eq("stripe_checkout_session_id", checkoutSessionId)
+    .eq("reason", "purchase")
+    .limit(1)
+    .maybeSingle();
 
+  if (existingLedger) {
+    return;
+  }
+
+  const { error } = await (supabase.from("ai_extra_credit_ledger") as any).insert({
+    pack_id: packId,
+    user_id: userId,
+    credits_delta: EXTRA_AI_PACK_CREDITS,
+    reason: "purchase",
+    stripe_checkout_session_id: checkoutSessionId,
+  });
+
+  if (error) {
+    throw new Error(`Unable to record Extra AI Pack ledger entry: ${error.message}`);
+  }
+}
+
+async function fulfillExtraAiPackForUser(
+  userId: string,
+  session: Stripe.Checkout.Session
+) {
+  const supabase = getSupabaseAdmin();
+  const checkoutSessionId = session.id;
+
+  const { data: existingPack, error: existingError } = await (supabase.from("ai_extra_credit_packs") as any)
+    .select("id")
+    .eq("stripe_checkout_session_id", checkoutSessionId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(`Unable to verify Extra AI Pack purchase: ${existingError.message}`);
+  }
+
+  if (existingPack?.id) {
+    await ensureExtraAiPackPurchaseLedger({
+      supabase,
+      packId: existingPack.id,
+      userId,
+      checkoutSessionId,
+    });
+    return;
+  }
+
+  const { data: pack, error } = await (supabase.from("ai_extra_credit_packs") as any)
+    .insert({
+      user_id: userId,
+      stripe_checkout_session_id: checkoutSessionId,
+      stripe_payment_intent_id: getPaymentIntentIdFromCheckoutSession(session),
+      stripe_customer_id: getCustomerIdFromCheckoutSession(session),
+      purchased_credits: EXTRA_AI_PACK_CREDITS,
+      remaining_credits: EXTRA_AI_PACK_CREDITS,
+      status: "active",
+      source: "stripe",
+      notes: `Extra AI Pack fulfilled from Stripe checkout session ${checkoutSessionId}.`,
+    })
+    .select("id")
+    .single();
+
+  if (error || !pack?.id) {
+    throw new Error(`Unable to fulfill Extra AI Pack: ${error?.message ?? "Missing pack id."}`);
+  }
+
+  await ensureExtraAiPackPurchaseLedger({
+    supabase,
+    packId: pack.id,
+    userId,
+    checkoutSessionId,
+  });
+}
+
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   const userId = getUserIdFromCheckoutSession(session);
   const planKey = getPlanKeyFromCheckoutSession(session);
 
@@ -206,6 +306,13 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     console.warn("Stripe checkout session completed without user_id metadata:", session.id);
     return;
   }
+
+  if (session.mode === "payment" && isExtraAiPackPlan(planKey)) {
+    await fulfillExtraAiPackForUser(userId, session);
+    return;
+  }
+
+  if (session.mode !== "subscription") return;
 
   const subscriptionId = getSubscriptionIdFromCheckoutSession(session);
   const checkoutCustomerId = getCustomerIdFromCheckoutSession(session);

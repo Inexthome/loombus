@@ -9,6 +9,7 @@ const CHECKOUT_PLANS = {
     label: "Loombus Premium Monthly",
     tier: "premium",
     interval: "monthly",
+    mode: "subscription",
     priceEnvVar: "STRIPE_PREMIUM_MONTHLY_PRICE_ID",
     fallbackPriceEnvVar: "STRIPE_PREMIUM_PRICE_ID",
   },
@@ -16,19 +17,30 @@ const CHECKOUT_PLANS = {
     label: "Loombus Premium Annual",
     tier: "premium",
     interval: "annual",
+    mode: "subscription",
     priceEnvVar: "STRIPE_PREMIUM_ANNUAL_PRICE_ID",
   },
   premium_plus_monthly: {
     label: "Loombus Premium Plus Monthly",
     tier: "premium_plus",
     interval: "monthly",
+    mode: "subscription",
     priceEnvVar: "STRIPE_PREMIUM_PLUS_MONTHLY_PRICE_ID",
   },
   premium_plus_annual: {
     label: "Loombus Premium Plus Annual",
     tier: "premium_plus",
     interval: "annual",
+    mode: "subscription",
     priceEnvVar: "STRIPE_PREMIUM_PLUS_ANNUAL_PRICE_ID",
+  },
+  extra_ai_pack: {
+    label: "Loombus Extra AI Pack",
+    tier: "add_on",
+    interval: "one_time",
+    mode: "payment",
+    priceEnvVar: "STRIPE_EXTRA_AI_PACK_PRICE_ID",
+    credits: 25,
   },
 } as const;
 
@@ -124,15 +136,20 @@ export async function POST(request: NextRequest) {
 
     const metadata = {
       user_id: user.id,
-      product: "loombus_premium_ai",
+      product:
+        requestedPlanKey === "extra_ai_pack"
+          ? "loombus_extra_ai_pack"
+          : "loombus_premium_ai",
       plan_key: requestedPlanKey,
       plan_label: selectedPlan.label,
       tier: selectedPlan.tier,
       billing_interval: selectedPlan.interval,
+      credits:
+        "credits" in selectedPlan ? String(selectedPlan.credits) : "",
     };
 
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+      mode: selectedPlan.mode,
       payment_method_types: ["card"],
       line_items: [
         {
@@ -145,9 +162,13 @@ export async function POST(request: NextRequest) {
       client_reference_id: user.id,
       customer_email: user.email ?? undefined,
       metadata,
-      subscription_data: {
-        metadata,
-      },
+      ...(selectedPlan.mode === "subscription"
+        ? {
+            subscription_data: {
+              metadata,
+            },
+          }
+        : {}),
     });
 
     if (!session.url) {
@@ -186,7 +207,7 @@ export async function POST(request: NextRequest) {
       message.toLowerCase().includes("recurring")
     ) {
       safeDetail =
-        "The selected plan price must be a recurring subscription price, not a one-time price.";
+        "The selected Stripe price has the wrong billing mode. Subscription plans require recurring prices, and Extra AI Pack requires a one-time price.";
     } else if (stripeCode) {
       safeDetail = `Stripe checkout failed with code: ${stripeCode}. Check the Stripe price and key configuration.`;
     }
