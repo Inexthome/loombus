@@ -575,13 +575,13 @@ export default function DashboardClientPage() {
           </Link>
 
           <Link
-            href="/premium"
+            href="/ai-usage"
             className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
           >
-            <h2 className="mb-3 text-xl font-medium">Premium AI</h2>
+            <h2 className="mb-3 text-xl font-medium">AI usage</h2>
             <p className="text-sm leading-relaxed text-zinc-400">
-              Upgrade to the Premium AI-Assisted Layer for summaries, takeaways,
-              viewpoint mapping, and thread evolution.
+              Review your monthly AI activity, cached outputs, usage remaining,
+              and recent AI-assisted actions.
             </p>
           </Link>
 

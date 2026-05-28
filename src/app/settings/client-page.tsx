@@ -168,6 +168,11 @@ const settingsSections = [
         href: "/premium",
       },
       {
+        title: "AI Usage",
+        description: "Review your monthly AI-assisted usage, cached outputs, and recent AI activity.",
+        href: "/ai-usage",
+      },
+      {
         title: "Guidelines",
         description: "Review community standards and contribution expectations.",
         href: "/guidelines",
