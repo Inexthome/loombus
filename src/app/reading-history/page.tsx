@@ -177,19 +177,19 @@ export default function ReadingHistoryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="mb-5 flex flex-col gap-3 md:mb-10 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-3 sm:text-sm sm:tracking-[0.3em]">
               Premium
             </p>
 
-            <h1 className="mb-4 text-5xl font-semibold tracking-tight">
+            <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-5xl">
               Reading history
             </h1>
 
-            <p className="max-w-3xl leading-relaxed text-zinc-500">
+            <p className="max-w-3xl text-sm leading-relaxed text-zinc-500 sm:text-base">
               Revisit discussions you opened recently and return to the ideas
               worth more attention.
             </p>
@@ -197,25 +197,25 @@ export default function ReadingHistoryPage() {
 
           <Link
             href="/my-activity"
-            className="w-fit rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+            className="w-fit rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white sm:px-5 sm:py-3"
           >
             Back to My Activity
           </Link>
         </div>
 
         {!loading && !canUseReadingHistory && (
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-3 text-2xl font-medium">
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:rounded-3xl sm:p-8">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               Reading history is a Premium feature.
             </h2>
 
-            <p className="mb-6 max-w-3xl leading-relaxed text-zinc-500">
+            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500 sm:mb-6 sm:text-base">
               You can still read, reply, save, and follow discussions on the Free
               plan. Premium and Admin accounts can keep a personal history of
               recently viewed discussions so useful threads are easier to revisit.
             </p>
 
-            <div className="mb-6 grid gap-4 md:grid-cols-3">
+            <div className="mb-6 hidden gap-4 md:grid md:grid-cols-3">
               <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   Revisit useful threads
@@ -293,40 +293,40 @@ export default function ReadingHistoryPage() {
 
         {!loading && canUseReadingHistory && (
           <>
-            <section className="mb-8 grid gap-6 md:grid-cols-2">
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <section className="mb-5 grid gap-3 sm:mb-8 md:grid-cols-2">
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:rounded-3xl sm:p-6">
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
                   Discussions
                 </p>
 
-                <h2 className="text-4xl font-semibold">
+                <h2 className="text-2xl font-semibold sm:text-4xl">
                   {history.length}
                 </h2>
               </div>
 
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:rounded-3xl sm:p-6">
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
                   Recent views counted
                 </p>
 
-                <h2 className="text-4xl font-semibold">
+                <h2 className="text-2xl font-semibold sm:text-4xl">
                   {totalViews}
                 </h2>
               </div>
             </section>
 
             {history.length === 0 && (
-              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-                <h2 className="mb-3 text-2xl font-medium">
+              <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:rounded-3xl sm:p-8">
+                <h2 className="mb-3 text-xl font-medium sm:text-2xl">
                   No reading history yet.
                 </h2>
 
-                <p className="mb-6 max-w-3xl text-zinc-500">
+                <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500 sm:mb-6 sm:text-base">
                   Open discussions while logged in, then return here to revisit
                   threads that deserve more attention.
                 </p>
 
-                <div className="mb-6 grid gap-4 md:grid-cols-3">
+                <div className="mb-6 hidden gap-4 md:grid md:grid-cols-3">
                   <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                     <p className="mb-2 text-sm font-medium text-zinc-300">
                       Browse by signal
@@ -391,7 +391,7 @@ export default function ReadingHistoryPage() {
             )}
 
             {history.length > 0 && (
-              <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+              <section className="hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex-1">
                     <label htmlFor="reading-history-search" className="mb-2 block text-sm font-medium text-zinc-300">
@@ -450,12 +450,12 @@ export default function ReadingHistoryPage() {
             )}
 
             {history.length > 0 && filteredHistory.length === 0 && (
-              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-                <h2 className="mb-3 text-2xl font-medium">
+              <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:rounded-3xl sm:p-8">
+                <h2 className="mb-3 text-xl font-medium sm:text-2xl">
                   No reading history found.
                 </h2>
 
-                <p className="mb-6 max-w-3xl text-zinc-500">
+                <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500 sm:mb-6 sm:text-base">
                   No viewed discussions match the current search. Try a broader term,
                   clear the search, or browse discussions to continue building your reading trail.
                 </p>
@@ -479,30 +479,30 @@ export default function ReadingHistoryPage() {
               </section>
             )}
 
-            <div className="space-y-5">
+            <div className="space-y-3 sm:space-y-5">
               {filteredHistory.map((item) => (
                 <article
                   key={item.discussion_id}
-                  className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6"
+                  className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:rounded-3xl sm:p-6"
                 >
                   <Link
                     href={`/discussions/${item.discussion.id}`}
                     className="block transition hover:opacity-90"
                   >
-                    <p className="mb-3 text-sm text-zinc-500">
+                    <p className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-600 sm:mb-3 sm:text-sm sm:normal-case sm:tracking-normal sm:text-zinc-500">
                       {item.discussion.topic}
                     </p>
 
-                    <h2 className="mb-3 text-2xl font-medium">
+                    <h2 className="mb-2 text-lg font-medium sm:mb-3 sm:text-2xl">
                       {item.discussion.title}
                     </h2>
 
-                    <p className="mb-5 line-clamp-2 leading-relaxed text-zinc-400">
+                    <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-5 sm:text-base">
                       {item.discussion.body}
                     </p>
                   </Link>
 
-                  <div className="flex flex-col gap-2 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-1.5 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:text-sm">
                     <p>
                       Last viewed {new Date(item.viewed_at).toLocaleString()}
                     </p>
