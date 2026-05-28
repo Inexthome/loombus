@@ -300,7 +300,8 @@ export async function GET(request: NextRequest) {
     profileError || entitlementError || monthlyUsageError || recentUsageError;
 
   if (firstError) {
-    return jsonError(firstError.message || "Unable to load AI usage.", 400);
+    console.error("AI usage dashboard load failed:", firstError.message);
+    return jsonError("Unable to load AI usage.", 400);
   }
 
   const isAdmin = Boolean(profile?.is_admin);

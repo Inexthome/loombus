@@ -121,7 +121,8 @@ export async function GET(request: NextRequest) {
     .eq("discussion_id", discussionId);
 
   if (error) {
-    return jsonError(error.message || "Unable to load AI output ratings.", 400);
+    console.error("AI output rating load failed:", error.message);
+    return jsonError("Unable to load AI output ratings.", 400);
   }
 
   const ratings: Record<string, "helpful" | "not_helpful"> = {};
@@ -187,7 +188,8 @@ export async function POST(request: NextRequest) {
       .eq("feature_key", featureKey);
 
     if (error) {
-      return jsonError(error.message || "Unable to clear AI output rating.", 400);
+      console.error("AI output rating clear failed:", error.message);
+      return jsonError("Unable to clear AI output rating.", 400);
     }
 
     return NextResponse.json({
@@ -218,7 +220,8 @@ export async function POST(request: NextRequest) {
     .single<AiOutputRatingRow>();
 
   if (error) {
-    return jsonError(error.message || "Unable to save AI output rating.", 400);
+    console.error("AI output rating save failed:", error.message);
+    return jsonError("Unable to save AI output rating.", 400);
   }
 
   return NextResponse.json({

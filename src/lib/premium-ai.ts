@@ -343,42 +343,28 @@ export function createContentHash(input: string) {
 export function getAiProviderErrorResponse(message: string): AiProviderErrorResponse {
   const normalized = message.toLowerCase();
 
-  if (normalized.includes("not configured")) {
-    return {
-      status: 503,
-      error: "AI generation is not configured yet.",
-    };
-  }
-
-  if (
-    normalized.includes("quota") ||
-    normalized.includes("billing") ||
-    normalized.includes("insufficient_quota")
-  ) {
-    return {
-      status: 503,
-      error: "AI generation is temporarily unavailable because the AI provider quota or billing needs attention.",
-    };
-  }
-
   if (
     normalized.includes("rate limit") ||
     normalized.includes("too many requests")
   ) {
     return {
       status: 429,
-      error: "AI generation is temporarily rate-limited. Please try again later.",
+      error: "AI is temporarily busy. Please try again later.",
     };
   }
 
   if (
+    normalized.includes("not configured") ||
+    normalized.includes("quota") ||
+    normalized.includes("billing") ||
+    normalized.includes("insufficient_quota") ||
     normalized.includes("api key") ||
     normalized.includes("unauthorized") ||
     normalized.includes("invalid_api_key")
   ) {
     return {
       status: 503,
-      error: "AI generation is temporarily unavailable because the AI provider credentials need attention.",
+      error: "AI is temporarily unavailable. Please try again later.",
     };
   }
 

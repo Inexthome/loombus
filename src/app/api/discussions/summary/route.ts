@@ -345,8 +345,10 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      console.error("AI summary cache write failed:", insertError.message);
+
       return NextResponse.json(
-        { error: insertError.message },
+        { error: "Unable to save AI summary. Please try again later." },
         { status: 500 }
       );
     }
