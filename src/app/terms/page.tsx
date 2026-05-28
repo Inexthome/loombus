@@ -215,8 +215,11 @@ export default function TermsPage() {
               Plus features, AI usage limits, extra AI action packs, or other
               paid services. Paid features may be subject to additional pricing,
               limits, usage rules, cancellation terms, refund rules, third-party
-              payment processor terms, and plan descriptions shown at checkout or
-              inside the platform.
+              payment processor terms, the{" "}
+              <Link href="/refunds" className="text-zinc-200 underline-offset-4 hover:underline">
+                Refund Policy
+              </Link>
+              , and plan descriptions shown at checkout or inside the platform.
             </p>
 
             <p className="mt-4">
@@ -262,7 +265,11 @@ export default function TermsPage() {
 
             <p className="mt-4">
               If you believe content on Loombus infringes your copyright or
-              intellectual property rights, contact{" "}
+              intellectual property rights, review the{" "}
+              <Link href="/dmca" className="text-zinc-200 underline-offset-4 hover:underline">
+                Copyright and DMCA Process
+              </Link>{" "}
+              or contact{" "}
               <a
                 href={`mailto:${supportEmail}?subject=Loombus%20Copyright%20Concern`}
                 className="text-zinc-200 underline-offset-4 hover:underline"

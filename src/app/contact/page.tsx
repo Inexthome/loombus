@@ -195,6 +195,30 @@ export default function ContactPage() {
             </section>
 
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+              <h2 className="mb-3 text-xl font-medium">Legal resources</h2>
+
+              <p className="mb-4 text-sm leading-relaxed text-zinc-400">
+                For copyright, refund, privacy, or platform rule questions,
+                review the relevant policy before submitting a request.
+              </p>
+
+              <div className="flex flex-col gap-2 text-sm">
+                <Link href="/dmca" className="text-zinc-300 underline underline-offset-4 hover:text-white">
+                  Copyright and DMCA Process
+                </Link>
+                <Link href="/refunds" className="text-zinc-300 underline underline-offset-4 hover:text-white">
+                  Refund Policy
+                </Link>
+                <Link href="/terms" className="text-zinc-300 underline underline-offset-4 hover:text-white">
+                  Terms of Service
+                </Link>
+                <Link href="/privacy" className="text-zinc-300 underline underline-offset-4 hover:text-white">
+                  Privacy Policy
+                </Link>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
               <h2 className="mb-3 text-xl font-medium">For safety concerns</h2>
 
               <p className="mb-4 text-sm leading-relaxed text-zinc-400">

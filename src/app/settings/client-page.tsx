@@ -198,6 +198,16 @@ const settingsSections = [
         href: "/cookies",
       },
       {
+        title: "Refund Policy",
+        description: "Review paid feature cancellation, refund, and billing dispute rules.",
+        href: "/refunds",
+      },
+      {
+        title: "Copyright / DMCA",
+        description: "Review copyright, rights concerns, and DMCA notice information.",
+        href: "/dmca",
+      },
+      {
         title: "Accessibility",
         description: "Review accessibility support and feedback options.",
         href: "/accessibility",

@@ -233,7 +233,11 @@ export default function PremiumPage() {
 
               <p className="mt-4 max-w-2xl leading-relaxed text-zinc-500">
                 Open the secure Stripe Billing Portal to update payment details,
-                review invoices, or manage your Premium subscription.
+                review invoices, or manage your Premium subscription. Review the{" "}
+                <Link href="/refunds" className="text-zinc-300 underline-offset-4 hover:underline">
+                  Refund Policy
+                </Link>{" "}
+                before live payments are enabled.
               </p>
             </div>
 
