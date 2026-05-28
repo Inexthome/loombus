@@ -27,6 +27,8 @@ type LabsFeatureRequest = {
   reviewed_at: string | null;
   created_at: string;
   updated_at: string;
+  vote_count: number;
+  voted_by_me: boolean;
 };
 
 const STATUS_LABELS: Record<LabsFeatureRequestStatus, string> = {
@@ -111,13 +113,49 @@ export default function LabsPage() {
         const { data: requestData, error: requestError } = await supabase
           .from("labs_feature_requests")
           .select("id, user_id, title, description, status, admin_note, reviewed_at, created_at, updated_at")
-          .eq("user_id", userData.user.id)
           .order("created_at", { ascending: false });
 
         if (requestError) {
           setMessage(`Unable to load Labs requests: ${requestError.message}`);
         } else {
-          setRequests((requestData ?? []) as LabsFeatureRequest[]);
+          const loadedRequests = (requestData ?? []) as Omit<
+            LabsFeatureRequest,
+            "vote_count" | "voted_by_me"
+          >[];
+
+          const requestIds = loadedRequests.map((request) => request.id);
+          let voteRows: { request_id: string; user_id: string }[] = [];
+
+          if (requestIds.length > 0) {
+            const { data: votes } = await supabase
+              .from("labs_feature_request_votes")
+              .select("request_id, user_id")
+              .in("request_id", requestIds);
+
+            voteRows = (votes ?? []) as { request_id: string; user_id: string }[];
+          }
+
+          const voteCounts = voteRows.reduce<Record<string, number>>(
+            (counts, vote) => {
+              counts[vote.request_id] = (counts[vote.request_id] ?? 0) + 1;
+              return counts;
+            },
+            {}
+          );
+
+          const myVotes = new Set(
+            voteRows
+              .filter((vote) => vote.user_id === userData.user.id)
+              .map((vote) => vote.request_id)
+          );
+
+          setRequests(
+            loadedRequests.map((request) => ({
+              ...request,
+              vote_count: voteCounts[request.id] ?? 0,
+              voted_by_me: myVotes.has(request.id),
+            }))
+          );
         }
       }
 
@@ -134,6 +172,60 @@ export default function LabsPage() {
       return counts;
     }, {});
   }, [requests]);
+
+  async function toggleVote(requestId: string) {
+    setMessage("");
+
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!canUseLabs) {
+      setMessage("Labs voting requires Premium Plus or Admin access.");
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      window.location.href = "/login";
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/labs/requests/vote", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ requestId }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to update Labs vote.");
+        return;
+      }
+
+      setRequests((current) =>
+        current.map((request) =>
+          request.id === requestId
+            ? {
+                ...request,
+                vote_count: result.voteCount ?? request.vote_count,
+                voted_by_me: Boolean(result.voted),
+              }
+            : request
+        )
+      );
+    } catch {
+      setMessage("Unable to update Labs vote.");
+    }
+  }
 
   async function submitRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -207,7 +299,14 @@ export default function LabsPage() {
       return;
     }
 
-    setRequests((current) => [result.request as LabsFeatureRequest, ...current]);
+    setRequests((current) => [
+      {
+        ...(result.request as Omit<LabsFeatureRequest, "vote_count" | "voted_by_me">),
+        vote_count: 0,
+        voted_by_me: false,
+      },
+      ...current,
+    ]);
     setTitle("");
     setDescription("");
     setMessage("Feature request submitted to Loombus Labs.");
@@ -391,7 +490,7 @@ export default function LabsPage() {
 
                 <div className="space-y-4 text-sm leading-relaxed text-zinc-500">
                   <p>Early visibility into what Loombus is building next.</p>
-                  <p>Priority feature request submission.</p>
+                  <p>Priority feature request submission and voting.</p>
                   <p>Status tracking as ideas move through review.</p>
                   <p>Admin review workflow coming next.</p>
                 </div>
@@ -453,11 +552,25 @@ export default function LabsPage() {
                         </p>
                       </div>
 
+                      <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleVote(request.id)}
+                        className={
+                          request.voted_by_me
+                            ? "rounded-full border border-white bg-white px-4 py-2 text-xs font-medium text-black"
+                            : "rounded-full border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                        }
+                      >
+                        {request.voted_by_me ? "Voted" : "Vote for this request"} · {request.vote_count}
+                      </button>
+
                       <span
                         className={`w-fit rounded-full border px-4 py-2 text-xs font-medium ${STATUS_CLASSES[request.status]}`}
                       >
                         {STATUS_LABELS[request.status]}
                       </span>
+                    </div>
                     </div>
 
                     <p className="whitespace-pre-wrap leading-relaxed text-zinc-400">

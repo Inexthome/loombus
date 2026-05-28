@@ -24,6 +24,7 @@ type LabsFeatureRequestRow = {
   reviewed_at: string | null;
   created_at: string;
   updated_at: string;
+  vote_count: number;
 };
 
 type Profile = {
@@ -107,7 +108,36 @@ export default function AdminLabsPage() {
         return;
       }
 
-      const loadedRequests = (requestData ?? []) as LabsFeatureRequestRow[];
+      const baseRequests = (requestData ?? []) as Omit<
+        LabsFeatureRequestRow,
+        "vote_count"
+      >[];
+
+      const requestIds = baseRequests.map((request) => request.id);
+      let voteRows: { request_id: string }[] = [];
+
+      if (requestIds.length > 0) {
+        const { data: votes } = await supabase
+          .from("labs_feature_request_votes")
+          .select("request_id")
+          .in("request_id", requestIds);
+
+        voteRows = (votes ?? []) as { request_id: string }[];
+      }
+
+      const voteCounts = voteRows.reduce<Record<string, number>>(
+        (counts, vote) => {
+          counts[vote.request_id] = (counts[vote.request_id] ?? 0) + 1;
+          return counts;
+        },
+        {}
+      );
+
+      const loadedRequests = baseRequests.map((request) => ({
+        ...request,
+        vote_count: voteCounts[request.id] ?? 0,
+      }));
+
       setRequests(loadedRequests);
 
       setStatusDrafts(
@@ -242,7 +272,12 @@ export default function AdminLabsPage() {
 
     setRequests((current) =>
       current.map((request) =>
-        request.id === requestId ? (result.request as LabsFeatureRequestRow) : request
+        request.id === requestId
+          ? {
+              ...(result.request as Omit<LabsFeatureRequestRow, "vote_count">),
+              vote_count: request.vote_count,
+            }
+          : request
       )
     );
 
@@ -430,6 +465,10 @@ export default function AdminLabsPage() {
 
                       <p className="mt-2 text-sm text-zinc-600">
                         Submitted {new Date(request.created_at).toLocaleString()}
+                      </p>
+
+                      <p className="mt-2 text-sm text-zinc-500">
+                        Votes: {request.vote_count}
                       </p>
                     </div>
 

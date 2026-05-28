@@ -47,6 +47,7 @@ const premiumPlusFeatures: PlanFeature[] = [
   { label: "Export saved discussions and notes", status: "available" },
   { label: "Longer discussion posts", status: "available" },
   { label: "Priority feature access / Loombus Labs", status: "available" },
+  { label: "Premium Plus Labs voting", status: "available" },
   { label: "Optional creator/supporter profile tools", status: "available" },
 ];
 
