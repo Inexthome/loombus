@@ -69,6 +69,11 @@ type DiscussionSummary = {
   generated_at: string;
 };
 
+type AiOutputRatingValue = "helpful" | "not_helpful";
+
+type AiOutputRatings = Partial<Record<string, AiOutputRatingValue>>;
+
+
 type AiEntitlement = {
   tier: string;
   ai_assisted_enabled: boolean;
@@ -181,6 +186,62 @@ function ProfileName({
   );
 }
 
+
+function AiOutputRatingControls({
+  featureKey,
+  currentRating,
+  working,
+  onRate,
+}: {
+  featureKey: string;
+  currentRating?: AiOutputRatingValue;
+  working: boolean;
+  onRate: (featureKey: string, rating: AiOutputRatingValue | null) => void;
+}) {
+  return (
+    <div className="mt-4 flex flex-col gap-3 border-t border-zinc-900 pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs text-zinc-600">
+        Was this AI output useful?
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={working}
+          onClick={() =>
+            onRate(featureKey, currentRating === "helpful" ? null : "helpful")
+          }
+          className={`rounded-full border px-3 py-1.5 text-xs transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            currentRating === "helpful"
+              ? "border-emerald-700 bg-emerald-950/40 text-emerald-300"
+              : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+          }`}
+        >
+          Helpful
+        </button>
+
+        <button
+          type="button"
+          disabled={working}
+          onClick={() =>
+            onRate(
+              featureKey,
+              currentRating === "not_helpful" ? null : "not_helpful"
+            )
+          }
+          className={`rounded-full border px-3 py-1.5 text-xs transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            currentRating === "not_helpful"
+              ? "border-amber-700 bg-amber-950/40 text-amber-300"
+              : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+          }`}
+        >
+          Not helpful
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function DiscussionPage() {
   const params = useParams();
   const id = params.id as string;
@@ -227,6 +288,8 @@ export default function DiscussionPage() {
   const [disagreementMap, setDisagreementMap] = useState("");
   const [disagreementMessage, setDisagreementMessage] = useState("");
   const [generatingDisagreement, setGeneratingDisagreement] = useState(false);
+  const [aiOutputRatings, setAiOutputRatings] = useState<AiOutputRatings>({});
+  const [ratingFeatureKey, setRatingFeatureKey] = useState("");
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [monthlySummaryUsage, setMonthlySummaryUsage] = useState(0);
   const [monthlyTakeawaysUsage, setMonthlyTakeawaysUsage] = useState(0);
@@ -553,6 +616,100 @@ export default function DiscussionPage() {
       handleReply(event);
     }
   }
+  async function loadAiOutputRatings(discussionId: string) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      return;
+    }
+
+    const response = await fetch(
+      `/api/ai/output-ratings?discussionId=${encodeURIComponent(discussionId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      return;
+    }
+
+    const result = await response.json().catch(() => ({}));
+
+    if (result?.ratings && typeof result.ratings === "object") {
+      setAiOutputRatings(result.ratings as AiOutputRatings);
+    }
+  }
+
+  async function handleRateAiOutput(
+    featureKey: string,
+    rating: AiOutputRatingValue | null
+  ) {
+    if (!discussion?.id) {
+      return;
+    }
+
+    setRatingFeatureKey(featureKey);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      setRatingFeatureKey("");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/ai/output-ratings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          discussionId: discussion.id,
+          featureKey,
+          rating,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setRatingFeatureKey("");
+        return;
+      }
+
+      setAiOutputRatings((current) => {
+        const next = { ...current };
+
+        if (result.rating) {
+          next[featureKey] = result.rating;
+        } else {
+          delete next[featureKey];
+        }
+
+        return next;
+      });
+    } catch {
+      // Rating feedback is non-blocking. Do not interrupt the discussion view.
+    } finally {
+      setRatingFeatureKey("");
+    }
+  }
+
+  useEffect(() => {
+    if (!currentUserId || !discussion?.id) {
+      return;
+    }
+
+    void loadAiOutputRatings(discussion.id);
+  }, [currentUserId, discussion?.id]);
+
 
   async function handleGenerateSummary() {
     setSummaryMessage("");
@@ -1509,6 +1666,12 @@ export default function DiscussionPage() {
           {whatChanged ? (
             <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
               {whatChanged}
+              <AiOutputRatingControls
+                featureKey="what_changed"
+                currentRating={aiOutputRatings["what_changed"]}
+                working={ratingFeatureKey === "what_changed"}
+                onRate={handleRateAiOutput}
+              />
             </div>
           ) : (
             <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
@@ -1597,6 +1760,12 @@ export default function DiscussionPage() {
           {disagreementMap ? (
             <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
               {disagreementMap}
+              <AiOutputRatingControls
+                featureKey="disagreement_map"
+                currentRating={aiOutputRatings["disagreement_map"]}
+                working={ratingFeatureKey === "disagreement_map"}
+                onRate={handleRateAiOutput}
+              />
             </div>
           ) : (
             <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
@@ -1685,6 +1854,12 @@ export default function DiscussionPage() {
           {keyTakeaways ? (
             <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
               {keyTakeaways}
+              <AiOutputRatingControls
+                featureKey="key_takeaways"
+                currentRating={aiOutputRatings["key_takeaways"]}
+                working={ratingFeatureKey === "key_takeaways"}
+                onRate={handleRateAiOutput}
+              />
             </div>
           ) : (
             <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
@@ -1781,6 +1956,13 @@ export default function DiscussionPage() {
                 {discussionSummary.model_name ? ` · ${discussionSummary.model_name}` : ""}
                 {" "}· {discussionSummary.source_reply_count} replies counted
               </p>
+
+              <AiOutputRatingControls
+                featureKey="thread_summary"
+                currentRating={aiOutputRatings["thread_summary"]}
+                working={ratingFeatureKey === "thread_summary"}
+                onRate={handleRateAiOutput}
+              />
             </>
           ) : (
             <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
