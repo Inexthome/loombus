@@ -1465,7 +1465,7 @@ export default function DiscussionPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-3xl text-zinc-400">
           Loading discussion...
         </div>
@@ -1475,7 +1475,7 @@ export default function DiscussionPage() {
 
   if (!discussion) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-3xl">
           <h1 className="mb-6 text-4xl font-semibold">
             Discussion not found.
@@ -1490,35 +1490,35 @@ export default function DiscussionPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-3xl">
         <Link
           href="/discussions"
-          className="mb-6 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
+          className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to discussions
         </Link>
 
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">
+        <div className="mb-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-1 sm:mb-4 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:pb-0">
+          <p className="shrink-0 rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500 sm:text-xs sm:tracking-[0.18em]">
             {discussion.topic}
           </p>
 
           {discussionTags.map((tag) => (
             <span
               key={tag}
-              className="rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-zinc-500"
+              className="shrink-0 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-zinc-500"
             >
               #{tag}
             </span>
           ))}
         </div>
 
-        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
+        <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-6xl">
           {discussion.title}
         </h1>
 
-        <div className="mb-6 flex flex-col gap-3 text-sm text-zinc-600">
+        <div className="mb-5 flex flex-col gap-2 text-sm text-zinc-600 sm:mb-6 sm:gap-3">
           <span className="inline-flex items-center gap-3">
             <ProfileAvatar profile={profile} />
             <span>
@@ -1526,7 +1526,7 @@ export default function DiscussionPage() {
             </span>
           </span>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span>
               Started {new Date(discussion.created_at).toLocaleString()}
             </span>
@@ -1555,11 +1555,11 @@ export default function DiscussionPage() {
           </div>
         </div>
 
-        <p className="mb-7 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
+        <p className="mb-6 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
           {discussion.body}
         </p>
 
-        <div className="mb-6 flex flex-col items-stretch gap-3 rounded-3xl border border-zinc-900 bg-black/30 p-4 sm:mb-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:p-0 sm:border-0 sm:bg-transparent">
+        <div className="mb-5 flex flex-col items-stretch gap-2 rounded-2xl border border-zinc-900 bg-black/30 p-3 sm:mb-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:border-0 sm:bg-transparent sm:p-0">
           {canManageDiscussionStatus && (
             <button
               type="button"
@@ -1636,18 +1636,18 @@ export default function DiscussionPage() {
 
         <nav
           aria-label="Discussion reader actions"
-          className="mb-6 grid grid-cols-3 gap-2 rounded-3xl border border-zinc-900 bg-black/40 p-2 sm:mb-10"
+          className="mb-5 grid grid-cols-3 gap-1.5 rounded-2xl border border-zinc-900 bg-black/40 p-1.5 sm:mb-10 sm:gap-2 sm:rounded-3xl sm:p-2"
         >
           <a
             href="#reply-form"
-            className="rounded-2xl bg-white px-3 py-3 text-center text-sm font-medium text-black transition hover:bg-zinc-200"
+            className="rounded-xl bg-white px-2.5 py-2.5 text-center text-xs font-medium text-black transition hover:bg-zinc-200 sm:rounded-2xl sm:px-3 sm:py-3 sm:text-sm"
           >
             Reply
           </a>
 
           <a
             href="#replies"
-            className="rounded-2xl border border-zinc-800 px-3 py-3 text-center text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+            className="rounded-xl border border-zinc-800 px-2.5 py-2.5 text-center text-xs text-zinc-300 transition hover:border-zinc-600 hover:text-white sm:rounded-2xl sm:px-3 sm:py-3 sm:text-sm"
           >
             Replies
           </a>
@@ -1664,7 +1664,7 @@ export default function DiscussionPage() {
                 });
               }, 0);
             }}
-            className="rounded-2xl border border-zinc-800 px-3 py-3 text-center text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+            className="rounded-xl border border-zinc-800 px-2.5 py-2.5 text-center text-xs text-zinc-300 transition hover:border-zinc-600 hover:text-white sm:rounded-2xl sm:px-3 sm:py-3 sm:text-sm"
           >
             AI tools
           </button>
@@ -1672,17 +1672,17 @@ export default function DiscussionPage() {
 
         <div
           id="intelligence-layer"
-          className="mb-5 scroll-mt-24 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-6 sm:p-6"
+          className="mb-4 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-6 sm:rounded-3xl sm:p-6"
         >
           <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
             Premium AI-Assisted Layer
           </p>
 
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h2 className="text-xl font-semibold tracking-tight sm:text-3xl">
             Premium AI Tools
           </h2>
 
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+          <p className="mt-3 hidden max-w-2xl text-sm leading-relaxed text-zinc-500 sm:block sm:text-base">
             Use AI to understand the strongest points, key shifts, and summary
             of this discussion without adding noise to the thread.
           </p>
@@ -1694,14 +1694,14 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <section className="mb-3 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-4 sm:p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <section className="mb-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:mb-4 sm:rounded-3xl sm:p-6">
+          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
                 Thread Evolution
               </p>
 
-              <h2 className="text-xl font-medium sm:text-2xl">
+              <h2 className="text-lg font-medium sm:text-2xl">
                 What Changed in This Thread
               </h2>
             </div>
@@ -1711,7 +1711,7 @@ export default function DiscussionPage() {
                 type="button"
                 onClick={handleGenerateWhatChanged}
                 disabled={generatingWhatChanged}
-                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
               >
                 {generatingWhatChanged ? "Generating..." : "Generate What Changed"}
               </button>
@@ -1724,7 +1724,7 @@ export default function DiscussionPage() {
                 current === "whatChanged" ? "" : "whatChanged"
               )
             }
-            className="mb-4 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
           >
             {openPremiumAiTool === "whatChanged" ? "Hide tool" : "Open tool"}
           </button>
@@ -1788,14 +1788,14 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-3 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-4 sm:p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <section className="mb-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:mb-4 sm:rounded-3xl sm:p-6">
+          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
                 Viewpoint Map
               </p>
 
-              <h2 className="text-xl font-medium sm:text-2xl">
+              <h2 className="text-lg font-medium sm:text-2xl">
                 Disagreement Mapping
               </h2>
             </div>
@@ -1805,7 +1805,7 @@ export default function DiscussionPage() {
                 type="button"
                 onClick={handleGenerateDisagreementMap}
                 disabled={generatingDisagreement}
-                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
               >
                 {generatingDisagreement ? "Generating..." : "Generate Disagreement Map"}
               </button>
@@ -1818,7 +1818,7 @@ export default function DiscussionPage() {
                 current === "disagreementMap" ? "" : "disagreementMap"
               )
             }
-            className="mb-4 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
           >
             {openPremiumAiTool === "disagreementMap" ? "Hide tool" : "Open tool"}
           </button>
@@ -1882,14 +1882,14 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-3 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-4 sm:p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <section className="mb-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:mb-4 sm:rounded-3xl sm:p-6">
+          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
                 High-Signal Takeaways
               </p>
 
-              <h2 className="text-xl font-medium sm:text-2xl">
+              <h2 className="text-lg font-medium sm:text-2xl">
                 Key Takeaways
               </h2>
             </div>
@@ -1899,7 +1899,7 @@ export default function DiscussionPage() {
                 type="button"
                 onClick={handleGenerateKeyTakeaways}
                 disabled={generatingTakeaways}
-                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
               >
                 {generatingTakeaways ? "Generating..." : "Generate Key Takeaways"}
               </button>
@@ -1912,7 +1912,7 @@ export default function DiscussionPage() {
                 current === "keyTakeaways" ? "" : "keyTakeaways"
               )
             }
-            className="mb-4 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
           >
             {openPremiumAiTool === "keyTakeaways" ? "Hide tool" : "Open tool"}
           </button>
@@ -1976,14 +1976,14 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-6 rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
+        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/30 sm:mb-10 sm:rounded-[1.5rem] sm:p-7">
+          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-600">
                 AI-assisted
               </p>
 
-              <h2 className="text-xl font-medium sm:text-2xl">
+              <h2 className="text-lg font-medium sm:text-2xl">
                 Discussion Summary
               </h2>
             </div>
@@ -1993,7 +1993,7 @@ export default function DiscussionPage() {
                 type="button"
                 onClick={handleGenerateSummary}
                 disabled={generatingSummary}
-                className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
               >
                 {generatingSummary ? "Generating..." : "Generate Summary"}
               </button>
@@ -2006,7 +2006,7 @@ export default function DiscussionPage() {
                 current === "summary" ? "" : "summary"
               )
             }
-            className="mb-4 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
           >
             {openPremiumAiTool === "summary" ? "Hide tool" : "Open tool"}
           </button>
@@ -2080,16 +2080,16 @@ export default function DiscussionPage() {
         </section>
 
         {relatedDiscussions.length > 0 && (
-          <div className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-12 sm:p-7">
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
                   Related discussions
                 </p>
-                <h2 className="mt-2 text-2xl font-medium text-white">
+                <h2 className="mt-2 text-xl font-medium text-white sm:text-2xl">
                   Keep reading in {discussion.topic}
                 </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+                <p className="mt-2 hidden max-w-2xl text-sm leading-6 text-zinc-400 sm:block">
                   Continue into nearby conversations instead of stopping at one thread.
                 </p>
               </div>
@@ -2128,7 +2128,7 @@ export default function DiscussionPage() {
         )}
 
         <div id="replies" className="scroll-mt-24">
-          <h2 className="mb-6 text-xl font-medium sm:mb-8 sm:text-2xl">
+          <h2 className="mb-4 text-xl font-medium sm:mb-8 sm:text-2xl">
             Replies
           </h2>
 
@@ -2136,7 +2136,7 @@ export default function DiscussionPage() {
             id="reply-form"
             onSubmit={handleReply}
             onKeyDown={handleReplyFormKeyDown}
-            className="mb-6 rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7"
+            className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-10 sm:rounded-[1.5rem] sm:p-7"
           >
             <label className="mb-3 block text-sm text-zinc-400">
               Add a thoughtful reply
@@ -2165,7 +2165,7 @@ export default function DiscussionPage() {
             )}
 
             <textarea
-              rows={5}
+              rows={4}
               value={replyBody}
               required
               onChange={(e) => setReplyBody(e.target.value)}
@@ -2183,7 +2183,7 @@ export default function DiscussionPage() {
                 {postingReply ? "Posting..." : "Post Reply"}
               </button>
 
-              <p className="text-sm text-zinc-600">
+              <p className="hidden text-sm text-zinc-600 sm:block">
                 Press Cmd+Enter or Ctrl+Enter to reply.
               </p>
             </div>
@@ -2192,7 +2192,7 @@ export default function DiscussionPage() {
           </form>
 
           {pinnedReply && (
-            <section className="mb-5 rounded-[1.5rem] border border-amber-900 bg-amber-950/20 p-4 shadow-2xl shadow-black/30 sm:mb-6 sm:p-7">
+            <section className="mb-5 rounded-2xl border border-amber-900 bg-amber-950/20 p-4 shadow-2xl shadow-black/30 sm:mb-6 sm:rounded-[1.5rem] sm:p-7">
               <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">
@@ -2288,7 +2288,7 @@ export default function DiscussionPage() {
               return (
                 <div
                   key={reply.id}
-                  className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:p-7"
+                  className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-[1.5rem] sm:p-7"
                 >
                   <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                     <p className="text-sm text-zinc-500">
@@ -2401,7 +2401,7 @@ export default function DiscussionPage() {
                             type="button"
                             onClick={() => handleUpdateReply(reply.id)}
                             disabled={updatingReplyId === reply.id}
-                            className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                            className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
                           >
                             {updatingReplyId === reply.id ? "Saving..." : "Save edit"}
                           </button>
