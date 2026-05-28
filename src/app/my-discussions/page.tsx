@@ -262,7 +262,7 @@ export default function MyDiscussionsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl text-zinc-400">
           Loading your discussions...
         </div>
@@ -271,31 +271,31 @@ export default function MyDiscussionsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
-          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+          className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to dashboard
         </Link>
 
-        <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:mb-10 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-4 sm:text-sm sm:tracking-[0.3em]">
               My Activity
             </p>
 
-            <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
               My Discussions
             </h1>
 
-            <p className="mt-4 text-zinc-500">
+            <p className="mt-2 text-sm leading-relaxed text-zinc-500 sm:mt-4 sm:text-base">
               Review the discussions you have started on Loombus.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:p-4">
             <ProfileAvatar profile={currentProfile} size="xl" />
 
             <div>
@@ -317,7 +317,7 @@ export default function MyDiscussionsPage() {
         )}
 
         {!canUseDrafts && (
-          <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:mb-8 sm:rounded-3xl sm:p-6">
             <h2 className="mb-2 text-2xl font-medium">
               Draft mode is a Premium feature.
             </h2>
@@ -337,7 +337,7 @@ export default function MyDiscussionsPage() {
         )}
 
         {canUseDrafts && (
-          <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:mb-10 sm:rounded-3xl sm:p-6">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -425,7 +425,7 @@ export default function MyDiscussionsPage() {
           </section>
         )}
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+        <section className="hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="my-discussions-search" className="mb-2 block text-sm font-medium text-zinc-300">
@@ -466,7 +466,7 @@ export default function MyDiscussionsPage() {
           </div>
         </section>
 
-        <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="mb-5 flex flex-col gap-2 md:mb-10 md:flex-row md:items-center md:justify-between">
           <p className="text-sm text-zinc-600">
             Showing {filteredDiscussions.length} of {discussions.length} published discussions
           </p>
@@ -483,16 +483,16 @@ export default function MyDiscussionsPage() {
         </div>
 
         {discussions.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-3 text-2xl font-medium">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:rounded-3xl sm:p-8">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               You have not started any discussions yet.
             </h2>
 
-            <p className="mb-6 max-w-3xl text-zinc-400">
+            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
               Start with one clear question, claim, or useful observation. A good first discussion gives people a specific idea to respond to.
             </p>
 
-            <div className="mb-6 grid gap-4 md:grid-cols-3">
+            <div className="mb-6 hidden gap-4 md:grid md:grid-cols-3">
               <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   Choose one idea
@@ -550,12 +550,12 @@ export default function MyDiscussionsPage() {
         )}
 
         {discussions.length > 0 && filteredDiscussions.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-3 text-2xl font-medium">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:p-8">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No discussions found.
             </h2>
 
-            <p className="max-w-2xl text-zinc-400">
+            <p className="max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
               No published discussions match your current search. Try a broader term,
               clear the search, or start a new discussion if the idea is not published yet.
             </p>
@@ -579,22 +579,22 @@ export default function MyDiscussionsPage() {
           </div>
         )}
 
-        <div className="space-y-5">
+        <div className="space-y-3 sm:space-y-5">
           {filteredDiscussions.map((discussion) => (
             <div
               key={discussion.id}
-              className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
+              className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-700 sm:p-6"
             >
               <Link href={`/discussions/${discussion.id}`} className="block">
-                <p className="mb-3 text-sm text-zinc-500">
+                <p className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-600 sm:mb-3 sm:text-sm sm:normal-case sm:tracking-normal sm:text-zinc-500">
                   {discussion.topic}
                 </p>
 
-                <h2 className="mb-3 text-2xl font-medium">
+                <h2 className="mb-3 text-xl font-medium sm:text-2xl">
                   {discussion.title}
                 </h2>
 
-                <p className="mb-5 line-clamp-3 leading-relaxed text-zinc-400">
+                <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-5 sm:line-clamp-3 sm:text-base">
                   {discussion.body}
                 </p>
               </Link>

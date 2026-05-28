@@ -111,7 +111,7 @@ export default function MyRepliesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl text-zinc-400">
           Loading your replies...
         </div>
@@ -120,31 +120,31 @@ export default function MyRepliesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
-          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+          className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to dashboard
         </Link>
 
-        <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:mb-10 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-4 sm:text-sm sm:tracking-[0.3em]">
               My Activity
             </p>
 
-            <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
               My Replies
             </h1>
 
-            <p className="mt-4 text-zinc-500">
+            <p className="mt-2 text-sm leading-relaxed text-zinc-500 sm:mt-4 sm:text-base">
               Review the replies you have contributed across Loombus.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:p-4">
             <ProfileAvatar profile={currentProfile} size="xl" />
 
             <div>
@@ -159,7 +159,7 @@ export default function MyRepliesPage() {
           </div>
         </div>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+        <section className="hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="my-replies-search" className="mb-2 block text-sm font-medium text-zinc-300">
@@ -200,7 +200,7 @@ export default function MyRepliesPage() {
           </div>
         </section>
 
-        <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="mb-5 flex flex-col gap-2 md:mb-10 md:flex-row md:items-center md:justify-between">
           <p className="text-sm text-zinc-600">
             Showing {filteredReplies.length} of {replies.length} replies
           </p>
@@ -217,18 +217,18 @@ export default function MyRepliesPage() {
         </div>
 
         {replies.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-3 text-2xl font-medium">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:rounded-3xl sm:p-8">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               You have not replied to any discussions yet.
             </h2>
 
-            <p className="mb-6 max-w-3xl text-zinc-400">
+            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
               Replies are where your perspective becomes part of the conversation.
               Start with one useful contribution: context, an example, experience,
               a counterpoint, or a sharper question.
             </p>
 
-            <div className="mb-6 grid gap-4 md:grid-cols-3">
+            <div className="mb-6 hidden gap-4 md:grid md:grid-cols-3">
               <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   Add context
@@ -293,12 +293,12 @@ export default function MyRepliesPage() {
         )}
 
         {replies.length > 0 && filteredReplies.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-8">
-            <h2 className="mb-3 text-2xl font-medium">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:p-8">
+            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No replies found.
             </h2>
 
-            <p className="mb-6 max-w-2xl text-zinc-400">
+            <p className="mb-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
               No replies match your current search. Try a broader word, topic,
               or discussion title, or browse discussions to find where to contribute next.
             </p>
@@ -322,7 +322,7 @@ export default function MyRepliesPage() {
           </div>
         )}
 
-        <div className="space-y-5">
+        <div className="space-y-3 sm:space-y-5">
           {filteredReplies.map((reply) => {
             const discussion = discussions[reply.discussion_id];
             const discussionAvailable = discussion && !discussion.deleted_at;
@@ -330,23 +330,23 @@ export default function MyRepliesPage() {
             return (
               <div
                 key={reply.id}
-                className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30"
+                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-7"
               >
                 <div className="mb-4">
-                  <p className="mb-2 text-sm text-zinc-500">
+                  <p className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-600 sm:text-sm sm:normal-case sm:tracking-normal sm:text-zinc-500">
                     {discussion?.topic ?? "Discussion"}
                   </p>
 
-                  <h2 className="text-2xl font-medium">
+                  <h2 className="text-lg font-medium sm:text-2xl">
                     {discussion?.title ?? "Discussion unavailable"}
                   </h2>
                 </div>
 
-                <p className="mb-5 whitespace-pre-wrap leading-relaxed text-zinc-400">
+                <p className="mb-4 line-clamp-4 whitespace-pre-wrap text-sm leading-relaxed text-zinc-400 sm:mb-5 sm:text-base">
                   {reply.body}
                 </p>
 
-                <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-zinc-500">
+                <div className="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:text-sm">
                   <span>
                     {new Date(reply.created_at).toLocaleDateString()}
                   </span>
