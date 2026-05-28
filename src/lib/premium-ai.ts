@@ -556,3 +556,101 @@ export async function getMonthlyAiFeatureUsageCount(
   return count ?? 0;
 }
 
+
+export async function getExtraAiCreditBalance(userId: string) {
+  const supabase = getPremiumAiServiceClient();
+
+  if (!supabase) {
+    console.error("Extra AI credit balance skipped: SUPABASE_SERVICE_ROLE_KEY is not configured.");
+    return 0;
+  }
+
+  const { data, error } = await (supabase.from("ai_extra_credit_packs") as any)
+    .select("remaining_credits")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .gt("remaining_credits", 0);
+
+  if (error) {
+    console.error("Extra AI credit balance lookup failed:", error.message);
+    return 0;
+  }
+
+  return (data ?? []).reduce((total: number, pack: { remaining_credits?: number | null }) => {
+    const remaining = pack.remaining_credits ?? 0;
+    return total + (Number.isFinite(remaining) && remaining > 0 ? remaining : 0);
+  }, 0);
+}
+
+export async function consumeExtraAiCredit({
+  userId,
+  featureKey,
+  targetType,
+  targetId,
+}: {
+  userId: string;
+  featureKey: string;
+  targetType?: string;
+  targetId?: string;
+}) {
+  const supabase = getPremiumAiServiceClient();
+
+  if (!supabase) {
+    console.error("Extra AI credit consumption skipped: SUPABASE_SERVICE_ROLE_KEY is not configured.");
+    return false;
+  }
+
+  const { data: pack, error: packError } = await (supabase.from("ai_extra_credit_packs") as any)
+    .select("id, remaining_credits")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .gt("remaining_credits", 0)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (packError) {
+    console.error("Extra AI credit pack lookup failed:", packError.message);
+    return false;
+  }
+
+  if (!pack?.id || !pack.remaining_credits || pack.remaining_credits <= 0) {
+    return false;
+  }
+
+  const nextRemaining = Math.max(Number(pack.remaining_credits) - 1, 0);
+
+  const { error: updateError } = await (supabase.from("ai_extra_credit_packs") as any)
+    .update({
+      remaining_credits: nextRemaining,
+      status: nextRemaining === 0 ? "depleted" : "active",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", pack.id)
+    .eq("user_id", userId)
+    .gt("remaining_credits", 0);
+
+  if (updateError) {
+    console.error("Extra AI credit pack update failed:", updateError.message);
+    return false;
+  }
+
+  const { error: ledgerError } = await (supabase.from("ai_extra_credit_ledger") as any)
+    .insert({
+      pack_id: pack.id,
+      user_id: userId,
+      feature_key: featureKey,
+      target_type: targetType ?? null,
+      target_id: targetId ?? null,
+      credits_delta: -1,
+      reason: "consume",
+    });
+
+  if (ledgerError) {
+    console.error("Extra AI credit ledger consumption failed:", ledgerError.message);
+    return false;
+  }
+
+  return true;
+}
+

@@ -7,6 +7,8 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  getExtraAiCreditBalance,
+  consumeExtraAiCredit,
   getOpenAiUsageMetadata,
   upsertDiscussionAiOutput,
 } from "@/lib/premium-ai";
@@ -257,7 +259,13 @@ export async function POST(request: NextRequest) {
       ? 0
       : await getMonthlyKeyTakeawaysUsageCount(supabase, user.id);
 
-    if (!access.isAdmin && monthlyUsageCount >= access.monthlyThreadAiLimit) {
+    const shouldUseExtraCredit =
+      !access.isAdmin && monthlyUsageCount >= access.monthlyThreadAiLimit;
+    const extraCreditsRemaining = shouldUseExtraCredit
+      ? await getExtraAiCreditBalance(user.id)
+      : 0;
+
+    if (shouldUseExtraCredit && extraCreditsRemaining <= 0) {
       await logAiUsage({
         supabase,
         userId: user.id,
@@ -348,6 +356,22 @@ export async function POST(request: NextRequest) {
       success: true,
       ...usageMetadata,
     });
+
+    if (shouldUseExtraCredit) {
+      const consumedExtraCredit = await consumeExtraAiCredit({
+        userId: user.id,
+        featureKey: "key_takeaways",
+        targetType: "discussion",
+        targetId: discussionId,
+      });
+
+      if (!consumedExtraCredit) {
+        return NextResponse.json(
+          { error: "Extra AI Pack credits could not be consumed. Please try again." },
+          { status: 429 }
+        );
+      }
+    }
 
     await logAuditEvent({
       actor_id: user.id,

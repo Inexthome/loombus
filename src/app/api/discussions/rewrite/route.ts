@@ -7,6 +7,8 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  getExtraAiCreditBalance,
+  consumeExtraAiCredit,
   getOpenAiUsageMetadata,
 } from "@/lib/premium-ai";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
@@ -205,8 +207,13 @@ export async function POST(request: NextRequest) {
       : await getMonthlyRewriteUsageCount(supabase, user.id);
 
     const monthlyFeatureLimit = getAiFeatureLimit(access, FEATURE_KEY);
+    const shouldUseExtraCredit =
+      !access.isAdmin && monthlyUsageCount >= monthlyFeatureLimit;
+    const extraCreditsRemaining = shouldUseExtraCredit
+      ? await getExtraAiCreditBalance(user.id)
+      : 0;
 
-    if (!access.isAdmin && monthlyUsageCount >= monthlyFeatureLimit) {
+    if (shouldUseExtraCredit && extraCreditsRemaining <= 0) {
       await logAiUsage({
         supabase,
         userId: user.id,
@@ -276,6 +283,21 @@ export async function POST(request: NextRequest) {
       success: true,
       ...usageMetadata,
     });
+
+    if (shouldUseExtraCredit) {
+      const consumedExtraCredit = await consumeExtraAiCredit({
+        userId: user.id,
+        featureKey: FEATURE_KEY,
+        targetType: "discussion_draft",
+      });
+
+      if (!consumedExtraCredit) {
+        return NextResponse.json(
+          { error: "Extra AI Pack credits could not be consumed. Please try again." },
+          { status: 429 }
+        );
+      }
+    }
 
     await logAuditEvent({
       actor_id: user.id,
