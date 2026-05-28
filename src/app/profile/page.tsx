@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TopicAlertsControl } from "@/components/topic-alerts-control";
 import { type ChangeEvent, type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -71,6 +72,7 @@ export default function ProfilePage() {
   const [emailDigestEnabled, setEmailDigestEnabled] = useState(false);
   const [emailDigestFrequency, setEmailDigestFrequency] = useState("weekly");
   const canUseEmailDigest = hasPremiumDigestAccess(aiEntitlement, isAdmin);
+  const canUseTopicAlerts = canUseEmailDigest;
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -385,6 +387,8 @@ export default function ProfilePage() {
         <p className="mb-6 text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
           Manage your public Loombus profile and notification preferences.
         </p>
+
+        <TopicAlertsControl canUseTopicAlerts={canUseTopicAlerts} />
 
         <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">

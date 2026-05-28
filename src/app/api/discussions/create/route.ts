@@ -65,6 +65,83 @@ function hasLongPostAccess(
 }
 
 
+
+async function createTopicAlertNotifications({
+  supabase,
+  discussionId,
+  discussionTitle,
+  discussionTopic,
+  authorId,
+}: {
+  supabase: any;
+  discussionId: string;
+  discussionTitle: string;
+  discussionTopic: string;
+  authorId: string;
+}) {
+  const { data: topicAlerts, error: alertError } = await supabase
+    .from("user_topic_alerts")
+    .select("user_id")
+    .eq("topic", discussionTopic)
+    .eq("enabled", true)
+    .neq("user_id", authorId);
+
+  if (alertError) {
+    console.error("Topic alert lookup failed:", alertError.message);
+    return;
+  }
+
+  const candidateUserIds = [
+    ...new Set(
+      ((topicAlerts ?? []) as { user_id: string | null }[])
+        .map((row) => row.user_id)
+        .filter((userId): userId is string => Boolean(userId))
+    ),
+  ];
+
+  if (candidateUserIds.length === 0) {
+    return;
+  }
+
+  const { data: blockRows } = await supabase
+    .from("user_blocks")
+    .select("blocker_id, blocked_id")
+    .or(`and(blocker_id.eq.${authorId},blocked_id.in.(${candidateUserIds.join(",")})),and(blocked_id.eq.${authorId},blocker_id.in.(${candidateUserIds.join(",")}))`);
+
+  const hiddenUserIds = new Set<string>();
+
+  for (const block of (blockRows ?? []) as { blocker_id: string; blocked_id: string }[]) {
+    if (block.blocker_id === authorId) {
+      hiddenUserIds.add(block.blocked_id);
+    }
+
+    if (block.blocked_id === authorId) {
+      hiddenUserIds.add(block.blocker_id);
+    }
+  }
+
+  const notifications = candidateUserIds
+    .filter((userId) => !hiddenUserIds.has(userId))
+    .map((userId) => ({
+      user_id: userId,
+      actor_id: authorId,
+      type: "topic_alert",
+      target_type: "discussion",
+      target_id: discussionId,
+      message: `New discussion in ${discussionTopic}: ${discussionTitle}`,
+    }));
+
+  if (notifications.length === 0) {
+    return;
+  }
+
+  const { error: topicNotificationError } = await createNotifications(notifications);
+
+  if (topicNotificationError) {
+    console.error("Topic alert notifications failed:", topicNotificationError.message);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");

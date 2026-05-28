@@ -31,6 +31,7 @@ const premiumFeatures: PlanFeature[] = [
   { label: "Custom profile badge: Premium Member", status: "available" },
   { label: "Better notification controls", status: "available" },
   { label: "Premium email digest", status: "available" },
+  { label: "Premium topic alerts", status: "available" },
   { label: "Draft mode for discussions", status: "available" },
   { label: "Extended edit window", status: "available" },
 ];
