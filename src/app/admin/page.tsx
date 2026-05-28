@@ -280,6 +280,13 @@ export default function AdminDashboardPage() {
           />
 
           <AdminCard
+            href="/admin/health"
+            title="Platform Health"
+            description="Review config presence, database visibility, AI failures, reports, and operational warnings."
+            action="Open Health"
+          />
+
+          <AdminCard
             href="/admin/ai-access"
             title="AI Access"
             description="Manage Premium AI-Assisted Layer access and review AI usage."
