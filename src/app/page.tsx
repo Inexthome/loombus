@@ -104,6 +104,39 @@ const memberSections = [
   },
 ];
 
+const mobileSignalShortcuts = [
+  {
+    title: "Setup Guide",
+    description: "Learn how to use Loombus.",
+    href: "/onboarding",
+  },
+  {
+    title: "My Activity",
+    description: "Review your recent Loombus activity.",
+    href: "/my-activity",
+  },
+  {
+    title: "Saved",
+    description: "Return to discussions you kept.",
+    href: "/saved",
+  },
+  {
+    title: "Following",
+    description: "Read people you follow.",
+    href: "/following",
+  },
+  {
+    title: "Reading History",
+    description: "Revisit what you opened.",
+    href: "/reading-history",
+  },
+  {
+    title: "AI Usage",
+    description: "Check Premium AI activity.",
+    href: "/ai-usage",
+  },
+];
+
 export default function Home() {
   const [authState, setAuthState] = useState<HomeAuthState>("checking");
   const [email, setEmail] = useState<string | null>(null);
@@ -295,7 +328,38 @@ export default function Home() {
               </Link>
             </section>
 
-            <section className="mb-5 rounded-[1.75rem] border border-zinc-800 bg-zinc-950/70 p-4">
+                          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  Mobile shortcuts
+                </p>
+
+                <h2 className="mb-3 text-lg font-semibold">Move faster.</h2>
+
+                <div className="grid gap-2">
+                  {mobileSignalShortcuts.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 hover:bg-zinc-950"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-zinc-100">
+                            {item.title}
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                            {item.description}
+                          </p>
+                        </div>
+
+                        <span className="text-zinc-600">→</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+
+<section className="mb-5 rounded-[1.75rem] border border-zinc-800 bg-zinc-950/70 p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">
