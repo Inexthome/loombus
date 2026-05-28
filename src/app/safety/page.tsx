@@ -39,7 +39,9 @@ export default function SafetyPage() {
 
           <p className="mt-4">
             Loombus support and moderation tools are not a substitute for law
-            enforcement, medical care, crisis support, or emergency response.
+            enforcement, medical care, crisis support, emergency response, or
+            professional advice. Reports and support requests may not be reviewed
+            in real time.
           </p>
         </Panel>
 
@@ -119,7 +121,27 @@ export default function SafetyPage() {
 
         <Panel>
           <h2 className="mb-4 text-2xl font-semibold text-white">
-            6. Privacy and Personal Information
+            6. Minors and Age Safety
+          </h2>
+
+          <p>
+            Loombus is not available to children under 13. Members should not
+            encourage children under 13 to create accounts, collect information
+            from children, or use Loombus to contact minors in unsafe,
+            exploitative, deceptive, or inappropriate ways.
+          </p>
+
+          <p className="mt-4">
+            Content or behavior involving child exploitation, grooming,
+            sexualized-minor content, coercion, or unsafe contact with minors may
+            lead to immediate enforcement and may be reported or preserved where
+            legally appropriate.
+          </p>
+        </Panel>
+
+        <Panel>
+          <h2 className="mb-4 text-2xl font-semibold text-white">
+            7. Privacy and Personal Information
           </h2>
 
           <p>
@@ -138,7 +160,7 @@ export default function SafetyPage() {
 
         <Panel>
           <h2 className="mb-4 text-2xl font-semibold text-white">
-            7. Account Safety
+            8. Account Safety
           </h2>
 
           <p>
@@ -156,7 +178,7 @@ export default function SafetyPage() {
 
         <Panel>
           <h2 className="mb-4 text-2xl font-semibold text-white">
-            8. Misuse of Safety Tools
+            9. Misuse of Safety Tools
           </h2>
 
           <p>
@@ -169,7 +191,7 @@ export default function SafetyPage() {
 
         <Panel>
           <h2 className="mb-4 text-2xl font-semibold text-white">
-            9. Moderation and Enforcement
+            10. Moderation and Enforcement
           </h2>
 
           <p>
@@ -189,7 +211,7 @@ export default function SafetyPage() {
 
         <Panel>
           <h2 className="mb-4 text-2xl font-semibold text-white">
-            10. Appeals and Review
+            11. Appeals and Review
           </h2>
 
           <p>
@@ -203,7 +225,7 @@ export default function SafetyPage() {
 
         <Panel>
           <h2 className="mb-4 text-2xl font-semibold text-white">
-            11. Safety Support
+            12. Safety Support
           </h2>
 
           <p>

@@ -44,7 +44,10 @@ export default function PrivacyPage() {
               <li>Premium or billing-related information, such as subscription tier, entitlement status, usage limits, checkout events, and payment processor status;</li>
               <li>AI-assisted feature information, such as prompts, discussion text, generated summaries, key takeaways, rewrites, quality checks, usage events, and cached AI outputs;</li>
               <li>technical information, such as device/browser information, session data, cookies, IP-related information, logs, diagnostics, and security events;</li>
-              <li>support information, such as messages, screenshots, issue descriptions, and communications sent to support.</li>
+              <li>support information, such as messages, screenshots, issue descriptions, and communications sent to support;</li>
+              <li>account status information, such as warnings, suspensions, bans, deactivations, deletion requests, enforcement reasons, admin notes, and audit records;</li>
+              <li>email preference information, such as welcome email delivery records, digest preferences, unsubscribe tokens, notification settings, and email delivery metadata;</li>
+              <li>copyright, DMCA, refund, billing, legal, or rights-related request information submitted through support or contact workflows.</li>
             </ul>
         </Panel>
 
@@ -215,11 +218,21 @@ export default function PrivacyPage() {
 
             <p className="mt-4">
               Some content or records may remain in backups, logs, moderation
-              records, audit records, legal records, or cached systems for a
-              period of time after deletion or account closure. Some information
-              may be retained where required or permitted by law, safety, fraud
-              prevention, billing, dispute resolution, or platform integrity
-              needs.
+              records, audit records, legal records, billing records, support
+              records, email delivery records, AI usage records, cached systems,
+              or security systems for a period of time after deletion or account
+              closure. Some information may be retained where required or
+              permitted by law, safety, fraud prevention, abuse prevention,
+              billing, dispute resolution, intellectual-property review,
+              chargeback response, tax/accounting obligations, or platform
+              integrity needs.
+            </p>
+
+            <p className="mt-4">
+              Account deletion requests may be reviewed before final processing
+              because public content, moderation history, safety records, billing
+              state, audit logs, and legal obligations may require careful
+              handling rather than immediate hard deletion.
             </p>
         </Panel>
 
@@ -273,11 +286,18 @@ export default function PrivacyPage() {
             </h2>
 
             <p>
-              Loombus is not intended for children under 13. Users must be at
-              least 13 years old to use Loombus. If Loombus learns that it has
-              collected personal information from a child under 13 without
-              appropriate consent, Loombus may delete the information and
-              restrict the account.
+              Loombus is not intended for children under 13 and does not
+              knowingly allow children under 13 to create accounts. Users must
+              be at least 13 years old to use Loombus. If Loombus learns that it
+              has collected personal information from a child under 13 without
+              appropriate consent, Loombus may delete the information, restrict
+              the account, preserve records needed for safety or legal
+              compliance, and take other appropriate action.
+            </p>
+
+            <p className="mt-4">
+              Parents or guardians who believe a child under 13 provided
+              information to Loombus may contact support for review.
             </p>
         </Panel>
 

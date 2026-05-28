@@ -78,6 +78,9 @@ export default function GuidelinesPage() {
             <li>attempts to bypass suspensions, blocks, restrictions, rate limits, or security controls;</li>
             <li>misuse of reporting, moderation, blocking, support, or safety tools;</li>
             <li>posting illegal, exploitative, non-consensual, or infringing content;</li>
+            <li>posting sexualized-minor content, child exploitation material, grooming behavior, or unsafe contact involving minors;</li>
+            <li>posting private information, credentials, payment details, confidential records, or non-consensual intimate content;</li>
+            <li>using AI or automation to generate spam, deception, impersonation, harassment, scams, synthetic reviews, or misleading content;</li>
             <li>using Loombus in a way that creates safety, legal, operational, reputational, or security risk for the platform, its owner, users, or service providers.</li>
           </ul>
         </Panel>

@@ -136,6 +136,9 @@ export default function CookiesPage() {
             If Loombus later introduces advertising, marketing analytics, or
             additional tracking technologies, this Cookie Use page and the
             Privacy Policy should be updated to describe those practices.
+            Loombus should not treat future analytics, advertising pixels, or
+            cross-site tracking as covered by this draft without additional
+            notice and review.
           </p>
         </Panel>
 

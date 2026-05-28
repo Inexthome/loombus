@@ -55,17 +55,29 @@ export default function TermsPage() {
             <p>
               You may use Loombus only if you can legally agree to these Terms
               and are not prohibited from using the service under applicable law.
-              You must be at least 13 years old to use Loombus. Users under the
-              age of majority in their jurisdiction may use Loombus only with
-              appropriate parental or guardian permission.
+              Loombus is not available to children under 13. By creating an
+              account or using Loombus, you represent that you are at least 13
+              years old. Users under the age of majority in their jurisdiction
+              may use Loombus only with appropriate parental or guardian
+              permission.
+            </p>
+
+            <p className="mt-4">
+              If Loombus learns that an account belongs to a child under 13, or
+              that an account was created with false age information, Loombus may
+              restrict, suspend, delete, or refuse service to that account and may
+              preserve records as needed for safety, legal compliance, fraud
+              prevention, or platform integrity.
             </p>
 
             <p className="mt-4">
               You are responsible for maintaining the confidentiality and
               security of your account credentials, account activity, profile,
               discussions, replies, saves, reports, and any actions taken through
-              your account. Loombus is not responsible for losses caused by your
-              failure to secure your account.
+              your account. You agree not to sell, transfer, share, rent, or
+              provide unauthorized access to your account. Loombus is not
+              responsible for losses caused by your failure to secure your
+              account.
             </p>
         </Panel>
 
@@ -122,6 +134,17 @@ export default function TermsPage() {
             </p>
 
             <p className="mt-4">
+              Content removal, account deactivation, or an account deletion
+              request may not immediately remove all copies of content from
+              backups, caches, logs, moderation records, AI output records,
+              legal records, reporting workflows, audit logs, search indexes, or
+              content already viewed, copied, quoted, exported, or shared by
+              others. The license above continues for as long as reasonably
+              necessary to operate, protect, preserve, enforce, or improve
+              Loombus and to comply with legal obligations.
+            </p>
+
+            <p className="mt-4">
               You agree that Loombus may use feedback, suggestions, or ideas you
               voluntarily provide without obligation, restriction, or
               compensation.
@@ -147,6 +170,16 @@ export default function TermsPage() {
               AI-assisted features are not legal, financial, medical,
               investment, tax, safety, mental health, or other professional
               advice.
+            </p>
+
+            <p className="mt-4">
+              You should not submit confidential, privileged, regulated,
+              sensitive, or third-party information to AI-assisted tools unless
+              you have the right to do so and accept the risk of processing. AI
+              tools may be provided by third-party model or infrastructure
+              providers, may be rate-limited, cached, logged, unavailable, or
+              changed, and may be disabled for safety, operational, billing, or
+              abuse-prevention reasons.
             </p>
 
             <p className="mt-4">
@@ -227,6 +260,14 @@ export default function TermsPage() {
               paid access does not guarantee uninterrupted service, permanent
               feature availability, specific AI output quality, visibility,
               audience growth, revenue, or any particular result.
+            </p>
+
+            <p className="mt-4">
+              Payment disputes, chargebacks, suspected fraud, failed payments,
+              subscription status changes, or payment processor action may cause
+              Loombus to restrict, suspend, revoke, or review paid features,
+              Extra AI Pack credits, billing access, or account access while the
+              issue is evaluated.
             </p>
         </Panel>
 

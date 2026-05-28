@@ -246,11 +246,11 @@ export default function SignupPage() {
             <Link href="/guidelines" className="text-zinc-400 underline-offset-4 hover:underline">
               Community Guidelines
             </Link>
-            , and{" "}
+            ,{" "}
             <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">
               Safety
             </Link>
-
+            , and{" "}
             <Link href="/contact" className="text-zinc-400 underline-offset-4 hover:underline">
               Contact
             </Link>
