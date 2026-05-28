@@ -527,7 +527,7 @@ export default function ClientLayout({
             </button>
 
             <Link
-              href="/discussions"
+              href="/search"
               aria-label="Search Loombus"
               className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-black text-zinc-300 shadow-lg shadow-black/40 transition hover:border-zinc-600 hover:text-white"
             >
