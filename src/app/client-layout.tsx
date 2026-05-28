@@ -9,12 +9,20 @@ import {
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
 
+type NavProfile = {
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  is_admin: boolean | null;
+};
+
 export default function ClientLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const [user, setUser] = useState<any>(null);
+  const [navProfile, setNavProfile] = useState<NavProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -119,11 +127,12 @@ export default function ClientLayout({
       try {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("is_admin")
+          .select("username, full_name, avatar_url, is_admin")
           .eq("id", userId)
           .single();
 
         if (isMounted && currentUserIdRef.current === userId) {
+          setNavProfile((profile ?? null) as NavProfile | null);
           setIsAdmin(Boolean(profile?.is_admin));
         }
       } catch (error) {
@@ -161,6 +170,7 @@ export default function ClientLayout({
 
         if (!userId) {
           setNotificationCount(0);
+          setNavProfile(null);
           setIsAdmin(false);
           lastNotificationLoadRef.current = null;
           return;
@@ -174,6 +184,7 @@ export default function ClientLayout({
           currentUserIdRef.current = null;
           setUser(null);
           setNotificationCount(0);
+          setNavProfile(null);
           setIsAdmin(false);
           lastNotificationLoadRef.current = null;
         }
@@ -486,7 +497,57 @@ export default function ClientLayout({
       )}
 
       <div className={user ? "pb-24 md:pb-0" : ""}>
-        {children}
+        {user && (
+        <div className="sticky top-0 z-40 border-b border-zinc-900 bg-black/95 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur md:hidden">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open menu"
+              aria-expanded={mobileMenuOpen}
+              className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 text-sm font-semibold text-white transition hover:border-zinc-600"
+            >
+              {navProfile?.avatar_url ? (
+                <img
+                  src={navProfile.avatar_url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span>
+                  {(navProfile?.full_name ||
+                    navProfile?.username ||
+                    user.email ||
+                    "U")
+                    .trim()
+                    .charAt(0)
+                    .toUpperCase()}
+                </span>
+              )}
+            </button>
+
+            <Link
+              href="/discussions"
+              aria-label="Search Loombus"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m16.5 16.5 4 4" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {children}
       </div>
 
       {user && mobileMenuOpen && (
@@ -568,8 +629,20 @@ export default function ClientLayout({
                     Saved
                   </Link>
 
+                  <Link href="/reading-history" onClick={closeMobileMenu} className={mobileNavLinkClass("/reading-history")}>
+                    Reading History
+                  </Link>
+
                   <Link href="/my-activity" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-activity")}>
                     My Activity
+                  </Link>
+
+                  <Link href="/my-discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-discussions")}>
+                    My Discussions
+                  </Link>
+
+                  <Link href="/my-replies" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-replies")}>
+                    My Replies
                   </Link>
                 </div>
               </section>
@@ -594,6 +667,10 @@ export default function ClientLayout({
 
                   <Link href="/premium" onClick={closeMobileMenu} className={mobileNavLinkClass("/premium")}>
                     Premium
+                  </Link>
+
+                  <Link href="/ai-usage" onClick={closeMobileMenu} className={mobileNavLinkClass("/ai-usage")}>
+                    AI Usage
                   </Link>
 
                   {isAdmin && (
@@ -627,60 +704,44 @@ export default function ClientLayout({
         >
           <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
             <Link href="/" onClick={closeMobileMenu} className={appTabClass("/")}>
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3.5 11.5 12 4l8.5 7.5" />
-                <path d="M5.5 10.5V20h13v-9.5" />
-                <path d="M9.5 20v-6h5v6" />
-              </svg>
+              <span aria-hidden="true" className="text-base">
+                ◆
+              </span>
               <span className="truncate">Home</span>
             </Link>
 
-            <Link href="/create" onClick={closeMobileMenu} className={appTabClass("/create")}>
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 5v14" />
-                <path d="M5 12h14" />
-              </svg>
-              <span className="truncate">Create</span>
-            </Link>
-
             <Link href="/discussions" onClick={closeMobileMenu} className={appTabClass("/discussions")}>
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 6.5h14" />
-                <path d="M5 12h10" />
-                <path d="M5 17.5h7" />
-                <path d="M17 15.5 20 18.5 17 21.5" />
-              </svg>
+              <span aria-hidden="true" className="text-base">
+                ◇
+              </span>
               <span className="truncate">Discuss</span>
             </Link>
 
+            <Link href="/create" onClick={closeMobileMenu} className={appTabClass("/create")}>
+              <span aria-hidden="true" className="text-base">
+                ＋
+              </span>
+              <span className="truncate">Create</span>
+            </Link>
+
+            <Link href="/people" onClick={closeMobileMenu} className={appTabClass("/people")}>
+              <span aria-hidden="true" className="text-base">
+                ◉
+              </span>
+              <span className="truncate">People</span>
+            </Link>
+
             <Link href="/notifications" onClick={closeMobileMenu} className={appTabClass("/notifications")}>
-              <span className="relative">
-                <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-                  <path d="M10 21h4" />
-                </svg>
+              <span aria-hidden="true" className="relative text-base">
+                ◌
                 {notificationCount > 0 && (
-                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-white px-1 text-[10px] leading-4 text-black">
+                  <span className="absolute -right-2 -top-1 min-w-4 rounded-full bg-white px-1 text-[9px] font-semibold text-black">
                     {notificationCount > 9 ? "9+" : notificationCount}
                   </span>
                 )}
               </span>
               <span className="truncate">Alerts</span>
             </Link>
-
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen((current) => !current)}
-              aria-expanded={mobileMenuOpen}
-              className={appMenuButtonClass()}
-            >
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
-                <path d="M5 7h14" />
-                <path d="M5 12h14" />
-                <path d="M5 17h14" />
-              </svg>
-              <span className="truncate">Menu</span>
-            </button>
           </div>
         </nav>
       )}

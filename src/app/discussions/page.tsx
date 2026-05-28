@@ -539,13 +539,13 @@ export default function DiscussionsPage() {
 
           <Link
             href="/create"
-            className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 sm:w-fit"
+            className="hidden w-full justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 sm:w-fit md:inline-flex"
           >
             Create Discussion
           </Link>
         </div>
-
-        <ProgressiveGuide
+        <div className="hidden md:block">
+          <ProgressiveGuide
           storageKey="loombus-guide-discussions-finding-signal-v1"
           eyebrow="Guide"
           title="Finding signal"
@@ -600,9 +600,10 @@ export default function DiscussionsPage() {
           </div>
         </section>
 
-        </ProgressiveGuide>
+          </ProgressiveGuide>
+        </div>
 
-        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+<section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -644,7 +645,7 @@ export default function DiscussionsPage() {
           )}
         </section>
 
-        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+        <section className="hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="discussion-search" className="mb-2 block text-sm font-medium text-zinc-300">
