@@ -13,6 +13,7 @@ type AdminCounts = {
   deletedDiscussions: number;
   deletedReplies: number;
   labsRequests: number;
+  supportRequests: number;
 };
 
 type AdminCardProps = {
@@ -72,6 +73,7 @@ export default function AdminDashboardPage() {
     deletedDiscussions: 0,
     deletedReplies: 0,
     labsRequests: 0,
+    supportRequests: 0,
   });
 
   useEffect(() => {
@@ -105,6 +107,7 @@ export default function AdminDashboardPage() {
         deletedDiscussions,
         deletedReplies,
         labsRequests,
+        supportRequests,
       ] = await Promise.all([
         supabase
           .from("reports")
@@ -136,6 +139,10 @@ export default function AdminDashboardPage() {
         supabase
           .from("labs_feature_requests")
           .select("*", { count: "exact", head: true }),
+        supabase
+          .from("support_requests")
+          .select("*", { count: "exact", head: true })
+          .in("status", ["new", "reviewing"]),
       ]);
 
       setCounts({
@@ -147,6 +154,7 @@ export default function AdminDashboardPage() {
         deletedDiscussions: deletedDiscussions.count ?? 0,
         deletedReplies: deletedReplies.count ?? 0,
         labsRequests: labsRequests.count ?? 0,
+        supportRequests: supportRequests.count ?? 0,
       });
 
       setAuthChecked(true);
@@ -263,6 +271,14 @@ export default function AdminDashboardPage() {
             description="Review and restore soft-deleted replies when needed."
             action="Open Deleted Replies"
             count={counts.deletedReplies}
+          />
+
+          <AdminCard
+            href="/admin/support"
+            title="Support Requests"
+            description="Review structured contact form submissions and track support status."
+            action="Open Support"
+            count={counts.supportRequests}
           />
 
           <AdminCard

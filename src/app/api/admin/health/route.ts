@@ -170,12 +170,14 @@ export async function GET(request: NextRequest) {
     extraCreditPackCount,
     topicAlertCount,
     accountDeletionRequestCount,
+    supportRequestCount,
     openReports,
     failedAi24h,
     newDiscussions24h,
     newReplies24h,
     digestOptIns,
     unlinkedPremiumEntitlements,
+    openSupportRequests,
   ] = await Promise.all([
     countTable(supabase, "profiles", "Profiles", "profiles"),
     countTable(supabase, "discussions", "Discussions", "discussions"),
@@ -194,6 +196,7 @@ export async function GET(request: NextRequest) {
       "Account deletion requests",
       "account_deletion_requests"
     ),
+    countTable(supabase, "support_requests", "Support requests", "support_requests"),
     countFiltered(supabase, "open_reports", "Open reports", "reports", (query) =>
       query.in("status", ["new", "reviewing"])
     ),
@@ -224,6 +227,13 @@ export async function GET(request: NextRequest) {
           .in("tier", ["premium", "admin"])
           .is("stripe_customer_id", null)
     ),
+    countFiltered(
+      supabase,
+      "open_support_requests",
+      "Open support requests",
+      "support_requests",
+      (query) => query.in("status", ["new", "reviewing"])
+    ),
   ]);
 
   const databaseCounts = [
@@ -239,6 +249,7 @@ export async function GET(request: NextRequest) {
     extraCreditPackCount,
     topicAlertCount,
     accountDeletionRequestCount,
+    supportRequestCount,
   ];
 
   const operationalSignals = [
@@ -248,6 +259,7 @@ export async function GET(request: NextRequest) {
     newReplies24h,
     digestOptIns,
     unlinkedPremiumEntitlements,
+    openSupportRequests,
   ];
 
   const config = getConfigStatus();
@@ -266,6 +278,16 @@ export async function GET(request: NextRequest) {
       message: `${item.label} could not be counted.`,
       detail: item.error,
     })),
+    ...(openSupportRequests.count && openSupportRequests.count > 0
+      ? [
+          {
+            key: "support_request_count",
+            severity: "attention",
+            message: `${openSupportRequests.count} support requests need review.`,
+            detail: "Support requests with status new or reviewing are open.",
+          },
+        ]
+      : []),
     ...(openReports.count && openReports.count > 0
       ? [
           {
