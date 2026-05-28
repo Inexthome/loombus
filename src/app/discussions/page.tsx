@@ -524,7 +524,7 @@ export default function DiscussionsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -865,37 +865,37 @@ export default function DiscussionsPage() {
           </div>
         )}
 
-        <div className="space-y-5">
+        <div className="space-y-3 sm:space-y-5">
           {filteredDiscussions.map((discussion) => {
             const profile = profiles[discussion.user_id];
 
             return (
               <div
                 key={discussion.id}
-                className="group overflow-hidden rounded-[1.75rem] border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
+                className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700 sm:rounded-[1.75rem]"
               >
                 <Link
                   href={`/discussions/${discussion.id}`}
                   className="block p-4 sm:p-6"
                 >
-                  <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
                     <div className="min-w-0">
-                      <p className="mb-2 inline-flex rounded-full border border-zinc-800 bg-black px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                      <p className="mb-2 inline-flex rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500 sm:px-3 sm:text-[11px] sm:tracking-[0.18em]">
                         {discussion.topic}
                       </p>
 
                       <span
-                        className={`ml-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-medium ${getDiscussionStatusClassName(discussion)}`}
+                        className={`ml-1.5 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium sm:ml-2 sm:px-3 sm:text-[11px] ${getDiscussionStatusClassName(discussion)}`}
                       >
                         {getDiscussionStatusLabel(discussion)}
                       </span>
                     </div>
 
-                    <div className="shrink-0 rounded-2xl border border-zinc-800 bg-black px-3 py-2 text-right">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-zinc-600">
+                    <div className="shrink-0 rounded-xl border border-zinc-800 bg-black px-3 py-2 text-right sm:rounded-2xl">
+                      <p className="text-[9px] uppercase tracking-[0.16em] text-zinc-600 sm:text-[10px] sm:tracking-[0.18em]">
                         Signal
                       </p>
-                      <p className="text-lg font-semibold text-white">
+                      <p className="text-base font-semibold text-white sm:text-lg">
                         {getSignalScore(
                           discussion.id,
                           replyCounts,
@@ -906,20 +906,20 @@ export default function DiscussionsPage() {
                     </div>
                   </div>
 
-                  <h2 className="mb-3 text-lg font-semibold leading-snug tracking-tight transition group-hover:text-white sm:text-2xl">
+                  <h2 className="mb-2 text-lg font-semibold leading-snug tracking-tight transition group-hover:text-white sm:mb-3 sm:text-2xl">
                     {discussion.title}
                   </h2>
 
-                  <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+                  <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-4 sm:line-clamp-3 sm:text-base">
                     {discussion.body}
                   </p>
 
                   {discussionTags[discussion.id]?.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
                       {discussionTags[discussion.id].map((tag) => (
                         <span
                           key={`${discussion.id}-${tag}`}
-                          className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs text-zinc-500"
+                          className="shrink-0 rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs text-zinc-500"
                         >
                           #{tag}
                         </span>
@@ -928,12 +928,12 @@ export default function DiscussionsPage() {
                   )}
                 </Link>
 
-                <div className="border-t border-zinc-900 bg-black/30 p-4">
-                  <div className="mb-4 flex min-w-0 items-center gap-3">
+                <div className="border-t border-zinc-900 bg-black/30 p-3 sm:p-4">
+                  <div className="mb-3 flex min-w-0 items-center gap-3 sm:mb-4">
                     <ProfileAvatar profile={profile} size="md" />
 
                     <div className="min-w-0">
-                      <p className="truncate text-sm text-zinc-500">
+                      <p className="truncate text-xs text-zinc-500 sm:text-sm">
                         by{" "}
                         {profile?.username ? (
                           <Link
@@ -947,7 +947,7 @@ export default function DiscussionsPage() {
                         )}
                       </p>
 
-                      <p className="mt-1 truncate text-xs text-zinc-700">
+                      <p className="mt-1 truncate text-[11px] text-zinc-700 sm:text-xs">
                         Created {new Date(discussion.created_at).toLocaleDateString()}
                         {latestReplyDates[discussion.id] && (
                           <>
@@ -959,30 +959,30 @@ export default function DiscussionsPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                    <div className="rounded-xl border border-zinc-900 bg-black px-2.5 py-2 sm:rounded-2xl sm:px-3">
                       <p className="text-sm font-semibold text-zinc-200">
                         {replyCounts[discussion.id] ?? 0}
                       </p>
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-700 sm:text-[11px] sm:tracking-[0.16em]">
                         Replies
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                    <div className="rounded-xl border border-zinc-900 bg-black px-2.5 py-2 sm:rounded-2xl sm:px-3">
                       <p className="text-sm font-semibold text-zinc-200">
                         {bookmarkCounts[discussion.id] ?? 0}
                       </p>
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-700 sm:text-[11px] sm:tracking-[0.16em]">
                         Saves
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                    <div className="rounded-xl border border-zinc-900 bg-black px-2.5 py-2 sm:rounded-2xl sm:px-3">
                       <p className="text-sm font-semibold text-zinc-200">
                         {viewCounts[discussion.id] ?? 0}
                       </p>
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-700 sm:text-[11px] sm:tracking-[0.16em]">
                         Views
                       </p>
                     </div>
