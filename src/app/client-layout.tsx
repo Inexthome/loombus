@@ -58,7 +58,7 @@ export default function ClientLayout({
     const active =
       pathname === href || (href !== "/" && pathname.startsWith(href));
 
-    return `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2.5 text-[11px] font-medium transition ${
+    return `flex min-w-0 items-center justify-center rounded-2xl border px-2 py-3 transition ${
       active
         ? "border-white bg-white text-black shadow-lg shadow-white/10"
         : "border-transparent text-zinc-500 hover:border-zinc-800 hover:bg-zinc-950 hover:text-white"
@@ -71,6 +71,58 @@ export default function ClientLayout({
         ? "border-white bg-white text-black shadow-lg shadow-white/10"
         : "border-transparent text-zinc-500 hover:border-zinc-800 hover:bg-zinc-950 hover:text-white"
     }`;
+  }
+
+  function MobileNavIcon({ name }: { name: "home" | "discuss" | "create" | "people" | "alerts" }) {
+    const iconClass = "h-5 w-5";
+
+    if (name === "home") {
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4.5 10.8 12 4.5l7.5 6.3" />
+          <path d="M6.5 10.5v8.2a.8.8 0 0 0 .8.8h3.2v-5h3v5h3.2a.8.8 0 0 0 .8-.8v-8.2" />
+        </svg>
+      );
+    }
+
+    if (name === "discuss") {
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6.5 7.5h11" />
+          <path d="M6.5 11.5h7" />
+          <path d="M7 17.5H6a3 3 0 0 1-3-3v-7A3 3 0 0 1 6 4.5h12a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-5.2L8 20.5v-3Z" />
+        </svg>
+      );
+    }
+
+    if (name === "create") {
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+          <path d="M7.5 3.5h9a4 4 0 0 1 4 4v9a4 4 0 0 1-4 4h-9a4 4 0 0 1-4-4v-9a4 4 0 0 1 4-4Z" />
+        </svg>
+      );
+    }
+
+    if (name === "people") {
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15.5 19.5a4.5 4.5 0 0 0-9 0" />
+          <path d="M11 12.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+          <path d="M18.5 18.5a3.4 3.4 0 0 0-2.7-3.3" />
+          <path d="M16.5 6.2a3 3 0 0 1 0 5.6" />
+        </svg>
+      );
+    }
+
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8.5a6 6 0 1 0-12 0c0 7-2.5 7.5-2.5 7.5h17S18 15.5 18 8.5Z" />
+        <path d="M9.8 19.2a2.4 2.4 0 0 0 4.4 0" />
+        <path d="M17.5 4.5 20 2" />
+      </svg>
+    );
   }
 
 
@@ -701,44 +753,31 @@ export default function ClientLayout({
           }`}
         >
           <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-            <Link href="/" onClick={closeMobileMenu} className={appTabClass("/")}>
-              <span aria-hidden="true" className="text-base">
-                ◆
-              </span>
-              <span className="truncate">Home</span>
+            <Link href="/" aria-label="Home" title="Home" onClick={closeMobileMenu} className={appTabClass("/")}>
+              <MobileNavIcon name="home" />
             </Link>
 
-            <Link href="/discussions" onClick={closeMobileMenu} className={appTabClass("/discussions")}>
-              <span aria-hidden="true" className="text-base">
-                ◇
-              </span>
-              <span className="truncate">Discuss</span>
+            <Link href="/discussions" aria-label="Discussions" title="Discussions" onClick={closeMobileMenu} className={appTabClass("/discussions")}>
+              <MobileNavIcon name="discuss" />
             </Link>
 
-            <Link href="/create" onClick={closeMobileMenu} className={appTabClass("/create")}>
-              <span aria-hidden="true" className="text-base">
-                ＋
-              </span>
-              <span className="truncate">Create</span>
+            <Link href="/create" aria-label="Create" title="Create" onClick={closeMobileMenu} className={appTabClass("/create")}>
+              <MobileNavIcon name="create" />
             </Link>
 
-            <Link href="/people" onClick={closeMobileMenu} className={appTabClass("/people")}>
-              <span aria-hidden="true" className="text-base">
-                ◉
-              </span>
-              <span className="truncate">People</span>
+            <Link href="/people" aria-label="People" title="People" onClick={closeMobileMenu} className={appTabClass("/people")}>
+              <MobileNavIcon name="people" />
             </Link>
 
-            <Link href="/notifications" onClick={closeMobileMenu} className={appTabClass("/notifications")}>
-              <span aria-hidden="true" className="relative text-base">
-                ◌
+            <Link href="/notifications" aria-label="Alerts" title="Alerts" onClick={closeMobileMenu} className={appTabClass("/notifications")}>
+              <span className="relative">
+                <MobileNavIcon name="alerts" />
                 {notificationCount > 0 && (
-                  <span className="absolute -right-2 -top-1 min-w-4 rounded-full bg-white px-1 text-[9px] font-semibold text-black">
+                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-white px-1 text-center text-[9px] font-semibold leading-4 text-black">
                     {notificationCount > 9 ? "9+" : notificationCount}
                   </span>
                 )}
               </span>
-              <span className="truncate">Alerts</span>
             </Link>
           </div>
         </nav>
