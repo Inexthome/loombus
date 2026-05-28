@@ -643,11 +643,11 @@ export default function SavedPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-7 flex flex-col gap-4 sm:mb-10 md:flex-row md:items-end md:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:mb-10 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="mb-3 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+            <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:mb-3 sm:text-4xl md:text-5xl">
               Saved discussions
             </h1>
 
@@ -658,7 +658,7 @@ export default function SavedPage() {
 
           <Link
             href="/premium"
-            className="w-full rounded-full border border-zinc-800 px-5 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white sm:w-fit"
+            className="hidden w-full rounded-full border border-zinc-800 px-5 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white sm:w-fit md:inline-block"
           >
             Premium folders
           </Link>
@@ -713,7 +713,7 @@ export default function SavedPage() {
         </section>
 
         {!loading && !canUseCollections && (
-          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
+          <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
             <h2 className="mb-2 text-xl font-medium sm:text-2xl">
               Saved folders are a Premium feature.
             </h2>
@@ -726,7 +726,7 @@ export default function SavedPage() {
         )}
 
         {!loading && canUseCollections && !canUsePrivateNotes && (
-          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
+          <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
             <h2 className="mb-2 text-xl font-medium sm:text-2xl">
               Private notes are a Premium Plus feature.
             </h2>
@@ -739,7 +739,7 @@ export default function SavedPage() {
         )}
 
         {canExportSavedNotes && (
-          <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
+          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -765,7 +765,7 @@ export default function SavedPage() {
                   type="button"
                   onClick={() => exportSavedDiscussions("json")}
                   disabled={Boolean(exportingFormat)}
-                  className="rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  className="w-full rounded-full border border-zinc-800 px-5 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
                 >
                   {exportingFormat === "json" ? "Exporting..." : "Export JSON"}
                 </button>
@@ -782,13 +782,13 @@ export default function SavedPage() {
         {canUseCollections && (
           <form
             onSubmit={createCollection}
-            className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6"
+            className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6"
           >
             <h2 className="mb-2 text-xl font-medium sm:text-2xl">
               Create saved folder
             </h2>
 
-            <p className="mb-5 max-w-2xl leading-relaxed text-zinc-500">
+            <p className="mb-4 hidden max-w-2xl leading-relaxed text-zinc-500 sm:block">
               Use folders to group high-signal discussions by research area,
               project, topic, or reading priority.
             </p>
@@ -820,7 +820,7 @@ export default function SavedPage() {
           </p>
         )}
 
-        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
+        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="saved-search" className="mb-2 block text-sm font-medium text-zinc-300">
@@ -862,7 +862,7 @@ export default function SavedPage() {
             )}
 
             {!hasActiveSavedFilters && (
-              <p className="text-sm text-zinc-600">
+              <p className="hidden text-sm text-zinc-600 sm:block">
                 Search scans saved discussion titles, topics, bodies, and private notes when available.
               </p>
             )}
@@ -870,7 +870,7 @@ export default function SavedPage() {
 
           {!loading && (
             <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <p className="text-sm text-zinc-600">
+              <p className="text-xs text-zinc-600 sm:text-sm">
                 Showing {filteredSaved.length} of {saved.length} saved discussions
               </p>
 
@@ -887,11 +887,11 @@ export default function SavedPage() {
           )}
         </section>
 
-        <div className="mb-8 flex flex-wrap gap-3">
+        <div className="mb-6 flex gap-2 overflow-x-auto pb-2 sm:mb-8 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:pb-0">
           <button
             type="button"
             onClick={() => setSelectedCollectionId("all")}
-            className={`rounded-full border px-4 py-2 text-sm transition ${
+            className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
               selectedCollectionId === "all"
                 ? "border-zinc-400 text-white"
                 : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
@@ -903,7 +903,7 @@ export default function SavedPage() {
           <button
             type="button"
             onClick={() => setSelectedCollectionId("unfiled")}
-            className={`rounded-full border px-4 py-2 text-sm transition ${
+            className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
               selectedCollectionId === "unfiled"
                 ? "border-zinc-400 text-white"
                 : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
@@ -913,11 +913,11 @@ export default function SavedPage() {
           </button>
 
           {collections.map((collection) => (
-            <div key={collection.id} className="flex items-center gap-2">
+            <div key={collection.id} className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedCollectionId(collection.id)}
-                className={`rounded-full border px-4 py-2 text-sm transition ${
+                className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
                   selectedCollectionId === collection.id
                     ? "border-zinc-400 text-white"
                     : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
@@ -947,7 +947,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-8">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
             <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               Nothing saved yet.
             </h2>
@@ -958,7 +958,7 @@ export default function SavedPage() {
               intentional.
             </p>
 
-            <div className="mb-5 grid gap-3 md:grid-cols-3">
+            <div className="mb-5 hidden gap-3 md:grid md:grid-cols-3">
               <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   Start with signal
@@ -1023,7 +1023,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length > 0 && filteredSaved.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-8">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
             <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No saved discussions found.
             </h2>
@@ -1060,7 +1060,7 @@ export default function SavedPage() {
           </div>
         )}
 
-        <div className="space-y-5">
+        <div className="space-y-3 sm:space-y-5">
           {filteredSaved.map((item) => {
             const discussion = item.discussions;
 
@@ -1071,27 +1071,27 @@ export default function SavedPage() {
             return (
               <div
                 key={item.id}
-                className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:p-7"
+                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-[1.5rem] sm:p-7"
               >
                 <Link
                   href={`/discussions/${discussion.id}`}
                   className="block transition hover:opacity-90"
                 >
-                  <p className="mb-3 text-sm text-zinc-500">
+                  <p className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-600 sm:mb-3 sm:text-sm sm:normal-case sm:tracking-normal sm:text-zinc-500">
                     {discussion.topic}
                   </p>
 
-                  <h2 className="mb-3 text-xl font-medium sm:text-2xl">
+                  <h2 className="mb-2 text-lg font-medium sm:mb-3 sm:text-2xl">
                     {discussion.title}
                   </h2>
 
-                  <p className="mb-4 line-clamp-2 leading-relaxed text-zinc-400">
+                  <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-4 sm:text-base">
                     {discussion.body}
                   </p>
                 </Link>
 
                 {canUsePrivateNotes && (
-                  <div className="mb-4 rounded-2xl border border-zinc-900 bg-black/40 p-4">
+                  <div className="mb-3 rounded-2xl border border-zinc-900 bg-black/40 p-3 sm:mb-4 sm:p-4">
                     <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                       <label className="text-sm font-medium text-zinc-300">
                         Private note
@@ -1135,7 +1135,7 @@ export default function SavedPage() {
                   </div>
                 )}
 
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <p className="text-sm text-zinc-600">
                     Saved {new Date(item.created_at).toLocaleDateString()}
                   </p>
