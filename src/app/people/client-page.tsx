@@ -337,7 +337,7 @@ export default function PeoplePage() {
 
   if (!authChecked || loading) {
     return (
-      <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
+      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl">
           <p className="text-zinc-500">
             Loading people...
@@ -395,12 +395,12 @@ export default function PeoplePage() {
   return (
     <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-7 sm:mb-10">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
+        <div className="mb-5 sm:mb-10">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
             People
           </h1>
 
-          <p className="mt-3 text-sm leading-relaxed text-zinc-500 sm:text-base">
+          <p className="mt-2 text-sm leading-relaxed text-zinc-500 sm:mt-3 sm:text-base">
             Discover thoughtful contributors across Loombus.
           </p>
         </div>
@@ -453,10 +453,10 @@ export default function PeoplePage() {
           </div>
         </section>
 
-        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
+        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
-              <label htmlFor="people-search" className="mb-3 block text-sm font-medium text-zinc-300">
+              <label htmlFor="people-search" className="mb-2 block text-sm font-medium text-zinc-300">
                 Search members
               </label>
 
@@ -487,14 +487,14 @@ export default function PeoplePage() {
                 Search: “{activePeopleSearch}”
               </span>
             ) : (
-              <p className="text-sm text-zinc-600">
+              <p className="hidden text-sm text-zinc-600 sm:block">
                 Search scans usernames, names, and bios so you can find contributors by interest or context.
               </p>
             )}
           </div>
 
           {!loading && (
-            <p className="mt-3 text-sm text-zinc-600">
+            <p className="mt-3 text-xs text-zinc-600 sm:text-sm">
               Showing {filteredProfiles.length} of {profiles.length} members
             </p>
           )}
@@ -550,7 +550,7 @@ export default function PeoplePage() {
           </div>
         )}
 
-        <div className="grid gap-3 sm:gap-5 lg:grid-cols-2">
+        <div className="grid gap-3 pb-4 sm:gap-5 sm:pb-0 lg:grid-cols-2">
           {filteredProfiles.map((profile) => {
             const isSelf = currentUserId === profile.id;
             const isFollowing = followingIds.has(profile.id);
@@ -561,14 +561,14 @@ export default function PeoplePage() {
               <Link
                 key={profile.id}
                 href={profile.username ? `/u/${profile.username}` : "/people"}
-                className="group overflow-hidden rounded-[1.5rem] border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
+                className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700 sm:rounded-[1.5rem]"
               >
                 <div className="p-4 sm:p-6">
-                  <div className="mb-4 flex items-start gap-3">
+                  <div className="mb-3 flex items-start gap-3 sm:mb-4">
                     <ProfileAvatar profile={profile} size="xl" />
 
                     <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">
+                      <h2 className="truncate text-lg font-semibold tracking-tight sm:text-2xl">
                         {profile.full_name || profile.username || "Loombus member"}
                       </h2>
 
@@ -588,14 +588,14 @@ export default function PeoplePage() {
                     </div>
                   </div>
 
-                  <p className="line-clamp-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
+                  <p className="line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:line-clamp-3 sm:text-base">
                     {profile.bio || "No bio yet."}
                   </p>
                 </div>
 
-                <div className="border-t border-zinc-900 bg-black/30 p-4">
+                <div className="border-t border-zinc-900 bg-black/30 p-3 sm:p-4">
                   <div className="mb-3 grid grid-cols-2 gap-2">
-                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                    <div className="rounded-xl border border-zinc-900 bg-black px-3 py-2 sm:rounded-2xl">
                       <p className="text-sm font-semibold text-zinc-200">
                         {(followCounts[profile.id]?.followers ?? 0).toLocaleString()}
                       </p>
@@ -604,7 +604,7 @@ export default function PeoplePage() {
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-zinc-900 bg-black px-3 py-2">
+                    <div className="rounded-xl border border-zinc-900 bg-black px-3 py-2 sm:rounded-2xl">
                       <p className="text-sm font-semibold text-zinc-200">
                         {(followCounts[profile.id]?.following ?? 0).toLocaleString()}
                       </p>
