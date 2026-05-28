@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { LegalReviewNotice, PageHeader, PageShell, Panel } from "@/components/ui";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const supportEmail = "support@loombus.com";
 
 export default function DmcaPage() {
