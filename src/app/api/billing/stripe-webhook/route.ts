@@ -20,6 +20,14 @@ const PREMIUM_PLUS_LIMITS = {
   monthly_discovery_limit: 75,
 };
 
+type StripeBillingIdentity = {
+  stripeCustomerId?: string | null;
+  stripeSubscriptionId?: string | null;
+  stripePriceId?: string | null;
+  stripeCurrentPeriodEnd?: string | null;
+  stripeSubscriptionStatus?: string | null;
+};
+
 function getStripe() {
   if (!STRIPE_SECRET_KEY) {
     throw new Error("STRIPE_SECRET_KEY is not configured.");
@@ -63,7 +71,8 @@ function getPlanLabel(planKey: string | null | undefined) {
 async function activatePremiumForUser(
   userId: string,
   note: string,
-  planKey?: string | null
+  planKey?: string | null,
+  billingIdentity: StripeBillingIdentity = {}
 ) {
   const supabase = getSupabaseAdmin();
   const updatedAt = new Date().toISOString();
@@ -75,6 +84,12 @@ async function activatePremiumForUser(
       tier: "premium",
       ai_assisted_enabled: true,
       ...limits,
+      stripe_customer_id: billingIdentity.stripeCustomerId ?? null,
+      stripe_subscription_id: billingIdentity.stripeSubscriptionId ?? null,
+      stripe_price_id: billingIdentity.stripePriceId ?? null,
+      stripe_current_period_end: billingIdentity.stripeCurrentPeriodEnd ?? null,
+      stripe_subscription_status:
+        billingIdentity.stripeSubscriptionStatus ?? "active",
       notes: `${note} Plan: ${getPlanLabel(planKey)}.`,
       updated_at: updatedAt,
     },
@@ -88,7 +103,11 @@ async function activatePremiumForUser(
   }
 }
 
-async function deactivatePremiumForUser(userId: string, note: string) {
+async function deactivatePremiumForUser(
+  userId: string,
+  note: string,
+  billingIdentity: StripeBillingIdentity = {}
+) {
   const supabase = getSupabaseAdmin();
   const updatedAt = new Date().toISOString();
 
@@ -101,6 +120,12 @@ async function deactivatePremiumForUser(userId: string, note: string) {
       monthly_writing_limit: 0,
       monthly_research_limit: 0,
       monthly_discovery_limit: 0,
+      stripe_customer_id: billingIdentity.stripeCustomerId ?? null,
+      stripe_subscription_id: billingIdentity.stripeSubscriptionId ?? null,
+      stripe_price_id: billingIdentity.stripePriceId ?? null,
+      stripe_current_period_end: billingIdentity.stripeCurrentPeriodEnd ?? null,
+      stripe_subscription_status:
+        billingIdentity.stripeSubscriptionStatus ?? "canceled",
       notes: note,
       updated_at: updatedAt,
     },
@@ -122,6 +147,47 @@ function getPlanKeyFromCheckoutSession(session: Stripe.Checkout.Session) {
   return session.metadata?.plan_key ?? null;
 }
 
+function getCustomerIdFromCheckoutSession(session: Stripe.Checkout.Session) {
+  if (typeof session.customer === "string") {
+    return session.customer;
+  }
+
+  return session.customer?.id ?? null;
+}
+
+function getSubscriptionIdFromCheckoutSession(session: Stripe.Checkout.Session) {
+  if (typeof session.subscription === "string") {
+    return session.subscription;
+  }
+
+  return session.subscription?.id ?? null;
+}
+
+function getCustomerIdFromSubscription(subscription: Stripe.Subscription) {
+  if (typeof subscription.customer === "string") {
+    return subscription.customer;
+  }
+
+  return subscription.customer?.id ?? null;
+}
+
+function getSubscriptionPriceId(subscription: Stripe.Subscription) {
+  const item = subscription.items?.data?.[0];
+  return item?.price?.id ?? null;
+}
+
+function getSubscriptionPeriodEnd(subscription: Stripe.Subscription) {
+  const periodEnd = (subscription as Stripe.Subscription & {
+    current_period_end?: number;
+  }).current_period_end;
+
+  if (!periodEnd) {
+    return null;
+  }
+
+  return new Date(periodEnd * 1000).toISOString();
+}
+
 function getUserIdFromSubscription(subscription: Stripe.Subscription) {
   return subscription.metadata?.user_id ?? null;
 }
@@ -141,10 +207,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     return;
   }
 
-  const subscriptionId =
-    typeof session.subscription === "string"
-      ? session.subscription
-      : session.subscription?.id;
+  const subscriptionId = getSubscriptionIdFromCheckoutSession(session);
+  const checkoutCustomerId = getCustomerIdFromCheckoutSession(session);
 
   if (subscriptionId) {
     const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
@@ -153,7 +217,15 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       await activatePremiumForUser(
         userId,
         `Premium AI-Assisted Layer activated from Stripe checkout session ${session.id}.`,
-        planKey
+        planKey,
+        {
+          stripeCustomerId:
+            getCustomerIdFromSubscription(subscription) ?? checkoutCustomerId,
+          stripeSubscriptionId: subscription.id,
+          stripePriceId: getSubscriptionPriceId(subscription),
+          stripeCurrentPeriodEnd: getSubscriptionPeriodEnd(subscription),
+          stripeSubscriptionStatus: subscription.status,
+        }
       );
     }
 
@@ -163,7 +235,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   await activatePremiumForUser(
     userId,
     `Premium AI-Assisted Layer activated from Stripe checkout session ${session.id}.`,
-    planKey
+    planKey,
+    {
+      stripeCustomerId: checkoutCustomerId,
+      stripeSubscriptionId: subscriptionId,
+      stripeSubscriptionStatus: "active",
+    }
   );
 }
 
@@ -176,11 +253,20 @@ async function handleSubscriptionChanged(subscription: Stripe.Subscription) {
     return;
   }
 
+  const billingIdentity: StripeBillingIdentity = {
+    stripeCustomerId: getCustomerIdFromSubscription(subscription),
+    stripeSubscriptionId: subscription.id,
+    stripePriceId: getSubscriptionPriceId(subscription),
+    stripeCurrentPeriodEnd: getSubscriptionPeriodEnd(subscription),
+    stripeSubscriptionStatus: subscription.status,
+  };
+
   if (["active", "trialing"].includes(subscription.status)) {
     await activatePremiumForUser(
       userId,
       `Premium AI-Assisted Layer active from Stripe subscription ${subscription.id} with status ${subscription.status}.`,
-      planKey
+      planKey,
+      billingIdentity
     );
     return;
   }
@@ -188,7 +274,8 @@ async function handleSubscriptionChanged(subscription: Stripe.Subscription) {
   if (["canceled", "unpaid", "incomplete_expired"].includes(subscription.status)) {
     await deactivatePremiumForUser(
       userId,
-      `Premium AI-Assisted Layer disabled from Stripe subscription ${subscription.id} with status ${subscription.status}.`
+      `Premium AI-Assisted Layer disabled from Stripe subscription ${subscription.id} with status ${subscription.status}.`,
+      billingIdentity
     );
     return;
   }

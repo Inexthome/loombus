@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BillingPortalButton } from "@/components/billing-portal-button";
 import { PremiumPlanCheckoutButton } from "./premium-checkout-button";
 
 type FeatureStatus = "available" | "planned";
@@ -213,6 +214,29 @@ export default function PremiumPage() {
             </div>
 
             <FeatureList features={premiumPlusFeatures} />
+          </div>
+        </section>
+
+        <section className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
+                Billing
+              </p>
+
+              <h2 className="text-3xl font-semibold tracking-tight">
+                Need to manage an existing subscription?
+              </h2>
+
+              <p className="mt-4 max-w-2xl leading-relaxed text-zinc-500">
+                Open the secure Stripe Billing Portal to update payment details,
+                review invoices, or manage your Premium subscription.
+              </p>
+            </div>
+
+            <BillingPortalButton variant="secondary">
+              Manage billing
+            </BillingPortalButton>
           </div>
         </section>
 
