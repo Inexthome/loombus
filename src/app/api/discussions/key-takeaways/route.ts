@@ -7,6 +7,7 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  getOpenAiUsageMetadata,
   upsertDiscussionAiOutput,
 } from "@/lib/premium-ai";
 
@@ -106,7 +107,10 @@ async function generateOpenAIKeyTakeaways({
     throw new Error("AI key takeaways generation returned no content.");
   }
 
-  return takeaways;
+  return {
+    takeaways: takeaways,
+    usageMetadata: getOpenAiUsageMetadata(payload, TAKEAWAYS_MODEL),
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -279,14 +283,17 @@ export async function POST(request: NextRequest) {
     }
 
     let takeaways: string;
+    let usageMetadata = {};
 
     try {
-      takeaways = await generateOpenAIKeyTakeaways({
+      const generatedTakeaways = await generateOpenAIKeyTakeaways({
         title: discussion.title,
         topic: discussion.topic,
         body: discussion.body,
         replies,
       });
+      takeaways = generatedTakeaways.takeaways;
+      usageMetadata = generatedTakeaways.usageMetadata;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "AI key takeaways generation failed.";
@@ -339,6 +346,7 @@ export async function POST(request: NextRequest) {
       modelName: TAKEAWAYS_MODEL,
       cached: false,
       success: true,
+      ...usageMetadata,
     });
 
     await logAuditEvent({

@@ -6,6 +6,7 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  getOpenAiUsageMetadata,
 } from "@/lib/premium-ai";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 
@@ -103,7 +104,10 @@ async function generateQualityCheck({
     throw new Error("AI quality check returned no feedback.");
   }
 
-  return qualityCheck;
+  return {
+    qualityCheck: qualityCheck,
+    usageMetadata: getOpenAiUsageMetadata(payload, QUALITY_CHECK_MODEL),
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -222,13 +226,16 @@ export async function POST(request: NextRequest) {
     }
 
     let qualityCheck: string;
+    let usageMetadata = {};
 
     try {
-      qualityCheck = await generateQualityCheck({
+      const generatedQualityCheck = await generateQualityCheck({
         title,
         topic,
         body,
       });
+      qualityCheck = generatedQualityCheck.qualityCheck;
+      usageMetadata = generatedQualityCheck.usageMetadata;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "AI quality check generation failed.";
@@ -262,6 +269,7 @@ export async function POST(request: NextRequest) {
       modelName: QUALITY_CHECK_MODEL,
       cached: false,
       success: true,
+      ...usageMetadata,
     });
 
     await logAuditEvent({

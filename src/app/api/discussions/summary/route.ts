@@ -7,6 +7,7 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  getOpenAiUsageMetadata,
   insertDiscussionSummary,
 } from "@/lib/premium-ai";
 
@@ -101,7 +102,10 @@ async function generateOpenAISummary({
     throw new Error("AI summary generation returned no summary.");
   }
 
-  return summary;
+  return {
+    summary: summary,
+    usageMetadata: getOpenAiUsageMetadata(payload, SUMMARY_MODEL),
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -260,14 +264,17 @@ export async function POST(request: NextRequest) {
     }
 
     let summaryText: string;
+    let usageMetadata = {};
 
     try {
-      summaryText = await generateOpenAISummary({
+      const generatedSummary = await generateOpenAISummary({
         title: discussion.title,
         topic: discussion.topic,
         body: discussion.body,
         replyCount: sourceReplyCount,
       });
+      summaryText = generatedSummary.summary;
+      usageMetadata = generatedSummary.usageMetadata;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "AI summary generation failed.";
@@ -347,6 +354,7 @@ export async function POST(request: NextRequest) {
       modelName: SUMMARY_MODEL,
       cached: false,
       success: true,
+      ...usageMetadata,
     });
 
     await logAuditEvent({

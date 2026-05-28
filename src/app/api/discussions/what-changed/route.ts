@@ -7,6 +7,7 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  getOpenAiUsageMetadata,
   upsertDiscussionAiOutput,
 } from "@/lib/premium-ai";
 
@@ -108,7 +109,10 @@ async function generateOpenAIWhatChanged({
     throw new Error("AI what-changed generation returned no content.");
   }
 
-  return whatChanged;
+  return {
+    whatChanged: whatChanged,
+    usageMetadata: getOpenAiUsageMetadata(payload, WHAT_CHANGED_MODEL),
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -281,15 +285,18 @@ export async function POST(request: NextRequest) {
     }
 
     let whatChanged: string;
+    let usageMetadata = {};
 
     try {
-      whatChanged = await generateOpenAIWhatChanged({
+      const generatedWhatChanged = await generateOpenAIWhatChanged({
         title: discussion.title,
         topic: discussion.topic,
         body: discussion.body,
         replies,
         replyCount: sourceReplyCount,
       });
+      whatChanged = generatedWhatChanged.whatChanged;
+      usageMetadata = generatedWhatChanged.usageMetadata;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "AI what-changed generation failed.";
@@ -342,6 +349,7 @@ export async function POST(request: NextRequest) {
       modelName: WHAT_CHANGED_MODEL,
       cached: false,
       success: true,
+      ...usageMetadata,
     });
 
     await logAuditEvent({

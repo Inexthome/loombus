@@ -40,6 +40,10 @@ type UsageEvent = {
   cached: boolean;
   success: boolean;
   error_message: string | null;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  total_tokens: number | null;
+  estimated_cost_usd: number | string | null;
   created_at: string;
 };
 
@@ -75,6 +79,31 @@ const ADMIN_PLAN_LIMITS: Record<AdminPlanKey, Partial<AiEntitlement>> = {
     notes: "Admin AI access set by admin.",
   },
 };
+
+
+function toNumber(value: number | string | null | undefined) {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const numberValue = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function formatCurrencyUsd(value: number | string | null | undefined) {
+  const numberValue = toNumber(value);
+
+  if (numberValue <= 0) {
+    return "$0.00000000";
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 8,
+    maximumFractionDigits: 8,
+  }).format(numberValue);
+}
 
 function getPlanTextClass(planKey: ReturnType<typeof getSubscriptionDisplayKey>) {
   if (planKey === "admin") {
@@ -184,6 +213,10 @@ export default function AdminAiAccessPage() {
           cached,
           success,
           error_message,
+          prompt_tokens,
+          completion_tokens,
+          total_tokens,
+          estimated_cost_usd,
           created_at
         `)
         .order("created_at", { ascending: false })
@@ -285,6 +318,69 @@ export default function AdminAiAccessPage() {
       return true;
     });
   }, [usageEvents, usageFeatureFilter, usageStatusFilter]);
+
+  const costSummary = useMemo(() => {
+    const byFeature: Record<
+      string,
+      {
+        featureKey: string;
+        estimatedCostUsd: number;
+        promptTokens: number;
+        completionTokens: number;
+        totalTokens: number;
+        events: number;
+      }
+    > = {};
+
+    let estimatedCostUsd = 0;
+    let promptTokens = 0;
+    let completionTokens = 0;
+    let totalTokens = 0;
+    let pricedEvents = 0;
+
+    for (const event of usageEvents) {
+      const eventCost = toNumber(event.estimated_cost_usd);
+      const eventPromptTokens = event.prompt_tokens ?? 0;
+      const eventCompletionTokens = event.completion_tokens ?? 0;
+      const eventTotalTokens = event.total_tokens ?? 0;
+
+      estimatedCostUsd += eventCost;
+      promptTokens += eventPromptTokens;
+      completionTokens += eventCompletionTokens;
+      totalTokens += eventTotalTokens;
+
+      if (eventCost > 0) {
+        pricedEvents += 1;
+      }
+
+      byFeature[event.feature_key] ??= {
+        featureKey: event.feature_key,
+        estimatedCostUsd: 0,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        events: 0,
+      };
+
+      byFeature[event.feature_key].estimatedCostUsd += eventCost;
+      byFeature[event.feature_key].promptTokens += eventPromptTokens;
+      byFeature[event.feature_key].completionTokens += eventCompletionTokens;
+      byFeature[event.feature_key].totalTokens += eventTotalTokens;
+      byFeature[event.feature_key].events += 1;
+    }
+
+    return {
+      estimatedCostUsd,
+      promptTokens,
+      completionTokens,
+      totalTokens,
+      pricedEvents,
+      byFeature: Object.values(byFeature).sort(
+        (a, b) => b.estimatedCostUsd - a.estimatedCostUsd
+      ),
+    };
+  }, [usageEvents]);
+
 
   function formatFeatureKey(featureKey: string) {
     return featureKey
@@ -564,7 +660,7 @@ export default function AdminAiAccessPage() {
           </div>
         </form>
 
-        <div className="mb-10 grid gap-6 md:grid-cols-3">
+        <div className="mb-10 grid gap-6 md:grid-cols-4">
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
             <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
               Entitlements
@@ -600,7 +696,103 @@ export default function AdminAiAccessPage() {
               {usageEvents.length}
             </h2>
           </div>
+
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+            <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+              Estimated AI cost
+            </p>
+
+            <h2 className="text-4xl font-semibold">
+              {formatCurrencyUsd(costSummary.estimatedCostUsd)}
+            </h2>
+          </div>
         </div>
+
+
+        <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-6">
+            <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+              Cost dashboard
+            </p>
+
+            <h2 className="text-2xl font-medium">
+              AI cost and token usage
+            </h2>
+
+            <p className="mt-3 max-w-2xl leading-relaxed text-zinc-500">
+              Estimated costs are calculated from provider-reported token usage when
+              the model price is known. Cached events and older events without token
+              metadata may show zero cost.
+            </p>
+          </div>
+
+          <div className="mb-6 grid gap-4 md:grid-cols-4">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+              <p className="mb-2 text-sm text-zinc-500">Estimated cost</p>
+              <p className="text-2xl font-semibold">
+                {formatCurrencyUsd(costSummary.estimatedCostUsd)}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+              <p className="mb-2 text-sm text-zinc-500">Total tokens</p>
+              <p className="text-2xl font-semibold">
+                {costSummary.totalTokens.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+              <p className="mb-2 text-sm text-zinc-500">Input tokens</p>
+              <p className="text-2xl font-semibold">
+                {costSummary.promptTokens.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+              <p className="mb-2 text-sm text-zinc-500">Output tokens</p>
+              <p className="text-2xl font-semibold">
+                {costSummary.completionTokens.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {costSummary.byFeature.length === 0 ? (
+            <div className="rounded-2xl border border-zinc-900 bg-black p-5 text-zinc-500">
+              No AI usage events are available for cost reporting yet.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {costSummary.byFeature.slice(0, 8).map((feature) => (
+                <div
+                  key={feature.featureKey}
+                  className="rounded-2xl border border-zinc-900 bg-black p-5"
+                >
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-medium">
+                        {formatFeatureKey(feature.featureKey)}
+                      </h3>
+
+                      <p className="text-xs text-zinc-600">
+                        {feature.events} events
+                      </p>
+                    </div>
+
+                    <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-300">
+                      {formatCurrencyUsd(feature.estimatedCostUsd)}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-zinc-500">
+                    {feature.totalTokens.toLocaleString()} tokens ·{" "}
+                    {feature.promptTokens.toLocaleString()} input ·{" "}
+                    {feature.completionTokens.toLocaleString()} output
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -660,6 +852,8 @@ export default function AdminAiAccessPage() {
                     <th className="py-3 pr-4 font-medium">Feature</th>
                     <th className="py-3 pr-4 font-medium">Status</th>
                     <th className="py-3 pr-4 font-medium">Provider</th>
+                    <th className="py-3 pr-4 font-medium">Tokens</th>
+                    <th className="py-3 pr-4 font-medium">Est. cost</th>
                     <th className="py-3 pr-4 font-medium">Target</th>
                     <th className="py-3 pr-4 font-medium">Created</th>
                     <th className="py-3 font-medium">Error</th>
@@ -724,6 +918,20 @@ export default function AdminAiAccessPage() {
                               {event.model_name ?? "No model"}
                             </p>
                           </div>
+                        </td>
+
+                        <td className="py-4 pr-4">
+                          <div className="space-y-1">
+                            <p>{event.total_tokens?.toLocaleString() ?? "—"}</p>
+                            <p className="text-xs text-zinc-600">
+                              {(event.prompt_tokens ?? 0).toLocaleString()} in ·{" "}
+                              {(event.completion_tokens ?? 0).toLocaleString()} out
+                            </p>
+                          </div>
+                        </td>
+
+                        <td className="py-4 pr-4 text-xs text-zinc-400">
+                          {formatCurrencyUsd(event.estimated_cost_usd)}
                         </td>
 
                         <td className="py-4 pr-4">

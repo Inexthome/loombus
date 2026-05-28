@@ -6,6 +6,7 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  getOpenAiUsageMetadata,
 } from "@/lib/premium-ai";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 
@@ -104,7 +105,10 @@ async function generateClarityRewrite({
     throw new Error("AI clarity rewrite returned no text.");
   }
 
-  return rewrite;
+  return {
+    rewrite: rewrite,
+    usageMetadata: getOpenAiUsageMetadata(payload, REWRITE_MODEL),
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -223,13 +227,16 @@ export async function POST(request: NextRequest) {
     }
 
     let rewrite: string;
+    let usageMetadata = {};
 
     try {
-      rewrite = await generateClarityRewrite({
+      const generatedRewrite = await generateClarityRewrite({
         title,
         topic,
         body,
       });
+      rewrite = generatedRewrite.rewrite;
+      usageMetadata = generatedRewrite.usageMetadata;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "AI clarity rewrite generation failed.";
@@ -263,6 +270,7 @@ export async function POST(request: NextRequest) {
       modelName: REWRITE_MODEL,
       cached: false,
       success: true,
+      ...usageMetadata,
     });
 
     await logAuditEvent({

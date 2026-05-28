@@ -7,6 +7,7 @@ import {
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
+  getOpenAiUsageMetadata,
   upsertDiscussionAiOutput,
 } from "@/lib/premium-ai";
 
@@ -108,7 +109,10 @@ async function generateOpenAIDisagreementMap({
     throw new Error("AI disagreement mapping returned no content.");
   }
 
-  return disagreementMap;
+  return {
+    disagreementMap: disagreementMap,
+    usageMetadata: getOpenAiUsageMetadata(payload, DISAGREEMENT_MODEL),
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -281,15 +285,18 @@ export async function POST(request: NextRequest) {
     }
 
     let disagreementMap: string;
+    let usageMetadata = {};
 
     try {
-      disagreementMap = await generateOpenAIDisagreementMap({
+      const generatedDisagreementMap = await generateOpenAIDisagreementMap({
         title: discussion.title,
         topic: discussion.topic,
         body: discussion.body,
         replies,
         replyCount: sourceReplyCount,
       });
+      disagreementMap = generatedDisagreementMap.disagreementMap;
+      usageMetadata = generatedDisagreementMap.usageMetadata;
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "AI disagreement mapping failed.";
@@ -342,6 +349,7 @@ export async function POST(request: NextRequest) {
       modelName: DISAGREEMENT_MODEL,
       cached: false,
       success: true,
+      ...usageMetadata,
     });
 
     await logAuditEvent({

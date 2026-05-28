@@ -14,8 +14,43 @@ export type AiProviderErrorResponse = {
   error: string;
 };
 
+export type AiUsageMetadata = {
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  totalTokens?: number | null;
+  estimatedCostUsd?: number | null;
+};
+
 type ServiceRoleError = {
   message: string;
+};
+
+type OpenAiTextPricing = {
+  input: number;
+  output: number;
+};
+
+const OPENAI_TEXT_PRICING_PER_MILLION: Record<string, OpenAiTextPricing> = {
+  "gpt-4o-mini": {
+    input: 0.15,
+    output: 0.6,
+  },
+  "gpt-4o-mini-2024-07-18": {
+    input: 0.15,
+    output: 0.6,
+  },
+  "gpt-5.4-mini": {
+    input: 0.75,
+    output: 4.5,
+  },
+  "gpt-5.4": {
+    input: 2.5,
+    output: 15,
+  },
+  "gpt-5.5": {
+    input: 5,
+    output: 30,
+  },
 };
 
 let premiumAiServiceClient: ReturnType<typeof createClient> | null = null;
@@ -48,6 +83,99 @@ function serviceRoleMissingError(tableName: string): ServiceRoleError {
   };
 }
 
+function safeTokenCount(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+
+  return Math.round(value);
+}
+
+function normalizeModelName(modelName: string | null | undefined) {
+  return (modelName ?? "").trim().toLowerCase();
+}
+
+function getOpenAiTextPricing(modelName: string | null | undefined) {
+  const normalized = normalizeModelName(modelName);
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (OPENAI_TEXT_PRICING_PER_MILLION[normalized]) {
+    return OPENAI_TEXT_PRICING_PER_MILLION[normalized];
+  }
+
+  const knownPrefix = Object.keys(OPENAI_TEXT_PRICING_PER_MILLION).find(
+    (modelKey) => normalized.startsWith(`${modelKey}-`)
+  );
+
+  return knownPrefix ? OPENAI_TEXT_PRICING_PER_MILLION[knownPrefix] : null;
+}
+
+export function estimateOpenAiTextCostUsd({
+  modelName,
+  promptTokens,
+  completionTokens,
+}: {
+  modelName: string | null | undefined;
+  promptTokens: number | null | undefined;
+  completionTokens: number | null | undefined;
+}) {
+  const pricing = getOpenAiTextPricing(modelName);
+
+  if (!pricing || promptTokens == null || completionTokens == null) {
+    return null;
+  }
+
+  const cost =
+    (promptTokens / 1_000_000) * pricing.input +
+    (completionTokens / 1_000_000) * pricing.output;
+
+  return Number(cost.toFixed(8));
+}
+
+export function getOpenAiUsageMetadata(
+  payload: any,
+  modelName: string | null | undefined
+): AiUsageMetadata {
+  const usage = payload?.usage;
+
+  if (!usage || typeof usage !== "object") {
+    return {
+      promptTokens: null,
+      completionTokens: null,
+      totalTokens: null,
+      estimatedCostUsd: null,
+    };
+  }
+
+  const promptTokens = safeTokenCount(
+    usage.prompt_tokens ?? usage.input_tokens
+  );
+
+  const completionTokens = safeTokenCount(
+    usage.completion_tokens ?? usage.output_tokens
+  );
+
+  const totalTokens =
+    safeTokenCount(usage.total_tokens) ??
+    (promptTokens != null && completionTokens != null
+      ? promptTokens + completionTokens
+      : null);
+
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    estimatedCostUsd: estimateOpenAiTextCostUsd({
+      modelName,
+      promptTokens,
+      completionTokens,
+    }),
+  };
+}
+
 type AiUsagePayload = {
   user_id: string;
   feature_key: string;
@@ -58,6 +186,10 @@ type AiUsagePayload = {
   cached: boolean;
   success: boolean;
   error_message: string | null;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  total_tokens: number | null;
+  estimated_cost_usd: number | null;
 };
 
 export type DiscussionAiOutputPayload = {
@@ -184,6 +316,10 @@ export async function logAiUsage({
   cached,
   success,
   errorMessage,
+  promptTokens,
+  completionTokens,
+  totalTokens,
+  estimatedCostUsd,
 }: {
   supabase?: any;
   userId: string;
@@ -195,6 +331,10 @@ export async function logAiUsage({
   cached?: boolean;
   success?: boolean;
   errorMessage?: string;
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  totalTokens?: number | null;
+  estimatedCostUsd?: number | null;
 }) {
   const supabase = getPremiumAiServiceClient();
 
@@ -213,6 +353,10 @@ export async function logAiUsage({
     cached: cached ?? false,
     success: success ?? true,
     error_message: errorMessage ?? null,
+    prompt_tokens: promptTokens ?? null,
+    completion_tokens: completionTokens ?? null,
+    total_tokens: totalTokens ?? null,
+    estimated_cost_usd: estimatedCostUsd ?? null,
   };
 
   const { error } = await (supabase.from("ai_usage_events") as any).insert(payload);
