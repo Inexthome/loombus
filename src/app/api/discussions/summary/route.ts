@@ -15,6 +15,7 @@ import {
 const SUMMARY_MODEL = process.env.OPENAI_SUMMARY_MODEL || "gpt-4o-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const MAX_DISCUSSION_BODY_CHARS = 6000;
+const MAX_REPLY_CHARS = 8000;
 
 type CachedSummary = {
   id: string;
@@ -54,11 +55,13 @@ async function generateOpenAISummary({
   title,
   topic,
   body,
+  replies,
   replyCount,
 }: {
   title: string;
   topic: string;
   body: string;
+  replies: string;
   replyCount: number;
 }) {
   if (!OPENAI_API_KEY) {
@@ -74,16 +77,16 @@ async function generateOpenAISummary({
     body: JSON.stringify({
       model: SUMMARY_MODEL,
       temperature: 0.2,
-      max_tokens: 220,
+      max_tokens: 320,
       messages: [
         {
           role: "system",
           content:
-            "You write concise, neutral discussion summaries for a public social discussion platform. Do not add facts not present in the source. Do not quote long passages. Keep the tone clear and non-sensational.",
+            "You write concise, neutral discussion summaries for a public high-signal discussion platform. Do not add facts not present in the source. Do not quote long passages. Keep the tone clear and non-sensational. When summarizing a point, include lightweight source tags using only [Original post] and [Reply N] labels from the provided source text. Do not invent source tags.",
         },
         {
           role: "user",
-          content: `Summarize this discussion opener for readers. Return 2-3 short bullets and one short takeaway.\n\nTopic: ${topic}\nTitle: ${title}\nReply count at generation time: ${replyCount}\n\nDiscussion body:\n${clampText(body, MAX_DISCUSSION_BODY_CHARS)}`,
+          content: `Summarize this discussion thread for readers. Return 2-4 short bullets and one short takeaway. Add a source tag to each bullet when a claim comes from the supplied text, for example [Original post], [Reply 1], or [Reply 2]. If there are no replies, cite only [Original post].\n\nTopic: ${topic}\nTitle: ${title}\nReply count at generation time: ${replyCount}\n\n[Original post]\n${clampText(body, MAX_DISCUSSION_BODY_CHARS)}\n\nReplies in chronological order:\n${clampText(replies || "No replies yet.", MAX_REPLY_CHARS)}`,
         },
       ],
     }),
@@ -194,18 +197,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { count: replyCount } = await supabase
+    const { data: replyData } = await supabase
       .from("replies")
-      .select("*", { count: "exact", head: true })
+      .select("body, created_at")
       .eq("discussion_id", discussionId)
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true })
+      .limit(25);
 
-    const sourceReplyCount = replyCount ?? 0;
+    const visibleReplies = (replyData ?? []) as {
+      body: string;
+      created_at: string;
+    }[];
+
+    const replies = visibleReplies
+      .map((reply, index) => `Reply ${index + 1}: ${reply.body}`)
+      .join("\n\n");
+
+    const sourceReplyCount = visibleReplies.length;
     const sourceContent = [
       discussion.title,
       discussion.topic,
       discussion.body,
-      `reply_count:${sourceReplyCount}`,
+      ...visibleReplies.map((reply, index) => `reply_${index + 1}:${reply.body}`),
     ].join("\n\n");
 
     const sourceContentHash = createContentHash(sourceContent);
@@ -275,6 +289,7 @@ export async function POST(request: NextRequest) {
         title: discussion.title,
         topic: discussion.topic,
         body: discussion.body,
+        replies,
         replyCount: sourceReplyCount,
       });
       summaryText = generatedSummary.summary;
