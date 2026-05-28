@@ -780,7 +780,7 @@ export default function ProfilePage() {
                       Email digest
                     </span>
                     <span className="mt-1 block text-sm text-zinc-500">
-                      Premium email digest: receive a daily or weekly summary of recent Loombus notifications.
+                      Premium email digest: receive a daily or weekly summary of recent Loombus notifications. You can turn this off here or from the unsubscribe link in any digest email.
                     </span>
                   </span>
 

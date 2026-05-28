@@ -6,6 +6,7 @@ type NotificationPreference = {
   email_digest_enabled: boolean;
   email_digest_frequency: "daily" | "weekly";
   email_digest_last_sent_at: string | null;
+  email_digest_unsubscribe_token: string | null;
 };
 
 type EntitlementRow = {
@@ -116,7 +117,8 @@ function getNotificationUrl(siteUrl: string, notification: NotificationRow) {
 function buildDigestEmail(
   siteUrl: string,
   frequency: "daily" | "weekly",
-  notifications: NotificationRow[]
+  notifications: NotificationRow[],
+  unsubscribeUrl: string
 ) {
   const label = frequency === "daily" ? "daily" : "weekly";
   const subject = `Your Loombus ${label} digest`;
@@ -145,6 +147,7 @@ function buildDigestEmail(
     }),
     "",
     `Manage notification settings: ${siteUrl}/profile`,
+    `Unsubscribe from email digests: ${unsubscribeUrl}`,
   ].join("\n");
 
   const html = `<!doctype html>
@@ -155,6 +158,11 @@ function buildDigestEmail(
     <ul style="padding-left:20px;">${rows}</ul>
     <p style="margin-top:24px;">
       <a href="${escapeHtml(siteUrl)}/profile">Manage notification settings</a>
+      &nbsp;·&nbsp;
+      <a href="${escapeHtml(unsubscribeUrl)}">Unsubscribe from email digests</a>
+    </p>
+    <p style="font-size:12px;color:#71717a;">
+      This unsubscribe link only turns off Loombus email digests. In-app notifications are not changed.
     </p>
   </body>
 </html>`;
@@ -235,7 +243,7 @@ async function runDigest(request: NextRequest) {
 
   const { data: preferences, error: preferencesError } = await supabase
     .from("notification_preferences")
-    .select("user_id, email_digest_enabled, email_digest_frequency, email_digest_last_sent_at")
+    .select("user_id, email_digest_enabled, email_digest_frequency, email_digest_last_sent_at, email_digest_unsubscribe_token")
     .eq("email_digest_enabled", true)
     .in("email_digest_frequency", ["daily", "weekly"]);
 
@@ -326,10 +334,15 @@ async function runDigest(request: NextRequest) {
       continue;
     }
 
+    const unsubscribeUrl = `${siteUrl}/unsubscribe?token=${encodeURIComponent(
+      preference.email_digest_unsubscribe_token ?? ""
+    )}`;
+
     const emailContent = buildDigestEmail(
       siteUrl,
       preference.email_digest_frequency,
-      notificationRows
+      notificationRows,
+      unsubscribeUrl
     );
 
     const sendResult = await sendEmailWithResend({
