@@ -50,26 +50,26 @@ export default function ClientLayout({
 
   function mobileNavLinkClass(href: string) {
     return isActivePath(href)
-      ? "rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white transition hover:text-white"
-      : "rounded-xl border border-transparent px-4 py-3 text-zinc-400 transition hover:border-zinc-800 hover:bg-zinc-950 hover:text-white";
+      ? "rounded-2xl border border-zinc-700 bg-black px-4 py-3 text-sm font-medium text-white transition hover:text-white"
+      : "rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-800 hover:bg-black hover:text-white";
   }
 
   function appTabClass(href: string) {
     const active =
       pathname === href || (href !== "/" && pathname.startsWith(href));
 
-    return `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition ${
+    return `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2.5 text-[11px] font-medium transition ${
       active
-        ? "bg-white text-black"
-        : "text-zinc-500 hover:bg-zinc-900 hover:text-white"
+        ? "border-white bg-white text-black shadow-lg shadow-white/10"
+        : "border-transparent text-zinc-500 hover:border-zinc-800 hover:bg-zinc-950 hover:text-white"
     }`;
   }
 
   function appMenuButtonClass() {
-    return `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-medium transition ${
+    return `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2.5 text-[11px] font-medium transition ${
       mobileMenuOpen
-        ? "bg-white text-black"
-        : "text-zinc-500 hover:bg-zinc-900 hover:text-white"
+        ? "border-white bg-white text-black shadow-lg shadow-white/10"
+        : "border-transparent text-zinc-500 hover:border-zinc-800 hover:bg-zinc-950 hover:text-white"
     }`;
   }
 
@@ -498,14 +498,14 @@ export default function ClientLayout({
 
       <div className={user ? "pb-24 md:pb-0" : ""}>
         {user && (
-        <div className="sticky top-0 z-40 border-b border-zinc-900 bg-black/95 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur md:hidden">
-          <div className="flex items-center justify-between">
+        <div className="sticky top-0 z-40 bg-black/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl md:hidden">
+          <div className="mx-auto flex max-w-md items-center justify-between rounded-full border border-zinc-900 bg-zinc-950/80 px-2 py-2 shadow-2xl shadow-black/40">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open menu"
               aria-expanded={mobileMenuOpen}
-              className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 text-sm font-semibold text-white transition hover:border-zinc-600"
+              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-black text-sm font-semibold text-white shadow-lg shadow-black/40 transition hover:border-zinc-500"
             >
               {navProfile?.avatar_url ? (
                 <img
@@ -529,7 +529,7 @@ export default function ClientLayout({
             <Link
               href="/discussions"
               aria-label="Search Loombus"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-black text-zinc-300 shadow-lg shadow-black/40 transition hover:border-zinc-600 hover:text-white"
             >
               <svg
                 aria-hidden="true"
@@ -552,24 +552,47 @@ export default function ClientLayout({
 
       {user && mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/80 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md md:hidden"
+          className="fixed inset-0 z-50 bg-black/80 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md md:hidden"
           onClick={closeMobileMenu}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Mobile app menu panel"
-            className="mx-auto flex max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-6.75rem)] max-w-md flex-col overflow-y-auto rounded-[2rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/70"
+            className="mx-auto flex max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-5.5rem)] max-w-md flex-col overflow-y-auto rounded-[2rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/70"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-4 flex items-start justify-between gap-3 border-b border-zinc-900 pb-4">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">
-                  Loombus menu
-                </p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-tight">
-                  Move with signal.
-                </h2>
+            <div className="mb-4 flex items-center justify-between gap-3 border-b border-zinc-900 pb-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-black text-sm font-semibold text-white">
+                  {navProfile?.avatar_url ? (
+                    <img
+                      src={navProfile.avatar_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {(navProfile?.full_name ||
+                        navProfile?.username ||
+                        user.email ||
+                        "U")
+                        .trim()
+                        .charAt(0)
+                        .toUpperCase()}
+                    </span>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-white">
+                    {navProfile?.full_name ||
+                      (navProfile?.username ? `@${navProfile.username}` : user.email)}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-zinc-600">
+                    Move with signal.
+                  </p>
+                </div>
               </div>
 
               <button
@@ -581,56 +604,15 @@ export default function ClientLayout({
               </button>
             </div>
 
-            <div className="grid gap-3">
+            <div className="grid gap-4">
               <section>
                 <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
-                  Primary
-                </p>
-
-                <div className="grid gap-2">
-                  <Link href="/" onClick={closeMobileMenu} className={mobileNavLinkClass("/")}>
-                    Home
-                  </Link>
-
-                  <Link href="/create" onClick={closeMobileMenu} className="rounded-xl bg-white px-4 py-3 text-black transition hover:bg-zinc-200">
-                    Create
-                  </Link>
-
-                  <Link href="/discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/discussions")}>
-                    Discussions
-                  </Link>
-
-                  <Link href="/notifications" onClick={closeMobileMenu} className={mobileNavLinkClass("/notifications")}>
-                    Notifications
-                    {notificationCount > 0 && (
-                      <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
-                        {notificationCount}
-                      </span>
-                    )}
-                  </Link>
-                </div>
-              </section>
-
-              <section>
-                <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
-                  Discovery
+                  Your Signal
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
-                    People
-                  </Link>
-
-                  <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
-                    Following
-                  </Link>
-
-                  <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
-                    Saved
-                  </Link>
-
-                  <Link href="/reading-history" onClick={closeMobileMenu} className={mobileNavLinkClass("/reading-history")}>
-                    Reading History
+                  <Link href="/profile" onClick={closeMobileMenu} className={mobileNavLinkClass("/profile")}>
+                    Profile
                   </Link>
 
                   <Link href="/my-activity" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-activity")}>
@@ -649,18 +631,34 @@ export default function ClientLayout({
 
               <section>
                 <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                  Library
+                </p>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
+                    Saved
+                  </Link>
+
+                  <Link href="/reading-history" onClick={closeMobileMenu} className={mobileNavLinkClass("/reading-history")}>
+                    Reading History
+                  </Link>
+
+                  <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
+                    Following
+                  </Link>
+
+                  <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
+                    Dashboard
+                  </Link>
+                </div>
+              </section>
+
+              <section>
+                <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
                   Account
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
-                    Dashboard
-                  </Link>
-
-                  <Link href="/profile" onClick={closeMobileMenu} className={mobileNavLinkClass("/profile")}>
-                    Profile
-                  </Link>
-
                   <Link href="/settings" onClick={closeMobileMenu} className={mobileNavLinkClass("/settings")}>
                     Settings
                   </Link>
@@ -686,7 +684,7 @@ export default function ClientLayout({
                   closeMobileMenu();
                   await handleLogout();
                 }}
-                className="mt-2 rounded-2xl border border-zinc-800 px-4 py-3 text-left text-sm text-zinc-400 transition hover:border-zinc-700 hover:bg-black hover:text-white"
+                className="rounded-2xl border border-zinc-800 px-4 py-3 text-left text-sm font-medium text-zinc-400 transition hover:border-zinc-700 hover:bg-black hover:text-white"
               >
                 Logout
               </button>
@@ -695,11 +693,11 @@ export default function ClientLayout({
         </div>
       )}
 
-      {user && (
+      {user && !mobileMenuOpen && (
         <nav
           aria-label="Mobile app navigation"
-          className={`fixed inset-x-0 bottom-0 z-50 border-t border-zinc-900 bg-black/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-2xl shadow-black/60 backdrop-blur transition-transform duration-300 md:hidden ${
-            bottomNavHidden && !mobileMenuOpen ? "translate-y-full" : "translate-y-0"
+          className={`fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 rounded-[1.75rem] border border-zinc-800 bg-black/90 p-2 shadow-2xl shadow-black/70 backdrop-blur-xl transition-transform duration-300 md:hidden ${
+            bottomNavHidden ? "translate-y-[calc(100%+1rem)]" : "translate-y-0"
           }`}
         >
           <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
