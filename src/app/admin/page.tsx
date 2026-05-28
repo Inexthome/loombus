@@ -273,6 +273,13 @@ export default function AdminDashboardPage() {
           />
 
           <AdminCard
+            href="/admin/billing"
+            title="Billing Diagnostics"
+            description="Review Stripe config presence, subscription sync, and Extra AI Pack fulfillment."
+            action="Open Billing"
+          />
+
+          <AdminCard
             href="/admin/ai-access"
             title="AI Access"
             description="Manage Premium AI-Assisted Layer access and review AI usage."
