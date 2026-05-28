@@ -421,7 +421,7 @@ export default function SettingsClientPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl text-zinc-400">
           Loading settings...
         </div>
@@ -431,8 +431,8 @@ export default function SettingsClientPage() {
 
   if (loadError) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
-        <div className="mx-auto max-w-6xl rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+        <div className="mx-auto max-w-6xl rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-7">
           <h1 className="mb-3 text-2xl font-medium">
             Settings could not load.
           </h1>
@@ -454,31 +454,31 @@ export default function SettingsClientPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
-          className="mb-6 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
+          className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to dashboard
         </Link>
 
-        <div className="mb-7 sm:mb-10">
-          <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500 sm:text-sm sm:tracking-[0.3em]">
+        <div className="mb-5 sm:mb-10">
+          <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-3 sm:text-sm sm:tracking-[0.3em]">
             Account
           </p>
 
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
             Settings
           </h1>
 
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:mt-4 sm:text-base">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:mt-4 sm:text-base">
             Manage your profile, activity, notifications, saved items,
             and platform reference pages from one place.
           </p>
         </div>
 
-        <section className="mb-7 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7">
+        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-10 sm:rounded-3xl sm:p-7">
           <div className="mb-4 sm:mb-5">
             <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:text-sm sm:tracking-[0.25em]">
               Appearance
@@ -499,7 +499,7 @@ export default function SettingsClientPage() {
                 key={option.value}
                 type="button"
                 onClick={() => updateAppearanceMode(option.value)}
-                className={`rounded-2xl border p-4 text-left transition ${
+                className={`rounded-2xl border p-3.5 text-left transition sm:p-4 ${
                   appearanceMode === option.value
                     ? "border-zinc-400 bg-black text-white"
                     : "border-zinc-800 bg-black text-zinc-400 hover:border-zinc-600 hover:text-white"
@@ -517,7 +517,7 @@ export default function SettingsClientPage() {
           </div>
         </section>
 
-        <section className="mb-7 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-10 sm:p-7">
+        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-10 sm:rounded-3xl sm:p-7">
           <div className="mb-4 flex flex-col items-start gap-3 sm:mb-5 sm:flex-row sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:text-sm sm:tracking-[0.25em]">
@@ -550,10 +550,10 @@ export default function SettingsClientPage() {
           </Link>
         </section>
 
-        <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-5 sm:space-y-8">
           {settingsSections.map((section) => (
             <section key={section.title}>
-              <h2 className="mb-3 text-xl font-medium sm:mb-4 sm:text-2xl">
+              <h2 className="mb-3 text-lg font-medium sm:mb-4 sm:text-2xl">
                 {section.title}
               </h2>
 
@@ -564,7 +564,7 @@ export default function SettingsClientPage() {
                     href={item.href}
                     className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-700 sm:p-6"
                   >
-                    <h3 className="mb-2 text-lg font-medium sm:mb-3 sm:text-xl">
+                    <h3 className="mb-2 text-base font-medium sm:mb-3 sm:text-xl">
                       {item.title}
                     </h3>
 
@@ -578,12 +578,12 @@ export default function SettingsClientPage() {
           ))}
         </div>
 
-        <section className="mt-8 rounded-3xl border border-red-950 bg-red-950/10 p-5 shadow-2xl shadow-black/30 sm:mt-10 sm:p-7">
+        <section className="mt-6 rounded-2xl border border-red-950 bg-red-950/10 p-4 shadow-2xl shadow-black/30 sm:mt-10 sm:rounded-3xl sm:p-7">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-red-400">
             Account controls
           </p>
 
-          <h2 className="mb-3 text-xl font-medium sm:mb-4 sm:text-2xl">
+          <h2 className="mb-3 text-lg font-medium sm:mb-4 sm:text-2xl">
             Deactivate or request deletion.
           </h2>
 

@@ -362,7 +362,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-xl text-zinc-400">
           Loading profile...
         </div>
@@ -371,20 +371,20 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <Link
           href="/settings"
-          className="mb-6 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
+          className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to settings
         </Link>
 
-        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+        <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-5xl">
           Profile
         </h1>
 
-        <p className="mb-6 text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
+        <p className="mb-5 text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
           Manage your public Loombus profile and notification preferences.
         </p>
 
@@ -438,11 +438,11 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-6">
+        <div className="grid gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-6">
           <form
             onSubmit={saveProfile}
             onKeyDown={handleProfileFormKeyDown}
-            className="space-y-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:space-y-8 sm:p-6"
+            className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:space-y-8 sm:p-6"
           >
           <section className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
             <div className="mb-4 flex items-start justify-between gap-3 sm:items-center sm:gap-4">
@@ -491,7 +491,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
                 <div className="flex items-center gap-3 sm:gap-4">
                   <ProfileAvatar
                     profile={{
@@ -525,7 +525,7 @@ export default function ProfilePage() {
                 </label>
               </div>
 
-              <p className="mt-4 text-xs leading-relaxed text-zinc-600">
+              <p className="mt-3 text-xs leading-relaxed text-zinc-600 sm:mt-4">
                 Supported formats depend on your browser. Keep images under 2 MB.
               </p>
             </div>
@@ -582,7 +582,7 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          <section className="space-y-4 border-t border-zinc-900 pt-6 sm:space-y-5 sm:pt-8">
+          <section className="space-y-4 border-t border-zinc-900 pt-5 sm:space-y-5 sm:pt-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-xl font-medium sm:text-2xl">
@@ -671,7 +671,7 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          <section className="border-t border-zinc-900 pt-6 sm:pt-8">
+          <section className="border-t border-zinc-900 pt-5 sm:pt-8">
             <div className="mb-4 sm:mb-5">
               <h2 className="text-xl font-medium sm:text-2xl">
                 Notification settings
@@ -682,8 +682,8 @@ export default function ProfilePage() {
               </p>
             </div>
 
-            <div className="space-y-4">
-              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-3.5 sm:gap-4 sm:p-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     Replies
@@ -701,7 +701,7 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-3.5 sm:gap-4 sm:p-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     Follows
@@ -719,7 +719,7 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-3.5 sm:gap-4 sm:p-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     Mentions
@@ -737,7 +737,7 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-3.5 sm:gap-4 sm:p-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     People I follow: new discussions
@@ -755,7 +755,7 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-4 sm:gap-4">
+              <label className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-900 bg-black p-3.5 sm:gap-4 sm:p-4">
                 <span>
                   <span className="block text-sm font-medium text-zinc-200">
                     People I follow: replies
@@ -773,7 +773,7 @@ export default function ProfilePage() {
                 />
               </label>
 
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-3.5 sm:p-4">
                 <label className="mb-4 flex items-start justify-between gap-4">
                   <span>
                     <span className="block text-sm font-medium text-zinc-200">
@@ -823,7 +823,7 @@ export default function ProfilePage() {
             {saving ? "Saving..." : "Save Profile"}
           </button>
 
-          <p className="text-sm text-zinc-600">
+          <p className="hidden text-sm text-zinc-600 sm:block">
             Press Cmd+Enter or Ctrl+Enter to save.
           </p>
 
@@ -834,7 +834,7 @@ export default function ProfilePage() {
           )}
           </form>
 
-          <aside className="h-fit rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6">
+          <aside className="h-fit rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
             <p className="mb-4 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Public Preview
             </p>
@@ -844,7 +844,7 @@ export default function ProfilePage() {
                 @{username || "username"}
               </p>
 
-              <div className="my-4 sm:my-5" aria-label="Profile preview avatar">
+              <div className="my-3 sm:my-5" aria-label="Profile preview avatar">
                 <ProfileAvatar
                   profile={{
                     full_name: fullName,
