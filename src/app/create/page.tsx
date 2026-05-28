@@ -589,20 +589,20 @@ export default function CreatePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-3xl">
         <Link
           href={isEditMode && editingDiscussionId ? `/discussions/${editingDiscussionId}` : "/discussions"}
-          className="mb-6 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
+          className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to {isEditMode ? "discussion" : "discussions"}
         </Link>
 
-        <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500 sm:text-sm sm:tracking-[0.3em]">
+        <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-3 sm:text-sm sm:tracking-[0.3em]">
           {isEditMode ? "Edit Discussion" : "New Discussion"}
         </p>
 
-        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+        <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-5xl">
           {isEditMode
             ? "Edit discussion."
             : draftId
@@ -610,7 +610,7 @@ export default function CreatePage() {
               : "Create a discussion."}
         </h1>
 
-        <p className="mb-6 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
+        <p className="mb-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
           {isEditMode
             ? "Make a clear, accountable update to your published discussion."
             : "Start a thoughtful discussion designed around signal, clarity, and meaningful contribution."}
@@ -657,7 +657,7 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && !profileComplete && (
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
+          <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
               Your profile is not complete yet.
             </p>
@@ -677,7 +677,7 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && !isEditMode && !canUseDrafts && (
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
+          <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
               Draft mode is a Premium feature.
             </p>
@@ -697,7 +697,8 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && !isEditMode && (
-          <ProgressiveGuide
+          <div className="hidden md:block">
+            <ProgressiveGuide
           storageKey="loombus-guide-create-first-discussion-v1"
           eyebrow="Guide"
           title="First discussion guide"
@@ -751,11 +752,12 @@ export default function CreatePage() {
               </div>
             </div>
           </section>
-          </ProgressiveGuide>
+            </ProgressiveGuide>
+          </div>
         )}
 
         {authChecked && isLoggedIn && isEditMode && (
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
+          <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
               Edit window
             </p>
@@ -773,7 +775,7 @@ export default function CreatePage() {
           <form
             onSubmit={handleCreate}
             onKeyDown={handleFormKeyDown}
-            className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 sm:space-y-6 sm:p-8"
+            className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:space-y-6 sm:p-8"
           >
             {draftId && !isEditMode && (
               <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
@@ -856,7 +858,7 @@ export default function CreatePage() {
               </label>
 
               <textarea
-                rows={8}
+                rows={7}
                 value={body}
                 required
                 maxLength={maxDiscussionLength}
@@ -878,8 +880,8 @@ export default function CreatePage() {
               </div>
             </div>
 
-            <section className="rounded-2xl border border-zinc-800 bg-black p-4 sm:p-5">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <section className="rounded-2xl border border-zinc-800 bg-black p-3.5 sm:p-5">
+              <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
                     Premium Plus AI
@@ -889,7 +891,7 @@ export default function CreatePage() {
                     Discussion quality check
                   </h2>
 
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                  <p className="mt-2 hidden text-sm leading-relaxed text-zinc-500 sm:block">
                     Get concise feedback before posting. This does not rewrite
                     or publish anything.
                   </p>
@@ -927,8 +929,8 @@ export default function CreatePage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-zinc-800 bg-black p-4 sm:p-5">
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <section className="rounded-2xl border border-zinc-800 bg-black p-3.5 sm:p-5">
+              <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
                     Premium Plus AI
@@ -938,7 +940,7 @@ export default function CreatePage() {
                     Rewrite for clarity
                   </h2>
 
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                  <p className="mt-2 hidden text-sm leading-relaxed text-zinc-500 sm:block">
                     Generate a clearer version of your discussion body. It will
                     not replace your text unless you apply it.
                   </p>
@@ -1010,7 +1012,7 @@ export default function CreatePage() {
                 )}
               </div>
 
-              <p className="text-sm text-zinc-600">
+              <p className="hidden text-sm text-zinc-600 sm:block">
                 Press Cmd+Enter or Ctrl+Enter to {isEditMode ? "save changes" : "publish"}.
               </p>
             </div>
