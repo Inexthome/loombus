@@ -19,6 +19,13 @@ type SupportRequest = {
   updated_at: string;
 };
 
+type SupportTemplate = {
+  key: string;
+  title: string;
+  category: string;
+  body: string[];
+};
+
 const statuses = ["new", "reviewing", "resolved", "closed"] as const;
 
 const statusLabels: Record<string, string> = {
@@ -27,6 +34,133 @@ const statusLabels: Record<string, string> = {
   resolved: "Resolved",
   closed: "Closed",
 };
+
+const supportResponseTemplates: SupportTemplate[] = [
+  {
+    key: "account-access",
+    title: "Account access",
+    category: "account",
+    body: [
+      "Hi,",
+      "",
+      "Thanks for contacting Loombus support. We received your account access request and are reviewing the details.",
+      "",
+      "For account protection, please do not send passwords, verification codes, payment card numbers, or private authentication tokens. If this is a login or password issue, use the password reset or sign-in flow first, then reply with the account email and a short description of what happened.",
+      "",
+      "We will review the account context and follow up if more information is needed.",
+      "",
+      "Loombus Support",
+    ],
+  },
+  {
+    key: "billing-premium",
+    title: "Billing / Premium",
+    category: "billing",
+    body: [
+      "Hi,",
+      "",
+      "Thanks for contacting Loombus support about billing or Premium access.",
+      "",
+      "Please include the account email, the plan involved, and whether the issue is about checkout, billing portal access, subscription status, or Extra AI Pack credits. Do not send full payment card details.",
+      "",
+      "We will review the billing status and follow up with the safest next step.",
+      "",
+      "Loombus Support",
+    ],
+  },
+  {
+    key: "safety-concern",
+    title: "Safety concern",
+    category: "safety",
+    body: [
+      "Hi,",
+      "",
+      "Thanks for reporting this safety concern. We take safety reports seriously and will review the context carefully.",
+      "",
+      "Please include any relevant discussion link, profile link, report reason, screenshots context, and a short explanation of what concerned you. Do not include sensitive private information unless it is necessary to understand the issue.",
+      "",
+      "If there is an immediate emergency or threat of physical harm, contact local emergency services first.",
+      "",
+      "Loombus Support",
+    ],
+  },
+  {
+    key: "accessibility",
+    title: "Accessibility issue",
+    category: "accessibility",
+    body: [
+      "Hi,",
+      "",
+      "Thanks for telling us about an accessibility issue on Loombus.",
+      "",
+      "Please include the page or feature where it happened, the device/browser you used, any assistive technology involved, and what made the experience difficult or blocked.",
+      "",
+      "We will review this and use it to improve accessibility across the platform.",
+      "",
+      "Loombus Support",
+    ],
+  },
+  {
+    key: "bug-report",
+    title: "Bug report",
+    category: "bug",
+    body: [
+      "Hi,",
+      "",
+      "Thanks for reporting this bug.",
+      "",
+      "Please include the page where it happened, what you expected to happen, what actually happened, and the steps to reproduce it. Device, browser, screenshots context, and error text are also helpful.",
+      "",
+      "We will review the issue and prioritize it based on impact.",
+      "",
+      "Loombus Support",
+    ],
+  },
+  {
+    key: "feedback",
+    title: "Product feedback",
+    category: "feedback",
+    body: [
+      "Hi,",
+      "",
+      "Thanks for sharing feedback about Loombus.",
+      "",
+      "We review feedback for patterns around clarity, usefulness, safety, and the signal-over-noise experience. Your note has been received and can help guide future improvements.",
+      "",
+      "Loombus Support",
+    ],
+  },
+  {
+    key: "legal-rights",
+    title: "Legal / rights concern",
+    category: "legal",
+    body: [
+      "Hi,",
+      "",
+      "Thanks for contacting Loombus about a legal or rights concern.",
+      "",
+      "Please include the relevant content link, the specific rights concern, your relationship to the content, and any documentation needed to understand the request. Do not include unnecessary sensitive information.",
+      "",
+      "We will review the submission carefully and follow up if additional information is required.",
+      "",
+      "Loombus Support",
+    ],
+  },
+  {
+    key: "resolved",
+    title: "Resolved confirmation",
+    category: "resolved",
+    body: [
+      "Hi,",
+      "",
+      "Thanks for contacting Loombus support. We reviewed this request and marked it as resolved.",
+      "",
+      "If the issue continues or you have new information, please submit a new support request with the updated details.",
+      "",
+      "Loombus Support",
+    ],
+  },
+];
 
 function statusClass(status: string) {
   if (status === "new") return "border-red-900 text-red-300";
@@ -118,6 +252,17 @@ export default function AdminSupportPage() {
       { all: 0, new: 0, reviewing: 0, resolved: 0, closed: 0 }
     );
   }, [requests]);
+
+  async function copyTemplate(template: SupportTemplate) {
+    const templateBody = template.body.join("\n");
+
+    try {
+      await navigator.clipboard.writeText(templateBody);
+      setMessage(`${template.title} template copied to clipboard.`);
+    } catch {
+      setMessage("Unable to copy template. Select the text and copy it manually.");
+    }
+  }
 
   async function updateRequest(requestId: string) {
     if (workingId) return;
@@ -234,6 +379,49 @@ export default function AdminSupportPage() {
             {message}
           </p>
         )}
+
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-5">
+            <p className="mb-2 text-sm uppercase tracking-wide text-zinc-600">
+              Admin templates
+            </p>
+            <h2 className="text-2xl font-medium">Response templates</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-500">
+              Copy a safe starter reply for common support categories. These templates do not send email automatically.
+              Reply manually from the appropriate support inbox or email account.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {supportResponseTemplates.map((template) => (
+              <article
+                key={template.key}
+                className="rounded-2xl border border-zinc-900 bg-black p-4"
+              >
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-base font-medium text-white">{template.title}</p>
+                    <p className="text-xs uppercase tracking-wide text-zinc-700">
+                      {template.category}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => copyTemplate(template)}
+                    className="rounded-full border border-zinc-800 px-4 py-2 text-xs text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Copy template
+                  </button>
+                </div>
+
+                <p className="whitespace-pre-wrap rounded-xl border border-zinc-900 bg-zinc-950 p-3 text-xs leading-relaxed text-zinc-500">
+                  {template.body.join("\n")}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <section className="mb-8 grid gap-4 md:grid-cols-5">
           {(["all", ...statuses] as const).map((status) => (
