@@ -7,6 +7,65 @@ export type PremiumAiAccess = {
   isAdmin: boolean;
   monthlyThreadAiLimit: number;
   monthlySummaryLimit: number;
+  monthlyWritingLimit: number;
+  monthlyResearchLimit: number;
+  monthlyDiscoveryLimit: number;
+};
+
+export type AiFeatureLimitBucket = "summary" | "writing" | "research" | "discovery";
+
+export type AiFeatureLimitPolicy = {
+  featureKey: string;
+  bucket: AiFeatureLimitBucket;
+  label: string;
+};
+
+export const AI_FEATURE_LIMIT_POLICIES: Record<string, AiFeatureLimitPolicy> = {
+  thread_summary: {
+    featureKey: "thread_summary",
+    bucket: "summary",
+    label: "Thread summaries",
+  },
+  key_takeaways: {
+    featureKey: "key_takeaways",
+    bucket: "summary",
+    label: "Key takeaways",
+  },
+  what_changed: {
+    featureKey: "what_changed",
+    bucket: "summary",
+    label: "What changed",
+  },
+  disagreement_map: {
+    featureKey: "disagreement_map",
+    bucket: "summary",
+    label: "Disagreement maps",
+  },
+  discussion_quality_check: {
+    featureKey: "discussion_quality_check",
+    bucket: "writing",
+    label: "Discussion quality checks",
+  },
+  discussion_clarity_rewrite: {
+    featureKey: "discussion_clarity_rewrite",
+    bucket: "writing",
+    label: "Clarity rewrites",
+  },
+  research_summary: {
+    featureKey: "research_summary",
+    bucket: "research",
+    label: "Research summaries",
+  },
+  discovery: {
+    featureKey: "discovery",
+    bucket: "discovery",
+    label: "Discovery assist",
+  },
+  reply_suggestions: {
+    featureKey: "reply_suggestions",
+    bucket: "discovery",
+    label: "Reply suggestions",
+  },
 };
 
 export type AiProviderErrorResponse = {
@@ -383,12 +442,22 @@ export async function getAiAccess(
       isAdmin: true,
       monthlyThreadAiLimit: Number.MAX_SAFE_INTEGER,
       monthlySummaryLimit: Number.MAX_SAFE_INTEGER,
+      monthlyWritingLimit: Number.MAX_SAFE_INTEGER,
+      monthlyResearchLimit: Number.MAX_SAFE_INTEGER,
+      monthlyDiscoveryLimit: Number.MAX_SAFE_INTEGER,
     };
   }
 
   const { data: entitlement } = await supabase
     .from("user_ai_entitlements")
-    .select("tier, ai_assisted_enabled, monthly_summary_limit")
+    .select(`
+      tier,
+      ai_assisted_enabled,
+      monthly_summary_limit,
+      monthly_writing_limit,
+      monthly_research_limit,
+      monthly_discovery_limit
+    `)
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -396,14 +465,20 @@ export async function getAiAccess(
     Boolean(entitlement?.ai_assisted_enabled) &&
     ["premium", "admin"].includes(entitlement?.tier ?? "");
 
-  const monthlyLimit = entitlement?.monthly_summary_limit ?? 0;
+  const monthlySummaryLimit = entitlement?.monthly_summary_limit ?? 0;
+  const monthlyWritingLimit = entitlement?.monthly_writing_limit ?? 0;
+  const monthlyResearchLimit = entitlement?.monthly_research_limit ?? 0;
+  const monthlyDiscoveryLimit = entitlement?.monthly_discovery_limit ?? 0;
 
   return {
     allowed,
     tier: entitlement?.tier ?? "free",
     isAdmin: false,
-    monthlyThreadAiLimit: monthlyLimit,
-    monthlySummaryLimit: monthlyLimit,
+    monthlyThreadAiLimit: monthlySummaryLimit,
+    monthlySummaryLimit,
+    monthlyWritingLimit,
+    monthlyResearchLimit,
+    monthlyDiscoveryLimit,
   };
 }
 
@@ -411,3 +486,64 @@ export function getCurrentMonthStart() {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
 }
+
+export function getAiFeatureLimitPolicy(featureKey: string): AiFeatureLimitPolicy {
+  return (
+    AI_FEATURE_LIMIT_POLICIES[featureKey] ?? {
+      featureKey,
+      bucket: "summary",
+      label: featureKey
+        .split("_")
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" "),
+    }
+  );
+}
+
+export function getAiFeatureLimit(access: PremiumAiAccess, featureKey: string) {
+  if (access.isAdmin) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  const policy = getAiFeatureLimitPolicy(featureKey);
+
+  if (policy.bucket === "writing") {
+    return access.monthlyWritingLimit;
+  }
+
+  if (policy.bucket === "research") {
+    return access.monthlyResearchLimit;
+  }
+
+  if (policy.bucket === "discovery") {
+    return access.monthlyDiscoveryLimit;
+  }
+
+  return access.monthlySummaryLimit;
+}
+
+export async function getMonthlyAiFeatureUsageCount(
+  supabase: any,
+  userId: string,
+  featureKey: string
+) {
+  const monthStart = getCurrentMonthStart();
+
+  const { count, error } = await supabase
+    .from("ai_usage_events")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("feature_key", featureKey)
+    .eq("cached", false)
+    .eq("success", true)
+    .gte("created_at", monthStart);
+
+  if (error) {
+    console.error(`AI ${featureKey} usage count failed:`, error.message);
+    return 0;
+  }
+
+  return count ?? 0;
+}
+

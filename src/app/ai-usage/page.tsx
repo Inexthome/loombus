@@ -19,12 +19,22 @@ type AiEntitlement = {
 
 type FeatureUsage = {
   featureKey: string;
+  bucket: string;
+  label: string;
   total: number;
   metered: number;
   generated: number;
   cached: number;
   failed: number;
   lastUsedAt: string | null;
+};
+
+type LimitBucketUsage = {
+  bucket: string;
+  label: string;
+  limit: number | null;
+  usage: number;
+  remaining: number | null;
 };
 
 type RecentAiEvent = {
@@ -52,6 +62,7 @@ type AiUsageResponse = {
     failedUsage: number;
     remaining: number | null;
     featureUsage: FeatureUsage[];
+    limitBuckets: LimitBucketUsage[];
   };
   recentEvents: RecentAiEvent[];
 };
@@ -336,6 +347,48 @@ export default function AiUsagePage() {
           </div>
         </section>
 
+        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-7">
+          <div className="mb-5">
+            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+              AI limit buckets
+            </p>
+
+            <h2 className="text-xl font-medium sm:text-2xl">
+              Per-feature monthly limits
+            </h2>
+
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+              Loombus separates AI usage into clearer buckets so thread
+              understanding, writing assistance, research, and discovery can be
+              controlled independently.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-4">
+            {month.limitBuckets.map((bucket) => (
+              <div
+                key={bucket.bucket}
+                className="rounded-2xl border border-zinc-900 bg-black p-5"
+              >
+                <p className="mb-2 text-sm text-zinc-500">
+                  {bucket.label}
+                </p>
+
+                <p className="text-2xl font-semibold">
+                  {bucket.usage}
+                  <span className="text-sm font-normal text-zinc-600">
+                    {" "}of {bucket.limit === null ? "∞" : bucket.limit}
+                  </span>
+                </p>
+
+                <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+                  Remaining: {bucket.remaining === null ? "∞" : bucket.remaining}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {usagePercent !== null && (
           <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
             <div className="mb-3 flex items-center justify-between gap-4">
@@ -382,11 +435,11 @@ export default function AiUsagePage() {
                   <div className="mb-4 flex items-start justify-between gap-4">
                     <div>
                       <h3 className="mb-1 text-lg font-medium">
-                        {formatFeatureKey(feature.featureKey)}
+                        {feature.label || formatFeatureKey(feature.featureKey)}
                       </h3>
 
                       <p className="text-xs text-zinc-600">
-                        Last used: {formatDateTime(feature.lastUsedAt)}
+                        {feature.bucket} bucket · Last used: {formatDateTime(feature.lastUsedAt)}
                       </p>
                     </div>
 

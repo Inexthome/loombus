@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAiFeatureLimitPolicy } from "@/lib/premium-ai";
 
 type ProfileRow = {
   is_admin: boolean | null;
@@ -28,12 +29,22 @@ type UsageEventRow = {
 
 type FeatureUsage = {
   featureKey: string;
+  bucket: string;
+  label: string;
   total: number;
   metered: number;
   generated: number;
   cached: number;
   failed: number;
   lastUsedAt: string | null;
+};
+
+type LimitBucketUsage = {
+  bucket: string;
+  label: string;
+  limit: number | null;
+  usage: number;
+  remaining: number | null;
 };
 
 function getSupabaseForRequest(request: NextRequest) {
@@ -94,8 +105,12 @@ function summarizeFeatures(events: UsageEventRow[]) {
   for (const event of events) {
     const featureKey = event.feature_key || "unknown";
 
+    const policy = getAiFeatureLimitPolicy(featureKey);
+
     usage[featureKey] ??= {
       featureKey,
+      bucket: policy.bucket,
+      label: policy.label,
       total: 0,
       metered: 0,
       generated: 0,
@@ -133,6 +148,56 @@ function summarizeFeatures(events: UsageEventRow[]) {
     }
 
     return b.total - a.total;
+  });
+}
+
+function summarizeLimitBuckets(
+  events: UsageEventRow[],
+  entitlement: ReturnType<typeof resolveEntitlement>,
+  isAdmin: boolean
+): LimitBucketUsage[] {
+  const usageByBucket: Record<string, number> = {
+    summary: 0,
+    writing: 0,
+    research: 0,
+    discovery: 0,
+  };
+
+  for (const event of events) {
+    if (event.cached || event.success === false) {
+      continue;
+    }
+
+    const policy = getAiFeatureLimitPolicy(event.feature_key || "unknown");
+    usageByBucket[policy.bucket] = (usageByBucket[policy.bucket] ?? 0) + 1;
+  }
+
+  const bucketLimits = {
+    summary: entitlement.monthly_summary_limit,
+    writing: entitlement.monthly_writing_limit,
+    research: entitlement.monthly_research_limit,
+    discovery: entitlement.monthly_discovery_limit,
+  };
+
+  const labels: Record<string, string> = {
+    summary: "Thread understanding",
+    writing: "Writing assist",
+    research: "Research assist",
+    discovery: "Discovery assist",
+  };
+
+  return Object.entries(bucketLimits).map(([bucket, limit]) => {
+    const usage = usageByBucket[bucket] ?? 0;
+    const normalizedLimit = isAdmin ? null : limit;
+
+    return {
+      bucket,
+      label: labels[bucket] ?? bucket,
+      limit: normalizedLimit,
+      usage,
+      remaining:
+        normalizedLimit === null ? null : Math.max(normalizedLimit - usage, 0),
+    };
   });
 }
 
@@ -272,6 +337,11 @@ export async function GET(request: NextRequest) {
       failedUsage,
       remaining,
       featureUsage: summarizeFeatures(loadedMonthlyEvents),
+      limitBuckets: summarizeLimitBuckets(
+        loadedMonthlyEvents,
+        resolvedEntitlement,
+        isAdmin
+      ),
     },
     recentEvents: sanitizeRecentEvents(loadedRecentEvents),
   });

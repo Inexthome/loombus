@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit-log";
 import {
   getAiAccess,
+  getAiFeatureLimit,
   getAiProviderErrorResponse,
   getCurrentMonthStart,
   logAiUsage,
@@ -30,9 +31,10 @@ function clampText(text: string, maxLength: number) {
 function hasQualityCheckAccess(access: {
   allowed: boolean;
   isAdmin: boolean;
-  monthlyThreadAiLimit: number;
+  monthlySummaryLimit: number;
+  monthlyWritingLimit: number;
 }) {
-  return access.isAdmin || (access.allowed && access.monthlyThreadAiLimit > 50);
+  return access.isAdmin || (access.allowed && access.monthlySummaryLimit > 50);
 }
 
 async function getMonthlyQualityCheckUsageCount(supabase: any, userId: string) {
@@ -201,7 +203,9 @@ export async function POST(request: NextRequest) {
       ? 0
       : await getMonthlyQualityCheckUsageCount(supabase, user.id);
 
-    if (!access.isAdmin && monthlyUsageCount >= access.monthlyThreadAiLimit) {
+    const monthlyFeatureLimit = getAiFeatureLimit(access, FEATURE_KEY);
+
+    if (!access.isAdmin && monthlyUsageCount >= monthlyFeatureLimit) {
       await logAiUsage({
         supabase,
         userId: user.id,
@@ -218,7 +222,7 @@ export async function POST(request: NextRequest) {
         {
           error: "Monthly Premium Plus AI quality-check limit reached.",
           code: "quality_check_limit_reached",
-          monthlyQualityCheckLimit: access.monthlyThreadAiLimit,
+          monthlyQualityCheckLimit: monthlyFeatureLimit,
           monthlyQualityCheckUsage: monthlyUsageCount,
         },
         { status: 429 }
@@ -280,7 +284,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         model_name: QUALITY_CHECK_MODEL,
         access_tier: access.tier,
-        monthly_quality_check_limit: access.isAdmin ? "unlimited" : access.monthlyThreadAiLimit,
+        monthly_quality_check_limit: access.isAdmin ? "unlimited" : monthlyFeatureLimit,
         monthly_quality_check_usage_before_generation: access.isAdmin ? 0 : monthlyUsageCount,
       },
     });
@@ -288,7 +292,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       qualityCheck,
       modelName: QUALITY_CHECK_MODEL,
-      monthlyQualityCheckLimit: access.isAdmin ? null : access.monthlyThreadAiLimit,
+      monthlyQualityCheckLimit: access.isAdmin ? null : monthlyFeatureLimit,
       monthlyQualityCheckUsage: access.isAdmin ? null : monthlyUsageCount + 1,
     });
   } catch (error) {
