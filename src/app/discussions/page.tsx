@@ -545,18 +545,11 @@ export default function DiscussionsPage() {
             Create Discussion
           </Link>
         </div>
-        <div className="mb-5 grid grid-cols-2 gap-2 md:hidden">
-          <Link
-            href="/search"
-            className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-          >
-            Search
-          </Link>
-
+        <div className="mb-5 md:hidden">
           <button
             type="button"
             onClick={() => setShowMobileDiscussionTools((current) => !current)}
-            className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+            className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
           >
             {showMobileDiscussionTools ? "Hide tools" : "Explore / Filters"}
           </button>
