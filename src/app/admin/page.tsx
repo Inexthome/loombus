@@ -266,6 +266,13 @@ export default function AdminDashboardPage() {
           />
 
           <AdminCard
+            href="/admin/users"
+            title="User Lookup"
+            description="Search members, review account status, Premium access, and billing identity presence."
+            action="Open Users"
+          />
+
+          <AdminCard
             href="/admin/ai-access"
             title="AI Access"
             description="Manage Premium AI-Assisted Layer access and review AI usage."
