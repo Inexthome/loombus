@@ -68,6 +68,20 @@ function hasCreatorToolsAccess(
   );
 }
 
+function hasPremiumDigestAccess(
+  entitlement: EntitlementRow | null,
+  isAdmin: boolean
+) {
+  if (isAdmin) {
+    return true;
+  }
+
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    entitlement.tier === "premium"
+  );
+}
+
 export async function POST(request: NextRequest) {
   let supabase;
 
@@ -170,6 +184,8 @@ export async function POST(request: NextRequest) {
     Boolean(creatorSupportUrl) ||
     Boolean(creatorSupportLabel);
 
+  const canUseEmailDigest = hasPremiumDigestAccess(entitlement ?? null, isAdmin);
+
   if (hasCreatorFields && !hasCreatorToolsAccess(entitlement ?? null, isAdmin)) {
     return jsonError(
       "Creator/supporter profile tools require Premium Plus or Admin access. Clear those fields to save your basic profile.",
@@ -205,7 +221,7 @@ export async function POST(request: NextRequest) {
       mentions_enabled: mentionsEnabled,
       followed_discussions_enabled: followedDiscussionsEnabled,
       followed_replies_enabled: followedRepliesEnabled,
-      email_digest_enabled: emailDigestEnabled,
+      email_digest_enabled: canUseEmailDigest ? emailDigestEnabled : false,
       email_digest_frequency: emailDigestFrequency,
       updated_at: new Date().toISOString(),
     });

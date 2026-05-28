@@ -23,6 +23,18 @@ function hasCreatorToolsAccess(entitlement: AiEntitlement, isAdmin: boolean) {
   );
 }
 
+function hasPremiumDigestAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+  if (isAdmin) {
+    return true;
+  }
+
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    entitlement.tier === "premium"
+  );
+}
+
+
 const MAX_AVATAR_FILE_SIZE_BYTES = 2 * 1024 * 1024;
 
 const ALLOWED_AVATAR_FILE_TYPES = new Set([
@@ -58,6 +70,7 @@ export default function ProfilePage() {
   const [followedRepliesEnabled, setFollowedRepliesEnabled] = useState(false);
   const [emailDigestEnabled, setEmailDigestEnabled] = useState(false);
   const [emailDigestFrequency, setEmailDigestFrequency] = useState("weekly");
+  const canUseEmailDigest = hasPremiumDigestAccess(aiEntitlement, isAdmin);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -763,7 +776,7 @@ export default function ProfilePage() {
                       Email digest
                     </span>
                     <span className="mt-1 block text-sm text-zinc-500">
-                      Send me a daily or weekly summary of recent Loombus notifications.
+                      Premium email digest: receive a daily or weekly summary of recent Loombus notifications.
                     </span>
                   </span>
 
@@ -780,12 +793,19 @@ export default function ProfilePage() {
                   <select
                     value={emailDigestFrequency}
                     onChange={(event) => setEmailDigestFrequency(event.target.value)}
-                    disabled={!emailDigestEnabled}
+                    disabled={!canUseEmailDigest || !emailDigestEnabled}
                     className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none focus:border-zinc-600 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                   >
                     <option value="weekly">Weekly</option>
                     <option value="daily">Daily</option>
                   </select>
+
+                  {!canUseEmailDigest && (
+                    <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+                      Email digests are a Premium feature. Free accounts can
+                      still use in-app notifications.
+                    </p>
+                  )}
                 </label>
               </div>
             </div>

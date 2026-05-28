@@ -8,6 +8,12 @@ type NotificationPreference = {
   email_digest_last_sent_at: string | null;
 };
 
+type EntitlementRow = {
+  user_id: string;
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+};
+
 type NotificationRow = {
   id: string;
   actor_id: string | null;
@@ -76,6 +82,13 @@ function getDigestSince(preference: NotificationPreference) {
   }
 
   return new Date(Math.max(lastSentTime, fallbackSince)).toISOString();
+}
+
+function hasPremiumDigestAccess(entitlement: EntitlementRow | null) {
+  return (
+    entitlement?.ai_assisted_enabled === true &&
+    ["premium", "admin"].includes(entitlement.tier ?? "")
+  );
 }
 
 function isDue(preference: NotificationPreference) {
@@ -231,9 +244,41 @@ async function runDigest(request: NextRequest) {
   }
 
   const duePreferences = ((preferences ?? []) as NotificationPreference[]).filter(isDue);
+  const dueUserIds = duePreferences.map((preference) => preference.user_id);
+
+  const { data: entitlements, error: entitlementError } = dueUserIds.length
+    ? await supabase
+        .from("user_ai_entitlements")
+        .select("user_id, tier, ai_assisted_enabled")
+        .in("user_id", dueUserIds)
+    : { data: [], error: null };
+
+  if (entitlementError) {
+    return jsonError(
+      entitlementError.message || "Unable to load digest entitlements.",
+      500
+    );
+  }
+
+  const entitlementByUserId = new Map(
+    ((entitlements ?? []) as EntitlementRow[]).map((entitlement) => [
+      entitlement.user_id,
+      entitlement,
+    ])
+  );
+
   const results: DigestResult[] = [];
 
   for (const preference of duePreferences) {
+    if (!hasPremiumDigestAccess(entitlementByUserId.get(preference.user_id) ?? null)) {
+      results.push({
+        userId: preference.user_id,
+        sent: false,
+        skippedReason: "Premium email digest access required.",
+      });
+      continue;
+    }
+
     const { data: authUser, error: userError } =
       await supabase.auth.admin.getUserById(preference.user_id);
 
