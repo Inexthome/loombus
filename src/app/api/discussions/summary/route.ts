@@ -9,6 +9,7 @@ import {
   logAiUsage,
   getOpenAiUsageMetadata,
   insertDiscussionSummary,
+  upsertDiscussionSummary,
 } from "@/lib/premium-ai";
 
 const SUMMARY_MODEL = process.env.OPENAI_SUMMARY_MODEL || "gpt-4o-mini";
@@ -215,7 +216,10 @@ export async function POST(request: NextRequest) {
       .eq("discussion_id", discussionId)
       .maybeSingle();
 
-    if (existingSummary) {
+    if (
+      existingSummary &&
+      existingSummary.source_content_hash === sourceContentHash
+    ) {
       await logAiUsage({
         supabase,
         userId: user.id,
@@ -301,7 +305,7 @@ export async function POST(request: NextRequest) {
 
     const generatedAt = new Date().toISOString();
 
-    const { data: insertedSummary, error: insertError } = await insertDiscussionSummary({
+    const { data: insertedSummary, error: insertError } = await upsertDiscussionSummary({
       discussion_id: discussionId,
       summary: summaryText,
       model_name: SUMMARY_MODEL,
@@ -319,7 +323,10 @@ export async function POST(request: NextRequest) {
         .eq("discussion_id", discussionId)
         .maybeSingle();
 
-      if (fallbackSummary) {
+      if (
+        fallbackSummary &&
+        fallbackSummary.source_content_hash === sourceContentHash
+      ) {
         await logAiUsage({
           supabase,
           userId: user.id,

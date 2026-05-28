@@ -313,6 +313,29 @@ export async function insertDiscussionSummary(
   return { data, error };
 }
 
+
+export async function upsertDiscussionSummary(
+  payload: DiscussionSummaryPayload
+): Promise<{ data: any | null; error: ServiceRoleError | null }> {
+  const supabase = getPremiumAiServiceClient();
+
+  if (!supabase) {
+    return {
+      data: null,
+      error: serviceRoleMissingError("discussion_summaries"),
+    };
+  }
+
+  const { data, error } = await (supabase.from("discussion_summaries") as any)
+    .upsert(payload, {
+      onConflict: "discussion_id",
+    })
+    .select("id, discussion_id, summary, model_name, source_reply_count, source_content_hash, generated_by, generated_at")
+    .single();
+
+  return { data, error };
+}
+
 export function createContentHash(input: string) {
   return createHash("sha256").update(input).digest("hex");
 }
