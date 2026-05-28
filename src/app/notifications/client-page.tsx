@@ -487,11 +487,11 @@ export default function NotificationsClientPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="mb-3 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+            <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:mb-3 sm:text-4xl md:text-5xl">
               Notifications
             </h1>
 
@@ -501,8 +501,8 @@ export default function NotificationsClientPage() {
           </div>
 
           {!loading && notifications.length > 0 && (
-            <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-              <div className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+              <div className="col-span-2 rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500 sm:col-span-1">
                 {unreadCount === 0
                   ? "All caught up"
                   : `${unreadCount} unread`}
@@ -527,7 +527,8 @@ export default function NotificationsClientPage() {
           )}
         </div>
 
-        <ProgressiveGuide
+        <div className="hidden md:block">
+          <ProgressiveGuide
           storageKey="loombus-guide-notifications-v1"
           eyebrow="Guide"
           title="Notifications guide"
@@ -583,7 +584,8 @@ export default function NotificationsClientPage() {
           </div>
         </section>
 
-        </ProgressiveGuide>
+          </ProgressiveGuide>
+        </div>
 
         {message && (
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
@@ -614,7 +616,7 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && notifications.length > 0 && (
-          <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
+          <section className="mb-5 hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6 md:block">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -708,7 +710,7 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && notifications.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-8">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
             <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No notifications yet.
             </h2>
@@ -719,7 +721,7 @@ export default function NotificationsClientPage() {
               to make this page useful is to participate where people can respond.
             </p>
 
-            <div className="mb-5 grid gap-3 md:grid-cols-3">
+            <div className="mb-5 hidden gap-3 md:grid md:grid-cols-3">
               <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   Start a discussion
@@ -777,7 +779,7 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && notifications.length > 0 && filteredNotifications.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-8">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
             <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               No notifications found.
             </h2>
@@ -810,7 +812,7 @@ export default function NotificationsClientPage() {
           </div>
         )}
 
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-3 pb-4 sm:space-y-4 sm:pb-0">
           {filteredNotifications.map((notification) => {
             const href = getNotificationHref(notification, profiles);
             const actorProfile = notification.actor_id
@@ -820,7 +822,7 @@ export default function NotificationsClientPage() {
             return (
               <div
                 key={notification.id}
-                className={`rounded-2xl border p-6 ${
+                className={`rounded-2xl border p-4 sm:p-6 ${
                   notification.read_at
                     ? "border-zinc-900 bg-zinc-950"
                     : "border-zinc-700 bg-zinc-950"
@@ -838,7 +840,7 @@ export default function NotificationsClientPage() {
                   </span>
                 </div>
 
-                <div className="mb-4 flex items-start gap-3 sm:gap-4">
+                <div className="mb-3 flex items-start gap-3 sm:mb-4 sm:gap-4">
                   <ProfileAvatar profile={actorProfile} size="md" />
 
                   <div className="min-w-0">
@@ -852,7 +854,7 @@ export default function NotificationsClientPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
                   {href && (
                     <Link
                       href={href}
