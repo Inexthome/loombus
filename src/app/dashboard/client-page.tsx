@@ -4,6 +4,7 @@ import { ProgressiveGuide } from "@/components/progressive-guide";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { WelcomeEmailTrigger } from "@/components/welcome-email-trigger";
 import { supabase } from "@/lib/supabase/client";
 import {
   filterBlockedActorNotifications,
@@ -270,6 +271,7 @@ export default function DashboardClientPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
+      <WelcomeEmailTrigger />
         <div className="mx-auto max-w-6xl text-zinc-400">
           Loading dashboard...
         </div>
@@ -303,6 +305,7 @@ export default function DashboardClientPage() {
 
   return (
     <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
+      <WelcomeEmailTrigger />
       <div className="mx-auto max-w-6xl">
         <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
           Dashboard

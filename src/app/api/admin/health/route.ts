@@ -171,6 +171,7 @@ export async function GET(request: NextRequest) {
     topicAlertCount,
     accountDeletionRequestCount,
     supportRequestCount,
+    welcomeEmailEventCount,
     openReports,
     failedAi24h,
     newDiscussions24h,
@@ -178,6 +179,7 @@ export async function GET(request: NextRequest) {
     digestOptIns,
     unlinkedPremiumEntitlements,
     openSupportRequests,
+    failedWelcomeEmails,
   ] = await Promise.all([
     countTable(supabase, "profiles", "Profiles", "profiles"),
     countTable(supabase, "discussions", "Discussions", "discussions"),
@@ -197,6 +199,7 @@ export async function GET(request: NextRequest) {
       "account_deletion_requests"
     ),
     countTable(supabase, "support_requests", "Support requests", "support_requests"),
+    countTable(supabase, "welcome_email_events", "Welcome email events", "welcome_email_events"),
     countFiltered(supabase, "open_reports", "Open reports", "reports", (query) =>
       query.in("status", ["new", "reviewing"])
     ),
@@ -234,6 +237,13 @@ export async function GET(request: NextRequest) {
       "support_requests",
       (query) => query.in("status", ["new", "reviewing"])
     ),
+    countFiltered(
+      supabase,
+      "failed_welcome_emails",
+      "Failed welcome emails",
+      "welcome_email_events",
+      (query) => query.eq("status", "failed")
+    ),
   ]);
 
   const databaseCounts = [
@@ -250,6 +260,7 @@ export async function GET(request: NextRequest) {
     topicAlertCount,
     accountDeletionRequestCount,
     supportRequestCount,
+    welcomeEmailEventCount,
   ];
 
   const operationalSignals = [
@@ -260,6 +271,7 @@ export async function GET(request: NextRequest) {
     digestOptIns,
     unlinkedPremiumEntitlements,
     openSupportRequests,
+    failedWelcomeEmails,
   ];
 
   const config = getConfigStatus();
@@ -278,6 +290,16 @@ export async function GET(request: NextRequest) {
       message: `${item.label} could not be counted.`,
       detail: item.error,
     })),
+    ...(failedWelcomeEmails.count && failedWelcomeEmails.count > 0
+      ? [
+          {
+            key: "failed_welcome_email_count",
+            severity: "notice",
+            message: `${failedWelcomeEmails.count} welcome emails failed.`,
+            detail: "Review welcome_email_events and Resend configuration.",
+          },
+        ]
+      : []),
     ...(openSupportRequests.count && openSupportRequests.count > 0
       ? [
           {
