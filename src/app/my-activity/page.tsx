@@ -348,7 +348,7 @@ export default function MyActivityPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
+      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-6xl text-zinc-400">
           Loading your activity...
         </div>
@@ -357,31 +357,31 @@ export default function MyActivityPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
-          className="mb-10 inline-block text-sm text-zinc-500 hover:text-white"
+          className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to dashboard
         </Link>
 
-        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-4 sm:text-sm sm:tracking-[0.3em]">
               My Activity
             </p>
 
-            <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
               Activity Overview
             </h1>
 
-            <p className="mt-4 text-zinc-500">
+            <p className="mt-2 text-sm leading-relaxed text-zinc-500 sm:mt-4 sm:text-base">
               A consolidated view of your discussions, replies, saved items, and notifications.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+          <div className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:p-4">
             <ProfileAvatar profile={currentProfile} size="xl" />
 
             <div>
@@ -396,7 +396,7 @@ export default function MyActivityPage() {
           </div>
         </div>
 
-        <div className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+        <div className="mb-10 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-5 md:block">
           <p className="mb-4 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Activity shortcuts
           </p>
@@ -494,37 +494,37 @@ export default function MyActivityPage() {
           </div>
         </div>
 
-        <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:mb-10 sm:gap-4 lg:grid-cols-4">
           <Link
             href="/my-discussions"
-            className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
+            className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-700 sm:p-5"
           >
             <p className="mb-2 text-sm text-zinc-500">Total discussions</p>
-            <p className="text-4xl font-semibold">{activityTotals.discussions}</p>
+            <p className="text-2xl font-semibold sm:text-4xl">{activityTotals.discussions}</p>
           </Link>
 
           <Link
             href="/my-replies"
-            className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
+            className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-700 sm:p-5"
           >
             <p className="mb-2 text-sm text-zinc-500">Total replies</p>
-            <p className="text-4xl font-semibold">{activityTotals.replies}</p>
+            <p className="text-2xl font-semibold sm:text-4xl">{activityTotals.replies}</p>
           </Link>
 
           <Link
             href="/saved"
-            className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
+            className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-700 sm:p-5"
           >
             <p className="mb-2 text-sm text-zinc-500">Total saved</p>
-            <p className="text-4xl font-semibold">{activityTotals.saved}</p>
+            <p className="text-2xl font-semibold sm:text-4xl">{activityTotals.saved}</p>
           </Link>
 
           <Link
             href="/notifications"
-            className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 transition hover:border-zinc-700"
+            className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-700 sm:p-5"
           >
             <p className="mb-2 text-sm text-zinc-500">Unread notifications</p>
-            <p className="text-4xl font-semibold">{activityTotals.unreadNotifications}</p>
+            <p className="text-2xl font-semibold sm:text-4xl">{activityTotals.unreadNotifications}</p>
           </Link>
         </div>
 
@@ -535,21 +535,21 @@ export default function MyActivityPage() {
         )}
 
         {!hasAnyActivity && (
-          <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
+          <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-10 sm:rounded-3xl sm:p-8">
             <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
               Activity starter
             </p>
 
-            <h2 className="mb-4 text-2xl font-medium">
+            <h2 className="mb-3 text-xl font-medium sm:mb-4 sm:text-2xl">
               Build your first activity trail.
             </h2>
 
-            <p className="mb-6 max-w-3xl leading-relaxed text-zinc-400">
+            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
               Your activity page becomes useful after you start a discussion, reply to someone,
               save a thread, or follow contributors. Start with one intentional action.
             </p>
 
-            <div className="mb-6 grid gap-4 md:grid-cols-3">
+            <div className="mb-6 hidden gap-4 md:grid md:grid-cols-3">
               <div className="rounded-2xl border border-zinc-900 bg-black p-4">
                 <p className="mb-2 text-sm font-medium text-zinc-300">
                   Start with signal
@@ -613,16 +613,16 @@ export default function MyActivityPage() {
           </section>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-medium">My Discussions</h2>
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-7">
+            <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5 sm:gap-4">
+              <h2 className="text-xl font-medium sm:text-2xl">My Discussions</h2>
               <Link href="/my-discussions" className="text-sm text-zinc-400 hover:text-white">
                 View all →
               </Link>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {discussions.map((discussion) => (
                 <Link
                   key={discussion.id}
@@ -638,7 +638,7 @@ export default function MyActivityPage() {
               ))}
 
               {discussions.length === 0 && (
-                <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+                <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
                   <p className="mb-2 text-sm font-medium text-zinc-300">
                     No discussions yet.
                   </p>
@@ -667,15 +667,15 @@ export default function MyActivityPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-medium">My Replies</h2>
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-7">
+            <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5 sm:gap-4">
+              <h2 className="text-xl font-medium sm:text-2xl">My Replies</h2>
               <Link href="/my-replies" className="text-sm text-zinc-400 hover:text-white">
                 View all →
               </Link>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {replies.map((reply) => {
                 const discussion = replyDiscussions[reply.discussion_id];
 
@@ -697,7 +697,7 @@ export default function MyActivityPage() {
               })}
 
               {replies.length === 0 && (
-                <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+                <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
                   <p className="mb-2 text-sm font-medium text-zinc-300">
                     No replies yet.
                   </p>
@@ -717,15 +717,15 @@ export default function MyActivityPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-medium">Saved</h2>
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-7">
+            <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5 sm:gap-4">
+              <h2 className="text-xl font-medium sm:text-2xl">Saved</h2>
               <Link href="/saved" className="text-sm text-zinc-400 hover:text-white">
                 View all →
               </Link>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {savedDiscussions.map((savedItem) => {
                 const discussion = savedItem.discussion;
 
@@ -763,7 +763,7 @@ export default function MyActivityPage() {
               })}
 
               {savedDiscussions.length === 0 && (
-                <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+                <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
                   <p className="mb-2 text-sm font-medium text-zinc-300">
                     No saved discussions yet.
                   </p>
@@ -792,15 +792,15 @@ export default function MyActivityPage() {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-medium">Notifications</h2>
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-7">
+            <div className="mb-4 flex items-center justify-between gap-3 sm:mb-5 sm:gap-4">
+              <h2 className="text-xl font-medium sm:text-2xl">Notifications</h2>
               <Link href="/notifications" className="text-sm text-zinc-400 hover:text-white">
                 View all →
               </Link>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {notifications.map((notification) => (
                 <button
                   key={notification.id}
@@ -827,7 +827,7 @@ export default function MyActivityPage() {
               ))}
 
               {notifications.length === 0 && (
-                <div className="rounded-2xl border border-zinc-900 bg-black p-5">
+                <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
                   <p className="mb-2 text-sm font-medium text-zinc-300">
                     No notifications yet.
                   </p>
