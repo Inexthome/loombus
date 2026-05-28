@@ -562,7 +562,7 @@ export default function ProfilePage() {
                       .toLowerCase()
                   )
                 }
-                placeholder="saint"
+                placeholder="example-user"
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               />
             </div>

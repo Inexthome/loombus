@@ -8,11 +8,6 @@ type WelcomeEmailEventRow = {
   provider_message_id: string | null;
 };
 
-type ProfileRow = {
-  username: string | null;
-  full_name: string | null;
-};
-
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -62,20 +57,13 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;");
 }
 
-function buildWelcomeEmail({
-  siteUrl,
-  displayName,
-}: {
-  siteUrl: string;
-  displayName: string;
-}) {
-  const safeName = escapeHtml(displayName);
+function buildWelcomeEmail({ siteUrl }: { siteUrl: string }) {
   const safeSiteUrl = escapeHtml(siteUrl);
 
   const subject = "Welcome to Loombus";
 
   const text = [
-    `Welcome to Loombus, ${displayName}.`,
+    "Welcome to Loombus.",
     "",
     "Loombus is built for high-signal discussions, thoughtful replies, and conversations worth returning to.",
     "",
@@ -91,7 +79,7 @@ function buildWelcomeEmail({
 
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111; max-width: 640px; margin: 0 auto;">
-      <h1 style="font-size: 28px; margin-bottom: 12px;">Welcome to Loombus, ${safeName}.</h1>
+      <h1 style="font-size: 28px; margin-bottom: 12px;">Welcome to Loombus.</h1>
       <p>Loombus is built for high-signal discussions, thoughtful replies, and conversations worth returning to.</p>
 
       <div style="margin: 24px 0; padding: 18px; border: 1px solid #ddd; border-radius: 14px;">
@@ -216,22 +204,10 @@ export async function POST(request: NextRequest) {
     return jsonError("Welcome email provider is not configured.", 503);
   }
 
-  const { data: profile } = await serviceSupabase
-    .from("profiles")
-    .select("username, full_name")
-    .eq("id", user.id)
-    .maybeSingle<ProfileRow>();
-
-  const displayName =
-    profile?.full_name?.trim() ||
-    profile?.username?.trim() ||
-    user.email.split("@")[0] ||
-    "there";
-
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://loombus.com";
 
-  const email = buildWelcomeEmail({ siteUrl, displayName });
+  const email = buildWelcomeEmail({ siteUrl });
 
   const sendResult = await sendEmailWithResend({
     apiKey: resendApiKey,

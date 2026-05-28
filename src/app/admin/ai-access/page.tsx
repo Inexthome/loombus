@@ -646,7 +646,7 @@ export default function AdminAiAccessPage() {
               type="text"
               value={grantUsername}
               onChange={(event) => setGrantUsername(event.target.value)}
-              placeholder="username, for example saint"
+              placeholder="username, for example example-user"
               className="min-w-0 flex-1 rounded-2xl border border-zinc-800 bg-black px-5 py-3 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
             />
 

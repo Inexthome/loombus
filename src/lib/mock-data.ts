@@ -3,7 +3,7 @@ export const discussions = [
     id: "1",
     title: "How AI changes trust online",
     topic: "AI & Society",
-    author: "Saint Blanc",
+    author: "Example User",
     preview:
       "Artificial intelligence is accelerating the collapse of informational trust online.",
     body:
