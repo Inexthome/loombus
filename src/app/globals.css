@@ -372,3 +372,20 @@ html[data-loombus-theme] .hover\:opacity-90:hover {
     transform: none !important;
   }
 }
+
+/* Mobile-only guard for legacy discussion discovery/filter controls.
+   Keeps the full desktop controls available while preventing stale mobile UI from leaking. */
+.loombus-desktop-only-discussion-control {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .loombus-desktop-only-discussion-control {
+    display: block !important;
+  }
+
+  .loombus-desktop-only-discussion-control-flex {
+    display: flex !important;
+  }
+}
+
