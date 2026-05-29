@@ -6,7 +6,6 @@ import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
-import { SignalExplainer } from "@/components/signal-explainer";
 
 type Profile = {
   full_name: string | null;
@@ -616,8 +615,6 @@ export default function CreatePage() {
             ? "Make a clear, accountable update to your published discussion."
             : "Start a thoughtful discussion designed around signal, clarity, and meaningful contribution."}
         </p>
-
-        <SignalExplainer context="create" className="loombus-phase1-signal-explainer my-4 md:my-6" />
 
         {!authChecked && (
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
