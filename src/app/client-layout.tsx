@@ -569,8 +569,9 @@ export default function ClientLayout({
               type="button"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open menu"
+              title="Open menu"
               aria-expanded={mobileMenuOpen}
-              className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 text-sm font-semibold text-white shadow-2xl shadow-black/50 transition hover:border-zinc-500"
+              className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 text-sm font-semibold text-white shadow-2xl shadow-black/50 transition hover:border-zinc-500"
             >
               {navProfile?.avatar_url ? (
                 <img
@@ -589,11 +590,23 @@ export default function ClientLayout({
                     .toUpperCase()}
                 </span>
               )}
+
+              <span
+                aria-hidden="true"
+                className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-zinc-800 bg-white text-black shadow-lg shadow-black/40"
+              >
+                <span className="flex flex-col gap-[2px]">
+                  <span className="block h-[1px] w-2 rounded-full bg-black" />
+                  <span className="block h-[1px] w-2 rounded-full bg-black" />
+                  <span className="block h-[1px] w-2 rounded-full bg-black" />
+                </span>
+              </span>
             </button>
 
             <Link
               href="/search"
               aria-label="Search Loombus"
+              title="Search Loombus"
               className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 shadow-2xl shadow-black/50 transition hover:border-zinc-600 hover:text-white"
             >
               <svg
