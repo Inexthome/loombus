@@ -1,6 +1,8 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { BillingPortalButton } from "@/components/billing-portal-button";
 import { PremiumPlanCheckoutButton } from "./premium-checkout-button";
+import { PremiumCheckoutStatusBanner } from "./premium-checkout-status-banner";
 
 type FeatureStatus = "available" | "planned";
 
@@ -75,6 +77,10 @@ export default function PremiumPage() {
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-6xl">
+        <Suspense fallback={null}>
+          <PremiumCheckoutStatusBanner />
+        </Suspense>
+
         <div className="mb-14 max-w-3xl">
           <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
             Loombus Premium
@@ -165,8 +171,8 @@ export default function PremiumPage() {
               </div>
 
               <p className="text-xs leading-relaxed text-zinc-600">
-                Checkout is currently connected to Stripe test mode until live
-                Stripe keys are enabled.
+                Secure live checkout is handled by Stripe. Your plan is
+                activated after payment succeeds.
               </p>
             </div>
 
@@ -211,8 +217,8 @@ export default function PremiumPage() {
               </div>
 
               <p className="text-xs leading-relaxed text-zinc-600">
-                Checkout is currently connected to Stripe test mode until live
-                Stripe keys are enabled.
+                Secure live checkout is handled by Stripe. Your plan is
+                activated after payment succeeds.
               </p>
             </div>
 
@@ -237,7 +243,7 @@ export default function PremiumPage() {
                 <Link href="/refunds" className="text-zinc-300 underline-offset-4 hover:underline">
                   Refund Policy
                 </Link>{" "}
-                before live payments are enabled.
+                before purchasing or managing a paid plan.
               </p>
             </div>
 
