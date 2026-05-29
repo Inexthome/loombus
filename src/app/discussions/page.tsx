@@ -735,7 +735,7 @@ export default function DiscussionsPage() {
         </div>
 
 <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="hidden mb-5 flex-col gap-3 md:flex md:flex-row md:items-end md:justify-between">
+          <div className="max-md:!hidden hidden mb-5 flex-col gap-3 md:flex md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                 Topic discovery
@@ -776,7 +776,7 @@ export default function DiscussionsPage() {
           )}
         </section>
 
-        <section className="hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+        <section className="max-md:!hidden hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="discussion-search" className="mb-2 block text-sm font-medium text-zinc-300">
@@ -789,7 +789,7 @@ export default function DiscussionsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search titles, bodies, topics, or contributors..."
-                className="hidden md:block w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+                className="max-md:!hidden hidden md:block w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
               />
             </div>
 
@@ -858,13 +858,13 @@ export default function DiscussionsPage() {
             </button>
           </div>
 
-          <p className="hidden md:block mt-3 text-xs leading-relaxed text-zinc-600">
+          <p className="max-md:!hidden md:block hidden md:block mt-3 text-xs leading-relaxed text-zinc-600">
             Signal Score ranks discussions using replies, saves, and views.
             Replies count more than views, and saves count the most.
           </p>
         </div>
 
-        <section className="hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+        <section className="max-md:!hidden hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -910,7 +910,7 @@ export default function DiscussionsPage() {
           </p>
         </section>
 
-        <div className="mb-5 hidden flex-wrap gap-2 sm:mb-6 sm:gap-3 md:flex">
+        <div className="max-md:!hidden mb-5 hidden flex-wrap gap-2 sm:mb-6 sm:gap-3 md:flex">
           {topics.map((topic) => (
             <button
               key={topic}
