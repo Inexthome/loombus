@@ -44,6 +44,16 @@ type EditableDiscussion = {
 
 const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
 const LONG_DISCUSSION_MAX_LENGTH = 12000;
+const ATTACHMENT_BUCKET = "discussion-attachments";
+const MAX_ATTACHMENT_FILES = 3;
+const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+]);
 
 function getMissingProfileFields(profile: Profile | null) {
   const missing = [];
@@ -132,11 +142,37 @@ function getTagInputHelper(value: string) {
   return `${tags.length}/5 tags: ${tags.join(", ")}`;
 }
 
+function formatAttachmentFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function getAttachmentKind(mimeType: string) {
+  if (mimeType.startsWith("image/")) {
+    return "image";
+  }
+
+  if (mimeType === "application/pdf") {
+    return "pdf";
+  }
+
+  return null;
+}
+
+function getSafeAttachmentFileName(fileName: string) {
+  return fileName.trim().replace(/[\\/]/g, "-").slice(0, 120);
+}
+
 export default function CreatePage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState<string>(DEFAULT_DISCUSSION_TOPIC);
   const [body, setBody] = useState("");
   const [tagsInput, setTagsInput] = useState("");
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+  const [attachmentMessage, setAttachmentMessage] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -492,6 +528,112 @@ export default function CreatePage() {
     setRewriteMessage("Rewrite applied to editor. Review before publishing.");
   }
 
+  function handleAttachmentSelection(event: React.ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+
+    setAttachmentMessage("");
+
+    if (selectedFiles.length === 0) {
+      setAttachmentFiles([]);
+      return;
+    }
+
+    if (selectedFiles.length > MAX_ATTACHMENT_FILES) {
+      setAttachmentFiles([]);
+      setAttachmentMessage("You can attach up to 3 files.");
+      event.target.value = "";
+      return;
+    }
+
+    const invalidFile = selectedFiles.find(
+      (file) =>
+        !ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type) ||
+        file.size <= 0 ||
+        file.size > MAX_ATTACHMENT_SIZE_BYTES
+    );
+
+    if (invalidFile) {
+      setAttachmentFiles([]);
+      setAttachmentMessage("Attachments must be JPG, PNG, WebP, GIF, or PDF files up to 10 MB each.");
+      event.target.value = "";
+      return;
+    }
+
+    setAttachmentFiles(selectedFiles);
+    setAttachmentMessage(`${selectedFiles.length} attachment${selectedFiles.length === 1 ? "" : "s"} ready.`);
+  }
+
+  function clearAttachments() {
+    setAttachmentFiles([]);
+    setAttachmentMessage("");
+  }
+
+  async function uploadDiscussionAttachments({
+    discussionId,
+    accessToken,
+  }: {
+    discussionId: string;
+    accessToken: string;
+  }) {
+    if (!currentUserId || attachmentFiles.length === 0) {
+      return true;
+    }
+
+    for (const [index, file] of attachmentFiles.entries()) {
+      const extension = getSafeAttachmentFileName(file.name).split(".").pop() || "file";
+      const storagePath = `${currentUserId}/${discussionId}/${crypto.randomUUID()}.${extension}`;
+      const attachmentKind = getAttachmentKind(file.type);
+
+      if (!attachmentKind) {
+        setAttachmentMessage("Attachment type is not allowed.");
+        return false;
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from(ATTACHMENT_BUCKET)
+        .upload(storagePath, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        setAttachmentMessage(`Discussion was saved, but ${file.name} could not upload.`);
+        return false;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from(ATTACHMENT_BUCKET)
+        .getPublicUrl(storagePath);
+
+      const response = await fetch("/api/discussions/attachments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          discussionId,
+          storagePath,
+          publicUrl: publicUrlData.publicUrl,
+          fileName: file.name,
+          mimeType: file.type,
+          fileSizeBytes: file.size,
+          sortOrder: index,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        await supabase.storage.from(ATTACHMENT_BUCKET).remove([storagePath]);
+        setAttachmentMessage(result.error ?? `Discussion was saved, but ${file.name} could not be attached.`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   async function handleCreate(
     event?: FormEvent<HTMLFormElement> | KeyboardEvent<HTMLFormElement>
   ) {
@@ -579,6 +721,20 @@ export default function CreatePage() {
     }
 
     const discussionId = result.discussion?.id ?? editingDiscussionId;
+
+    if (!isEditMode && discussionId && attachmentFiles.length > 0) {
+      const attachmentsUploaded = await uploadDiscussionAttachments({
+        discussionId,
+        accessToken: sessionData.session.access_token,
+      });
+
+      if (!attachmentsUploaded) {
+        setPublishing(false);
+        setMessage("Discussion was published, but one or more attachments could not be saved. You can open the discussion now or try again later.");
+        return;
+      }
+    }
+
     window.location.href = `/discussions/${discussionId}`;
   }
 
@@ -879,6 +1035,71 @@ export default function CreatePage() {
                 </p>
               </div>
             </div>
+
+            {!isEditMode && (
+              <section className="rounded-2xl border border-zinc-800 bg-black p-3.5 sm:p-5">
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+                      Attachments
+                    </p>
+
+                    <h2 className="text-lg font-medium sm:text-xl">
+                      Add supporting files.
+                    </h2>
+
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                      Optional. Attach up to 3 images or PDFs that support the discussion. Max 10 MB each.
+                    </p>
+                  </div>
+
+                  {attachmentFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearAttachments}
+                      disabled={publishing}
+                      className="w-full rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700 sm:w-fit"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                  onChange={handleAttachmentSelection}
+                  disabled={publishing}
+                  className="block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-black disabled:cursor-not-allowed disabled:text-zinc-700"
+                />
+
+                {attachmentFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {attachmentFiles.map((file) => (
+                      <div
+                        key={`${file.name}-${file.size}-${file.lastModified}`}
+                        className="flex flex-col gap-1 rounded-xl border border-zinc-900 bg-zinc-950 p-3 text-sm text-zinc-400 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <span className="truncate">
+                          {file.name}
+                        </span>
+
+                        <span className="text-xs text-zinc-600">
+                          {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {attachmentMessage && (
+                  <p className="mt-3 text-sm text-zinc-500">
+                    {attachmentMessage}
+                  </p>
+                )}
+              </section>
+            )}
 
             <section className="rounded-2xl border border-zinc-800 bg-black p-3.5 sm:p-5">
               <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between">
