@@ -445,7 +445,7 @@ export default function ClientLayout({
   return (
     <div className="min-h-screen bg-black text-white antialiased">
       {user && (
-        <header className="border-b border-zinc-900 pt-[env(safe-area-inset-top)]">
+        <header className="hidden border-b border-zinc-900 pt-[env(safe-area-inset-top)] md:block">
           <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-5">
             <div className="flex items-center justify-between gap-4">
               <Link
@@ -564,13 +564,13 @@ export default function ClientLayout({
       <div className={user ? "pb-24 md:pb-0" : ""}>
         {user && (
         <div className="sticky top-0 z-40 bg-black/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl md:hidden">
-          <div className="mx-auto flex max-w-md items-center justify-between rounded-full border border-zinc-900 bg-zinc-950/80 px-2 py-2 shadow-2xl shadow-black/40">
+          <div className="mx-auto flex max-w-md items-center justify-between">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open menu"
               aria-expanded={mobileMenuOpen}
-              className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-black text-sm font-semibold text-white shadow-lg shadow-black/40 transition hover:border-zinc-500"
+              className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 text-sm font-semibold text-white shadow-2xl shadow-black/50 transition hover:border-zinc-500"
             >
               {navProfile?.avatar_url ? (
                 <img
@@ -594,7 +594,7 @@ export default function ClientLayout({
             <Link
               href="/search"
               aria-label="Search Loombus"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-black text-zinc-300 shadow-lg shadow-black/40 transition hover:border-zinc-600 hover:text-white"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 shadow-2xl shadow-black/50 transition hover:border-zinc-600 hover:text-white"
             >
               <svg
                 aria-hidden="true"
