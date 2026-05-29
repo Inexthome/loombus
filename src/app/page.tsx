@@ -522,7 +522,7 @@ export default function Home() {
           sharper ideas, and cleaner community dialogue.
         </p>
 
-        <div className="w-full rounded-3xl border border-zinc-900 bg-zinc-950/60 p-5 shadow-2xl shadow-black/30 space-y-3">
+        <div className="w-full rounded-3xl border border-zinc-900 bg-zinc-950/60 p-5 shadow-2xl shadow-black/30 space-y-3 loombus-mobile-visitor-auth-card">
           <button
             type="button"
             onClick={() => signUpWithProvider("google")}
@@ -540,12 +540,12 @@ export default function Home() {
 
           <Link
             href="/signup"
-            className="block w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white"
+            className="block w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white loombus-mobile-visitor-create"
           >
             Create Account
           </Link>
 
-          <p className="pt-3 text-xs leading-relaxed text-zinc-500">
+          <p className="pt-3 text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
             By creating an account or continuing with Google, you confirm that you are at least 13 years old and agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
@@ -576,9 +576,9 @@ export default function Home() {
           </p>
         )}
 
-        <p className="mt-7 text-sm text-zinc-500">
+        <p className="mt-7 text-sm text-zinc-500 loombus-mobile-visitor-existing">
           Already have an account?{" "}
-          <Link href="/login" className="text-zinc-200 underline-offset-4 hover:underline">
+          <Link href="/login" className="text-zinc-200 underline-offset-4 hover:underline loombus-mobile-visitor-signin">
             Sign in
           </Link>
         </p>

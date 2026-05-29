@@ -372,3 +372,45 @@ html[data-loombus-theme] .hover\:opacity-90:hover {
     transform: none !important;
   }
 }
+
+/* Loombus mobile visitor auth cleanup */
+@media (max-width: 767px) {
+  .loombus-mobile-visitor-auth-card {
+    background: rgba(255, 255, 255, 0.97) !important;
+    color: #111827 !important;
+    border: 1px solid rgba(148, 163, 184, 0.45) !important;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12) !important;
+  }
+
+  .loombus-mobile-visitor-create {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: rgba(15, 23, 42, 0.28) !important;
+    opacity: 1 !important;
+  }
+
+  .loombus-mobile-visitor-create:hover {
+    background: #f8fafc !important;
+  }
+
+  .loombus-mobile-visitor-legal,
+  .loombus-mobile-visitor-existing {
+    color: #4b5563 !important;
+    opacity: 1 !important;
+  }
+
+  .loombus-mobile-visitor-legal a {
+    color: #111827 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 3px !important;
+    opacity: 1 !important;
+  }
+
+  .loombus-mobile-visitor-signin {
+    color: #111827 !important;
+    font-weight: 700 !important;
+    text-decoration: underline !important;
+    text-underline-offset: 4px !important;
+    opacity: 1 !important;
+  }
+}

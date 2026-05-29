@@ -114,7 +114,7 @@ export default function SignupPage() {
         </p>
 
         {!signupComplete && (
-          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
+          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 loombus-mobile-visitor-auth-card">
             <button
               type="button"
               onClick={handleGoogleSignup}
@@ -218,7 +218,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 loombus-mobile-visitor-create"
           >
             {loading ? "Creating account..." : "Create Account"}
           </button>
@@ -229,7 +229,7 @@ export default function SignupPage() {
             </p>
           )}
 
-          <p className="text-xs leading-relaxed text-zinc-500">
+          <p className="text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
             By creating an account or continuing with Google, you confirm that you are at least 13 years old and agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
@@ -257,11 +257,11 @@ export default function SignupPage() {
             .
           </p>
 
-          <p className="pt-1 text-center text-sm text-zinc-500">
+          <p className="pt-1 text-center text-sm text-zinc-500 loombus-mobile-visitor-existing">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+              className="text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white loombus-mobile-visitor-signin"
             >
               Log in
             </Link>
