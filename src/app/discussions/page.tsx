@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
+import { SignalExplainer } from "@/components/signal-explainer";
 
 type Discussion = {
   id: string;
@@ -566,6 +567,8 @@ export default function DiscussionsPage() {
             worth reading carefully. A useful reply usually adds context, evidence,
             experience, a counterpoint, or a clearer framing.
           </p>
+
+        <SignalExplainer context="feed" className="loombus-phase1-signal-explainer my-4 md:my-6" />
 
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-zinc-900 bg-black p-4">
