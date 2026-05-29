@@ -4,7 +4,6 @@ import { validateContent } from "@/lib/moderation/content";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { createNotification, createNotifications } from "@/lib/notifications";
-import { checkRealLifeSignalsSafety, isRealLifeSignalsTopic } from "@/lib/real-life-signals";
 
 const REPLY_COOLDOWN_MS = 10000;
 const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
@@ -26,12 +25,6 @@ type ReferencedReply = {
   discussion_id: string;
   body: string;
   deleted_at: string | null;
-};
-
-type DiscussionForReply = {
-  user_id: string;
-  title: string;
-  topic: string;
 };
 
 function getQuotedExcerpt(content: string) {
@@ -169,53 +162,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: discussionForReply, error: discussionForReplyError } = await supabase
-      .from("discussions")
-      .select("user_id, title, topic")
-      .eq("id", discussionId)
-      .is("deleted_at", null)
-      .maybeSingle();
-
-    if (discussionForReplyError || !discussionForReply) {
-      return NextResponse.json(
-        { error: "Discussion not found." },
-        { status: 404 }
-      );
-    }
-
-    const discussionContext = discussionForReply as DiscussionForReply;
-
-    const replyRealLifeSignalsSafety = checkRealLifeSignalsSafety({
-      topic: discussionContext.topic,
-      title: discussionContext.title,
-      body: content,
-    });
-
-    if (!replyRealLifeSignalsSafety.allowed) {
-      await logAuditEvent({
-        actor_id: user.id,
-        action: "real_life_signals.reply_blocked",
-        target_type: "discussion",
-        target_id: discussionId,
-        metadata: {
-          topic: discussionContext.topic,
-          severity: replyRealLifeSignalsSafety.severity,
-          code: replyRealLifeSignalsSafety.code,
-          matched_rule: replyRealLifeSignalsSafety.matchedRule ?? null,
-          body_length: content.length,
-        },
-      });
-
-      return NextResponse.json(
-        {
-          error: replyRealLifeSignalsSafety.message,
-          code: replyRealLifeSignalsSafety.code,
-          severity: replyRealLifeSignalsSafety.severity,
-        },
-        { status: replyRealLifeSignalsSafety.severity === "crisis" ? 422 : 400 }
-      );
-    }
-
     let referencedReply: ReferencedReply | null = null;
 
     if (referencedReplyId) {
@@ -301,18 +247,14 @@ export async function POST(request: NextRequest) {
       metadata: {
         discussion_id: discussionId,
         referenced_reply_id: referencedReply?.id ?? null,
-        real_life_signals: isRealLifeSignalsTopic(discussionContext.topic),
-        real_life_signals_safety: isRealLifeSignalsTopic(discussionContext.topic)
-          ? {
-              severity: replyRealLifeSignalsSafety.severity,
-              code: replyRealLifeSignalsSafety.code,
-              matched_rule: replyRealLifeSignalsSafety.matchedRule ?? null,
-            }
-          : null,
       },
     });
 
-    const discussion = discussionContext;
+    const { data: discussion } = await supabase
+      .from("discussions")
+      .select("user_id, title")
+      .eq("id", discussionId)
+      .single();
 
     const alreadyNotifiedUserIds = new Set<string>();
 
