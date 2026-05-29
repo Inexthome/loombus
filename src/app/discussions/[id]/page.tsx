@@ -276,6 +276,8 @@ export default function DiscussionPage() {
   const [bookmarkMessage, setBookmarkMessage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
   const [savedBookmarkId, setSavedBookmarkId] = useState<string | null>(null);
+  const [discussionViewCount, setDiscussionViewCount] = useState(0);
+  const [discussionSaveCount, setDiscussionSaveCount] = useState(0);
   const [savingBookmark, setSavingBookmark] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
   const [reportReason, setReportReason] = useState(DEFAULT_REPORT_REASON);
@@ -397,6 +399,20 @@ export default function DiscussionPage() {
         discussion_id: id,
         viewer_id: viewerData.user?.id ?? null,
       });
+
+      const [{ count: viewCount }, { count: saveCount }] = await Promise.all([
+        supabase
+          .from("discussion_views")
+          .select("id", { count: "exact", head: true })
+          .eq("discussion_id", id),
+        supabase
+          .from("bookmarks")
+          .select("id", { count: "exact", head: true })
+          .eq("discussion_id", id),
+      ]);
+
+      setDiscussionViewCount(viewCount ?? 0);
+      setDiscussionSaveCount(saveCount ?? 0);
 
       if (viewerData.user) {
         const { data: savedData } = await supabase
@@ -1282,6 +1298,7 @@ export default function DiscussionPage() {
 
       setIsSaved(true);
       setSavedBookmarkId(result.bookmark?.id ?? null);
+      setDiscussionSaveCount((current) => Math.max(current + 1, 1));
       setBookmarkMessage("Discussion saved.");
     } finally {
       setSavingBookmark(false);
@@ -1326,6 +1343,7 @@ export default function DiscussionPage() {
 
       setIsSaved(false);
       setSavedBookmarkId(null);
+      setDiscussionSaveCount((current) => Math.max(current - 1, 0));
       setBookmarkMessage("Saved discussion removed.");
     } finally {
       setSavingBookmark(false);
@@ -1431,6 +1449,13 @@ export default function DiscussionPage() {
   const discussionEditLabel = discussion ? getDiscussionEditLabel(discussion) : null;
   const discussionStatus =
     discussion?.discussion_status === "resolved" ? "resolved" : "open";
+  const discussionReplyCount = replies.length;
+  const discussionSaveCountDisplay = Math.max(
+    discussionSaveCount,
+    isSaved ? 1 : 0
+  );
+  const discussionSignalScore =
+    discussionReplyCount * 3 + discussionSaveCountDisplay * 5 + discussionViewCount;
   const canManageDiscussionStatus =
     Boolean(currentUserId) &&
     Boolean(discussion) &&
@@ -1556,9 +1581,50 @@ export default function DiscussionPage() {
           </div>
         </div>
 
-        <p className="mb-6 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
+        <p className="mb-6 text-base leading-7 text-zinc-300 sm:mb-8 sm:text-xl sm:leading-relaxed">
           {discussion.body}
         </p>
+
+        <section
+          aria-label="Discussion signal metrics"
+          className="mb-4 grid grid-cols-2 gap-2 sm:mb-8 sm:grid-cols-4"
+        >
+          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-3 sm:p-4">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-700 sm:text-xs">
+              Signal
+            </p>
+            <p className="mt-1 text-xl font-semibold text-white sm:text-2xl">
+              {discussionSignalScore.toLocaleString()}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-3 sm:p-4">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-700 sm:text-xs">
+              Views
+            </p>
+            <p className="mt-1 text-xl font-semibold text-white sm:text-2xl">
+              {discussionViewCount.toLocaleString()}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-3 sm:p-4">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-700 sm:text-xs">
+              Replies
+            </p>
+            <p className="mt-1 text-xl font-semibold text-white sm:text-2xl">
+              {discussionReplyCount.toLocaleString()}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-900 bg-zinc-950 p-3 sm:p-4">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-zinc-700 sm:text-xs">
+              Saves
+            </p>
+            <p className="mt-1 text-xl font-semibold text-white sm:text-2xl">
+              {discussionSaveCountDisplay.toLocaleString()}
+            </p>
+          </div>
+        </section>
 
         <div className="mb-4 md:hidden">
           <button
