@@ -588,7 +588,7 @@ export default function DiscussionsPage() {
                   </button>
                 </div>
 
-                <div className="hidden gap-2 overflow-x-auto pb-1 md:flex">
+                <div className="flex gap-2 overflow-x-auto pb-1">
                   {topics.map((topic) => (
                     <button
                       key={topic}
@@ -789,7 +789,7 @@ export default function DiscussionsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search titles, bodies, topics, or contributors..."
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+                className="hidden md:block w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
               />
             </div>
 
@@ -858,7 +858,7 @@ export default function DiscussionsPage() {
             </button>
           </div>
 
-          <p className="mt-3 text-xs leading-relaxed text-zinc-600">
+          <p className="hidden md:block mt-3 text-xs leading-relaxed text-zinc-600">
             Signal Score ranks discussions using replies, saves, and views.
             Replies count more than views, and saves count the most.
           </p>
