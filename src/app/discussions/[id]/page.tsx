@@ -69,6 +69,16 @@ type DiscussionSummary = {
   generated_at: string;
 };
 
+type DiscussionAttachment = {
+  id: string;
+  public_url: string;
+  file_name: string;
+  mime_type: string;
+  file_size_bytes: number;
+  attachment_kind: "image" | "pdf";
+  sort_order: number;
+};
+
 type AiOutputRatingValue = "helpful" | "not_helpful";
 
 type AiOutputRatings = Partial<Record<string, AiOutputRatingValue>>;
@@ -162,6 +172,14 @@ function getDiscussionEditLabel(discussion: Discussion) {
   return parts.join(" · ");
 }
 
+function formatAttachmentFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
 function ProfileName({
   profile,
   fallback = "Loombus member",
@@ -251,6 +269,7 @@ export default function DiscussionPage() {
   const [replies, setReplies] = useState<Reply[]>([]);
   const [relatedDiscussions, setRelatedDiscussions] = useState<RelatedDiscussion[]>([]);
   const [discussionTags, setDiscussionTags] = useState<string[]>([]);
+  const [discussionAttachments, setDiscussionAttachments] = useState<DiscussionAttachment[]>([]);
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [replyBody, setReplyBody] = useState("");
   const [replySuggestions, setReplySuggestions] = useState("");
@@ -314,6 +333,7 @@ export default function DiscussionPage() {
         setDiscussion(null);
         setRelatedDiscussions([]);
         setDiscussionTags([]);
+        setDiscussionAttachments([]);
         setLoading(false);
         return;
       }
@@ -342,6 +362,13 @@ export default function DiscussionPage() {
         .select("tag")
         .eq("discussion_id", id)
         .order("tag", { ascending: true });
+
+      const { data: attachmentData } = await supabase
+        .from("discussion_attachments")
+        .select("id, public_url, file_name, mime_type, file_size_bytes, attachment_kind, sort_order")
+        .eq("discussion_id", id)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
 
       const { data: relatedData } = await supabase
         .from("discussions")
@@ -519,6 +546,7 @@ export default function DiscussionPage() {
       setReplies(visibleReplies);
       setRelatedDiscussions(visibleRelatedDiscussions);
       setDiscussionTags((tagData ?? []).map((row: { tag: string }) => row.tag));
+      setDiscussionAttachments((attachmentData ?? []) as DiscussionAttachment[]);
       setReplyProfiles(replyProfileMap);
       setLoading(false);
     }
@@ -1559,6 +1587,74 @@ export default function DiscussionPage() {
         <p className="mb-6 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
           {discussion.body}
         </p>
+
+        {discussionAttachments.length > 0 && (
+          <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-10 sm:rounded-3xl sm:p-6">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:text-sm sm:tracking-[0.25em]">
+              Attachments
+            </p>
+
+            <h2 className="mb-4 text-lg font-medium sm:text-2xl">
+              Supporting files
+            </h2>
+
+            <div className="grid gap-4">
+              {discussionAttachments.map((attachment) => (
+                <div
+                  key={attachment.id}
+                  className="rounded-2xl border border-zinc-800 bg-black p-4"
+                >
+                  {attachment.attachment_kind === "image" ? (
+                    <a
+                      href={attachment.public_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block overflow-hidden rounded-xl border border-zinc-900 bg-zinc-950"
+                    >
+                      <img
+                        src={attachment.public_url}
+                        alt={attachment.file_name}
+                        className="max-h-[520px] w-full object-contain"
+                      />
+                    </a>
+                  ) : (
+                    <a
+                      href={attachment.public_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-zinc-950 p-4 transition hover:border-zinc-600"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-zinc-200">
+                          {attachment.file_name}
+                        </span>
+                        <span className="mt-1 block text-xs text-zinc-600">
+                          PDF · {formatAttachmentFileSize(attachment.file_size_bytes)}
+                        </span>
+                      </span>
+
+                      <span className="shrink-0 text-sm text-zinc-400">
+                        Open PDF →
+                      </span>
+                    </a>
+                  )}
+
+                  {attachment.attachment_kind === "image" && (
+                    <div className="mt-3 flex flex-col gap-1 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="truncate">
+                        {attachment.file_name}
+                      </span>
+
+                      <span>
+                        Image · {formatAttachmentFileSize(attachment.file_size_bytes)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="mb-4 md:hidden">
           <button
