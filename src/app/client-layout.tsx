@@ -565,13 +565,11 @@ export default function ClientLayout({
         {user && (
         <div className="sticky top-0 z-40 bg-black/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl md:hidden">
           <div className="mx-auto flex max-w-md items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Open menu"
-              title="Open menu"
-              aria-expanded={mobileMenuOpen}
-              className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 text-sm font-semibold text-white shadow-2xl shadow-black/50 transition hover:border-zinc-500"
+            <Link
+              href="/profile"
+              aria-label="View profile"
+              title="View profile"
+              className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 text-sm font-semibold text-white shadow-2xl shadow-black/50 transition hover:border-zinc-500"
             >
               {navProfile?.avatar_url ? (
                 <img
@@ -590,37 +588,51 @@ export default function ClientLayout({
                     .toUpperCase()}
                 </span>
               )}
-
-              <span
-                aria-hidden="true"
-                className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full border border-zinc-800 bg-white text-black shadow-lg shadow-black/40"
-              >
-                <span className="flex flex-col gap-[2px]">
-                  <span className="block h-[1px] w-2 rounded-full bg-black" />
-                  <span className="block h-[1px] w-2 rounded-full bg-black" />
-                  <span className="block h-[1px] w-2 rounded-full bg-black" />
-                </span>
-              </span>
-            </button>
-
-            <Link
-              href="/search"
-              aria-label="Search Loombus"
-              title="Search Loombus"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 shadow-2xl shadow-black/50 transition hover:border-zinc-600 hover:text-white"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="m16.5 16.5 4 4" />
-              </svg>
             </Link>
+
+            <div className="flex items-center gap-2">
+              <Link
+                href="/search"
+                aria-label="Search Loombus"
+                title="Search Loombus"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 shadow-2xl shadow-black/50 transition hover:border-zinc-600 hover:text-white"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m16.5 16.5 4 4" />
+                </svg>
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Open menu"
+                title="Open menu"
+                aria-expanded={mobileMenuOpen}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 shadow-2xl shadow-black/50 transition hover:border-zinc-600 hover:text-white"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.85"
+                  strokeLinecap="round"
+                >
+                  <path d="M5 7h14" />
+                  <path d="M5 12h14" />
+                  <path d="M5 17h14" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       )}
