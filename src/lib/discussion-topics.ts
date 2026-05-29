@@ -8,6 +8,7 @@ export const DISCUSSION_TOPICS = [
   "Environment",
   "Faith & Values",
   "Future of Work",
+  "Real Life Signals",
   "General",
   "Healthcare",
   "Law & Justice",

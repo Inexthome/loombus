@@ -6,6 +6,7 @@ import { normalizeDiscussionTags } from "@/lib/discussion-tags";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { createNotifications } from "@/lib/notifications";
+import { checkRealLifeSignalsSafety, isRealLifeSignalsTopic } from "@/lib/real-life-signals";
 
 const CREATE_COOLDOWN_MS = 30000;
 const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
@@ -283,6 +284,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const realLifeSignalsSafety = checkRealLifeSignalsSafety({
+      topic,
+      title,
+      body: content,
+    });
+
+    if (!realLifeSignalsSafety.allowed) {
+      await logAuditEvent({
+        actor_id: user.id,
+        action: "real_life_signals.blocked",
+        target_type: "discussion",
+        target_id: null,
+        metadata: {
+          topic,
+          severity: realLifeSignalsSafety.severity,
+          code: realLifeSignalsSafety.code,
+          matched_rule: realLifeSignalsSafety.matchedRule ?? null,
+          title_length: title.length,
+          body_length: content.length,
+        },
+      });
+
+      return NextResponse.json(
+        {
+          error: realLifeSignalsSafety.message,
+          code: realLifeSignalsSafety.code,
+          severity: realLifeSignalsSafety.severity,
+        },
+        { status: realLifeSignalsSafety.severity === "crisis" ? 422 : 400 }
+      );
+    }
+
     const cooldownSince = new Date(
       Date.now() - CREATE_COOLDOWN_MS
     ).toISOString();
@@ -349,6 +382,14 @@ export async function POST(request: NextRequest) {
         topic,
         title,
         tags: discussionTags,
+        real_life_signals: isRealLifeSignalsTopic(topic),
+        real_life_signals_safety: isRealLifeSignalsTopic(topic)
+          ? {
+              severity: realLifeSignalsSafety.severity,
+              code: realLifeSignalsSafety.code,
+              matched_rule: realLifeSignalsSafety.matchedRule ?? null,
+            }
+          : null,
       },
     });
 

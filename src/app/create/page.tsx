@@ -6,6 +6,7 @@ import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import { REAL_LIFE_SIGNALS_BOUNDARY, REAL_LIFE_SIGNALS_PROMPTS, REAL_LIFE_SIGNALS_TOPIC } from "@/lib/real-life-signals";
 
 type Profile = {
   full_name: string | null;
@@ -151,6 +152,18 @@ export default function CreatePage() {
   const [qualityCheck, setQualityCheck] = useState("");
   const [qualityCheckMessage, setQualityCheckMessage] = useState("");
   const [generatingQualityCheck, setGeneratingQualityCheck] = useState(false);
+
+  function applyRealLifeSignalPrompt(example: string) {
+    setTopic(REAL_LIFE_SIGNALS_TOPIC);
+    if (!title.trim()) {
+      setTitle(example);
+    }
+    if (!body.trim()) {
+      setBody(
+        "I want to share this from lived experience, not as professional advice.\n\nWhat happened:\n\nWhat people usually do not see:\n\nWhat I learned:\n\nThe question I am still thinking through:"
+      );
+    }
+  }
   const [clarityRewrite, setClarityRewrite] = useState("");
   const [rewriteMessage, setRewriteMessage] = useState("");
   const [generatingRewrite, setGeneratingRewrite] = useState(false);
@@ -827,7 +840,38 @@ export default function CreatePage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-zinc-400">
+                            {topic === REAL_LIFE_SIGNALS_TOPIC && (
+                <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white">Real Life Signals boundary</p>
+                      <p className="mt-1 text-sm leading-6 text-zinc-400">
+                        {REAL_LIFE_SIGNALS_BOUNDARY}
+                      </p>
+                    </div>
+                    <span className="w-fit rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400">
+                      Share experience, not instructions
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {REAL_LIFE_SIGNALS_PROMPTS.map((prompt) => (
+                      <button
+                        key={prompt.title}
+                        type="button"
+                        onClick={() => applyRealLifeSignalPrompt(prompt.example)}
+                        className="rounded-xl border border-zinc-800 bg-black p-3 text-left transition hover:border-zinc-600"
+                      >
+                        <p className="text-sm font-medium text-white">{prompt.title}</p>
+                        <p className="mt-1 text-xs leading-5 text-zinc-500">{prompt.description}</p>
+                        <p className="mt-2 text-xs leading-5 text-zinc-400">{prompt.example}</p>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+<label className="mb-2 block text-sm text-zinc-400">
                 Optional Tags
               </label>
 
@@ -863,7 +907,11 @@ export default function CreatePage() {
                 required
                 maxLength={maxDiscussionLength}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder="Write your discussion..."
+                placeholder={
+                  topic === REAL_LIFE_SIGNALS_TOPIC
+                    ? "Share the real experience, what people usually miss, what you learned, and what question remains. Avoid professional advice or crisis guidance."
+                    : "Write your discussion..."
+                }
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               />
 
