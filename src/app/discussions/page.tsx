@@ -588,7 +588,7 @@ export default function DiscussionsPage() {
                   </button>
                 </div>
 
-                <div className="max-md:hidden md:flex flex gap-2 overflow-x-auto pb-1">
+                <div className="hidden gap-2 overflow-x-auto pb-1 md:flex">
                   {topics.map((topic) => (
                     <button
                       key={topic}
@@ -675,7 +675,7 @@ export default function DiscussionsPage() {
           </section>
         )}
 
-        <div className="max-md:hidden md:block">
+        <div className="hidden md:block">
           <ProgressiveGuide
           storageKey="loombus-guide-discussions-finding-signal-v1"
           eyebrow="Guide"
@@ -735,7 +735,7 @@ export default function DiscussionsPage() {
         </div>
 
 <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="max-md:hidden md:block mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div className="hidden mb-5 flex-col gap-3 md:flex md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                 Topic discovery
@@ -776,7 +776,7 @@ export default function DiscussionsPage() {
           )}
         </section>
 
-        <section className="max-md:hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+        <section className="hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="discussion-search" className="mb-2 block text-sm font-medium text-zinc-300">
@@ -823,7 +823,7 @@ export default function DiscussionsPage() {
         </section>
 
         <div className="mb-8">
-          <div className="max-md:hidden md:block flex flex-wrap items-center gap-3">
+          <div className="hidden flex-wrap items-center gap-3 md:flex">
             <button
               onClick={() => setSortMode("Newest")}
             className={`rounded-full px-4 py-2 text-sm transition ${
@@ -864,7 +864,7 @@ export default function DiscussionsPage() {
           </p>
         </div>
 
-        <section className="max-md:hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+        <section className="hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -910,7 +910,7 @@ export default function DiscussionsPage() {
           </p>
         </section>
 
-        <div className="mb-6 flex flex-wrap gap-3">
+        <div className="mb-5 hidden flex-wrap gap-2 sm:mb-6 sm:gap-3 md:flex">
           {topics.map((topic) => (
             <button
               key={topic}
