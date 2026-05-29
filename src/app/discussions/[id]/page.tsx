@@ -279,6 +279,7 @@ export default function DiscussionPage() {
   const [savingBookmark, setSavingBookmark] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
   const [reportReason, setReportReason] = useState(DEFAULT_REPORT_REASON);
+  const [showMobileThreadActions, setShowMobileThreadActions] = useState(false);
   const [discussionSummary, setDiscussionSummary] = useState<DiscussionSummary | null>(null);
   const [summaryMessage, setSummaryMessage] = useState("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
@@ -1559,7 +1560,126 @@ export default function DiscussionPage() {
           {discussion.body}
         </p>
 
-        <div className="mb-5 flex flex-col items-stretch gap-2 rounded-2xl border border-zinc-900 bg-black/30 p-3 sm:mb-10 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4 sm:border-0 sm:bg-transparent sm:p-0">
+        <div className="mb-4 md:hidden">
+          <button
+            type="button"
+            onClick={() => setShowMobileThreadActions((current) => !current)}
+            className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+            aria-expanded={showMobileThreadActions}
+            aria-controls="mobile-thread-actions"
+          >
+            <span>Thread actions</span>
+            <span aria-hidden="true" className="text-lg leading-none">
+              ...
+            </span>
+          </button>
+
+          {showMobileThreadActions && (
+            <section
+              id="mobile-thread-actions"
+              className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30"
+            >
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+                    Thread controls
+                  </p>
+                  <h2 className="mt-1 text-lg font-medium">
+                    Manage carefully.
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMobileThreadActions(false)}
+                  className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {canManageDiscussionStatus && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateDiscussionStatus(
+                        discussionStatus === "resolved" ? "open" : "resolved"
+                      )
+                    }
+                    disabled={statusWorking}
+                    className={`w-full rounded-full border px-5 py-3 text-sm transition disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 ${
+                      discussionStatus === "resolved"
+                        ? "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                        : "border-emerald-800 text-emerald-300 hover:border-emerald-600 hover:text-emerald-200"
+                    }`}
+                  >
+                    {statusWorking
+                      ? "Updating..."
+                      : discussionStatus === "resolved"
+                        ? "Reopen Discussion"
+                        : "Mark Resolved"}
+                  </button>
+                )}
+
+                {isSaved ? (
+                  <button
+                    type="button"
+                    onClick={handleRemoveBookmark}
+                    disabled={savingBookmark}
+                    className="w-full rounded-full border border-zinc-800 bg-zinc-900 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    {savingBookmark ? "Removing..." : "Unsave"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleBookmark}
+                    disabled={savingBookmark}
+                    className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    {savingBookmark ? "Saving..." : "Save Discussion"}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleReport}
+                  disabled={reportedDiscussion}
+                  className="w-full rounded-full border border-red-900 px-5 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                >
+                  {reportedDiscussion ? "Reported" : "Report Discussion"}
+                </button>
+
+                {currentUserId && (
+                  <label className="block text-xs text-zinc-500">
+                    <span className="mb-2 block">Report reason</span>
+
+                    <select
+                      value={reportReason}
+                      onChange={(event) => setReportReason(event.target.value as ReportReason)}
+                      className="w-full rounded-full border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                    >
+                      {REPORT_REASONS.map((reason) => (
+                        <option key={reason} value={reason}>
+                          {reason}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+                {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
+                  <p className="text-sm text-zinc-500">
+                    {pinMessage || statusMessage || bookmarkMessage || reportMessage}
+                  </p>
+                )}
+              </div>
+            </section>
+          )}
+        </div>
+
+        <div className="mb-5 hidden flex-col items-stretch gap-2 rounded-2xl border border-zinc-900 bg-black/30 p-3 sm:mb-10 md:flex md:flex-row md:flex-wrap md:items-center md:gap-4 md:border-0 md:bg-transparent md:p-0">
           {canManageDiscussionStatus && (
             <button
               type="button"
