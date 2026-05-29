@@ -196,7 +196,6 @@ export default function DiscussionsPage() {
   const [selectedTopic, setSelectedTopic] = useState("All");
   const [showAllTopicDiscovery, setShowAllTopicDiscovery] = useState(false);
   const [showAllTopicFilters, setShowAllTopicFilters] = useState(false);
-  const [showMobileDiscussionTools, setShowMobileDiscussionTools] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState("Newest");
   const [advancedFilter, setAdvancedFilter] =
@@ -545,136 +544,6 @@ export default function DiscussionsPage() {
             Create Discussion
           </Link>
         </div>
-        <div className="mb-5 md:hidden">
-          <button
-            type="button"
-            onClick={() => setShowMobileDiscussionTools((current) => !current)}
-            className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-          >
-            {showMobileDiscussionTools ? "Hide tools" : "Explore / Filters"}
-          </button>
-        </div>
-
-        {showMobileDiscussionTools && (
-          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 md:hidden">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">
-                  Discussion tools
-                </p>
-                <h2 className="mt-1 text-lg font-medium">Explore signal.</h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowMobileDiscussionTools(false)}
-                className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="space-y-5">
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-zinc-300">Topics</p>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowAllTopicFilters((current) => !current)}
-                    className="text-xs text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
-                  >
-                    {showAllTopicFilters ? "Fewer" : "More"}
-                  </button>
-                </div>
-
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {topics.map((topic) => (
-                    <button
-                      key={topic}
-                      type="button"
-                      onClick={() => setTopicFilter(topic)}
-                      className={`shrink-0 rounded-full border px-3 py-2 text-xs transition ${
-                        selectedTopic === topic
-                          ? "border-white bg-white text-black"
-                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
-                      }`}
-                    >
-                      {topic}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm font-medium text-zinc-300">Sort</p>
-
-                <div className="grid grid-cols-3 gap-2">
-                  {["Newest", "Most replied", "Signal"].map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setSortMode(mode)}
-                      className={`rounded-full border px-3 py-2 text-xs transition ${
-                        sortMode === mode
-                          ? "border-white bg-white text-black"
-                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
-                      }`}
-                    >
-                      {mode}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-zinc-300">
-                    Advanced filters
-                  </p>
-
-                  {!canUseAdvancedFilters && (
-                    <Link
-                      href="/premium"
-                      className="text-xs text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
-                    >
-                      Premium
-                    </Link>
-                  )}
-                </div>
-
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {ADVANCED_FILTERS.map((filter) => (
-                    <button
-                      key={filter}
-                      type="button"
-                      onClick={() => setAdvancedFilter(filter)}
-                      disabled={!canUseAdvancedFilters && filter !== "All activity"}
-                      className={`shrink-0 rounded-full border px-3 py-2 text-xs transition disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 ${
-                        advancedFilter === filter
-                          ? "border-white bg-white text-black"
-                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
-                      }`}
-                    >
-                      {filter}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {hasActiveDiscussionFilters && (
-                <button
-                  type="button"
-                  onClick={resetDiscussionFilters}
-                  className="w-full rounded-full border border-zinc-700 px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-          </section>
-        )}
-
         <div className="hidden md:block">
           <ProgressiveGuide
           storageKey="loombus-guide-discussions-finding-signal-v1"
@@ -735,7 +604,7 @@ export default function DiscussionsPage() {
         </div>
 
 <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="loombus-desktop-only-discussion-control max-md:!hidden hidden mb-5 flex-col gap-3 md:flex md:flex-row md:items-end md:justify-between">
+          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
                 Topic discovery
@@ -776,7 +645,7 @@ export default function DiscussionsPage() {
           )}
         </section>
 
-        <section className="loombus-desktop-only-discussion-control max-md:!hidden hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+        <section className="hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="discussion-search" className="mb-2 block text-sm font-medium text-zinc-300">
@@ -789,7 +658,7 @@ export default function DiscussionsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search titles, bodies, topics, or contributors..."
-                className="loombus-desktop-only-discussion-control max-md:!hidden hidden md:block w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
               />
             </div>
 
@@ -823,7 +692,7 @@ export default function DiscussionsPage() {
         </section>
 
         <div className="mb-8">
-          <div className="hidden flex-wrap items-center gap-3 md:flex">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setSortMode("Newest")}
             className={`rounded-full px-4 py-2 text-sm transition ${
@@ -858,13 +727,13 @@ export default function DiscussionsPage() {
             </button>
           </div>
 
-          <p className="loombus-desktop-only-discussion-control max-md:!hidden md:block hidden md:block mt-3 text-xs leading-relaxed text-zinc-600">
+          <p className="mt-3 text-xs leading-relaxed text-zinc-600">
             Signal Score ranks discussions using replies, saves, and views.
             Replies count more than views, and saves count the most.
           </p>
         </div>
 
-        <section className="loombus-desktop-only-discussion-control max-md:!hidden hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -910,7 +779,7 @@ export default function DiscussionsPage() {
           </p>
         </section>
 
-        <div className="loombus-desktop-only-discussion-control-flex max-md:!hidden mb-5 hidden flex-wrap gap-2 sm:mb-6 sm:gap-3 md:flex">
+        <div className="mb-6 flex flex-wrap gap-3">
           {topics.map((topic) => (
             <button
               key={topic}
