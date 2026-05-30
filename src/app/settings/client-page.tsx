@@ -1,4 +1,5 @@
 "use client";
+import MobileV3SettingsHeader from "@/components/mobile/mobile-v3-settings-header";
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
@@ -524,6 +525,9 @@ export default function SettingsClientPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      {/* MOBILE_V3_SETTINGS_HEADER */}
+      <MobileV3SettingsHeader />
+
         <div className="mx-auto max-w-6xl text-zinc-400">
           Loading settings...
         </div>
@@ -534,6 +538,9 @@ export default function SettingsClientPage() {
   if (loadError) {
     return (
       <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      {/* MOBILE_V3_SETTINGS_HEADER */}
+      <MobileV3SettingsHeader />
+
         <div className="mx-auto max-w-6xl rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-7">
           <h1 className="mb-3 text-2xl font-medium">
             Settings could not load.
@@ -557,6 +564,9 @@ export default function SettingsClientPage() {
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      {/* MOBILE_V3_SETTINGS_HEADER */}
+      <MobileV3SettingsHeader />
+
       <div className="mx-auto max-w-6xl">
         <Link
           href="/dashboard"
