@@ -439,30 +439,7 @@ export default function ProfilePage() {
         </section>
 
         <div className="grid gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-6">
-
-        <section className="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-5 shadow-lg shadow-cyan-950/10">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
-                Account security
-              </p>
-              <h2 className="mt-2 text-xl font-bold text-white">
-                Change password
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-slate-300">
-                Update the password used to sign in to your Loombus account.
-              </p>
-            </div>
-            <Link
-              href="/profile/password"
-              className="inline-flex items-center justify-center rounded-2xl bg-cyan-300 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
-            >
-              Change password
-            </Link>
-          </div>
-        </section>
-
-<form
+          <form
             onSubmit={saveProfile}
             onKeyDown={handleProfileFormKeyDown}
             className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:space-y-8 sm:p-6"
