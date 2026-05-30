@@ -1,5 +1,4 @@
 "use client";
-import MobileV3DiscussionsHeader from "@/components/mobile/mobile-v3-discussions-header";
 
 import { ProgressiveGuide } from "@/components/progressive-guide";
 
@@ -526,9 +525,6 @@ export default function DiscussionsPage() {
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
-      {/* MOBILE_V3_DISCUSSIONS_HEADER */}
-      <MobileV3DiscussionsHeader />
-
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
