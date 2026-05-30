@@ -1,5 +1,4 @@
 "use client";
-import MobileV3Home from "@/components/mobile/mobile-v3-home";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -502,12 +501,6 @@ export default function Home() {
   }
 
   return (
-    <>
-      {/* MOBILE_V3_HOME_WRAPPED */}
-      <div className="md:hidden">
-        <MobileV3Home />
-      </div>
-      <div className="hidden md:block">
     <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
       <section className="mx-auto flex min-h-[72vh] max-w-xl flex-col items-center justify-center text-center">
         <img
@@ -622,8 +615,5 @@ export default function Home() {
         </nav>
       </footer>
     </main>
-  
-      </div>
-    </>
   );
 }
