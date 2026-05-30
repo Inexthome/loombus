@@ -530,3 +530,66 @@ html[data-loombus-theme] .hover\:opacity-90:hover {
   background-color: var(--loombus-surface-strong);
   color: var(--loombus-text);
 }
+
+/* Theme-aware mobile Home cards.
+   Keeps the existing mobile Home layout while making Light/Dark/System readable. */
+.loombus-mobile-home-card {
+  background-color: var(--loombus-surface);
+  border-color: var(--loombus-border);
+  color: var(--loombus-text);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.12);
+}
+
+.loombus-mobile-home-hero {
+  background-image: linear-gradient(
+    to bottom,
+    var(--loombus-surface),
+    color-mix(in srgb, var(--loombus-surface) 82%, var(--loombus-page-bg))
+  );
+}
+
+.loombus-mobile-home-primary-card {
+  background-color: var(--loombus-primary-bg);
+  border-color: color-mix(in srgb, var(--loombus-primary-bg) 58%, var(--loombus-border));
+  color: var(--loombus-primary-text);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.14);
+}
+
+.loombus-mobile-home-row {
+  background-color: var(--loombus-surface-strong);
+  border-color: var(--loombus-border-muted);
+  color: var(--loombus-text);
+}
+
+.loombus-mobile-home-row:hover {
+  border-color: var(--loombus-border);
+  background-color: var(--loombus-surface-muted);
+}
+
+.loombus-mobile-home-title,
+.loombus-mobile-home-row-title {
+  color: var(--loombus-text);
+}
+
+.loombus-mobile-home-eyebrow,
+.loombus-mobile-home-subtle,
+.loombus-mobile-home-pill {
+  color: var(--loombus-text-subtle);
+}
+
+.loombus-mobile-home-muted {
+  color: var(--loombus-text-muted);
+}
+
+.loombus-mobile-home-primary-title {
+  color: var(--loombus-primary-text);
+}
+
+.loombus-mobile-home-primary-eyebrow,
+.loombus-mobile-home-primary-muted {
+  color: color-mix(in srgb, var(--loombus-primary-text) 68%, transparent);
+}
+
+.loombus-mobile-home-pill {
+  border-color: var(--loombus-border);
+}

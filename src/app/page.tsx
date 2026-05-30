@@ -235,21 +235,21 @@ export default function Home() {
         <section className="mx-auto max-w-6xl">
           <div className="md:hidden">
             {/* Mobile Signal Hub */}
-            <section className="mb-5 rounded-[2rem] border border-zinc-800 bg-gradient-to-b from-zinc-950 to-black p-5 shadow-2xl shadow-black/40">
-              <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500">
+            <section className="loombus-mobile-home-card loombus-mobile-home-hero mb-5 rounded-[2rem] border p-5 shadow-2xl">
+              <p className="loombus-mobile-home-eyebrow mb-3 text-xs uppercase tracking-[0.24em]">
                 Signal Hub
               </p>
 
-              <h1 className="mb-3 text-3xl font-semibold tracking-tight">
+              <h1 className="loombus-mobile-home-title mb-3 text-3xl font-semibold tracking-tight">
                 What matters now.
               </h1>
 
-              <p className="text-sm leading-relaxed text-zinc-500">
+              <p className="loombus-mobile-home-muted text-sm leading-relaxed">
                 Create, read, reply, and return to the highest-signal parts of Loombus.
               </p>
 
               {email && (
-                <p className="mt-4 truncate text-xs text-zinc-700">
+                <p className="loombus-mobile-home-subtle mt-4 truncate text-xs">
                   {email}
                 </p>
               )}
@@ -258,17 +258,17 @@ export default function Home() {
             <section className="mb-5">
               <Link
                 href="/create"
-                className="block rounded-[1.75rem] border border-zinc-500 bg-white p-5 text-black shadow-2xl shadow-black/30 active:scale-[0.99]"
+                className="loombus-mobile-home-primary-card block rounded-[1.75rem] border p-5 shadow-2xl active:scale-[0.99]"
               >
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600">
+                <p className="loombus-mobile-home-primary-eyebrow mb-2 text-xs font-semibold uppercase tracking-[0.2em]">
                   Start signal
                 </p>
 
-                <h2 className="text-2xl font-semibold tracking-tight">
+                <h2 className="loombus-mobile-home-primary-title text-2xl font-semibold tracking-tight">
                   Create a discussion
                 </h2>
 
-                <p className="mt-2 text-sm leading-relaxed text-zinc-700">
+                <p className="loombus-mobile-home-primary-muted mt-2 text-sm leading-relaxed">
                   Turn a clear thought, question, or claim into a focused thread.
                 </p>
               </Link>
@@ -277,58 +277,58 @@ export default function Home() {
             <section className="mb-5 grid grid-cols-2 gap-3">
               <Link
                 href="/discussions"
-                className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 active:scale-[0.99]"
+                className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
               >
-                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
                   Read
                 </p>
                 <h2 className="text-lg font-semibold">Discussions</h2>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
                   Browse focused conversations.
                 </p>
               </Link>
 
               <Link
                 href="/notifications"
-                className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 active:scale-[0.99]"
+                className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
               >
-                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
                   Return
                 </p>
                 <h2 className="text-lg font-semibold">Alerts</h2>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
                   See replies, follows, and mentions.
                 </p>
               </Link>
 
               <Link
                 href="/following"
-                className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 active:scale-[0.99]"
+                className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
               >
-                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
                   People
                 </p>
                 <h2 className="text-lg font-semibold">Following</h2>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
                   Follow selective signal.
                 </p>
               </Link>
 
               <Link
                 href="/saved"
-                className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-4 active:scale-[0.99]"
+                className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
               >
-                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
                   Memory
                 </p>
                 <h2 className="text-lg font-semibold">Saved</h2>
-                <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
                   Revisit what is worth keeping.
                 </p>
               </Link>
             </section>
 
-                          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+                          <section className="loombus-mobile-home-card rounded-3xl border p-5">
                 <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
                   Mobile shortcuts
                 </p>
@@ -340,29 +340,29 @@ export default function Home() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 hover:bg-zinc-950"
+                      className="loombus-mobile-home-row rounded-2xl border p-4 transition"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-medium text-zinc-100">
+                          <p className="loombus-mobile-home-row-title text-sm font-medium">
                             {item.title}
                           </p>
-                          <p className="mt-1 text-xs leading-relaxed text-zinc-600">
+                          <p className="loombus-mobile-home-subtle mt-1 text-xs leading-relaxed">
                             {item.description}
                           </p>
                         </div>
 
-                        <span className="text-zinc-600">→</span>
+                        <span className="loombus-mobile-home-subtle">→</span>
                       </div>
                     </Link>
                   ))}
                 </div>
               </section>
 
-<section className="mb-5 rounded-[1.75rem] border border-zinc-800 bg-zinc-950/70 p-4">
+<section className="loombus-mobile-home-card mb-5 rounded-[1.75rem] border p-4">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+                  <p className="loombus-mobile-home-eyebrow text-xs uppercase tracking-[0.2em]">
                     Today’s direction
                   </p>
                   <h2 className="mt-1 text-xl font-semibold">
@@ -370,7 +370,7 @@ export default function Home() {
                   </h2>
                 </div>
 
-                <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                <span className="loombus-mobile-home-pill rounded-full border px-3 py-1 text-xs">
                   v1
                 </span>
               </div>
@@ -378,33 +378,33 @@ export default function Home() {
               <div className="grid gap-2">
                 <Link
                   href="/dashboard"
-                  className="rounded-2xl border border-zinc-900 bg-black p-3 text-sm text-zinc-300"
+                  className="loombus-mobile-home-row rounded-2xl border p-3 text-sm"
                 >
                   Dashboard → account, plan, and activity status
                 </Link>
 
                 <Link
                   href="/profile"
-                  className="rounded-2xl border border-zinc-900 bg-black p-3 text-sm text-zinc-300"
+                  className="loombus-mobile-home-row rounded-2xl border p-3 text-sm"
                 >
                   Profile → public identity and notification comfort
                 </Link>
 
                 <Link
                   href="/settings"
-                  className="rounded-2xl border border-zinc-900 bg-black p-3 text-sm text-zinc-300"
+                  className="loombus-mobile-home-row rounded-2xl border p-3 text-sm"
                 >
                   Settings → account, legal, safety, and platform controls
                 </Link>
               </div>
             </section>
 
-            <section className="rounded-[1.75rem] border border-zinc-900 bg-black p-4">
+            <section className="loombus-mobile-home-card rounded-[1.75rem] border p-4">
               <p className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-600">
                 Loombus principle
               </p>
 
-              <p className="text-sm leading-relaxed text-zinc-400">
+              <p className="loombus-mobile-home-muted text-sm leading-relaxed">
                 The goal is not endless scrolling. The goal is cleaner thinking,
                 better replies, and conversations worth returning to.
               </p>
