@@ -29,6 +29,7 @@ export default function ClientLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [bottomNavHidden, setBottomNavHidden] = useState(false);
+  const [topNavHidden, setTopNavHidden] = useState(false);
   const currentUserIdRef = useRef<string | null>(null);
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
   const loadingNotificationCountRef = useRef(false);
@@ -315,13 +316,16 @@ export default function ClientLayout({
 
     function setNavVisibilityFromDelta(currentScrollY: number, scrollDelta: number) {
       if (mobileMenuOpen || currentScrollY < 80) {
+        setTopNavHidden(false);
         setBottomNavHidden(false);
         return;
       }
 
       if (scrollDelta > 8) {
+        setTopNavHidden(true);
         setBottomNavHidden(true);
       } else if (scrollDelta < -8) {
+        setTopNavHidden(false);
         setBottomNavHidden(false);
       }
     }
@@ -521,7 +525,9 @@ export default function ClientLayout({
 
       <div className={user ? "pb-24 md:pb-0" : ""}>
         {user && (
-        <div className="loombus-mobile-topbar sticky top-0 z-40 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl md:hidden">
+        <div className={`loombus-mobile-topbar sticky top-0 z-40 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl transition-transform duration-300 md:hidden ${
+          topNavHidden ? "-translate-y-full" : "translate-y-0"
+        }`}>
           <div className="mx-auto flex max-w-md items-center justify-between">
             <Link
               href="/profile"
