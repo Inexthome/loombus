@@ -258,6 +258,13 @@ export default function AdminDashboardPage() {
           />
 
           <AdminCard
+            href="/admin/safety"
+            title="Safety Queue"
+            description="Review pre-submit safety blocks and warnings from rule-based and AI-assisted checks."
+            action="Open Safety"
+          />
+
+          <AdminCard
             href="/admin/deleted"
             title="Deleted Discussions"
             description="Review and restore soft-deleted discussions when needed."
