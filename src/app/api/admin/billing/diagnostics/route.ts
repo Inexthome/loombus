@@ -95,7 +95,6 @@ function getConfigStatus() {
     stripeSecretKey: present(process.env.STRIPE_SECRET_KEY),
     stripeWebhookSecret: present(process.env.STRIPE_WEBHOOK_SECRET),
     premiumMonthlyPrice: present(process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID),
-    premiumMonthlyFallbackPrice: present(process.env.STRIPE_PREMIUM_PRICE_ID),
     premiumAnnualPrice: present(process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID),
     premiumPlusMonthlyPrice: present(process.env.STRIPE_PREMIUM_PLUS_MONTHLY_PRICE_ID),
     premiumPlusAnnualPrice: present(process.env.STRIPE_PREMIUM_PLUS_ANNUAL_PRICE_ID),

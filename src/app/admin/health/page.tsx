@@ -49,7 +49,6 @@ const CONFIG_LABELS: Record<string, string> = {
   stripeSecretKey: "Stripe secret key",
   stripeWebhookSecret: "Stripe webhook secret",
   premiumMonthlyPrice: "Premium monthly price",
-  premiumMonthlyFallbackPrice: "Premium fallback price",
   premiumAnnualPrice: "Premium annual price",
   premiumPlusMonthlyPrice: "Premium Plus monthly price",
   premiumPlusAnnualPrice: "Premium Plus annual price",
