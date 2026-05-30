@@ -1,4 +1,5 @@
 "use client";
+import MobileV3ProfileHeader from "@/components/mobile/mobile-v3-profile-header";
 
 import Link from "next/link";
 import { TopicAlertsControl } from "@/components/topic-alerts-control";
@@ -363,6 +364,9 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      {/* MOBILE_V3_PROFILE_HEADER */}
+      <MobileV3ProfileHeader />
+
         <div className="mx-auto max-w-xl text-zinc-400">
           Loading profile...
         </div>
@@ -372,6 +376,9 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      {/* MOBILE_V3_PROFILE_HEADER */}
+      <MobileV3ProfileHeader />
+
       <div className="mx-auto max-w-6xl">
         <Link
           href="/settings"
