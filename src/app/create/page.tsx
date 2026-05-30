@@ -749,16 +749,16 @@ export default function CreatePage() {
       <div className="mx-auto max-w-3xl">
         <Link
           href={isEditMode && editingDiscussionId ? `/discussions/${editingDiscussionId}` : "/discussions"}
-          className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
+          className="mb-3 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to {isEditMode ? "discussion" : "discussions"}
         </Link>
 
-        <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-3 sm:text-sm sm:tracking-[0.3em]">
+        <p className="mb-1.5 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-3 sm:text-sm sm:tracking-[0.3em]">
           {isEditMode ? "Edit Discussion" : "New Discussion"}
         </p>
 
-        <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-5xl">
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-5xl">
           {isEditMode
             ? "Edit discussion."
             : draftId
@@ -766,7 +766,7 @@ export default function CreatePage() {
               : "Create a discussion."}
         </h1>
 
-        <p className="mb-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
+        <p className="mb-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
           {isEditMode
             ? "Make a clear, accountable update to your published discussion."
             : "Start a thoughtful discussion designed around signal, clarity, and meaningful contribution."}
@@ -931,7 +931,7 @@ export default function CreatePage() {
           <form
             onSubmit={handleCreate}
             onKeyDown={handleFormKeyDown}
-            className="space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:space-y-6 sm:p-8"
+            className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
             {draftId && !isEditMode && (
               <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
@@ -1037,7 +1037,7 @@ export default function CreatePage() {
             </div>
 
             {!isEditMode && (
-              <section className="rounded-2xl border border-zinc-800 bg-black p-3.5 sm:p-5">
+              <section className="rounded-2xl border border-zinc-800 bg-black p-3 sm:p-5">
                 <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -1101,7 +1101,7 @@ export default function CreatePage() {
               </section>
             )}
 
-            <section className="rounded-2xl border border-zinc-800 bg-black p-3.5 sm:p-5">
+            <section className="rounded-2xl border border-zinc-800 bg-black p-3 sm:p-5">
               <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -1150,7 +1150,7 @@ export default function CreatePage() {
               )}
             </section>
 
-            <section className="rounded-2xl border border-zinc-800 bg-black p-3.5 sm:p-5">
+            <section className="rounded-2xl border border-zinc-800 bg-black p-3 sm:p-5">
               <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
