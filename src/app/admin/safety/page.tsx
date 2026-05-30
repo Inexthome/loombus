@@ -148,6 +148,80 @@ export default function AdminSafetyPage() {
   const aiCount = events.filter((event) => getMetadataString(event.metadata, "stage") === "ai_assisted").length;
   const ruleCount = events.filter((event) => getMetadataString(event.metadata, "stage") === "rule_based").length;
 
+  const repeatOffenders = useMemo(() => {
+    const groups: Record<
+      string,
+      {
+        actorId: string;
+        total: number;
+        blocked: number;
+        warned: number;
+        latestAt: string | null;
+        categories: Set<string>;
+      }
+    > = {};
+
+    for (const event of events) {
+      if (!event.actor_id) {
+        continue;
+      }
+
+      if (!groups[event.actor_id]) {
+        groups[event.actor_id] = {
+          actorId: event.actor_id,
+          total: 0,
+          blocked: 0,
+          warned: 0,
+          latestAt: null,
+          categories: new Set<string>(),
+        };
+      }
+
+      const group = groups[event.actor_id];
+      group.total += 1;
+
+      if (event.action === "content_safety.blocked") {
+        group.blocked += 1;
+      }
+
+      if (event.action === "content_safety.warned") {
+        group.warned += 1;
+      }
+
+      const category = getMetadataString(event.metadata, "category");
+
+      if (category) {
+        group.categories.add(category);
+      }
+
+      if (
+        !group.latestAt ||
+        new Date(event.created_at).getTime() > new Date(group.latestAt).getTime()
+      ) {
+        group.latestAt = event.created_at;
+      }
+    }
+
+    return Object.values(groups)
+      .filter((group) => group.total >= 2)
+      .sort((a, b) => {
+        if (b.blocked !== a.blocked) {
+          return b.blocked - a.blocked;
+        }
+
+        if (b.total !== a.total) {
+          return b.total - a.total;
+        }
+
+        return new Date(b.latestAt ?? 0).getTime() - new Date(a.latestAt ?? 0).getTime();
+      })
+      .slice(0, 6)
+      .map((group) => ({
+        ...group,
+        categories: [...group.categories].slice(0, 3),
+      }));
+  }, [events]);
+
   const filteredEvents = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -347,6 +421,111 @@ export default function AdminSafetyPage() {
           <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
             {message}
           </div>
+        )}
+
+        {repeatOffenders.length > 0 && (
+          <section className="mb-8 rounded-3xl border border-red-950 bg-red-950/10 p-6">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-red-300">
+                  Repeat offender signals
+                </p>
+
+                <h2 className="text-2xl font-medium">
+                  Members with multiple safety events.
+                </h2>
+
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                  Use this as a review signal, not automatic enforcement. Confirm the context before warning, suspending, or banning.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {repeatOffenders.map((group) => {
+                const profile = profiles[group.actorId];
+
+                return (
+                  <div
+                    key={group.actorId}
+                    className="rounded-2xl border border-red-950 bg-black/40 p-4"
+                  >
+                    <div className="mb-4 flex items-center gap-3">
+                      <ProfileAvatar profile={profile} size="md" />
+
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-zinc-300">
+                          {getProfileDisplayName(profile, "Unknown member")}
+                        </p>
+
+                        <p className="truncate text-xs text-zinc-600">
+                          {profile?.username ? `@${profile.username}` : group.actorId}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-2">
+                        <p className="text-zinc-600">Total</p>
+                        <p className="mt-1 text-lg font-semibold text-zinc-200">{group.total}</p>
+                      </div>
+
+                      <div className="rounded-xl border border-red-950 bg-red-950/20 p-2">
+                        <p className="text-red-300">Blocked</p>
+                        <p className="mt-1 text-lg font-semibold text-red-200">{group.blocked}</p>
+                      </div>
+
+                      <div className="rounded-xl border border-amber-900 bg-amber-950/20 p-2">
+                        <p className="text-amber-300">Warned</p>
+                        <p className="mt-1 text-lg font-semibold text-amber-200">{group.warned}</p>
+                      </div>
+                    </div>
+
+                    {group.categories.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {group.categories.map((category) => (
+                          <span
+                            key={category}
+                            className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500"
+                          >
+                            {category}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {group.latestAt && (
+                      <p className="mt-3 text-xs text-zinc-600">
+                        Latest: {new Date(group.latestAt).toLocaleString()}
+                      </p>
+                    )}
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Link
+                        href={`/admin/users?member=${encodeURIComponent(group.actorId)}`}
+                        className="rounded-full border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                      >
+                        Review member
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery(group.actorId);
+                          setActionFilter("all");
+                          setStageFilter("all");
+                          setTargetTypeFilter("all");
+                        }}
+                        className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                      >
+                        Show events
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
