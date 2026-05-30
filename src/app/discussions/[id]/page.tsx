@@ -1523,12 +1523,12 @@ export default function DiscussionPage() {
       <div className="mx-auto max-w-3xl">
         <Link
           href="/discussions"
-          className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
+          className="mb-3 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
         >
           ← Back to discussions
         </Link>
 
-        <div className="mb-3 flex flex-nowrap items-center gap-2 overflow-x-auto pb-1 sm:mb-4 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:pb-0">
+        <div className="mb-2 flex flex-nowrap items-center gap-2 overflow-x-auto pb-1 sm:mb-4 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:pb-0">
           <p className="shrink-0 rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500 sm:text-xs sm:tracking-[0.18em]">
             {discussion.topic}
           </p>
@@ -1543,11 +1543,11 @@ export default function DiscussionPage() {
           ))}
         </div>
 
-        <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-6xl">
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-6xl">
           {discussion.title}
         </h1>
 
-        <div className="mb-5 flex flex-col gap-2 text-sm text-zinc-600 sm:mb-6 sm:gap-3">
+        <div className="mb-4 flex flex-col gap-2 text-sm text-zinc-600 sm:mb-6 sm:gap-3">
           <span className="inline-flex items-center gap-3">
             <ProfileAvatar profile={profile} />
             <span>
@@ -1584,7 +1584,7 @@ export default function DiscussionPage() {
           </div>
         </div>
 
-        <p className="mb-6 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
+        <p className="mb-5 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
           {discussion.body}
         </p>
 
@@ -1656,7 +1656,7 @@ export default function DiscussionPage() {
           </section>
         )}
 
-        <div className="mb-4 md:hidden">
+        <div className="mb-3 md:hidden">
           <button
             type="button"
             onClick={() => setShowMobileThreadActions((current) => !current)}
@@ -1673,7 +1673,7 @@ export default function DiscussionPage() {
           {showMobileThreadActions && (
             <section
               id="mobile-thread-actions"
-              className="mt-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30"
+              className="mt-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/30"
             >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
@@ -1852,7 +1852,7 @@ export default function DiscussionPage() {
 
         <nav
           aria-label="Discussion reader actions"
-          className="mb-5 grid grid-cols-3 gap-1.5 rounded-2xl border border-zinc-900 bg-black/40 p-1.5 sm:mb-10 sm:gap-2 sm:rounded-3xl sm:p-2"
+          className="mb-4 grid grid-cols-3 gap-1.5 rounded-2xl border border-zinc-900 bg-black/40 p-1.5 sm:mb-10 sm:gap-2 sm:rounded-3xl sm:p-2"
         >
           <a
             href="#reply-form"
@@ -1888,7 +1888,7 @@ export default function DiscussionPage() {
 
         <div
           id="intelligence-layer"
-          className="mb-4 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-6 sm:rounded-3xl sm:p-6"
+          className="mb-3 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:mb-6 sm:rounded-3xl sm:p-6"
         >
           <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
             Premium AI-Assisted Layer
@@ -1910,7 +1910,7 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <section className="mb-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:mb-4 sm:rounded-3xl sm:p-6">
+        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
           <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
@@ -2004,7 +2004,7 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:mb-4 sm:rounded-3xl sm:p-6">
+        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
           <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
@@ -2098,7 +2098,7 @@ export default function DiscussionPage() {
           )}
         </section>
 
-        <section className="mb-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:mb-4 sm:rounded-3xl sm:p-6">
+        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
           <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
