@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { validateContent } from "@/lib/moderation/content";
 import { getAiSafetyErrorPayload, reviewContentSafety } from "@/lib/moderation/ai-safety";
+import { logAiSafetyEvent, logRuleBasedSafetyEvent } from "@/lib/moderation/safety-events";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { createNotification, createNotifications } from "@/lib/notifications";
@@ -157,6 +158,14 @@ export async function POST(request: NextRequest) {
     const moderationError = validateContent(content);
 
     if (moderationError) {
+      await logRuleBasedSafetyEvent({
+        userId: user.id,
+        contentType: "reply",
+        content,
+        message: moderationError,
+        targetId: discussionId,
+      });
+
       return NextResponse.json(
         { error: moderationError },
         { status: 400 }
@@ -169,6 +178,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (aiSafetyReview.action !== "allow") {
+      await logAiSafetyEvent({
+        userId: user.id,
+        contentType: "reply",
+        content,
+        review: aiSafetyReview,
+        targetId: discussionId,
+      });
+
       return NextResponse.json(
         getAiSafetyErrorPayload(aiSafetyReview),
         { status: 400 }

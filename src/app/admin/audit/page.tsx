@@ -35,6 +35,8 @@ const actionLabels: Record<string, string> = {
   "account.suspended": "Account suspended",
   "account.banned": "Account banned",
   "account.restored": "Account restored",
+  "content_safety.blocked": "Content safety blocked",
+  "content_safety.warned": "Content safety warned",
   "account.deactivated": "Account deactivated",
   "account.deletion_requested": "Account deletion requested",
 };
@@ -50,6 +52,8 @@ const actionDescriptions: Record<string, string> = {
   "account.suspended": "An admin temporarily suspended a member account.",
   "account.banned": "An admin banned a member account.",
   "account.restored": "An admin restored a member account to active status.",
+  "content_safety.blocked": "Loombus blocked content before it was published.",
+  "content_safety.warned": "Loombus warned a member before content was published.",
   "account.deactivated": "A member deactivated their account.",
   "account.deletion_requested": "A member requested account deletion.",
 };
@@ -69,6 +73,14 @@ function getActionBadgeClass(action: string) {
 
   if (action.includes("banned")) {
     return "border-red-900 text-red-300";
+  }
+
+  if (action.includes("content_safety.blocked")) {
+    return "border-red-900 text-red-300";
+  }
+
+  if (action.includes("content_safety.warned")) {
+    return "border-amber-800 text-amber-300";
   }
 
   if (action.includes("deletion_requested")) {
