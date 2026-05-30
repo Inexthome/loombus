@@ -1,5 +1,4 @@
 "use client";
-import MobileV3DiscussionDetailHeader from "@/components/mobile/mobile-v3-discussion-detail-header";
 
 import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
@@ -1496,9 +1495,6 @@ export default function DiscussionPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
-      {/* MOBILE_V3_DISCUSSION_DETAIL_HEADER */}
-      <MobileV3DiscussionDetailHeader />
-
         <div className="mx-auto max-w-3xl text-zinc-400">
           Loading discussion...
         </div>
@@ -1509,9 +1505,6 @@ export default function DiscussionPage() {
   if (!discussion) {
     return (
       <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
-      {/* MOBILE_V3_DISCUSSION_DETAIL_HEADER */}
-      <MobileV3DiscussionDetailHeader />
-
         <div className="mx-auto max-w-3xl">
           <h1 className="mb-6 text-4xl font-semibold">
             Discussion not found.
@@ -1527,9 +1520,6 @@ export default function DiscussionPage() {
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
-      {/* MOBILE_V3_DISCUSSION_DETAIL_HEADER */}
-      <MobileV3DiscussionDetailHeader />
-
       <div className="mx-auto max-w-3xl">
         <Link
           href="/discussions"
