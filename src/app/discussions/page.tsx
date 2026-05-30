@@ -603,7 +603,7 @@ export default function DiscussionsPage() {
           </ProgressiveGuide>
         </div>
 
-<section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+<section className="hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -733,7 +733,7 @@ export default function DiscussionsPage() {
           </p>
         </div>
 
-        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+        <section className="hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
