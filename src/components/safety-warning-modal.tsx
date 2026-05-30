@@ -12,20 +12,34 @@ export function getSafetyWarningFromResult(result: unknown): SafetyWarningState 
 
   const record = result as Record<string, unknown>;
   const code = typeof record.code === "string" ? record.code : "";
+  const errorText =
+    typeof record.error === "string" && record.error.trim()
+      ? record.error.trim()
+      : "";
 
-  if (code !== "content_safety_blocked" && code !== "content_safety_warning") {
+  const isSafetyCode =
+    code === "content_safety_blocked" || code === "content_safety_warning";
+
+  const isRuleBasedSafetyMessage =
+    errorText.startsWith("This content appears") ||
+    errorText.includes("Please revise before posting") ||
+    errorText.includes("Please critique ideas instead of attacking people") ||
+    errorText.includes("Please make the claim more specific and constructive");
+
+  if (!isSafetyCode && !isRuleBasedSafetyMessage) {
     return null;
   }
 
   const message =
-    typeof record.error === "string" && record.error.trim()
-      ? record.error.trim()
-      : "This content may violate Loombus safety rules. Please revise before posting.";
+    errorText ||
+    "This content may violate Loombus safety rules. Please revise before posting.";
 
   const category =
     typeof record.category === "string" && record.category.trim()
       ? record.category.trim()
-      : null;
+      : isRuleBasedSafetyMessage
+        ? "rule_based_safety"
+        : null;
 
   return {
     message,
