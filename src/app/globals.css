@@ -414,3 +414,57 @@ html[data-loombus-theme] .hover\:opacity-90:hover {
     opacity: 1 !important;
   }
 }
+
+/* Theme-aware mobile app shell.
+   Keeps the existing mobile top bar, floating bottom nav, and auto-hide behavior
+   while allowing System/Dark/Light appearance to style the shell correctly. */
+.loombus-mobile-topbar {
+  background-color: var(--loombus-surface);
+  background-color: color-mix(in srgb, var(--loombus-surface) 92%, transparent);
+  border-bottom: 1px solid var(--loombus-border-muted);
+  color: var(--loombus-text);
+}
+
+.loombus-mobile-shell-button,
+.loombus-mobile-shell-avatar {
+  background-color: var(--loombus-surface-strong);
+  border-color: var(--loombus-border);
+  color: var(--loombus-text-muted);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
+}
+
+.loombus-mobile-shell-button:hover,
+.loombus-mobile-shell-avatar:hover {
+  border-color: var(--loombus-text-subtle);
+  color: var(--loombus-text);
+}
+
+.loombus-mobile-bottom-nav {
+  background-color: var(--loombus-surface);
+  background-color: color-mix(in srgb, var(--loombus-surface) 92%, transparent);
+  border-color: var(--loombus-border);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.18);
+}
+
+.loombus-mobile-bottom-tab-active {
+  border-color: var(--loombus-primary-bg);
+  background-color: var(--loombus-primary-bg);
+  color: var(--loombus-primary-text);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+}
+
+.loombus-mobile-bottom-tab-inactive {
+  border-color: transparent;
+  color: var(--loombus-text-subtle);
+}
+
+.loombus-mobile-bottom-tab-inactive:hover {
+  border-color: var(--loombus-border);
+  background-color: var(--loombus-surface-strong);
+  color: var(--loombus-text);
+}
+
+.loombus-mobile-nav-badge {
+  background-color: var(--loombus-primary-bg);
+  color: var(--loombus-primary-text);
+}

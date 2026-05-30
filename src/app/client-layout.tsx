@@ -61,8 +61,8 @@ export default function ClientLayout({
 
     return `flex min-w-0 items-center justify-center rounded-[1.1rem] border px-2 py-3 transition ${
       active
-        ? "border-white bg-white text-black shadow-lg shadow-white/10"
-        : "border-transparent text-zinc-500 hover:border-zinc-800 hover:bg-zinc-950 hover:text-white"
+        ? "loombus-mobile-bottom-tab-active"
+        : "loombus-mobile-bottom-tab-inactive"
     }`;
   }
 
@@ -521,13 +521,13 @@ export default function ClientLayout({
 
       <div className={user ? "pb-24 md:pb-0" : ""}>
         {user && (
-        <div className="sticky top-0 z-40 bg-black/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl md:hidden">
+        <div className="loombus-mobile-topbar sticky top-0 z-40 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl md:hidden">
           <div className="mx-auto flex max-w-md items-center justify-between">
             <Link
               href="/profile"
               aria-label="View profile"
               title="View profile"
-              className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-zinc-950 text-sm font-semibold text-white shadow-2xl shadow-black/50 transition hover:border-zinc-500"
+              className="loombus-mobile-shell-avatar flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border text-sm font-semibold transition"
             >
               {navProfile?.avatar_url ? (
                 <img
@@ -553,7 +553,7 @@ export default function ClientLayout({
                 href="/search"
                 aria-label="Search Loombus"
                 title="Search Loombus"
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 shadow-2xl shadow-black/50 transition hover:border-zinc-600 hover:text-white"
+                className="loombus-mobile-shell-button flex h-11 w-11 items-center justify-center rounded-full border transition"
               >
                 <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               </Link>
@@ -564,7 +564,7 @@ export default function ClientLayout({
                 aria-label="Open menu"
                 title="Open menu"
                 aria-expanded={mobileMenuOpen}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 shadow-2xl shadow-black/50 transition hover:border-zinc-600 hover:text-white"
+                className="loombus-mobile-shell-button flex h-11 w-11 items-center justify-center rounded-full border transition"
               >
                 <Menu aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               </button>
@@ -722,7 +722,7 @@ export default function ClientLayout({
       {user && !mobileMenuOpen && (
         <nav
           aria-label="Mobile app navigation"
-          className={`fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 rounded-[1.75rem] border border-zinc-800 bg-black/90 p-2 shadow-2xl shadow-black/70 backdrop-blur-xl transition-transform duration-300 md:hidden ${
+          className={`loombus-mobile-bottom-nav fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 rounded-[1.75rem] border p-2 backdrop-blur-xl transition-transform duration-300 md:hidden ${
             bottomNavHidden ? "translate-y-[calc(100%+1rem)]" : "translate-y-0"
           }`}
         >
@@ -747,7 +747,7 @@ export default function ClientLayout({
               <span className="relative">
                 <MobileNavIcon name="alerts" />
                 {notificationCount > 0 && (
-                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-white px-1 text-center text-[9px] font-semibold leading-4 text-black">
+                  <span className="loombus-mobile-nav-badge absolute -right-2 -top-2 min-w-4 rounded-full px-1 text-center text-[9px] font-semibold leading-4">
                     {notificationCount > 9 ? "9+" : notificationCount}
                   </span>
                 )}
