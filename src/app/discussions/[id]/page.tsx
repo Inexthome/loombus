@@ -11,6 +11,7 @@ import {
 } from "@/lib/subscription-plans";
 import { DEFAULT_REPORT_REASON, REPORT_REASONS, type ReportReason } from "@/lib/report-reasons";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { SafetyWarningModal, getSafetyWarningFromResult, type SafetyWarningState } from "@/components/safety-warning-modal";
 
 type Discussion = {
   id: string;
@@ -288,6 +289,7 @@ export default function DiscussionPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [safetyWarning, setSafetyWarning] = useState<SafetyWarningState>(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [statusWorking, setStatusWorking] = useState(false);
   const [pinMessage, setPinMessage] = useState("");
@@ -576,6 +578,7 @@ export default function DiscussionPage() {
     event?.preventDefault();
 
     setMessage("");
+    setSafetyWarning(null);
 
     if (postingReply) {
       return;
@@ -612,7 +615,15 @@ export default function DiscussionPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        setMessage(result.error ?? "Unable to post reply.");
+        const safetyWarningResult = getSafetyWarningFromResult(result);
+
+        if (safetyWarningResult) {
+          setSafetyWarning(safetyWarningResult);
+          setMessage("");
+        } else {
+          setMessage(result.error ?? "Unable to post reply.");
+        }
+
         return;
       }
 
@@ -1051,6 +1062,7 @@ export default function DiscussionPage() {
 
   async function handleUpdateReply(replyId: string) {
     setMessage("");
+    setSafetyWarning(null);
 
     if (!editingReplyBody.trim()) {
       setMessage("Please enter a reply.");
@@ -1086,7 +1098,15 @@ export default function DiscussionPage() {
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setMessage(result.error ?? "Unable to update reply.");
+        const safetyWarningResult = getSafetyWarningFromResult(result);
+
+        if (safetyWarningResult) {
+          setSafetyWarning(safetyWarningResult);
+          setMessage("");
+        } else {
+          setMessage(result.error ?? "Unable to update reply.");
+        }
+
         return;
       }
 
@@ -1495,6 +1515,10 @@ export default function DiscussionPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      <SafetyWarningModal
+        warning={safetyWarning}
+        onClose={() => setSafetyWarning(null)}
+      />
         <div className="mx-auto max-w-3xl text-zinc-400">
           Loading discussion...
         </div>
@@ -1505,6 +1529,10 @@ export default function DiscussionPage() {
   if (!discussion) {
     return (
       <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      <SafetyWarningModal
+        warning={safetyWarning}
+        onClose={() => setSafetyWarning(null)}
+      />
         <div className="mx-auto max-w-3xl">
           <h1 className="mb-6 text-4xl font-semibold">
             Discussion not found.
@@ -1520,6 +1548,10 @@ export default function DiscussionPage() {
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      <SafetyWarningModal
+        warning={safetyWarning}
+        onClose={() => setSafetyWarning(null)}
+      />
       <div className="mx-auto max-w-3xl">
         <Link
           href="/discussions"

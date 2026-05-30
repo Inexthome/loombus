@@ -1,6 +1,7 @@
 "use client";
 
 import { ProgressiveGuide } from "@/components/progressive-guide";
+import { SafetyWarningModal, getSafetyWarningFromResult, type SafetyWarningState } from "@/components/safety-warning-modal";
 
 import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
@@ -184,6 +185,7 @@ export default function CreatePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [message, setMessage] = useState("");
+  const [safetyWarning, setSafetyWarning] = useState<SafetyWarningState>(null);
   const [qualityCheck, setQualityCheck] = useState("");
   const [qualityCheckMessage, setQualityCheckMessage] = useState("");
   const [generatingQualityCheck, setGeneratingQualityCheck] = useState(false);
@@ -645,6 +647,7 @@ export default function CreatePage() {
 
     setPublishing(true);
     setMessage("");
+    setSafetyWarning(null);
 
     if (!title.trim()) {
       setMessage("Please enter a discussion title.");
@@ -702,7 +705,15 @@ export default function CreatePage() {
     const result = await response.json();
 
     if (!response.ok) {
-      setMessage(result.error ?? (isEditMode ? "Unable to save changes." : "Unable to publish discussion."));
+      const safetyWarningResult = getSafetyWarningFromResult(result);
+
+      if (safetyWarningResult) {
+        setSafetyWarning(safetyWarningResult);
+        setMessage("");
+      } else {
+        setMessage(result.error ?? (isEditMode ? "Unable to save changes." : "Unable to publish discussion."));
+      }
+
       setPublishing(false);
       return;
     }
@@ -746,6 +757,11 @@ export default function CreatePage() {
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      <SafetyWarningModal
+        warning={safetyWarning}
+        onClose={() => setSafetyWarning(null)}
+      />
+
       <div className="mx-auto max-w-3xl">
         <Link
           href={isEditMode && editingDiscussionId ? `/discussions/${editingDiscussionId}` : "/discussions"}
