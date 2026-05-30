@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import {
   getAiUsageLabel,
@@ -231,6 +231,14 @@ export default function SettingsClientPage() {
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("system");
   const [accountActionMessage, setAccountActionMessage] = useState("");
   const [accountActionWorking, setAccountActionWorking] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState("");
+  const [hasPasswordProvider, setHasPasswordProvider] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordActionMessage, setPasswordActionMessage] = useState("");
+  const [passwordActionWorking, setPasswordActionWorking] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -258,6 +266,24 @@ export default function SettingsClientPage() {
           window.location.replace("/login");
           return;
         }
+
+        setCurrentUserEmail(data.user.email ?? "");
+        const identityProviders = (data.user.identities ?? []).map(
+          (identity) => identity.provider
+        );
+        const appProviders = Array.isArray(data.user.app_metadata?.providers)
+          ? data.user.app_metadata.providers
+          : [];
+        const appProvider =
+          typeof data.user.app_metadata?.provider === "string"
+            ? data.user.app_metadata.provider
+            : "";
+
+        setHasPasswordProvider(
+          identityProviders.includes("email") ||
+            appProviders.includes("email") ||
+            appProvider === "email"
+        );
 
         const [entitlementResult, profileResult, deletionRequestResult] =
           await withSettingsTimeout(
@@ -310,6 +336,82 @@ export default function SettingsClientPage() {
     setAppearanceMode(mode);
     window.localStorage.setItem(APPEARANCE_STORAGE_KEY, mode);
     applyAppearanceMode(mode);
+  }
+
+  async function changePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordActionMessage("");
+
+    if (passwordActionWorking) {
+      return;
+    }
+
+    if (!hasPasswordProvider) {
+      setPasswordActionMessage(
+        "This account uses Google sign-in. Manage your Google password through Google."
+      );
+      return;
+    }
+
+    if (!currentUserEmail) {
+      setPasswordActionMessage("Unable to confirm your account email. Please sign in again.");
+      return;
+    }
+
+    if (!currentPassword.trim()) {
+      setPasswordActionMessage("Enter your current password.");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordActionMessage("New password must be at least 8 characters.");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordActionMessage("New passwords do not match.");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordActionMessage("Choose a new password that is different from your current password.");
+      return;
+    }
+
+    setPasswordActionWorking(true);
+
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: currentUserEmail,
+        password: currentPassword,
+      });
+
+      if (signInError) {
+        setPasswordActionMessage("Current password is incorrect.");
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) {
+        setPasswordActionMessage(updateError.message || "Unable to update password.");
+        return;
+      }
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setPasswordActionMessage("Password updated successfully.");
+      setChangePasswordOpen(false);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to update password.";
+      setPasswordActionMessage(message);
+    } finally {
+      setPasswordActionWorking(false);
+    }
   }
 
   async function deactivateAccount() {
@@ -577,6 +679,107 @@ export default function SettingsClientPage() {
             </section>
           ))}
         </div>
+
+        <section className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mt-10 sm:rounded-3xl sm:p-7">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Account security
+          </p>
+
+          <h2 className="mb-3 text-lg font-medium sm:mb-4 sm:text-2xl">
+            Password security.
+          </h2>
+
+          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Change the password used for email login. For your protection, Loombus asks
+            for your current password before saving a new one.
+          </p>
+
+          <div className="rounded-2xl border border-zinc-900 bg-black p-4 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="mb-2 text-lg font-medium sm:mb-3 sm:text-xl">
+                  Change password
+                </h3>
+
+                <p className="text-sm leading-relaxed text-zinc-500">
+                  Use this if you can already sign in and want to update your password.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setChangePasswordOpen((open) => !open);
+                  setPasswordActionMessage("");
+                }}
+                disabled={!hasPasswordProvider}
+                className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+              >
+                {changePasswordOpen ? "Hide password form" : "Change password"}
+              </button>
+            </div>
+
+            {!hasPasswordProvider && (
+              <div className="mt-5 rounded-2xl border border-zinc-900 bg-zinc-950/70 p-4 text-sm leading-relaxed text-zinc-500">
+                This account appears to use Google sign-in. Manage your Google password
+                through Google. Email password recovery depends on Loombus Auth email delivery.
+              </div>
+            )}
+
+            {changePasswordOpen && hasPasswordProvider && (
+              <form onSubmit={changePassword} className="mt-5 grid gap-4">
+                <label className="block text-sm text-zinc-500">
+                  <span className="mb-2 block">Current password</span>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    autoComplete="current-password"
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-zinc-300 outline-none focus:border-zinc-600"
+                  />
+                </label>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block text-sm text-zinc-500">
+                    <span className="mb-2 block">New password</span>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      autoComplete="new-password"
+                      onChange={(event) => setNewPassword(event.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-zinc-300 outline-none focus:border-zinc-600"
+                    />
+                  </label>
+
+                  <label className="block text-sm text-zinc-500">
+                    <span className="mb-2 block">Confirm new password</span>
+                    <input
+                      type="password"
+                      value={confirmNewPassword}
+                      autoComplete="new-password"
+                      onChange={(event) => setConfirmNewPassword(event.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-zinc-300 outline-none focus:border-zinc-600"
+                    />
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={passwordActionWorking}
+                  className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                >
+                  {passwordActionWorking ? "Updating..." : "Update password"}
+                </button>
+              </form>
+            )}
+
+            {passwordActionMessage && (
+              <p className="mt-5 text-sm text-zinc-400">
+                {passwordActionMessage}
+              </p>
+            )}
+          </div>
+        </section>
 
         <section className="mt-6 rounded-2xl border border-red-950 bg-red-950/10 p-4 shadow-2xl shadow-black/30 sm:mt-10 sm:rounded-3xl sm:p-7">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-red-400">
