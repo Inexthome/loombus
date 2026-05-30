@@ -354,6 +354,9 @@ export default function PeoplePage() {
   if (!currentUserId) {
     return (
       <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
+      {/* MOBILE_V3_PEOPLE_HEADER_ALL_STATES */}
+      <MobileV3PeopleHeader />
+
         <div className="mx-auto max-w-3xl">
           <Link
             href="/discussions"
@@ -398,6 +401,9 @@ export default function PeoplePage() {
 
   return (
     <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
+      {/* MOBILE_V3_PEOPLE_HEADER_ALL_STATES */}
+      <MobileV3PeopleHeader />
+
       <div className="mx-auto max-w-6xl">
         <div className="mb-5 sm:mb-10">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
