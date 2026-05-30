@@ -24,6 +24,8 @@ type Profile = {
   avatar_url: string | null;
 };
 
+type AccountEnforcementAction = "warn_user" | "suspend_user" | "ban_user";
+
 function getMetadataString(metadata: SafetyMetadata, key: string) {
   const value = metadata?.[key];
 
@@ -76,6 +78,8 @@ export default function AdminSafetyPage() {
   const [actionFilter, setActionFilter] = useState("all");
   const [stageFilter, setStageFilter] = useState("all");
   const [targetTypeFilter, setTargetTypeFilter] = useState("all");
+  const [message, setMessage] = useState("");
+  const [enforcingEventId, setEnforcingEventId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadSafetyEvents() {
@@ -178,6 +182,87 @@ export default function AdminSafetyPage() {
     setTargetTypeFilter("all");
   }
 
+  function getSafetyEnforcementReason(event: SafetyEvent) {
+    const category = getMetadataString(event.metadata, "category");
+    return category
+      ? `Pre-submit safety event: ${category}`
+      : "Pre-submit safety event reviewed in Safety Queue";
+  }
+
+  async function enforceFromSafetyQueue(
+    event: SafetyEvent,
+    enforcementAction: AccountEnforcementAction
+  ) {
+    if (!event.actor_id || enforcingEventId) {
+      return;
+    }
+
+    const actionLabel =
+      enforcementAction === "warn_user"
+        ? "warn this member"
+        : enforcementAction === "suspend_user"
+          ? "suspend this member for 7 days"
+          : "ban this member";
+
+    const confirmed = window.confirm(
+      `Are you sure you want to ${actionLabel}? This will update the member account status.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setMessage("");
+    setEnforcingEventId(event.id);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const suspendedUntil =
+        enforcementAction === "suspend_user"
+          ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+          : null;
+
+      const response = await fetch("/api/admin/moderation/actions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          action: enforcementAction,
+          targetUserId: event.actor_id,
+          enforcementReason: getSafetyEnforcementReason(event),
+          enforcementNote: `Action taken from Safety Queue event ${event.id}.`,
+          suspendedUntil,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to update account enforcement.");
+        return;
+      }
+
+      setMessage(
+        enforcementAction === "warn_user"
+          ? "Member warned."
+          : enforcementAction === "suspend_user"
+            ? "Member suspended for 7 days."
+            : "Member banned."
+      );
+    } finally {
+      setEnforcingEventId(null);
+    }
+  }
+
   if (loading) {
     return (
       <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -257,6 +342,12 @@ export default function AdminSafetyPage() {
             <p className="text-4xl font-semibold">{ruleCount}</p>
           </div>
         </section>
+
+        {message && (
+          <div className="mb-8 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
+            {message}
+          </div>
+        )}
 
         <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
@@ -436,12 +527,41 @@ export default function AdminSafetyPage() {
 
                 <div className="mt-4 flex flex-wrap gap-3">
                   {event.actor_id && (
-                    <Link
-                      href={`/admin/users?member=${encodeURIComponent(event.actor_id)}`}
-                      className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                    >
-                      Review member
-                    </Link>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => enforceFromSafetyQueue(event, "warn_user")}
+                        disabled={enforcingEventId === event.id}
+                        className="rounded-full border border-sky-900 px-4 py-2 text-sm text-sky-300 transition hover:border-sky-700 hover:text-sky-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {enforcingEventId === event.id ? "Working..." : "Warn"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => enforceFromSafetyQueue(event, "suspend_user")}
+                        disabled={enforcingEventId === event.id}
+                        className="rounded-full border border-amber-800 px-4 py-2 text-sm text-amber-300 transition hover:border-amber-600 hover:text-amber-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        Suspend 7 days
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => enforceFromSafetyQueue(event, "ban_user")}
+                        disabled={enforcingEventId === event.id}
+                        className="rounded-full border border-red-900 px-4 py-2 text-sm text-red-300 transition hover:border-red-700 hover:text-red-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        Ban
+                      </button>
+
+                      <Link
+                        href={`/admin/users?member=${encodeURIComponent(event.actor_id)}`}
+                        className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                      >
+                        Review member
+                      </Link>
+                    </>
                   )}
 
                   <Link
