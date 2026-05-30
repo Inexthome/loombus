@@ -1,5 +1,4 @@
 "use client";
-import MobileV3NotificationsHeader from "@/components/mobile/mobile-v3-notifications-header";
 
 import { ProgressiveGuide } from "@/components/progressive-guide";
 
@@ -489,9 +488,6 @@ export default function NotificationsClientPage() {
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
-      {/* MOBILE_V3_NOTIFICATIONS_HEADER */}
-      <MobileV3NotificationsHeader />
-
       <div className="mx-auto max-w-4xl">
         <div className="mb-5 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
