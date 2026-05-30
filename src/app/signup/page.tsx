@@ -8,6 +8,7 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
   const [signupComplete, setSignupComplete] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,6 +23,11 @@ export default function SignupPage() {
 
     setMessage("");
     setSignupComplete(false);
+
+    if (password !== confirmPassword) {
+      setMessage("Passwords do not match.");
+      return;
+    }
 
     const ageConfirmed = window.confirm(
       "Loombus is not available to children under 13. Please confirm that you are at least 13 years old to create an account."
@@ -57,6 +63,7 @@ export default function SignupPage() {
 
     setSignupComplete(true);
     setPassword("");
+    setConfirmPassword("");
     setMessage("Signup successful. Check your email to confirm your account.");
     setLoading(false);
   }
@@ -219,6 +226,19 @@ export default function SignupPage() {
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             />
           </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-zinc-400">Confirm Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  autoComplete="new-password"
+                  required
+                  minLength={6}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                />
+              </div>
 
           <button
             type="submit"
