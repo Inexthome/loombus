@@ -1,4 +1,5 @@
 "use client";
+import MobileV3CreateHeader from "@/components/mobile/mobile-v3-create-header";
 
 import { ProgressiveGuide } from "@/components/progressive-guide";
 
@@ -746,6 +747,9 @@ export default function CreatePage() {
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      {/* MOBILE_V3_CREATE_HEADER */}
+      <MobileV3CreateHeader />
+
       <div className="mx-auto max-w-3xl">
         <Link
           href={isEditMode && editingDiscussionId ? `/discussions/${editingDiscussionId}` : "/discussions"}
