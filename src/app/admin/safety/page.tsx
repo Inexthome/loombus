@@ -435,6 +435,15 @@ export default function AdminSafetyPage() {
                 )}
 
                 <div className="mt-4 flex flex-wrap gap-3">
+                  {event.actor_id && (
+                    <Link
+                      href={`/admin/users?member=${encodeURIComponent(event.actor_id)}`}
+                      className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                    >
+                      Review member
+                    </Link>
+                  )}
+
                   <Link
                     href={`/admin/audit?search=${encodeURIComponent(event.id)}`}
                     className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"

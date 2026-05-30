@@ -69,6 +69,13 @@ export default function AdminUsersPage() {
   const [planFilter, setPlanFilter] = useState("all");
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const memberQuery = params.get("member") || params.get("search");
+
+    if (memberQuery) {
+      setSearchQuery(memberQuery);
+    }
+
     async function loadUsers() {
       const { data: userData } = await supabase.auth.getUser();
 
