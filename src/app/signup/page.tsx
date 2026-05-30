@@ -38,14 +38,19 @@ export default function SignupPage() {
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
         data: {
-          full_name: fullName,
+          full_name: fullName.trim(),
         },
       },
     });
 
     if (error) {
-      setMessage(`Error: ${error.message}`);
+      const publicMessage = error.message.toLowerCase().includes("sending confirmation email")
+        ? "Loombus could not send the confirmation email. Please try Google signup or contact support if this continues."
+        : error.message;
+
+      setMessage(`Error: ${publicMessage}`);
       setLoading(false);
       return;
     }
