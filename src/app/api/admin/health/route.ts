@@ -79,6 +79,8 @@ function getConfigStatus() {
     openAiQualityCheckModel: present(process.env.OPENAI_QUALITY_CHECK_MODEL),
     openAiRewriteModel: present(process.env.OPENAI_REWRITE_MODEL),
     openAiReplySuggestionsModel: present(process.env.OPENAI_REPLY_SUGGESTIONS_MODEL),
+    anthropicApiKey: present(process.env.ANTHROPIC_API_KEY),
+    anthropicFallbackModel: present(process.env.ANTHROPIC_FALLBACK_MODEL),
 
     stripeSecretKey: present(process.env.STRIPE_SECRET_KEY),
     stripeWebhookSecret: present(process.env.STRIPE_WEBHOOK_SECRET),

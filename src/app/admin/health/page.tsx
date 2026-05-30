@@ -43,6 +43,8 @@ const CONFIG_LABELS: Record<string, string> = {
   openAiQualityCheckModel: "OpenAI quality-check model",
   openAiRewriteModel: "OpenAI rewrite model",
   openAiReplySuggestionsModel: "OpenAI reply-suggestions model",
+  anthropicApiKey: "Anthropic API key",
+  anthropicFallbackModel: "Anthropic fallback model",
 
   stripeSecretKey: "Stripe secret key",
   stripeWebhookSecret: "Stripe webhook secret",

@@ -13,9 +13,13 @@ import {
   insertDiscussionSummary,
   upsertDiscussionSummary,
 } from "@/lib/premium-ai";
+import { generateAnthropicText } from "@/lib/anthropic-ai";
 
 const SUMMARY_MODEL = process.env.OPENAI_SUMMARY_MODEL || "gpt-4o-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_FALLBACK_MODEL =
+  process.env.ANTHROPIC_FALLBACK_MODEL || "claude-haiku-4-5-20251001";
 const MAX_DISCUSSION_BODY_CHARS = 6000;
 const MAX_REPLY_CHARS = 8000;
 
@@ -29,6 +33,13 @@ type CachedSummary = {
   generated_by: string | null;
   generated_at: string;
 };
+
+function getSummaryProvider(modelName: string | null | undefined) {
+  return modelName?.toLowerCase().startsWith("claude")
+    ? "anthropic"
+    : "openai";
+}
+
 function clampText(text: string, maxLength: number) {
   if (text.length <= maxLength) {
     return text;
@@ -113,6 +124,45 @@ async function generateOpenAISummary({
     usageMetadata: getOpenAiUsageMetadata(payload, SUMMARY_MODEL),
   };
 }
+
+async function generateAnthropicSummary({
+  title,
+  topic,
+  body,
+  replies,
+  replyCount,
+}: {
+  title: string;
+  topic: string;
+  body: string;
+  replies: string;
+  replyCount: number;
+}) {
+  const system =
+    "You write concise, neutral discussion summaries for a public high-signal discussion platform. Do not add facts not present in the source. Do not quote long passages. Keep the tone clear and non-sensational. When summarizing a point, include lightweight source tags using only [Original post] and [Reply N] labels from the provided source text. Do not invent source tags.";
+
+  const userPrompt = `Summarize this discussion thread for readers. Return 2-4 short bullets and one short takeaway. Add a source tag to each bullet when a claim comes from the supplied text, for example [Original post], [Reply 1], or [Reply 2]. If there are no replies, cite only [Original post].\n\nTopic: ${topic}\nTitle: ${title}\nReply count at generation time: ${replyCount}\n\n[Original post]\n${clampText(body, MAX_DISCUSSION_BODY_CHARS)}\n\nReplies in chronological order:\n${clampText(replies || "No replies yet.", MAX_REPLY_CHARS)}`;
+
+  const result = await generateAnthropicText({
+    apiKey: ANTHROPIC_API_KEY,
+    modelName: ANTHROPIC_FALLBACK_MODEL,
+    system,
+    messages: [
+      {
+        role: "user",
+        content: userPrompt,
+      },
+    ],
+    maxTokens: 320,
+    temperature: 0.2,
+  });
+
+  return {
+    summary: result.text,
+    usageMetadata: result.usageMetadata,
+  };
+}
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -242,7 +292,7 @@ export async function POST(request: NextRequest) {
         featureKey: "thread_summary",
         targetType: "discussion",
         targetId: discussionId,
-        provider: "openai",
+        provider: getSummaryProvider(existingSummary.model_name ?? SUMMARY_MODEL),
         modelName: existingSummary.model_name ?? SUMMARY_MODEL,
         cached: true,
         success: true,
@@ -291,6 +341,8 @@ export async function POST(request: NextRequest) {
 
     let summaryText: string;
     let usageMetadata = {};
+    let generationProvider: "openai" | "anthropic" = "openai";
+    let generationModelName = SUMMARY_MODEL;
 
     try {
       const generatedSummary = await generateOpenAISummary({
@@ -318,12 +370,53 @@ export async function POST(request: NextRequest) {
         errorMessage: message,
       });
 
-      const aiError = getAiProviderErrorResponse(message);
+      if (!ANTHROPIC_API_KEY) {
+        const aiError = getAiProviderErrorResponse(message);
 
-      return NextResponse.json(
-        { error: aiError.error },
-        { status: aiError.status }
-      );
+        return NextResponse.json(
+          { error: aiError.error },
+          { status: aiError.status }
+        );
+      }
+
+      try {
+        const generatedSummary = await generateAnthropicSummary({
+          title: discussion.title,
+          topic: discussion.topic,
+          body: discussion.body,
+          replies,
+          replyCount: sourceReplyCount,
+        });
+
+        summaryText = generatedSummary.summary;
+        usageMetadata = generatedSummary.usageMetadata;
+        generationProvider = "anthropic";
+        generationModelName = ANTHROPIC_FALLBACK_MODEL;
+      } catch (fallbackError) {
+        const fallbackMessage =
+          fallbackError instanceof Error
+            ? fallbackError.message
+            : "Anthropic fallback generation failed.";
+
+        await logAiUsage({
+          supabase,
+          userId: user.id,
+          featureKey: "thread_summary",
+          targetType: "discussion",
+          targetId: discussionId,
+          provider: "anthropic",
+          modelName: ANTHROPIC_FALLBACK_MODEL,
+          success: false,
+          errorMessage: fallbackMessage,
+        });
+
+        const aiError = getAiProviderErrorResponse(fallbackMessage);
+
+        return NextResponse.json(
+          { error: aiError.error },
+          { status: aiError.status }
+        );
+      }
     }
 
     const generatedAt = new Date().toISOString();
@@ -331,7 +424,7 @@ export async function POST(request: NextRequest) {
     const { data: insertedSummary, error: insertError } = await upsertDiscussionSummary({
       discussion_id: discussionId,
       summary: summaryText,
-      model_name: SUMMARY_MODEL,
+      model_name: generationModelName,
       source_reply_count: sourceReplyCount,
       source_content_hash: sourceContentHash,
       generated_by: user.id,
@@ -356,7 +449,7 @@ export async function POST(request: NextRequest) {
           featureKey: "thread_summary",
           targetType: "discussion",
           targetId: discussionId,
-          provider: "openai",
+          provider: getSummaryProvider(fallbackSummary.model_name ?? SUMMARY_MODEL),
           modelName: fallbackSummary.model_name ?? SUMMARY_MODEL,
           cached: true,
           success: true,
@@ -382,8 +475,8 @@ export async function POST(request: NextRequest) {
       featureKey: "thread_summary",
       targetType: "discussion",
       targetId: discussionId,
-      provider: "openai",
-      modelName: SUMMARY_MODEL,
+      provider: generationProvider,
+      modelName: generationModelName,
       cached: false,
       success: true,
       ...usageMetadata,
@@ -411,7 +504,8 @@ export async function POST(request: NextRequest) {
       target_type: "discussion",
       target_id: discussionId,
       metadata: {
-        model_name: SUMMARY_MODEL,
+        model_name: generationModelName,
+        ai_provider: generationProvider,
         source_reply_count: sourceReplyCount,
         access_tier: access.tier,
         monthly_summary_limit: access.isAdmin ? "unlimited" : access.monthlySummaryLimit,
