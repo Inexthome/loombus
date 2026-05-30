@@ -51,8 +51,8 @@ export default function ClientLayout({
 
   function mobileNavLinkClass(href: string) {
     return isActivePath(href)
-      ? "rounded-2xl border border-zinc-700 bg-black px-4 py-3 text-sm font-medium text-white transition hover:text-white"
-      : "rounded-2xl border border-transparent px-4 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-800 hover:bg-black hover:text-white";
+      ? "loombus-mobile-menu-link-active rounded-2xl border px-4 py-3 text-sm font-medium transition"
+      : "loombus-mobile-menu-link-inactive rounded-2xl border px-4 py-3 text-sm font-medium transition";
   }
 
   function appTabClass(href: string) {
@@ -578,19 +578,19 @@ export default function ClientLayout({
 
       {user && mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md md:hidden"
+          className="loombus-mobile-menu-backdrop fixed inset-0 z-50 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md md:hidden"
           onClick={closeMobileMenu}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Mobile app menu panel"
-            className="mx-auto flex max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-5.5rem)] max-w-md flex-col overflow-y-auto rounded-[2rem] border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/70"
+            className="loombus-mobile-menu-panel mx-auto flex max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-5.5rem)] max-w-md flex-col overflow-y-auto rounded-[2rem] border p-4"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between gap-3 border-b border-zinc-900 pb-4">
+            <div className="loombus-mobile-menu-header mb-4 flex items-center justify-between gap-3 border-b pb-4">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-black text-sm font-semibold text-white">
+                <div className="loombus-mobile-menu-avatar flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border text-sm font-semibold">
                   {navProfile?.avatar_url ? (
                     <img
                       src={navProfile.avatar_url}
@@ -611,11 +611,11 @@ export default function ClientLayout({
                 </div>
 
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-white">
+                  <p className="loombus-mobile-menu-title truncate text-sm font-medium">
                     {navProfile?.full_name ||
                       (navProfile?.username ? `@${navProfile.username}` : user.email)}
                   </p>
-                  <p className="mt-1 truncate text-xs text-zinc-600">
+                  <p className="loombus-mobile-menu-subtitle mt-1 truncate text-xs">
                     Move with signal.
                   </p>
                 </div>
@@ -624,7 +624,7 @@ export default function ClientLayout({
               <button
                 type="button"
                 onClick={closeMobileMenu}
-                className="rounded-full border border-zinc-800 px-3 py-2 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                className="loombus-mobile-menu-close rounded-full border px-3 py-2 text-xs transition"
               >
                 Close
               </button>
@@ -632,7 +632,7 @@ export default function ClientLayout({
 
             <div className="grid gap-4">
               <section>
-                <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
                   Your Signal
                 </p>
 
@@ -656,7 +656,7 @@ export default function ClientLayout({
               </section>
 
               <section>
-                <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
                   Library
                 </p>
 
@@ -680,7 +680,7 @@ export default function ClientLayout({
               </section>
 
               <section>
-                <p className="mb-2 px-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
                   Account
                 </p>
 
@@ -710,7 +710,7 @@ export default function ClientLayout({
                   closeMobileMenu();
                   await handleLogout();
                 }}
-                className="rounded-2xl border border-zinc-800 px-4 py-3 text-left text-sm font-medium text-zinc-400 transition hover:border-zinc-700 hover:bg-black hover:text-white"
+                className="loombus-mobile-menu-logout rounded-2xl border px-4 py-3 text-left text-sm font-medium transition"
               >
                 Logout
               </button>

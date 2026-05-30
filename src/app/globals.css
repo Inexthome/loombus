@@ -468,3 +468,65 @@ html[data-loombus-theme] .hover\:opacity-90:hover {
   background-color: var(--loombus-primary-bg);
   color: var(--loombus-primary-text);
 }
+
+/* Theme-aware mobile menu overlay.
+   Keeps the existing menu structure and links while matching System/Dark/Light appearance. */
+.loombus-mobile-menu-backdrop {
+  background-color: color-mix(in srgb, var(--loombus-page-bg) 78%, transparent);
+}
+
+.loombus-mobile-menu-panel {
+  background-color: var(--loombus-surface);
+  border-color: var(--loombus-border);
+  color: var(--loombus-text);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
+}
+
+.loombus-mobile-menu-header {
+  border-color: var(--loombus-border-muted);
+}
+
+.loombus-mobile-menu-avatar {
+  background-color: var(--loombus-surface-strong);
+  border-color: var(--loombus-border);
+  color: var(--loombus-text);
+}
+
+.loombus-mobile-menu-title {
+  color: var(--loombus-text);
+}
+
+.loombus-mobile-menu-subtitle,
+.loombus-mobile-menu-section-label {
+  color: var(--loombus-text-subtle);
+}
+
+.loombus-mobile-menu-close,
+.loombus-mobile-menu-logout {
+  border-color: var(--loombus-border);
+  color: var(--loombus-text-muted);
+}
+
+.loombus-mobile-menu-close:hover,
+.loombus-mobile-menu-logout:hover {
+  border-color: var(--loombus-text-subtle);
+  background-color: var(--loombus-surface-strong);
+  color: var(--loombus-text);
+}
+
+.loombus-mobile-menu-link-active {
+  border-color: var(--loombus-border);
+  background-color: var(--loombus-surface-strong);
+  color: var(--loombus-text);
+}
+
+.loombus-mobile-menu-link-inactive {
+  border-color: transparent;
+  color: var(--loombus-text-muted);
+}
+
+.loombus-mobile-menu-link-inactive:hover {
+  border-color: var(--loombus-border);
+  background-color: var(--loombus-surface-strong);
+  color: var(--loombus-text);
+}
