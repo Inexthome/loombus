@@ -7,6 +7,29 @@ import { supabase } from "@/lib/supabase/client";
 type OAuthProvider = "google";
 type HomeAuthState = "checking" | "logged_out" | "logged_in";
 
+type HomeProfile = {
+  full_name: string | null;
+  username: string | null;
+};
+
+function getGreetingName(profile: HomeProfile | null, email: string | null) {
+  const profileName = profile?.full_name?.trim() || profile?.username?.trim();
+
+  if (profileName) {
+    return profileName.split(/\s+/)[0];
+  }
+
+  if (email) {
+    const emailName = email.split("@")[0]?.trim();
+
+    if (emailName) {
+      return emailName;
+    }
+  }
+
+  return "";
+}
+
 function withTimeout<T>(
   promise: PromiseLike<T>,
   label: string,
@@ -140,6 +163,7 @@ const mobileSignalShortcuts = [
 export default function Home() {
   const [authState, setAuthState] = useState<HomeAuthState>("checking");
   const [email, setEmail] = useState<string | null>(null);
+  const [profile, setProfile] = useState<HomeProfile | null>(null);
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
 
@@ -159,17 +183,38 @@ export default function Home() {
 
         if (error || !data.user) {
           setEmail(null);
+          setProfile(null);
           setAuthState("logged_out");
           return;
         }
 
         setEmail(data.user.email ?? null);
+
+        const { data: profileData, error: profileError } = await withTimeout(
+          supabase
+            .from("profiles")
+            .select("full_name, username")
+            .eq("id", data.user.id)
+            .maybeSingle(),
+          "Home profile check"
+        );
+
+        if (profileError) {
+          console.error("Unable to load home profile greeting.", profileError);
+        }
+
+        if (!isMounted) {
+          return;
+        }
+
+        setProfile((profileData ?? null) as HomeProfile | null);
         setAuthState("logged_in");
       } catch (error) {
         console.error("Unable to check home authentication state.", error);
 
         if (isMounted) {
           setEmail(null);
+          setProfile(null);
           setAuthState("logged_out");
         }
       }
@@ -230,6 +275,8 @@ export default function Home() {
   }
 
   if (authState === "logged_in") {
+    const greetingName = getGreetingName(profile, email);
+
     return (
       <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
         <section className="mx-auto max-w-6xl">
@@ -241,7 +288,7 @@ export default function Home() {
               </p>
 
               <h1 className="loombus-mobile-home-title mb-3 text-3xl font-semibold tracking-tight">
-                What matters now.
+                {greetingName ? `Welcome back, ${greetingName}.` : "Welcome back."}
               </h1>
 
               <p className="loombus-mobile-home-muted text-sm leading-relaxed">
