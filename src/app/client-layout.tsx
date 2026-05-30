@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Bell, Edit3, Home, Menu, MessageCircle, Search, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import {
   filterBlockedActorNotifications,
@@ -74,69 +75,26 @@ export default function ClientLayout({
   }
 
   function MobileNavIcon({ name }: { name: "home" | "discuss" | "create" | "people" | "alerts" }) {
-    const iconClass = "h-5 w-5";
+    const iconClass = "h-[1.35rem] w-[1.35rem]";
+    const strokeWidth = 2.05;
 
     if (name === "home") {
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 4.5v3.2" />
-          <path d="M12 16.3v3.2" />
-          <path d="M4.5 12h3.2" />
-          <path d="M16.3 12h3.2" />
-          <path d="M6.9 6.9 9 9" />
-          <path d="m15 15 2.1 2.1" />
-          <path d="m17.1 6.9-2.1 2.1" />
-          <path d="M9 15 6.9 17.1" />
-          <circle cx="12" cy="12" r="3.8" />
-          <circle cx="12" cy="12" r="1.15" fill="currentColor" stroke="none" />
-        </svg>
-      );
+      return <Home aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
     }
 
     if (name === "discuss") {
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M7.2 6.2h9.6a3.2 3.2 0 0 1 3.2 3.2v3.1a3.2 3.2 0 0 1-3.2 3.2h-3.2L9.5 19v-3.3H7.2A3.2 3.2 0 0 1 4 12.5V9.4a3.2 3.2 0 0 1 3.2-3.2Z" />
-          <path d="M8.4 10h7.2" />
-          <path d="M8.4 12.8h4.8" />
-          <path d="M5.3 14.9A3 3 0 0 1 3 12V8.2A3.2 3.2 0 0 1 6.2 5h9.1" opacity=".55" />
-        </svg>
-      );
+      return <MessageCircle aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
     }
 
     if (name === "create") {
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M5 19h14" />
-          <path d="m7.2 15.8 1.1-4.1 7.7-7.7a2.1 2.1 0 0 1 3 3l-7.7 7.7-4.1 1.1Z" />
-          <path d="m14.7 5.3 3 3" />
-          <path d="M8.3 11.7 11.3 14.7" opacity=".65" />
-        </svg>
-      );
+      return <Edit3 aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
     }
 
     if (name === "people") {
-      return (
-        <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="8" r="3.1" />
-          <path d="M6.7 19.2a5.3 5.3 0 0 1 10.6 0" />
-          <circle cx="5.8" cy="10.2" r="1.9" opacity=".7" />
-          <circle cx="18.2" cy="10.2" r="1.9" opacity=".7" />
-          <path d="M4 18.2a3.4 3.4 0 0 1 3-3.3" opacity=".7" />
-          <path d="M17 14.9a3.4 3.4 0 0 1 3 3.3" opacity=".7" />
-        </svg>
-      );
+      return <Users aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
     }
 
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18.2 9.6a6.2 6.2 0 1 0-12.4 0c0 5.5-2.2 6.8-2.2 6.8h16.8s-2.2-1.3-2.2-6.8Z" />
-        <path d="M9.8 19a2.4 2.4 0 0 0 4.4 0" />
-        <path d="M19.2 4.2 21 2.4" />
-        <path d="M20.8 8.2h2" />
-        <path d="M15.7 3.2V1.4" />
-      </svg>
-    );
+    return <Bell aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
   }
 
   async function loadNotificationCount(
@@ -597,17 +555,7 @@ export default function ClientLayout({
                 title="Search Loombus"
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 shadow-2xl shadow-black/50 transition hover:border-zinc-600 hover:text-white"
               >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                >
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m16.5 16.5 4 4" />
-                </svg>
+                <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               </Link>
 
               <button
@@ -618,19 +566,7 @@ export default function ClientLayout({
                 aria-expanded={mobileMenuOpen}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-300 shadow-2xl shadow-black/50 transition hover:border-zinc-600 hover:text-white"
               >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.85"
-                  strokeLinecap="round"
-                >
-                  <path d="M5 7h14" />
-                  <path d="M5 12h14" />
-                  <path d="M5 17h14" />
-                </svg>
+                <Menu aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               </button>
             </div>
           </div>
