@@ -691,47 +691,112 @@ export default function DiscussionsPage() {
           </div>
         </section>
 
-        <div className="mb-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setSortMode("Newest")}
-            className={`rounded-full px-4 py-2 text-sm transition ${
-              sortMode === "Newest"
-                ? "bg-white text-black"
-                : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
-            }`}
-          >
-            Newest
-          </button>
+        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-xl shadow-black/10 sm:mb-8 sm:rounded-3xl sm:p-5">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <p className="mb-1 text-xs uppercase tracking-[0.22em] text-zinc-500">
+                Browse controls
+              </p>
+              <h2 className="text-lg font-semibold tracking-tight">
+                Sort and filter
+              </h2>
+            </div>
 
-          <button
-            onClick={() => setSortMode("Most replied")}
-            className={`rounded-full px-4 py-2 text-sm transition ${
-              sortMode === "Most replied"
-                ? "bg-white text-black"
-                : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
-            }`}
-          >
-            Most replied
-          </button>
-
-            <button
-              onClick={() => setSortMode("Signal")}
-              className={`rounded-full px-4 py-2 text-sm transition ${
-                sortMode === "Signal"
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
-              }`}
-            >
-              Signal
-            </button>
+            {hasActiveDiscussionFilters && (
+              <button
+                type="button"
+                onClick={resetDiscussionFilters}
+                className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+              >
+                Reset
+              </button>
+            )}
           </div>
 
-          <p className="mt-3 text-xs leading-relaxed text-zinc-600">
-            Signal Score ranks discussions using replies, saves, and views.
-            Replies count more than views, and saves count the most.
-          </p>
-        </div>
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
+                Sort by
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setSortMode("Newest")}
+                  className={`rounded-full px-3.5 py-2 text-sm transition ${
+                    sortMode === "Newest"
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                  }`}
+                >
+                  Newest
+                </button>
+
+                <button
+                  onClick={() => setSortMode("Most replied")}
+                  className={`rounded-full px-3.5 py-2 text-sm transition ${
+                    sortMode === "Most replied"
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                  }`}
+                >
+                  Most replied
+                </button>
+
+                <button
+                  onClick={() => setSortMode("Signal")}
+                  className={`rounded-full px-3.5 py-2 text-sm transition ${
+                    sortMode === "Signal"
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                  }`}
+                >
+                  Signal
+                </button>
+              </div>
+
+              <p className="mt-3 rounded-2xl border border-zinc-900 bg-black/30 px-3 py-2 text-xs leading-relaxed text-zinc-600">
+                Signal Score ranks discussions using replies, saves, and views.
+                Replies count more than views, and saves count the most.
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
+                Topics
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {topics.map((topic) => (
+                  <button
+                    key={topic}
+                    onClick={() => setTopicFilter(topic)}
+                    className={`rounded-full px-3.5 py-2 text-sm transition ${
+                      selectedTopic === topic
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                    }`}
+                  >
+                    {topic}
+                  </button>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (showAllTopicFilters && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
+                      setTopicFilter("All");
+                    }
+
+                    setShowAllTopicFilters((current) => !current);
+                  }}
+                  className="rounded-full border border-zinc-800 bg-black/20 px-3.5 py-2 text-sm text-zinc-500 transition hover:border-zinc-700 hover:text-white"
+                >
+                  {showAllTopicFilters ? "Show active topics" : "Show all topics"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section className="hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -779,35 +844,7 @@ export default function DiscussionsPage() {
           </p>
         </section>
 
-        <div className="mb-6 flex flex-wrap gap-3">
-          {topics.map((topic) => (
-            <button
-              key={topic}
-              onClick={() => setTopicFilter(topic)}
-              className={`rounded-full px-4 py-2 text-sm transition ${
-                selectedTopic === topic
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
-              }`}
-            >
-              {topic}
-            </button>
-          ))}
 
-          <button
-            type="button"
-            onClick={() => {
-              if (showAllTopicFilters && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
-                setTopicFilter("All");
-              }
-
-              setShowAllTopicFilters((current) => !current);
-            }}
-            className="rounded-full border border-zinc-800 bg-black px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-700 hover:text-white"
-          >
-            {showAllTopicFilters ? "Show active topics" : "Show all topics"}
-          </button>
-        </div>
 
         {!loading && (
           <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
