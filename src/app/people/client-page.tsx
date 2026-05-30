@@ -1,5 +1,4 @@
 "use client";
-import MobileV3PeopleHeader from "@/components/mobile/mobile-v3-people-header";
 
 import Link from "next/link";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -339,9 +338,6 @@ export default function PeoplePage() {
   if (!authChecked || loading) {
     return (
       <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
-      {/* MOBILE_V3_PEOPLE_HEADER */}
-      <MobileV3PeopleHeader />
-
         <div className="mx-auto max-w-6xl">
           <p className="text-zinc-500">
             Loading people...
