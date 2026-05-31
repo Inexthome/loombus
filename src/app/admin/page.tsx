@@ -317,6 +317,13 @@ export default function AdminDashboardPage() {
           />
 
           <AdminCard
+            href="/admin/topic-memory"
+            title="Topic Memory"
+            description="Review recurring topics, Reality Lenses, tags, and AI idea coverage."
+            action="Open Topic Memory"
+          />
+
+          <AdminCard
             href="/admin/labs"
             title="Loombus Labs"
             description="Review Premium Plus feature requests and update Labs status."
