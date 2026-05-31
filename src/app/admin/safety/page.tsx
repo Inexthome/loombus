@@ -26,6 +26,14 @@ type Profile = {
 
 type AccountEnforcementAction = "warn_user" | "suspend_user" | "ban_user";
 
+type SafetyPatternSignal = {
+  key: string;
+  label: string;
+  description: string;
+  count: number;
+  severity: "watch" | "elevated" | "high";
+};
+
 function getMetadataString(metadata: SafetyMetadata, key: string) {
   const value = metadata?.[key];
 
@@ -63,6 +71,41 @@ function getSearchText(event: SafetyEvent, profile: Profile | undefined) {
     profile?.username,
     profile?.full_name,
     JSON.stringify(event.metadata ?? {}),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function getPatternSeverity(count: number): SafetyPatternSignal["severity"] {
+  if (count >= 6) {
+    return "high";
+  }
+
+  if (count >= 3) {
+    return "elevated";
+  }
+
+  return "watch";
+}
+
+function getPatternClassName(severity: SafetyPatternSignal["severity"]) {
+  if (severity === "high") {
+    return "border-red-950 bg-red-950/20 text-red-200";
+  }
+
+  if (severity === "elevated") {
+    return "border-amber-900 bg-amber-950/20 text-amber-200";
+  }
+
+  return "border-zinc-800 bg-black/40 text-zinc-300";
+}
+
+function getPatternPreviewText(event: SafetyEvent) {
+  return [
+    getMetadataString(event.metadata, "category"),
+    getMetadataString(event.metadata, "message"),
+    getMetadataString(event.metadata, "content_preview"),
   ]
     .filter(Boolean)
     .join(" ")
@@ -221,6 +264,93 @@ export default function AdminSafetyPage() {
         categories: [...group.categories].slice(0, 3),
       }));
   }, [events]);
+
+  const patternSignals = useMemo(() => {
+    const signalCounts = {
+      repeatedSafetyEvents: repeatOffenders.length,
+      aiAssistedWarnings: events.filter(
+        (event) =>
+          event.action === "content_safety.warned" &&
+          getMetadataString(event.metadata, "stage") === "ai_assisted"
+      ).length,
+      rageBaitOrBroadShaming: events.filter((event) => {
+        const text = getPatternPreviewText(event);
+        return text.includes("rage bait") || text.includes("broad shaming");
+      }).length,
+      spamLikeRepetition: events.filter((event) => {
+        const text = getPatternPreviewText(event);
+        return text.includes("spam") || text.includes("repetition");
+      }).length,
+      hostileEscalation: events.filter((event) => {
+        const text = getPatternPreviewText(event);
+        return (
+          text.includes("hostile") ||
+          text.includes("harassment") ||
+          text.includes("abusive") ||
+          text.includes("personal attack") ||
+          text.includes("degrading")
+        );
+      }).length,
+      manipulationOrDeception: events.filter((event) => {
+        const text = getPatternPreviewText(event);
+        return (
+          text.includes("manipulation") ||
+          text.includes("deception") ||
+          text.includes("coordinated") ||
+          text.includes("fake engagement")
+        );
+      }).length,
+    };
+
+    const signals: SafetyPatternSignal[] = [
+      {
+        key: "repeatedSafetyEvents",
+        label: "Repeat safety events",
+        description: "Members appearing multiple times in blocked or warned pre-submit safety events.",
+        count: signalCounts.repeatedSafetyEvents,
+        severity: getPatternSeverity(signalCounts.repeatedSafetyEvents),
+      },
+      {
+        key: "aiAssistedWarnings",
+        label: "AI-assisted warnings",
+        description: "AI safety review flagged content that may need admin context review.",
+        count: signalCounts.aiAssistedWarnings,
+        severity: getPatternSeverity(signalCounts.aiAssistedWarnings),
+      },
+      {
+        key: "rageBaitOrBroadShaming",
+        label: "Rage bait or broad shaming",
+        description: "Content framed to provoke, shame broadly, or lower discussion quality.",
+        count: signalCounts.rageBaitOrBroadShaming,
+        severity: getPatternSeverity(signalCounts.rageBaitOrBroadShaming),
+      },
+      {
+        key: "spamLikeRepetition",
+        label: "Spam-like repetition",
+        description: "Repetitive or spam-like submissions caught before publishing.",
+        count: signalCounts.spamLikeRepetition,
+        severity: getPatternSeverity(signalCounts.spamLikeRepetition),
+      },
+      {
+        key: "hostileEscalation",
+        label: "Hostile escalation",
+        description: "Hostility, harassment, abusive framing, or personal attack signals.",
+        count: signalCounts.hostileEscalation,
+        severity: getPatternSeverity(signalCounts.hostileEscalation),
+      },
+      {
+        key: "manipulationOrDeception",
+        label: "Manipulation or deception",
+        description: "Signals related to manipulation, deception, coordination, or fake engagement.",
+        count: signalCounts.manipulationOrDeception,
+        severity: getPatternSeverity(signalCounts.manipulationOrDeception),
+      },
+    ];
+
+    return signals
+      .filter((signal) => signal.count > 0)
+      .sort((a, b) => b.count - a.count);
+  }, [events, repeatOffenders]);
 
   const filteredEvents = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -422,6 +552,57 @@ export default function AdminSafetyPage() {
             {message}
           </div>
         )}
+
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Admin pattern intelligence
+              </p>
+
+              <h2 className="text-2xl font-medium">
+                Low-quality and manipulation signals.
+              </h2>
+
+              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                These are admin-only review signals based on blocked and warned pre-submit events. They do not label members publicly and do not trigger automatic enforcement.
+              </p>
+            </div>
+          </div>
+
+          {patternSignals.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {patternSignals.map((signal) => (
+                <div
+                  key={signal.key}
+                  className={`rounded-2xl border p-4 ${getPatternClassName(signal.severity)}`}
+                >
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <h3 className="text-base font-medium">
+                      {signal.label}
+                    </h3>
+
+                    <span className="rounded-full border border-current/30 px-2.5 py-1 text-xs">
+                      {signal.count}
+                    </span>
+                  </div>
+
+                  <p className="text-sm leading-relaxed opacity-80">
+                    {signal.description}
+                  </p>
+
+                  <p className="mt-3 text-xs uppercase tracking-[0.2em] opacity-60">
+                    {signal.severity} signal
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
+              No low-quality pattern signals are visible in the current safety queue.
+            </div>
+          )}
+        </section>
 
         {repeatOffenders.length > 0 && (
           <section className="mb-8 rounded-3xl border border-red-950 bg-red-950/10 p-6">
