@@ -14,6 +14,7 @@ type SavedDiscussion = {
     id: string;
     title: string;
     topic: string;
+    reality_lens: string | null;
     body: string;
     created_at: string;
   } | null;
@@ -35,6 +36,33 @@ type AiEntitlement = {
 } | null;
 
 type ExportFormat = "markdown" | "json";
+
+type KnowledgeSignal = {
+  label: string;
+  count: number;
+};
+
+function sortKnowledgeSignals(counts: Record<string, number>) {
+  return Object.entries(counts)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => {
+      if (b.count !== a.count) {
+        return b.count - a.count;
+      }
+
+      return a.label.localeCompare(b.label);
+    });
+}
+
+function incrementSignal(counts: Record<string, number>, value: string | null | undefined) {
+  const label = value?.trim();
+
+  if (!label) {
+    return;
+  }
+
+  counts[label] = (counts[label] ?? 0) + 1;
+}
 
 function getSafeExportDate() {
   return new Date().toISOString().replace(/[:.]/g, "-");
@@ -75,6 +103,41 @@ function hasPrivateNotesAccess(entitlement: AiEntitlement) {
     entitlement.ai_assisted_enabled === true &&
     entitlement.tier === "premium" &&
     (entitlement.monthly_summary_limit ?? 0) > 50
+  );
+}
+
+function KnowledgeSignalGroup({
+  title,
+  empty,
+  signals,
+}: {
+  title: string;
+  empty: string;
+  signals: KnowledgeSignal[];
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+      <h3 className="mb-3 text-sm font-medium text-zinc-300">
+        {title}
+      </h3>
+
+      {signals.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {signals.map((signal) => (
+            <span
+              key={signal.label}
+              className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400"
+            >
+              {signal.label} · {signal.count}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-zinc-600">
+          {empty}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -138,6 +201,7 @@ export default function SavedPage() {
               id,
               title,
               topic,
+              reality_lens,
               body,
               created_at
             )
@@ -230,6 +294,51 @@ export default function SavedPage() {
       );
     });
   }, [saved, selectedCollectionId, savedSearchQuery, noteDrafts]);
+
+  const knowledgeSnapshot = useMemo(() => {
+    const topicCounts: Record<string, number> = {};
+    const lensCounts: Record<string, number> = {};
+    const folderCounts: Record<string, number> = {};
+    let notesCount = 0;
+    let recentSavedCount = 0;
+
+    const recentCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+    for (const item of saved) {
+      const discussion = item.discussions;
+
+      if (!discussion) {
+        continue;
+      }
+
+      incrementSignal(topicCounts, discussion.topic);
+      incrementSignal(lensCounts, discussion.reality_lens);
+
+      const folderName = item.collection_id
+        ? collectionNameById[item.collection_id] ?? "Unknown folder"
+        : "Unfiled";
+
+      incrementSignal(folderCounts, folderName);
+
+      const note = noteDrafts[item.id] ?? item.private_note ?? "";
+
+      if (note.trim()) {
+        notesCount += 1;
+      }
+
+      if (new Date(item.created_at).getTime() >= recentCutoff) {
+        recentSavedCount += 1;
+      }
+    }
+
+    return {
+      topics: sortKnowledgeSignals(topicCounts).slice(0, 6),
+      lenses: sortKnowledgeSignals(lensCounts).slice(0, 6),
+      folders: sortKnowledgeSignals(folderCounts).slice(0, 6),
+      notesCount,
+      recentSavedCount,
+    };
+  }, [collectionNameById, noteDrafts, saved]);
 
   const activeSavedSearch = savedSearchQuery.trim();
   const hasActiveSavedSearch = activeSavedSearch.length > 0;
@@ -511,6 +620,7 @@ export default function SavedPage() {
           discussion_id: discussion.id,
           title: discussion.title,
           topic: discussion.topic,
+          reality_lens: discussion.reality_lens,
           body: discussion.body,
           discussion_created_at: discussion.created_at,
           saved_at: item.created_at,
@@ -567,6 +677,7 @@ export default function SavedPage() {
           `## ${index + 1}. ${item.title}`,
           "",
           `- Topic: ${item.topic}`,
+          `- Reality Lens: ${item.reality_lens ?? "None"}`,
           `- Folder: ${item.collection}`,
           `- Saved: ${new Date(item.saved_at).toLocaleString()}`,
           `- Discussion created: ${new Date(item.discussion_created_at).toLocaleString()}`,
@@ -736,6 +847,88 @@ export default function SavedPage() {
               access to add private notes and export saved discussions.
             </p>
           </div>
+        )}
+
+        {!loading && saved.length > 0 && (
+          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                  Saved knowledge snapshot
+                </p>
+
+                <h2 className="text-xl font-medium sm:text-2xl">
+                  What your saved discussions are becoming.
+                </h2>
+
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                  This is a private, on-page snapshot based only on your saved discussions, folders, and private notes.
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
+                {saved.length} saved
+              </span>
+            </div>
+
+            <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Saved recently
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.recentSavedCount}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Private notes
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.notesCount}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Topic signals
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.topics.length}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Reality signals
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.lenses.length}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <KnowledgeSignalGroup
+                title="Saved topics"
+                empty="No topic signals yet."
+                signals={knowledgeSnapshot.topics}
+              />
+
+              <KnowledgeSignalGroup
+                title="Reality Lenses"
+                empty="No Reality Lens signals yet."
+                signals={knowledgeSnapshot.lenses}
+              />
+
+              <KnowledgeSignalGroup
+                title="Folders"
+                empty="No folder signals yet."
+                signals={knowledgeSnapshot.folders}
+              />
+            </div>
+          </section>
         )}
 
         {canExportSavedNotes && (
@@ -1077,9 +1270,17 @@ export default function SavedPage() {
                   href={`/discussions/${discussion.id}`}
                   className="block transition hover:opacity-90"
                 >
-                  <p className="mb-2 text-xs uppercase tracking-[0.16em] text-zinc-600 sm:mb-3 sm:text-sm sm:normal-case sm:tracking-normal sm:text-zinc-500">
-                    {discussion.topic}
-                  </p>
+                  <div className="mb-2 flex flex-wrap gap-2 sm:mb-3">
+                    <p className="rounded-full border border-zinc-900 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-zinc-600 sm:text-xs sm:normal-case sm:tracking-normal sm:text-zinc-500">
+                      {discussion.topic}
+                    </p>
+
+                    {discussion.reality_lens && (
+                      <span className="rounded-full border border-zinc-900 px-2.5 py-1 text-xs text-zinc-500">
+                        {discussion.reality_lens}
+                      </span>
+                    )}
+                  </div>
 
                   <h2 className="mb-2 text-lg font-medium sm:mb-3 sm:text-2xl">
                     {discussion.title}
