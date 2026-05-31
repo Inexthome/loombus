@@ -13,6 +13,7 @@ type Discussion = {
   user_id: string;
   title: string;
   topic: string;
+  reality_lens: string | null;
   body: string;
   created_at: string;
   discussion_status?: "open" | "resolved" | null;
@@ -434,6 +435,7 @@ export default function DiscussionsPage() {
         !query ||
         discussion.title.toLowerCase().includes(query) ||
         discussion.body.toLowerCase().includes(query) ||
+        (discussion.reality_lens ?? "").toLowerCase().includes(query) ||
         discussion.topic.toLowerCase().includes(query) ||
         (profile?.username ?? "").toLowerCase().includes(query) ||
         (profile?.full_name ?? "").toLowerCase().includes(query);
@@ -920,6 +922,12 @@ export default function DiscussionsPage() {
                       <p className="mb-2 inline-flex rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500 sm:px-3 sm:text-[11px] sm:tracking-[0.18em]">
                         {discussion.topic}
                       </p>
+
+                      {discussion.reality_lens && (
+                        <span className="ml-1.5 inline-flex rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] font-medium text-zinc-400 sm:ml-2 sm:px-3 sm:text-[11px]">
+                          {discussion.reality_lens}
+                        </span>
+                      )}
 
                       <span
                         className={`ml-1.5 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium sm:ml-2 sm:px-3 sm:text-[11px] ${getDiscussionStatusClassName(discussion)}`}

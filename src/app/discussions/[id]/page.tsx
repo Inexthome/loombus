@@ -18,6 +18,7 @@ type Discussion = {
   user_id: string;
   title: string;
   topic: string;
+  reality_lens: string | null;
   body: string;
   created_at: string;
   updated_at?: string | null;
@@ -1564,6 +1565,12 @@ export default function DiscussionPage() {
           <p className="shrink-0 rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500 sm:text-xs sm:tracking-[0.18em]">
             {discussion.topic}
           </p>
+
+          {discussion.reality_lens && (
+            <span className="shrink-0 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-zinc-400">
+              {discussion.reality_lens}
+            </span>
+          )}
 
           {discussionTags.map((tag) => (
             <span

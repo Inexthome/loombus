@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import { normalizeRealityLens } from "@/lib/reality-lenses";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
   const draftId = source.draftId;
   const title = cleanText(source.title, 140);
   const rawTopic = typeof source.topic === "string" ? source.topic : "";
+  const reality_lens = normalizeRealityLens(source.realityLens ?? source.reality_lens);
   const topic = DISCUSSION_TOPICS.includes(rawTopic as typeof DISCUSSION_TOPICS[number])
     ? rawTopic
     : DEFAULT_DISCUSSION_TOPIC;

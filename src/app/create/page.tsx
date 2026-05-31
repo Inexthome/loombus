@@ -7,6 +7,7 @@ import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import { REALITY_LENSES, normalizeRealityLens } from "@/lib/reality-lenses";
 
 type Profile = {
   full_name: string | null;
@@ -26,6 +27,7 @@ type DiscussionDraft = {
   id: string;
   title: string;
   topic: string;
+  reality_lens: string | null;
   body: string;
   created_at: string;
   updated_at: string;
@@ -36,6 +38,7 @@ type EditableDiscussion = {
   user_id: string;
   title: string;
   topic: string;
+  reality_lens: string | null;
   body: string;
   created_at: string;
   updated_at: string | null;
@@ -170,6 +173,7 @@ function getSafeAttachmentFileName(fileName: string) {
 export default function CreatePage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState<string>(DEFAULT_DISCUSSION_TOPIC);
+  const [realityLens, setRealityLens] = useState<string>("");
   const [body, setBody] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
@@ -244,7 +248,7 @@ export default function CreatePage() {
       if (requestedEditId) {
         const { data: discussionData, error: discussionError } = await supabase
           .from("discussions")
-          .select("id, user_id, title, topic, body, created_at, updated_at, edited_at, edit_count")
+          .select("id, user_id, title, topic, reality_lens, body, created_at, updated_at, edited_at, edit_count")
           .eq("id", requestedEditId)
           .is("deleted_at", null)
           .maybeSingle();
@@ -270,6 +274,7 @@ export default function CreatePage() {
                 : DEFAULT_DISCUSSION_TOPIC
             );
 
+            setRealityLens(normalizeRealityLens(discussion.reality_lens) ?? "");
             setBody(discussion.body ?? "");
 
             const { data: tagRows, error: tagError } = await supabase
@@ -294,7 +299,7 @@ export default function CreatePage() {
       if (requestedDraftId) {
         const { data: draftData, error: draftError } = await supabase
           .from("discussion_drafts")
-          .select("id, title, topic, body, created_at, updated_at")
+          .select("id, title, topic, reality_lens, body, created_at, updated_at")
           .eq("id", requestedDraftId)
           .eq("user_id", userData.user.id)
           .maybeSingle();
@@ -314,6 +319,7 @@ export default function CreatePage() {
               : DEFAULT_DISCUSSION_TOPIC
           );
 
+          setRealityLens(normalizeRealityLens(draft.reality_lens) ?? "");
           setBody(draft.body ?? "");
           setTagsInput("");
           setDraftUpdatedAt(draft.updated_at);
@@ -377,6 +383,7 @@ export default function CreatePage() {
         draftId,
         title,
         topic,
+        realityLens,
         body,
       }),
     });
@@ -683,12 +690,14 @@ export default function CreatePage() {
           discussionId: editingDiscussionId,
           title,
           topic,
+          realityLens,
           body,
           tags: tagsInput,
         }
       : {
           title,
           topic,
+          realityLens,
           body,
           tags: tagsInput,
         };
@@ -980,22 +989,47 @@ export default function CreatePage() {
               />
             </div>
 
-            <div>
-              <label className="mb-2 block text-sm text-zinc-400">
-                Topic
-              </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm text-zinc-400">
+                  Topic
+                </label>
 
-              <select
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
-              >
-                {DISCUSSION_TOPICS.map((topicOption) => (
-                  <option key={topicOption} value={topicOption}>
-                    {topicOption}
-                  </option>
-                ))}
-              </select>
+                <select
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                >
+                  {DISCUSSION_TOPICS.map((topicOption) => (
+                    <option key={topicOption} value={topicOption}>
+                      {topicOption}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-zinc-400">
+                  Reality Lens optional
+                </label>
+
+                <select
+                  value={realityLens}
+                  onChange={(e) => setRealityLens(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                >
+                  <option value="">No reality lens</option>
+                  {REALITY_LENSES.map((lens) => (
+                    <option key={lens} value={lens}>
+                      {lens}
+                    </option>
+                  ))}
+                </select>
+
+                <p className="mt-2 text-xs text-zinc-600">
+                  Add a human-reality lens if this discussion touches a deeper life experience.
+                </p>
+              </div>
             </div>
 
             <div>
