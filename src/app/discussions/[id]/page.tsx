@@ -317,6 +317,9 @@ export default function DiscussionPage() {
   const [conversationMap, setConversationMap] = useState("");
   const [conversationMapMessage, setConversationMapMessage] = useState("");
   const [generatingConversationMap, setGeneratingConversationMap] = useState(false);
+  const [relatedIdeas, setRelatedIdeas] = useState("");
+  const [relatedIdeasMessage, setRelatedIdeasMessage] = useState("");
+  const [generatingRelatedIdeas, setGeneratingRelatedIdeas] = useState(false);
   const [aiOutputRatings, setAiOutputRatings] = useState<AiOutputRatings>({});
   const [ratingFeatureKey, setRatingFeatureKey] = useState("");
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
@@ -325,6 +328,7 @@ export default function DiscussionPage() {
   const [monthlyWhatChangedUsage, setMonthlyWhatChangedUsage] = useState(0);
   const [monthlyDisagreementUsage, setMonthlyDisagreementUsage] = useState(0);
   const [monthlyConversationMapUsage, setMonthlyConversationMapUsage] = useState(0);
+  const [monthlyRelatedIdeasUsage, setMonthlyRelatedIdeasUsage] = useState(0);
   const [openPremiumAiTool, setOpenPremiumAiTool] = useState("");
 
   useEffect(() => {
@@ -549,11 +553,21 @@ export default function DiscussionPage() {
             .eq("success", true)
             .gte("created_at", monthStart);
 
+          const { count: monthlyRelatedIdeasCount } = await supabase
+            .from("ai_usage_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", viewerData.user.id)
+            .eq("feature_key", "related_ideas")
+            .eq("cached", false)
+            .eq("success", true)
+            .gte("created_at", monthStart);
+
           setMonthlySummaryUsage(monthlyUsageCount ?? 0);
           setMonthlyTakeawaysUsage(monthlyTakeawaysCount ?? 0);
           setMonthlyWhatChangedUsage(monthlyWhatChangedCount ?? 0);
           setMonthlyDisagreementUsage(monthlyDisagreementCount ?? 0);
           setMonthlyConversationMapUsage(monthlyConversationMapCount ?? 0);
+          setMonthlyRelatedIdeasUsage(monthlyRelatedIdeasCount ?? 0);
         }
       }
 
@@ -1124,6 +1138,66 @@ export default function DiscussionPage() {
     }
   }
 
+  async function handleGenerateRelatedIdeas() {
+    setRelatedIdeasMessage("");
+
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!canUseAiSummary) {
+      setRelatedIdeasMessage("This tool requires Premium or Premium Plus access. Choose a plan to unlock it.");
+      return;
+    }
+
+    setGeneratingRelatedIdeas(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!discussion) {
+        setRelatedIdeasMessage("Discussion is not loaded yet.");
+        return;
+      }
+
+      const response = await fetch("/api/discussions/related-ideas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          discussionId: discussion.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setRelatedIdeasMessage(result.error ?? "Unable to generate related ideas.");
+        return;
+      }
+
+      setRelatedIdeas(result.relatedIdeas ?? "");
+
+      if (typeof result.monthlyRelatedIdeasUsage === "number") {
+        setMonthlyRelatedIdeasUsage(result.monthlyRelatedIdeasUsage);
+      }
+
+      setRelatedIdeasMessage(
+        result.cached ? "Showing cached related ideas." : "Related ideas generated."
+      );
+    } finally {
+      setGeneratingRelatedIdeas(false);
+    }
+  }
+
   function startReplyEdit(reply: Reply) {
     setMessage("");
     setEditingReplyId(reply.id);
@@ -1588,6 +1662,10 @@ export default function DiscussionPage() {
   );
   const monthlyConversationMapRemaining = Math.max(
     monthlySummaryLimit - monthlyConversationMapUsage,
+    0
+  );
+  const monthlyRelatedIdeasRemaining = Math.max(
+    monthlySummaryLimit - monthlyRelatedIdeasUsage,
     0
   );
 
@@ -2112,6 +2190,97 @@ export default function DiscussionPage() {
               {conversationMapMessage && (
                 <p className="mt-4 text-sm text-zinc-500">
                   {conversationMapMessage}
+                </p>
+              )}
+            </>
+          )}
+        </section>
+
+        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
+          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                Idea Graph
+              </p>
+
+              <h2 className="text-lg font-medium sm:text-2xl">
+                Related Ideas
+              </h2>
+            </div>
+
+            {openPremiumAiTool === "relatedIdeas" && currentUserId && canUseAiSummary && (
+              <button
+                type="button"
+                onClick={handleGenerateRelatedIdeas}
+                disabled={generatingRelatedIdeas}
+                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+              >
+                {generatingRelatedIdeas ? "Generating..." : "Generate Related Ideas"}
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setOpenPremiumAiTool((current) =>
+                current === "relatedIdeas" ? "" : "relatedIdeas"
+              )
+            }
+            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
+          >
+            {openPremiumAiTool === "relatedIdeas" ? "Hide tool" : "Open tool"}
+          </button>
+
+          {openPremiumAiTool === "relatedIdeas" && (
+            <>
+              {relatedIdeas ? (
+                <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
+                  {relatedIdeas}
+                  <AiOutputRatingControls
+                    featureKey="related_ideas"
+                    currentRating={aiOutputRatings["related_ideas"]}
+                    working={ratingFeatureKey === "related_ideas"}
+                    onRate={handleRateAiOutput}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
+                  {!currentUserId
+                    ? "Log in to generate related ideas for this discussion."
+                    : canUseAiSummary
+                      ? "Generate adjacent ideas that can become the foundation for an idea graph."
+                      : (
+                        <>
+                          Related ideas are available with Premium or Premium Plus.{" "}
+                          <Link
+                            href="/premium"
+                            className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
+                          >
+                            View Premium
+                          </Link>
+                        </>
+                      )}
+                </p>
+              )}
+
+              {currentUserId && canUseAiSummary && (
+                <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
+                  {isAdmin ? (
+                    <p>
+                      Admin AI access: unlimited related idea maps.
+                    </p>
+                  ) : (
+                    <p>
+                      {subscriptionDisplay.label} AI related ideas usage: {monthlyRelatedIdeasUsage} of {monthlySummaryLimit} used this month.
+                      {" "}Remaining: {monthlyRelatedIdeasRemaining}.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {relatedIdeasMessage && (
+                <p className="mt-4 text-sm text-zinc-500">
+                  {relatedIdeasMessage}
                 </p>
               )}
             </>

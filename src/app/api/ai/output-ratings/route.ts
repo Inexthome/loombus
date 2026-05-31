@@ -7,6 +7,7 @@ const ALLOWED_FEATURE_KEYS = new Set([
   "what_changed",
   "disagreement_map",
   "conversation_map",
+  "related_ideas",
 ]);
 
 const ALLOWED_RATINGS = new Set(["helpful", "not_helpful"]);
