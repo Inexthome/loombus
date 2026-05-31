@@ -314,6 +314,9 @@ export default function DiscussionPage() {
   const [disagreementMap, setDisagreementMap] = useState("");
   const [disagreementMessage, setDisagreementMessage] = useState("");
   const [generatingDisagreement, setGeneratingDisagreement] = useState(false);
+  const [conversationMap, setConversationMap] = useState("");
+  const [conversationMapMessage, setConversationMapMessage] = useState("");
+  const [generatingConversationMap, setGeneratingConversationMap] = useState(false);
   const [aiOutputRatings, setAiOutputRatings] = useState<AiOutputRatings>({});
   const [ratingFeatureKey, setRatingFeatureKey] = useState("");
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
@@ -321,6 +324,7 @@ export default function DiscussionPage() {
   const [monthlyTakeawaysUsage, setMonthlyTakeawaysUsage] = useState(0);
   const [monthlyWhatChangedUsage, setMonthlyWhatChangedUsage] = useState(0);
   const [monthlyDisagreementUsage, setMonthlyDisagreementUsage] = useState(0);
+  const [monthlyConversationMapUsage, setMonthlyConversationMapUsage] = useState(0);
   const [openPremiumAiTool, setOpenPremiumAiTool] = useState("");
 
   useEffect(() => {
@@ -536,10 +540,20 @@ export default function DiscussionPage() {
             .eq("success", true)
             .gte("created_at", monthStart);
 
+          const { count: monthlyConversationMapCount } = await supabase
+            .from("ai_usage_events")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", viewerData.user.id)
+            .eq("feature_key", "conversation_map")
+            .eq("cached", false)
+            .eq("success", true)
+            .gte("created_at", monthStart);
+
           setMonthlySummaryUsage(monthlyUsageCount ?? 0);
           setMonthlyTakeawaysUsage(monthlyTakeawaysCount ?? 0);
           setMonthlyWhatChangedUsage(monthlyWhatChangedCount ?? 0);
           setMonthlyDisagreementUsage(monthlyDisagreementCount ?? 0);
+          setMonthlyConversationMapUsage(monthlyConversationMapCount ?? 0);
         }
       }
 
@@ -1050,6 +1064,66 @@ export default function DiscussionPage() {
     }
   }
 
+  async function handleGenerateConversationMap() {
+    setConversationMapMessage("");
+
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!canUseAiSummary) {
+      setConversationMapMessage("This tool requires Premium or Premium Plus access. Choose a plan to unlock it.");
+      return;
+    }
+
+    setGeneratingConversationMap(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (!discussion) {
+        setConversationMapMessage("Discussion is not loaded yet.");
+        return;
+      }
+
+      const response = await fetch("/api/discussions/conversation-map", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          discussionId: discussion.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setConversationMapMessage(result.error ?? "Unable to generate conversation map.");
+        return;
+      }
+
+      setConversationMap(result.conversationMap ?? "");
+
+      if (typeof result.monthlyConversationMapUsage === "number") {
+        setMonthlyConversationMapUsage(result.monthlyConversationMapUsage);
+      }
+
+      setConversationMapMessage(
+        result.cached ? "Showing cached conversation map." : "Conversation map generated."
+      );
+    } finally {
+      setGeneratingConversationMap(false);
+    }
+  }
+
   function startReplyEdit(reply: Reply) {
     setMessage("");
     setEditingReplyId(reply.id);
@@ -1512,6 +1586,10 @@ export default function DiscussionPage() {
     monthlySummaryLimit - monthlyDisagreementUsage,
     0
   );
+  const monthlyConversationMapRemaining = Math.max(
+    monthlySummaryLimit - monthlyConversationMapUsage,
+    0
+  );
 
   if (loading) {
     return (
@@ -1948,6 +2026,97 @@ export default function DiscussionPage() {
             </p>
           )}
         </div>
+
+        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
+          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                Idea Structure
+              </p>
+
+              <h2 className="text-lg font-medium sm:text-2xl">
+                Conversation Map
+              </h2>
+            </div>
+
+            {openPremiumAiTool === "conversationMap" && currentUserId && canUseAiSummary && (
+              <button
+                type="button"
+                onClick={handleGenerateConversationMap}
+                disabled={generatingConversationMap}
+                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+              >
+                {generatingConversationMap ? "Generating..." : "Generate Conversation Map"}
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setOpenPremiumAiTool((current) =>
+                current === "conversationMap" ? "" : "conversationMap"
+              )
+            }
+            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
+          >
+            {openPremiumAiTool === "conversationMap" ? "Hide tool" : "Open tool"}
+          </button>
+
+          {openPremiumAiTool === "conversationMap" && (
+            <>
+              {conversationMap ? (
+                <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
+                  {conversationMap}
+                  <AiOutputRatingControls
+                    featureKey="conversation_map"
+                    currentRating={aiOutputRatings["conversation_map"]}
+                    working={ratingFeatureKey === "conversation_map"}
+                    onRate={handleRateAiOutput}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
+                  {!currentUserId
+                    ? "Log in to generate an AI conversation map for this discussion."
+                    : canUseAiSummary
+                      ? "Map the core idea, supporting points, open questions, tensions, and related directions."
+                      : (
+                        <>
+                          Conversation mapping is available with Premium or Premium Plus.{" "}
+                          <Link
+                            href="/premium"
+                            className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
+                          >
+                            View Premium
+                          </Link>
+                        </>
+                      )}
+                </p>
+              )}
+
+              {currentUserId && canUseAiSummary && (
+                <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
+                  {isAdmin ? (
+                    <p>
+                      Admin AI access: unlimited conversation maps.
+                    </p>
+                  ) : (
+                    <p>
+                      {subscriptionDisplay.label} AI conversation map usage: {monthlyConversationMapUsage} of {monthlySummaryLimit} used this month.
+                      {" "}Remaining: {monthlyConversationMapRemaining}.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {conversationMapMessage && (
+                <p className="mt-4 text-sm text-zinc-500">
+                  {conversationMapMessage}
+                </p>
+              )}
+            </>
+          )}
+        </section>
 
         <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
           <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">

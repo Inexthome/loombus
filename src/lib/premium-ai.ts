@@ -41,6 +41,11 @@ export const AI_FEATURE_LIMIT_POLICIES: Record<string, AiFeatureLimitPolicy> = {
     bucket: "summary",
     label: "Disagreement maps",
   },
+  conversation_map: {
+    featureKey: "conversation_map",
+    bucket: "summary",
+    label: "Conversation maps",
+  },
   discussion_quality_check: {
     featureKey: "discussion_quality_check",
     bucket: "writing",
