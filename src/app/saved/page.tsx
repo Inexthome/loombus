@@ -1580,43 +1580,59 @@ export default function SavedPage() {
             }
 
             return (
-              <div
+              <article
                 key={item.id}
-                className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-[1.5rem] sm:p-7"
+                className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 transition hover:border-zinc-700 sm:rounded-[1.5rem] sm:p-5"
               >
                 <Link
                   href={`/discussions/${discussion.id}`}
-                  className="block transition hover:opacity-90"
+                  className="block"
                 >
-                  <div className="mb-2 flex flex-wrap gap-2 sm:mb-3">
-                    <p className="rounded-full border border-zinc-900 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-zinc-600 sm:text-xs sm:normal-case sm:tracking-normal sm:text-zinc-500">
+                  <div className="mb-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+                    <span className="shrink-0 rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500 sm:px-3 sm:text-[11px] sm:tracking-[0.18em]">
                       {discussion.topic}
-                    </p>
+                    </span>
 
                     {discussion.reality_lens && (
-                      <span className="rounded-full border border-zinc-900 px-2.5 py-1 text-xs text-zinc-500">
+                      <span className="shrink-0 rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] font-medium text-zinc-400 sm:px-3 sm:text-[11px]">
                         {discussion.reality_lens}
                       </span>
                     )}
 
                     {discussion.purpose_lane && (
-                      <span className="rounded-full border border-zinc-900 px-2.5 py-1 text-xs text-zinc-500">
+                      <span className="shrink-0 rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] font-medium text-zinc-400 sm:px-3 sm:text-[11px]">
                         {discussion.purpose_lane}
                       </span>
                     )}
                   </div>
 
-                  <h2 className="mb-2 text-lg font-medium sm:mb-3 sm:text-2xl">
+                  <h2 className="mb-2 text-lg font-semibold leading-snug tracking-tight transition group-hover:text-white sm:text-2xl">
                     {discussion.title}
                   </h2>
 
-                  <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-4 sm:text-base">
+                  <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:text-base">
                     {discussion.body}
                   </p>
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-zinc-900 pt-4 text-xs text-zinc-500 sm:text-sm">
+                    <span>
+                      Saved {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+
+                    <span>
+                      {item.collection_id
+                        ? collectionNameById[item.collection_id] ?? "Folder"
+                        : "Unfiled"}
+                    </span>
+
+                    <span className="ml-auto hidden text-zinc-400 sm:inline">
+                      Open discussion →
+                    </span>
+                  </div>
                 </Link>
 
                 {canUsePrivateNotes && (
-                  <div className="mb-3 rounded-2xl border border-zinc-900 bg-black/40 p-3 sm:mb-4 sm:p-4">
+                  <div className="mt-4 rounded-2xl border border-zinc-900 bg-black/30 p-3 sm:p-4">
                     <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                       <label className="text-sm font-medium text-zinc-300">
                         Private note
@@ -1638,9 +1654,9 @@ export default function SavedPage() {
                         }))
                       }
                       maxLength={1000}
-                      rows={3}
-                      placeholder="Add a private note for why this discussion matters..."
-                      className="mb-3 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-zinc-600"
+                      rows={2}
+                      placeholder="Why did you save this?"
+                      className="mb-3 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-zinc-600 sm:text-base"
                     />
 
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1660,9 +1676,9 @@ export default function SavedPage() {
                   </div>
                 )}
 
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <p className="text-sm text-zinc-600">
-                    Saved {new Date(item.created_at).toLocaleDateString()}
+                <div className="mt-4 flex flex-col gap-3 border-t border-zinc-900 pt-4 md:flex-row md:items-center md:justify-between">
+                  <p className="text-xs text-zinc-600 sm:text-sm">
+                    Saved library actions
                   </p>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -1684,13 +1700,13 @@ export default function SavedPage() {
                       type="button"
                       onClick={() => removeBookmark(item.id)}
                       disabled={removingBookmarkId === item.id}
-                      className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                     >
-                      {removingBookmarkId === item.id ? "Removing..." : "Remove saved"}
+                      {removingBookmarkId === item.id ? "Removing..." : "Remove"}
                     </button>
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
