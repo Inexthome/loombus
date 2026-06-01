@@ -51,6 +51,7 @@ export default function PeoplePage() {
   const [blockedProfileIds, setBlockedProfileIds] = useState<Set<string>>(new Set());
   const [profileBadges, setProfileBadges] = useState<Record<string, ProfileBadge>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [workingFollowId, setWorkingFollowId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -130,7 +131,17 @@ export default function PeoplePage() {
           return;
         }
 
-        const [viewerFollowingResult, viewerFollowersResult, blocksResult] = await Promise.all([
+        const [
+          viewerProfileResult,
+          viewerFollowingResult,
+          viewerFollowersResult,
+          blocksResult,
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", viewerId)
+            .maybeSingle(),
           supabase
             .from("follows")
             .select("following_id")
@@ -146,6 +157,7 @@ export default function PeoplePage() {
         ]);
 
         const firstError =
+          viewerProfileResult.error ||
           viewerFollowingResult.error ||
           viewerFollowersResult.error ||
           blocksResult.error;
@@ -157,6 +169,9 @@ export default function PeoplePage() {
         if (!isMounted) {
           return;
         }
+
+        const viewerIsAdmin = Boolean(viewerProfileResult.data?.is_admin);
+        setIsAdmin(viewerIsAdmin);
 
         const directFollowingIds = (viewerFollowingResult.data ?? [])
           .map((follow) => follow.following_id)
@@ -176,7 +191,7 @@ export default function PeoplePage() {
           );
         }
 
-        setBlockedProfileIds(hiddenIds);
+        setBlockedProfileIds(viewerIsAdmin ? new Set() : hiddenIds);
 
         const directRelationshipIds = new Set<string>([
           ...directFollowingIds,
@@ -220,7 +235,7 @@ export default function PeoplePage() {
           }
         }
 
-        const visibleProfileIds = Array.from(
+        let visibleProfileIds = Array.from(
           new Set<string>([
             ...directRelationshipIds,
             ...Array.from(suggestedProfileIds).slice(0, 24),
@@ -229,7 +244,19 @@ export default function PeoplePage() {
 
         let loadedProfiles: Profile[] = [];
 
-        if (visibleProfileIds.length > 0) {
+        if (viewerIsAdmin) {
+          const profilesResult = await supabase
+            .from("profiles")
+            .select("id, full_name, username, avatar_url, bio")
+            .order("full_name", { ascending: true });
+
+          if (profilesResult.error) {
+            throw profilesResult.error;
+          }
+
+          loadedProfiles = (profilesResult.data ?? []) as Profile[];
+          visibleProfileIds = loadedProfiles.map((profile) => profile.id);
+        } else if (visibleProfileIds.length > 0) {
           const profilesResult = await supabase
             .from("profiles")
             .select("id, full_name, username, avatar_url, bio")
@@ -312,9 +339,9 @@ export default function PeoplePage() {
   const filteredProfiles = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    const visibleProfiles = profiles.filter(
-      (profile) => !blockedProfileIds.has(profile.id)
-    );
+    const visibleProfiles = isAdmin
+      ? profiles
+      : profiles.filter((profile) => !blockedProfileIds.has(profile.id));
 
     if (!query) {
       return visibleProfiles;
@@ -327,7 +354,7 @@ export default function PeoplePage() {
         (profile.bio ?? "").toLowerCase().includes(query)
       );
     });
-  }, [profiles, searchQuery, blockedProfileIds]);
+  }, [profiles, searchQuery, blockedProfileIds, isAdmin]);
 
   async function toggleFollow(
     event: MouseEvent<HTMLButtonElement>,
@@ -472,11 +499,13 @@ export default function PeoplePage() {
           </p>
 
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-            Your people network
+            {isAdmin ? "Admin view: all people" : "Your people network"}
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-            See people you follow, people who follow you, and limited suggestions from your existing network.
+            {isAdmin
+              ? "Admin accounts can review all visible member profiles without relationship restrictions."
+              : "See people you follow, people who follow you, and limited suggestions from your existing network."}
           </p>
 
           <label htmlFor="people-search" className="mt-5 block xl:hidden">
@@ -505,13 +534,13 @@ export default function PeoplePage() {
               </button>
             ) : (
               <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                Relationship view
+                {isAdmin ? "Admin view" : "Relationship view"}
               </span>
             )}
 
             {!loading && (
               <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                {filteredProfiles.length} of {profiles.length} visible people
+                {filteredProfiles.length} of {profiles.length} {isAdmin ? "people" : "visible people"}
               </span>
             )}
           </div>
@@ -536,7 +565,9 @@ export default function PeoplePage() {
             </h2>
 
             <p className="max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-              No people match this relationship view yet. Follow contributors from discussions to build your network, or clear your search if one is active.
+              {isAdmin
+                ? "No people match this admin view. Clear your search if one is active."
+                : "No people match this relationship view yet. Follow contributors from discussions to build your network, or clear your search if one is active."}
             </p>
 
             <div className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row sm:flex-wrap">
@@ -646,11 +677,13 @@ export default function PeoplePage() {
                     </p>
 
                     <h2 className="text-xl font-semibold tracking-tight">
-                      Refine your people network.
+                      {isAdmin ? "Refine all people." : "Refine your people network."}
                     </h2>
 
                     <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                      Search people you follow, people who follow you, and relationship-based suggestions here.
+                      {isAdmin
+                        ? "Search all visible member profiles here."
+                        : "Search people you follow, people who follow you, and relationship-based suggestions here."}
                     </p>
                   </div>
 
@@ -687,13 +720,13 @@ export default function PeoplePage() {
                     </span>
                   ) : (
                     <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
-                      Relationship view
+                      {isAdmin ? "Admin view" : "Relationship view"}
                     </span>
                   )}
 
                   {!loading && (
                     <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                      {filteredProfiles.length} of {profiles.length} visible
+                      {filteredProfiles.length} of {profiles.length} {isAdmin ? "people" : "visible"}
                     </span>
                   )}
                 </div>
@@ -776,7 +809,11 @@ export default function PeoplePage() {
                       View
                     </p>
                     <p className="mt-1 text-sm text-zinc-300">
-                      {hasActivePeopleSearch ? `Search: “${activePeopleSearch}”` : "Relationship view"}
+                      {hasActivePeopleSearch
+                        ? `Search: “${activePeopleSearch}”`
+                        : isAdmin
+                          ? "Admin view"
+                          : "Relationship view"}
                     </p>
                   </div>
 
