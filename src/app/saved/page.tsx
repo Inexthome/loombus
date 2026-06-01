@@ -42,6 +42,13 @@ type KnowledgeSignal = {
   count: number;
 };
 
+type LearningPathStep = {
+  title: string;
+  description: string;
+  actionLabel: string;
+  actionHref: string;
+};
+
 function sortKnowledgeSignals(counts: Record<string, number>) {
   return Object.entries(counts)
     .map(([label, count]) => ({ label, count }))
@@ -137,6 +144,39 @@ function KnowledgeSignalGroup({
           {empty}
         </p>
       )}
+    </div>
+  );
+}
+
+function LearningPathCard({
+  step,
+  index,
+}: {
+  step: LearningPathStep;
+  index: number;
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <span className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
+          Step {index + 1}
+        </span>
+      </div>
+
+      <h3 className="mb-2 text-base font-medium text-zinc-200">
+        {step.title}
+      </h3>
+
+      <p className="mb-4 text-sm leading-relaxed text-zinc-600">
+        {step.description}
+      </p>
+
+      <Link
+        href={step.actionHref}
+        className="inline-flex rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+      >
+        {step.actionLabel}
+      </Link>
     </div>
   );
 }
@@ -339,6 +379,75 @@ export default function SavedPage() {
       recentSavedCount,
     };
   }, [collectionNameById, noteDrafts, saved]);
+
+  const learningPath = useMemo(() => {
+    const primaryTopic = knowledgeSnapshot.topics[0]?.label ?? null;
+    const primaryLens = knowledgeSnapshot.lenses[0]?.label ?? null;
+    const primaryFolder = knowledgeSnapshot.folders.find((folder) => folder.label !== "Unfiled")?.label ?? null;
+    const hasNotes = knowledgeSnapshot.notesCount > 0;
+    const hasRecentSaves = knowledgeSnapshot.recentSavedCount > 0;
+
+    const steps: LearningPathStep[] = [];
+
+    steps.push({
+      title: primaryTopic
+        ? `Start with ${primaryTopic}`
+        : "Start with your strongest saved discussion",
+      description: primaryTopic
+        ? `Your saved library currently points most strongly toward ${primaryTopic}. Begin there before branching into other topics.`
+        : "Pick one saved discussion that still feels useful and reread it before adding more saved items.",
+      actionLabel: primaryTopic ? `Search ${primaryTopic}` : "View saved",
+      actionHref: primaryTopic
+        ? `/saved?search=${encodeURIComponent(primaryTopic)}`
+        : "/saved",
+    });
+
+    steps.push({
+      title: primaryLens
+        ? `Deepen the ${primaryLens} thread`
+        : "Add a Reality Lens to your reading",
+      description: primaryLens
+        ? `${primaryLens} appears in your saved library. Use it as the deeper human-reality theme behind what you are learning.`
+        : "As more saved discussions include Reality Lenses, this path can show the human themes behind your reading.",
+      actionLabel: primaryLens ? `Search ${primaryLens}` : "Browse discussions",
+      actionHref: primaryLens
+        ? `/saved?search=${encodeURIComponent(primaryLens)}`
+        : "/discussions",
+    });
+
+    steps.push({
+      title: hasNotes
+        ? "Revisit your private notes"
+        : "Add notes to make saved items useful",
+      description: hasNotes
+        ? "Your private notes are becoming the personal layer of your saved library. Review them to find what still matters."
+        : "Private notes turn saved discussions from a list into a working knowledge shelf.",
+      actionLabel: hasNotes ? "Search notes" : "Review saved",
+      actionHref: "/saved",
+    });
+
+    steps.push({
+      title: primaryFolder
+        ? `Organize around ${primaryFolder}`
+        : "Create one focused folder",
+      description: primaryFolder
+        ? `${primaryFolder} is already acting like a learning lane. Keep related discussions grouped there.`
+        : "A single focused folder can turn scattered saved discussions into a path you can return to.",
+      actionLabel: primaryFolder ? `Open ${primaryFolder}` : "Organize saved",
+      actionHref: "/saved",
+    });
+
+    if (hasRecentSaves) {
+      steps.push({
+        title: "Revisit recent saves next",
+        description: "Recent saves show what currently has your attention. Revisit them before adding too many new items.",
+        actionLabel: "View recent saved",
+        actionHref: "/saved",
+      });
+    }
+
+    return steps.slice(0, 5);
+  }, [knowledgeSnapshot]);
 
   const activeSavedSearch = savedSearchQuery.trim();
   const hasActiveSavedSearch = activeSavedSearch.length > 0;
@@ -927,6 +1036,36 @@ export default function SavedPage() {
                 empty="No folder signals yet."
                 signals={knowledgeSnapshot.folders}
               />
+            </div>
+          </section>
+        )}
+
+        {!loading && saved.length > 0 && (
+          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                  Learning path snapshot
+                </p>
+
+                <h2 className="text-xl font-medium sm:text-2xl">
+                  What to read, revisit, and organize next.
+                </h2>
+
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                  This path is generated on-page from your saved topics, Reality Lenses, folders, and notes. It is private to your saved library.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+              {learningPath.map((step, index) => (
+                <LearningPathCard
+                  key={`${step.title}-${index}`}
+                  step={step}
+                  index={index}
+                />
+              ))}
             </div>
           </section>
         )}
