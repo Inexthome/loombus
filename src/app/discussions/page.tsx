@@ -1098,81 +1098,140 @@ export default function DiscussionsPage() {
 
         <aside className="hidden xl:block">
           <div className="sticky top-6 space-y-4">
+            <section className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20">
+              <div className="border-b border-zinc-900 p-5">
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  Loombus Signal Panel
+                </p>
+
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Signal discipline
+                </h2>
+
+                <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                  Read before reacting. Reply when you can add context, lived experience, evidence, a sharper question, or a clearer frame.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 border-b border-zinc-900">
+                <div className="border-r border-zinc-900 p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                    Showing
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-zinc-200">
+                    {filteredDiscussions.length}
+                  </p>
+                </div>
+
+                <div className="border-r border-zinc-900 p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                    Total
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-zinc-200">
+                    {discussions.length}
+                  </p>
+                </div>
+
+                <div className="p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                    Sort
+                  </p>
+                  <p className="mt-2 truncate text-sm font-medium text-zinc-300">
+                    {sortMode}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-5">
+                <Link
+                  href="/create"
+                  className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+                >
+                  Create a discussion
+                </Link>
+              </div>
+            </section>
+
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                Loombus Signal Panel
+              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                Current lens
               </p>
 
-              <h2 className="text-xl font-semibold tracking-tight">
-                Read with intent.
-              </h2>
+              <div className="space-y-2">
+                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                    Topic
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-300">
+                    {selectedTopic}
+                  </p>
+                </div>
 
-              <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                Loombus is built around fewer, better discussions. Start with one thread, read the context, then reply only when you can add signal.
+                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                    Purpose
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-300">
+                    {selectedPurposeLane}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                    View
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-300">
+                    {filterSummary}
+                  </p>
+                </div>
+              </div>
+
+              {hasActiveDiscussionFilters && (
+                <button
+                  type="button"
+                  onClick={resetDiscussionFilters}
+                  className="mt-4 w-full rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Reset lens
+                </button>
+              )}
+            </section>
+
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                Reply standard
+              </p>
+
+              <div className="space-y-3 text-sm leading-relaxed text-zinc-500">
+                <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  Add context the original post did not have.
+                </p>
+
+                <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  Ask a question that moves the discussion forward.
+                </p>
+
+                <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  Use experience, examples, evidence, or better framing.
+                </p>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                Save standard
+              </p>
+
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Save a discussion when it is worth returning to, comparing, citing, or building on later. A saved thread should become part of your working knowledge shelf.
               </p>
 
               <Link
-                href="/create"
-                className="mt-5 inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+                href="/saved"
+                className="mt-4 inline-flex w-full justify-center rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
               >
-                Create a discussion
+                Open saved
               </Link>
-            </section>
-
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                What to look for
-              </p>
-
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                  <h3 className="text-sm font-medium text-zinc-200">
-                    Clear framing
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                    A strong discussion makes the question, tension, or lived problem easy to understand.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                  <h3 className="text-sm font-medium text-zinc-200">
-                    Useful replies
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                    Look for context, examples, experience, evidence, or a better way to frame the issue.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                  <h3 className="text-sm font-medium text-zinc-200">
-                    Saved value
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                    Save threads that you may revisit, cite, compare, or use to build future ideas.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                Current view
-              </p>
-
-              <div className="space-y-2 text-sm text-zinc-500">
-                <p>
-                  Showing {filteredDiscussions.length} of {discussions.length}
-                </p>
-                <p>
-                  Sort: {sortMode}
-                </p>
-                <p>
-                  Topic: {selectedTopic}
-                </p>
-                <p>
-                  Purpose: {selectedPurposeLane}
-                </p>
-              </div>
             </section>
           </div>
         </aside>
