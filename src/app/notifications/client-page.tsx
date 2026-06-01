@@ -146,7 +146,7 @@ export default function NotificationsClientPage() {
     const readAt = new Date().toISOString();
 
     const { error } = await supabase
-      .from("alerts")
+      .from("notifications")
       .update({ read_at: readAt })
       .eq("user_id", userId)
       .in("id", ids)
@@ -259,7 +259,7 @@ export default function NotificationsClientPage() {
             .maybeSingle(),
           getBlockedRelationshipUserIds(supabase, userId),
           supabase
-            .from("alerts")
+            .from("notifications")
             .select("id, actor_id, type, target_type, target_id, message, read_at, created_at")
             .eq("user_id", userId)
             .order("created_at", { ascending: false }),
@@ -346,7 +346,7 @@ export default function NotificationsClientPage() {
     setWorking(true);
 
     const { error } = await supabase
-      .from("alerts")
+      .from("notifications")
       .delete()
       .eq("user_id", currentUserId)
       .eq("id", id);
@@ -409,7 +409,7 @@ export default function NotificationsClientPage() {
     setWorking(true);
 
     const { error } = await supabase
-      .from("alerts")
+      .from("notifications")
       .delete()
       .eq("user_id", currentUserId)
       .in("id", readIds);
