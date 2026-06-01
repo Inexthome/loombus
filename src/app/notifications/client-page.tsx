@@ -112,7 +112,7 @@ function getNotificationActionLabel(notification: Notification) {
 }
 
 export default function NotificationsClientPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [alerts, setNotifications] = useState<Notification[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [filterMode, setFilterMode] = useState<NotificationFilter>("all");
@@ -138,14 +138,14 @@ export default function NotificationsClientPage() {
     const readAt = new Date().toISOString();
 
     const { error } = await supabase
-      .from("notifications")
+      .from("alerts")
       .update({ read_at: readAt })
       .eq("user_id", userId)
       .in("id", ids)
       .is("read_at", null);
 
     if (error) {
-      setMessage("Unable to mark notifications as read.");
+      setMessage("Unable to mark alerts as read.");
       return false;
     }
 
@@ -172,7 +172,7 @@ export default function NotificationsClientPage() {
       }
 
       setMessage((current) =>
-        current || "Notifications took too long to load. Please refresh if the list looks incomplete."
+        current || "Alerts took too long to load. Please refresh if the list looks incomplete."
       );
       setLoading(false);
     }, 10000);
@@ -237,7 +237,7 @@ export default function NotificationsClientPage() {
           profileResult,
           entitlementResult,
           blockedRelationshipUserIds,
-          notificationsResult,
+          alertsResult,
         ] = await Promise.all([
           supabase
             .from("profiles")
@@ -251,14 +251,14 @@ export default function NotificationsClientPage() {
             .maybeSingle(),
           getBlockedRelationshipUserIds(supabase, userId),
           supabase
-            .from("notifications")
+            .from("alerts")
             .select("id, actor_id, type, target_type, target_id, message, read_at, created_at")
             .eq("user_id", userId)
             .order("created_at", { ascending: false }),
         ]);
 
         const firstError =
-          profileResult.error || entitlementResult.error || notificationsResult.error;
+          profileResult.error || entitlementResult.error || alertsResult.error;
 
         if (firstError) {
           throw firstError;
@@ -272,7 +272,7 @@ export default function NotificationsClientPage() {
         setAiEntitlement((entitlementResult.data ?? null) as AiEntitlement);
 
         const loadedNotifications = filterBlockedActorNotifications(
-          (notificationsResult.data ?? []) as Notification[],
+          (alertsResult.data ?? []) as Notification[],
           blockedRelationshipUserIds
         );
 
@@ -289,10 +289,10 @@ export default function NotificationsClientPage() {
 
         void loadActorProfiles(actorIds);
       } catch (error) {
-        console.error("Unable to load notifications.", error);
+        console.error("Unable to load alerts.", error);
 
         if (isMounted) {
-          setMessage("Notifications could not load. Please refresh and try again.");
+          setMessage("Alerts could not load. Please refresh and try again.");
           setLoading(false);
         }
       }
@@ -338,7 +338,7 @@ export default function NotificationsClientPage() {
     setWorking(true);
 
     const { error } = await supabase
-      .from("notifications")
+      .from("alerts")
       .delete()
       .eq("user_id", currentUserId)
       .eq("id", id);
@@ -362,12 +362,12 @@ export default function NotificationsClientPage() {
       return;
     }
 
-    const unreadIds = notifications
+    const unreadIds = alerts
       .filter((notification) => !notification.read_at)
       .map((notification) => notification.id);
 
     if (unreadIds.length === 0) {
-      setMessage("No unread notifications to mark read.");
+      setMessage("No unread alerts to mark read.");
       return;
     }
 
@@ -379,7 +379,7 @@ export default function NotificationsClientPage() {
     setWorking(false);
 
     if (success) {
-      setMessage("All unread notifications marked read.");
+      setMessage("All unread alerts marked read.");
     }
   }
 
@@ -388,12 +388,12 @@ export default function NotificationsClientPage() {
       return;
     }
 
-    const readIds = notifications
+    const readIds = alerts
       .filter((notification) => notification.read_at)
       .map((notification) => notification.id);
 
     if (readIds.length === 0) {
-      setMessage("No read notifications to clear.");
+      setMessage("No read alerts to clear.");
       return;
     }
 
@@ -401,7 +401,7 @@ export default function NotificationsClientPage() {
     setWorking(true);
 
     const { error } = await supabase
-      .from("notifications")
+      .from("alerts")
       .delete()
       .eq("user_id", currentUserId)
       .in("id", readIds);
@@ -417,21 +417,21 @@ export default function NotificationsClientPage() {
       current.filter((notification) => !readIds.includes(notification.id))
     );
 
-    setMessage("Read notifications cleared.");
+    setMessage("Read alerts cleared.");
     window.dispatchEvent(new Event("loombus:notifications-changed"));
   }
 
-  const unreadCount = notifications.filter(
+  const unreadCount = alerts.filter(
     (notification) => !notification.read_at
   ).length;
 
-  const readCount = notifications.length - unreadCount;
+  const readCount = alerts.length - unreadCount;
 
   const filteredNotifications = useMemo(() => {
     const activeTypeFilter = canUseAdvancedControls ? typeFilter : "all";
     const activeSortMode = canUseAdvancedControls ? sortMode : "newest";
 
-    const filtered = notifications.filter((notification) => {
+    const filtered = alerts.filter((notification) => {
       if (filterMode === "unread" && notification.read_at) {
         return false;
       }
@@ -457,7 +457,7 @@ export default function NotificationsClientPage() {
       return activeSortMode === "oldest" ? aTime - bTime : bTime - aTime;
     });
   }, [
-    notifications,
+    alerts,
     filterMode,
     typeFilter,
     sortMode,
@@ -472,7 +472,7 @@ export default function NotificationsClientPage() {
     {
       label: "All",
       value: "all",
-      count: notifications.length,
+      count: alerts.length,
     },
     {
       label: "Unread",
@@ -489,56 +489,64 @@ export default function NotificationsClientPage() {
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-5 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:mb-3 sm:text-4xl md:text-5xl">
-              Notifications
-            </h1>
+        <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-8 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Alerts
+              </p>
 
-            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
-              Updates from conversations and activity connected to you.
-            </p>
-          </div>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+                Alerts inbox
+              </h1>
 
-          {!loading && notifications.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-              <div className="col-span-2 rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500 sm:col-span-1">
-                {unreadCount === 0
-                  ? "All caught up"
-                  : `${unreadCount} unread`}
-              </div>
-
-              <button
-                onClick={markAllRead}
-                disabled={working || unreadCount === 0}
-                className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-              >
-                Mark all read
-              </button>
-
-              <button
-                onClick={clearReadNotifications}
-                disabled={working || readCount === 0}
-                className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-              >
-                Clear read
-              </button>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+                Updates from replies, follows, mentions, and conversations connected to you.
+              </p>
             </div>
-          )}
-        </div>
+
+            {!loading && alerts.length > 0 && (
+              <div className="flex flex-col gap-2 sm:items-end">
+                <span className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500">
+                  {unreadCount === 0
+                    ? "All caught up"
+                    : `${unreadCount} unread`}
+                </span>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={markAllRead}
+                    disabled={working || unreadCount === 0}
+                    className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    Mark all read
+                  </button>
+
+                  <button
+                    onClick={clearReadNotifications}
+                    disabled={working || readCount === 0}
+                    className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    Clear read
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
 
         <div className="hidden md:block">
           <ProgressiveGuide
           storageKey="loombus-guide-notifications-v1"
           eyebrow="Guide"
-          title="Notifications guide"
+          title="Alerts guide"
           description="Reopen this when you want help managing alerts without distraction."
           collapsedClassName="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6"
           defaultCollapsed
         >
         <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-            Notifications guide
+            Alerts guide
           </p>
 
           <h2 className="mb-4 text-2xl font-medium">
@@ -546,7 +554,7 @@ export default function NotificationsClientPage() {
           </h2>
 
           <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            Notifications help you return to replies, follows, and mentions that
+            Alerts help you return to replies, follows, and mentions that
             matter. Use unread status for what needs attention, then mark read or
             clear older items when they stop being useful.
           </p>
@@ -558,7 +566,7 @@ export default function NotificationsClientPage() {
               </p>
 
               <p className="text-sm leading-relaxed text-zinc-600">
-                Start with unread notifications so you can respond to current activity first.
+                Start with unread alerts so you can respond to current activity first.
               </p>
             </div>
 
@@ -593,7 +601,7 @@ export default function NotificationsClientPage() {
           </div>
         )}
 
-        {!loading && notifications.length > 0 && (
+        {!loading && alerts.length > 0 && (
           <div className="mb-5 grid grid-cols-3 gap-2 sm:mb-8 sm:flex sm:flex-wrap sm:gap-3">
             {filterOptions.map((option) => (
               <button
@@ -615,7 +623,7 @@ export default function NotificationsClientPage() {
           </div>
         )}
 
-        {!loading && notifications.length > 0 && (
+        {!loading && alerts.length > 0 && (
           <section className="mb-5 hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6 md:block">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
@@ -624,7 +632,7 @@ export default function NotificationsClientPage() {
                 </p>
 
                 <h2 className="text-xl font-medium sm:text-2xl">
-                  Filter notifications by signal
+                  Filter alerts by signal
                 </h2>
               </div>
 
@@ -698,25 +706,25 @@ export default function NotificationsClientPage() {
 
             <p className="mt-5 text-xs leading-relaxed text-zinc-600">
               Premium controls let you isolate replies, mentions, follows, and
-              review notifications from newest or oldest first.
+              review alerts from newest or oldest first.
             </p>
           </section>
         )}
 
         {loading && (
           <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
-            Loading notifications...
+            Loading alerts...
           </p>
         )}
 
-        {!loading && notifications.length === 0 && (
+        {!loading && alerts.length === 0 && (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
             <h2 className="mb-3 text-xl font-medium sm:text-2xl">
-              No notifications yet.
+              No alerts yet.
             </h2>
 
             <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
-              Notifications appear when people reply, mention you, follow you, or
+              Alerts appear when people reply, mention you, follow you, or
               interact with activity connected to your contributions. The best way
               to make this page useful is to participate where people can respond.
             </p>
@@ -778,15 +786,15 @@ export default function NotificationsClientPage() {
           </div>
         )}
 
-        {!loading && notifications.length > 0 && filteredNotifications.length === 0 && (
+        {!loading && alerts.length > 0 && filteredNotifications.length === 0 && (
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
             <h2 className="mb-3 text-xl font-medium sm:text-2xl">
-              No notifications found.
+              No alerts found.
             </h2>
 
             <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
-              No notifications match the current filters. Broaden the view or
-              return to all notifications to review everything connected to you.
+              No alerts match the current filters. Broaden the view or
+              return to all alerts to review everything connected to you.
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -820,41 +828,43 @@ export default function NotificationsClientPage() {
               : undefined;
 
             return (
-              <div
+              <article
                 key={notification.id}
-                className={`rounded-2xl border p-4 sm:p-6 ${
+                className={`group rounded-2xl border p-4 shadow-2xl shadow-black/15 transition hover:border-zinc-700 sm:p-5 ${
                   notification.read_at
-                    ? "border-zinc-900 bg-zinc-950"
+                    ? "border-zinc-900 bg-zinc-950/80"
                     : "border-zinc-700 bg-zinc-950"
                 }`}
               >
-                <div className="mb-3 flex flex-wrap items-center gap-3">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
                   {!notification.read_at && (
-                    <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-black">
+                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-black">
                       New
                     </span>
                   )}
 
-                  <span className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+                  <span className="rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500">
                     {notification.type}
+                  </span>
+
+                  <span className="ml-auto text-xs text-zinc-700">
+                    {new Date(notification.created_at).toLocaleString()}
                   </span>
                 </div>
 
-                <div className="mb-3 flex items-start gap-3 sm:mb-4 sm:gap-4">
+                <div className="mb-4 flex items-start gap-3">
                   <ProfileAvatar profile={actorProfile} size="md" />
 
-                  <div className="min-w-0">
-                    <p className="text-sm leading-relaxed text-zinc-300 sm:text-base">
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm leading-relaxed sm:text-base ${
+                      notification.read_at ? "text-zinc-500" : "text-zinc-300"
+                    }`}>
                       {getNotificationMessage(notification, profiles)}
-                    </p>
-
-                    <p className="mt-2 text-sm text-zinc-600">
-                      {new Date(notification.created_at).toLocaleString()}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+                <div className="flex flex-col gap-2 border-t border-zinc-900 pt-4 sm:flex-row sm:flex-wrap sm:items-center">
                   {href && (
                     <Link
                       href={href}
@@ -872,7 +882,7 @@ export default function NotificationsClientPage() {
                     <button
                       onClick={() => markRead(notification.id)}
                       disabled={working}
-                      className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                     >
                       Mark read
                     </button>
@@ -881,12 +891,18 @@ export default function NotificationsClientPage() {
                   <button
                     onClick={() => deleteNotification(notification.id)}
                     disabled={working}
-                    className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    className="rounded-full border border-zinc-900 px-4 py-2 text-center text-sm text-zinc-600 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:ml-auto"
                   >
                     Delete
                   </button>
+
+                  {href && (
+                    <span className="hidden text-xs text-zinc-500 sm:inline">
+                      Open alert →
+                    </span>
+                  )}
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
