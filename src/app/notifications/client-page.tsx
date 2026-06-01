@@ -487,8 +487,10 @@ export default function NotificationsClientPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
-      <div className="mx-auto max-w-4xl">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12">
+      <div className="mx-auto max-w-[82rem]">
+        <div className="alerts-shell-grid grid gap-6 xl:grid-cols-[minmax(0,46rem)_20rem] xl:items-start xl:justify-center">
+          <div className="min-w-0">
         <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-8 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -905,6 +907,147 @@ export default function NotificationsClientPage() {
               </article>
             );
           })}
+        </div>
+          </div>
+
+          <aside className="hidden xl:block">
+            <div className="sticky top-6 space-y-4">
+              <section className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20">
+                <div className="border-b border-zinc-900 p-5">
+                  <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                    Alerts Panel
+                  </p>
+
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    Attention without noise.
+                  </h2>
+
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                    Alerts should help you return to meaningful activity, not pull you away from deeper discussions.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 border-b border-zinc-900">
+                  <div className="border-r border-zinc-900 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      Total
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-zinc-200">
+                      {alerts.length}
+                    </p>
+                  </div>
+
+                  <div className="border-r border-zinc-900 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      Unread
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-zinc-200">
+                      {unreadCount}
+                    </p>
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      Read
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-zinc-200">
+                      {readCount}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  <Link
+                    href="/discussions"
+                    className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+                  >
+                    Browse discussions
+                  </Link>
+                </div>
+              </section>
+
+              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+                <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Current inbox
+                </p>
+
+                <div className="space-y-2">
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      View
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-300">
+                      {filterMode}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      Type
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-300">
+                      {canUseAdvancedControls ? typeFilter : "all"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      Sort
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-300">
+                      {canUseAdvancedControls ? sortMode : "newest"}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+                <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Response standard
+                </p>
+
+                <div className="space-y-3 text-sm leading-relaxed text-zinc-500">
+                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    Open the source before reacting.
+                  </p>
+
+                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    Reply when you can add context or clarity.
+                  </p>
+
+                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    Mark read when the alert no longer needs attention.
+                  </p>
+                </div>
+              </section>
+
+              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+                <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Quiet inbox
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-500">
+                  A useful alert inbox is not a place to live. Use it as a return path, then go back to reading, replying, saving, or creating.
+                </p>
+
+                <div className="mt-4 grid gap-2">
+                  <Link
+                    href="/settings"
+                    className="inline-flex justify-center rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Alert settings
+                  </Link>
+
+                  <Link
+                    href="/create"
+                    className="inline-flex justify-center rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Create discussion
+                  </Link>
+                </div>
+              </section>
+            </div>
+          </aside>
         </div>
       </div>
     </main>
