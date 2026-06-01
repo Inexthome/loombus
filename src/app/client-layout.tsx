@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Search,
   Settings as SettingsIcon,
+  ShieldCheck,
   UserCircle,
   Users,
 } from "lucide-react";
@@ -602,6 +603,13 @@ export default function ClientLayout({
               <UserCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Profile" />
             </Link>
+
+            {isAdmin && (
+              <Link href="/admin" aria-label="Admin" title="Admin" className={desktopRailLinkClass("/admin")}>
+                <ShieldCheck aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+                <DesktopRailTooltip label="Admin" />
+              </Link>
+            )}
 
             <Link href="/settings" aria-label="Settings" title="Settings" className={desktopRailLinkClass("/settings")}>
               <SettingsIcon aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
