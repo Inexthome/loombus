@@ -723,6 +723,42 @@ export default function DashboardClientPage() {
       : null,
   ].filter((item): item is OrganizationAction => Boolean(item)).slice(0, 4);
 
+  const primaryHomeActions = [
+    {
+      title: "Create",
+      description: "Start a clear discussion.",
+      href: "/create",
+      action: "Start",
+      stat: activityCounts.discussions,
+      statLabel: "started",
+    },
+    {
+      title: "Browse",
+      description: "Find conversations worth reading.",
+      href: "/discussions",
+      action: "Explore",
+      stat: activityCounts.replies,
+      statLabel: "replies",
+    },
+    {
+      title: "Saved",
+      description: "Return to useful discussions.",
+      href: "/saved",
+      action: "Open",
+      stat: activityCounts.saved,
+      statLabel: "saved",
+    },
+  ];
+
+  const topNextAction =
+    organizationActions[0] ?? {
+      title: "Keep building your Loombus signal",
+      description: "Create, reply, save, or follow one useful thing today.",
+      href: "/discussions",
+      action: "Browse discussions",
+      priority: "growth" as const,
+    };
+
   async function getAccessToken() {
     const { data } = await supabase.auth.getSession();
     const accessToken = data.session?.access_token;
@@ -920,17 +956,82 @@ export default function DashboardClientPage() {
     <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
       <WelcomeEmailTrigger />
       <div className="mx-auto max-w-6xl">
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-          Dashboard
+        <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
+          Home
         </p>
 
-        <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-          Welcome to Loombus.
-        </h1>
+        <section className="mb-6 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-6">
+          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+                What Matters Now
+              </h1>
 
-        <p className="mb-6 text-sm text-zinc-400 sm:text-base">
-          Signed in as {email}
-        </p>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+                Start, browse, or return to something useful. Loombus works best when the next step is clear.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-500">
+              Signed in
+            </div>
+          </div>
+
+          <div className="mb-5 grid gap-3 md:grid-cols-3">
+            {primaryHomeActions.map((item) => (
+              <Link
+                key={item.title}
+                href={item.href}
+                className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700"
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-medium text-zinc-100">
+                      {item.title}
+                    </h2>
+
+                    <p className="mt-1 text-sm text-zinc-600">
+                      {item.description}
+                    </p>
+                  </div>
+
+                  <span className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
+                    {item.stat} {item.statLabel}
+                  </span>
+                </div>
+
+                <span className="text-sm text-zinc-300">
+                  {item.action} →
+                </span>
+              </Link>
+            ))}
+          </div>
+
+          <Link
+            href={topNextAction.href}
+            className="block rounded-2xl border border-zinc-900 bg-black/40 p-4 transition hover:border-zinc-700"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="mb-1 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Next step
+                </p>
+
+                <h2 className="text-base font-medium text-zinc-200">
+                  {topNextAction.title}
+                </h2>
+
+                <p className="mt-1 text-sm leading-relaxed text-zinc-600">
+                  {topNextAction.description}
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-full bg-white px-4 py-2 text-sm text-black">
+                {topNextAction.action}
+              </span>
+            </div>
+          </Link>
+        </section>
 
         <ProgressiveGuide
           storageKey="loombus-guide-dashboard-getting-started-v1"
@@ -1003,7 +1104,7 @@ export default function DashboardClientPage() {
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Organization assistant
+                Next steps
               </p>
 
               <h2 className="text-xl font-medium sm:text-2xl">
@@ -1031,7 +1132,7 @@ export default function DashboardClientPage() {
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Private contribution goals
+                Private goals
               </p>
 
               <h2 className="text-xl font-medium sm:text-2xl">
@@ -1246,11 +1347,11 @@ export default function DashboardClientPage() {
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Contribution foundation
+                Contribution basics
               </p>
 
               <h2 className="text-xl font-medium sm:text-2xl">
-                How your reputation foundation is forming.
+                How your contribution base is forming.
               </h2>
             </div>
 
@@ -1274,11 +1375,11 @@ export default function DashboardClientPage() {
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Contribution signals
+                Your activity signals
               </p>
 
               <h2 className="text-xl font-medium sm:text-2xl">
-                Your private contribution snapshot.
+                Your private activity snapshot.
               </h2>
             </div>
 
@@ -1301,7 +1402,7 @@ export default function DashboardClientPage() {
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                  Topic contribution signals
+                  Topic activity
                 </p>
 
                 <h3 className="text-lg font-medium text-zinc-200">
