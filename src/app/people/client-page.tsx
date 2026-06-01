@@ -130,15 +130,15 @@ export default function PeoplePage() {
           return;
         }
 
-        const [profilesResult, followsResult, blocksResult] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("id, full_name, username, avatar_url, bio")
-            .order("full_name", { ascending: true }),
+        const [viewerFollowingResult, viewerFollowersResult, blocksResult] = await Promise.all([
           supabase
             .from("follows")
             .select("following_id")
             .eq("follower_id", viewerId),
+          supabase
+            .from("follows")
+            .select("follower_id")
+            .eq("following_id", viewerId),
           supabase
             .from("user_blocks")
             .select("blocker_id, blocked_id")
@@ -146,7 +146,9 @@ export default function PeoplePage() {
         ]);
 
         const firstError =
-          profilesResult.error || followsResult.error || blocksResult.error;
+          viewerFollowingResult.error ||
+          viewerFollowersResult.error ||
+          blocksResult.error;
 
         if (firstError) {
           throw firstError;
@@ -156,14 +158,15 @@ export default function PeoplePage() {
           return;
         }
 
-        const loadedProfiles = (profilesResult.data ?? []) as Profile[];
-        setProfiles(loadedProfiles);
+        const directFollowingIds = (viewerFollowingResult.data ?? [])
+          .map((follow) => follow.following_id)
+          .filter((profileId): profileId is string => Boolean(profileId));
 
-        setFollowingIds(
-          new Set(
-            (followsResult.data ?? []).map((follow) => follow.following_id)
-          )
-        );
+        const directFollowerIds = (viewerFollowersResult.data ?? [])
+          .map((follow) => follow.follower_id)
+          .filter((profileId): profileId is string => Boolean(profileId));
+
+        setFollowingIds(new Set(directFollowingIds));
 
         const hiddenIds = new Set<string>();
 
@@ -175,7 +178,73 @@ export default function PeoplePage() {
 
         setBlockedProfileIds(hiddenIds);
 
-        const visibleProfileIds = loadedProfiles.map((profile) => profile.id);
+        const directRelationshipIds = new Set<string>([
+          ...directFollowingIds,
+          ...directFollowerIds,
+        ]);
+
+        directRelationshipIds.delete(viewerId);
+        hiddenIds.forEach((profileId) => directRelationshipIds.delete(profileId));
+
+        const suggestedProfileIds = new Set<string>();
+        const suggestionSourceIds = directFollowingIds.filter(
+          (profileId) => !hiddenIds.has(profileId)
+        );
+
+        if (suggestionSourceIds.length > 0) {
+          const suggestionsResult = await supabase
+            .from("follows")
+            .select("following_id")
+            .in("follower_id", suggestionSourceIds)
+            .limit(100);
+
+          if (suggestionsResult.error) {
+            console.error(
+              "Unable to load People relationship suggestions.",
+              suggestionsResult.error
+            );
+          } else {
+            (suggestionsResult.data ?? []).forEach((row) => {
+              const profileId = (row as { following_id: string | null })
+                .following_id;
+
+              if (
+                profileId &&
+                profileId !== viewerId &&
+                !hiddenIds.has(profileId) &&
+                !directRelationshipIds.has(profileId)
+              ) {
+                suggestedProfileIds.add(profileId);
+              }
+            });
+          }
+        }
+
+        const visibleProfileIds = Array.from(
+          new Set<string>([
+            ...directRelationshipIds,
+            ...Array.from(suggestedProfileIds).slice(0, 24),
+          ])
+        );
+
+        let loadedProfiles: Profile[] = [];
+
+        if (visibleProfileIds.length > 0) {
+          const profilesResult = await supabase
+            .from("profiles")
+            .select("id, full_name, username, avatar_url, bio")
+            .in("id", visibleProfileIds)
+            .order("full_name", { ascending: true });
+
+          if (profilesResult.error) {
+            throw profilesResult.error;
+          }
+
+          loadedProfiles = (profilesResult.data ?? []) as Profile[];
+        }
+
+        setProfiles(loadedProfiles);
+
         const nextFollowCounts: FollowCounts = Object.fromEntries(
           visibleProfileIds.map((profileId) => [
             profileId,
@@ -368,7 +437,7 @@ export default function PeoplePage() {
             </h1>
 
             <p className="mb-5 text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
-              The People directory is available to Loombus members only.
+              The People network is available to Loombus members only.
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -403,11 +472,11 @@ export default function PeoplePage() {
           </p>
 
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-            Find contributors
+            Your people network
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-            Discover people whose discussions, replies, and interests can make your feed more useful.
+            See people you follow, people who follow you, and limited suggestions from your existing network.
           </p>
 
           <label htmlFor="people-search" className="mt-5 block xl:hidden">
@@ -420,7 +489,7 @@ export default function PeoplePage() {
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search by username, name, bio, interests, or projects..."
+              placeholder="Search visible people by username, name, bio, interests, or projects..."
               className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500 sm:text-lg"
             />
           </label>
@@ -436,13 +505,13 @@ export default function PeoplePage() {
               </button>
             ) : (
               <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                Browse members
+                Relationship view
               </span>
             )}
 
             {!loading && (
               <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                {filteredProfiles.length} of {profiles.length} members
+                {filteredProfiles.length} of {profiles.length} visible people
               </span>
             )}
           </div>
@@ -463,11 +532,11 @@ export default function PeoplePage() {
         {!loading && filteredProfiles.length === 0 && (
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
             <h2 className="mb-3 text-xl font-medium sm:text-2xl">
-              No members found.
+              No visible people found.
             </h2>
 
             <p className="max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-              No visible members match the current search. Try a broader term or browse public discussions first.
+              No people match this relationship view yet. Follow contributors from discussions to build your network, or clear your search if one is active.
             </p>
 
             <div className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row sm:flex-wrap">
@@ -577,11 +646,11 @@ export default function PeoplePage() {
                     </p>
 
                     <h2 className="text-xl font-semibold tracking-tight">
-                      Refine contributor discovery.
+                      Refine your people network.
                     </h2>
 
                     <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                      Search people here. The center panel stays focused on contributor results.
+                      Search people you follow, people who follow you, and relationship-based suggestions here.
                     </p>
                   </div>
 
@@ -606,7 +675,7 @@ export default function PeoplePage() {
                     type="text"
                     value={searchQuery}
                     onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search by username, name, bio, interests, or projects..."
+                    placeholder="Search visible people by username, name, bio, interests, or projects..."
                     className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
                   />
                 </label>
@@ -618,13 +687,13 @@ export default function PeoplePage() {
                     </span>
                   ) : (
                     <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
-                      Browse members
+                      Relationship view
                     </span>
                   )}
 
                   {!loading && (
                     <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                      {filteredProfiles.length} of {profiles.length}
+                      {filteredProfiles.length} of {profiles.length} visible
                     </span>
                   )}
                 </div>
@@ -658,7 +727,7 @@ export default function PeoplePage() {
 
                   <div className="p-4">
                     <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
-                      Total
+                      Visible
                     </p>
                     <p className="mt-2 text-lg font-semibold text-zinc-200">
                       {profiles.length}
@@ -707,7 +776,7 @@ export default function PeoplePage() {
                       View
                     </p>
                     <p className="mt-1 text-sm text-zinc-300">
-                      {hasActivePeopleSearch ? `Search: “${activePeopleSearch}”` : "Browse members"}
+                      {hasActivePeopleSearch ? `Search: “${activePeopleSearch}”` : "Relationship view"}
                     </p>
                   </div>
 
@@ -727,7 +796,7 @@ export default function PeoplePage() {
                     onClick={resetPeopleSearch}
                     className="mt-4 w-full rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
                   >
-                    Reset discovery
+                    Reset search
                   </button>
                 )}
               </section>
@@ -750,10 +819,10 @@ export default function PeoplePage() {
                   </Link>
 
                   <Link
-                    href="/search"
+                    href="/following"
                     className="inline-flex justify-center rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
                   >
-                    Search Loombus
+                    Open following feed
                   </Link>
                 </div>
               </section>
