@@ -86,6 +86,10 @@ function getNotificationHref(
     return `/discussions/${notification.target_id}`;
   }
 
+  if (notification.target_type === "identity_verification") {
+    return "/profile";
+  }
+
   if (notification.target_type === "profile") {
     const actorProfile = notification.actor_id
       ? profiles[notification.actor_id]
@@ -102,6 +106,10 @@ function getNotificationHref(
 function getNotificationActionLabel(notification: Notification) {
   if (notification.target_type === "discussion") {
     return "Open discussion";
+  }
+
+  if (notification.target_type === "identity_verification") {
+    return "Open verification";
   }
 
   if (notification.target_type === "profile") {

@@ -5,6 +5,7 @@ import { TopicAlertsControl } from "@/components/topic-alerts-control";
 import { type ChangeEvent, type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { getIdentityVerificationDisplay, normalizeIdentityVerificationStatus, type IdentityVerificationStatus } from "@/lib/identity-verification";
 
 type AiEntitlement = {
   tier: string | null;
@@ -75,6 +76,10 @@ export default function ProfilePage() {
   const [creatorSupportLabel, setCreatorSupportLabel] = useState("");
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [identityVerificationStatus, setIdentityVerificationStatus] = useState<IdentityVerificationStatus>("unverified");
+  const [identityVerificationProvider, setIdentityVerificationProvider] = useState<string | null>(null);
+  const [identityVerifiedAt, setIdentityVerifiedAt] = useState<string | null>(null);
+  const [legalNameVerified, setLegalNameVerified] = useState(false);
   const [repliesEnabled, setRepliesEnabled] = useState(true);
   const [followsEnabled, setFollowsEnabled] = useState(true);
   const [mentionsEnabled, setMentionsEnabled] = useState(true);
@@ -84,6 +89,7 @@ export default function ProfilePage() {
   const [emailDigestFrequency, setEmailDigestFrequency] = useState("weekly");
   const canUseEmailDigest = hasPremiumDigestAccess(aiEntitlement, isAdmin);
   const canUseTopicAlerts = canUseEmailDigest;
+  const identityVerificationDisplay = getIdentityVerificationDisplay(identityVerificationStatus);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -114,6 +120,12 @@ export default function ProfilePage() {
         setCreatorSupportUrl(data.creator_support_url ?? "");
         setCreatorSupportLabel(data.creator_support_label ?? "");
         setIsAdmin(Boolean(data.is_admin));
+        setIdentityVerificationStatus(
+          normalizeIdentityVerificationStatus(data.identity_verification_status)
+        );
+        setIdentityVerificationProvider(data.identity_verification_provider ?? null);
+        setIdentityVerifiedAt(data.identity_verified_at ?? null);
+        setLegalNameVerified(Boolean(data.legal_name_verified));
       }
 
       const { data: entitlementData } = await supabase
@@ -402,6 +414,67 @@ export default function ProfilePage() {
         </p>
 
         <TopicAlertsControl canUseTopicAlerts={canUseTopicAlerts} />
+
+        <section className={`mb-6 rounded-2xl border p-4 shadow-2xl shadow-black/20 sm:p-6 ${identityVerificationDisplay.cardClassName}`}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Identity verification
+              </p>
+
+              <h2 className="text-xl font-medium sm:text-2xl">
+                Account verification status.
+              </h2>
+            </div>
+
+            <span className={`w-fit rounded-full border px-4 py-2 text-sm ${identityVerificationDisplay.badgeClassName}`}>
+              {identityVerificationDisplay.label}
+            </span>
+          </div>
+
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-zinc-400">
+            {identityVerificationDisplay.description}
+          </p>
+
+          <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+              <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-700">
+                Provider
+              </p>
+              <p className="text-zinc-300">
+                {identityVerificationProvider === "idme"
+                  ? "ID.me"
+                  : identityVerificationProvider === "manual"
+                    ? "Manual review"
+                    : "Not selected"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+              <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-700">
+                Legal name
+              </p>
+              <p className="text-zinc-300">
+                {legalNameVerified ? "Verified" : "Not verified"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+              <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-700">
+                Verified at
+              </p>
+              <p className="text-zinc-300">
+                {identityVerifiedAt
+                  ? new Date(identityVerifiedAt).toLocaleDateString()
+                  : "Not verified"}
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-4 text-sm text-zinc-500">
+            {identityVerificationDisplay.nextAction}
+          </p>
+        </section>
 
         <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">

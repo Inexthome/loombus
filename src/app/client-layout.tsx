@@ -21,6 +21,7 @@ import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
+import { IdentityVerificationReminderTrigger } from "@/components/identity-verification-reminder-trigger";
 
 type NavProfile = {
   username: string | null;
@@ -530,6 +531,7 @@ export default function ClientLayout({
 
   return (
     <div className="min-h-screen bg-black text-white antialiased">
+      <IdentityVerificationReminderTrigger />
       {/* Desktop Signal Rail: U2 app-shell foundation. Mobile keeps the existing floating top/bottom shell. */}
       {user && (
         <aside className="loombus-desktop-rail fixed inset-y-0 left-0 z-40 hidden w-24 border-r border-zinc-900 bg-black/95 px-3 py-4 backdrop-blur-xl md:flex md:flex-col md:items-center">
