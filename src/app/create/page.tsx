@@ -8,6 +8,7 @@ import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from
 import { supabase } from "@/lib/supabase/client";
 import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { REALITY_LENSES, normalizeRealityLens } from "@/lib/reality-lenses";
+import { PURPOSE_LANES, normalizePurposeLane } from "@/lib/purpose-lanes";
 
 type Profile = {
   full_name: string | null;
@@ -28,6 +29,7 @@ type DiscussionDraft = {
   title: string;
   topic: string;
   reality_lens: string | null;
+  purpose_lane: string | null;
   body: string;
   created_at: string;
   updated_at: string;
@@ -39,6 +41,7 @@ type EditableDiscussion = {
   title: string;
   topic: string;
   reality_lens: string | null;
+  purpose_lane: string | null;
   body: string;
   created_at: string;
   updated_at: string | null;
@@ -174,6 +177,7 @@ export default function CreatePage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState<string>(DEFAULT_DISCUSSION_TOPIC);
   const [realityLens, setRealityLens] = useState<string>("");
+  const [purposeLane, setPurposeLane] = useState<string>("");
   const [body, setBody] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
@@ -248,7 +252,7 @@ export default function CreatePage() {
       if (requestedEditId) {
         const { data: discussionData, error: discussionError } = await supabase
           .from("discussions")
-          .select("id, user_id, title, topic, reality_lens, body, created_at, updated_at, edited_at, edit_count")
+          .select("id, user_id, title, topic, reality_lens, purpose_lane, body, created_at, updated_at, edited_at, edit_count")
           .eq("id", requestedEditId)
           .is("deleted_at", null)
           .maybeSingle();
@@ -275,6 +279,7 @@ export default function CreatePage() {
             );
 
             setRealityLens(normalizeRealityLens(discussion.reality_lens) ?? "");
+            setPurposeLane(normalizePurposeLane(discussion.purpose_lane) ?? "");
             setBody(discussion.body ?? "");
 
             const { data: tagRows, error: tagError } = await supabase
@@ -299,7 +304,7 @@ export default function CreatePage() {
       if (requestedDraftId) {
         const { data: draftData, error: draftError } = await supabase
           .from("discussion_drafts")
-          .select("id, title, topic, reality_lens, body, created_at, updated_at")
+          .select("id, title, topic, reality_lens, purpose_lane, body, created_at, updated_at")
           .eq("id", requestedDraftId)
           .eq("user_id", userData.user.id)
           .maybeSingle();
@@ -320,6 +325,7 @@ export default function CreatePage() {
           );
 
           setRealityLens(normalizeRealityLens(draft.reality_lens) ?? "");
+          setPurposeLane(normalizePurposeLane(draft.purpose_lane) ?? "");
           setBody(draft.body ?? "");
           setTagsInput("");
           setDraftUpdatedAt(draft.updated_at);
@@ -384,6 +390,7 @@ export default function CreatePage() {
         title,
         topic,
         realityLens,
+        purposeLane,
         body,
       }),
     });
@@ -691,6 +698,7 @@ export default function CreatePage() {
           title,
           topic,
           realityLens,
+          purposeLane,
           body,
           tags: tagsInput,
         }
@@ -698,6 +706,7 @@ export default function CreatePage() {
           title,
           topic,
           realityLens,
+          purposeLane,
           body,
           tags: tagsInput,
         };
@@ -989,7 +998,7 @@ export default function CreatePage() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               <div>
                 <label className="mb-2 block text-sm text-zinc-400">
                   Topic
@@ -1028,6 +1037,29 @@ export default function CreatePage() {
 
                 <p className="mt-2 text-xs text-zinc-600">
                   Add a human-reality lens if this discussion touches a deeper life experience.
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-zinc-400">
+                  Purpose Lane optional
+                </label>
+
+                <select
+                  value={purposeLane}
+                  onChange={(e) => setPurposeLane(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                >
+                  <option value="">No purpose lane</option>
+                  {PURPOSE_LANES.map((lane) => (
+                    <option key={lane} value={lane}>
+                      {lane}
+                    </option>
+                  ))}
+                </select>
+
+                <p className="mt-2 text-xs text-zinc-600">
+                  Add a direction if this discussion points toward learning, contribution, mastery, or community.
                 </p>
               </div>
             </div>

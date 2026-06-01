@@ -5,6 +5,7 @@ import { getAiSafetyErrorPayload, reviewContentSafety } from "@/lib/moderation/a
 import { logAiSafetyEvent, logRuleBasedSafetyEvent } from "@/lib/moderation/safety-events";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 import { normalizeRealityLens } from "@/lib/reality-lenses";
+import { normalizePurposeLane } from "@/lib/purpose-lanes";
 import { normalizeDiscussionTags } from "@/lib/discussion-tags";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
@@ -21,6 +22,7 @@ type ExistingDiscussion = {
   topic: string;
   body: string;
   reality_lens: string | null;
+  purpose_lane: string | null;
   created_at: string;
   deleted_at: string | null;
   edit_count: number | null;
@@ -147,6 +149,7 @@ export async function POST(request: NextRequest) {
     const title = String(body.title ?? "").trim();
     const requestedTopic = String(body.topic ?? "").trim();
     const reality_lens = normalizeRealityLens(body.realityLens ?? body.reality_lens);
+    const purpose_lane = normalizePurposeLane(body.purposeLane ?? body.purpose_lane);
     const content = String(body.body ?? "").trim();
     const hasTagPayload = Object.prototype.hasOwnProperty.call(body, "tags");
     const tagResult = normalizeDiscussionTags(hasTagPayload ? body.tags : []);
@@ -201,7 +204,7 @@ export async function POST(request: NextRequest) {
           .maybeSingle(),
         supabase
           .from("discussions")
-          .select("id, user_id, title, topic, reality_lens, body, created_at, deleted_at, edit_count")
+          .select("id, user_id, title, topic, reality_lens, purpose_lane, body, created_at, deleted_at, edit_count")
           .eq("id", discussionId)
           .maybeSingle(),
       ]);
@@ -303,6 +306,7 @@ export async function POST(request: NextRequest) {
       title: existingDiscussion.title,
       topic: existingDiscussion.topic,
       reality_lens: existingDiscussion.reality_lens,
+      purpose_lane: existingDiscussion.purpose_lane,
       body: existingDiscussion.body,
     };
 
@@ -312,6 +316,7 @@ export async function POST(request: NextRequest) {
         title,
         topic,
         reality_lens,
+        purpose_lane,
         body: content,
         updated_at: editedAt,
         edited_at: editedAt,
@@ -319,7 +324,7 @@ export async function POST(request: NextRequest) {
         edit_count: (existingDiscussion.edit_count ?? 0) + 1,
       })
       .eq("id", discussionId)
-      .select("id, user_id, title, topic, reality_lens, body, created_at, updated_at, edited_at, edited_by, edit_count")
+      .select("id, user_id, title, topic, reality_lens, purpose_lane, body, created_at, updated_at, edited_at, edited_by, edit_count")
       .single();
 
     if (updateError) {
@@ -373,6 +378,7 @@ export async function POST(request: NextRequest) {
           title,
           topic,
           reality_lens,
+          purpose_lane,
           body: content,
           tags: hasTagPayload ? discussionTags : undefined,
         },

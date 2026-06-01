@@ -19,6 +19,7 @@ type Discussion = {
   title: string;
   topic: string;
   reality_lens: string | null;
+  purpose_lane: string | null;
   body: string;
   created_at: string;
   updated_at?: string | null;
@@ -1771,6 +1772,12 @@ export default function DiscussionPage() {
           {discussion.reality_lens && (
             <span className="shrink-0 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-zinc-400">
               {discussion.reality_lens}
+            </span>
+          )}
+
+          {discussion.purpose_lane && (
+            <span className="shrink-0 rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1 text-xs text-zinc-400">
+              {discussion.purpose_lane}
             </span>
           )}
 

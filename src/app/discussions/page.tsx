@@ -14,6 +14,7 @@ type Discussion = {
   title: string;
   topic: string;
   reality_lens: string | null;
+  purpose_lane: string | null;
   body: string;
   created_at: string;
   discussion_status?: "open" | "resolved" | null;
@@ -436,6 +437,7 @@ export default function DiscussionsPage() {
         discussion.title.toLowerCase().includes(query) ||
         discussion.body.toLowerCase().includes(query) ||
         (discussion.reality_lens ?? "").toLowerCase().includes(query) ||
+        (discussion.purpose_lane ?? "").toLowerCase().includes(query) ||
         discussion.topic.toLowerCase().includes(query) ||
         (profile?.username ?? "").toLowerCase().includes(query) ||
         (profile?.full_name ?? "").toLowerCase().includes(query);
@@ -926,6 +928,12 @@ export default function DiscussionsPage() {
                       {discussion.reality_lens && (
                         <span className="ml-1.5 inline-flex rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] font-medium text-zinc-400 sm:ml-2 sm:px-3 sm:text-[11px]">
                           {discussion.reality_lens}
+                        </span>
+                      )}
+
+                      {discussion.purpose_lane && (
+                        <span className="ml-1.5 inline-flex rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] font-medium text-zinc-400 sm:ml-2 sm:px-3 sm:text-[11px]">
+                          {discussion.purpose_lane}
                         </span>
                       )}
 

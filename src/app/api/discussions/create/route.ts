@@ -5,6 +5,7 @@ import { getAiSafetyErrorPayload, reviewContentSafety } from "@/lib/moderation/a
 import { logAiSafetyEvent, logRuleBasedSafetyEvent } from "@/lib/moderation/safety-events";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 import { normalizeRealityLens } from "@/lib/reality-lenses";
+import { normalizePurposeLane } from "@/lib/purpose-lanes";
 import { normalizeDiscussionTags } from "@/lib/discussion-tags";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
@@ -187,6 +188,7 @@ export async function POST(request: NextRequest) {
     const title = String(body.title ?? "").trim();
     const requestedTopic = String(body.topic ?? "").trim();
     const reality_lens = normalizeRealityLens(body.realityLens ?? body.reality_lens);
+    const purpose_lane = normalizePurposeLane(body.purposeLane ?? body.purpose_lane);
 
     const topic: DiscussionTopic = DISCUSSION_TOPICS.includes(
       requestedTopic as DiscussionTopic
@@ -340,6 +342,7 @@ export async function POST(request: NextRequest) {
         title,
         topic,
         reality_lens,
+        purpose_lane,
         body: content,
       })
       .select()
@@ -379,6 +382,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         topic,
         reality_lens,
+        purpose_lane,
         title,
         tags: discussionTags,
       },
