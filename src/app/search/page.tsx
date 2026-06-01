@@ -201,8 +201,10 @@ export default function SearchPage() {
   }, [blockedProfileIds, cleanQuery, currentUserId, profiles]);
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
-      <div className="mx-auto max-w-3xl">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12">
+      <div className="mx-auto max-w-[78rem]">
+        <div className="search-shell-grid grid gap-6 xl:grid-cols-[minmax(0,42rem)_20rem] xl:items-start xl:justify-center">
+          <div className="min-w-0">
         <Link
           href="/"
           className="mb-5 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
@@ -441,6 +443,103 @@ export default function SearchPage() {
             </div>
           )}
         </section>
+          </div>
+
+          <aside className="hidden xl:block">
+            <div className="sticky top-6 space-y-4">
+              <section className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20">
+                <div className="border-b border-zinc-900 p-5">
+                  <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                    Discovery Panel
+                  </p>
+
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    Search with signal.
+                  </h2>
+
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                    Use search to find ideas, topics, contributors, and discussions worth returning to.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 border-b border-zinc-900">
+                  <div className="border-r border-zinc-900 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      Threads
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-zinc-200">
+                      {discussionResults.length}
+                    </p>
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      People
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-zinc-200">
+                      {peopleResults.length}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  <Link
+                    href="/discussions"
+                    className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+                  >
+                    Browse discussions
+                  </Link>
+                </div>
+              </section>
+
+              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+                <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Search paths
+                </p>
+
+                <div className="space-y-3 text-sm leading-relaxed text-zinc-500">
+                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    Search a topic when you want a subject lane.
+                  </p>
+
+                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    Search a reality or purpose phrase when you want human context.
+                  </p>
+
+                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    Search a contributor when you want a voice or perspective.
+                  </p>
+                </div>
+              </section>
+
+              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+                <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Discovery standard
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-500">
+                  The best search result is not always the most popular one. Look for clear framing, useful context, and contributors who help you think better.
+                </p>
+
+                <div className="mt-4 grid gap-2">
+                  <Link
+                    href="/people"
+                    className="inline-flex justify-center rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Find contributors
+                  </Link>
+
+                  <Link
+                    href="/saved"
+                    className="inline-flex justify-center rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Open saved
+                  </Link>
+                </div>
+              </section>
+            </div>
+          </aside>
+        </div>
       </div>
     </main>
   );
