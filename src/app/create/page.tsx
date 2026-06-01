@@ -777,13 +777,13 @@ export default function CreatePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16 loombus-shell-with-right-rail">
       <SafetyWarningModal
         warning={safetyWarning}
         onClose={() => setSafetyWarning(null)}
       />
 
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-[46rem]">
         <Link
           href={isEditMode && editingDiscussionId ? `/discussions/${editingDiscussionId}` : "/discussions"}
           className="mb-3 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
@@ -890,7 +890,7 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && !isEditMode && (
-          <div className="hidden md:block">
+          <div className="hidden md:block xl:hidden">
             <ProgressiveGuide
           storageKey="loombus-guide-create-first-discussion-v1"
           eyebrow="Guide"
@@ -1029,7 +1029,7 @@ export default function CreatePage() {
               </div>
             </div>
 
-            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
+            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 xl:hidden">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
@@ -1149,7 +1149,7 @@ export default function CreatePage() {
             </section>
 
             {!isEditMode && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 xl:hidden">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
@@ -1229,7 +1229,7 @@ export default function CreatePage() {
               </section>
             )}
 
-            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
+            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 xl:hidden">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
@@ -1396,6 +1396,354 @@ export default function CreatePage() {
             {message && <p className="text-sm text-zinc-400">{message}</p>}
           </form>
         )}
+      <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl xl:block">
+        <div className="space-y-4">
+          {authChecked && isLoggedIn && !isEditMode && (
+            <ProgressiveGuide
+              storageKey="loombus-guide-create-first-discussion-v1"
+              eyebrow="Guide"
+              title="First discussion guide"
+              description="Reopen this when you want help shaping a high-signal post."
+              collapsedClassName="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20"
+            >
+              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  First discussion guide
+                </p>
+
+                <h2 className="mb-3 text-xl font-semibold tracking-tight">
+                  Start with signal.
+                </h2>
+
+                <div className="space-y-3 text-sm leading-relaxed text-zinc-500">
+                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    Make the title clear before readers open it.
+                  </p>
+
+                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    Add context: what prompted the thought and why it matters.
+                  </p>
+
+                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    Invite useful replies: examples, counterpoints, experience, or better framing.
+                  </p>
+                </div>
+              </section>
+            </ProgressiveGuide>
+          )}
+
+          {authChecked && isLoggedIn && (
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <div className="mb-5 flex items-start justify-between gap-3">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                    Create tools
+                  </p>
+
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    Shape the post.
+                  </h2>
+
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                    Details, attachments, and writing tools live here. The center stays focused on writing.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowOptionalDetails((current) => !current)}
+                  className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                  aria-expanded={showOptionalDetails}
+                >
+                  <span>Optional details</span>
+                  <span className="text-xs text-zinc-600">
+                    {showOptionalDetails ? "Hide" : "Show"}
+                  </span>
+                </button>
+
+                {!isEditMode && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAttachmentsPanel((current) => !current)}
+                    className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                    aria-expanded={showAttachmentsPanel}
+                  >
+                    <span>Optional attachments</span>
+                    <span className="text-xs text-zinc-600">
+                      {attachmentFiles.length > 0 ? `${attachmentFiles.length} selected` : showAttachmentsPanel ? "Hide" : "Add"}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowWritingTools((current) => !current)}
+                  className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                  aria-expanded={showWritingTools}
+                >
+                  <span>Optional writing tools</span>
+                  <span className="text-xs text-zinc-600">
+                    {showWritingTools ? "Hide" : "Open"}
+                  </span>
+                </button>
+              </div>
+            </section>
+          )}
+
+          {authChecked && isLoggedIn && showOptionalDetails && (
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                Optional details
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm text-zinc-400">
+                    Topic
+                  </label>
+
+                  <select
+                    value={topic}
+                    onChange={(event) => setTopic(event.target.value)}
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                  >
+                    {DISCUSSION_TOPICS.map((topicOption) => (
+                      <option key={topicOption} value={topicOption}>
+                        {topicOption}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm text-zinc-400">
+                    Reality Lens optional
+                  </label>
+
+                  <select
+                    value={realityLens}
+                    onChange={(event) => setRealityLens(event.target.value)}
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                  >
+                    <option value="">No reality lens</option>
+                    {REALITY_LENSES.map((lens) => (
+                      <option key={lens} value={lens}>
+                        {lens}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm text-zinc-400">
+                    Purpose Lane optional
+                  </label>
+
+                  <select
+                    value={purposeLane}
+                    onChange={(event) => setPurposeLane(event.target.value)}
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                  >
+                    <option value="">No purpose lane</option>
+                    {PURPOSE_LANES.map((lane) => (
+                      <option key={lane} value={lane}>
+                        {lane}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm text-zinc-400">
+                    Optional Tags
+                  </label>
+
+                  <input
+                    type="text"
+                    value={tagsInput}
+                    onChange={(event) => setTagsInput(event.target.value)}
+                    placeholder="AI ethics, publishing, startups"
+                    className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                  />
+
+                  <p className="mt-2 text-xs text-zinc-600">
+                    {tagInputHelper}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {authChecked && isLoggedIn && !isEditMode && showAttachmentsPanel && (
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                    Optional attachments
+                  </p>
+
+                  <p className="text-sm leading-relaxed text-zinc-500">
+                    Add up to 3 images or PDFs. Max 10 MB each.
+                  </p>
+                </div>
+
+                {attachmentFiles.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearAttachments}
+                    disabled={publishing}
+                    className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              <input
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                onChange={handleAttachmentSelection}
+                disabled={publishing}
+                className="block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400 file:mb-3 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-black disabled:cursor-not-allowed disabled:text-zinc-700"
+              />
+
+              {attachmentFiles.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {attachmentFiles.map((file) => (
+                    <div
+                      key={`${file.name}-${file.size}-${file.lastModified}`}
+                      className="rounded-xl border border-zinc-900 bg-black p-3 text-sm text-zinc-400"
+                    >
+                      <p className="truncate">{file.name}</p>
+                      <p className="mt-1 text-xs text-zinc-600">
+                        {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {attachmentMessage && (
+                <p className="mt-3 text-sm text-zinc-500">
+                  {attachmentMessage}
+                </p>
+              )}
+            </section>
+          )}
+
+          {authChecked && isLoggedIn && showWritingTools && (
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                Optional writing tools
+              </p>
+
+              <div className="space-y-4">
+                <section className="rounded-2xl border border-zinc-800 bg-black p-4">
+                  <div className="mb-3 flex flex-col gap-3">
+                    <div>
+                      <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                        Premium Plus AI
+                      </p>
+
+                      <h2 className="text-base font-medium">
+                        Discussion quality check
+                      </h2>
+                    </div>
+
+                    {canUseQualityCheck ? (
+                      <button
+                        type="button"
+                        onClick={runQualityCheck}
+                        disabled={generatingQualityCheck || publishing}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {generatingQualityCheck ? "Checking..." : "Run quality check"}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/premium"
+                        className="w-full rounded-full border border-zinc-800 px-4 py-2.5 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                      >
+                        Unlock with Premium Plus
+                      </Link>
+                    )}
+                  </div>
+
+                  {qualityCheckMessage && (
+                    <p className="mb-3 text-sm text-zinc-500">
+                      {qualityCheckMessage}
+                    </p>
+                  )}
+
+                  {qualityCheck && (
+                    <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
+                      {qualityCheck}
+                    </div>
+                  )}
+                </section>
+
+                <section className="rounded-2xl border border-zinc-800 bg-black p-4">
+                  <div className="mb-3 flex flex-col gap-3">
+                    <div>
+                      <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                        Premium Plus AI
+                      </p>
+
+                      <h2 className="text-base font-medium">
+                        Rewrite for clarity
+                      </h2>
+                    </div>
+
+                    {canUseQualityCheck ? (
+                      <button
+                        type="button"
+                        onClick={runClarityRewrite}
+                        disabled={generatingRewrite || publishing}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {generatingRewrite ? "Rewriting..." : "Generate rewrite"}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/premium"
+                        className="w-full rounded-full border border-zinc-800 px-4 py-2.5 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                      >
+                        Unlock with Premium Plus
+                      </Link>
+                    )}
+                  </div>
+
+                  {rewriteMessage && (
+                    <p className="mb-3 text-sm text-zinc-500">
+                      {rewriteMessage}
+                    </p>
+                  )}
+
+                  {clarityRewrite && (
+                    <div className="space-y-4">
+                      <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
+                        {clarityRewrite}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={applyClarityRewrite}
+                        className="inline-flex w-full justify-center rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                      >
+                        Use rewrite
+                      </button>
+                    </div>
+                  )}
+                </section>
+              </div>
+            </section>
+          )}
+        </div>
+      </aside>
+
       </div>
     </main>
   );
