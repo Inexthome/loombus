@@ -20,6 +20,7 @@ type ProfileAccess = {
   account_status: string | null;
   enforcement_reason: string | null;
   suspended_until: string | null;
+  identity_verification_status: string | null;
 };
 
 type AiEntitlement = {
@@ -232,7 +233,7 @@ export async function POST(request: NextRequest) {
     const [{ data: profile }, { data: entitlement }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("is_admin, account_status, enforcement_reason, suspended_until")
+        .select("is_admin, account_status, enforcement_reason, suspended_until, identity_verification_status")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -256,6 +257,17 @@ export async function POST(request: NextRequest) {
     }
 
     const isAdmin = Boolean(profileAccess?.is_admin);
+
+    if (!isAdmin && profileAccess?.identity_verification_status !== "verified") {
+      return NextResponse.json(
+        {
+          error: "Identity verification is required before creating discussions.",
+          code: "identity_verification_required",
+        },
+        { status: 403 }
+      );
+    }
+
     const canUseLongPosts = hasLongPostAccess(
       (entitlement ?? null) as AiEntitlement | null,
       isAdmin

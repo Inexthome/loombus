@@ -16,9 +16,11 @@ type BlockRow = {
 };
 
 type ProfileAccess = {
+  is_admin: boolean | null;
   account_status: string | null;
   enforcement_reason: string | null;
   suspended_until: string | null;
+  identity_verification_status: string | null;
 };
 
 type ReferencedReply = {
@@ -110,19 +112,30 @@ export async function POST(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("account_status, enforcement_reason, suspended_until")
+      .select("is_admin, account_status, enforcement_reason, suspended_until, identity_verification_status")
       .eq("id", user.id)
       .maybeSingle();
 
-    const enforcement = getAccountEnforcementResult(
-      (profile ?? null) as ProfileAccess | null
-    );
+    const profileAccess = (profile ?? null) as ProfileAccess | null;
+    const enforcement = getAccountEnforcementResult(profileAccess);
 
     if (!enforcement.allowed) {
       return NextResponse.json(
         {
           error: enforcement.errorMessage,
           code: enforcement.code,
+        },
+        { status: 403 }
+      );
+    }
+
+    const isAdmin = Boolean(profileAccess?.is_admin);
+
+    if (!isAdmin && profileAccess?.identity_verification_status !== "verified") {
+      return NextResponse.json(
+        {
+          error: "Identity verification is required before replying.",
+          code: "identity_verification_required",
         },
         { status: 403 }
       );
