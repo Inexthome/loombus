@@ -399,6 +399,8 @@ export default function DiscussionPage() {
   const [reportMessage, setReportMessage] = useState("");
   const [reportReason, setReportReason] = useState(DEFAULT_REPORT_REASON);
   const [showMobileThreadActions, setShowMobileThreadActions] = useState(false);
+  const [showAiToolsPanel, setShowAiToolsPanel] = useState(false);
+  const [showReplyHelpersPanel, setShowReplyHelpersPanel] = useState(false);
   const [discussionSummary, setDiscussionSummary] = useState<DiscussionSummary | null>(null);
   const [summaryMessage, setSummaryMessage] = useState("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
@@ -2211,6 +2213,7 @@ export default function DiscussionPage() {
           <button
             type="button"
             onClick={() => {
+              setShowAiToolsPanel(true);
               setOpenPremiumAiTool((current) => current || "summary");
 
               window.setTimeout(() => {
@@ -2226,30 +2229,44 @@ export default function DiscussionPage() {
           </button>
         </nav>
 
-        <div
+        <section
           id="intelligence-layer"
-          className="mb-3 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:mb-6 sm:rounded-3xl sm:p-6"
+          className="mb-4 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/20 sm:mb-6 sm:rounded-3xl sm:p-6"
         >
-          <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-            Premium AI-Assisted Layer
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                Optional tools
+              </p>
 
-          <h2 className="text-xl font-semibold tracking-tight sm:text-3xl">
-            Premium AI Tools
-          </h2>
+              <h2 className="text-xl font-semibold tracking-tight sm:text-3xl">
+                AI tools
+              </h2>
 
-          <p className="mt-3 hidden max-w-2xl text-sm leading-relaxed text-zinc-500 sm:block sm:text-base">
-            Use AI to understand the strongest points, key shifts, and summary
-            of this discussion without adding noise to the thread.
-          </p>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+                Use these only when you want help understanding or organizing the thread.
+              </p>
 
-          {currentUserId && (
-            <p className="mt-4 text-sm text-zinc-500">
-              Current plan: {subscriptionDisplay.label}. Included AI usage: {aiUsageLabel}.
-            </p>
-          )}
-        </div>
+              {currentUserId && (
+                <p className="mt-4 text-sm text-zinc-500">
+                  Current plan: {subscriptionDisplay.label}. Included AI usage: {aiUsageLabel}.
+                </p>
+              )}
+            </div>
 
+            <button
+              type="button"
+              onClick={() => setShowAiToolsPanel((current) => !current)}
+              className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
+              aria-expanded={showAiToolsPanel}
+            >
+              {showAiToolsPanel ? "Hide AI tools" : "Show AI tools"}
+            </button>
+          </div>
+        </section>
+
+        {showAiToolsPanel && (
+          <div className="mb-6">
         <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
           <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div>
@@ -2816,6 +2833,8 @@ export default function DiscussionPage() {
             </>
           )}
         </section>
+          </div>
+        )}
 
         {relatedDiscussions.length > 0 && (
           <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7">
@@ -2866,12 +2885,31 @@ export default function DiscussionPage() {
         )}
 
         <div id="replies" className="scroll-mt-24">
-          <h2 className="mb-4 text-xl font-medium sm:mb-8 sm:text-2xl">
-            Replies
-          </h2>
+          <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-xl font-medium sm:text-2xl">
+              Replies
+            </h2>
 
-          {currentUserId && (
-            <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-[1.5rem] sm:p-6">
+            {currentUserId && (
+              <button
+                type="button"
+                onClick={() => setShowReplyHelpersPanel((current) => !current)}
+                className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
+                aria-expanded={showReplyHelpersPanel}
+              >
+                {showReplyHelpersPanel ? "Hide reply helpers" : "Reply helpers"}
+              </button>
+            )}
+          </div>
+
+          {showReplyHelpersPanel && currentUserId && (
+            <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 shadow-2xl shadow-black/20 sm:mb-8 sm:rounded-[1.5rem] sm:p-4">
+              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                Optional reply helpers
+              </p>
+
+              <div className="space-y-3">
+            <section className="rounded-2xl border border-zinc-900 bg-black/40 p-4 sm:p-5">
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">
@@ -2905,10 +2943,8 @@ export default function DiscussionPage() {
                 ))}
               </div>
             </section>
-          )}
 
-          {currentUserId && (
-            <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-[1.5rem] sm:p-6">
+            <section className="rounded-2xl border border-zinc-900 bg-black/40 p-4 sm:p-5">
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">
@@ -2942,10 +2978,8 @@ export default function DiscussionPage() {
                 ))}
               </div>
             </section>
-          )}
 
-          {currentUserId && (
-            <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-[1.5rem] sm:p-6">
+            <section className="rounded-2xl border border-zinc-900 bg-black/40 p-4 sm:p-5">
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">
@@ -2979,6 +3013,9 @@ export default function DiscussionPage() {
                 ))}
               </div>
             </section>
+
+              </div>
+            </div>
           )}
 
           <form
