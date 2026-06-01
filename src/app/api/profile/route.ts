@@ -45,6 +45,15 @@ function cleanOptionalText(value: unknown, maxLength: number) {
   return value.trim().slice(0, maxLength);
 }
 
+const PERSPECTIVE_MARKERS = new Set([
+  "Lived experience",
+  "Professional experience",
+  "Research-based",
+  "Builder / operator",
+  "Student / learner",
+  "Question / exploring",
+]);
+
 function isValidOptionalUrl(value: string) {
   if (!value) {
     return true;
@@ -113,6 +122,11 @@ export async function POST(request: NextRequest) {
     .replace(/^@+/, "")
     .toLowerCase();
   const bio = typeof source.bio === "string" ? source.bio.trim().slice(0, 1000) : "";
+  const perspectiveMarker =
+    typeof source.perspectiveMarker === "string" &&
+    PERSPECTIVE_MARKERS.has(source.perspectiveMarker)
+      ? source.perspectiveMarker
+      : null;
   const avatarUrl =
     typeof source.avatarUrl === "string" && source.avatarUrl.trim()
       ? source.avatarUrl.trim()
@@ -198,6 +212,7 @@ export async function POST(request: NextRequest) {
     full_name: fullName,
     username,
     bio,
+    perspective_marker: perspectiveMarker,
     avatar_url: avatarUrl,
     creator_website_url: creatorWebsiteUrl || null,
     creator_support_url: creatorSupportUrl || null,
@@ -240,6 +255,7 @@ export async function POST(request: NextRequest) {
       full_name: fullName,
       username,
       bio,
+      perspective_marker: perspectiveMarker,
       avatar_url: avatarUrl,
       creator_website_url: creatorWebsiteUrl || null,
       creator_support_url: creatorSupportUrl || null,

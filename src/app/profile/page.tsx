@@ -44,6 +44,16 @@ const ALLOWED_AVATAR_FILE_TYPES = new Set([
   "image/webp",
 ]);
 
+const PERSPECTIVE_MARKERS = [
+  "",
+  "Lived experience",
+  "Professional experience",
+  "Research-based",
+  "Builder / operator",
+  "Student / learner",
+  "Question / exploring",
+] as const;
+
 function isValidOptionalUrl(value: string) {
   const clean = value.trim();
 
@@ -58,6 +68,7 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [perspectiveMarker, setPerspectiveMarker] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [creatorWebsiteUrl, setCreatorWebsiteUrl] = useState("");
   const [creatorSupportUrl, setCreatorSupportUrl] = useState("");
@@ -97,6 +108,7 @@ export default function ProfilePage() {
         setFullName(data.full_name ?? "");
         setUsername(data.username ?? "");
         setBio(data.bio ?? "");
+        setPerspectiveMarker(data.perspective_marker ?? "");
         setAvatarUrl(data.avatar_url ?? "");
         setCreatorWebsiteUrl(data.creator_website_url ?? "");
         setCreatorSupportUrl(data.creator_support_url ?? "");
@@ -323,6 +335,7 @@ export default function ProfilePage() {
           fullName,
           username: cleanUsername,
           bio,
+          perspectiveMarker: perspectiveMarker || null,
           avatarUrl: avatarUrl || null,
           creatorWebsiteUrl: cleanCreatorWebsiteUrl,
           creatorSupportUrl: cleanCreatorSupportUrl,
@@ -579,6 +592,28 @@ export default function ProfilePage() {
                 placeholder="Write a short introduction..."
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm text-zinc-400">
+                Perspective marker
+              </label>
+
+              <select
+                value={perspectiveMarker}
+                onChange={(event) => setPerspectiveMarker(event.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+              >
+                {PERSPECTIVE_MARKERS.map((marker) => (
+                  <option key={marker || "none"} value={marker}>
+                    {marker || "No perspective marker"}
+                  </option>
+                ))}
+              </select>
+
+              <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+                Optional self-context for where you are speaking from. This is not verification, an expertise label, or a trust score.
+              </p>
             </div>
           </section>
 
@@ -858,6 +893,12 @@ export default function ProfilePage() {
               <h2 className="mb-3 text-xl font-medium sm:text-2xl">
                 {fullName || "Loombus member"}
               </h2>
+
+              {perspectiveMarker && (
+                <p className="mb-3 w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400">
+                  Perspective: {perspectiveMarker}
+                </p>
+              )}
 
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-400 sm:text-base">
                 {bio || "Your bio preview will appear here."}

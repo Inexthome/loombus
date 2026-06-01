@@ -12,6 +12,7 @@ type Profile = {
   full_name: string;
   username: string;
   bio: string | null;
+  perspective_marker: string | null;
   avatar_url: string | null;
   creator_website_url: string | null;
   creator_support_url: string | null;
@@ -70,7 +71,7 @@ export default function UserProfilePage() {
     async function loadProfile() {
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, full_name, username, bio, avatar_url, creator_website_url, creator_support_url, creator_support_label")
+        .select("id, full_name, username, bio, perspective_marker, avatar_url, creator_website_url, creator_support_url, creator_support_label")
         .eq("username", username)
         .single();
 
@@ -382,6 +383,12 @@ export default function UserProfilePage() {
               </h1>
             </div>
           </div>
+
+          {profile.perspective_marker && (
+            <p className="mb-4 w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400">
+              Perspective: {profile.perspective_marker}
+            </p>
+          )}
 
           <p className="max-w-2xl leading-relaxed text-zinc-400">
             {profile.bio || "No bio added yet."}
