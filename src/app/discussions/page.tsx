@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import { PURPOSE_LANES } from "@/lib/purpose-lanes";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
 
 type Discussion = {
@@ -196,6 +197,7 @@ export default function DiscussionsPage() {
   const [discussionTags, setDiscussionTags] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState("All");
+  const [selectedPurposeLane, setSelectedPurposeLane] = useState("All");
   const [showAllTopicDiscovery, setShowAllTopicDiscovery] = useState(false);
   const [showAllTopicFilters, setShowAllTopicFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -376,6 +378,17 @@ export default function DiscussionsPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const topicParam = params.get("topic");
+    const purposeParam = params.get("purpose");
+
+    if (purposeParam) {
+      const matchedPurposeLane = PURPOSE_LANES.find(
+        (lane) => lane.toLowerCase() === purposeParam.toLowerCase()
+      );
+
+      if (matchedPurposeLane) {
+        setSelectedPurposeLane(matchedPurposeLane);
+      }
+    }
 
     if (!topicParam) {
       return;
@@ -400,15 +413,15 @@ export default function DiscussionsPage() {
     }
   }, [activeTopics]);
 
-  function setTopicFilter(topic: string) {
-    setSelectedTopic(topic);
-
+  function updateUrlParams(updates: Record<string, string | null>) {
     const params = new URLSearchParams(window.location.search);
 
-    if (topic === "All") {
-      params.delete("topic");
-    } else {
-      params.set("topic", topic);
+    for (const [key, value] of Object.entries(updates)) {
+      if (!value) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
     }
 
     const queryString = params.toString();
@@ -417,6 +430,16 @@ export default function DiscussionsPage() {
       : window.location.pathname;
 
     window.history.replaceState(null, "", nextUrl);
+  }
+
+  function setTopicFilter(topic: string) {
+    setSelectedTopic(topic);
+    updateUrlParams({ topic: topic === "All" ? null : topic });
+  }
+
+  function setPurposeLaneFilter(purposeLane: string) {
+    setSelectedPurposeLane(purposeLane);
+    updateUrlParams({ purpose: purposeLane === "All" ? null : purposeLane });
   }
 
   const filteredDiscussions = useMemo(() => {
@@ -431,6 +454,9 @@ export default function DiscussionsPage() {
 
       const matchesTopic =
         selectedTopic === "All" || discussion.topic === selectedTopic;
+
+      const matchesPurposeLane =
+        selectedPurposeLane === "All" || discussion.purpose_lane === selectedPurposeLane;
 
       const matchesSearch =
         !query ||
@@ -451,7 +477,7 @@ export default function DiscussionsPage() {
         latestReplyDates
       );
 
-      return matchesTopic && matchesSearch && matchesAdvanced;
+      return matchesTopic && matchesPurposeLane && matchesSearch && matchesAdvanced;
     });
 
     if (sortMode === "Most replied") {
@@ -494,6 +520,7 @@ export default function DiscussionsPage() {
     discussions,
     profiles,
     selectedTopic,
+    selectedPurposeLane,
     searchQuery,
     sortMode,
     advancedFilter,
@@ -507,6 +534,7 @@ export default function DiscussionsPage() {
   const activeFilterLabels = [
     searchQuery.trim() ? `Search: “${searchQuery.trim()}”` : "",
     selectedTopic !== "All" ? `Topic: ${selectedTopic}` : "",
+    selectedPurposeLane !== "All" ? `Purpose: ${selectedPurposeLane}` : "",
     sortMode !== "Newest" ? `Sort: ${sortMode}` : "",
     advancedFilter !== "All activity" ? `Filter: ${advancedFilter}` : "",
   ].filter(Boolean);
@@ -523,6 +551,7 @@ export default function DiscussionsPage() {
   function resetDiscussionFilters() {
     setSearchQuery("");
     setTopicFilter("All");
+    setPurposeLaneFilter("All");
     setSortMode("Newest");
     setAdvancedFilter("All activity");
   }
@@ -799,6 +828,33 @@ export default function DiscussionsPage() {
                 </button>
               </div>
             </div>
+
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
+                Purpose lanes
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {["All", ...PURPOSE_LANES].map((lane) => (
+                  <button
+                    key={lane}
+                    type="button"
+                    onClick={() => setPurposeLaneFilter(lane)}
+                    className={`rounded-full px-3.5 py-2 text-sm transition ${
+                      selectedPurposeLane === lane
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                    }`}
+                  >
+                    {lane}
+                  </button>
+                ))}
+              </div>
+
+              <p className="mt-3 rounded-2xl border border-zinc-900 bg-black/30 px-3 py-2 text-xs leading-relaxed text-zinc-600">
+                Purpose lanes help you browse discussions by direction, such as learning, contribution, mastery, or community.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -881,7 +937,7 @@ export default function DiscussionsPage() {
             </h2>
 
             <p className="max-w-2xl text-zinc-400">
-              No discussions match the current search, topic, sort, or advanced filter selection.
+              No discussions match the current search, topic, purpose lane, sort, or advanced filter selection.
               Try clearing the filters, using a broader search term, or starting a new discussion in this topic.
             </p>
 
