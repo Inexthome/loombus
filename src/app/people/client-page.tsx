@@ -395,109 +395,55 @@ export default function PeoplePage() {
   return (
     <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-4 sm:mb-10">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
+        <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-8 sm:p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             People
+          </p>
+
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+            Find contributors
           </h1>
 
-          <p className="mt-1.5 text-sm leading-relaxed text-zinc-500 sm:mt-3 sm:text-base">
-            Discover thoughtful contributors across Loombus.
-          </p>
-        </div>
-
-        <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
-          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-            Finding people
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+            Discover people whose discussions, replies, and interests can make your feed more useful.
           </p>
 
-          <h2 className="mb-3 text-xl font-medium sm:mb-4 sm:text-2xl">
-            Follow contributors for signal, not noise.
-          </h2>
+          <label htmlFor="people-search" className="mt-5 block">
+            <span className="mb-2 block text-sm font-medium text-zinc-300">
+              Search people
+            </span>
 
-          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            Loombus works best when you follow people whose discussions, replies,
-            and areas of interest help you think more clearly. Start small and
-            build a network around useful contribution.
-          </p>
+            <input
+              id="people-search"
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by username, name, bio, interests, or projects..."
+              className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500 sm:text-lg"
+            />
+          </label>
 
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Read the bio
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Look for interests, experience, projects, or discussion themes that match what you care about.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Check contribution style
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Follow people who add context, questions, examples, or better framing.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Keep the feed useful
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Your following feed should help you revisit thoughtful contributors, not chase popularity.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:mb-8 sm:p-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1">
-              <label htmlFor="people-search" className="mb-2 block text-sm font-medium text-zinc-300">
-                Search members
-              </label>
-
-              <input
-                id="people-search"
-                type="text"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search by username, name, bio, interests, or projects..."
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-              />
-            </div>
-
-            {hasActivePeopleSearch && (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {hasActivePeopleSearch ? (
               <button
                 type="button"
                 onClick={resetPeopleSearch}
-                className="w-full rounded-full border border-zinc-700 px-5 py-3 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
+                className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
               >
                 Clear search
               </button>
-            )}
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {hasActivePeopleSearch ? (
-              <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
-                Search: “{activePeopleSearch}”
-              </span>
             ) : (
-              <p className="hidden text-sm text-zinc-600 sm:block">
-                Search scans usernames, names, and bios so you can find contributors by interest or context.
-              </p>
+              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                Browse members
+              </span>
+            )}
+
+            {!loading && (
+              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                {filteredProfiles.length} of {profiles.length} members
+              </span>
             )}
           </div>
-
-          {!loading && (
-            <p className="mt-2 text-xs text-zinc-600 sm:text-sm">
-              Showing {filteredProfiles.length} of {profiles.length} members
-            </p>
-          )}
         </section>
 
         {message && (
@@ -519,7 +465,7 @@ export default function PeoplePage() {
             </h2>
 
             <p className="max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-              No visible members match the current search. Try a broader term, browse public discussions first, or return to onboarding for suggested topic lanes.
+              No visible members match the current search. Try a broader term or browse public discussions first.
             </p>
 
             <div className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row sm:flex-wrap">
@@ -539,18 +485,11 @@ export default function PeoplePage() {
               >
                 Browse discussions
               </Link>
-
-              <Link
-                href="/onboarding"
-                className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-              >
-                Open setup guide
-              </Link>
             </div>
           </div>
         )}
 
-        <div className="grid gap-2.5 pb-4 sm:gap-5 sm:pb-0 lg:grid-cols-2">
+        <div className="grid gap-3 pb-4 sm:gap-4 sm:pb-0 lg:grid-cols-2">
           {filteredProfiles.map((profile) => {
             const isSelf = currentUserId === profile.id;
             const isFollowing = followingIds.has(profile.id);
@@ -561,61 +500,44 @@ export default function PeoplePage() {
               <Link
                 key={profile.id}
                 href={profile.username ? `/u/${profile.username}` : "/people"}
-                className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-xl shadow-black/15 transition hover:border-zinc-700 sm:rounded-[1.5rem]"
+                className="group rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-xl shadow-black/15 transition hover:border-zinc-700 sm:p-5"
               >
-                <div className="p-3.5 sm:p-6">
-                  <div className="mb-2.5 flex items-start gap-3 sm:mb-4">
-                    <ProfileAvatar profile={profile} size="xl" />
+                <div className="mb-3 flex items-start gap-3">
+                  <ProfileAvatar profile={profile} size="xl" />
 
-                    <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-lg font-semibold tracking-tight sm:text-2xl">
-                        {profile.full_name || profile.username || "Loombus member"}
-                      </h2>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate text-lg font-semibold tracking-tight transition group-hover:text-white sm:text-xl">
+                      {profile.full_name || profile.username || "Loombus member"}
+                    </h2>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <p className="text-sm text-zinc-500">
-                          {profile.username ? `@${profile.username}` : "No username yet"}
-                        </p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                      <p className="text-sm text-zinc-500">
+                        {profile.username ? `@${profile.username}` : "No username yet"}
+                      </p>
 
-                        {badge && (
-                          <span
-                            className={`rounded-full border px-2.5 py-1 text-[0.7rem] font-medium ${getBadgeClassName(badge)}`}
-                          >
-                            {badge.label}
-                          </span>
-                        )}
-                      </div>
+                      {badge && (
+                        <span
+                          className={`rounded-full border px-2.5 py-1 text-[0.7rem] font-medium ${getBadgeClassName(badge)}`}
+                        >
+                          {badge.label}
+                        </span>
+                      )}
                     </div>
                   </div>
-
-                  <p className="line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:line-clamp-3 sm:text-base">
-                    {profile.bio || "No bio yet."}
-                  </p>
                 </div>
 
-                <div className="border-t border-zinc-900 bg-black/30 p-2.5 sm:p-4">
-                  <div className="mb-3 grid grid-cols-2 gap-2">
-                    <div className="rounded-xl border border-zinc-900 bg-black px-3 py-2 sm:rounded-2xl">
-                      <p className="text-sm font-semibold text-zinc-200">
-                        {(followCounts[profile.id]?.followers ?? 0).toLocaleString()}
-                      </p>
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
-                        Followers
-                      </p>
-                    </div>
+                <p className="line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:text-base">
+                  {profile.bio || "No bio yet."}
+                </p>
 
-                    <div className="rounded-xl border border-zinc-900 bg-black px-3 py-2 sm:rounded-2xl">
-                      <p className="text-sm font-semibold text-zinc-200">
-                        {(followCounts[profile.id]?.following ?? 0).toLocaleString()}
-                      </p>
-                      <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-700">
-                        Following
-                      </p>
-                    </div>
-                  </div>
+                <div className="mt-4 flex flex-col gap-3 border-t border-zinc-900 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-zinc-600 sm:text-sm">
+                    {(followCounts[profile.id]?.followers ?? 0).toLocaleString()} followers ·{" "}
+                    {(followCounts[profile.id]?.following ?? 0).toLocaleString()} following
+                  </p>
 
                   {isSelf ? (
-                    <span className="block rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500">
+                    <span className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500">
                       You
                     </span>
                   ) : (
@@ -623,7 +545,7 @@ export default function PeoplePage() {
                       type="button"
                       onClick={(event) => toggleFollow(event, profile)}
                       disabled={isWorking}
-                      className={`block w-full rounded-full px-4 py-2 text-center text-sm transition disabled:cursor-not-allowed ${
+                      className={`rounded-full px-4 py-2 text-center text-sm transition disabled:cursor-not-allowed ${
                         isFollowing
                           ? "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
                           : "bg-white text-black hover:bg-zinc-200"
@@ -633,6 +555,10 @@ export default function PeoplePage() {
                     </button>
                   )}
                 </div>
+
+                <p className="mt-3 text-xs text-zinc-500">
+                  View profile →
+                </p>
               </Link>
             );
           })}
