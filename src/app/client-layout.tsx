@@ -65,6 +65,7 @@ export default function ClientLayout({
     "/people",
     "/saved",
     "/notifications",
+    "/create",
   ].includes(pathname);
 
   function isActivePath(href: string) {
