@@ -54,6 +54,14 @@ type ContributionSignal = {
   href: string;
 };
 
+type TopicContributionSignal = {
+  topic: string;
+  discussions: number;
+  repliesReceived: number;
+  savedByReaders: number;
+  resolved: number;
+};
+
 function getMissingProfileFields(profile: Profile | null) {
   const missing = [];
 
@@ -94,6 +102,55 @@ function withDashboardTimeout<T>(
       clearTimeout(timeoutId);
     }
   });
+}
+
+function TopicContributionCard({ signal }: { signal: TopicContributionSignal }) {
+  return (
+    <Link
+      href={`/discussions?topic=${encodeURIComponent(signal.topic)}`}
+      className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
+    >
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <h3 className="text-base font-medium text-zinc-200">
+          {signal.topic}
+        </h3>
+
+        <span className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
+          topic
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 text-xs text-zinc-500">
+        <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-2">
+          <p className="text-zinc-600">Discussions</p>
+          <p className="mt-1 text-base font-semibold text-zinc-200">
+            {signal.discussions}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-2">
+          <p className="text-zinc-600">Replies</p>
+          <p className="mt-1 text-base font-semibold text-zinc-200">
+            {signal.repliesReceived}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-2">
+          <p className="text-zinc-600">Saves</p>
+          <p className="mt-1 text-base font-semibold text-zinc-200">
+            {signal.savedByReaders}
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-2">
+          <p className="text-zinc-600">Resolved</p>
+          <p className="mt-1 text-base font-semibold text-zinc-200">
+            {signal.resolved}
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
 }
 
 function ContributionSignalCard({ signal }: { signal: ContributionSignal }) {
@@ -164,6 +221,7 @@ export default function DashboardClientPage() {
     repliesReceived: 0,
     resolvedDiscussions: 0,
   });
+  const [topicContributionSignals, setTopicContributionSignals] = useState<TopicContributionSignal[]>([]);
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -278,20 +336,25 @@ export default function DashboardClientPage() {
 
         let repliesReceived = 0;
         let savedByReaders = 0;
+        let replyTopicRows: { discussion_id: string }[] = [];
+        let saveTopicRows: { discussion_id: string }[] = [];
 
         if (ownedDiscussionIds.length > 0) {
-          const [{ count: receivedReplyCount }, { count: readerSaveCount }] =
+          const [
+            { count: receivedReplyCount, data: receivedReplyRows },
+            { count: readerSaveCount, data: readerSaveRows },
+          ] =
             await withDashboardTimeout(Promise.all([
               supabase
                 .from("replies")
-                .select("*", { count: "exact", head: true })
+                .select("discussion_id", { count: "exact" })
                 .in("discussion_id", ownedDiscussionIds)
                 .neq("user_id", data.user.id)
                 .is("deleted_at", null),
 
               supabase
                 .from("bookmarks")
-                .select("*", { count: "exact", head: true })
+                .select("discussion_id", { count: "exact" })
                 .in("discussion_id", ownedDiscussionIds)
                 .neq("user_id", data.user.id),
             ]),
@@ -300,7 +363,75 @@ export default function DashboardClientPage() {
 
           repliesReceived = receivedReplyCount ?? 0;
           savedByReaders = readerSaveCount ?? 0;
+          replyTopicRows = (receivedReplyRows ?? []) as { discussion_id: string }[];
+          saveTopicRows = (readerSaveRows ?? []) as { discussion_id: string }[];
         }
+
+        const topicMap: Record<string, TopicContributionSignal> = {};
+        const discussionTopicById = new Map<string, string>();
+
+        for (const discussion of ownedDiscussionRows) {
+          const topic = discussion.topic?.trim();
+
+          if (!topic) {
+            continue;
+          }
+
+          discussionTopicById.set(discussion.id, topic);
+
+          topicMap[topic] ??= {
+            topic,
+            discussions: 0,
+            repliesReceived: 0,
+            savedByReaders: 0,
+            resolved: 0,
+          };
+
+          topicMap[topic].discussions += 1;
+
+          if (discussion.discussion_status === "resolved") {
+            topicMap[topic].resolved += 1;
+          }
+        }
+
+        for (const reply of replyTopicRows) {
+          const topic = discussionTopicById.get(reply.discussion_id);
+
+          if (topic && topicMap[topic]) {
+            topicMap[topic].repliesReceived += 1;
+          }
+        }
+
+        for (const save of saveTopicRows) {
+          const topic = discussionTopicById.get(save.discussion_id);
+
+          if (topic && topicMap[topic]) {
+            topicMap[topic].savedByReaders += 1;
+          }
+        }
+
+        const nextTopicContributionSignals = Object.values(topicMap)
+          .sort((a, b) => {
+            const signalA =
+              a.discussions * 3 +
+              a.repliesReceived * 2 +
+              a.savedByReaders * 3 +
+              a.resolved * 2;
+            const signalB =
+              b.discussions * 3 +
+              b.repliesReceived * 2 +
+              b.savedByReaders * 3 +
+              b.resolved * 2;
+
+            if (signalB !== signalA) {
+              return signalB - signalA;
+            }
+
+            return a.topic.localeCompare(b.topic);
+          })
+          .slice(0, 6);
+
+        setTopicContributionSignals(nextTopicContributionSignals);
 
         setProfile(profileData ?? null);
         setAiEntitlement(entitlementData ?? null);
@@ -740,6 +871,36 @@ export default function DashboardClientPage() {
             {contributionSignals.map((signal) => (
               <ContributionSignalCard key={signal.label} signal={signal} />
             ))}
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-zinc-900 bg-black/40 p-4 sm:p-5">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Topic contribution signals
+                </p>
+
+                <h3 className="text-lg font-medium text-zinc-200">
+                  Where your contribution is forming.
+                </h3>
+              </div>
+
+              <span className="w-fit rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                Private
+              </span>
+            </div>
+
+            {topicContributionSignals.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {topicContributionSignals.map((signal) => (
+                  <TopicContributionCard key={signal.topic} signal={signal} />
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-600">
+                Start discussions in topic lanes to build private topic contribution signals.
+              </p>
+            )}
           </div>
         </section>
 
