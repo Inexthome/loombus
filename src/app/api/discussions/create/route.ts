@@ -260,8 +260,8 @@ export async function POST(request: NextRequest) {
 
     const isAdmin = Boolean(profileAccess?.is_admin);
 
-    const profileNameGate = validatePublicProfileName(profileAccess.full_name);
-    if (!profileAccess.is_admin && !profileNameGate.ok) {
+    const profileNameGate = validatePublicProfileName(profileAccess?.full_name ?? null);
+    if (!profileAccess?.is_admin && !profileNameGate.ok) {
       return jsonError(profileNameGate.message, 403, {
         code: profileNameGate.code,
       });
