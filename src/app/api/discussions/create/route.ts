@@ -262,9 +262,13 @@ export async function POST(request: NextRequest) {
 
     const profileNameGate = validatePublicProfileName(profileAccess?.full_name ?? null);
     if (!profileAccess?.is_admin && !profileNameGate.ok) {
-      return jsonError(profileNameGate.message, 403, {
-        code: profileNameGate.code,
-      });
+      return NextResponse.json(
+        {
+          error: profileNameGate.message,
+          code: profileNameGate.code,
+        },
+        { status: 403 }
+      );
     }
 
     const canUseLongPosts = hasLongPostAccess(

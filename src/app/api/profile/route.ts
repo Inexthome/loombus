@@ -122,9 +122,13 @@ export async function POST(request: NextRequest) {
 
   const profileNameGate = validatePublicProfileName(fullName);
   if (!profileNameGate.ok) {
-    return jsonError(profileNameGate.message, 400, {
+    return NextResponse.json(
+    {
+      error: profileNameGate.message,
       code: profileNameGate.code,
-    });
+    },
+    { status: 400 }
+  );
   }
   const username = cleanOptionalText(source.username, 30)
     .replace(/^@+/, "")
