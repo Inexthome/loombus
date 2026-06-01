@@ -450,7 +450,7 @@ export default function ClientLayout({
                 </Link>
 
                 <Link href="/notifications" onClick={closeMoreMenu} className={navLinkClass("/notifications")}>
-                  Notifications
+                  Alerts
                   {notificationCount > 0 && (
                     <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
                       {notificationCount}
@@ -472,18 +472,30 @@ export default function ClientLayout({
                   </button>
 
                   {moreMenuOpen && (
-                    <div className="absolute right-0 z-50 mt-3 w-56 rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl">
+                    <div className="absolute right-0 z-50 mt-3 w-60 rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl">
+                      <p className="px-4 py-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                        Explore
+                      </p>
+
+                      <Link href="/search" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Search
+                      </Link>
                       <Link href="/people" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         People
                       </Link>
                       <Link href="/following" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         Following
                       </Link>
-                      <Link href="/dashboard" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
-                        Dashboard
-                      </Link>
                       <Link href="/saved" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         Saved
+                      </Link>
+
+                      <p className="mt-2 px-4 py-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                        Account
+                      </p>
+
+                      <Link href="/dashboard" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Home status
                       </Link>
                       <Link href="/my-activity" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         My Activity
@@ -639,6 +651,30 @@ export default function ClientLayout({
             <div className="grid gap-4">
               <section>
                 <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
+                  Explore Loombus
+                </p>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Link href="/search" onClick={closeMobileMenu} className={mobileNavLinkClass("/search")}>
+                    Search
+                  </Link>
+
+                  <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
+                    People
+                  </Link>
+
+                  <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
+                    Following
+                  </Link>
+
+                  <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
+                    Saved
+                  </Link>
+                </div>
+              </section>
+
+              <section>
+                <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
                   Your Signal
                 </p>
 
@@ -663,24 +699,16 @@ export default function ClientLayout({
 
               <section>
                 <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
-                  Library
+                  Continue
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
-                    Saved
-                  </Link>
-
                   <Link href="/reading-history" onClick={closeMobileMenu} className={mobileNavLinkClass("/reading-history")}>
                     Reading History
                   </Link>
 
-                  <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
-                    Following
-                  </Link>
-
                   <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
-                    Dashboard
+                    Home status
                   </Link>
                 </div>
               </section>
