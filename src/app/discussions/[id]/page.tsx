@@ -1859,7 +1859,7 @@ export default function DiscussionPage() {
         warning={safetyWarning}
         onClose={() => setSafetyWarning(null)}
       />
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-7xl">
         <Link
           href="/discussions"
           className="mb-3 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
@@ -2008,10 +2008,12 @@ export default function DiscussionPage() {
         )}
 
         <div className="mb-3 md:hidden">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-start">
+          <div className="min-w-0">
           <button
             type="button"
             onClick={() => setShowMobileThreadActions((current) => !current)}
-            className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+            className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white xl:hidden"
             aria-expanded={showMobileThreadActions}
             aria-controls="mobile-thread-actions"
           >
@@ -2024,7 +2026,7 @@ export default function DiscussionPage() {
           {showMobileThreadActions && (
             <section
               id="mobile-thread-actions"
-              className="mt-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/30"
+              className="mt-2 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/30 xl:hidden"
             >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
@@ -2126,7 +2128,7 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <div className="mb-5 hidden flex-col items-stretch gap-2 rounded-2xl border border-zinc-900 bg-black/30 p-3 sm:mb-10 md:flex md:flex-row md:flex-wrap md:items-center md:gap-4 md:border-0 md:bg-transparent md:p-0">
+        <div className="hidden">
           {canManageDiscussionStatus && (
             <button
               type="button"
@@ -2240,7 +2242,7 @@ export default function DiscussionPage() {
 
         <section
           id="intelligence-layer"
-          className="mb-4 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/20 sm:mb-6 sm:rounded-3xl sm:p-6"
+          className="mb-4 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/20 sm:mb-6 sm:rounded-3xl sm:p-6 xl:hidden"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -2846,7 +2848,7 @@ export default function DiscussionPage() {
         )}
 
         {relatedDiscussions.length > 0 && (
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7">
+          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7 xl:hidden">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
@@ -3352,6 +3354,182 @@ export default function DiscussionPage() {
             )}
           </div>
         </div>
+          </div>
+
+          <aside className="hidden xl:block">
+            <div className="sticky top-24 space-y-4">
+              <section className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30">
+                <p className="mb-4 text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
+                  Thread controls
+                </p>
+
+                <div className="space-y-3">
+                  {canManageDiscussionStatus && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateDiscussionStatus(
+                          discussionStatus === "resolved" ? "open" : "resolved"
+                        )
+                      }
+                      disabled={statusWorking}
+                      className={`w-full rounded-full border px-5 py-3 text-sm transition disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 ${
+                        discussionStatus === "resolved"
+                          ? "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                          : "border-emerald-800 text-emerald-300 hover:border-emerald-600 hover:text-emerald-200"
+                      }`}
+                    >
+                      {statusWorking
+                        ? "Updating..."
+                        : discussionStatus === "resolved"
+                          ? "Reopen Discussion"
+                          : "Mark Resolved"}
+                    </button>
+                  )}
+
+                  {isSaved ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveBookmark}
+                      disabled={savingBookmark}
+                      className="w-full rounded-full border border-zinc-800 bg-zinc-900 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    >
+                      {savingBookmark ? "Removing..." : "Unsave"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleBookmark}
+                      disabled={savingBookmark}
+                      className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    >
+                      {savingBookmark ? "Saving..." : "Save Discussion"}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleReport}
+                    disabled={reportedDiscussion}
+                    className="w-full rounded-full border border-red-900 px-5 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  >
+                    {reportedDiscussion ? "Reported" : "Report Discussion"}
+                  </button>
+
+                  {currentUserId && (
+                    <label className="block text-xs text-zinc-500">
+                      <span className="mb-2 block">Report reason</span>
+
+                      <select
+                        value={reportReason}
+                        onChange={(event) => setReportReason(event.target.value as (typeof REPORT_REASONS)[number])}
+                        className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                      >
+                        {REPORT_REASONS.map((reason) => (
+                          <option key={reason} value={reason}>
+                            {reason}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+
+                  {(statusMessage || bookmarkMessage || reportMessage) && (
+                    <div className="space-y-2 rounded-2xl border border-zinc-900 bg-black/40 p-3 text-xs leading-relaxed text-zinc-500">
+                      {statusMessage && <p>{statusMessage}</p>}
+                      {bookmarkMessage && <p>{bookmarkMessage}</p>}
+                      {reportMessage && <p>{reportMessage}</p>}
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30">
+                <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
+                  Optional tools
+                </p>
+
+                <h2 className="text-2xl font-semibold tracking-tight text-white">
+                  AI tools
+                </h2>
+
+                <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                  Use these only when you want help understanding or organizing the thread.
+                </p>
+
+                {currentUserId && (
+                  <p className="mt-4 text-sm text-zinc-500">
+                    Current plan: {subscriptionDisplay.label}. Included AI usage: {aiUsageLabel}.
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextPanelState = !showAiToolsPanel;
+                    setShowAiToolsPanel(nextPanelState);
+
+                    if (nextPanelState) {
+                      setOpenPremiumAiTool((current) => current || "summary");
+                    }
+                  }}
+                  className="mt-5 w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                  aria-expanded={showAiToolsPanel}
+                >
+                  {showAiToolsPanel ? "Hide AI tools" : "Show AI tools"}
+                </button>
+              </section>
+
+              {relatedDiscussions.length > 0 && (
+                <section className="rounded-[1.5rem] border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
+                        Related discussions
+                      </p>
+
+                      <h2 className="mt-2 text-xl font-medium text-white">
+                        Keep reading in {discussion.topic}
+                      </h2>
+                    </div>
+
+                    <Link
+                      href={`/discussions?topic=${encodeURIComponent(discussion.topic)}`}
+                      className="shrink-0 rounded-full border border-zinc-700 px-3 py-2 text-xs text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                    >
+                      View topic
+                    </Link>
+                  </div>
+
+                  <div className="space-y-3">
+                    {relatedDiscussions.slice(0, 3).map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/discussions/${item.id}`}
+                        className="block rounded-2xl border border-zinc-800 bg-black/30 p-4 transition hover:border-zinc-600 hover:bg-black/50"
+                      >
+                        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">
+                          {item.topic}
+                        </p>
+
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="text-sm leading-relaxed text-white">
+                            {item.title}
+                          </h3>
+
+                          <span className="shrink-0 text-xs text-zinc-500">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          </aside>
+        </div>
+
       </div>
     </main>
   );
