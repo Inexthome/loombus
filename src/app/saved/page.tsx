@@ -386,6 +386,62 @@ export default function SavedPage() {
     };
   }, [collectionNameById, noteDrafts, saved]);
 
+  const purposePathCards = useMemo(() => {
+    const primaryPurposeLane = knowledgeSnapshot.purposeSignals[0]?.label ?? null;
+    const secondaryPurposeLane = knowledgeSnapshot.purposeSignals[1]?.label ?? null;
+    const primaryTopic = knowledgeSnapshot.topics[0]?.label ?? null;
+    const hasNotes = knowledgeSnapshot.notesCount > 0;
+
+    return [
+      {
+        title: primaryPurposeLane
+          ? `Revisit ${primaryPurposeLane}`
+          : "Choose a purpose direction",
+        description: primaryPurposeLane
+          ? `Start with saved discussions in ${primaryPurposeLane}. Look for what you can learn, build, contribute, or revisit next.`
+          : "Save discussions with Purpose Lanes so your reading path can show a clearer direction.",
+        actionLabel: primaryPurposeLane ? `Search ${primaryPurposeLane}` : "Browse Purpose Lanes",
+        actionHref: primaryPurposeLane
+          ? `/saved?search=${encodeURIComponent(primaryPurposeLane)}`
+          : "/discussions",
+      },
+      {
+        title: primaryTopic && primaryPurposeLane
+          ? `Connect ${primaryTopic} to ${primaryPurposeLane}`
+          : "Connect topic to direction",
+        description: primaryTopic && primaryPurposeLane
+          ? `Your saved library links ${primaryTopic} with ${primaryPurposeLane}. Use that connection to decide what is worth reading more deeply.`
+          : "A useful path forms when saved topics connect to a purpose direction like learning, contribution, mastery, or community.",
+        actionLabel: primaryTopic ? `Search ${primaryTopic}` : "Review saved",
+        actionHref: primaryTopic
+          ? `/saved?search=${encodeURIComponent(primaryTopic)}`
+          : "/saved",
+      },
+      {
+        title: secondaryPurposeLane
+          ? `Compare with ${secondaryPurposeLane}`
+          : "Add one more useful lane",
+        description: secondaryPurposeLane
+          ? `${secondaryPurposeLane} is another direction in your saved library. Compare it with your strongest lane before adding more saves.`
+          : "A second purpose lane can help you separate what you are learning from what you may want to contribute or build.",
+        actionLabel: secondaryPurposeLane ? `Search ${secondaryPurposeLane}` : "Find discussions",
+        actionHref: secondaryPurposeLane
+          ? `/saved?search=${encodeURIComponent(secondaryPurposeLane)}`
+          : "/discussions",
+      },
+      {
+        title: hasNotes
+          ? "Turn notes into next steps"
+          : "Add notes to clarify why it matters",
+        description: hasNotes
+          ? "Your private notes can explain why a saved discussion matters and what you may want to do with it later."
+          : "A short private note can turn a saved discussion from passive reading into a useful purpose path.",
+        actionLabel: hasNotes ? "Review notes" : "Open saved",
+        actionHref: "/saved",
+      },
+    ];
+  }, [knowledgeSnapshot]);
+
   const learningPath = useMemo(() => {
     const primaryTopic = knowledgeSnapshot.topics[0]?.label ?? null;
     const primaryLens = knowledgeSnapshot.lenses[0]?.label ?? null;
@@ -1157,6 +1213,38 @@ export default function SavedPage() {
                   index={index}
                 />
               ))}
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black/40 p-4 sm:p-5">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                    Purpose-aware path
+                  </p>
+
+                  <h3 className="text-lg font-medium text-zinc-200">
+                    Connect what you save to what you may learn, build, or contribute.
+                  </h3>
+                </div>
+
+                <span className="w-fit rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                  Private
+                </span>
+              </div>
+
+              <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-600">
+                This stays private and uses saved topics, Purpose Lanes, and notes. It does not diagnose, coach, score, or rank you.
+              </p>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {purposePathCards.map((step, index) => (
+                  <LearningPathCard
+                    key={`${step.title}-${index}`}
+                    step={step}
+                    index={index}
+                  />
+                ))}
+              </div>
             </div>
           </section>
         )}
