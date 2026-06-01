@@ -3,7 +3,7 @@
 import { ProgressiveGuide } from "@/components/progressive-guide";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { WelcomeEmailTrigger } from "@/components/welcome-email-trigger";
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -14,6 +14,7 @@ import {
   getAiUsageLabel,
   getSubscriptionDisplay,
 } from "@/lib/subscription-plans";
+import { PURPOSE_LANES } from "@/lib/purpose-lanes";
 
 type Profile = {
   full_name: string | null;
@@ -68,6 +69,20 @@ type ContributionFoundationItem = {
   description: string;
   href: string;
   action: string;
+};
+
+type PurposeGoalStatus = "active" | "paused" | "completed";
+
+type PurposeGoal = {
+  id: string;
+  user_id: string;
+  title: string;
+  purpose_lane: string | null;
+  private_note: string | null;
+  status: PurposeGoalStatus;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
 };
 
 function getMissingProfileFields(profile: Profile | null) {
@@ -257,6 +272,13 @@ export default function DashboardClientPage() {
     resolvedDiscussions: 0,
   });
   const [topicContributionSignals, setTopicContributionSignals] = useState<TopicContributionSignal[]>([]);
+  const [purposeGoals, setPurposeGoals] = useState<PurposeGoal[]>([]);
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalPurposeLane, setGoalPurposeLane] = useState("");
+  const [goalPrivateNote, setGoalPrivateNote] = useState("");
+  const [goalMessage, setGoalMessage] = useState("");
+  const [goalWorking, setGoalWorking] = useState(false);
+  const [updatingGoalId, setUpdatingGoalId] = useState<string | null>(null);
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -298,6 +320,7 @@ export default function DashboardClientPage() {
           { data: unreadNotificationData, error: notificationError },
           { data: entitlementData, error: entitlementError },
           { data: ownedDiscussionData, error: ownedDiscussionError },
+          { data: purposeGoalData, error: purposeGoalError },
         ] = await withDashboardTimeout(Promise.all([
           supabase
             .from("profiles")
@@ -339,6 +362,13 @@ export default function DashboardClientPage() {
             .select("id, topic, discussion_status")
             .eq("user_id", data.user.id)
             .is("deleted_at", null),
+
+          supabase
+            .from("user_purpose_goals")
+            .select("id, user_id, title, purpose_lane, private_note, status, created_at, updated_at, completed_at")
+            .eq("user_id", data.user.id)
+            .order("updated_at", { ascending: false })
+            .limit(6),
         ]),
           "Dashboard activity summary"
         );
@@ -350,7 +380,8 @@ export default function DashboardClientPage() {
           savedError ||
           notificationError ||
           entitlementError ||
-          ownedDiscussionError;
+          ownedDiscussionError ||
+          purposeGoalError;
 
         if (firstError) {
           throw firstError;
@@ -467,6 +498,7 @@ export default function DashboardClientPage() {
           .slice(0, 6);
 
         setTopicContributionSignals(nextTopicContributionSignals);
+        setPurposeGoals((purposeGoalData ?? []) as PurposeGoal[]);
 
         setProfile(profileData ?? null);
         setAiEntitlement(entitlementData ?? null);
@@ -691,6 +723,159 @@ export default function DashboardClientPage() {
       : null,
   ].filter((item): item is OrganizationAction => Boolean(item)).slice(0, 4);
 
+  async function getAccessToken() {
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+
+    if (!accessToken) {
+      window.location.href = "/login";
+      return null;
+    }
+
+    return accessToken;
+  }
+
+  async function createPurposeGoal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setGoalMessage("");
+
+    if (goalWorking) {
+      return;
+    }
+
+    const cleanTitle = goalTitle.trim();
+
+    if (!cleanTitle) {
+      setGoalMessage("Enter a private goal title.");
+      return;
+    }
+
+    setGoalWorking(true);
+
+    try {
+      const accessToken = await getAccessToken();
+
+      if (!accessToken) {
+        return;
+      }
+
+      const response = await fetch("/api/purpose-goals", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          title: cleanTitle,
+          purposeLane: goalPurposeLane || null,
+          privateNote: goalPrivateNote,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setGoalMessage(result.error ?? "Unable to create private goal.");
+        return;
+      }
+
+      const goal = result.goal as PurposeGoal;
+      setPurposeGoals((current) => [goal, ...current].slice(0, 6));
+      setGoalTitle("");
+      setGoalPurposeLane("");
+      setGoalPrivateNote("");
+      setGoalMessage("Private goal created.");
+    } finally {
+      setGoalWorking(false);
+    }
+  }
+
+  async function updatePurposeGoalStatus(goalId: string, status: PurposeGoalStatus) {
+    setGoalMessage("");
+
+    if (updatingGoalId) {
+      return;
+    }
+
+    setUpdatingGoalId(goalId);
+
+    try {
+      const accessToken = await getAccessToken();
+
+      if (!accessToken) {
+        return;
+      }
+
+      const response = await fetch("/api/purpose-goals", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          goalId,
+          status,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setGoalMessage(result.error ?? "Unable to update private goal.");
+        return;
+      }
+
+      const goal = result.goal as PurposeGoal;
+      setPurposeGoals((current) =>
+        current.map((item) => (item.id === goal.id ? goal : item))
+      );
+      setGoalMessage("Private goal updated.");
+    } finally {
+      setUpdatingGoalId(null);
+    }
+  }
+
+  async function deletePurposeGoal(goalId: string) {
+    setGoalMessage("");
+
+    if (updatingGoalId) {
+      return;
+    }
+
+    setUpdatingGoalId(goalId);
+
+    try {
+      const accessToken = await getAccessToken();
+
+      if (!accessToken) {
+        return;
+      }
+
+      const response = await fetch("/api/purpose-goals", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          goalId,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setGoalMessage(result.error ?? "Unable to delete private goal.");
+        return;
+      }
+
+      setPurposeGoals((current) => current.filter((item) => item.id !== goalId));
+      setGoalMessage("Private goal deleted.");
+    } finally {
+      setUpdatingGoalId(null);
+    }
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     window.location.href = "/";
@@ -840,6 +1025,143 @@ export default function DashboardClientPage() {
               <OrganizationActionCard key={item.title} item={item} />
             ))}
           </div>
+        </section>
+
+        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Private contribution goals
+              </p>
+
+              <h2 className="text-xl font-medium sm:text-2xl">
+                What you want to build toward.
+              </h2>
+            </div>
+
+            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
+              Private
+            </span>
+          </div>
+
+          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            Set private goals around learning, mastery, contribution, or community. These are not public, not scored, and not used as reputation labels.
+          </p>
+
+          <form onSubmit={createPurposeGoal} className="mb-5 rounded-2xl border border-zinc-900 bg-black/40 p-4">
+            <div className="grid gap-3 md:grid-cols-[1.4fr_1fr]">
+              <input
+                type="text"
+                value={goalTitle}
+                onChange={(event) => setGoalTitle(event.target.value)}
+                maxLength={120}
+                placeholder="Example: Build a stronger AI and work reading path"
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-600"
+              />
+
+              <select
+                value={goalPurposeLane}
+                onChange={(event) => setGoalPurposeLane(event.target.value)}
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition focus:border-zinc-600"
+              >
+                <option value="">No Purpose Lane</option>
+                {PURPOSE_LANES.map((lane) => (
+                  <option key={lane} value={lane}>
+                    {lane}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <textarea
+              value={goalPrivateNote}
+              onChange={(event) => setGoalPrivateNote(event.target.value)}
+              maxLength={1000}
+              rows={3}
+              placeholder="Optional private note: why this goal matters or what you may do next..."
+              className="mt-3 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-zinc-600"
+            />
+
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-zinc-600">
+                {goalPrivateNote.length}/1000 characters
+              </p>
+
+              <button
+                type="submit"
+                disabled={goalWorking}
+                className="w-full rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-fit"
+              >
+                {goalWorking ? "Creating..." : "Create private goal"}
+              </button>
+            </div>
+          </form>
+
+          {goalMessage && (
+            <p className="mb-4 text-sm text-zinc-500">
+              {goalMessage}
+            </p>
+          )}
+
+          {purposeGoals.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {purposeGoals.map((goal) => (
+                <div
+                  key={goal.id}
+                  className="rounded-2xl border border-zinc-900 bg-black p-4"
+                >
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <h3 className="text-base font-medium text-zinc-200">
+                      {goal.title}
+                    </h3>
+
+                    <span className="shrink-0 rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
+                      {goal.status}
+                    </span>
+                  </div>
+
+                  {goal.purpose_lane && (
+                    <p className="mb-3 w-fit rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                      {goal.purpose_lane}
+                    </p>
+                  )}
+
+                  {goal.private_note && (
+                    <p className="mb-4 text-sm leading-relaxed text-zinc-600">
+                      {goal.private_note}
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap gap-2">
+                    {(["active", "paused", "completed"] as PurposeGoalStatus[]).map((status) => (
+                      <button
+                        key={`${goal.id}-${status}`}
+                        type="button"
+                        onClick={() => updatePurposeGoalStatus(goal.id, status)}
+                        disabled={updatingGoalId === goal.id || goal.status === status}
+                        className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {status}
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => deletePurposeGoal(goal.id)}
+                      disabled={updatingGoalId === goal.id}
+                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-600">
+              No private contribution goals yet. Add one goal to connect your activity to a direction.
+            </p>
+          )}
         </section>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
