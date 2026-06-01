@@ -61,14 +61,15 @@ export default function ClientLayout({
   const lastNotificationLoadRef = useRef<{ userId: string; loadedAt: number } | null>(null);
   const rightRailDragStartRef = useRef<{ pointerX: number; width: number } | null>(null);
   const pathname = usePathname();
-  const hasDesktopRightRail = [
-    "/discussions",
-    "/search",
-    "/people",
-    "/saved",
-    "/notifications",
-    "/create",
-  ].includes(pathname);
+  const hasDesktopRightRail =
+    [
+      "/discussions",
+      "/search",
+      "/people",
+      "/saved",
+      "/notifications",
+      "/create",
+    ].includes(pathname) || pathname.startsWith("/discussions/");
 
   function isActivePath(href: string) {
     if (href === "/") {

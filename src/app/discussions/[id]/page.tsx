@@ -1840,7 +1840,7 @@ export default function DiscussionPage() {
         warning={safetyWarning}
         onClose={() => setSafetyWarning(null)}
       />
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-[48rem]">
           <h1 className="mb-6 text-4xl font-semibold">
             Discussion not found.
           </h1>
@@ -1854,7 +1854,7 @@ export default function DiscussionPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16 loombus-shell-with-right-rail">
       <SafetyWarningModal
         warning={safetyWarning}
         onClose={() => setSafetyWarning(null)}
@@ -3353,6 +3353,249 @@ export default function DiscussionPage() {
           </div>
         </div>
       </div>
+
+      <aside className="discussion-detail-right-rail loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl xl:block">
+        <div className="space-y-4">
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+            <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+              Thread panel
+            </p>
+
+            <h2 className="text-xl font-semibold tracking-tight">
+              Discussion controls.
+            </h2>
+
+            <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+              Manage the thread, save it, report concerns, open AI tools, or continue into related discussions.
+            </p>
+
+            <div className="mt-5 space-y-2">
+              {canManageDiscussionStatus && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateDiscussionStatus(
+                      discussionStatus === "resolved" ? "open" : "resolved"
+                    )
+                  }
+                  disabled={statusWorking}
+                  className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 ${
+                    discussionStatus === "resolved"
+                      ? "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                      : "border-emerald-800 text-emerald-300 hover:border-emerald-600 hover:text-emerald-200"
+                  }`}
+                >
+                  {statusWorking
+                    ? "Updating..."
+                    : discussionStatus === "resolved"
+                      ? "Reopen Discussion"
+                      : "Mark Resolved"}
+                </button>
+              )}
+
+              {isSaved ? (
+                <button
+                  type="button"
+                  onClick={handleRemoveBookmark}
+                  disabled={savingBookmark}
+                  className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-left text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                >
+                  {savingBookmark ? "Removing..." : "Unsave Discussion"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleBookmark}
+                  disabled={savingBookmark}
+                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                >
+                  {savingBookmark ? "Saving..." : "Save Discussion"}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={handleReport}
+                disabled={reportedDiscussion}
+                className="w-full rounded-2xl border border-red-950 bg-black px-4 py-3 text-left text-sm text-red-400 transition hover:border-red-800 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                {reportedDiscussion ? "Reported" : "Report Discussion"}
+              </button>
+            </div>
+
+            {currentUserId && (
+              <label className="mt-4 block text-xs text-zinc-500">
+                <span className="mb-2 block">Report reason</span>
+
+                <select
+                  value={reportReason}
+                  onChange={(event) => setReportReason(event.target.value as ReportReason)}
+                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                >
+                  {REPORT_REASONS.map((reason) => (
+                    <option key={reason} value={reason}>
+                      {reason}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
+              <p className="mt-4 text-sm leading-relaxed text-zinc-500">
+                {pinMessage || statusMessage || bookmarkMessage || reportMessage}
+              </p>
+            )}
+          </section>
+
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+            <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+              Reader shortcuts
+            </p>
+
+            <div className="grid gap-2">
+              <a
+                href="#reply-form"
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+              >
+                Reply
+              </a>
+
+              <a
+                href="#replies"
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+              >
+                Replies
+              </a>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAiToolsPanel(true);
+                  setOpenPremiumAiTool((current) => current || "summary");
+
+                  window.setTimeout(() => {
+                    document.getElementById("intelligence-layer")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }, 0);
+                }}
+                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+              >
+                AI tools
+              </button>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  AI tools
+                </p>
+
+                <h2 className="text-lg font-semibold tracking-tight">
+                  Understand the thread.
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAiToolsPanel((current) => !current)}
+                className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+              >
+                {showAiToolsPanel ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            {currentUserId ? (
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Current plan: {subscriptionDisplay.label}. Included AI usage: {aiUsageLabel}.
+              </p>
+            ) : (
+              <p className="text-sm leading-relaxed text-zinc-500">
+                Log in to use available AI tools for this discussion.
+              </p>
+            )}
+
+            <div className="mt-4 grid gap-2 text-sm">
+              {[
+                ["summary", "Summary"],
+                ["keyTakeaways", "Key Takeaways"],
+                ["whatChanged", "What Changed"],
+                ["disagreementMap", "Disagreement Map"],
+                ["conversationMap", "Conversation Map"],
+                ["relatedIdeas", "Related Ideas"],
+              ].map(([toolKey, label]) => (
+                <button
+                  key={toolKey}
+                  type="button"
+                  onClick={() => {
+                    setShowAiToolsPanel(true);
+                    setOpenPremiumAiTool((current) =>
+                      current === toolKey ? "" : toolKey
+                    );
+
+                    window.setTimeout(() => {
+                      document.getElementById("intelligence-layer")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }, 0);
+                  }}
+                  className="rounded-2xl border border-zinc-900 bg-black px-4 py-3 text-left text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {relatedDiscussions.length > 0 && (
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <div className="mb-4">
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  Related discussions
+                </p>
+
+                <h2 className="text-lg font-semibold tracking-tight">
+                  Keep reading in {discussion.topic}
+                </h2>
+
+                <Link
+                  href={`/discussions?topic=${encodeURIComponent(discussion.topic)}`}
+                  className="mt-3 inline-flex rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                >
+                  View topic
+                </Link>
+              </div>
+
+              <div className="space-y-2">
+                {relatedDiscussions.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/discussions/${item.id}`}
+                    className="block rounded-2xl border border-zinc-900 bg-black p-3 transition hover:border-zinc-700"
+                  >
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      {item.topic}
+                    </p>
+
+                    <h3 className="mt-2 text-sm font-medium leading-snug text-zinc-300">
+                      {item.title}
+                    </h3>
+
+                    <p className="mt-2 text-xs text-zinc-600">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </aside>
     </main>
   );
 }
