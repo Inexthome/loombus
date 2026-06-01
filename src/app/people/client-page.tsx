@@ -410,7 +410,7 @@ export default function PeoplePage() {
             Discover people whose discussions, replies, and interests can make your feed more useful.
           </p>
 
-          <label htmlFor="people-search" className="mt-5 block">
+          <label htmlFor="people-search" className="mt-5 block xl:hidden">
             <span className="mb-2 block text-sm font-medium text-zinc-300">
               Search people
             </span>
@@ -425,7 +425,7 @@ export default function PeoplePage() {
             />
           </label>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2 xl:hidden">
             {hasActivePeopleSearch ? (
               <button
                 type="button"
@@ -569,6 +569,68 @@ export default function PeoplePage() {
 
           <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl xl:block">
             <div className="space-y-4">
+              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+                <div className="mb-5 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                      People controls
+                    </p>
+
+                    <h2 className="text-xl font-semibold tracking-tight">
+                      Refine contributor discovery.
+                    </h2>
+
+                    <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                      Search people here. The center panel stays focused on contributor results.
+                    </p>
+                  </div>
+
+                  {hasActivePeopleSearch && (
+                    <button
+                      type="button"
+                      onClick={resetPeopleSearch}
+                      className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+
+                <label htmlFor="people-search-rail" className="block">
+                  <span className="mb-2 block text-sm font-medium text-zinc-300">
+                    Search people
+                  </span>
+
+                  <input
+                    id="people-search-rail"
+                    type="text"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search by username, name, bio, interests, or projects..."
+                    className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                  />
+                </label>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {hasActivePeopleSearch ? (
+                    <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
+                      {`Search: “${activePeopleSearch}”`}
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
+                      Browse members
+                    </span>
+                  )}
+
+                  {!loading && (
+                    <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                      {filteredProfiles.length} of {profiles.length}
+                    </span>
+                  )}
+                </div>
+              </section>
+
+
               <section className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20">
                 <div className="border-b border-zinc-900 p-5">
                   <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
