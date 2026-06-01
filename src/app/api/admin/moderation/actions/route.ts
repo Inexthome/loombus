@@ -1,10 +1,51 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit-log";
+import { createNotification } from "@/lib/notifications";
+import { IDENTITY_VERIFICATION_TARGET_TYPE } from "@/lib/identity-verification";
 
 type AdminProfileRow = {
   is_admin: boolean | null;
 };
+
+type ProfileIdentityRow = {
+  id: string;
+  identity_verification_status: string | null;
+};
+
+type IdentityVerificationActionStatus =
+  | "unverified"
+  | "pending"
+  | "verified"
+  | "failed"
+  | "restricted";
+
+const IDENTITY_VERIFICATION_ACTION_STATUSES = new Set<IdentityVerificationActionStatus>([
+  "unverified",
+  "pending",
+  "verified",
+  "failed",
+  "restricted",
+]);
+
+function isIdentityVerificationActionStatus(
+  value: unknown
+): value is IdentityVerificationActionStatus {
+  return (
+    typeof value === "string" &&
+    IDENTITY_VERIFICATION_ACTION_STATUSES.has(value as IdentityVerificationActionStatus)
+  );
+}
+
+function getIdentityVerificationNotificationLabel(
+  status: IdentityVerificationActionStatus
+) {
+  if (status === "verified") return "verified";
+  if (status === "pending") return "pending review";
+  if (status === "failed") return "not completed";
+  if (status === "restricted") return "restricted";
+  return "not verified";
+}
 
 type ModerationAction =
   | "restore_discussion"
@@ -16,7 +57,8 @@ type ModerationAction =
   | "warn_user"
   | "suspend_user"
   | "ban_user"
-  | "restore_user";
+  | "restore_user"
+  | "update_identity_verification";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -392,6 +434,106 @@ export async function POST(request: NextRequest) {
       enforcedBy: user.id,
       enforcedAt: now,
       suspendedUntil,
+    });
+  }
+
+  if (action === "update_identity_verification") {
+    const targetUserId = body?.targetUserId;
+    const requestedStatus = body?.identityVerificationStatus;
+    const identityRestrictionReason = getCleanText(
+      body?.identityRestrictionReason,
+      500
+    );
+    const legalNameVerified = body?.legalNameVerified === true;
+
+    if (!isValidUuid(targetUserId)) {
+      return jsonError("Invalid target user id.", 400);
+    }
+
+    if (!isIdentityVerificationActionStatus(requestedStatus)) {
+      return jsonError("Invalid identity verification status.", 400);
+    }
+
+    const now = new Date().toISOString();
+
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("id, identity_verification_status")
+      .eq("id", targetUserId)
+      .maybeSingle<ProfileIdentityRow>();
+
+    if (!targetProfile) {
+      return jsonError("Target profile not found.", 404);
+    }
+
+    const shouldStoreReason =
+      requestedStatus === "failed" || requestedStatus === "restricted";
+
+    const updatePayload = {
+      identity_verification_status: requestedStatus,
+      identity_verification_provider:
+        requestedStatus === "unverified" ? null : "manual",
+      identity_provider_subject: null,
+      identity_verified_at: requestedStatus === "verified" ? now : null,
+      identity_verification_last_checked_at: now,
+      legal_name_verified:
+        requestedStatus === "verified" ? legalNameVerified : false,
+      identity_restriction_reason: shouldStoreReason
+        ? identityRestrictionReason || null
+        : null,
+    };
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(updatePayload)
+      .eq("id", targetUserId);
+
+    if (error) {
+      return jsonError(error.message || "Unable to update identity verification.", 400);
+    }
+
+    await logAuditEvent({
+      actor_id: user.id,
+      action: "identity_verification.updated",
+      target_type: "profile",
+      target_id: targetUserId,
+      metadata: {
+        previous_status: targetProfile.identity_verification_status,
+        identity_verification_status: requestedStatus,
+        identity_verification_provider: updatePayload.identity_verification_provider,
+        legal_name_verified: updatePayload.legal_name_verified,
+        has_restriction_reason: Boolean(updatePayload.identity_restriction_reason),
+      },
+    });
+
+    const notificationLabel =
+      getIdentityVerificationNotificationLabel(requestedStatus);
+
+    const { error: notificationError } = await createNotification({
+      user_id: targetUserId,
+      actor_id: user.id,
+      type: "identity_verification_status",
+      target_type: IDENTITY_VERIFICATION_TARGET_TYPE,
+      target_id: null,
+      message: `Your Loombus identity verification status is now ${notificationLabel}.`,
+    });
+
+    if (notificationError) {
+      console.error(
+        "Identity verification status notification failed:",
+        notificationError.message
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      identityVerificationStatus: requestedStatus,
+      identityVerificationProvider: updatePayload.identity_verification_provider,
+      identityVerifiedAt: updatePayload.identity_verified_at,
+      identityVerificationLastCheckedAt:
+        updatePayload.identity_verification_last_checked_at,
+      legalNameVerified: updatePayload.legal_name_verified,
+      identityRestrictionReason: updatePayload.identity_restriction_reason,
     });
   }
 
