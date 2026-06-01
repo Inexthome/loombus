@@ -97,6 +97,38 @@ type BlockRow = {
   blocked_id: string;
 };
 
+type ClarificationRequest = {
+  label: string;
+  body: string;
+};
+
+const CLARIFICATION_REQUESTS: ClarificationRequest[] = [
+  {
+    label: "Clarify the claim",
+    body: "Could you clarify the main claim here? I want to make sure I understand the point before responding.",
+  },
+  {
+    label: "Ask for an example",
+    body: "Could you share a concrete example of what you mean? That would make the point easier to evaluate.",
+  },
+  {
+    label: "Ask for source or context",
+    body: "Could you add the source, context, or reasoning behind this claim? I want to understand what it is based on.",
+  },
+  {
+    label: "Ask for practical detail",
+    body: "Could you explain how this would work in practice? The idea is interesting, but I need more detail.",
+  },
+  {
+    label: "Ask what would change their view",
+    body: "What kind of evidence or example would make you reconsider this view?",
+  },
+  {
+    label: "Ask for lived context",
+    body: "Is this coming from lived experience, professional experience, research, or a question you are exploring?",
+  },
+];
+
 function MentionText({ text }: { text: string }) {
   const parts = text.split(/(@[a-zA-Z0-9_]{2,30})/g);
 
@@ -599,6 +631,20 @@ export default function DiscussionPage() {
 
   function clearReferencedReply() {
     setReferencedReply(null);
+  }
+
+  function startClarificationRequest(request: ClarificationRequest) {
+    setMessage("");
+    setSafetyWarning(null);
+    setReferencedReply(null);
+    setReplyBody(request.body);
+
+    window.setTimeout(() => {
+      document.getElementById("reply-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 0);
   }
 
   async function handleReply(
@@ -2724,6 +2770,43 @@ export default function DiscussionPage() {
           <h2 className="mb-4 text-xl font-medium sm:mb-8 sm:text-2xl">
             Replies
           </h2>
+
+          {currentUserId && (
+            <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-[1.5rem] sm:p-6">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">
+                    Request clarification
+                  </p>
+
+                  <h3 className="text-lg font-medium text-white sm:text-xl">
+                    Ask for more context without turning it into a fight.
+                  </h3>
+                </div>
+
+                <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
+                  Structured reply helper
+                </span>
+              </div>
+
+              <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                Use these prompts when a point needs more detail, context, evidence, or practical explanation. They prefill the reply box and do not create scores, penalties, or verification labels.
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {CLARIFICATION_REQUESTS.map((request) => (
+                  <button
+                    key={request.label}
+                    type="button"
+                    onClick={() => startClarificationRequest(request)}
+                    className="rounded-full border border-zinc-800 px-3 py-2 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white sm:text-sm"
+                  >
+                    {request.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           <form
             id="reply-form"
