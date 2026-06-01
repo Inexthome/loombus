@@ -35,6 +35,14 @@ type AiEntitlement = {
   monthly_summary_limit: number;
 };
 
+type OrganizationAction = {
+  title: string;
+  description: string;
+  href: string;
+  action: string;
+  priority: "foundation" | "attention" | "growth";
+};
+
 function getMissingProfileFields(profile: Profile | null) {
   const missing = [];
 
@@ -75,6 +83,40 @@ function withDashboardTimeout<T>(
       clearTimeout(timeoutId);
     }
   });
+}
+
+function OrganizationActionCard({ item }: { item: OrganizationAction }) {
+  const priorityClass =
+    item.priority === "foundation"
+      ? "border-sky-900 text-sky-300"
+      : item.priority === "attention"
+        ? "border-amber-900 text-amber-300"
+        : "border-emerald-900 text-emerald-300";
+
+  return (
+    <Link
+      href={item.href}
+      className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
+    >
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <h3 className="text-base font-medium text-zinc-200">
+          {item.title}
+        </h3>
+
+        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs ${priorityClass}`}>
+          {item.priority}
+        </span>
+      </div>
+
+      <p className="mb-4 text-sm leading-relaxed text-zinc-500">
+        {item.description}
+      </p>
+
+      <span className="text-sm text-zinc-300">
+        {item.action} →
+      </span>
+    </Link>
+  );
 }
 
 export default function DashboardClientPage() {
@@ -263,6 +305,60 @@ export default function DashboardClientPage() {
     (step) => step.complete
   ).length;
 
+  const organizationActions: OrganizationAction[] = [
+    !profileComplete
+      ? {
+          title: "Finish your member foundation",
+          description: "Complete your profile so your discussions, replies, and follows have a clearer identity behind them.",
+          href: "/onboarding",
+          action: "Open setup guide",
+          priority: "foundation",
+        }
+      : null,
+    activityCounts.unreadNotifications > 0
+      ? {
+          title: "Clear current attention",
+          description: `You have ${activityCounts.unreadNotifications} unread notification${activityCounts.unreadNotifications === 1 ? "" : "s"}. Handle those before starting more activity.`,
+          href: "/notifications",
+          action: "Review notifications",
+          priority: "attention",
+        }
+      : null,
+    activityCounts.saved > 0
+      ? {
+          title: "Continue your saved learning path",
+          description: "Your saved discussions now include a private knowledge snapshot and learning path. Use it to decide what to revisit next.",
+          href: "/saved",
+          action: "Open saved",
+          priority: "growth",
+        }
+      : {
+          title: "Save one useful discussion",
+          description: "Saving one strong discussion gives Loombus something to organize into your personal knowledge path.",
+          href: "/discussions",
+          action: "Find a discussion",
+          priority: "growth",
+        },
+    activityCounts.discussions === 0
+      ? {
+          title: "Start your first signal thread",
+          description: "Create one clear discussion that invites thoughtful replies instead of noise.",
+          href: "/create",
+          action: "Create discussion",
+          priority: "foundation",
+        }
+      : null,
+    activityCounts.replies === 0
+      ? {
+          title: "Add one useful reply",
+          description: "A thoughtful reply helps you participate before starting too many new threads.",
+          href: "/discussions",
+          action: "Browse discussions",
+          priority: "growth",
+        }
+      : null,
+  ].filter((item): item is OrganizationAction => Boolean(item)).slice(0, 4);
+
   async function handleLogout() {
     await supabase.auth.signOut();
     window.location.href = "/";
@@ -385,6 +481,34 @@ export default function DashboardClientPage() {
         </section>
 
         </ProgressiveGuide>
+
+        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Organization assistant
+              </p>
+
+              <h2 className="text-xl font-medium sm:text-2xl">
+                What to handle next.
+              </h2>
+            </div>
+
+            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
+              {organizationActions.length} actions
+            </span>
+          </div>
+
+          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            A lightweight organization layer based on your profile, activity, saved discussions, and notifications. It suggests next actions but never acts for you.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {organizationActions.map((item) => (
+              <OrganizationActionCard key={item.title} item={item} />
+            ))}
+          </div>
+        </section>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
