@@ -225,7 +225,7 @@ export default function SearchPage() {
             Find discussions, topics, contributors, and useful signals faster.
           </p>
 
-          <label htmlFor="global-search" className="mt-5 block">
+          <label htmlFor="global-search" className="mt-5 block xl:hidden">
             <span className="mb-2 block text-sm font-medium text-zinc-300">
               What are you looking for?
             </span>
@@ -450,16 +450,42 @@ export default function SearchPage() {
               <section className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20">
                 <div className="border-b border-zinc-900 p-5">
                   <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                    Discovery Panel
+                    Search workspace panel
                   </p>
 
                   <h2 className="text-xl font-semibold tracking-tight">
-                    Search with signal.
+                    Search from here.
                   </h2>
 
                   <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                    Use search to find ideas, topics, contributors, and discussions worth returning to.
+                    Type in the right rail. Results update in the center panel.
                   </p>
+
+                  <label htmlFor="desktop-global-search" className="mt-5 block">
+                    <span className="mb-2 block text-sm font-medium text-zinc-300">
+                      What are you looking for?
+                    </span>
+
+                    <input
+                      id="desktop-global-search"
+                      type="search"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search discussions, people, topics, or ideas..."
+                      autoFocus
+                      className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                  </label>
+
+                  {query.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setQuery("")}
+                      className="mt-3 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                    >
+                      Clear search
+                    </button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 border-b border-zinc-900">
