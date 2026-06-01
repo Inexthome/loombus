@@ -3,7 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Bell, Edit3, Home, Menu, MessageCircle, Search, Users } from "lucide-react";
+import {
+  Bell,
+  Bookmark,
+  Edit3,
+  Home,
+  LayoutDashboard,
+  Menu,
+  MessageCircle,
+  Search,
+  Settings as SettingsIcon,
+  UserCircle,
+  Users,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import {
   filterBlockedActorNotifications,
@@ -65,6 +77,28 @@ export default function ClientLayout({
         ? "loombus-mobile-bottom-tab-active"
         : "loombus-mobile-bottom-tab-inactive"
     }`;
+  }
+
+  function desktopRailLinkClass(href: string, emphasis = false) {
+    const active = isActivePath(href);
+
+    if (emphasis) {
+      return active
+        ? "group relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-black shadow-2xl shadow-white/10 transition"
+        : "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-950 text-zinc-300 transition hover:border-zinc-600 hover:text-white";
+    }
+
+    return active
+      ? "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-900 text-white shadow-xl shadow-black/20 transition"
+      : "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent text-zinc-500 transition hover:border-zinc-800 hover:bg-zinc-950 hover:text-white";
+  }
+
+  function DesktopRailTooltip({ label }: { label: string }) {
+    return (
+      <span className="pointer-events-none absolute left-[3.65rem] z-50 whitespace-nowrap rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-300 opacity-0 shadow-2xl transition group-hover:opacity-100">
+        {label}
+      </span>
+    );
   }
 
   function appMenuButtonClass() {
@@ -406,8 +440,86 @@ export default function ClientLayout({
 
   return (
     <div className="min-h-screen bg-black text-white antialiased">
+      {/* Desktop Signal Rail: U2 app-shell foundation. Mobile keeps the existing floating top/bottom shell. */}
       {user && (
-        <header className="hidden border-b border-zinc-900 pt-[env(safe-area-inset-top)] md:block">
+        <aside className="loombus-desktop-rail fixed inset-y-0 left-0 z-40 hidden w-24 border-r border-zinc-900 bg-black/95 px-3 py-4 backdrop-blur-xl md:flex md:flex-col md:items-center">
+          <Link
+            href="/"
+            aria-label="Loombus home"
+            title="Loombus"
+            className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-900 bg-zinc-950 transition hover:border-zinc-700"
+          >
+            <img
+              src="/assets/brand/loombus-mark-transparent.png"
+              alt=""
+              className="h-9 w-9 object-contain"
+            />
+          </Link>
+
+          <nav aria-label="Primary desktop navigation" className="flex flex-1 flex-col items-center gap-2">
+            <Link href="/" aria-label="Home" title="Home" className={desktopRailLinkClass("/")}>
+              <Home aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Home" />
+            </Link>
+
+            <Link href="/discussions" aria-label="Discussions" title="Discussions" className={desktopRailLinkClass("/discussions", true)}>
+              <MessageCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Discussions" />
+            </Link>
+
+            <Link href="/create" aria-label="Create" title="Create" className={desktopRailLinkClass("/create", true)}>
+              <Edit3 aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Create" />
+            </Link>
+
+            <Link href="/search" aria-label="Search" title="Search" className={desktopRailLinkClass("/search")}>
+              <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Search" />
+            </Link>
+
+            <Link href="/people" aria-label="People" title="People" className={desktopRailLinkClass("/people")}>
+              <Users aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="People" />
+            </Link>
+
+            <Link href="/saved" aria-label="Saved" title="Saved" className={desktopRailLinkClass("/saved")}>
+              <Bookmark aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Saved" />
+            </Link>
+
+            <Link href="/notifications" aria-label="Alerts" title="Alerts" className={desktopRailLinkClass("/notifications")}>
+              <span className="relative">
+                <Bell aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+                {notificationCount > 0 && (
+                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-white px-1 text-center text-[9px] font-semibold leading-4 text-black">
+                    {notificationCount > 9 ? "9+" : notificationCount}
+                  </span>
+                )}
+              </span>
+              <DesktopRailTooltip label="Alerts" />
+            </Link>
+          </nav>
+
+          <div className="flex flex-col items-center gap-2">
+            <Link href="/dashboard" aria-label="Home status" title="Home status" className={desktopRailLinkClass("/dashboard")}>
+              <LayoutDashboard aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Home status" />
+            </Link>
+
+            <Link href="/profile" aria-label="Profile" title="Profile" className={desktopRailLinkClass("/profile")}>
+              <UserCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Profile" />
+            </Link>
+
+            <Link href="/settings" aria-label="Settings" title="Settings" className={desktopRailLinkClass("/settings")}>
+              <SettingsIcon aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Settings" />
+            </Link>
+          </div>
+        </aside>
+      )}
+      {user && (
+        <header className="hidden">
           <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-5">
             <div className="flex items-center justify-between gap-4">
               <Link
@@ -535,7 +647,7 @@ export default function ClientLayout({
         </header>
       )}
 
-      <div className={user ? "pb-24 md:pb-0" : ""}>
+      <div className={user ? "pb-24 md:pb-0 md:pl-24" : ""}>
         {user && (
         <div className={`loombus-mobile-topbar sticky top-0 z-40 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl transition-transform duration-300 md:hidden ${
           topNavHidden ? "-translate-y-full" : "translate-y-0"
