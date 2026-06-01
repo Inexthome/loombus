@@ -200,6 +200,9 @@ export default function CreatePage() {
   const [clarityRewrite, setClarityRewrite] = useState("");
   const [rewriteMessage, setRewriteMessage] = useState("");
   const [generatingRewrite, setGeneratingRewrite] = useState(false);
+  const [showOptionalDetails, setShowOptionalDetails] = useState(false);
+  const [showAttachmentsPanel, setShowAttachmentsPanel] = useState(false);
+  const [showWritingTools, setShowWritingTools] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
 
@@ -998,98 +1001,6 @@ export default function CreatePage() {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <div>
-                <label className="mb-2 block text-sm text-zinc-400">
-                  Topic
-                </label>
-
-                <select
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
-                >
-                  {DISCUSSION_TOPICS.map((topicOption) => (
-                    <option key={topicOption} value={topicOption}>
-                      {topicOption}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-zinc-400">
-                  Reality Lens optional
-                </label>
-
-                <select
-                  value={realityLens}
-                  onChange={(e) => setRealityLens(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
-                >
-                  <option value="">No reality lens</option>
-                  {REALITY_LENSES.map((lens) => (
-                    <option key={lens} value={lens}>
-                      {lens}
-                    </option>
-                  ))}
-                </select>
-
-                <p className="mt-2 text-xs text-zinc-600">
-                  Add a human-reality lens if this discussion touches a deeper life experience.
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm text-zinc-400">
-                  Purpose Lane optional
-                </label>
-
-                <select
-                  value={purposeLane}
-                  onChange={(e) => setPurposeLane(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
-                >
-                  <option value="">No purpose lane</option>
-                  {PURPOSE_LANES.map((lane) => (
-                    <option key={lane} value={lane}>
-                      {lane}
-                    </option>
-                  ))}
-                </select>
-
-                <p className="mt-2 text-xs text-zinc-600">
-                  Add a direction if this discussion points toward learning, contribution, mastery, or community.
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm text-zinc-400">
-                Optional Tags
-              </label>
-
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={(event) => setTagsInput(event.target.value)}
-                placeholder="AI ethics, publishing, startups"
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-              />
-
-              <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
-                <p>
-                  {tagInputHelper}
-                </p>
-
-                {!isEditMode && draftId && (
-                  <p>
-                    Tags are saved when publishing, not while saving drafts.
-                  </p>
-                )}
-              </div>
-            </div>
-
             <div>
               <label className="mb-2 block text-sm text-zinc-400">
                 Discussion Body
@@ -1118,72 +1029,231 @@ export default function CreatePage() {
               </div>
             </div>
 
-            {!isEditMode && (
-              <section className="rounded-2xl border border-zinc-800 bg-black p-3 sm:p-5">
-                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
-                      Attachments
-                    </p>
+            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                    Optional details
+                  </p>
 
-                    <h2 className="text-lg font-medium sm:text-xl">
-                      Add supporting files.
-                    </h2>
-
-                    <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-                      Optional. Attach up to 3 images or PDFs that support the discussion. Max 10 MB each.
-                    </p>
-                  </div>
-
-                  {attachmentFiles.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearAttachments}
-                      disabled={publishing}
-                      className="w-full rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700 sm:w-fit"
-                    >
-                      Clear
-                    </button>
-                  )}
+                  <p className="text-sm text-zinc-400">
+                    Topic, life context, direction, and tags.
+                  </p>
                 </div>
 
-                <input
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
-                  onChange={handleAttachmentSelection}
-                  disabled={publishing}
-                  className="block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-black disabled:cursor-not-allowed disabled:text-zinc-700"
-                />
+                <button
+                  type="button"
+                  onClick={() => setShowOptionalDetails((current) => !current)}
+                  className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
+                  aria-expanded={showOptionalDetails}
+                >
+                  {showOptionalDetails ? "Hide details" : "Show details"}
+                </button>
+              </div>
 
-                {attachmentFiles.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    {attachmentFiles.map((file) => (
-                      <div
-                        key={`${file.name}-${file.size}-${file.lastModified}`}
-                        className="flex flex-col gap-1 rounded-xl border border-zinc-900 bg-zinc-950 p-3 text-sm text-zinc-400 sm:flex-row sm:items-center sm:justify-between"
+              {showOptionalDetails && (
+                <div className="mt-5 space-y-4">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div>
+                      <label className="mb-2 block text-sm text-zinc-400">
+                        Topic
+                      </label>
+
+                      <select
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
                       >
-                        <span className="truncate">
-                          {file.name}
-                        </span>
+                        {DISCUSSION_TOPICS.map((topicOption) => (
+                          <option key={topicOption} value={topicOption}>
+                            {topicOption}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                        <span className="text-xs text-zinc-600">
-                          {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
-                        </span>
-                      </div>
-                    ))}
+                    <div>
+                      <label className="mb-2 block text-sm text-zinc-400">
+                        Reality Lens optional
+                      </label>
+
+                      <select
+                        value={realityLens}
+                        onChange={(e) => setRealityLens(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                      >
+                        <option value="">No reality lens</option>
+                        {REALITY_LENSES.map((lens) => (
+                          <option key={lens} value={lens}>
+                            {lens}
+                          </option>
+                        ))}
+                      </select>
+
+                      <p className="mt-2 text-xs text-zinc-600">
+                        Add a human-reality lens if this discussion touches a deeper life experience.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm text-zinc-400">
+                        Purpose Lane optional
+                      </label>
+
+                      <select
+                        value={purposeLane}
+                        onChange={(e) => setPurposeLane(e.target.value)}
+                        className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                      >
+                        <option value="">No purpose lane</option>
+                        {PURPOSE_LANES.map((lane) => (
+                          <option key={lane} value={lane}>
+                            {lane}
+                          </option>
+                        ))}
+                      </select>
+
+                      <p className="mt-2 text-xs text-zinc-600">
+                        Add a direction if this discussion points toward learning, contribution, mastery, or community.
+                      </p>
+                    </div>
                   </div>
-                )}
 
-                {attachmentMessage && (
-                  <p className="mt-3 text-sm text-zinc-500">
-                    {attachmentMessage}
-                  </p>
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Optional Tags
+                    </label>
+
+                    <input
+                      type="text"
+                      value={tagsInput}
+                      onChange={(event) => setTagsInput(event.target.value)}
+                      placeholder="AI ethics, publishing, startups"
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+
+                    <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
+                      <p>
+                        {tagInputHelper}
+                      </p>
+
+                      {!isEditMode && draftId && (
+                        <p>
+                          Tags are saved when publishing, not while saving drafts.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            {!isEditMode && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                      Optional attachments
+                    </p>
+
+                    <p className="text-sm text-zinc-400">
+                      Add up to 3 images or PDFs.
+                      {attachmentFiles.length > 0 ? ` ${attachmentFiles.length} selected.` : ""}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowAttachmentsPanel((current) => !current)}
+                    className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
+                    aria-expanded={showAttachmentsPanel}
+                  >
+                    {showAttachmentsPanel ? "Hide attachments" : "Add attachments"}
+                  </button>
+                </div>
+
+                {showAttachmentsPanel && (
+                  <div className="mt-5">
+                    <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <p className="text-sm leading-relaxed text-zinc-500">
+                        Optional. Attach files that support the discussion. Max 10 MB each.
+                      </p>
+
+                      {attachmentFiles.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearAttachments}
+                          disabled={publishing}
+                          className="w-full rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700 sm:w-fit"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                      onChange={handleAttachmentSelection}
+                      disabled={publishing}
+                      className="block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-black disabled:cursor-not-allowed disabled:text-zinc-700"
+                    />
+
+                    {attachmentFiles.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        {attachmentFiles.map((file) => (
+                          <div
+                            key={`${file.name}-${file.size}-${file.lastModified}`}
+                            className="flex flex-col gap-1 rounded-xl border border-zinc-900 bg-zinc-950 p-3 text-sm text-zinc-400 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <span className="truncate">
+                              {file.name}
+                            </span>
+
+                            <span className="text-xs text-zinc-600">
+                              {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {attachmentMessage && (
+                      <p className="mt-3 text-sm text-zinc-500">
+                        {attachmentMessage}
+                      </p>
+                    )}
+                  </div>
                 )}
               </section>
             )}
 
-            <section className="rounded-2xl border border-zinc-800 bg-black p-3 sm:p-5">
+            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                    Optional writing tools
+                  </p>
+
+                  <p className="text-sm text-zinc-400">
+                    Quality check and clarity rewrite.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowWritingTools((current) => !current)}
+                  className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
+                  aria-expanded={showWritingTools}
+                >
+                  {showWritingTools ? "Hide writing tools" : "Writing tools"}
+                </button>
+              </div>
+
+              {showWritingTools && (
+                <div className="mt-5 space-y-4">
+                  <section className="rounded-2xl border border-zinc-800 bg-black p-3 sm:p-5">
               <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -1287,6 +1357,9 @@ export default function CreatePage() {
                   >
                     Use rewrite
                   </button>
+                </div>
+              )}
+            </section>
                 </div>
               )}
             </section>
