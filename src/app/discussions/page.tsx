@@ -561,8 +561,10 @@ export default function DiscussionsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12">
+      <div className="mx-auto max-w-[92rem]">
+        <div className="discussion-shell-grid grid gap-6 xl:grid-cols-[minmax(0,46rem)_21rem] xl:items-start xl:justify-center">
+          <div className="min-w-0">
         <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-6 sm:p-6">
           <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
@@ -1091,6 +1093,89 @@ export default function DiscussionsPage() {
               </article>
             );
           })}
+        </div>
+        </div>
+
+        <aside className="hidden xl:block">
+          <div className="sticky top-6 space-y-4">
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                Loombus Signal Panel
+              </p>
+
+              <h2 className="text-xl font-semibold tracking-tight">
+                Read with intent.
+              </h2>
+
+              <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                Loombus is built around fewer, better discussions. Start with one thread, read the context, then reply only when you can add signal.
+              </p>
+
+              <Link
+                href="/create"
+                className="mt-5 inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+              >
+                Create a discussion
+              </Link>
+            </section>
+
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                What to look for
+              </p>
+
+              <div className="space-y-3">
+                <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                  <h3 className="text-sm font-medium text-zinc-200">
+                    Clear framing
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+                    A strong discussion makes the question, tension, or lived problem easy to understand.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                  <h3 className="text-sm font-medium text-zinc-200">
+                    Useful replies
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+                    Look for context, examples, experience, evidence, or a better way to frame the issue.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                  <h3 className="text-sm font-medium text-zinc-200">
+                    Saved value
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+                    Save threads that you may revisit, cite, compare, or use to build future ideas.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                Current view
+              </p>
+
+              <div className="space-y-2 text-sm text-zinc-500">
+                <p>
+                  Showing {filteredDiscussions.length} of {discussions.length}
+                </p>
+                <p>
+                  Sort: {sortMode}
+                </p>
+                <p>
+                  Topic: {selectedTopic}
+                </p>
+                <p>
+                  Purpose: {selectedPurposeLane}
+                </p>
+              </div>
+            </section>
+          </div>
+        </aside>
         </div>
       </div>
     </main>
