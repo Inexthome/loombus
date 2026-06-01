@@ -589,7 +589,7 @@ export default function DiscussionsPage() {
             </Link>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end xl:hidden">
             <label htmlFor="discussion-search" className="block">
               <span className="mb-2 block text-sm font-medium text-zinc-300">
                 Search discussions
@@ -645,7 +645,7 @@ export default function DiscussionsPage() {
           </div>
         </section>
         {showExploreFilters && (
-          <div>
+          <div className="xl:hidden">
           <ProgressiveGuide
           storageKey="loombus-guide-discussions-finding-signal-v1"
           eyebrow="Guide"
@@ -1098,6 +1098,221 @@ export default function DiscussionsPage() {
 
         <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl xl:block">
           <div className="space-y-4">
+            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <div className="mb-5 flex items-start justify-between gap-3">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                    Feed controls
+                  </p>
+
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    Refine the discussion feed.
+                  </h2>
+
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                    Search, filter, and sort here. The center panel stays focused on discussion results.
+                  </p>
+                </div>
+
+                {hasActiveDiscussionFilters && (
+                  <button
+                    type="button"
+                    onClick={resetDiscussionFilters}
+                    className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+
+              <label htmlFor="discussion-search-rail" className="block">
+                <span className="mb-2 block text-sm font-medium text-zinc-300">
+                  Search discussions
+                </span>
+
+                <input
+                  id="discussion-search-rail"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search titles, bodies, topics, or contributors..."
+                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setShowExploreFilters((current) => !current)}
+                className="mt-4 w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                aria-expanded={showExploreFilters}
+              >
+                {showExploreFilters ? "Hide filters" : "Explore / Filters"}
+              </button>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {hasActiveDiscussionFilters ? (
+                  activeFilterLabels.map((label) => (
+                    <span
+                      key={label}
+                      className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400"
+                    >
+                      {label}
+                    </span>
+                  ))
+                ) : (
+                  <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
+                    {filterSummary}
+                  </span>
+                )}
+              </div>
+
+              {showExploreFilters && (
+                <div className="mt-5 space-y-5">
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
+                      Sort by
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSortMode("Newest")}
+                        className={`rounded-full px-3.5 py-2 text-sm transition ${
+                          sortMode === "Newest"
+                            ? "bg-white text-black"
+                            : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                        }`}
+                      >
+                        Newest
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSortMode("Most replied")}
+                        className={`rounded-full px-3.5 py-2 text-sm transition ${
+                          sortMode === "Most replied"
+                            ? "bg-white text-black"
+                            : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                        }`}
+                      >
+                        Most replied
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSortMode("Signal")}
+                        className={`rounded-full px-3.5 py-2 text-sm transition ${
+                          sortMode === "Signal"
+                            ? "bg-white text-black"
+                            : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                        }`}
+                      >
+                        Signal
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
+                      Topics
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {topics.map((topic) => (
+                        <button
+                          key={topic}
+                          type="button"
+                          onClick={() => setTopicFilter(topic)}
+                          className={`rounded-full px-3.5 py-2 text-sm transition ${
+                            selectedTopic === topic
+                              ? "bg-white text-black"
+                              : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                          }`}
+                        >
+                          {topic}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (showAllTopicFilters && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
+                            setTopicFilter("All");
+                          }
+
+                          setShowAllTopicFilters((current) => !current);
+                        }}
+                        className="rounded-full border border-zinc-800 bg-black/20 px-3.5 py-2 text-sm text-zinc-500 transition hover:border-zinc-700 hover:text-white"
+                      >
+                        {showAllTopicFilters ? "Show active topics" : "Show all topics"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
+                      Purpose lanes
+                    </p>
+
+                    <div className="flex flex-wrap gap-2">
+                      {["All", ...PURPOSE_LANES].map((lane) => (
+                        <button
+                          key={lane}
+                          type="button"
+                          onClick={() => setPurposeLaneFilter(lane)}
+                          className={`rounded-full px-3.5 py-2 text-sm transition ${
+                            selectedPurposeLane === lane
+                              ? "bg-white text-black"
+                              : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                          }`}
+                        >
+                          {lane}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
+                          Advanced filters
+                        </p>
+
+                        {!canUseAdvancedFilters && (
+                          <Link
+                            href="/premium"
+                            className="text-xs text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+                          >
+                            Unlock with Premium
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {ADVANCED_FILTERS.map((filter) => (
+                        <button
+                          key={filter}
+                          type="button"
+                          onClick={() => setAdvancedFilter(filter)}
+                          disabled={!canUseAdvancedFilters && filter !== "All activity"}
+                          className={`rounded-full border px-3.5 py-2 text-sm transition ${
+                            advancedFilter === filter
+                              ? "border-zinc-400 text-white"
+                              : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
+                          } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+
+
             <section className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20">
               <div className="border-b border-zinc-900 p-5">
                 <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
