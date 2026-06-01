@@ -210,51 +210,57 @@ export default function SearchPage() {
           ← Back home
         </Link>
 
-        <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-3 sm:text-sm sm:tracking-[0.3em]">
-          Search Loombus
-        </p>
-
-        <h1 className="mb-3 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-5xl">
-          Find signal faster.
-        </h1>
-
-        <p className="mb-5 text-sm leading-relaxed text-zinc-500 sm:mb-8 sm:text-base">
-          Search discussions first. Members can also search people.
-        </p>
-
-        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
-          <label htmlFor="global-search" className="mb-2 block text-sm font-medium text-zinc-300">
+        <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-8 sm:p-6">
+          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Search
+          </p>
+
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+            Search across Loombus
+          </h1>
+
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+            Find discussions, topics, contributors, and useful signals faster.
+          </p>
+
+          <label htmlFor="global-search" className="mt-5 block">
+            <span className="mb-2 block text-sm font-medium text-zinc-300">
+              What are you looking for?
+            </span>
+
+            <input
+              id="global-search"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search discussions, topics, people, or ideas..."
+              autoFocus
+              className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500 sm:text-lg"
+            />
           </label>
 
-          <input
-            id="global-search"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search discussions, topics, or people..."
-            autoFocus
-            className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-          />
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            {query.trim() && (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {query.trim() ? (
               <button
                 type="button"
                 onClick={() => setQuery("")}
                 className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
               >
-                Clear
+                Clear search
               </button>
+            ) : (
+              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                Showing recent signal
+              </span>
             )}
 
             <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-              {loading ? "Loading..." : `${discussionResults.length} discussion results`}
+              {loading ? "Loading..." : `${discussionResults.length} discussions`}
             </span>
 
             {currentUserId && (
               <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                {peopleResults.length} people results
+                {peopleResults.length} people
               </span>
             )}
           </div>
@@ -287,7 +293,24 @@ export default function SearchPage() {
             <p className="text-sm text-zinc-500">Loading discussions...</p>
           ) : discussionResults.length === 0 ? (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-500">
-              No discussions match this search.
+              <p>No discussions match this search.</p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="rounded-full bg-white px-4 py-2 text-sm text-black transition hover:bg-zinc-200"
+                >
+                  Clear search
+                </button>
+
+                <Link
+                  href="/discussions"
+                  className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                >
+                  Browse discussions
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -295,33 +318,45 @@ export default function SearchPage() {
                 const author = profileMap[discussion.user_id];
 
                 return (
-                  <Link
+                  <article
                     key={discussion.id}
-                    href={`/discussions/${discussion.id}`}
-                    className="block rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
+                    className="group rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
                   >
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="shrink-0 rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-                        {discussion.topic}
-                      </span>
+                    <Link
+                      href={`/discussions/${discussion.id}`}
+                      className="block p-4"
+                    >
+                      <div className="mb-3 flex min-w-0 items-center gap-3">
+                        <ProfileAvatar profile={author} size="md" />
 
-                      <span className="text-xs text-zinc-700">
-                        {new Date(discussion.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm text-zinc-300">
+                            {author ? getProfileDisplayName(author) : "Loombus member"}
+                          </p>
 
-                    <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug text-zinc-100">
-                      {discussion.title}
-                    </h3>
+                          <p className="mt-1 truncate text-xs text-zinc-700">
+                            {new Date(discussion.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
 
-                    <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-500">
-                      {discussion.body}
-                    </p>
+                        <span className="shrink-0 rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+                          {discussion.topic}
+                        </span>
+                      </div>
 
-                    <p className="text-xs text-zinc-700">
-                      by {author ? getProfileDisplayName(author) : "Loombus member"}
-                    </p>
-                  </Link>
+                      <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug text-zinc-100 transition group-hover:text-white">
+                        {discussion.title}
+                      </h3>
+
+                      <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-500">
+                        {discussion.body}
+                      </p>
+
+                      <p className="border-t border-zinc-900 pt-3 text-xs text-zinc-500">
+                        Open discussion →
+                      </p>
+                    </Link>
+                  </article>
                 );
               })}
             </div>
@@ -353,7 +388,24 @@ export default function SearchPage() {
             <p className="text-sm text-zinc-500">Loading people...</p>
           ) : peopleResults.length === 0 ? (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-500">
-              No people match this search.
+              <p>No people match this search.</p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="rounded-full bg-white px-4 py-2 text-sm text-black transition hover:bg-zinc-200"
+                >
+                  Clear search
+                </button>
+
+                <Link
+                  href="/people"
+                  className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                >
+                  Browse people
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -361,22 +413,28 @@ export default function SearchPage() {
                 <Link
                   key={profile.id}
                   href={profile.username ? `/u/${profile.username}` : "/people"}
-                  className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
+                  className="group flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
                 >
                   <ProfileAvatar profile={profile} size="md" />
 
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-zinc-100">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-zinc-100 transition group-hover:text-white">
                       {getProfileDisplayName(profile)}
                     </p>
+
                     <p className="mt-1 truncate text-xs text-zinc-600">
                       {profile.username ? `@${profile.username}` : "No username yet"}
                     </p>
+
                     {profile.bio && (
                       <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-500">
                         {profile.bio}
                       </p>
                     )}
+
+                    <p className="mt-3 text-xs text-zinc-500">
+                      View profile →
+                    </p>
                   </div>
                 </Link>
               ))}
