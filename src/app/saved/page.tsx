@@ -90,7 +90,11 @@ function downloadTextFile(filename: string, content: string, mimeType: string) {
   URL.revokeObjectURL(url);
 }
 
-function hasCollectionAccess(entitlement: AiEntitlement) {
+function hasCollectionAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+  if (isAdmin) {
+    return true;
+  }
+
   if (!entitlement?.ai_assisted_enabled) {
     return false;
   }
@@ -98,7 +102,11 @@ function hasCollectionAccess(entitlement: AiEntitlement) {
   return entitlement.tier === "premium" || entitlement.tier === "admin";
 }
 
-function hasPrivateNotesAccess(entitlement: AiEntitlement) {
+function hasPrivateNotesAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+  if (isAdmin) {
+    return true;
+  }
+
   if (!entitlement) {
     return false;
   }
@@ -186,6 +194,7 @@ export default function SavedPage() {
   const [saved, setSaved] = useState<SavedDiscussion[]>([]);
   const [collections, setCollections] = useState<BookmarkCollection[]>([]);
   const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState("all");
   const [savedSearchQuery, setSavedSearchQuery] = useState("");
@@ -200,8 +209,8 @@ export default function SavedPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
-  const canUseCollections = hasCollectionAccess(entitlement);
-  const canUsePrivateNotes = hasPrivateNotesAccess(entitlement);
+  const canUseCollections = hasCollectionAccess(entitlement, isAdmin);
+  const canUsePrivateNotes = hasPrivateNotesAccess(entitlement, isAdmin);
   const canExportSavedNotes = canUsePrivateNotes;
 
   useEffect(() => {
@@ -216,10 +225,16 @@ export default function SavedPage() {
       setCurrentUserId(userData.user.id);
 
       const [
+        { data: profileData },
         { data: entitlementData },
         { data: collectionData },
         { data: bookmarkData },
       ] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", userData.user.id)
+          .maybeSingle(),
         supabase
           .from("user_ai_entitlements")
           .select("tier, ai_assisted_enabled, monthly_summary_limit")
@@ -252,6 +267,7 @@ export default function SavedPage() {
           .order("created_at", { ascending: false }),
       ]);
 
+      setIsAdmin(Boolean(profileData?.is_admin));
       setEntitlement((entitlementData ?? null) as AiEntitlement);
       setCollections((collectionData ?? []) as BookmarkCollection[]);
 
@@ -956,12 +972,14 @@ export default function SavedPage() {
             </p>
           </div>
 
-          <Link
-            href="/premium"
-            className="hidden w-full rounded-full border border-zinc-800 px-5 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white sm:w-fit md:inline-block"
-          >
-            Premium folders
-          </Link>
+          {!isAdmin && (
+            <Link
+              href="/premium"
+              className="hidden w-full rounded-full border border-zinc-800 px-5 py-3 text-center text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white sm:w-fit md:inline-block"
+            >
+              Premium folders
+            </Link>
+          )}
         </div>
 
         <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
@@ -1006,7 +1024,9 @@ export default function SavedPage() {
               </p>
 
               <p className="text-sm leading-relaxed text-zinc-600">
-                Premium folders and Premium Plus notes help when your saved list becomes a working library.
+                {isAdmin
+                  ? "Admin access includes folders, private notes, and saved-library exports."
+                  : "Premium folders and Premium Plus notes help when your saved list becomes a working library."}
               </p>
             </div>
           </div>
@@ -1256,7 +1276,7 @@ export default function SavedPage() {
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
-                  Premium Plus export
+                  {isAdmin ? "Admin export" : "Premium Plus export"}
                 </p>
 
                 <h2 className="text-xl font-medium sm:text-2xl">
