@@ -103,6 +103,11 @@ type ClarificationRequest = {
   body: string;
 };
 
+type ActionPrompt = {
+  label: string;
+  body: string;
+};
+
 const CLARIFICATION_REQUESTS: ClarificationRequest[] = [
   {
     label: "Clarify the claim",
@@ -127,6 +132,33 @@ const CLARIFICATION_REQUESTS: ClarificationRequest[] = [
   {
     label: "Ask for lived context",
     body: "Is this coming from lived experience, professional experience, research, or a question you are exploring?",
+  },
+];
+
+const ACTION_PROMPTS: ActionPrompt[] = [
+  {
+    label: "What can be learned?",
+    body: "One useful thing that can be learned from this discussion is...",
+  },
+  {
+    label: "Name a next question",
+    body: "A useful question to explore next is...",
+  },
+  {
+    label: "Connect to a skill",
+    body: "The skill or area of mastery this connects to is...",
+  },
+  {
+    label: "Suggest a practical step",
+    body: "One practical next step this points to is...",
+  },
+  {
+    label: "Find the community angle",
+    body: "A local or community angle worth considering is...",
+  },
+  {
+    label: "Make it more useful",
+    body: "This discussion would become more useful if...",
   },
 ];
 
@@ -639,6 +671,20 @@ export default function DiscussionPage() {
     setSafetyWarning(null);
     setReferencedReply(null);
     setReplyBody(request.body);
+
+    window.setTimeout(() => {
+      document.getElementById("reply-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 0);
+  }
+
+  function startActionPrompt(prompt: ActionPrompt) {
+    setMessage("");
+    setSafetyWarning(null);
+    setReferencedReply(null);
+    setReplyBody(prompt.body);
 
     window.setTimeout(() => {
       document.getElementById("reply-form")?.scrollIntoView({
@@ -2777,6 +2823,43 @@ export default function DiscussionPage() {
           <h2 className="mb-4 text-xl font-medium sm:mb-8 sm:text-2xl">
             Replies
           </h2>
+
+          {currentUserId && (
+            <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-[1.5rem] sm:p-6">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">
+                    Action prompts
+                  </p>
+
+                  <h3 className="text-lg font-medium text-white sm:text-xl">
+                    Turn the discussion into a useful next thought.
+                  </h3>
+                </div>
+
+                <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
+                  Reply helper
+                </span>
+              </div>
+
+              <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                Use these prompts to think through learning, practical detail, skills, or community direction. They prefill the reply box and never post automatically.
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {ACTION_PROMPTS.map((prompt) => (
+                  <button
+                    key={prompt.label}
+                    type="button"
+                    onClick={() => startActionPrompt(prompt)}
+                    className="rounded-full border border-zinc-800 px-3 py-2 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white sm:text-sm"
+                  >
+                    {prompt.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           {currentUserId && (
             <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-[1.5rem] sm:p-6">
