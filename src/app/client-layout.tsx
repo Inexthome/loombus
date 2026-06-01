@@ -9,6 +9,7 @@ import {
   Edit3,
   Home,
   LayoutDashboard,
+  LogOut,
   Menu,
   MessageCircle,
   Search,
@@ -615,6 +616,17 @@ export default function ClientLayout({
               <SettingsIcon aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Settings" />
             </Link>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Logout"
+              title="Logout"
+              className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent text-zinc-600 transition hover:border-red-950 hover:bg-red-950/20 hover:text-red-300"
+            >
+              <LogOut aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Logout" />
+            </button>
           </div>
         </aside>
       )}
