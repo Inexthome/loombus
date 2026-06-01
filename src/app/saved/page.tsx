@@ -15,6 +15,7 @@ type SavedDiscussion = {
     title: string;
     topic: string;
     reality_lens: string | null;
+    purpose_lane: string | null;
     body: string;
     created_at: string;
   } | null;
@@ -242,6 +243,7 @@ export default function SavedPage() {
               title,
               topic,
               reality_lens,
+              purpose_lane,
               body,
               created_at
             )
@@ -329,6 +331,7 @@ export default function SavedPage() {
       return (
         (discussion?.title ?? "").toLowerCase().includes(query) ||
         (discussion?.topic ?? "").toLowerCase().includes(query) ||
+        (discussion?.purpose_lane ?? "").toLowerCase().includes(query) ||
         (discussion?.body ?? "").toLowerCase().includes(query) ||
         note.toLowerCase().includes(query)
       );
@@ -338,6 +341,7 @@ export default function SavedPage() {
   const knowledgeSnapshot = useMemo(() => {
     const topicCounts: Record<string, number> = {};
     const lensCounts: Record<string, number> = {};
+    const purposeCounts: Record<string, number> = {};
     const folderCounts: Record<string, number> = {};
     let notesCount = 0;
     let recentSavedCount = 0;
@@ -353,6 +357,7 @@ export default function SavedPage() {
 
       incrementSignal(topicCounts, discussion.topic);
       incrementSignal(lensCounts, discussion.reality_lens);
+      incrementSignal(purposeCounts, discussion.purpose_lane);
 
       const folderName = item.collection_id
         ? collectionNameById[item.collection_id] ?? "Unknown folder"
@@ -374,6 +379,7 @@ export default function SavedPage() {
     return {
       topics: sortKnowledgeSignals(topicCounts).slice(0, 6),
       lenses: sortKnowledgeSignals(lensCounts).slice(0, 6),
+      purposeSignals: sortKnowledgeSignals(purposeCounts).slice(0, 6),
       folders: sortKnowledgeSignals(folderCounts).slice(0, 6),
       notesCount,
       recentSavedCount,
@@ -384,6 +390,7 @@ export default function SavedPage() {
     const primaryTopic = knowledgeSnapshot.topics[0]?.label ?? null;
     const primaryLens = knowledgeSnapshot.lenses[0]?.label ?? null;
     const primaryFolder = knowledgeSnapshot.folders.find((folder) => folder.label !== "Unfiled")?.label ?? null;
+    const primaryPurposeLane = knowledgeSnapshot.purposeSignals[0]?.label ?? null;
     const hasNotes = knowledgeSnapshot.notesCount > 0;
     const hasRecentSaves = knowledgeSnapshot.recentSavedCount > 0;
 
@@ -412,6 +419,19 @@ export default function SavedPage() {
       actionLabel: primaryLens ? `Search ${primaryLens}` : "Browse discussions",
       actionHref: primaryLens
         ? `/saved?search=${encodeURIComponent(primaryLens)}`
+        : "/discussions",
+    });
+
+    steps.push({
+      title: primaryPurposeLane
+        ? `Follow the ${primaryPurposeLane} direction`
+        : "Add purpose direction to your saved path",
+      description: primaryPurposeLane
+        ? `${primaryPurposeLane} is showing up in your saved library. Use it as the direction behind what you revisit next.`
+        : "As more saved discussions include Purpose Lanes, this path can show what kind of direction your saved library is forming around.",
+      actionLabel: primaryPurposeLane ? `Search ${primaryPurposeLane}` : "Browse discussions",
+      actionHref: primaryPurposeLane
+        ? `/saved?search=${encodeURIComponent(primaryPurposeLane)}`
         : "/discussions",
     });
 
@@ -730,6 +750,7 @@ export default function SavedPage() {
           title: discussion.title,
           topic: discussion.topic,
           reality_lens: discussion.reality_lens,
+          purpose_lane: discussion.purpose_lane,
           body: discussion.body,
           discussion_created_at: discussion.created_at,
           saved_at: item.created_at,
@@ -787,6 +808,7 @@ export default function SavedPage() {
           "",
           `- Topic: ${item.topic}`,
           `- Reality Lens: ${item.reality_lens ?? "None"}`,
+          `- Purpose Lane: ${item.purpose_lane ?? "None"}`,
           `- Folder: ${item.collection}`,
           `- Saved: ${new Date(item.saved_at).toLocaleString()}`,
           `- Discussion created: ${new Date(item.discussion_created_at).toLocaleString()}`,
@@ -1016,9 +1038,18 @@ export default function SavedPage() {
                   {knowledgeSnapshot.lenses.length}
                 </p>
               </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Purpose signals
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.purposeSignals.length}
+                </p>
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <KnowledgeSignalGroup
                 title="Saved topics"
                 empty="No topic signals yet."
@@ -1032,11 +1063,71 @@ export default function SavedPage() {
               />
 
               <KnowledgeSignalGroup
+                title="Purpose Lanes"
+                empty="No Purpose Lane signals yet."
+                signals={knowledgeSnapshot.purposeSignals}
+              />
+
+              <KnowledgeSignalGroup
                 title="Folders"
                 empty="No folder signals yet."
                 signals={knowledgeSnapshot.folders}
               />
             </div>
+          </section>
+        )}
+
+        {!loading && saved.length > 0 && (
+          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                  Purpose snapshot
+                </p>
+
+                <h2 className="text-xl font-medium sm:text-2xl">
+                  What direction your saved library is forming.
+                </h2>
+
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                  This private snapshot uses saved Purpose Lanes only. It is not therapy, diagnosis, life coaching, scoring, or ranking.
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
+                Private
+              </span>
+            </div>
+
+            {knowledgeSnapshot.purposeSignals.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {knowledgeSnapshot.purposeSignals.map((signal) => (
+                  <Link
+                    key={signal.label}
+                    href={`/saved?search=${encodeURIComponent(signal.label)}`}
+                    className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700"
+                  >
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <h3 className="text-base font-medium text-zinc-200">
+                        {signal.label}
+                      </h3>
+
+                      <span className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
+                        {signal.count} saved
+                      </span>
+                    </div>
+
+                    <p className="text-sm leading-relaxed text-zinc-600">
+                      Revisit saved discussions in this lane to see what learning, contribution, mastery, or community direction is emerging.
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-600">
+                Save discussions with Purpose Lanes to build a private purpose snapshot.
+              </p>
+            )}
           </section>
         )}
 
@@ -1417,6 +1508,12 @@ export default function SavedPage() {
                     {discussion.reality_lens && (
                       <span className="rounded-full border border-zinc-900 px-2.5 py-1 text-xs text-zinc-500">
                         {discussion.reality_lens}
+                      </span>
+                    )}
+
+                    {discussion.purpose_lane && (
+                      <span className="rounded-full border border-zinc-900 px-2.5 py-1 text-xs text-zinc-500">
+                        {discussion.purpose_lane}
                       </span>
                     )}
                   </div>
