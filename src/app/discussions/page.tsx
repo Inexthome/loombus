@@ -768,7 +768,6 @@ export default function DiscussionsPage() {
           </div>
 
           <div className="space-y-4">
-
             <div>
               <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
                 Sort by
@@ -1099,28 +1098,6 @@ export default function DiscussionsPage() {
 
         <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl xl:block">
           <div className="space-y-4">
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                Universal Search
-              </p>
-
-              <h2 className="text-xl font-semibold tracking-tight">
-                Search all of Loombus.
-              </h2>
-
-              <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                Find discussions, people, topics, Reality Lenses, Purpose Lanes, and public signals from one place.
-              </p>
-
-              <Link
-                href="/search"
-                className="mt-5 inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
-              >
-                Open Universal Search
-              </Link>
-            </section>
-
-            
             <section className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20">
               <div className="border-b border-zinc-900 p-5">
                 <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
