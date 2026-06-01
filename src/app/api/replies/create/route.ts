@@ -5,6 +5,7 @@ import { getAiSafetyErrorPayload, reviewContentSafety } from "@/lib/moderation/a
 import { logAiSafetyEvent, logRuleBasedSafetyEvent } from "@/lib/moderation/safety-events";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { getIdentityVerificationGateResult } from "@/lib/identity-verification";
 import { createNotification, createNotifications } from "@/lib/notifications";
 
 const REPLY_COOLDOWN_MS = 10000;
@@ -21,6 +22,7 @@ type ProfileAccess = {
   enforcement_reason: string | null;
   suspended_until: string | null;
   identity_verification_status: string | null;
+  legal_name_verified: boolean | null;
 };
 
 type ReferencedReply = {
@@ -112,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("is_admin, account_status, enforcement_reason, suspended_until, identity_verification_status")
+      .select("is_admin, account_status, enforcement_reason, suspended_until, identity_verification_status, legal_name_verified")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -129,13 +131,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isAdmin = Boolean(profileAccess?.is_admin);
+    const identityGate = getIdentityVerificationGateResult(profileAccess);
 
-    if (!isAdmin && profileAccess?.identity_verification_status !== "verified") {
+    if (!identityGate.allowed) {
       return NextResponse.json(
         {
-          error: "Identity verification is required before replying.",
-          code: "identity_verification_required",
+          error: identityGate.errorMessage,
+          code: identityGate.code,
         },
         { status: 403 }
       );

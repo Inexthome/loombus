@@ -9,6 +9,7 @@ import { normalizePurposeLane } from "@/lib/purpose-lanes";
 import { normalizeDiscussionTags } from "@/lib/discussion-tags";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { getIdentityVerificationGateResult } from "@/lib/identity-verification";
 import { createNotifications } from "@/lib/notifications";
 
 const CREATE_COOLDOWN_MS = 30000;
@@ -21,6 +22,7 @@ type ProfileAccess = {
   enforcement_reason: string | null;
   suspended_until: string | null;
   identity_verification_status: string | null;
+  legal_name_verified: boolean | null;
 };
 
 type AiEntitlement = {
@@ -233,7 +235,7 @@ export async function POST(request: NextRequest) {
     const [{ data: profile }, { data: entitlement }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("is_admin, account_status, enforcement_reason, suspended_until, identity_verification_status")
+        .select("is_admin, account_status, enforcement_reason, suspended_until, identity_verification_status, legal_name_verified")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -258,11 +260,13 @@ export async function POST(request: NextRequest) {
 
     const isAdmin = Boolean(profileAccess?.is_admin);
 
-    if (!isAdmin && profileAccess?.identity_verification_status !== "verified") {
+    const identityGate = getIdentityVerificationGateResult(profileAccess);
+
+    if (!identityGate.allowed) {
       return NextResponse.json(
         {
-          error: "Identity verification is required before creating discussions.",
-          code: "identity_verification_required",
+          error: identityGate.errorMessage,
+          code: identityGate.code,
         },
         { status: 403 }
       );

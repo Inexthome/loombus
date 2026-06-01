@@ -94,3 +94,80 @@ export function getIdentityVerificationDisplay(
       "You will be notified when verification is ready to complete.",
   };
 }
+
+export type IdentityVerificationGateResult = {
+  allowed: boolean;
+  status: IdentityVerificationStatus;
+  code?:
+    | "identity_verification_required"
+    | "identity_verification_pending"
+    | "identity_verification_failed"
+    | "identity_verification_restricted";
+  errorMessage?: string;
+};
+
+type IdentityVerificationGateProfile = {
+  is_admin?: boolean | null;
+  identity_verification_status?: string | null;
+  legal_name_verified?: boolean | null;
+};
+
+export function getIdentityVerificationGateResult(
+  profile: IdentityVerificationGateProfile | null
+): IdentityVerificationGateResult {
+  const status = normalizeIdentityVerificationStatus(
+    profile?.identity_verification_status
+  );
+
+  if (profile?.is_admin) {
+    return {
+      allowed: true,
+      status,
+    };
+  }
+
+  if (status === "verified" && profile?.legal_name_verified === true) {
+    return {
+      allowed: true,
+      status,
+    };
+  }
+
+  if (status === "pending") {
+    return {
+      allowed: false,
+      status,
+      code: "identity_verification_pending",
+      errorMessage:
+        "Identity verification is pending. You can post and reply after verification is complete.",
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      allowed: false,
+      status,
+      code: "identity_verification_failed",
+      errorMessage:
+        "Identity verification was not completed. Please complete verification before posting or replying.",
+    };
+  }
+
+  if (status === "restricted") {
+    return {
+      allowed: false,
+      status,
+      code: "identity_verification_restricted",
+      errorMessage:
+        "Identity verification is restricted for this account. Contact support if you believe this is a mistake.",
+    };
+  }
+
+  return {
+    allowed: false,
+    status,
+    code: "identity_verification_required",
+    errorMessage:
+      "Complete identity verification before posting or replying on Loombus.",
+  };
+}
