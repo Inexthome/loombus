@@ -561,9 +561,9 @@ export default function DiscussionsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12">
-      <div className="mx-auto max-w-[92rem]">
-        <div className="discussion-shell-grid grid gap-6 xl:grid-cols-[minmax(0,46rem)_21rem] xl:items-start xl:justify-center">
+    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12 xl:pr-80">
+      <div className="mx-auto max-w-[46rem]">
+        <div className="discussion-shell-grid">
           <div className="min-w-0">
         <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-6 sm:p-6">
           <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -1096,8 +1096,8 @@ export default function DiscussionsPage() {
         </div>
         </div>
 
-        <aside className="hidden xl:block">
-          <div className="sticky top-6 space-y-4">
+        <aside className="fixed inset-y-0 right-0 z-30 hidden w-80 overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl xl:block">
+          <div className="space-y-4">
             <section className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20">
               <div className="border-b border-zinc-900 p-5">
                 <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
