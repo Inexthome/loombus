@@ -27,6 +27,10 @@ type ActivityCounts = {
   replies: number;
   saved: number;
   unreadNotifications: number;
+  topicsContributed: number;
+  savedByReaders: number;
+  repliesReceived: number;
+  resolvedDiscussions: number;
 };
 
 type AiEntitlement = {
@@ -41,6 +45,13 @@ type OrganizationAction = {
   href: string;
   action: string;
   priority: "foundation" | "attention" | "growth";
+};
+
+type ContributionSignal = {
+  label: string;
+  value: number;
+  description: string;
+  href: string;
 };
 
 function getMissingProfileFields(profile: Profile | null) {
@@ -85,6 +96,27 @@ function withDashboardTimeout<T>(
   });
 }
 
+function ContributionSignalCard({ signal }: { signal: ContributionSignal }) {
+  return (
+    <Link
+      href={signal.href}
+      className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
+    >
+      <p className="mb-2 text-sm text-zinc-500">
+        {signal.label}
+      </p>
+
+      <p className="mb-3 text-3xl font-semibold sm:text-4xl">
+        {signal.value}
+      </p>
+
+      <p className="text-sm leading-relaxed text-zinc-600">
+        {signal.description}
+      </p>
+    </Link>
+  );
+}
+
 function OrganizationActionCard({ item }: { item: OrganizationAction }) {
   const priorityClass =
     item.priority === "foundation"
@@ -127,6 +159,10 @@ export default function DashboardClientPage() {
     replies: 0,
     saved: 0,
     unreadNotifications: 0,
+    topicsContributed: 0,
+    savedByReaders: 0,
+    repliesReceived: 0,
+    resolvedDiscussions: 0,
   });
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -168,6 +204,7 @@ export default function DashboardClientPage() {
           { count: savedCount, error: savedError },
           { data: unreadNotificationData, error: notificationError },
           { data: entitlementData, error: entitlementError },
+          { data: ownedDiscussionData, error: ownedDiscussionError },
         ] = await withDashboardTimeout(Promise.all([
           supabase
             .from("profiles")
@@ -203,6 +240,12 @@ export default function DashboardClientPage() {
             .select("tier, ai_assisted_enabled, monthly_summary_limit")
             .eq("user_id", data.user.id)
             .maybeSingle(),
+
+          supabase
+            .from("discussions")
+            .select("id, topic, discussion_status")
+            .eq("user_id", data.user.id)
+            .is("deleted_at", null),
         ]),
           "Dashboard activity summary"
         );
@@ -213,7 +256,8 @@ export default function DashboardClientPage() {
           replyError ||
           savedError ||
           notificationError ||
-          entitlementError;
+          entitlementError ||
+          ownedDiscussionError;
 
         if (firstError) {
           throw firstError;
@@ -224,6 +268,40 @@ export default function DashboardClientPage() {
           blockedRelationshipUserIds
         );
 
+        const ownedDiscussionRows = (ownedDiscussionData ?? []) as {
+          id: string;
+          topic: string | null;
+          discussion_status: string | null;
+        }[];
+
+        const ownedDiscussionIds = ownedDiscussionRows.map((discussion) => discussion.id);
+
+        let repliesReceived = 0;
+        let savedByReaders = 0;
+
+        if (ownedDiscussionIds.length > 0) {
+          const [{ count: receivedReplyCount }, { count: readerSaveCount }] =
+            await withDashboardTimeout(Promise.all([
+              supabase
+                .from("replies")
+                .select("*", { count: "exact", head: true })
+                .in("discussion_id", ownedDiscussionIds)
+                .neq("user_id", data.user.id)
+                .is("deleted_at", null),
+
+              supabase
+                .from("bookmarks")
+                .select("*", { count: "exact", head: true })
+                .in("discussion_id", ownedDiscussionIds)
+                .neq("user_id", data.user.id),
+            ]),
+              "Dashboard contribution signal summary"
+            );
+
+          repliesReceived = receivedReplyCount ?? 0;
+          savedByReaders = readerSaveCount ?? 0;
+        }
+
         setProfile(profileData ?? null);
         setAiEntitlement(entitlementData ?? null);
         setActivityCounts({
@@ -231,6 +309,16 @@ export default function DashboardClientPage() {
           replies: replyCount ?? 0,
           saved: savedCount ?? 0,
           unreadNotifications: visibleUnreadNotifications.length,
+          topicsContributed: new Set(
+            ownedDiscussionRows
+              .map((discussion) => discussion.topic)
+              .filter(Boolean)
+          ).size,
+          savedByReaders,
+          repliesReceived,
+          resolvedDiscussions: ownedDiscussionRows.filter(
+            (discussion) => discussion.discussion_status === "resolved"
+          ).length,
         });
       } catch (error) {
         const message =
@@ -304,6 +392,45 @@ export default function DashboardClientPage() {
   const gettingStartedCompleteCount = gettingStartedSteps.filter(
     (step) => step.complete
   ).length;
+
+  const contributionSignals: ContributionSignal[] = [
+    {
+      label: "Discussions started",
+      value: activityCounts.discussions,
+      description: "Original discussions you have contributed to Loombus.",
+      href: "/my-discussions",
+    },
+    {
+      label: "Replies contributed",
+      value: activityCounts.replies,
+      description: "Replies you have added to other conversations.",
+      href: "/my-replies",
+    },
+    {
+      label: "Topics contributed to",
+      value: activityCounts.topicsContributed,
+      description: "Distinct topic lanes where you have started discussions.",
+      href: "/my-discussions",
+    },
+    {
+      label: "Saved by readers",
+      value: activityCounts.savedByReaders,
+      description: "Times other members saved discussions you started.",
+      href: "/my-discussions",
+    },
+    {
+      label: "Replies received",
+      value: activityCounts.repliesReceived,
+      description: "Replies other members added to discussions you started.",
+      href: "/my-discussions",
+    },
+    {
+      label: "Resolved discussions",
+      value: activityCounts.resolvedDiscussions,
+      description: "Your discussions marked resolved after the thread developed.",
+      href: "/my-discussions",
+    },
+  ];
 
   const organizationActions: OrganizationAction[] = [
     !profileComplete
@@ -587,6 +714,34 @@ export default function DashboardClientPage() {
             </p>
           )}
         </div>
+
+        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Contribution signals
+              </p>
+
+              <h2 className="text-xl font-medium sm:text-2xl">
+                Your private contribution snapshot.
+              </h2>
+            </div>
+
+            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
+              Private
+            </span>
+          </div>
+
+          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            These are private signals based on your discussions, replies, topics, saves, and resolved threads. They are not public scores or rankings.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {contributionSignals.map((signal) => (
+              <ContributionSignalCard key={signal.label} signal={signal} />
+            ))}
+          </div>
+        </section>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
