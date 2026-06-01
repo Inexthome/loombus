@@ -5,8 +5,8 @@ import { getAiSafetyErrorPayload, reviewContentSafety } from "@/lib/moderation/a
 import { logAiSafetyEvent, logRuleBasedSafetyEvent } from "@/lib/moderation/safety-events";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
-import { getIdentityVerificationGateResult } from "@/lib/identity-verification";
 import { createNotification, createNotifications } from "@/lib/notifications";
+import { validatePublicProfileName } from "@/lib/profile-name-quality";
 
 const REPLY_COOLDOWN_MS = 10000;
 const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
@@ -21,8 +21,8 @@ type ProfileAccess = {
   account_status: string | null;
   enforcement_reason: string | null;
   suspended_until: string | null;
-  identity_verification_status: string | null;
-  legal_name_verified: boolean | null;
+  full_name: string | null;
+  username: string | null;
 };
 
 type ReferencedReply = {
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("is_admin, account_status, enforcement_reason, suspended_until, identity_verification_status, legal_name_verified")
+      .select("is_admin, account_status, enforcement_reason, suspended_until, full_name, username")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -131,16 +131,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const identityGate = getIdentityVerificationGateResult(profileAccess);
-
-    if (!identityGate.allowed) {
-      return NextResponse.json(
-        {
-          error: identityGate.errorMessage,
-          code: identityGate.code,
-        },
-        { status: 403 }
-      );
+    const profileNameGate = validatePublicProfileName(profileAccess.full_name);
+    if (!profileAccess.is_admin && !profileNameGate.ok) {
+      return jsonError(profileNameGate.message, 403, {
+        code: profileNameGate.code,
+      });
     }
 
     const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(

@@ -415,6 +415,8 @@ export default function ProfilePage() {
 
         <TopicAlertsControl canUseTopicAlerts={canUseTopicAlerts} />
 
+        {false && (
+          /* Identity verification paused by Loombus pivot. Foundation remains dormant for optional verification later. */
         <section className={`mb-6 rounded-2xl border p-4 shadow-2xl shadow-black/20 sm:p-6 ${identityVerificationDisplay.cardClassName}`}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -475,6 +477,7 @@ export default function ProfilePage() {
             {identityVerificationDisplay.nextAction}
           </p>
         </section>
+        )}
 
         <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -498,7 +501,7 @@ export default function ProfilePage() {
               </p>
 
               <p className="text-sm leading-relaxed text-zinc-600">
-                Use the public name and username you are comfortable being known by on Loombus.
+                Use a recognizable public name and username you are comfortable being known by on Loombus. This does not have to be your full legal name.
               </p>
             </div>
 

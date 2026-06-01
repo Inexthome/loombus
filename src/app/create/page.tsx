@@ -209,7 +209,7 @@ export default function CreatePage() {
 
   const isAdmin = Boolean(profile?.is_admin);
   const identityVerificationStatus = profile?.identity_verification_status ?? "unverified";
-  const canCreateOrEditDiscussion = isAdmin || identityVerificationStatus === "verified";
+  const canCreateOrEditDiscussion = true;
   const canUseDrafts = hasPremiumAccess(entitlement, isAdmin);
   const canUseLongPosts = hasLongPostAccess(entitlement, isAdmin);
   const canUseQualityCheck = canUseLongPosts;
@@ -861,18 +861,18 @@ export default function CreatePage() {
         {authChecked && isLoggedIn && !canCreateOrEditDiscussion && (
           <div className="mb-5 rounded-2xl border border-amber-900 bg-amber-950/20 p-4 sm:mb-8 sm:p-5">
             <p className="mb-2 text-sm font-medium text-amber-200">
-              Verify identity before posting.
+              Complete your public profile before posting.
             </p>
 
             <p className="mb-4 text-sm leading-relaxed text-amber-100/80">
-              Loombus now requires identity verification before members can publish discussions or replies. You can still save drafts and update your profile while verification is pending.
+              Loombus asks members to use a recognizable public name before publishing discussions or replies. You can still save drafts and update your profile.
             </p>
 
             <Link
               href="/profile"
               className="text-sm text-amber-100 underline decoration-amber-700 underline-offset-4 transition hover:text-white hover:decoration-white"
             >
-              Open identity verification →
+              Open profile →
             </Link>
           </div>
         )}
@@ -1402,7 +1402,7 @@ export default function CreatePage() {
                   {publishing
                     ? isEditMode ? "Saving..." : "Publishing..."
                     : !canCreateOrEditDiscussion
-                      ? "Verify Identity First"
+                      ? "Complete Profile First"
                       : isEditMode ? "Save Changes" : "Publish Discussion"}
                 </button>
 

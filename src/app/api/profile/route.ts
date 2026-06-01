@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { validatePublicProfileName } from "@/lib/profile-name-quality";
 
 type ProfileRow = {
   id: string;
@@ -118,6 +119,13 @@ export async function POST(request: NextRequest) {
   const source = body as Record<string, unknown>;
 
   const fullName = cleanOptionalText(source.fullName, 80);
+
+  const profileNameGate = validatePublicProfileName(fullName);
+  if (!profileNameGate.ok) {
+    return jsonError(profileNameGate.message, 400, {
+      code: profileNameGate.code,
+    });
+  }
   const username = cleanOptionalText(source.username, 30)
     .replace(/^@+/, "")
     .toLowerCase();

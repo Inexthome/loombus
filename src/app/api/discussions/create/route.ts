@@ -9,8 +9,8 @@ import { normalizePurposeLane } from "@/lib/purpose-lanes";
 import { normalizeDiscussionTags } from "@/lib/discussion-tags";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
-import { getIdentityVerificationGateResult } from "@/lib/identity-verification";
 import { createNotifications } from "@/lib/notifications";
+import { validatePublicProfileName } from "@/lib/profile-name-quality";
 
 const CREATE_COOLDOWN_MS = 30000;
 const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
@@ -21,8 +21,8 @@ type ProfileAccess = {
   account_status: string | null;
   enforcement_reason: string | null;
   suspended_until: string | null;
-  identity_verification_status: string | null;
-  legal_name_verified: boolean | null;
+  full_name: string | null;
+  username: string | null;
 };
 
 type AiEntitlement = {
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
     const [{ data: profile }, { data: entitlement }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("is_admin, account_status, enforcement_reason, suspended_until, identity_verification_status, legal_name_verified")
+        .select("is_admin, account_status, enforcement_reason, suspended_until, full_name, username")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -260,16 +260,11 @@ export async function POST(request: NextRequest) {
 
     const isAdmin = Boolean(profileAccess?.is_admin);
 
-    const identityGate = getIdentityVerificationGateResult(profileAccess);
-
-    if (!identityGate.allowed) {
-      return NextResponse.json(
-        {
-          error: identityGate.errorMessage,
-          code: identityGate.code,
-        },
-        { status: 403 }
-      );
+    const profileNameGate = validatePublicProfileName(profileAccess.full_name);
+    if (!profileAccess.is_admin && !profileNameGate.ok) {
+      return jsonError(profileNameGate.message, 403, {
+        code: profileNameGate.code,
+      });
     }
 
     const canUseLongPosts = hasLongPostAccess(

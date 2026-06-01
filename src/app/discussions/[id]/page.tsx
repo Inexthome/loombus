@@ -758,7 +758,7 @@ export default function DiscussionPage() {
     }
 
     if (!canReplyWithIdentity) {
-      setMessage("Verify your identity before replying.");
+      setMessage("Complete your public profile before replying.");
       return;
     }
 
@@ -1791,7 +1791,7 @@ export default function DiscussionPage() {
   const canUseAiSummary = ["premium", "premium_plus", "admin"].includes(
     subscriptionDisplayKey
   );
-  const canReplyWithIdentity = isAdmin || viewerIdentityStatus === "verified";
+  const canReplyWithIdentity = true;
 
   const monthlySummaryLimit = aiEntitlement?.monthly_summary_limit ?? 0;
   const monthlySummaryRemaining = Math.max(
@@ -3030,18 +3030,18 @@ export default function DiscussionPage() {
           {currentUserId && !canReplyWithIdentity && (
             <div className="mb-4 rounded-2xl border border-amber-900 bg-amber-950/20 p-4 text-sm leading-relaxed text-amber-100/80">
               <p className="mb-2 font-medium text-amber-200">
-                Verify identity before replying.
+                Complete your public profile before replying.
               </p>
 
               <p className="mb-3">
-                Loombus now requires identity verification before members can post replies. You can keep reading, saving, and managing your profile while verification is pending.
+                Loombus asks members to use a recognizable public name before posting replies. You can keep reading, saving, and managing your profile.
               </p>
 
               <Link
                 href="/profile"
                 className="text-amber-100 underline decoration-amber-700 underline-offset-4 transition hover:text-white hover:decoration-white"
               >
-                Open identity verification →
+                Open profile →
               </Link>
             </div>
           )}
@@ -3083,18 +3083,18 @@ export default function DiscussionPage() {
               value={replyBody}
               required
               onChange={(e) => setReplyBody(e.target.value)}
-              disabled={postingReply || !canReplyWithIdentity}
-              placeholder={canReplyWithIdentity ? "Contribute with clarity, context, and signal... Use @username to mention someone." : "Verify your identity before replying."}
+              disabled={postingReply}
+              placeholder="Contribute with clarity, context, and signal... Use @username to mention someone."
               className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-600 disabled:placeholder:text-zinc-700"
             />
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="submit"
-                disabled={postingReply || !canReplyWithIdentity}
+                disabled={postingReply}
               className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-fit"
             >
-                {postingReply ? "Posting..." : !canReplyWithIdentity ? "Verify Identity First" : "Post Reply"}
+                {postingReply ? "Posting..." : "Post Reply"}
               </button>
 
               <p className="hidden text-sm text-zinc-600 sm:block">
