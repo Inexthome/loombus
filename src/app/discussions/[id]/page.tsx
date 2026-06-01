@@ -108,6 +108,11 @@ type ActionPrompt = {
   body: string;
 };
 
+type CommunityPrompt = {
+  label: string;
+  body: string;
+};
+
 const CLARIFICATION_REQUESTS: ClarificationRequest[] = [
   {
     label: "Clarify the claim",
@@ -159,6 +164,33 @@ const ACTION_PROMPTS: ActionPrompt[] = [
   {
     label: "Make it more useful",
     body: "This discussion would become more useful if...",
+  },
+];
+
+const COMMUNITY_PROMPTS: CommunityPrompt[] = [
+  {
+    label: "Name the issue",
+    body: "The local or community issue this connects to is...",
+  },
+  {
+    label: "Who is affected?",
+    body: "The people most affected by this problem may be...",
+  },
+  {
+    label: "What should be learned first?",
+    body: "Before anyone acts on this, it would help to learn...",
+  },
+  {
+    label: "Small clarifying step",
+    body: "One small step that could clarify this issue is...",
+  },
+  {
+    label: "Systems involved",
+    body: "The institutions, systems, or local factors involved may include...",
+  },
+  {
+    label: "Make it useful offline",
+    body: "This discussion could become more useful beyond online conversation if...",
   },
 ];
 
@@ -681,6 +713,20 @@ export default function DiscussionPage() {
   }
 
   function startActionPrompt(prompt: ActionPrompt) {
+    setMessage("");
+    setSafetyWarning(null);
+    setReferencedReply(null);
+    setReplyBody(prompt.body);
+
+    window.setTimeout(() => {
+      document.getElementById("reply-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 0);
+  }
+
+  function startCommunityPrompt(prompt: CommunityPrompt) {
     setMessage("");
     setSafetyWarning(null);
     setReferencedReply(null);
@@ -2823,6 +2869,43 @@ export default function DiscussionPage() {
           <h2 className="mb-4 text-xl font-medium sm:mb-8 sm:text-2xl">
             Replies
           </h2>
+
+          {currentUserId && (
+            <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-[1.5rem] sm:p-6">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">
+                    Community angle prompts
+                  </p>
+
+                  <h3 className="text-lg font-medium text-white sm:text-xl">
+                    Connect the idea to a real-world problem carefully.
+                  </h3>
+                </div>
+
+                <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
+                  Reply helper
+                </span>
+              </div>
+
+              <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                Use these prompts to explore a local or community angle without collecting location data, organizing action, or pressuring anyone to participate. They prefill the reply box and never post automatically.
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {COMMUNITY_PROMPTS.map((prompt) => (
+                  <button
+                    key={prompt.label}
+                    type="button"
+                    onClick={() => startCommunityPrompt(prompt)}
+                    className="rounded-full border border-zinc-800 px-3 py-2 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white sm:text-sm"
+                  >
+                    {prompt.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           {currentUserId && (
             <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-[1.5rem] sm:p-6">
