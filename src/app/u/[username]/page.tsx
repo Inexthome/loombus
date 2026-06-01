@@ -359,43 +359,82 @@ export default function UserProfilePage() {
           ← Back to people
         </Link>
 
-        <div className="mb-16 rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-          <div className="mb-6 flex items-center gap-5">
-            <ProfileAvatar profile={profile} size="xl" />
+        <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20 sm:mb-10 sm:p-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 gap-4 sm:gap-5">
+              <ProfileAvatar profile={profile} size="xl" />
 
-            <div>
-              <div className="mb-2 flex flex-wrap items-center gap-3">
-                <p className="text-sm text-zinc-500">
-                  @{profile.username}
-                </p>
+              <div className="min-w-0">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-zinc-500">
+                    @{profile.username}
+                  </p>
 
-                {profileBadge && (
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs font-medium ${getBadgeClassName(profileBadge)}`}
+                  {profileBadge && (
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-medium ${getBadgeClassName(profileBadge)}`}
+                    >
+                      {profileBadge.label}
+                    </span>
+                  )}
+                </div>
+
+                <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+                  {profile.full_name}
+                </h1>
+
+                <div className="mt-3 flex flex-wrap gap-4 text-sm text-zinc-500">
+                  <Link
+                    href={`/u/${profile.username}/followers`}
+                    className="transition hover:text-white"
                   >
-                    {profileBadge.label}
-                  </span>
-                )}
-              </div>
+                    <span className="text-white">{followerCount}</span> followers
+                  </Link>
 
-              <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
-                {profile.full_name}
-              </h1>
+                  <Link
+                    href={`/u/${profile.username}/following`}
+                    className="transition hover:text-white"
+                  >
+                    <span className="text-white">{followingCount}</span> following
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0">
+              {!currentUserId && (
+                <Link
+                  href="/login"
+                  className="inline-flex w-full justify-center rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 sm:w-fit"
+                >
+                  Log in to follow
+                </Link>
+              )}
+
+              {currentUserId && currentUserId !== profile.id && !isBlockedByProfile && !isBlocked && (
+                <button
+                  onClick={toggleFollow}
+                  disabled={followWorking}
+                  className="inline-flex w-full justify-center rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-fit"
+                >
+                  {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
+                </button>
+              )}
             </div>
           </div>
 
           {profile.perspective_marker && (
-            <p className="mb-4 w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400">
+            <p className="mt-5 w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400">
               Perspective: {profile.perspective_marker}
             </p>
           )}
 
-          <p className="max-w-2xl leading-relaxed text-zinc-400">
+          <p className="mt-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:text-base">
             {profile.bio || "No bio added yet."}
           </p>
 
           {(profile.creator_website_url || profile.creator_support_url) && (
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-3">
               {profile.creator_website_url && (
                 <a
                   href={profile.creator_website_url}
@@ -420,100 +459,65 @@ export default function UserProfilePage() {
             </div>
           )}
 
-          <div className="mt-6 flex gap-8 text-sm text-zinc-500">
-            <Link
-              href={`/u/${profile.username}/followers`}
-              className="transition hover:text-white"
-            >
-              <span className="text-white">{followerCount}</span> followers
-            </Link>
-
-            <Link
-              href={`/u/${profile.username}/following`}
-              className="transition hover:text-white"
-            >
-              <span className="text-white">{followingCount}</span> following
-            </Link>
-          </div>
-
-          {!currentUserId && (
-            <div className="mt-8">
-              <Link
-                href="/login"
-                className="inline-flex rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200"
-              >
-                Log in to follow
-              </Link>
-
-              <p className="mt-4 text-sm text-zinc-500">
-                Members can follow contributors and build their Loombus network.
-              </p>
-            </div>
-          )}
-
           {currentUserId && currentUserId !== profile.id && (
-            <div className="mt-8">
+            <div className="mt-6 border-t border-zinc-900 pt-5">
               {isBlockedByProfile ? (
-                <div className="rounded-3xl border border-zinc-800 bg-black p-5 text-sm text-zinc-500">
+                <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
                   You cannot interact with this profile.
                 </div>
               ) : (
-                <div className="flex flex-wrap items-end gap-3">
-                  {!isBlocked && (
-                    <button
-                      onClick={toggleFollow}
-                      disabled={followWorking}
-                      className="rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
-                    >
-                      {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
-                    </button>
-                  )}
+                <div>
+                  <p className="mb-3 text-xs uppercase tracking-[0.2em] text-zinc-600">
+                    Profile actions
+                  </p>
 
-                  {!isBlocked && (
-                    <label className="flex min-w-64 flex-col text-xs text-zinc-500">
-                      <span className="mb-2">Report reason</span>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+                    {!isBlocked && (
+                      <label className="flex min-w-64 flex-col text-xs text-zinc-500">
+                        <span className="mb-2">Report reason</span>
 
-                      <select
-                        value={reportReason}
-                        onChange={(event) => setReportReason(event.target.value as ReportReason)}
-                        className="rounded-full border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                        <select
+                          value={reportReason}
+                          onChange={(event) => setReportReason(event.target.value as ReportReason)}
+                          className="rounded-full border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                        >
+                          {REPORT_REASONS.map((reason) => (
+                            <option key={reason} value={reason}>
+                              {reason}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+
+                    {!isBlocked && (
+                      <button
+                        type="button"
+                        onClick={handleReportProfile}
+                        disabled={reportWorking || reportedProfile}
+                        className="rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                       >
-                        {REPORT_REASONS.map((reason) => (
-                          <option key={reason} value={reason}>
-                            {reason}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
+                        {reportedProfile
+                          ? "Reported"
+                          : reportWorking
+                            ? "Reporting..."
+                            : "Report"}
+                      </button>
+                    )}
 
-                  {!isBlocked && (
                     <button
                       type="button"
-                      onClick={handleReportProfile}
-                      disabled={reportWorking || reportedProfile}
-                      className="rounded-full border border-red-900 px-6 py-3 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      onClick={toggleBlock}
+                      disabled={blockWorking}
+                      className="rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                     >
-                      {reportedProfile
-                        ? "Reported"
-                        : reportWorking
-                          ? "Reporting..."
-                          : "Report Profile"}
+                      {blockWorking
+                        ? "Updating..."
+                        : isBlocked
+                          ? "Unblock"
+                          : "Block"}
                     </button>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={toggleBlock}
-                    disabled={blockWorking}
-                    className="rounded-full border border-zinc-800 px-6 py-3 text-sm text-zinc-400 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                  >
-                    {blockWorking
-                      ? "Updating..."
-                      : isBlocked
-                        ? "Unblock User"
-                        : "Block User"}
-                  </button>
+                  </div>
                 </div>
               )}
 
@@ -524,39 +528,74 @@ export default function UserProfilePage() {
               )}
             </div>
           )}
-        </div>
+        </section>
 
-        <h2 className="mb-8 text-3xl font-semibold tracking-tight">
-          Discussions
-        </h2>
-
-        <div className="space-y-5">
-          {discussions.map((discussion) => (
-            <Link
-              key={discussion.id}
-              href={`/discussions/${discussion.id}`}
-              className="block rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30 transition hover:-translate-y-0.5 hover:border-zinc-700"
-            >
-              <p className="mb-3 text-sm text-zinc-500">
-                {discussion.topic}
+        <section>
+          <div className="mb-5 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">
+                Contributions
               </p>
 
-              <h3 className="mb-3 text-2xl font-medium">
-                {discussion.title}
-              </h3>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+                Discussions
+              </h2>
+            </div>
 
-              <p className="line-clamp-2 leading-relaxed text-zinc-400">
-                {discussion.body}
-              </p>
-            </Link>
-          ))}
-
-          {discussions.length === 0 && (
-            <p className="text-zinc-500">
-              No discussions yet.
+            <p className="text-sm text-zinc-600">
+              {discussions.length} {discussions.length === 1 ? "discussion" : "discussions"}
             </p>
-          )}
-        </div>
+          </div>
+
+          <div className="space-y-3 sm:space-y-4">
+            {discussions.map((discussion) => (
+              <article
+                key={discussion.id}
+                className="group rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700"
+              >
+                <Link
+                  href={`/discussions/${discussion.id}`}
+                  className="block p-4 sm:p-5"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <span className="shrink-0 rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+                      {discussion.topic}
+                    </span>
+
+                    <span className="text-xs text-zinc-700">
+                      {new Date(discussion.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-snug transition group-hover:text-white sm:text-xl">
+                    {discussion.title}
+                  </h3>
+
+                  <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:text-base">
+                    {discussion.body}
+                  </p>
+
+                  <p className="border-t border-zinc-900 pt-3 text-xs text-zinc-500">
+                    Open discussion →
+                  </p>
+                </Link>
+              </article>
+            ))}
+
+            {discussions.length === 0 && (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 text-sm text-zinc-500 shadow-2xl shadow-black/20">
+                <p>No discussions yet.</p>
+
+                <Link
+                  href="/people"
+                  className="mt-4 inline-flex rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                >
+                  Find more contributors
+                </Link>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </main>
   );
