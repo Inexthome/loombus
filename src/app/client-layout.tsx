@@ -29,6 +29,15 @@ type NavProfile = {
   is_admin: boolean | null;
 };
 
+const RIGHT_RAIL_WIDTH_STORAGE_KEY = "loombus:right-rail-width";
+const DEFAULT_RIGHT_RAIL_WIDTH = 320;
+const MIN_RIGHT_RAIL_WIDTH = 280;
+const MAX_RIGHT_RAIL_WIDTH = 480;
+
+function clampRightRailWidth(width: number) {
+  return Math.min(MAX_RIGHT_RAIL_WIDTH, Math.max(MIN_RIGHT_RAIL_WIDTH, width));
+}
+
 export default function ClientLayout({
   children,
 }: Readonly<{
@@ -42,11 +51,21 @@ export default function ClientLayout({
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [bottomNavHidden, setBottomNavHidden] = useState(false);
   const [topNavHidden, setTopNavHidden] = useState(false);
+  const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
+  const [rightRailResizing, setRightRailResizing] = useState(false);
   const currentUserIdRef = useRef<string | null>(null);
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
   const loadingNotificationCountRef = useRef(false);
   const lastNotificationLoadRef = useRef<{ userId: string; loadedAt: number } | null>(null);
+  const rightRailDragStartRef = useRef<{ pointerX: number; width: number } | null>(null);
   const pathname = usePathname();
+  const hasDesktopRightRail = [
+    "/discussions",
+    "/search",
+    "/people",
+    "/saved",
+    "/notifications",
+  ].includes(pathname);
 
   function isActivePath(href: string) {
     if (href === "/") {
@@ -310,6 +329,76 @@ export default function ClientLayout({
   function closeMoreMenu() {
     setMoreMenuOpen(false);
   }
+
+  useEffect(() => {
+    const storedWidth = Number(window.localStorage.getItem(RIGHT_RAIL_WIDTH_STORAGE_KEY));
+
+    if (Number.isFinite(storedWidth) && storedWidth > 0) {
+      setRightRailWidth(clampRightRailWidth(storedWidth));
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--loombus-right-rail-width",
+      `${rightRailWidth}px`
+    );
+
+    window.localStorage.setItem(
+      RIGHT_RAIL_WIDTH_STORAGE_KEY,
+      String(rightRailWidth)
+    );
+  }, [rightRailWidth]);
+
+  function startRightRailResize(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+
+    rightRailDragStartRef.current = {
+      pointerX: event.clientX,
+      width: rightRailWidth,
+    };
+
+    setRightRailResizing(true);
+  }
+
+  function adjustRightRailWidth(delta: number) {
+    setRightRailWidth((current) => clampRightRailWidth(current + delta));
+  }
+
+  useEffect(() => {
+    if (!rightRailResizing) {
+      return;
+    }
+
+    function handleMouseMove(event: MouseEvent) {
+      const dragStart = rightRailDragStartRef.current;
+
+      if (!dragStart) {
+        return;
+      }
+
+      const delta = dragStart.pointerX - event.clientX;
+      setRightRailWidth(clampRightRailWidth(dragStart.width + delta));
+    }
+
+    function handleMouseUp() {
+      rightRailDragStartRef.current = null;
+      setRightRailResizing(false);
+    }
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [rightRailResizing]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -705,6 +794,45 @@ export default function ClientLayout({
 
       {children}
       </div>
+
+      {user && hasDesktopRightRail && (
+        <button
+          type="button"
+          aria-label="Resize right panel"
+          aria-valuemin={MIN_RIGHT_RAIL_WIDTH}
+          aria-valuemax={MAX_RIGHT_RAIL_WIDTH}
+          aria-valuenow={rightRailWidth}
+          title="Drag to resize the right panel"
+          onMouseDown={startRightRailResize}
+          onDoubleClick={() => setRightRailWidth(DEFAULT_RIGHT_RAIL_WIDTH)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              adjustRightRailWidth(20);
+            }
+
+            if (event.key === "ArrowRight") {
+              event.preventDefault();
+              adjustRightRailWidth(-20);
+            }
+
+            if (event.key === "Home") {
+              event.preventDefault();
+              setRightRailWidth(MIN_RIGHT_RAIL_WIDTH);
+            }
+
+            if (event.key === "End") {
+              event.preventDefault();
+              setRightRailWidth(MAX_RIGHT_RAIL_WIDTH);
+            }
+          }}
+          className={`loombus-right-rail-resizer fixed inset-y-0 z-40 hidden w-3 cursor-col-resize xl:block ${
+            rightRailResizing ? "loombus-right-rail-resizer-active" : ""
+          }`}
+        >
+          <span className="sr-only">Resize right panel</span>
+        </button>
+      )}
 
       {user && mobileMenuOpen && (
         <div
