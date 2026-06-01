@@ -266,21 +266,21 @@ export default function FollowingPage() {
 
         setViewCounts(views);
 
-          const { data: tagData } = await supabase
-            .from("discussion_tags")
-            .select("discussion_id, tag")
-            .in("discussion_id", discussionIds);
+        const { data: tagData } = await supabase
+          .from("discussion_tags")
+          .select("discussion_id, tag")
+          .in("discussion_id", discussionIds);
 
-          const tagMap: Record<string, string[]> = {};
+        const tagMap: Record<string, string[]> = {};
 
-          for (const row of tagData ?? []) {
-            tagMap[row.discussion_id] = [
-              ...(tagMap[row.discussion_id] ?? []),
-              row.tag,
-            ];
-          }
+        for (const row of tagData ?? []) {
+          tagMap[row.discussion_id] = [
+            ...(tagMap[row.discussion_id] ?? []),
+            row.tag,
+          ];
+        }
 
-          setDiscussionTags(tagMap);
+        setDiscussionTags(tagMap);
 
         const { data: bookmarkData } = await supabase
           .from("bookmarks")
@@ -861,7 +861,7 @@ export default function FollowingPage() {
             const profile = profiles[discussion.user_id];
 
             return (
-              <div
+              <article
                 key={discussion.id}
                 className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700 sm:rounded-[1.75rem]"
               >
@@ -869,32 +869,36 @@ export default function FollowingPage() {
                   href={`/discussions/${discussion.id}`}
                   className="block p-4 sm:p-6"
                 >
-                  <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
-                    <div className="min-w-0">
-                      <p className="mb-2 inline-flex rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500 sm:px-3 sm:text-[11px] sm:tracking-[0.18em]">
-                        {discussion.topic}
+                  <div className="mb-4 flex min-w-0 items-center gap-3">
+                    <ProfileAvatar profile={profile} size="md" />
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm text-zinc-300">
+                        {profile?.username ? getProfileDisplayName(profile) : "Loombus member"}
                       </p>
 
-                      <span
-                        className={`ml-1.5 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium sm:ml-2 sm:px-3 sm:text-[11px] ${getDiscussionStatusClassName(discussion)}`}
-                      >
-                        {getDiscussionStatusLabel(discussion)}
-                      </span>
-                    </div>
-
-                    <div className="shrink-0 rounded-xl border border-zinc-800 bg-black px-3 py-2 text-right sm:rounded-2xl">
-                      <p className="text-[9px] uppercase tracking-[0.16em] text-zinc-600 sm:text-[10px] sm:tracking-[0.18em]">
-                        Signal
-                      </p>
-                      <p className="text-base font-semibold text-white sm:text-lg">
-                        {getSignalScore(
-                          discussion.id,
-                          replyCounts,
-                          bookmarkCounts,
-                          viewCounts
+                      <p className="mt-1 truncate text-xs text-zinc-700">
+                        {new Date(discussion.created_at).toLocaleDateString()}
+                        {latestReplyDates[discussion.id] && (
+                          <>
+                            {" "}· Active{" "}
+                            {new Date(latestReplyDates[discussion.id]).toLocaleDateString()}
+                          </>
                         )}
                       </p>
                     </div>
+
+                    <span
+                      className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium sm:px-3 sm:text-[11px] ${getDiscussionStatusClassName(discussion)}`}
+                    >
+                      {getDiscussionStatusLabel(discussion)}
+                    </span>
+                  </div>
+
+                  <div className="mb-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+                    <span className="shrink-0 rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500 sm:px-3 sm:text-[11px] sm:tracking-[0.18em]">
+                      {discussion.topic}
+                    </span>
                   </div>
 
                   <h2 className="mb-2 text-lg font-semibold leading-snug tracking-tight transition group-hover:text-white sm:mb-3 sm:text-2xl">
@@ -906,7 +910,7 @@ export default function FollowingPage() {
                   </p>
 
                   {discussionTags[discussion.id]?.length > 0 && (
-                    <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+                    <div className="mb-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
                       {discussionTags[discussion.id].map((tag) => (
                         <span
                           key={`${discussion.id}-${tag}`}
@@ -917,69 +921,35 @@ export default function FollowingPage() {
                       ))}
                     </div>
                   )}
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-zinc-900 pt-4 text-xs text-zinc-500 sm:text-sm">
+                    <span>
+                      {replyCounts[discussion.id] ?? 0} replies
+                    </span>
+
+                    <span>
+                      {bookmarkCounts[discussion.id] ?? 0} saves
+                    </span>
+
+                    <span>
+                      {viewCounts[discussion.id] ?? 0} views
+                    </span>
+
+                    <span>
+                      Signal {getSignalScore(
+                        discussion.id,
+                        replyCounts,
+                        bookmarkCounts,
+                        viewCounts
+                      )}
+                    </span>
+
+                    <span className="ml-auto hidden text-zinc-400 sm:inline">
+                      Open discussion →
+                    </span>
+                  </div>
                 </Link>
-
-                <div className="border-t border-zinc-900 bg-black/30 p-3 sm:p-4">
-                  <div className="mb-3 flex min-w-0 items-center gap-3 sm:mb-4">
-                    <ProfileAvatar profile={profile} size="md" />
-
-                    <div className="min-w-0">
-                      <p className="truncate text-xs text-zinc-500 sm:text-sm">
-                        by{" "}
-                        {profile?.username ? (
-                          <Link
-                            href={`/u/${profile.username}`}
-                            className="text-zinc-300 transition hover:text-white"
-                          >
-                            {getProfileDisplayName(profile)}
-                          </Link>
-                        ) : (
-                          "Loombus member"
-                        )}
-                      </p>
-
-                      <p className="mt-1 truncate text-[11px] text-zinc-700 sm:text-xs">
-                        Created {new Date(discussion.created_at).toLocaleDateString()}
-                        {latestReplyDates[discussion.id] && (
-                          <>
-                            {" "}· Active{" "}
-                            {new Date(latestReplyDates[discussion.id]).toLocaleDateString()}
-                          </>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                    <div className="rounded-xl border border-zinc-900 bg-black px-2.5 py-2 sm:rounded-2xl sm:px-3">
-                      <p className="text-sm font-semibold text-zinc-200">
-                        {replyCounts[discussion.id] ?? 0}
-                      </p>
-                      <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-700 sm:text-[11px] sm:tracking-[0.16em]">
-                        Replies
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-zinc-900 bg-black px-2.5 py-2 sm:rounded-2xl sm:px-3">
-                      <p className="text-sm font-semibold text-zinc-200">
-                        {bookmarkCounts[discussion.id] ?? 0}
-                      </p>
-                      <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-700 sm:text-[11px] sm:tracking-[0.16em]">
-                        Saves
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-zinc-900 bg-black px-2.5 py-2 sm:rounded-2xl sm:px-3">
-                      <p className="text-sm font-semibold text-zinc-200">
-                        {viewCounts[discussion.id] ?? 0}
-                      </p>
-                      <p className="text-[10px] uppercase tracking-[0.12em] text-zinc-700 sm:text-[11px] sm:tracking-[0.16em]">
-                        Views
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </article>
             );
           })}
         </div>
