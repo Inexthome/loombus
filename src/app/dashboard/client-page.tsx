@@ -62,6 +62,14 @@ type TopicContributionSignal = {
   resolved: number;
 };
 
+type ContributionFoundationItem = {
+  label: string;
+  status: string;
+  description: string;
+  href: string;
+  action: string;
+};
+
 function getMissingProfileFields(profile: Profile | null) {
   const missing = [];
 
@@ -102,6 +110,33 @@ function withDashboardTimeout<T>(
       clearTimeout(timeoutId);
     }
   });
+}
+
+function ContributionFoundationCard({ item }: { item: ContributionFoundationItem }) {
+  return (
+    <Link
+      href={item.href}
+      className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
+    >
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <h3 className="text-base font-medium text-zinc-200">
+          {item.label}
+        </h3>
+
+        <span className="shrink-0 rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
+          {item.status}
+        </span>
+      </div>
+
+      <p className="mb-4 text-sm leading-relaxed text-zinc-600">
+        {item.description}
+      </p>
+
+      <span className="text-sm text-zinc-300">
+        {item.action} →
+      </span>
+    </Link>
+  );
 }
 
 function TopicContributionCard({ signal }: { signal: TopicContributionSignal }) {
@@ -563,6 +598,45 @@ export default function DashboardClientPage() {
     },
   ];
 
+  const contributionFoundationItems: ContributionFoundationItem[] = [
+    {
+      label: "Foundation",
+      status: profileComplete ? "ready" : "needs setup",
+      description: profileComplete
+        ? "Your profile has the basic identity context people need when reading your contributions."
+        : "Complete your profile so your contributions have clearer context behind them.",
+      href: profileComplete ? "/profile" : "/onboarding",
+      action: profileComplete ? "Review profile" : "Finish setup",
+    },
+    {
+      label: "Participation",
+      status: activityCounts.replies > 0 ? "active" : "not started",
+      description: activityCounts.replies > 0
+        ? "You are participating through replies, not only starting your own discussions."
+        : "Add one thoughtful reply to begin building participation beyond your own posts.",
+      href: activityCounts.replies > 0 ? "/my-replies" : "/discussions",
+      action: activityCounts.replies > 0 ? "Review replies" : "Find a discussion",
+    },
+    {
+      label: "Topic depth",
+      status: `${activityCounts.topicsContributed} topic${activityCounts.topicsContributed === 1 ? "" : "s"}`,
+      description: activityCounts.topicsContributed > 0
+        ? "Your contribution footprint is forming across topic lanes."
+        : "Start a focused discussion in one topic lane to begin forming topic depth.",
+      href: activityCounts.topicsContributed > 0 ? "/my-discussions" : "/create",
+      action: activityCounts.topicsContributed > 0 ? "View discussions" : "Create discussion",
+    },
+    {
+      label: "Reader response",
+      status: `${activityCounts.repliesReceived + activityCounts.savedByReaders} signal${activityCounts.repliesReceived + activityCounts.savedByReaders === 1 ? "" : "s"}`,
+      description: activityCounts.repliesReceived + activityCounts.savedByReaders > 0
+        ? "Other members have responded to or saved discussions you started."
+        : "Reader response appears when other members reply to or save discussions you start.",
+      href: "/my-discussions",
+      action: "Review started threads",
+    },
+  ];
+
   const organizationActions: OrganizationAction[] = [
     !profileComplete
       ? {
@@ -845,6 +919,34 @@ export default function DashboardClientPage() {
             </p>
           )}
         </div>
+
+        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Contribution foundation
+              </p>
+
+              <h2 className="text-xl font-medium sm:text-2xl">
+                How your reputation foundation is forming.
+              </h2>
+            </div>
+
+            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
+              Private
+            </span>
+          </div>
+
+          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
+            This private view summarizes your contribution pattern without assigning a public score, rank, or expert label.
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {contributionFoundationItems.map((item) => (
+              <ContributionFoundationCard key={item.label} item={item} />
+            ))}
+          </div>
+        </section>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
