@@ -200,6 +200,7 @@ export default function DiscussionsPage() {
   const [selectedPurposeLane, setSelectedPurposeLane] = useState("All");
   const [showAllTopicDiscovery, setShowAllTopicDiscovery] = useState(false);
   const [showAllTopicFilters, setShowAllTopicFilters] = useState(false);
+  const [showExploreFilters, setShowExploreFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState("Newest");
   const [advancedFilter, setAdvancedFilter] =
@@ -540,6 +541,9 @@ export default function DiscussionsPage() {
   ].filter(Boolean);
 
   const hasActiveDiscussionFilters = activeFilterLabels.length > 0;
+  const filterSummary = hasActiveDiscussionFilters
+    ? activeFilterLabels.join(" · ")
+    : "Newest discussions";
 
   const topicDiscoveryItems = (
     showAllTopicDiscovery ? DISCUSSION_TOPICS : []
@@ -559,25 +563,87 @@ export default function DiscussionsPage() {
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
-              Discussions
-            </h1>
+        <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-6 sm:p-6">
+          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                Feed
+              </p>
 
-            <p className="mt-3 text-zinc-500">
-              Explore thoughtful, high-signal conversations.
-            </p>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+                Discussions
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+                Read, reply, and save thoughtful conversations without starting from every filter at once.
+              </p>
+            </div>
+
+            <Link
+              href="/create"
+              className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 sm:w-fit"
+            >
+              Create Discussion
+            </Link>
           </div>
 
-          <Link
-            href="/create"
-            className="hidden w-full justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 sm:w-fit md:inline-flex"
-          >
-            Create Discussion
-          </Link>
-        </div>
-        <div className="hidden md:block">
+          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+            <label htmlFor="discussion-search" className="block">
+              <span className="mb-2 block text-sm font-medium text-zinc-300">
+                Search discussions
+              </span>
+
+              <input
+                id="discussion-search"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search titles, bodies, topics, or contributors..."
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={() => setShowExploreFilters((current) => !current)}
+              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              aria-expanded={showExploreFilters}
+            >
+              {showExploreFilters ? "Hide filters" : "Explore / Filters"}
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {hasActiveDiscussionFilters ? (
+                activeFilterLabels.map((label) => (
+                  <span
+                    key={label}
+                    className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400"
+                  >
+                    {label}
+                  </span>
+                ))
+              ) : (
+                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
+                  {filterSummary}
+                </span>
+              )}
+            </div>
+
+            {hasActiveDiscussionFilters && (
+              <button
+                type="button"
+                onClick={resetDiscussionFilters}
+                className="w-fit text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+        </section>
+        {showExploreFilters && (
+          <div>
           <ProgressiveGuide
           storageKey="loombus-guide-discussions-finding-signal-v1"
           eyebrow="Guide"
@@ -634,9 +700,8 @@ export default function DiscussionsPage() {
         </section>
 
           </ProgressiveGuide>
-        </div>
 
-<section className="hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
+        <section className="hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -678,60 +743,14 @@ export default function DiscussionsPage() {
           )}
         </section>
 
-        <section className="hidden md:block mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1">
-              <label htmlFor="discussion-search" className="mb-2 block text-sm font-medium text-zinc-300">
-                Search discussions
-              </label>
-
-              <input
-                id="discussion-search"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search titles, bodies, topics, or contributors..."
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
-              />
-            </div>
-
-            {hasActiveDiscussionFilters && (
-              <button
-                type="button"
-                onClick={resetDiscussionFilters}
-                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-              >
-                Clear search and filters
-              </button>
-            )}
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {activeFilterLabels.length > 0 ? (
-              activeFilterLabels.map((label) => (
-                <span
-                  key={label}
-                  className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400"
-                >
-                  {label}
-                </span>
-              ))
-            ) : (
-              <p className="text-sm text-zinc-600">
-                Search scans discussion titles, bodies, topics, and contributor names.
-              </p>
-            )}
-          </div>
-        </section>
-
         <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-xl shadow-black/10 sm:mb-8 sm:rounded-3xl sm:p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="mb-1 text-xs uppercase tracking-[0.22em] text-zinc-500">
-                Browse controls
+                Filters
               </p>
               <h2 className="text-lg font-semibold tracking-tight">
-                Sort and filter
+                Choose what to show
               </h2>
             </div>
 
@@ -788,7 +807,7 @@ export default function DiscussionsPage() {
               </div>
 
               <p className="mt-3 rounded-2xl border border-zinc-900 bg-black/30 px-3 py-2 text-xs leading-relaxed text-zinc-600">
-                Signal Score ranks discussions using replies, saves, and views.
+                Signal uses replies, saves, and views.
                 Replies count more than views, and saves count the most.
               </p>
             </div>
@@ -903,6 +922,8 @@ export default function DiscussionsPage() {
             to help cut through low-signal browsing.
           </p>
         </section>
+          </div>
+        )}
 
 
 
