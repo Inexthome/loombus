@@ -16,6 +16,7 @@ type Profile = {
   bio: string | null;
   avatar_url: string | null;
   is_admin?: boolean | null;
+  identity_verification_status?: string | null;
 };
 
 type AiEntitlement = {
@@ -207,6 +208,8 @@ export default function CreatePage() {
   const [savingDraft, setSavingDraft] = useState(false);
 
   const isAdmin = Boolean(profile?.is_admin);
+  const identityVerificationStatus = profile?.identity_verification_status ?? "unverified";
+  const canCreateOrEditDiscussion = isAdmin || identityVerificationStatus === "verified";
   const canUseDrafts = hasPremiumAccess(entitlement, isAdmin);
   const canUseLongPosts = hasLongPostAccess(entitlement, isAdmin);
   const canUseQualityCheck = canUseLongPosts;
@@ -237,7 +240,7 @@ export default function CreatePage() {
       const [{ data: profileData }, { data: entitlementData }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("full_name, username, bio, avatar_url, is_admin")
+          .select("full_name, username, bio, avatar_url, is_admin, identity_verification_status")
           .eq("id", userData.user.id)
           .maybeSingle(),
         supabase
@@ -666,6 +669,12 @@ export default function CreatePage() {
     setMessage("");
     setSafetyWarning(null);
 
+    if (!canCreateOrEditDiscussion) {
+      setPublishing(false);
+      setMessage("Verify your identity before publishing discussions.");
+      return;
+    }
+
     if (!title.trim()) {
       setMessage("Please enter a discussion title.");
       setPublishing(false);
@@ -846,6 +855,25 @@ export default function CreatePage() {
                 Create Account
               </Link>
             </div>
+          </div>
+        )}
+
+        {authChecked && isLoggedIn && !canCreateOrEditDiscussion && (
+          <div className="mb-5 rounded-2xl border border-amber-900 bg-amber-950/20 p-4 sm:mb-8 sm:p-5">
+            <p className="mb-2 text-sm font-medium text-amber-200">
+              Verify identity before posting.
+            </p>
+
+            <p className="mb-4 text-sm leading-relaxed text-amber-100/80">
+              Loombus now requires identity verification before members can publish discussions or replies. You can still save drafts and update your profile while verification is pending.
+            </p>
+
+            <Link
+              href="/profile"
+              className="text-sm text-amber-100 underline decoration-amber-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+            >
+              Open identity verification →
+            </Link>
           </div>
         )}
 
@@ -1368,12 +1396,14 @@ export default function CreatePage() {
               <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
                 <button
                   type="submit"
-                  disabled={publishing || isBodyOverLimit}
+                  disabled={publishing || isBodyOverLimit || !canCreateOrEditDiscussion}
                   className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50 sm:w-fit"
                 >
                   {publishing
                     ? isEditMode ? "Saving..." : "Publishing..."
-                    : isEditMode ? "Save Changes" : "Publish Discussion"}
+                    : !canCreateOrEditDiscussion
+                      ? "Verify Identity First"
+                      : isEditMode ? "Save Changes" : "Publish Discussion"}
                 </button>
 
                 {canUseDrafts && !isEditMode && (

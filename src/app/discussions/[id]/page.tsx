@@ -39,6 +39,7 @@ type Profile = {
   full_name: string | null;
   username: string | null;
   avatar_url: string | null;
+  identity_verification_status?: string | null;
 };
 
 type Reply = {
@@ -384,6 +385,7 @@ export default function DiscussionPage() {
   const [reportedDiscussion, setReportedDiscussion] = useState(false);
   const [reportedReplyIds, setReportedReplyIds] = useState<string[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [viewerIdentityStatus, setViewerIdentityStatus] = useState("unverified");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -574,12 +576,13 @@ export default function DiscussionPage() {
 
         const { data: viewerProfile } = await supabase
           .from("profiles")
-          .select("is_admin")
+          .select("is_admin, identity_verification_status")
           .eq("id", viewerData.user.id)
           .single();
 
         const viewerIsAdmin = Boolean(viewerProfile?.is_admin);
         setIsAdmin(viewerIsAdmin);
+        setViewerIdentityStatus(viewerProfile?.identity_verification_status ?? "unverified");
 
         const { data: entitlementData } = await supabase
           .from("user_ai_entitlements")
@@ -751,6 +754,11 @@ export default function DiscussionPage() {
     setSafetyWarning(null);
 
     if (postingReply) {
+      return;
+    }
+
+    if (!canReplyWithIdentity) {
+      setMessage("Verify your identity before replying.");
       return;
     }
 
@@ -1783,6 +1791,7 @@ export default function DiscussionPage() {
   const canUseAiSummary = ["premium", "premium_plus", "admin"].includes(
     subscriptionDisplayKey
   );
+  const canReplyWithIdentity = isAdmin || viewerIdentityStatus === "verified";
 
   const monthlySummaryLimit = aiEntitlement?.monthly_summary_limit ?? 0;
   const monthlySummaryRemaining = Math.max(
@@ -3018,6 +3027,25 @@ export default function DiscussionPage() {
             </div>
           )}
 
+          {currentUserId && !canReplyWithIdentity && (
+            <div className="mb-4 rounded-2xl border border-amber-900 bg-amber-950/20 p-4 text-sm leading-relaxed text-amber-100/80">
+              <p className="mb-2 font-medium text-amber-200">
+                Verify identity before replying.
+              </p>
+
+              <p className="mb-3">
+                Loombus now requires identity verification before members can post replies. You can keep reading, saving, and managing your profile while verification is pending.
+              </p>
+
+              <Link
+                href="/profile"
+                className="text-amber-100 underline decoration-amber-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+              >
+                Open identity verification →
+              </Link>
+            </div>
+          )}
+
           <form
             id="reply-form"
             onSubmit={handleReply}
@@ -3055,18 +3083,18 @@ export default function DiscussionPage() {
               value={replyBody}
               required
               onChange={(e) => setReplyBody(e.target.value)}
-              disabled={postingReply}
-              placeholder="Contribute with clarity, context, and signal... Use @username to mention someone."
-              className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600"
+              disabled={postingReply || !canReplyWithIdentity}
+              placeholder={canReplyWithIdentity ? "Contribute with clarity, context, and signal... Use @username to mention someone." : "Verify your identity before replying."}
+              className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-600 disabled:placeholder:text-zinc-700"
             />
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="submit"
-                disabled={postingReply}
+                disabled={postingReply || !canReplyWithIdentity}
               className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-fit"
             >
-                {postingReply ? "Posting..." : "Post Reply"}
+                {postingReply ? "Posting..." : !canReplyWithIdentity ? "Verify Identity First" : "Post Reply"}
               </button>
 
               <p className="hidden text-sm text-zinc-600 sm:block">
