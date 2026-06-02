@@ -211,8 +211,7 @@ export default function ReadingHistoryPage() {
 
             <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500 sm:mb-6 sm:text-base">
               You can still read, reply, save, and follow discussions on the Free
-              plan. Premium and Admin accounts can keep a personal history of
-              recently viewed discussions so useful threads are easier to revisit.
+              plan. Premium accounts can keep a personal history of recently viewed discussions so useful threads are easier to revisit.
             </p>
 
             <div className="mb-6 hidden gap-4 md:grid md:grid-cols-3">

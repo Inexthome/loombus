@@ -2347,7 +2347,7 @@ export default function DiscussionPage() {
                 <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
                   {isAdmin ? (
                     <p>
-                      Admin AI access: unlimited conversation maps.
+                      Unlimited conversation maps available.
                     </p>
                   ) : (
                     <p>
@@ -2438,7 +2438,7 @@ export default function DiscussionPage() {
                 <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
                   {isAdmin ? (
                     <p>
-                      Admin AI access: unlimited related idea maps.
+                      Unlimited related idea maps available.
                     </p>
                   ) : (
                     <p>
@@ -2531,7 +2531,7 @@ export default function DiscussionPage() {
             <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
               {isAdmin ? (
                 <p>
-                  Admin AI access: unlimited what-changed analyses.
+                  Unlimited what-changed analyses available.
                 </p>
               ) : (
                 <p>
@@ -2625,7 +2625,7 @@ export default function DiscussionPage() {
             <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
               {isAdmin ? (
                 <p>
-                  Admin AI access: unlimited disagreement maps.
+                  Unlimited disagreement maps available.
                 </p>
               ) : (
                 <p>
@@ -2719,7 +2719,7 @@ export default function DiscussionPage() {
             <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
               {isAdmin ? (
                 <p>
-                  Admin AI access: unlimited key takeaways.
+                  Unlimited key takeaways available.
                 </p>
               ) : (
                 <p>
@@ -2822,7 +2822,7 @@ export default function DiscussionPage() {
             <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
               {isAdmin ? (
                 <p>
-                  Admin AI access: unlimited summaries.
+                  Unlimited summaries available.
                 </p>
               ) : (
                 <p>
@@ -3114,7 +3114,7 @@ export default function DiscussionPage() {
                   </p>
 
                   <p className="mt-2 text-sm text-zinc-500">
-                    Highlighted by the discussion author or an admin.
+                    Highlighted by the discussion author or Loombus.
                     {discussion.pinned_at
                       ? ` Pinned ${new Date(discussion.pinned_at).toLocaleString()}.`
                       : ""}

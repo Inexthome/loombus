@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!hasPremiumTopicAlertAccess(entitlement, isAdmin)) {
-    return jsonError("Topic alerts require Premium or Admin access.", 403);
+    return jsonError("Topic alerts require Premium access.", 403);
   }
 
   const body = await request.json().catch(() => ({}));

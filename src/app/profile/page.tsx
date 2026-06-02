@@ -311,7 +311,7 @@ export default function ProfilePage() {
 
     if (hasCreatorFields && !canUseCreatorTools) {
       setSaving(false);
-      setMessage("Creator/supporter profile tools require Premium Plus or Admin access. Clear those fields to save your basic profile.");
+      setMessage("Creator/supporter profile tools require Premium Plus access. Clear those fields to save your basic profile.");
       return;
     }
 
@@ -654,7 +654,7 @@ export default function ProfilePage() {
 
             {!canUseCreatorTools && (
               <div className="rounded-2xl border border-zinc-900 bg-black p-4 text-sm leading-relaxed text-zinc-500">
-                Creator/supporter tools are locked for Free accounts. Creator website links, support links, and custom support labels require Premium Plus or Admin access. You can still save your basic profile without these fields.
+                Creator/supporter tools are locked for Free accounts. Creator website links, support links, and custom support labels require Premium Plus access. You can still save your basic profile without these fields.
               </div>
             )}
 

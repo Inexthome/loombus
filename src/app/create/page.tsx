@@ -110,7 +110,7 @@ function hasLongPostAccess(entitlement: AiEntitlement, isAdmin: boolean) {
 
 function getEditWindowLabel(entitlement: AiEntitlement, isAdmin: boolean) {
   if (isAdmin) {
-    return "Admin access: no normal edit-window limit";
+    return "Full edit access: no normal edit-window limit";
   }
 
   if (hasPremiumAccess(entitlement, false)) {
@@ -365,7 +365,7 @@ export default function CreatePage() {
     }
 
     if (!canUseDrafts) {
-      setMessage("Draft mode requires Premium or Admin access.");
+      setMessage("Draft mode requires Premium access.");
       return;
     }
 
@@ -430,7 +430,7 @@ export default function CreatePage() {
     }
 
     if (!canUseQualityCheck) {
-      setQualityCheckMessage("AI discussion quality check requires Premium Plus or Admin access.");
+      setQualityCheckMessage("AI discussion quality check requires Premium Plus access.");
       return;
     }
 
@@ -490,7 +490,7 @@ export default function CreatePage() {
     }
 
     if (!canUseQualityCheck) {
-      setRewriteMessage("AI rewrite for clarity requires Premium Plus or Admin access.");
+      setRewriteMessage("AI rewrite for clarity requires Premium Plus access.");
       return;
     }
 
@@ -904,8 +904,7 @@ export default function CreatePage() {
             </p>
 
             <p className="mb-4 text-sm leading-relaxed text-zinc-500">
-              You can still publish discussions normally. Premium and Admin accounts
-              can save drafts before publishing.
+              You can still publish discussions normally. Premium accounts can save drafts before publishing.
             </p>
 
             <Link
@@ -1051,7 +1050,7 @@ export default function CreatePage() {
 
                 <p>
                   {canUseLongPosts
-                    ? "Premium Plus/Admin long-post limit active."
+                    ? "Expanded long-post limit active."
                     : "Upgrade to Premium Plus for longer discussion posts."}
                 </p>
               </div>

@@ -135,7 +135,7 @@ export function TopicAlertsControl({
 
       {!canUseTopicAlerts && (
         <div className="mb-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm leading-relaxed text-zinc-500">
-          Topic alerts require Premium or Admin access. Free accounts can still
+          Topic alerts require Premium access. Free accounts can still
           browse topics and use normal in-app notifications.
         </div>
       )}

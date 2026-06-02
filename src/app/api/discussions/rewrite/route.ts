@@ -190,12 +190,12 @@ export async function POST(request: NextRequest) {
         modelName: REWRITE_MODEL,
         cached: false,
         success: false,
-        errorMessage: "Premium Plus or Admin access required.",
+        errorMessage: "Premium Plus access required.",
       });
 
       return NextResponse.json(
         {
-          error: "AI rewrite for clarity requires Premium Plus or Admin access.",
+          error: "AI rewrite for clarity requires Premium Plus access.",
           code: "premium_plus_required",
         },
         { status: 403 }

@@ -559,7 +559,7 @@ export default function SavedPage() {
     }
 
     if (!canUseCollections) {
-      setMessage("Saved folders require Premium or Admin access.");
+      setMessage("Saved folders require Premium access.");
       return;
     }
 
@@ -616,7 +616,7 @@ export default function SavedPage() {
     }
 
     if (!canUseCollections) {
-      setMessage("Moving saved discussions into folders requires Premium or Admin access.");
+      setMessage("Moving saved discussions into folders requires Premium access.");
       return;
     }
 
@@ -675,7 +675,7 @@ export default function SavedPage() {
     }
 
     if (!canUseCollections) {
-      setMessage("Deleting saved folders requires Premium or Admin access.");
+      setMessage("Deleting saved folders requires Premium access.");
       return;
     }
 
@@ -740,7 +740,7 @@ export default function SavedPage() {
     }
 
     if (!canUsePrivateNotes) {
-      setMessage("Private notes require Premium Plus or Admin access.");
+      setMessage("Private notes require Premium Plus access.");
       return;
     }
 
@@ -804,7 +804,7 @@ export default function SavedPage() {
     setMessage("");
 
     if (!canExportSavedNotes) {
-      setMessage("Exporting saved discussions and notes requires Premium Plus or Admin access.");
+      setMessage("Exporting saved discussions and notes requires Premium Plus access.");
       return;
     }
 
@@ -1025,7 +1025,7 @@ export default function SavedPage() {
 
               <p className="text-sm leading-relaxed text-zinc-600">
                 {isAdmin
-                  ? "Admin access includes folders, private notes, and saved-library exports."
+                  ? "Saved-library tools are available for this account."
                   : "Premium folders and Premium Plus notes help when your saved list becomes a working library."}
               </p>
             </div>
@@ -1040,7 +1040,7 @@ export default function SavedPage() {
 
             <p className="max-w-3xl text-sm leading-relaxed text-zinc-500 sm:text-base">
               You can still save and remove discussions on the Free plan. Premium and
-              Admin accounts can organize saved discussions into folders.
+              Premium accounts can organize saved discussions into folders.
             </p>
           </div>
         )}
@@ -1052,8 +1052,7 @@ export default function SavedPage() {
             </h2>
 
             <p className="max-w-3xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-              Your saved folders are available. Upgrade to Premium Plus or use Admin
-              access to add private notes and export saved discussions.
+              Your saved folders are available. Upgrade to Premium Plus to add private notes and export saved discussions.
             </p>
           </div>
         )}
@@ -1276,7 +1275,7 @@ export default function SavedPage() {
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
-                  {isAdmin ? "Admin export" : "Premium Plus export"}
+                  "Premium Plus export"
                 </p>
 
                 <h2 className="text-xl font-medium sm:text-2xl">

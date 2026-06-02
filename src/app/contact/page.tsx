@@ -74,7 +74,7 @@ export default function ContactPage() {
       setSubject("");
       setMessageBody("");
       setCategory("general");
-      setStatusMessage("Support request submitted. Loombus support can review it from the admin queue.");
+      setStatusMessage("Support request submitted. Loombus support can review it from the support queue.");
     } catch {
       setStatusMessage("Unable to submit support request.");
     } finally {
@@ -183,7 +183,7 @@ export default function ContactPage() {
 
               <p className="mb-4 text-sm leading-relaxed text-zinc-400">
                 You can still email Loombus directly. Use the form for a more
-                structured request that can be tracked in admin review.
+                structured request that can be tracked by the support team.
               </p>
 
               <a

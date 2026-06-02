@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     );
 
   if (!canUseLabs) {
-    return jsonError("Loombus Labs requires Premium Plus or Admin access.", 403);
+    return jsonError("Loombus Labs requires Premium Plus access.", 403);
   }
 
   const cooldownCutoff = new Date(

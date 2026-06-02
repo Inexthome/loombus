@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
   const canUseLabs = await getLabsAccess(supabase, user.id);
 
   if (!canUseLabs) {
-    return jsonError("Labs voting requires Premium Plus or Admin access.", 403);
+    return jsonError("Labs voting requires Premium Plus access.", 403);
   }
 
   const body = await request.json().catch(() => null);

@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
 
   if (hasCreatorFields && !hasCreatorToolsAccess(entitlement ?? null, isAdmin)) {
     return jsonError(
-      "Creator/supporter profile tools require Premium Plus or Admin access. Clear those fields to save your basic profile.",
+      "Creator/supporter profile tools require Premium Plus access. Clear those fields to save your basic profile.",
       403
     );
   }

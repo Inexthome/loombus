@@ -182,7 +182,7 @@ export default function LabsPage() {
     }
 
     if (!canUseLabs) {
-      setMessage("Labs voting requires Premium Plus or Admin access.");
+      setMessage("Labs voting requires Premium Plus access.");
       return;
     }
 
@@ -236,7 +236,7 @@ export default function LabsPage() {
     }
 
     if (!canUseLabs) {
-      setMessage("Loombus Labs requires Premium Plus or Admin access.");
+      setMessage("Loombus Labs requires Premium Plus access.");
       return;
     }
 
@@ -343,8 +343,7 @@ export default function LabsPage() {
             </h1>
 
             <p className="mb-6 leading-relaxed text-zinc-400">
-              Loombus Labs is the early-access area for Premium Plus members
-              and Admins.
+              Loombus Labs is the early-access area for Premium Plus members.
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -388,9 +387,7 @@ export default function LabsPage() {
           </h1>
 
           <p className="max-w-3xl leading-relaxed text-zinc-400">
-            Labs is where Premium Plus members and Admins get early access to
-            upcoming Loombus capabilities and can submit feature requests for
-            review.
+            Labs is where Premium Plus members get early access to upcoming Loombus capabilities and can submit feature requests for review.
           </p>
         </div>
 
@@ -402,8 +399,7 @@ export default function LabsPage() {
 
             <p className="mb-6 max-w-3xl leading-relaxed text-zinc-500">
               Free and Premium members can keep using the core platform. Labs is
-              reserved for Premium Plus members and Admins so early feedback
-              stays focused and manageable.
+              reserved for Premium Plus members so early feedback stays focused and manageable.
             </p>
 
             <Link
@@ -492,7 +488,7 @@ export default function LabsPage() {
                   <p>Early visibility into what Loombus is building next.</p>
                   <p>Priority feature request submission and voting.</p>
                   <p>Status tracking as ideas move through review.</p>
-                  <p>Admin review workflow coming next.</p>
+                  <p>Review workflow coming next.</p>
                 </div>
               </section>
 
@@ -580,7 +576,7 @@ export default function LabsPage() {
                     {request.admin_note && (
                       <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
                         <p className="mb-2 text-sm font-medium text-zinc-300">
-                          Admin note
+                          Loombus note
                         </p>
 
                         <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-500">

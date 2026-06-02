@@ -57,7 +57,7 @@ export default function SafetyPage() {
           </p>
 
           <p className="mt-4">
-            Reports may be reviewed by Loombus administrators or moderation
+            Reports may be reviewed by the Loombus moderation
             tools. Loombus may use report details, account information,
             content, metadata, and related records to evaluate the issue and
             protect the platform.
