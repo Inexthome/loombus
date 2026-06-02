@@ -648,6 +648,46 @@ html[data-loombus-theme="light"] .loombus-mobile-visitor-existing {
   border-color: var(--loombus-border);
 }
 
+
+/* Mobile Shell Polish M1.
+   Preserve the existing top/bottom floating navbars and hide-on-scroll behavior,
+   while giving mobile pages a little more safe-area breathing room and improving
+   tap targets. Desktop remains untouched. */
+@media (max-width: 767px) {
+  html[data-loombus-theme] body {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html[data-loombus-theme] main.min-h-screen {
+    padding-top: max(1rem, env(safe-area-inset-top)) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 7.25rem) !important;
+  }
+
+  .loombus-mobile-topbar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .loombus-mobile-shell-button,
+  .loombus-mobile-shell-avatar {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+
+  .loombus-mobile-bottom-nav {
+    bottom: calc(env(safe-area-inset-bottom) + 0.625rem) !important;
+    padding: 0.55rem !important;
+  }
+
+  .loombus-mobile-bottom-nav a {
+    min-height: 3.1rem;
+  }
+
+  .loombus-mobile-menu-panel {
+    max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 5rem) !important;
+  }
+}
+
 /* Loombus desktop right rail resizing */
 :root {
   --loombus-right-rail-width: 320px;
