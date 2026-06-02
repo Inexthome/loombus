@@ -783,3 +783,40 @@ html[data-loombus-theme="light"] .loombus-mobile-visitor-existing {
     opacity: 1;
   }
 }
+
+/* Dark-only visitor auth card polish.
+   Keeps light appearance untouched while preventing the mobile signup card from
+   rendering as a bright surface in dark mode. */
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card {
+  background: rgb(9 9 11) !important;
+  border-color: rgb(39 39 42) !important;
+  color: rgb(244 244 245) !important;
+}
+
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .loombus-mobile-visitor-legal,
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .loombus-mobile-visitor-legal a,
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .text-zinc-500,
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .text-zinc-600,
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .text-zinc-700 {
+  color: rgb(161 161 170) !important;
+}
+
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .bg-white {
+  background: rgb(244 244 245) !important;
+}
+
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .text-black {
+  color: rgb(9 9 11) !important;
+}
+
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .bg-zinc-900,
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .bg-zinc-950,
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .bg-black {
+  background: rgb(0 0 0) !important;
+}
+
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .border-zinc-700,
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .border-zinc-800,
+html[data-loombus-theme="dark"] .loombus-mobile-visitor-auth-card .border-zinc-900 {
+  border-color: rgb(39 39 42) !important;
+}
