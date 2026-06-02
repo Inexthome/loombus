@@ -1364,33 +1364,18 @@ export default function DashboardClientPage() {
           )}
         </MobileDashboardShell>
 
-        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Contribution basics
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                How your contribution base is forming.
-              </h2>
-            </div>
-
-            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
-              Private
-            </span>
-          </div>
-
-          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            This private view summarizes your contribution pattern without assigning a public score, rank, or expert label.
-          </p>
-
+        <MobileDashboardShell
+          eyebrow="Contribution basics"
+          title="How your contribution base is forming."
+          summary="This private view summarizes your contribution pattern without assigning a public score, rank, or expert label."
+          storageKey="loombus-dashboard-shell-contribution-basics-v1"
+        >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {contributionFoundationItems.map((item) => (
               <ContributionFoundationCard key={item.label} item={item} />
             ))}
           </div>
-        </section>
+        </MobileDashboardShell>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
