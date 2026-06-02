@@ -625,6 +625,7 @@ export default function DashboardClientPage() {
     Math.round(((totalProfileFields - missingProfileFields.length) / totalProfileFields) * 100);
 
   const profileComplete = missingProfileFields.length === 0;
+  const profileSetupOpenByDefault = !profileComplete;
 
   const subscriptionDisplay = getSubscriptionDisplay(aiEntitlement);
   const aiUsageLabel = getAiUsageLabel(aiEntitlement);
@@ -1328,23 +1329,13 @@ export default function DashboardClientPage() {
           </Link>
         </MobileDashboardShell>
 
-        <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Profile setup
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                {profileComplete ? "Your public profile is complete." : "Complete your public profile."}
-              </h2>
-            </div>
-
-            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
-              {profileCompletionPercent}%
-            </span>
-          </div>
-
+        <MobileDashboardShell
+          eyebrow="Profile setup"
+          title={profileComplete ? "Your public profile is complete." : "Complete your public profile."}
+          summary={`${profileCompletionPercent}% complete`}
+          storageKey="loombus-dashboard-shell-profile-setup-v1"
+          defaultOpen={profileSetupOpenByDefault}
+        >
           <div className="mb-4 h-2 overflow-hidden rounded-full bg-zinc-900">
             <div
               className="h-full rounded-full bg-white transition-all"
@@ -1356,7 +1347,7 @@ export default function DashboardClientPage() {
             <>
               <p className="mb-5 leading-relaxed text-zinc-400">
                 Add your {missingProfileFields.join(", ")} so other members know
-                who they are reading and interacting with.
+                who they are talking to.
               </p>
 
               <Link
@@ -1371,7 +1362,7 @@ export default function DashboardClientPage() {
               Your profile is ready for people, mentions, follows, and discussion attribution.
             </p>
           )}
-        </div>
+        </MobileDashboardShell>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
