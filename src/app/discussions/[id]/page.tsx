@@ -690,6 +690,36 @@ export default function DiscussionPage() {
     loadDiscussion();
   }, [id]);
 
+  useEffect(() => {
+    if (!openReplyActionMenuId) {
+      return;
+    }
+
+    function handleReplyActionMenuOutsideClick(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+
+      if (target?.closest("[data-reply-action-menu]")) {
+        return;
+      }
+
+      setOpenReplyActionMenuId(null);
+    }
+
+    function handleReplyActionMenuKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpenReplyActionMenuId(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleReplyActionMenuOutsideClick);
+    document.addEventListener("keydown", handleReplyActionMenuKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleReplyActionMenuOutsideClick);
+      document.removeEventListener("keydown", handleReplyActionMenuKeyDown);
+    };
+  }, [openReplyActionMenuId]);
+
   function startRespondToPoint(reply: Reply) {
     setMessage("");
     setReferencedReply(reply);
@@ -3190,7 +3220,7 @@ export default function DiscussionPage() {
                   </p>
                 </div>
 
-                <div className="relative shrink-0">
+                <div className="relative shrink-0" data-reply-action-menu>
                   <button
                     type="button"
                     onClick={() => toggleReplyActionMenu(`pinned-${pinnedReply.id}`)}
@@ -3304,7 +3334,7 @@ export default function DiscussionPage() {
                       </span>
                     </p>
 
-                    <div className="relative shrink-0">
+                    <div className="relative shrink-0" data-reply-action-menu>
                       <button
                         type="button"
                         onClick={() => toggleReplyActionMenu(reply.id)}
