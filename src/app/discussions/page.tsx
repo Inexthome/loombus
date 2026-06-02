@@ -598,33 +598,33 @@ export default function DiscussionsPage() {
       <div className="mx-auto max-w-[46rem]">
         <div className="discussion-shell-grid">
           <div className="min-w-0">
-        <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-6 sm:p-6">
-          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+        <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-6 sm:rounded-3xl sm:p-6">
+          <div className="mb-4 flex items-start justify-between gap-3 md:mb-5 md:items-start">
+            <div className="min-w-0">
+              <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-500 sm:mb-2 sm:text-sm sm:tracking-[0.25em]">
                 Feed
               </p>
 
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
                 Discussions
               </h1>
 
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-                Read, reply, and save thoughtful conversations without starting from every filter at once.
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:mt-3 sm:text-base">
+                Browse thoughtful conversations by signal, topic, or intent.
               </p>
             </div>
 
             <Link
               href="/create"
-              className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 sm:w-fit"
+              className="shrink-0 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 sm:px-5 sm:py-3"
             >
-              Create Discussion
+              Create
             </Link>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end xl:hidden">
+          <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-end xl:hidden">
             <label htmlFor="discussion-search" className="block">
-              <span className="mb-2 block text-sm font-medium text-zinc-300">
+              <span className="sr-only">
                 Search discussions
               </span>
 
@@ -633,8 +633,8 @@ export default function DiscussionsPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search titles, bodies, topics, or contributors..."
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+                placeholder="Search discussions..."
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3.5 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600 sm:px-5 sm:py-4"
               />
             </label>
 
