@@ -1310,29 +1310,14 @@ export default function DashboardClientPage() {
           )}
         </MobileDashboardShell>
 
-        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Subscription
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                {subscriptionDisplay.label}
-              </h2>
-            </div>
-
-            <span className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300">
-              {subscriptionDisplay.badge}
-            </span>
-          </div>
-
+        <MobileDashboardShell
+          eyebrow="Subscription"
+          title={subscriptionDisplay.label}
+          summary={`${subscriptionDisplay.badge} · Included AI usage: ${aiUsageLabel}`}
+          storageKey="loombus-dashboard-shell-subscription-v1"
+        >
           <p className="mb-3 leading-relaxed text-zinc-400">
             {subscriptionDisplay.description}
-          </p>
-
-          <p className="mb-5 text-sm text-zinc-500">
-            Included AI usage: {aiUsageLabel}
           </p>
 
           <Link
@@ -1341,7 +1326,7 @@ export default function DashboardClientPage() {
           >
             {subscriptionDisplay.nextAction}
           </Link>
-        </section>
+        </MobileDashboardShell>
 
         <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-4 flex items-start justify-between gap-3">
