@@ -593,6 +593,33 @@ export default function DiscussionsPage() {
     setAdvancedFilter("All activity");
   }
 
+  function persistExploreFiltersOpen() {
+    setShowExploreFilters(true);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(DISCUSSION_FILTER_DRAWER_STORAGE_KEY, "open");
+    }
+  }
+
+  function openDiscussionSearch() {
+    const input = document.getElementById("discussion-search") as HTMLInputElement | null;
+
+    input?.focus();
+    input?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function openDiscussionGuide() {
+    persistExploreFiltersOpen();
+  }
+
+  function openDiscussionTopics() {
+    persistExploreFiltersOpen();
+  }
+
+  function openDiscussionPurpose() {
+    persistExploreFiltersOpen();
+  }
+
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12 loombus-shell-with-right-rail">
       <div className="mx-auto max-w-[46rem]">
@@ -645,6 +672,63 @@ export default function DiscussionsPage() {
               aria-expanded={showExploreFilters}
             >
               {showExploreFilters ? "Hide filters" : hasActiveDiscussionFilters ? "Edit filters" : "Explore / Filters"}
+            </button>
+          </div>
+
+          <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:hidden" aria-label="Discussion tools rail">
+            <button
+              type="button"
+              onClick={openDiscussionSearch}
+              className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-3.5 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+            >
+              Search
+            </button>
+
+            <button
+              type="button"
+              onClick={openDiscussionGuide}
+              className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-3.5 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+            >
+              Guide
+            </button>
+
+            {(["Newest", "Most replied", "Signal"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setSortMode(mode)}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                  sortMode === mode
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+
+            <button
+              type="button"
+              onClick={openDiscussionTopics}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                selectedTopic !== "All"
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+            >
+              Topics
+            </button>
+
+            <button
+              type="button"
+              onClick={openDiscussionPurpose}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                selectedPurposeLane !== "All"
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+            >
+              Purpose
             </button>
           </div>
 
