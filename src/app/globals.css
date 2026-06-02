@@ -390,6 +390,43 @@ html[data-loombus-theme] .hover\:opacity-90:hover {
   }
 }
 
+
+/* Light-mode signup/auth contrast repair.
+   The signup/auth card appears on both mobile and desktop. The older visitor
+   auth cleanup was mobile-only, so desktop Light mode could keep muted text
+   too faint against the themed card. */
+html[data-loombus-theme="light"] .loombus-mobile-visitor-auth-card {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #d4d4d8 !important;
+}
+
+html[data-loombus-theme="light"] .loombus-mobile-visitor-auth-card .text-zinc-700,
+html[data-loombus-theme="light"] .loombus-mobile-visitor-auth-card .text-zinc-600,
+html[data-loombus-theme="light"] .loombus-mobile-visitor-auth-card .text-zinc-500 {
+  color: #374151 !important;
+  opacity: 1 !important;
+}
+
+html[data-loombus-theme="light"] .loombus-mobile-visitor-auth-card a {
+  color: #111827 !important;
+  opacity: 1 !important;
+}
+
+html[data-loombus-theme="light"] .loombus-mobile-visitor-create {
+  color: #111827 !important;
+  border-color: #9ca3af !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+}
+
+html[data-loombus-theme="light"] .loombus-mobile-visitor-legal,
+html[data-loombus-theme="light"] .loombus-mobile-visitor-existing {
+  color: #374151 !important;
+  opacity: 1 !important;
+}
+
+
 /* Loombus mobile visitor auth cleanup */
 @media (max-width: 767px) {
   .loombus-mobile-visitor-auth-card {
