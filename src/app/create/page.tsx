@@ -1172,50 +1172,6 @@ export default function CreatePage() {
                 </p>
               </div>
 
-              {!isEditMode && (
-                <div className="create-composer-paperclip mt-3 flex flex-wrap items-center gap-2 md:hidden">
-                  <button
-                    type="button"
-                    onClick={() => setShowAttachmentsPanel((current) => !current)}
-                    disabled={publishing}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                      showAttachmentsPanel || attachmentFiles.length > 0
-                        ? "border-zinc-500 bg-white text-black"
-                        : "border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                    }`}
-                    aria-expanded={showAttachmentsPanel}
-                    aria-label="Add attachments"
-                  >
-                    <span aria-hidden="true">📎</span>
-                    <span>
-                      Attach
-                    </span>
-                  </button>
-
-                  {attachmentFiles.length > 0 && (
-                    <span className="rounded-full border border-zinc-800 bg-black px-3 py-2 text-sm text-zinc-400">
-                      {attachmentFiles.length} selected
-                    </span>
-                  )}
-
-                  {attachmentFiles.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearAttachments}
-                      disabled={publishing}
-                      className="rounded-full border border-zinc-800 px-3 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
-                    >
-                      Clear
-                    </button>
-                  )}
-
-                  {attachmentMessage && (
-                    <span className="text-xs text-zinc-600">
-                      {attachmentMessage}
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
 
             <section className="hidden rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 md:block xl:hidden">
