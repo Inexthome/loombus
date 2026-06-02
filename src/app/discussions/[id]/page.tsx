@@ -2126,7 +2126,7 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <div className="mb-5 hidden flex-col items-stretch gap-2 rounded-2xl border border-zinc-900 bg-black/30 p-3 sm:mb-10 md:flex md:flex-row md:flex-wrap md:items-center md:gap-4 md:border-0 md:bg-transparent md:p-0">
+        <div className="discussion-detail-desktop-center-actions mb-5 hidden flex-col items-stretch gap-2 rounded-2xl border border-zinc-900 bg-black/30 p-3 sm:mb-10 md:flex md:flex-row md:flex-wrap md:items-center md:gap-4 md:border-0 md:bg-transparent md:p-0 xl:hidden">
           {canManageDiscussionStatus && (
             <button
               type="button"
@@ -2203,7 +2203,7 @@ export default function DiscussionPage() {
 
         <nav
           aria-label="Discussion reader actions"
-          className="mb-4 grid grid-cols-3 gap-1.5 rounded-2xl border border-zinc-900 bg-black/40 p-1.5 sm:mb-10 sm:gap-2 sm:rounded-3xl sm:p-2"
+          className="discussion-detail-center-shortcuts mb-4 grid grid-cols-3 gap-1.5 rounded-2xl border border-zinc-900 bg-black/40 p-1.5 sm:mb-10 sm:gap-2 sm:rounded-3xl sm:p-2 xl:hidden"
         >
           <a
             href="#reply-form"
@@ -2846,7 +2846,7 @@ export default function DiscussionPage() {
         )}
 
         {relatedDiscussions.length > 0 && (
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7">
+          <div className="discussion-detail-center-related mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7 xl:hidden">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
