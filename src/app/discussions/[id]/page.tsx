@@ -718,29 +718,21 @@ export default function DiscussionPage() {
     setActiveDetailTool((current) => {
       const next = current === panel ? "none" : panel;
 
-      if (panel === "ai") {
-        setShowAiToolsPanel(next === "ai");
+      setShowAiToolsPanel(next === "ai");
+      setShowReplyHelpersPanel(next === "helpers");
+      setShowMobileThreadActions(next === "more");
+
+      if (next === "ai") {
         setOpenPremiumAiTool((currentTool) => currentTool || "summary");
-
-        if (next === "ai") {
-          scrollToDetailSection("intelligence-layer");
-        }
+        scrollToDetailSection("intelligence-layer");
       }
 
-      if (panel === "helpers") {
-        setShowReplyHelpersPanel(next === "helpers");
-
-        if (next === "helpers") {
-          scrollToDetailSection("replies");
-        }
+      if (next === "helpers") {
+        scrollToDetailSection("replies");
       }
 
-      if (panel === "related" && next === "related") {
+      if (next === "related") {
         scrollToDetailSection("related-discussions");
-      }
-
-      if (panel === "more") {
-        setShowMobileThreadActions(next === "more");
       }
 
       return next;
