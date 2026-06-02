@@ -1143,33 +1143,18 @@ export default function DashboardClientPage() {
 
         </ProgressiveGuide>
 
-        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Next steps
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                What to handle next.
-              </h2>
-            </div>
-
-            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
-              {organizationActions.length} actions
-            </span>
-          </div>
-
-          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            A lightweight organization layer based on your profile, activity, saved discussions, and notifications. It suggests next actions but never acts for you.
-          </p>
-
+        <MobileDashboardShell
+          eyebrow="Next steps"
+          title="What to handle next."
+          summary={`A lightweight organization layer based on your profile, activity, saved discussions, and notifications. ${organizationActions.length} actions suggested.`}
+          defaultOpen
+        >
           <div className="grid gap-4 md:grid-cols-2">
             {organizationActions.map((item) => (
               <OrganizationActionCard key={item.title} item={item} />
             ))}
           </div>
-        </section>
+        </MobileDashboardShell>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
