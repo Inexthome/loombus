@@ -1420,40 +1420,18 @@ export default function DashboardClientPage() {
           </div>
         </MobileDashboardShell>
 
-        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                My Activity
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                Your Loombus footprint
-              </h2>
-            </div>
-
+        <MobileDashboardShell
+          eyebrow="My Activity"
+          title="Your Loombus footprint"
+          summary="A quick private view of your discussions, replies, saves, and unread alerts."
+          storageKey="loombus-dashboard-shell-my-activity-v1"
+        >
+          <div className="mb-4 flex justify-end">
             <Link
               href="/my-activity"
               className="text-sm text-zinc-400 transition hover:text-white"
             >
               View all activity →
-            </Link>
-
-            <Link
-              href="/following"
-              className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 transition hover:border-zinc-700"
-            >
-              <p className="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-600">
-                Social Feed
-              </p>
-
-              <h2 className="mb-3 text-xl font-medium">
-                Following Feed →
-              </h2>
-
-              <p className="text-sm leading-relaxed text-zinc-500">
-                See discussions from the people you follow.
-              </p>
             </Link>
           </div>
 
@@ -1510,7 +1488,7 @@ export default function DashboardClientPage() {
               </p>
             </Link>
           </div>
-        </section>
+        </MobileDashboardShell>
 
         <div className="grid gap-4 md:grid-cols-4">
           <Link
