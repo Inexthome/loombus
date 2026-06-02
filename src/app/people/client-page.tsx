@@ -720,7 +720,7 @@ export default function PeoplePage() {
                     </span>
                   ) : (
                     <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
-                      {isAdmin ? "Admin view" : "Relationship view"}
+                      {isAdmin ? "Platform view" : "Relationship view"}
                     </span>
                   )}
 

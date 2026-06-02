@@ -133,12 +133,12 @@ export default function OnboardingPage() {
                 New member setup
               </p>
               <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-tight text-zinc-950 md:text-5xl">
-                Build your Loombus signal before the feed gets noisy.
+                Build your Loombus signal before the platform gets deep.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-600">
-                Start with a clear profile, explore the strongest topics, and post your first
-                thoughtful discussion. This keeps new members from landing in an empty or confusing
-                experience.
+                Start with a clear profile, choose a topic lane, understand Reality Lenses,
+                and post your first thoughtful discussion. From there, Loombus helps you save,
+                revisit, organize, and understand discussions without turning the platform into noise.
               </p>
             </div>
 
@@ -187,7 +187,7 @@ export default function OnboardingPage() {
                   Focus
                 </p>
                 <p className="mt-3 text-lg font-black text-zinc-950">Signal over noise</p>
-                <p className="mt-2 text-sm text-zinc-600">depth before attention</p>
+                <p className="mt-2 text-sm text-zinc-600">depth before attention, tools after context</p>
               </div>
             </div>
           )}
@@ -233,7 +233,8 @@ export default function OnboardingPage() {
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
                 Topics help Loombus organize higher-signal discussions. Start with one that matches
-                what you want to think through deeply.
+                what you want to think through deeply, then use Reality Lenses when the human context
+                behind a topic matters.
               </p>
             </div>
 

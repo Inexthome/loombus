@@ -159,7 +159,7 @@ const settingsSections = [
       },
       {
         title: "Loombus Setup Guide",
-        description: "Review profile setup, topic lanes, people discovery, and first-discussion guidance.",
+        description: "Review profile setup, topic lanes, Reality Lenses, people discovery, saved learning, and first-discussion guidance.",
         href: "/onboarding",
       },
       {

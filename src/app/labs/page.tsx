@@ -488,7 +488,6 @@ export default function LabsPage() {
                   <p>Early visibility into what Loombus is building next.</p>
                   <p>Priority feature request submission and voting.</p>
                   <p>Status tracking as ideas move through review.</p>
-                  <p>Review workflow coming next.</p>
                 </div>
               </section>
 

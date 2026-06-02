@@ -13,8 +13,9 @@ export default function AboutPage() {
         title="About Loombus"
         description={
           <>
-            Loombus is a signal-first discussion platform designed for thoughtful
-            conversations, durable knowledge, and meaningful contribution.
+            Loombus is a signal-first discussion platform for thoughtful
+            conversations, durable knowledge, Reality Lenses, AI-assisted
+            understanding, saved learning, and meaningful contribution.
           </>
         }
       />
@@ -28,8 +29,8 @@ export default function AboutPage() {
           <p className="leading-relaxed text-zinc-400">
             Most platforms optimize for addiction, outrage, virality, and
             endless engagement loops. Loombus is being built around a different
-            idea: thoughtful discussions and valuable insights should outlive
-            trends, algorithms, and noise.
+            idea: thoughtful discussions, real-life context, saved knowledge,
+            and useful insights should outlive trends, algorithms, and noise.
           </p>
         </Panel>
 
@@ -41,10 +42,12 @@ export default function AboutPage() {
           <div className="grid gap-3 text-zinc-400 md:grid-cols-2">
             <p>• Thoughtful discussions over reactive posting</p>
             <p>• Signal over virality</p>
+            <p>• Real-life context through Reality Lenses</p>
             <p>• Long-term knowledge over short-term engagement</p>
             <p>• Credibility and contribution over popularity</p>
             <p>• Discovery through substance, not manipulation</p>
-            <p>• Safer tools for cleaner community dialogue</p>
+            <p>• AI tools that organize ideas without replacing judgment</p>
+            <p>• Saved learning, private notes, and cleaner community dialogue</p>
           </div>
         </Panel>
 
