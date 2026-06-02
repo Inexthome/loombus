@@ -1293,63 +1293,8 @@ export default function CreatePage() {
               )}
             </section>
 
-            {!isEditMode && showAttachmentsPanel && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <p className="text-sm leading-relaxed text-zinc-500">
-                    Optional. Attach up to 3 images or PDFs. Max 10 MB each.
-                  </p>
-
-                  {attachmentFiles.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearAttachments}
-                      disabled={publishing}
-                      className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
-                    >
-                      Clear
-                    </button>
-                  )}
-                </div>
-
-                <input
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
-                  onChange={handleAttachmentSelection}
-                  disabled={publishing}
-                  className="block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-black disabled:cursor-not-allowed disabled:text-zinc-700"
-                />
-
-                {attachmentFiles.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {attachmentFiles.map((file) => (
-                      <div
-                        key={`${file.name}-${file.size}-${file.lastModified}`}
-                        className="flex flex-col gap-1 rounded-xl border border-zinc-900 bg-zinc-950 p-3 text-sm text-zinc-400"
-                      >
-                        <span className="truncate">
-                          {file.name}
-                        </span>
-
-                        <span className="text-xs text-zinc-600">
-                          {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {attachmentMessage && (
-                  <p className="mt-3 text-sm text-zinc-500">
-                    {attachmentMessage}
-                  </p>
-                )}
-              </section>
-            )}
-
             {!isEditMode && (
-              <section className="hidden rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 md:block xl:hidden">
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 xl:hidden">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
