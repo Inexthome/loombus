@@ -203,6 +203,8 @@ export default function DiscussionsPage() {
   const [showAllTopicDiscovery, setShowAllTopicDiscovery] = useState(false);
   const [showAllTopicFilters, setShowAllTopicFilters] = useState(false);
   const [showExploreFilters, setShowExploreFilters] = useState(false);
+  const [activeDiscussionTool, setActiveDiscussionTool] =
+    useState<"none" | "search" | "guide" | "topics" | "purpose">("none");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState("Newest");
   const [advancedFilter, setAdvancedFilter] =
@@ -602,22 +604,26 @@ export default function DiscussionsPage() {
   }
 
   function openDiscussionSearch() {
-    const input = document.getElementById("discussion-search") as HTMLInputElement | null;
+    setActiveDiscussionTool((current) => current === "search" ? "none" : "search");
 
-    input?.focus();
-    input?.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => {
+      const input = document.getElementById("discussion-search") as HTMLInputElement | null;
+
+      input?.focus();
+      input?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 0);
   }
 
   function openDiscussionGuide() {
-    persistExploreFiltersOpen();
+    setActiveDiscussionTool((current) => current === "guide" ? "none" : "guide");
   }
 
   function openDiscussionTopics() {
-    persistExploreFiltersOpen();
+    setActiveDiscussionTool((current) => current === "topics" ? "none" : "topics");
   }
 
   function openDiscussionPurpose() {
-    persistExploreFiltersOpen();
+    setActiveDiscussionTool((current) => current === "purpose" ? "none" : "purpose");
   }
 
   return (
@@ -649,7 +655,78 @@ export default function DiscussionsPage() {
             </Link>
           </div>
 
-          <div className="grid gap-2 md:grid-cols-[1fr_auto] md:items-end xl:hidden">
+        </section>
+
+        <div className="mb-4 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:hidden" aria-label="Discussion tools rail">
+          <button
+            type="button"
+            onClick={openDiscussionSearch}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              activeDiscussionTool === "search" || searchQuery.trim()
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+            }`}
+          >
+            Search
+          </button>
+
+          <button
+            type="button"
+            onClick={openDiscussionGuide}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              activeDiscussionTool === "guide"
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+            }`}
+          >
+            Guide
+          </button>
+
+          {(["Newest", "Most replied", "Signal"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => {
+                setSortMode(mode);
+                setActiveDiscussionTool("none");
+              }}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                sortMode === mode
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={openDiscussionTopics}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              activeDiscussionTool === "topics" || selectedTopic !== "All"
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+            }`}
+          >
+            Topics
+          </button>
+
+          <button
+            type="button"
+            onClick={openDiscussionPurpose}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              activeDiscussionTool === "purpose" || selectedPurposeLane !== "All"
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+            }`}
+          >
+            Purpose
+          </button>
+        </div>
+
+        {activeDiscussionTool === "search" && (
+          <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
             <label htmlFor="discussion-search" className="block">
               <span className="sr-only">
                 Search discussions
@@ -661,389 +738,114 @@ export default function DiscussionsPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search discussions..."
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3.5 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600 sm:px-5 sm:py-4"
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3.5 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
               />
             </label>
+          </section>
+        )}
 
-            <button
-              type="button"
-              onClick={toggleExploreFilters}
-              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-              aria-expanded={showExploreFilters}
-            >
-              {showExploreFilters ? "Hide filters" : hasActiveDiscussionFilters ? "Edit filters" : "Explore / Filters"}
-            </button>
-          </div>
-
-          <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:hidden" aria-label="Discussion tools rail">
-            <button
-              type="button"
-              onClick={openDiscussionSearch}
-              className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-3.5 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-            >
-              Search
-            </button>
-
-            <button
-              type="button"
-              onClick={openDiscussionGuide}
-              className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-3.5 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-            >
+        {activeDiscussionTool === "guide" && (
+          <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
+            <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-500">
               Guide
-            </button>
+            </p>
 
-            {(["Newest", "Most replied", "Signal"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setSortMode(mode)}
-                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                  sortMode === mode
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
+            <h2 className="mb-2 text-base font-semibold">
+              Finding signal
+            </h2>
 
-            <button
-              type="button"
-              onClick={openDiscussionTopics}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                selectedTopic !== "All"
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              Topics
-            </button>
+            <p className="text-sm leading-relaxed text-zinc-500">
+              Use search, sort, topics, purpose lanes, and Signal to find discussions worth reading carefully.
+            </p>
+          </section>
+        )}
 
-            <button
-              type="button"
-              onClick={openDiscussionPurpose}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                selectedPurposeLane !== "All"
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              Purpose
-            </button>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              {hasActiveDiscussionFilters ? (
-                activeFilterLabels.map((label) => (
-                  <span
-                    key={label}
-                    className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400"
-                  >
-                    {label}
-                  </span>
-                ))
-              ) : (
-                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
-                  {filterSummary}
-                </span>
-              )}
-            </div>
-
-            {hasActiveDiscussionFilters && (
-              <button
-                type="button"
-                onClick={resetDiscussionFilters}
-                className="w-fit text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
-              >
-                Clear filters
-              </button>
-            )}
-          </div>
-        </section>
-        {showExploreFilters && (
-          <div className="xl:hidden">
-          <ProgressiveGuide
-          storageKey="loombus-guide-discussions-finding-signal-v1"
-          eyebrow="Guide"
-          title="Finding signal"
-          description="Reopen this when you want help browsing with more intent."
-          collapsedClassName="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6"
-        >
-        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-            Finding signal
-          </p>
-
-          <h2 className="mb-4 text-2xl font-medium">
-            Browse with a purpose.
-          </h2>
-
-          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            Use topics, search, sort controls, and Signal Score to find discussions
-            worth reading carefully. A useful reply usually adds context, evidence,
-            experience, a counterpoint, or a clearer framing.
-          </p>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Start with topics
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Filter by a subject area first, then use search when you know what you are looking for.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Sort for intent
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Use Newest for fresh posts, Most replied for active threads, and Signal for stronger engagement.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Reply with value
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Add something another reader can use: examples, experience, questions, or better structure.
-              </p>
-            </div>
-          </div>
-        </section>
-
-          </ProgressiveGuide>
-
-        <section className="hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Topic discovery
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                Choose a lane before scrolling.
-              </h2>
-
-              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
-                Loombus works best when readers start with a focused lane. Pick a topic to narrow the feed into conversations that match your intent.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowAllTopicDiscovery((current) => !current)}
-              className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
-            >
-              {showAllTopicDiscovery ? "Show fewer topics" : "Show all topics"}
-            </button>
-          </div>
-
-          {showAllTopicDiscovery && (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {topicDiscoveryItems.map(({ topic, description }) => (
-                <Link
-                  key={topic}
-                  href={`/discussions?topic=${encodeURIComponent(topic)}`}
-                  onClick={() => setTopicFilter(topic)}
-                  className="rounded-2xl border border-zinc-800 bg-black p-4 transition hover:border-zinc-600 hover:bg-zinc-900"
-                >
-                  <p className="text-sm font-medium text-white">{topic}</p>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">{description}</p>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-xl shadow-black/10 sm:mb-8 sm:rounded-3xl sm:p-5">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div>
-              <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-500">
-                Filters
-              </p>
-              <h2 className="text-base font-semibold tracking-tight sm:text-lg">
-                Choose what to show
-              </h2>
-            </div>
-
-            {hasActiveDiscussionFilters && (
-              <button
-                type="button"
-                onClick={resetDiscussionFilters}
-                className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <div className="rounded-2xl border border-zinc-900 bg-black/25 p-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
-                Sort
-              </p>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() => setSortMode("Newest")}
-                  className={`rounded-full px-3.5 py-2 text-sm transition ${
-                    sortMode === "Newest"
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                  }`}
-                >
-                  Newest
-                </button>
-
-                <button
-                  onClick={() => setSortMode("Most replied")}
-                  className={`rounded-full px-3.5 py-2 text-sm transition ${
-                    sortMode === "Most replied"
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                  }`}
-                >
-                  Most replied
-                </button>
-
-                <button
-                  onClick={() => setSortMode("Signal")}
-                  className={`rounded-full px-3.5 py-2 text-sm transition ${
-                    sortMode === "Signal"
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                  }`}
-                >
-                  Signal
-                </button>
-              </div>
-
-              <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-                Signal uses replies, saves, and views.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black/25 p-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
+        {activeDiscussionTool === "topics" && (
+          <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
                 Topics
               </p>
 
-              <div className="flex flex-wrap gap-2">
-                {topics.map((topic) => (
-                  <button
-                    key={topic}
-                    onClick={() => setTopicFilter(topic)}
-                    className={`rounded-full px-3.5 py-2 text-sm transition ${
-                      selectedTopic === topic
-                        ? "bg-white text-black"
-                        : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                    }`}
-                  >
-                    {topic}
-                  </button>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (showAllTopicFilters && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
-                      setTopicFilter("All");
-                    }
-
-                    setShowAllTopicFilters((current) => !current);
-                  }}
-                  className="rounded-full border border-zinc-800 bg-black/20 px-3.5 py-2 text-sm text-zinc-500 transition hover:border-zinc-700 hover:text-white"
-                >
-                  {showAllTopicFilters ? "Show active topics" : "Show all topics"}
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black/25 p-3">
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
-                Purpose
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                {["All", ...PURPOSE_LANES].map((lane) => (
-                  <button
-                    key={lane}
-                    type="button"
-                    onClick={() => setPurposeLaneFilter(lane)}
-                    className={`rounded-full px-3.5 py-2 text-sm transition ${
-                      selectedPurposeLane === lane
-                        ? "bg-white text-black"
-                        : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                    }`}
-                  >
-                    {lane}
-                  </button>
-                ))}
-              </div>
-
-              <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-                Browse by direction: learning, contribution, mastery, or community.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="hidden md:block mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
-                Advanced filters
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                Refine by discussion signal
-              </h2>
-            </div>
-
-            {!canUseAdvancedFilters && (
-              <Link
-                href="/premium"
-                className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
-              >
-                Unlock with Premium
-              </Link>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            {ADVANCED_FILTERS.map((filter) => (
               <button
-                key={filter}
                 type="button"
-                onClick={() => setAdvancedFilter(filter)}
-                disabled={!canUseAdvancedFilters && filter !== "All activity"}
-                className={`rounded-full border px-4 py-2 text-sm transition ${
-                  advancedFilter === filter
-                    ? "border-zinc-400 text-white"
-                    : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
-                } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
+                onClick={() => {
+                  if (showAllTopicFilters && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
+                    setTopicFilter("All");
+                  }
 
-          <p className="mt-4 text-xs leading-relaxed text-zinc-600">
-            Premium filters use replies, saves, Signal Score, and recent activity
-            to help cut through low-signal browsing.
-          </p>
-        </section>
-          </div>
+                  setShowAllTopicFilters((current) => !current);
+                }}
+                className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+              >
+                {showAllTopicFilters ? "Active only" : "All topics"}
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {topics.map((topic) => (
+                <button
+                  key={topic}
+                  type="button"
+                  onClick={() => setTopicFilter(topic)}
+                  className={`rounded-full px-3.5 py-2 text-sm transition ${
+                    selectedTopic === topic
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                  }`}
+                >
+                  {topic}
+                </button>
+              ))}
+            </div>
+          </section>
         )}
 
+        {activeDiscussionTool === "purpose" && (
+          <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
+            <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
+              Purpose
+            </p>
 
+            <div className="flex flex-wrap gap-2">
+              {["All", ...PURPOSE_LANES].map((lane) => (
+                <button
+                  key={lane}
+                  type="button"
+                  onClick={() => setPurposeLaneFilter(lane)}
+                  className={`rounded-full px-3.5 py-2 text-sm transition ${
+                    selectedPurposeLane === lane
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                  }`}
+                >
+                  {lane}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {hasActiveDiscussionFilters && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 xl:hidden">
+            {activeFilterLabels.map((label) => (
+              <span
+                key={label}
+                className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400"
+              >
+                {label}
+              </span>
+            ))}
+
+            <button
+              type="button"
+              onClick={resetDiscussionFilters}
+              className="text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+            >
+              Clear
+            </button>
+          </div>
+        )}
 
         {!loading && (
           <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
