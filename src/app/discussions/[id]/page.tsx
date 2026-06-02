@@ -714,27 +714,53 @@ export default function DiscussionPage() {
     }, 0);
   }
 
+  function toggleDetailPanel(panel: "ai" | "helpers" | "related" | "more") {
+    setActiveDetailTool((current) => {
+      const next = current === panel ? "none" : panel;
+
+      if (panel === "ai") {
+        setShowAiToolsPanel(next === "ai");
+        setOpenPremiumAiTool((currentTool) => currentTool || "summary");
+
+        if (next === "ai") {
+          scrollToDetailSection("intelligence-layer");
+        }
+      }
+
+      if (panel === "helpers") {
+        setShowReplyHelpersPanel(next === "helpers");
+
+        if (next === "helpers") {
+          scrollToDetailSection("replies");
+        }
+      }
+
+      if (panel === "related" && next === "related") {
+        scrollToDetailSection("related-discussions");
+      }
+
+      if (panel === "more") {
+        setShowMobileThreadActions(next === "more");
+      }
+
+      return next;
+    });
+  }
+
   function openDetailAiTools() {
-    setActiveDetailTool((current) => current === "ai" ? "none" : "ai");
-    setShowAiToolsPanel(true);
-    setOpenPremiumAiTool((current) => current || "summary");
-    scrollToDetailSection("intelligence-layer");
+    toggleDetailPanel("ai");
   }
 
   function openDetailReplyHelpers() {
-    setActiveDetailTool((current) => current === "helpers" ? "none" : "helpers");
-    setShowReplyHelpersPanel(true);
-    scrollToDetailSection("replies");
+    toggleDetailPanel("helpers");
   }
 
   function openDetailRelated() {
-    setActiveDetailTool((current) => current === "related" ? "none" : "related");
-    scrollToDetailSection("related-discussions");
+    toggleDetailPanel("related");
   }
 
   function openDetailMore() {
-    setActiveDetailTool((current) => current === "more" ? "none" : "more");
-    setShowMobileThreadActions(true);
+    toggleDetailPanel("more");
   }
 
   function openDetailReplyForm() {
@@ -2092,7 +2118,7 @@ export default function DiscussionPage() {
             type="button"
             onClick={openDetailAiTools}
             className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-              activeDetailTool === "ai" || showAiToolsPanel
+              activeDetailTool === "ai"
                 ? "bg-white text-black"
                 : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
             }`}
@@ -2119,7 +2145,7 @@ export default function DiscussionPage() {
               type="button"
               onClick={openDetailReplyHelpers}
               className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                activeDetailTool === "helpers" || showReplyHelpersPanel
+                activeDetailTool === "helpers"
                   ? "bg-white text-black"
                   : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
               }`}
@@ -2132,7 +2158,7 @@ export default function DiscussionPage() {
             type="button"
             onClick={openDetailMore}
             className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-              activeDetailTool === "more" || showMobileThreadActions
+              activeDetailTool === "more"
                 ? "bg-white text-black"
                 : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
             }`}
@@ -2895,7 +2921,7 @@ export default function DiscussionPage() {
           </div>
         )}
 
-        {relatedDiscussions.length > 0 && (
+        {relatedDiscussions.length > 0 && activeDetailTool === "related" && (
           <div id="related-discussions" className="discussion-detail-center-related mb-6 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7 xl:hidden">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
@@ -2949,16 +2975,7 @@ export default function DiscussionPage() {
               Replies
             </h2>
 
-            {currentUserId && (
-              <button
-                type="button"
-                onClick={() => setShowReplyHelpersPanel((current) => !current)}
-                className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
-                aria-expanded={showReplyHelpersPanel}
-              >
-                {showReplyHelpersPanel ? "Hide reply helpers" : "Reply helpers"}
-              </button>
-            )}
+
           </div>
 
           {showReplyHelpersPanel && currentUserId && (
