@@ -323,8 +323,7 @@ export default function MyDiscussionsPage() {
             </h2>
 
             <p className="mb-5 max-w-3xl leading-relaxed text-zinc-500">
-              You can still publish discussions normally. Premium and Admin accounts
-              can save drafts and return to them before publishing.
+              You can still publish discussions normally. Premium accounts can save drafts and return to them before publishing.
             </p>
 
             <Link

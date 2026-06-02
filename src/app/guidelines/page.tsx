@@ -170,14 +170,17 @@ export default function GuidelinesPage() {
             Loombus may offer AI-assisted tools, but users remain responsible
             for content they submit, publish, rewrite, summarize, or rely on.
             Do not use AI tools to generate spam, harassment, deception,
-            impersonation, illegal content, infringing content, or harmful
-            instructions.
+            impersonation, illegal content, infringing content, manipulative
+            content, harmful instructions, or content that misrepresents real
+            people, experience, or expertise.
           </p>
 
           <p className="mt-4">
             AI-generated or AI-assisted content may be inaccurate, incomplete,
             or misleading. Members should review AI-assisted content before
-            using or posting it.
+            using or posting it. AI tools should support better discussion, not
+            replace member judgment, lived context, or responsibility for what is
+            posted.
           </p>
         </Panel>
 

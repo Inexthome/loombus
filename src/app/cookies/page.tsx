@@ -51,9 +51,9 @@ export default function CookiesPage() {
             <li>keep users signed in;</li>
             <li>maintain secure account sessions;</li>
             <li>support Google authentication and email login;</li>
-            <li>remember basic account and interface state;</li>
+            <li>remember basic account, interface, and layout state, such as appearance preferences or panel sizing where supported;</li>
             <li>protect against fraud, abuse, spam, and unauthorized access;</li>
-            <li>support Premium access, subscription status, and AI usage limits;</li>
+            <li>support Premium access, subscription status, Labs access, saved-library tools, and AI usage limits;</li>
             <li>maintain safety, moderation, and reporting tools;</li>
             <li>diagnose technical issues, improve reliability, and measure platform performance;</li>
             <li>support required platform functionality across browsers and devices.</li>

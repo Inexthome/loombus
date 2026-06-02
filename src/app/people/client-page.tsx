@@ -499,12 +499,12 @@ export default function PeoplePage() {
           </p>
 
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-            {isAdmin ? "Admin view: all people" : "Your people network"}
+            {isAdmin ? "Platform view: all people" : "Your people network"}
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
             {isAdmin
-              ? "Admin accounts can review all visible member profiles without relationship restrictions."
+              ? "This account can review all visible member profiles without relationship restrictions."
               : "See people you follow, people who follow you, and limited suggestions from your existing network."}
           </p>
 
@@ -534,7 +534,7 @@ export default function PeoplePage() {
               </button>
             ) : (
               <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                {isAdmin ? "Admin view" : "Relationship view"}
+                {isAdmin ? "Platform view" : "Relationship view"}
               </span>
             )}
 
@@ -566,7 +566,7 @@ export default function PeoplePage() {
 
             <p className="max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
               {isAdmin
-                ? "No people match this admin view. Clear your search if one is active."
+                ? "No people match this platform view. Clear your search if one is active."
                 : "No people match this relationship view yet. Follow contributors from discussions to build your network, or clear your search if one is active."}
             </p>
 
@@ -812,7 +812,7 @@ export default function PeoplePage() {
                       {hasActivePeopleSearch
                         ? `Search: “${activePeopleSearch}”`
                         : isAdmin
-                          ? "Admin view"
+                          ? "Platform view"
                           : "Relationship view"}
                     </p>
                   </div>

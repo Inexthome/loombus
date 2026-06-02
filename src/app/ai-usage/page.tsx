@@ -341,7 +341,7 @@ export default function AiUsagePage() {
 
             <p className="mt-2 text-xs leading-relaxed text-zinc-600">
               {month.limit === null
-                ? "Admin access is not capped by the normal monthly meter."
+                ? "This account is not capped by the normal monthly meter."
                 : `${month.limit} included actions for ${formatMonth(month.start)}.`}
             </p>
           </div>

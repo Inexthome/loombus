@@ -799,8 +799,7 @@ export default function SettingsClientPage() {
 
           {profileAccount?.is_admin && (
             <div className="mb-5 rounded-2xl border border-amber-900 bg-amber-950/20 p-4 text-sm leading-relaxed text-amber-200">
-              Admin accounts cannot be deactivated or requested for deletion if
-              they are the only admin account.
+              This account cannot be deactivated or requested for deletion while it is required for platform operations.
             </div>
           )}
 

@@ -40,9 +40,9 @@ export default function PrivacyPage() {
             <ul className="mt-4 list-disc space-y-2 pl-6">
               <li>account information, such as email address, login method, user ID, and authentication status;</li>
               <li>profile information, such as username, display name, avatar, bio, profile settings, and creator/supporter profile details;</li>
-              <li>content you create or interact with, such as discussions, replies, reports, saves, folders, private notes, reading history, follows, blocks, and notifications;</li>
+              <li>content you create or interact with, such as discussions, replies, reports, saves, folders, private notes, reading history, follows, blocks, notifications, Labs requests, topic alerts, and discussion attachments;</li>
               <li>Premium or billing-related information, such as subscription tier, entitlement status, usage limits, checkout events, and payment processor status;</li>
-              <li>AI-assisted feature information, such as prompts, discussion text, generated summaries, key takeaways, rewrites, quality checks, usage events, and cached AI outputs;</li>
+              <li>AI-assisted feature information, such as prompts, discussion text, replies, titles, topics, Reality Lenses, tags, generated summaries, key takeaways, rewrites, quality checks, Conversation Maps, Related Ideas, usage events, output ratings, and cached AI outputs;</li>
               <li>technical information, such as device/browser information, session data, cookies, IP-related information, logs, diagnostics, and security events;</li>
               <li>support information, such as messages, screenshots, issue descriptions, and communications sent to support;</li>
               <li>account status information, such as warnings, suspensions, bans, deactivations, deletion requests, enforcement reasons, admin notes, and audit records;</li>
@@ -57,8 +57,12 @@ export default function PrivacyPage() {
             </h2>
 
             <p>
-              Loombus supports email login and Google authentication. When you
-              sign in through Google, Loombus may receive authentication
+              Loombus supports email login and Google authentication. Email
+              sign-in, email confirmation, password-based authentication, and
+              Google sign-in are used as Loombus account authentication layers.
+              Loombus does not currently require legal-name, state-ID, biometric,
+              or ID.me-style identity verification for ordinary member access.
+              When you sign in through Google, Loombus may receive authentication
               information from Google, such as your email address, account
               identifier, and basic profile information permitted by the sign-in
               process.
@@ -120,10 +124,11 @@ export default function PrivacyPage() {
             </h2>
 
             <p>
-              Loombus may process discussion content, replies, prompts, and
-              related metadata to provide AI-assisted features such as summaries,
-              key takeaways, disagreement maps, thread evolution, quality checks,
-              or clarity rewrites.
+              Loombus may process discussion content, replies, prompts, titles,
+              topics, Reality Lenses, tags, and related metadata to provide
+              AI-assisted features such as summaries, key takeaways,
+              disagreement maps, thread evolution, Conversation Map, Related
+              Ideas, reply suggestions, quality checks, or clarity rewrites.
             </p>
 
             <p className="mt-4">
@@ -198,7 +203,8 @@ export default function PrivacyPage() {
 
             <p className="mt-4">
               Reports, moderation decisions, block records, safety reviews,
-              admin actions, audit logs, and related metadata may be stored and
+              platform-operation actions, audit logs, support request records,
+              Labs review records, and related metadata may be stored and
               reviewed to protect the platform and users.
             </p>
         </Panel>

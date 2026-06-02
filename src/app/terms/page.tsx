@@ -35,8 +35,10 @@ export default function TermsPage() {
               thoughtful conversations, durable knowledge, community discussion,
               and optional AI-assisted tools. The platform may include public
               pages, member accounts, discussions, replies, follows, saves,
-              notifications, Premium features, moderation tools, reporting
-              systems, and related services.
+              notifications, Premium features, Premium Plus tools, Labs,
+              discussion attachments, saved folders, private notes, reading
+              history, topic alerts, support requests, moderation tools,
+              reporting systems, and related services.
             </p>
 
             <p className="mt-4">
@@ -159,8 +161,9 @@ export default function TermsPage() {
             <p>
               Loombus may provide optional AI-assisted tools, including
               summaries, key takeaways, clarity rewrites, quality checks,
-              disagreement maps, thread evolution, or similar features. These
-              tools are provided for convenience and assistance only.
+              disagreement maps, thread evolution, Conversation Map, Related
+              Ideas, reply suggestions, or similar features. These tools are
+              provided for convenience and assistance only.
             </p>
 
             <p className="mt-4">
@@ -176,7 +179,9 @@ export default function TermsPage() {
               You should not submit confidential, privileged, regulated,
               sensitive, or third-party information to AI-assisted tools unless
               you have the right to do so and accept the risk of processing. AI
-              tools may be provided by third-party model or infrastructure
+              tools may use discussion content, replies, titles, topics, Reality
+              Lenses, tags, and related metadata to generate requested outputs.
+              AI tools may be provided by third-party model or infrastructure
               providers, may be rate-limited, cached, logged, unavailable, or
               changed, and may be disabled for safety, operational, billing, or
               abuse-prevention reasons.
@@ -245,8 +250,10 @@ export default function TermsPage() {
 
             <p>
               Loombus may offer paid subscriptions, Premium features, Premium
-              Plus features, AI usage limits, extra AI action packs, or other
-              paid services. Paid features may be subject to additional pricing,
+              Plus features, Labs access, creator/supporter profile tools,
+              saved-library tools, private notes, exports, AI usage limits,
+              extra AI action packs, or other paid services. Paid features may
+              be subject to additional pricing,
               limits, usage rules, cancellation terms, refund rules, third-party
               payment processor terms, the{" "}
               <Link href="/refunds" className="text-zinc-200 underline-offset-4 hover:underline">

@@ -387,7 +387,7 @@ export default function LabsPage() {
           </h1>
 
           <p className="max-w-3xl leading-relaxed text-zinc-400">
-            Labs is where Premium Plus members get early access to upcoming Loombus capabilities and can submit feature requests for review.
+            Labs is where Premium Plus members get early access to upcoming Loombus capabilities, submit feature requests, vote on requests, and track request status as ideas move through review.
           </p>
         </div>
 

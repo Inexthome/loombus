@@ -57,10 +57,10 @@ export default function SafetyPage() {
           </p>
 
           <p className="mt-4">
-            Reports may be reviewed by the Loombus moderation
-            tools. Loombus may use report details, account information,
-            content, metadata, and related records to evaluate the issue and
-            protect the platform.
+            Reports may be reviewed by Loombus moderation processes and
+            tools. Loombus may use report details, account information, content,
+            metadata, and related records to evaluate the issue and protect the
+            platform.
           </p>
         </Panel>
 
@@ -165,8 +165,9 @@ export default function SafetyPage() {
 
           <p>
             Members are responsible for protecting their accounts. Use a strong
-            password, protect your email account, avoid suspicious links, and
-            do not share login credentials.
+            password, protect your email account, avoid suspicious links, and do
+            not share login credentials. Email sign-in and account authentication
+            are the current Loombus verification layer for ordinary member use.
           </p>
 
           <p className="mt-4">
