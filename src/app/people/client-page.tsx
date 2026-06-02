@@ -47,6 +47,8 @@ function getBadgeClassName(badge: ProfileBadge) {
 export default function PeoplePage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [followerIds, setFollowerIds] = useState<Set<string>>(new Set());
+  const [suggestedIds, setSuggestedIds] = useState<Set<string>>(new Set());
   const [followCounts, setFollowCounts] = useState<FollowCounts>({});
   const [blockedProfileIds, setBlockedProfileIds] = useState<Set<string>>(new Set());
   const [profileBadges, setProfileBadges] = useState<Record<string, ProfileBadge>>({});
@@ -56,6 +58,8 @@ export default function PeoplePage() {
   const [workingFollowId, setWorkingFollowId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activePeopleTool, setActivePeopleTool] =
+    useState<"none" | "search" | "following" | "followers" | "suggested">("none");
   const [loading, setLoading] = useState(true);
   const loadingRef = useRef(true);
 
@@ -182,6 +186,7 @@ export default function PeoplePage() {
           .filter((profileId): profileId is string => Boolean(profileId));
 
         setFollowingIds(new Set(directFollowingIds));
+        setFollowerIds(new Set(directFollowerIds));
 
         const hiddenIds = new Set<string>();
 
@@ -271,6 +276,7 @@ export default function PeoplePage() {
         }
 
         setProfiles(loadedProfiles);
+        setSuggestedIds(new Set(suggestedProfileIds));
 
         const nextFollowCounts: FollowCounts = Object.fromEntries(
           visibleProfileIds.map((profileId) => [
@@ -343,18 +349,43 @@ export default function PeoplePage() {
       ? profiles
       : profiles.filter((profile) => !blockedProfileIds.has(profile.id));
 
+    const scopedProfiles = visibleProfiles.filter((profile) => {
+      if (activePeopleTool === "following") {
+        return followingIds.has(profile.id);
+      }
+
+      if (activePeopleTool === "followers") {
+        return followerIds.has(profile.id);
+      }
+
+      if (activePeopleTool === "suggested") {
+        return suggestedIds.has(profile.id);
+      }
+
+      return true;
+    });
+
     if (!query) {
-      return visibleProfiles;
+      return scopedProfiles;
     }
 
-    return visibleProfiles.filter((profile) => {
+    return scopedProfiles.filter((profile) => {
       return (
         (profile.username ?? "").toLowerCase().includes(query) ||
         (profile.full_name ?? "").toLowerCase().includes(query) ||
         (profile.bio ?? "").toLowerCase().includes(query)
       );
     });
-  }, [profiles, searchQuery, blockedProfileIds, isAdmin]);
+  }, [
+    profiles,
+    searchQuery,
+    blockedProfileIds,
+    isAdmin,
+    activePeopleTool,
+    followingIds,
+    followerIds,
+    suggestedIds,
+  ]);
 
   async function toggleFollow(
     event: MouseEvent<HTMLButtonElement>,
@@ -430,6 +461,35 @@ export default function PeoplePage() {
   function resetPeopleSearch() {
     setSearchQuery("");
   }
+
+  function togglePeopleTool(tool: "search" | "following" | "followers" | "suggested") {
+    setActivePeopleTool((current) => current === tool ? "none" : tool);
+
+    if (tool === "search") {
+      window.setTimeout(() => {
+        document.getElementById("people-search")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        (document.getElementById("people-search") as HTMLInputElement | null)?.focus();
+      }, 0);
+    }
+  }
+
+  function showAllPeople() {
+    setActivePeopleTool("none");
+  }
+
+  const peopleViewLabel =
+    activePeopleTool === "following"
+      ? "Following"
+      : activePeopleTool === "followers"
+        ? "Followers"
+        : activePeopleTool === "suggested"
+          ? "Suggested"
+          : isAdmin
+            ? "All people"
+            : "All visible people";
 
   if (!authChecked || loading) {
     return (
@@ -508,33 +568,99 @@ export default function PeoplePage() {
               : "See people you follow, people who follow you, and limited suggestions from your existing network."}
           </p>
 
-          <label htmlFor="people-search" className="mt-5 block xl:hidden">
-            <span className="mb-2 block text-sm font-medium text-zinc-300">
-              Search people
-            </span>
-
-            <input
-              id="people-search"
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search visible people by username, name, bio, interests, or projects..."
-              className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500 sm:text-lg"
-            />
-          </label>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2 xl:hidden">
-            {hasActivePeopleSearch ? (
+          <div className="mt-4 xl:hidden">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="People tools rail">
               <button
                 type="button"
-                onClick={resetPeopleSearch}
-                className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                onClick={showAllPeople}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                  activePeopleTool === "none"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
               >
-                Clear search
+                All
               </button>
-            ) : (
+
+              <button
+                type="button"
+                onClick={() => togglePeopleTool("search")}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                  activePeopleTool === "search" || hasActivePeopleSearch
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+                aria-expanded={activePeopleTool === "search"}
+              >
+                Search
+              </button>
+
+              <button
+                type="button"
+                onClick={() => togglePeopleTool("following")}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                  activePeopleTool === "following"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+                aria-expanded={activePeopleTool === "following"}
+              >
+                Following
+              </button>
+
+              <button
+                type="button"
+                onClick={() => togglePeopleTool("followers")}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                  activePeopleTool === "followers"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+                aria-expanded={activePeopleTool === "followers"}
+              >
+                Followers
+              </button>
+
+              <button
+                type="button"
+                onClick={() => togglePeopleTool("suggested")}
+                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                  activePeopleTool === "suggested"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+                aria-expanded={activePeopleTool === "suggested"}
+              >
+                Suggested
+              </button>
+            </div>
+          </div>
+
+          {activePeopleTool === "search" && (
+            <label htmlFor="people-search" className="mt-4 block xl:hidden">
+              <span className="sr-only">
+                Search people
+              </span>
+
+              <input
+                id="people-search"
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search people..."
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3.5 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+              />
+            </label>
+          )}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 xl:hidden">
+            <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+              {peopleViewLabel}
+            </span>
+
+            {hasActivePeopleSearch && (
               <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                {isAdmin ? "Platform view" : "Relationship view"}
+                Search: “{activePeopleSearch}”
               </span>
             )}
 
@@ -542,6 +668,16 @@ export default function PeoplePage() {
               <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
                 {filteredProfiles.length} of {profiles.length} {isAdmin ? "people" : "visible people"}
               </span>
+            )}
+
+            {hasActivePeopleSearch && (
+              <button
+                type="button"
+                onClick={resetPeopleSearch}
+                className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+              >
+                Clear
+              </button>
             )}
           </div>
         </section>
