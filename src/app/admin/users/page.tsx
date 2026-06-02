@@ -566,7 +566,7 @@ export default function AdminUsersPage() {
                         Manual identity verification
                       </h3>
                       <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-                        Use this only for internal review/testing until ID.me is connected. This does not store identity documents or biometric data.
+                        Use this only for internal review/testing. This status does not store identity documents or biometric data.
                       </p>
                     </div>
 
