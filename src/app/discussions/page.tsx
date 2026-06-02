@@ -778,13 +778,13 @@ export default function DiscussionsPage() {
           )}
         </section>
 
-        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-xl shadow-black/10 sm:mb-8 sm:rounded-3xl sm:p-5">
-          <div className="mb-4 flex items-start justify-between gap-3">
+        <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-xl shadow-black/10 sm:mb-8 sm:rounded-3xl sm:p-5">
+          <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <p className="mb-1 text-xs uppercase tracking-[0.22em] text-zinc-500">
+              <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-500">
                 Filters
               </p>
-              <h2 className="text-lg font-semibold tracking-tight">
+              <h2 className="text-base font-semibold tracking-tight sm:text-lg">
                 Choose what to show
               </h2>
             </div>
@@ -800,10 +800,10 @@ export default function DiscussionsPage() {
             )}
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
-                Sort by
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-zinc-900 bg-black/25 p-3">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
+                Sort
               </p>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -841,14 +841,13 @@ export default function DiscussionsPage() {
                 </button>
               </div>
 
-              <p className="mt-3 rounded-2xl border border-zinc-900 bg-black/30 px-3 py-2 text-xs leading-relaxed text-zinc-600">
+              <p className="mt-2 text-xs leading-relaxed text-zinc-600">
                 Signal uses replies, saves, and views.
-                Replies count more than views, and saves count the most.
               </p>
             </div>
 
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
+            <div className="rounded-2xl border border-zinc-900 bg-black/25 p-3">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
                 Topics
               </p>
 
@@ -883,9 +882,9 @@ export default function DiscussionsPage() {
               </div>
             </div>
 
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
-                Purpose lanes
+            <div className="rounded-2xl border border-zinc-900 bg-black/25 p-3">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
+                Purpose
               </p>
 
               <div className="flex flex-wrap gap-2">
@@ -905,8 +904,8 @@ export default function DiscussionsPage() {
                 ))}
               </div>
 
-              <p className="mt-3 rounded-2xl border border-zinc-900 bg-black/30 px-3 py-2 text-xs leading-relaxed text-zinc-600">
-                Purpose lanes help you browse discussions by direction, such as learning, contribution, mastery, or community.
+              <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+                Browse by direction: learning, contribution, mastery, or community.
               </p>
             </div>
           </div>
