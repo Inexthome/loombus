@@ -205,6 +205,8 @@ export default function CreatePage() {
   const [showAttachmentsPanel, setShowAttachmentsPanel] = useState(false);
   const [showWritingTools, setShowWritingTools] = useState(false);
   const [showComposerMetadataMenu, setShowComposerMetadataMenu] = useState(false);
+  const [activeCreateTool, setActiveCreateTool] =
+    useState<"none" | "attachments" | "quality" | "rewrite">("none");
   const [publishing, setPublishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
 
@@ -786,6 +788,10 @@ export default function CreatePage() {
     }
   }
 
+  function toggleCreateTool(tool: "attachments" | "quality" | "rewrite") {
+    setActiveCreateTool((current) => current === tool ? "none" : tool);
+  }
+
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16 loombus-shell-with-right-rail">
       <SafetyWarningModal
@@ -1293,8 +1299,246 @@ export default function CreatePage() {
               )}
             </section>
 
+            <div className="space-y-3 md:hidden">
+              <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                Composer tools
+              </p>
+
+              {!isEditMode && (
+                <button
+                  type="button"
+                  onClick={() => toggleCreateTool("attachments")}
+                  className={`flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition ${
+                    activeCreateTool === "attachments"
+                      ? "border-zinc-600 bg-zinc-900"
+                      : "border-zinc-800 bg-black/40 hover:border-zinc-600"
+                  }`}
+                  aria-expanded={activeCreateTool === "attachments"}
+                >
+                  <span>
+                    <span className="block text-base font-medium text-white">
+                      Attachments
+                    </span>
+                    <span className="mt-1 block text-sm text-zinc-500">
+                      Add images or PDFs to support the discussion.
+                      {attachmentFiles.length > 0 ? ` ${attachmentFiles.length} selected.` : ""}
+                    </span>
+                  </span>
+
+                  <span className="text-2xl text-zinc-500">
+                    →
+                  </span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => toggleCreateTool("quality")}
+                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition ${
+                  activeCreateTool === "quality"
+                    ? "border-zinc-600 bg-zinc-900"
+                    : "border-zinc-800 bg-black/40 hover:border-zinc-600"
+                }`}
+                aria-expanded={activeCreateTool === "quality"}
+              >
+                <span>
+                  <span className="block text-base font-medium text-white">
+                    Quality Check
+                  </span>
+                  <span className="mt-1 block text-sm text-zinc-500">
+                    Review clarity, signal, and discussion strength.
+                  </span>
+                </span>
+
+                <span className="text-2xl text-zinc-500">
+                  →
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleCreateTool("rewrite")}
+                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition ${
+                  activeCreateTool === "rewrite"
+                    ? "border-zinc-600 bg-zinc-900"
+                    : "border-zinc-800 bg-black/40 hover:border-zinc-600"
+                }`}
+                aria-expanded={activeCreateTool === "rewrite"}
+              >
+                <span>
+                  <span className="block text-base font-medium text-white">
+                    Rewrite for Clarity
+                  </span>
+                  <span className="mt-1 block text-sm text-zinc-500">
+                    Generate a clearer version without replacing your text.
+                  </span>
+                </span>
+
+                <span className="text-2xl text-zinc-500">
+                  →
+                </span>
+              </button>
+            </div>
+
+            {!isEditMode && activeCreateTool === "attachments" && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <p className="text-sm leading-relaxed text-zinc-500">
+                    Optional. Attach files that support the discussion. Max 10 MB each.
+                  </p>
+
+                  {attachmentFiles.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearAttachments}
+                      disabled={publishing}
+                      className="w-full rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700 sm:w-fit"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                  onChange={handleAttachmentSelection}
+                  disabled={publishing}
+                  className="block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-black disabled:cursor-not-allowed disabled:text-zinc-700"
+                />
+
+                {attachmentFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {attachmentFiles.map((file) => (
+                      <div
+                        key={`${file.name}-${file.size}-${file.lastModified}`}
+                        className="flex flex-col gap-1 rounded-xl border border-zinc-900 bg-zinc-950 p-3 text-sm text-zinc-400 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <span className="truncate">
+                          {file.name}
+                        </span>
+
+                        <span className="text-xs text-zinc-600">
+                          {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {attachmentMessage && (
+                  <p className="mt-3 text-sm text-zinc-500">
+                    {attachmentMessage}
+                  </p>
+                )}
+              </section>
+            )}
+
+            {activeCreateTool === "quality" && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+                <div className="mb-3 flex flex-col gap-3">
+                  <div>
+                    <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                      Premium Plus AI
+                    </p>
+
+                    <h2 className="text-base font-medium">
+                      Discussion quality check
+                    </h2>
+                  </div>
+
+                  {canUseQualityCheck ? (
+                    <button
+                      type="button"
+                      onClick={runQualityCheck}
+                      disabled={generatingQualityCheck || publishing}
+                      className="w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    >
+                      {generatingQualityCheck ? "Checking..." : "Run quality check"}
+                    </button>
+                  ) : (
+                    <Link
+                      href="/premium"
+                      className="w-full rounded-full border border-zinc-800 px-4 py-2.5 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                    >
+                      Unlock with Premium Plus
+                    </Link>
+                  )}
+                </div>
+
+                {qualityCheckMessage && (
+                  <p className="mb-3 text-sm text-zinc-500">
+                    {qualityCheckMessage}
+                  </p>
+                )}
+
+                {qualityCheck && (
+                  <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
+                    {qualityCheck}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {activeCreateTool === "rewrite" && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+                <div className="mb-3 flex flex-col gap-3">
+                  <div>
+                    <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                      Premium Plus AI
+                    </p>
+
+                    <h2 className="text-base font-medium">
+                      Rewrite for clarity
+                    </h2>
+                  </div>
+
+                  {canUseQualityCheck ? (
+                    <button
+                      type="button"
+                      onClick={runClarityRewrite}
+                      disabled={generatingRewrite || publishing}
+                      className="w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    >
+                      {generatingRewrite ? "Rewriting..." : "Generate rewrite"}
+                    </button>
+                  ) : (
+                    <Link
+                      href="/premium"
+                      className="w-full rounded-full border border-zinc-800 px-4 py-2.5 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                    >
+                      Unlock with Premium Plus
+                    </Link>
+                  )}
+                </div>
+
+                {rewriteMessage && (
+                  <p className="mb-3 text-sm text-zinc-500">
+                    {rewriteMessage}
+                  </p>
+                )}
+
+                {clarityRewrite && (
+                  <div className="space-y-4">
+                    <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
+                      {clarityRewrite}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={applyClarityRewrite}
+                      className="inline-flex w-full justify-center rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                    >
+                      Use rewrite
+                    </button>
+                  </div>
+                )}
+              </section>
+            )}
+
             {!isEditMode && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 xl:hidden">
+              <section className="hidden rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 md:block xl:hidden">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
@@ -1374,7 +1618,7 @@ export default function CreatePage() {
               </section>
             )}
 
-            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 xl:hidden">
+            <section className="hidden rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 md:block xl:hidden">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
