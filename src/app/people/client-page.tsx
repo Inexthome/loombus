@@ -558,7 +558,7 @@ export default function PeoplePage() {
             <button
               type="button"
               onClick={showAllPeople}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
                 activePeopleTool === "none"
                   ? "bg-white text-black"
                   : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
@@ -570,7 +570,7 @@ export default function PeoplePage() {
             <button
               type="button"
               onClick={() => togglePeopleTool("search")}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
                 activePeopleTool === "search" || hasActivePeopleSearch
                   ? "bg-white text-black"
                   : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
@@ -583,7 +583,7 @@ export default function PeoplePage() {
             <button
               type="button"
               onClick={() => togglePeopleTool("following")}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
                 activePeopleTool === "following"
                   ? "bg-white text-black"
                   : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
@@ -596,7 +596,7 @@ export default function PeoplePage() {
             <button
               type="button"
               onClick={() => togglePeopleTool("followers")}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
                 activePeopleTool === "followers"
                   ? "bg-white text-black"
                   : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
@@ -609,7 +609,7 @@ export default function PeoplePage() {
             <button
               type="button"
               onClick={() => togglePeopleTool("suggested")}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
                 activePeopleTool === "suggested"
                   ? "bg-white text-black"
                   : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
