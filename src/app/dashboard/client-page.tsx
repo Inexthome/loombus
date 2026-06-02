@@ -1377,27 +1377,12 @@ export default function DashboardClientPage() {
           </div>
         </MobileDashboardShell>
 
-        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Your activity signals
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                Your private activity snapshot.
-              </h2>
-            </div>
-
-            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
-              Private
-            </span>
-          </div>
-
-          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            These are private signals based on your discussions, replies, topics, saves, and resolved threads. They are not public scores or rankings.
-          </p>
-
+        <MobileDashboardShell
+          eyebrow="Your activity signals"
+          title="Your private activity snapshot."
+          summary="Private signals based on your discussions, replies, topics, saves, and resolved threads. Not public scores or rankings."
+          storageKey="loombus-dashboard-shell-activity-signals-v1"
+        >
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {contributionSignals.map((signal) => (
               <ContributionSignalCard key={signal.label} signal={signal} />
@@ -1433,7 +1418,7 @@ export default function DashboardClientPage() {
               </p>
             )}
           </div>
-        </section>
+        </MobileDashboardShell>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
