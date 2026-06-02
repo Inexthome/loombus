@@ -1299,85 +1299,53 @@ export default function CreatePage() {
               )}
             </section>
 
-            <div className="space-y-3 md:hidden">
-              <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+            <div className="md:hidden">
+              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
                 Composer tools
               </p>
 
-              {!isEditMode && (
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Create composer tools rail">
+                {!isEditMode && (
+                  <button
+                    type="button"
+                    onClick={() => toggleCreateTool("attachments")}
+                    className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                      activeCreateTool === "attachments" || attachmentFiles.length > 0
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    }`}
+                    aria-expanded={activeCreateTool === "attachments"}
+                  >
+                    {attachmentFiles.length > 0 ? `${attachmentFiles.length} attached` : "Attachments"}
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => toggleCreateTool("attachments")}
-                  className={`flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition ${
-                    activeCreateTool === "attachments"
-                      ? "border-zinc-600 bg-zinc-900"
-                      : "border-zinc-800 bg-black/40 hover:border-zinc-600"
+                  onClick={() => toggleCreateTool("quality")}
+                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                    activeCreateTool === "quality"
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
                   }`}
-                  aria-expanded={activeCreateTool === "attachments"}
+                  aria-expanded={activeCreateTool === "quality"}
                 >
-                  <span>
-                    <span className="block text-base font-medium text-white">
-                      Attachments
-                    </span>
-                    <span className="mt-1 block text-sm text-zinc-500">
-                      Add images or PDFs to support the discussion.
-                      {attachmentFiles.length > 0 ? ` ${attachmentFiles.length} selected.` : ""}
-                    </span>
-                  </span>
-
-                  <span className="text-2xl text-zinc-500">
-                    →
-                  </span>
+                  Quality Check
                 </button>
-              )}
 
-              <button
-                type="button"
-                onClick={() => toggleCreateTool("quality")}
-                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition ${
-                  activeCreateTool === "quality"
-                    ? "border-zinc-600 bg-zinc-900"
-                    : "border-zinc-800 bg-black/40 hover:border-zinc-600"
-                }`}
-                aria-expanded={activeCreateTool === "quality"}
-              >
-                <span>
-                  <span className="block text-base font-medium text-white">
-                    Quality Check
-                  </span>
-                  <span className="mt-1 block text-sm text-zinc-500">
-                    Review clarity, signal, and discussion strength.
-                  </span>
-                </span>
-
-                <span className="text-2xl text-zinc-500">
-                  →
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => toggleCreateTool("rewrite")}
-                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition ${
-                  activeCreateTool === "rewrite"
-                    ? "border-zinc-600 bg-zinc-900"
-                    : "border-zinc-800 bg-black/40 hover:border-zinc-600"
-                }`}
-                aria-expanded={activeCreateTool === "rewrite"}
-              >
-                <span>
-                  <span className="block text-base font-medium text-white">
-                    Rewrite for Clarity
-                  </span>
-                  <span className="mt-1 block text-sm text-zinc-500">
-                    Generate a clearer version without replacing your text.
-                  </span>
-                </span>
-
-                <span className="text-2xl text-zinc-500">
-                  →
-                </span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => toggleCreateTool("rewrite")}
+                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                    activeCreateTool === "rewrite"
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                  }`}
+                  aria-expanded={activeCreateTool === "rewrite"}
+                >
+                  Rewrite
+                </button>
+              </div>
             </div>
 
             {!isEditMode && activeCreateTool === "attachments" && (
