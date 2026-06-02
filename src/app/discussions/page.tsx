@@ -187,6 +187,8 @@ function getTopicDiscoveryDescription(topic: string) {
 }
 
 
+const DISCUSSION_FILTER_DRAWER_STORAGE_KEY = "loombus-discussions-filter-drawer-v1";
+
 export default function DiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
@@ -209,6 +211,37 @@ export default function DiscussionsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const canUseAdvancedFilters = hasAdvancedFilterAccess(aiEntitlement, isAdmin);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const stored = window.localStorage.getItem(DISCUSSION_FILTER_DRAWER_STORAGE_KEY);
+
+    if (stored === "open") {
+      setShowExploreFilters(true);
+    }
+
+    if (stored === "closed") {
+      setShowExploreFilters(false);
+    }
+  }, []);
+
+  function toggleExploreFilters() {
+    setShowExploreFilters((current) => {
+      const next = !current;
+
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          DISCUSSION_FILTER_DRAWER_STORAGE_KEY,
+          next ? "open" : "closed"
+        );
+      }
+
+      return next;
+    });
+  }
 
   useEffect(() => {
     async function loadDiscussions() {
@@ -607,11 +640,11 @@ export default function DiscussionsPage() {
 
             <button
               type="button"
-              onClick={() => setShowExploreFilters((current) => !current)}
+              onClick={toggleExploreFilters}
               className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               aria-expanded={showExploreFilters}
             >
-              {showExploreFilters ? "Hide filters" : "Explore / Filters"}
+              {showExploreFilters ? "Hide filters" : hasActiveDiscussionFilters ? "Edit filters" : "Explore / Filters"}
             </button>
           </div>
 
@@ -1142,11 +1175,11 @@ export default function DiscussionsPage() {
 
               <button
                 type="button"
-                onClick={() => setShowExploreFilters((current) => !current)}
+                onClick={toggleExploreFilters}
                 className="mt-4 w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
                 aria-expanded={showExploreFilters}
               >
-                {showExploreFilters ? "Hide filters" : "Explore / Filters"}
+                {showExploreFilters ? "Hide filters" : hasActiveDiscussionFilters ? "Edit filters" : "Explore / Filters"}
               </button>
 
               <div className="mt-4 flex flex-wrap gap-2">
