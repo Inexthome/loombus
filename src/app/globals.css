@@ -688,6 +688,64 @@ html[data-loombus-theme="light"] .loombus-mobile-visitor-existing {
   }
 }
 
+
+/* Mobile Page Density M2A.
+   Lightly tightens dense member pages on phones without changing desktop,
+   mobile nav behavior, or page logic. */
+@media (max-width: 767px) {
+  html[data-loombus-theme] main.min-h-screen > .mx-auto {
+    max-width: 100% !important;
+  }
+
+  html[data-loombus-theme] main.min-h-screen section.rounded-3xl,
+  html[data-loombus-theme] main.min-h-screen section.rounded-2xl,
+  html[data-loombus-theme] main.min-h-screen div.rounded-3xl,
+  html[data-loombus-theme] main.min-h-screen div.rounded-2xl,
+  html[data-loombus-theme] main.min-h-screen article.rounded-2xl {
+    border-radius: 1.1rem !important;
+  }
+
+  html[data-loombus-theme] main.min-h-screen section.rounded-3xl,
+  html[data-loombus-theme] main.min-h-screen section.rounded-2xl {
+    margin-bottom: 1rem !important;
+  }
+
+  html[data-loombus-theme] main.min-h-screen h1.text-3xl {
+    font-size: 1.625rem !important;
+    line-height: 2rem !important;
+  }
+
+  html[data-loombus-theme] main.min-h-screen h2.text-xl,
+  html[data-loombus-theme] main.min-h-screen h2.text-2xl {
+    font-size: 1.125rem !important;
+    line-height: 1.55rem !important;
+  }
+
+  html[data-loombus-theme] main.min-h-screen .tracking-\[0\.25em\],
+  html[data-loombus-theme] main.min-h-screen .tracking-\[0\.3em\],
+  html[data-loombus-theme] main.min-h-screen .tracking-\[0\.22em\] {
+    letter-spacing: 0.14em !important;
+  }
+
+  html[data-loombus-theme] main.min-h-screen input,
+  html[data-loombus-theme] main.min-h-screen textarea,
+  html[data-loombus-theme] main.min-h-screen select {
+    font-size: 1rem !important;
+  }
+
+  html[data-loombus-theme] main.min-h-screen .shadow-2xl {
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16) !important;
+  }
+
+  html[data-loombus-theme] main.min-h-screen .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.85rem !important;
+  }
+
+  html[data-loombus-theme] main.min-h-screen .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.65rem !important;
+  }
+}
+
 /* Loombus desktop right rail resizing */
 :root {
   --loombus-right-rail-width: 320px;
