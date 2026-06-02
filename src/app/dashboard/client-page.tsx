@@ -3,7 +3,7 @@
 import { ProgressiveGuide } from "@/components/progressive-guide";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { WelcomeEmailTrigger } from "@/components/welcome-email-trigger";
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -125,6 +125,60 @@ function withDashboardTimeout<T>(
       clearTimeout(timeoutId);
     }
   });
+}
+
+
+type MobileDashboardShellProps = {
+  eyebrow: string;
+  title: string;
+  summary?: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+};
+
+function MobileDashboardShell({
+  eyebrow,
+  title,
+  summary,
+  defaultOpen = false,
+  children,
+}: MobileDashboardShellProps) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:rounded-3xl sm:p-6">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-500 sm:text-sm sm:tracking-[0.25em]">
+            {eyebrow}
+          </p>
+
+          <h2 className="text-xl font-medium sm:text-3xl">
+            {title}
+          </h2>
+
+          {summary && (
+            <p className="mt-2 text-sm leading-relaxed text-zinc-500 sm:text-base">
+              {summary}
+            </p>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white md:hidden"
+          aria-expanded={open}
+        >
+          {open ? "Hide" : "Show"}
+        </button>
+      </div>
+
+      <div className={open ? "block" : "hidden md:block"}>
+        {children}
+      </div>
+    </section>
+  );
 }
 
 function ContributionFoundationCard({ item }: { item: ContributionFoundationItem }) {
@@ -960,23 +1014,12 @@ export default function DashboardClientPage() {
           Home
         </p>
 
-        <section className="mb-6 overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-6">
-          <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-                What Matters Now
-              </h1>
-
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-                Start, browse, or return to something useful. Loombus works best when the next step is clear.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-500">
-              Signed in
-            </div>
-          </div>
-
+        <MobileDashboardShell
+          eyebrow="Home"
+          title="What Matters Now"
+          summary="Start, browse, or return to something useful. Loombus works best when the next step is clear."
+          defaultOpen
+        >
           <div className="mb-5 grid gap-3 md:grid-cols-3">
             {primaryHomeActions.map((item) => (
               <Link
@@ -995,7 +1038,7 @@ export default function DashboardClientPage() {
                     </p>
                   </div>
 
-                  <span className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
+                  <span className="text-xs text-zinc-600">
                     {item.stat} {item.statLabel}
                   </span>
                 </div>
@@ -1031,7 +1074,7 @@ export default function DashboardClientPage() {
               </span>
             </div>
           </Link>
-        </section>
+        </MobileDashboardShell>
 
         <ProgressiveGuide
           storageKey="loombus-guide-dashboard-getting-started-v1"
