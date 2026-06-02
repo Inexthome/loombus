@@ -2141,20 +2141,7 @@ export default function DiscussionPage() {
           </button>
         </div>
 
-        <div className="mb-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setShowMobileThreadActions((current) => !current)}
-            className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-            aria-expanded={showMobileThreadActions}
-            aria-controls="mobile-thread-actions"
-          >
-            <span>Thread actions</span>
-            <span aria-hidden="true" className="text-lg leading-none">
-              ...
-            </span>
-          </button>
-
+        <div className="discussion-detail-legacy-mobile-actions-hidden mb-3 md:hidden">
           {showMobileThreadActions && (
             <section
               id="mobile-thread-actions"
@@ -2335,78 +2322,7 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <nav
-          aria-label="Discussion reader actions"
-          className="discussion-detail-center-shortcuts mb-4 grid grid-cols-3 gap-1.5 rounded-2xl border border-zinc-900 bg-black/40 p-1.5 sm:mb-10 sm:gap-2 sm:rounded-3xl sm:p-2 xl:hidden"
-        >
-          <a
-            href="#reply-form"
-            className="rounded-xl bg-white px-2.5 py-2.5 text-center text-xs font-medium text-black transition hover:bg-zinc-200 sm:rounded-2xl sm:px-3 sm:py-3 sm:text-sm"
-          >
-            Reply
-          </a>
-
-          <a
-            href="#replies"
-            className="rounded-xl border border-zinc-800 px-2.5 py-2.5 text-center text-xs text-zinc-300 transition hover:border-zinc-600 hover:text-white sm:rounded-2xl sm:px-3 sm:py-3 sm:text-sm"
-          >
-            Replies
-          </a>
-
-          <button
-            type="button"
-            onClick={() => {
-              setShowAiToolsPanel(true);
-              setOpenPremiumAiTool((current) => current || "summary");
-
-              window.setTimeout(() => {
-                document.getElementById("intelligence-layer")?.scrollIntoView({
-                  behavior: "smooth",
-                  block: "start",
-                });
-              }, 0);
-            }}
-            className="rounded-xl border border-zinc-800 px-2.5 py-2.5 text-center text-xs text-zinc-300 transition hover:border-zinc-600 hover:text-white sm:rounded-2xl sm:px-3 sm:py-3 sm:text-sm"
-          >
-            AI tools
-          </button>
-        </nav>
-
-        <section
-          id="intelligence-layer"
-          className="discussion-detail-center-ai-tools mb-4 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/20 sm:mb-6 sm:rounded-3xl sm:p-6 xl:hidden"
-        >
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                Optional tools
-              </p>
-
-              <h2 className="text-xl font-semibold tracking-tight sm:text-3xl">
-                AI tools
-              </h2>
-
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-                Use these only when you want help understanding or organizing the thread.
-              </p>
-
-              {currentUserId && (
-                <p className="mt-4 text-sm text-zinc-500">
-                  Current plan: {subscriptionDisplay.label}. Included AI usage: {aiUsageLabel}.
-                </p>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowAiToolsPanel((current) => !current)}
-              className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
-              aria-expanded={showAiToolsPanel}
-            >
-              {showAiToolsPanel ? "Hide AI tools" : "Show AI tools"}
-            </button>
-          </div>
-        </section>
+        <div id="intelligence-layer" className="scroll-mt-24" />
 
         {showAiToolsPanel && (
           <div className="discussion-detail-center-ai-panel mb-6 xl:hidden">
