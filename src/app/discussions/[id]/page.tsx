@@ -384,6 +384,7 @@ export default function DiscussionPage() {
   const [reportingReplyId, setReportingReplyId] = useState<string | null>(null);
   const [reportedDiscussion, setReportedDiscussion] = useState(false);
   const [reportedReplyIds, setReportedReplyIds] = useState<string[]>([]);
+  const [openReplyActionMenuId, setOpenReplyActionMenuId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [viewerIdentityStatus, setViewerIdentityStatus] = useState("unverified");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -1418,6 +1419,7 @@ export default function DiscussionPage() {
 
   function startReplyEdit(reply: Reply) {
     setMessage("");
+    closeReplyActionMenu();
     setEditingReplyId(reply.id);
     setEditingReplyBody(reply.body);
   }
@@ -1784,6 +1786,14 @@ export default function DiscussionPage() {
 
     setReportedDiscussion(true);
     setReportMessage("Discussion reported.");
+  }
+
+  function toggleReplyActionMenu(replyId: string) {
+    setOpenReplyActionMenuId((current) => current === replyId ? null : replyId);
+  }
+
+  function closeReplyActionMenu() {
+    setOpenReplyActionMenuId(null);
   }
 
   async function handleReportReply(replyId: string) {
@@ -3166,7 +3176,7 @@ export default function DiscussionPage() {
 
           {pinnedReply && (
             <section className="mb-5 rounded-2xl border border-amber-900 bg-amber-950/20 p-4 shadow-2xl shadow-black/30 sm:mb-6 sm:rounded-[1.5rem] sm:p-7">
-              <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.24em] text-amber-300">
                     Pinned reply
@@ -3180,28 +3190,48 @@ export default function DiscussionPage() {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {currentUserId && pinnedReply.user_id !== currentUserId && (
-                    <button
-                      type="button"
-                      onClick={() => startRespondToPoint(pinnedReply)}
-                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
-                    >
-                      Respond to point
-                    </button>
-                  )}
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => toggleReplyActionMenu(`pinned-${pinnedReply.id}`)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-800 bg-black text-xl leading-none text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                    aria-expanded={openReplyActionMenuId === `pinned-${pinnedReply.id}`}
+                    aria-label="Open pinned reply actions"
+                  >
+                    ⋮
+                  </button>
 
-                  {canManageDiscussionStatus && (
-                    <button
-                      type="button"
-                      onClick={() => updatePinnedReply(pinnedReply.id, true)}
-                      disabled={pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"}
-                      className="rounded-full border border-amber-800 px-3 py-1.5 text-xs text-amber-300 transition hover:border-amber-600 hover:text-amber-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                    >
-                      {pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"
-                        ? "Updating..."
-                        : "Unpin"}
-                    </button>
+                  {openReplyActionMenuId === `pinned-${pinnedReply.id}` && (
+                    <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-zinc-800 bg-black p-2 shadow-2xl shadow-black/40">
+                      {currentUserId && pinnedReply.user_id !== currentUserId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            closeReplyActionMenu();
+                            startRespondToPoint(pinnedReply);
+                          }}
+                          className="w-full rounded-xl px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+                        >
+                          Respond to point
+                        </button>
+                      )}
+
+                      {canManageDiscussionStatus && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            closeReplyActionMenu();
+                            updatePinnedReply(pinnedReply.id, true);
+                          }}
+                          disabled={pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"}
+                          className="w-full rounded-xl px-3 py-2 text-left text-sm text-amber-300 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-700"
+                        >
+                          {pinWorkingReplyId === pinnedReply.id || pinWorkingReplyId === "unpin"
+                            ? "Updating..."
+                            : "Unpin"}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -3263,9 +3293,9 @@ export default function DiscussionPage() {
                   key={reply.id}
                   className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-[1.5rem] sm:p-7"
                 >
-                  <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                    <p className="text-sm text-zinc-500">
-                      <span className="inline-flex items-center gap-3">
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <p className="min-w-0 text-sm text-zinc-500">
+                      <span className="inline-flex min-w-0 items-center gap-3">
                         <ProfileAvatar
                           profile={replyProfiles[reply.user_id]}
                           size="sm"
@@ -3274,73 +3304,97 @@ export default function DiscussionPage() {
                       </span>
                     </p>
 
-                    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
-                      {canRespondToPoint && !isEditingReply && (
-                        <button
-                          type="button"
-                          onClick={() => startRespondToPoint(reply)}
-                          disabled={Boolean(editingReplyId)}
-                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                        >
-                          Respond to point
-                        </button>
-                      )}
+                    <div className="relative shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleReplyActionMenu(reply.id)}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-800 bg-black text-xl leading-none text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                        aria-expanded={openReplyActionMenuId === reply.id}
+                        aria-label="Open reply actions"
+                      >
+                        ⋮
+                      </button>
 
-                      {canReportReply && (
-                        <button
-                          type="button"
-                          onClick={() => handleReportReply(reply.id)}
-                          disabled={reportingReplyId === reply.id || hasReportedReply}
-                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                        >
-                          {hasReportedReply
-                            ? "Reported"
-                            : reportingReplyId === reply.id
-                              ? "Reporting..."
-                              : "Report"}
-                        </button>
-                      )}
+                      {openReplyActionMenuId === reply.id && (
+                        <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-zinc-800 bg-black p-2 shadow-2xl shadow-black/40">
+                          {canRespondToPoint && !isEditingReply && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeReplyActionMenu();
+                                startRespondToPoint(reply);
+                              }}
+                              disabled={Boolean(editingReplyId)}
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+                            >
+                              Respond to point
+                            </button>
+                          )}
 
-                      {canManageDiscussionStatus && !isEditingReply && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            updatePinnedReply(
-                              reply.id,
-                              discussion?.pinned_reply_id === reply.id
-                            )
-                          }
-                          disabled={Boolean(pinWorkingReplyId)}
-                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-amber-700 hover:text-amber-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                        >
-                          {pinWorkingReplyId === reply.id
-                            ? "Updating..."
-                            : discussion?.pinned_reply_id === reply.id
-                              ? "Unpin"
-                              : "Pin reply"}
-                        </button>
-                      )}
+                          {canReportReply && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeReplyActionMenu();
+                                handleReportReply(reply.id);
+                              }}
+                              disabled={reportingReplyId === reply.id || hasReportedReply}
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+                            >
+                              {hasReportedReply
+                                ? "Reported"
+                                : reportingReplyId === reply.id
+                                  ? "Reporting..."
+                                  : "Report"}
+                            </button>
+                          )}
 
-                      {canEditReply && !isEditingReply && (
-                        <button
-                          type="button"
-                          onClick={() => startReplyEdit(reply)}
-                          disabled={Boolean(editingReplyId) || updatingReplyId === reply.id}
-                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                        >
-                          Edit
-                        </button>
-                      )}
+                          {canManageDiscussionStatus && !isEditingReply && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeReplyActionMenu();
+                                updatePinnedReply(
+                                  reply.id,
+                                  discussion?.pinned_reply_id === reply.id
+                                );
+                              }}
+                              disabled={Boolean(pinWorkingReplyId)}
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-amber-300 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-700"
+                            >
+                              {pinWorkingReplyId === reply.id
+                                ? "Updating..."
+                                : discussion?.pinned_reply_id === reply.id
+                                  ? "Unpin"
+                                  : "Pin reply"}
+                            </button>
+                          )}
 
-                      {canDeleteReply && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteReply(reply.id)}
-                          disabled={deletingReplyId === reply.id || isEditingReply}
-                          className="rounded-full border border-zinc-800 px-3 py-2 text-center text-xs text-zinc-500 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                        >
-                          {deletingReplyId === reply.id ? "Deleting..." : "Delete"}
-                        </button>
+                          {canEditReply && !isEditingReply && (
+                            <button
+                              type="button"
+                              onClick={() => startReplyEdit(reply)}
+                              disabled={Boolean(editingReplyId) || updatingReplyId === reply.id}
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+                            >
+                              Edit
+                            </button>
+                          )}
+
+                          {canDeleteReply && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeReplyActionMenu();
+                                handleDeleteReply(reply.id);
+                              }}
+                              disabled={deletingReplyId === reply.id || isEditingReply}
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-red-300 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-700"
+                            >
+                              {deletingReplyId === reply.id ? "Deleting..." : "Delete"}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
