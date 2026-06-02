@@ -3500,13 +3500,6 @@ export default function DiscussionPage() {
                 </h2>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowAiToolsPanel((current) => !current)}
-                className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-              >
-                {showAiToolsPanel ? "Hide" : "Show"}
-              </button>
             </div>
 
             {currentUserId ? (
