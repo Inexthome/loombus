@@ -2240,7 +2240,7 @@ export default function DiscussionPage() {
 
         <section
           id="intelligence-layer"
-          className="mb-4 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/20 sm:mb-6 sm:rounded-3xl sm:p-6"
+          className="discussion-detail-center-ai-tools mb-4 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/20 sm:mb-6 sm:rounded-3xl sm:p-6 xl:hidden"
         >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -2275,7 +2275,7 @@ export default function DiscussionPage() {
         </section>
 
         {showAiToolsPanel && (
-          <div className="mb-6">
+          <div className="discussion-detail-center-ai-panel mb-6 xl:hidden">
         <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
           <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div>
