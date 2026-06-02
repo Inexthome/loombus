@@ -133,6 +133,7 @@ type MobileDashboardShellProps = {
   title: string;
   summary?: string;
   defaultOpen?: boolean;
+  storageKey?: string;
   children: ReactNode;
 };
 
@@ -141,9 +142,38 @@ function MobileDashboardShell({
   title,
   summary,
   defaultOpen = false,
+  storageKey,
   children,
 }: MobileDashboardShellProps) {
   const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (!storageKey || typeof window === "undefined") {
+      return;
+    }
+
+    const stored = window.localStorage.getItem(storageKey);
+
+    if (stored === "open") {
+      setOpen(true);
+    }
+
+    if (stored === "closed") {
+      setOpen(false);
+    }
+  }, [storageKey]);
+
+  function toggleOpen() {
+    setOpen((current) => {
+      const next = !current;
+
+      if (storageKey && typeof window !== "undefined") {
+        window.localStorage.setItem(storageKey, next ? "open" : "closed");
+      }
+
+      return next;
+    });
+  }
 
   return (
     <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:rounded-3xl sm:p-6">
@@ -166,7 +196,7 @@ function MobileDashboardShell({
 
         <button
           type="button"
-          onClick={() => setOpen((current) => !current)}
+          onClick={toggleOpen}
           className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white md:hidden"
           aria-expanded={open}
         >
@@ -1018,6 +1048,7 @@ export default function DashboardClientPage() {
           eyebrow="Home"
           title="What Matters Now"
           summary="Start, browse, or return to something useful. Loombus works best when the next step is clear."
+          storageKey="loombus-dashboard-shell-what-matters-now-v1"
           defaultOpen
         >
           <div className="mb-5 grid gap-3 md:grid-cols-3">
@@ -1147,6 +1178,7 @@ export default function DashboardClientPage() {
           eyebrow="Next steps"
           title="What to handle next."
           summary={`A lightweight organization layer based on your profile, activity, saved discussions, and notifications. ${organizationActions.length} actions suggested.`}
+          storageKey="loombus-dashboard-shell-next-steps-v1"
           defaultOpen
         >
           <div className="grid gap-4 md:grid-cols-2">
@@ -1156,27 +1188,12 @@ export default function DashboardClientPage() {
           </div>
         </MobileDashboardShell>
 
-        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Private goals
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                What you want to build toward.
-              </h2>
-            </div>
-
-            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
-              Private
-            </span>
-          </div>
-
-          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            Set private goals around learning, mastery, contribution, or community. These are not public, not scored, and not used as reputation labels.
-          </p>
-
+        <MobileDashboardShell
+          eyebrow="Private goals"
+          title="What you want to build toward."
+          summary="Private goals around learning, mastery, contribution, or community."
+          storageKey="loombus-dashboard-shell-private-goals-v1"
+        >
           <form onSubmit={createPurposeGoal} className="mb-5 rounded-2xl border border-zinc-900 bg-black/40 p-4">
             <div className="grid gap-3 md:grid-cols-[1.4fr_1fr]">
               <input
@@ -1291,7 +1308,7 @@ export default function DashboardClientPage() {
               No private contribution goals yet. Add one goal to connect your activity to a direction.
             </p>
           )}
-        </section>
+        </MobileDashboardShell>
 
         <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
           <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
