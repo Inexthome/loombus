@@ -553,91 +553,75 @@ export default function PeoplePage() {
       <div className="mx-auto max-w-[52rem]">
         <div className="people-shell-grid">
           <div className="min-w-0">
-        <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-8 sm:p-6">
-          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-            People
-          </p>
+        <section className="people-quick-controls mb-4 xl:hidden">
+          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="People tools rail">
+            <button
+              type="button"
+              onClick={showAllPeople}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                activePeopleTool === "none"
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+            >
+              All
+            </button>
 
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-            {isAdmin ? "Platform view: all people" : "Your people network"}
-          </h1>
+            <button
+              type="button"
+              onClick={() => togglePeopleTool("search")}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                activePeopleTool === "search" || hasActivePeopleSearch
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+              aria-expanded={activePeopleTool === "search"}
+            >
+              Search
+            </button>
 
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-            {isAdmin
-              ? "This account can review all visible member profiles without relationship restrictions."
-              : "See people you follow, people who follow you, and limited suggestions from your existing network."}
-          </p>
+            <button
+              type="button"
+              onClick={() => togglePeopleTool("following")}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                activePeopleTool === "following"
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+              aria-expanded={activePeopleTool === "following"}
+            >
+              Following
+            </button>
 
-          <div className="mt-4 xl:hidden">
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="People tools rail">
-              <button
-                type="button"
-                onClick={showAllPeople}
-                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                  activePeopleTool === "none"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-              >
-                All
-              </button>
+            <button
+              type="button"
+              onClick={() => togglePeopleTool("followers")}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                activePeopleTool === "followers"
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+              aria-expanded={activePeopleTool === "followers"}
+            >
+              Followers
+            </button>
 
-              <button
-                type="button"
-                onClick={() => togglePeopleTool("search")}
-                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                  activePeopleTool === "search" || hasActivePeopleSearch
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-                aria-expanded={activePeopleTool === "search"}
-              >
-                Search
-              </button>
-
-              <button
-                type="button"
-                onClick={() => togglePeopleTool("following")}
-                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                  activePeopleTool === "following"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-                aria-expanded={activePeopleTool === "following"}
-              >
-                Following
-              </button>
-
-              <button
-                type="button"
-                onClick={() => togglePeopleTool("followers")}
-                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                  activePeopleTool === "followers"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-                aria-expanded={activePeopleTool === "followers"}
-              >
-                Followers
-              </button>
-
-              <button
-                type="button"
-                onClick={() => togglePeopleTool("suggested")}
-                className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                  activePeopleTool === "suggested"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-                aria-expanded={activePeopleTool === "suggested"}
-              >
-                Suggested
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => togglePeopleTool("suggested")}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                activePeopleTool === "suggested"
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+              aria-expanded={activePeopleTool === "suggested"}
+            >
+              Suggested
+            </button>
           </div>
 
           {activePeopleTool === "search" && (
-            <label htmlFor="people-search" className="mt-4 block xl:hidden">
+            <label htmlFor="people-search" className="mt-3 block">
               <span className="sr-only">
                 Search people
               </span>
@@ -653,7 +637,7 @@ export default function PeoplePage() {
             </label>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 xl:hidden">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
               {peopleViewLabel}
             </span>
