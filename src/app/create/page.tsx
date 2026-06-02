@@ -204,6 +204,7 @@ export default function CreatePage() {
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
   const [showAttachmentsPanel, setShowAttachmentsPanel] = useState(false);
   const [showWritingTools, setShowWritingTools] = useState(false);
+  const [showComposerMetadataMenu, setShowComposerMetadataMenu] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
 
@@ -997,6 +998,122 @@ export default function CreatePage() {
             onKeyDown={handleFormKeyDown}
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
+            <div className="flex items-center justify-between gap-3 md:hidden">
+              <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                Composer
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setShowComposerMetadataMenu((current) => !current)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-black text-xl leading-none text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                aria-expanded={showComposerMetadataMenu}
+                aria-label="Open discussion details"
+              >
+                ⋮
+              </button>
+            </div>
+
+            {showComposerMetadataMenu && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                      Details
+                    </p>
+
+                    <h2 className="text-base font-medium">
+                      Discussion metadata
+                    </h2>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowComposerMetadataMenu(false)}
+                    className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Topic
+                    </label>
+
+                    <select
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                    >
+                      {DISCUSSION_TOPICS.map((topicOption) => (
+                        <option key={topicOption} value={topicOption}>
+                          {topicOption}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Reality Lens optional
+                    </label>
+
+                    <select
+                      value={realityLens}
+                      onChange={(e) => setRealityLens(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                    >
+                      <option value="">No reality lens</option>
+                      {REALITY_LENSES.map((lens) => (
+                        <option key={lens} value={lens}>
+                          {lens}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Purpose Lane optional
+                    </label>
+
+                    <select
+                      value={purposeLane}
+                      onChange={(e) => setPurposeLane(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                    >
+                      <option value="">No purpose lane</option>
+                      {PURPOSE_LANES.map((lane) => (
+                        <option key={lane} value={lane}>
+                          {lane}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Optional Tags
+                    </label>
+
+                    <input
+                      type="text"
+                      value={tagsInput}
+                      onChange={(event) => setTagsInput(event.target.value)}
+                      placeholder="AI ethics, publishing, startups"
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+
+                    <p className="mt-2 text-xs text-zinc-600">
+                      {tagInputHelper}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {draftId && !isEditMode && (
               <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
                 Editing saved draft
@@ -1056,7 +1173,7 @@ export default function CreatePage() {
               </div>
             </div>
 
-            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 xl:hidden">
+            <section className="hidden rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 md:block xl:hidden">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
