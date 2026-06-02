@@ -348,6 +348,36 @@ export default function CreatePage() {
     loadProfileStatus();
   }, []);
 
+  useEffect(() => {
+    if (!showComposerMetadataMenu) {
+      return;
+    }
+
+    function handleCreateMetadataMenuOutsideClick(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+
+      if (target?.closest("[data-create-metadata-menu]")) {
+        return;
+      }
+
+      setShowComposerMetadataMenu(false);
+    }
+
+    function handleCreateMetadataMenuKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        setShowComposerMetadataMenu(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleCreateMetadataMenuOutsideClick);
+    document.addEventListener("keydown", handleCreateMetadataMenuKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleCreateMetadataMenuOutsideClick);
+      document.removeEventListener("keydown", handleCreateMetadataMenuKeyDown);
+    };
+  }, [showComposerMetadataMenu]);
+
   const missingProfileFields = useMemo(
     () => getMissingProfileFields(profile),
     [profile]
@@ -1004,7 +1034,7 @@ export default function CreatePage() {
             onKeyDown={handleFormKeyDown}
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
-            <div className="flex items-center justify-between gap-3 md:hidden">
+            <div className="flex items-center justify-between gap-3 md:hidden" data-create-metadata-menu>
               <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
                 Composer
               </p>
@@ -1021,7 +1051,7 @@ export default function CreatePage() {
             </div>
 
             {showComposerMetadataMenu && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden" data-create-metadata-menu>
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div>
                     <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-600">
