@@ -403,6 +403,8 @@ export default function DiscussionPage() {
   const [showMobileThreadActions, setShowMobileThreadActions] = useState(false);
   const [showAiToolsPanel, setShowAiToolsPanel] = useState(false);
   const [showReplyHelpersPanel, setShowReplyHelpersPanel] = useState(false);
+  const [activeDetailTool, setActiveDetailTool] =
+    useState<"none" | "ai" | "helpers" | "related" | "more">("none");
   const [discussionSummary, setDiscussionSummary] = useState<DiscussionSummary | null>(null);
   const [summaryMessage, setSummaryMessage] = useState("");
   const [generatingSummary, setGeneratingSummary] = useState(false);
@@ -701,6 +703,55 @@ export default function DiscussionPage() {
 
   function clearReferencedReply() {
     setReferencedReply(null);
+  }
+
+  function scrollToDetailSection(sectionId: string) {
+    window.setTimeout(() => {
+      document.getElementById(sectionId)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
+  }
+
+  function openDetailAiTools() {
+    setActiveDetailTool((current) => current === "ai" ? "none" : "ai");
+    setShowAiToolsPanel(true);
+    setOpenPremiumAiTool((current) => current || "summary");
+    scrollToDetailSection("intelligence-layer");
+  }
+
+  function openDetailReplyHelpers() {
+    setActiveDetailTool((current) => current === "helpers" ? "none" : "helpers");
+    setShowReplyHelpersPanel(true);
+    scrollToDetailSection("replies");
+  }
+
+  function openDetailRelated() {
+    setActiveDetailTool((current) => current === "related" ? "none" : "related");
+    scrollToDetailSection("related-discussions");
+  }
+
+  function openDetailMore() {
+    setActiveDetailTool((current) => current === "more" ? "none" : "more");
+    setShowMobileThreadActions(true);
+  }
+
+  function openDetailReplyForm() {
+    scrollToDetailSection("reply-form");
+  }
+
+  function openDetailReplies() {
+    scrollToDetailSection("replies");
+  }
+
+  function toggleDetailSave() {
+    if (isSaved) {
+      handleRemoveBookmark();
+      return;
+    }
+
+    handleBookmark();
   }
 
   function startClarificationRequest(request: ClarificationRequest) {
@@ -2007,6 +2058,89 @@ export default function DiscussionPage() {
           </section>
         )}
 
+        <div className="mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:hidden" aria-label="Discussion detail tools rail">
+          <button
+            type="button"
+            onClick={openDetailReplyForm}
+            className="shrink-0 rounded-full bg-white px-3.5 py-2 text-sm font-medium text-black transition hover:bg-zinc-200"
+          >
+            Reply
+          </button>
+
+          <button
+            type="button"
+            onClick={openDetailReplies}
+            className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-3.5 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+          >
+            Replies
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleDetailSave}
+            disabled={savingBookmark}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isSaved
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+            }`}
+          >
+            {isSaved ? "Saved" : "Save"}
+          </button>
+
+          <button
+            type="button"
+            onClick={openDetailAiTools}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              activeDetailTool === "ai" || showAiToolsPanel
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+            }`}
+          >
+            AI
+          </button>
+
+          {relatedDiscussions.length > 0 && (
+            <button
+              type="button"
+              onClick={openDetailRelated}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                activeDetailTool === "related"
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+            >
+              Related
+            </button>
+          )}
+
+          {currentUserId && (
+            <button
+              type="button"
+              onClick={openDetailReplyHelpers}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                activeDetailTool === "helpers" || showReplyHelpersPanel
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+            >
+              Helpers
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={openDetailMore}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+              activeDetailTool === "more" || showMobileThreadActions
+                ? "bg-white text-black"
+                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+            }`}
+          >
+            More
+          </button>
+        </div>
+
         <div className="mb-3 md:hidden">
           <button
             type="button"
@@ -2846,7 +2980,7 @@ export default function DiscussionPage() {
         )}
 
         {relatedDiscussions.length > 0 && (
-          <div className="discussion-detail-center-related mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7 xl:hidden">
+          <div id="related-discussions" className="discussion-detail-center-related mb-6 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7 xl:hidden">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
