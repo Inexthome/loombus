@@ -1414,6 +1414,163 @@ export default function CreatePage() {
 
             </div>
 
+            {/* AI Assist shell */}
+            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
+              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                    AI Assist
+                  </p>
+
+                  <h2 className="text-lg font-medium sm:text-xl">
+                    Improve before publishing.
+                  </h2>
+
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                    Check the quality of your post or generate a clearer version before you publish.
+                  </p>
+                </div>
+              </div>
+
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Create AI Assist rail">
+                <button
+                  type="button"
+                  onClick={() => toggleCreateTool("quality")}
+                  className={`shrink-0 rounded-full px-4 py-2.5 text-sm transition ${
+                    activeCreateTool === "quality"
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                  }`}
+                  aria-expanded={activeCreateTool === "quality"}
+                >
+                  Quality Check
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => toggleCreateTool("rewrite")}
+                  className={`shrink-0 rounded-full px-4 py-2.5 text-sm transition ${
+                    activeCreateTool === "rewrite"
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                  }`}
+                  aria-expanded={activeCreateTool === "rewrite"}
+                >
+                  Rewrite
+                </button>
+              </div>
+
+              {activeCreateTool === "quality" && (
+                <section className="mt-4 rounded-2xl border border-zinc-800 bg-black p-3 sm:p-5">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                        Premium Plus AI
+                      </p>
+
+                      <h3 className="text-base font-medium">
+                        Discussion quality check
+                      </h3>
+
+                      <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                        Review clarity, signal, usefulness, and risk before posting.
+                      </p>
+                    </div>
+
+                    {canUseQualityCheck ? (
+                      <button
+                        type="button"
+                        onClick={runQualityCheck}
+                        disabled={generatingQualityCheck || publishing}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                      >
+                        {generatingQualityCheck ? "Checking..." : "Run quality check"}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/premium"
+                        className="w-full rounded-full border border-zinc-800 px-4 py-2.5 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white sm:w-fit"
+                      >
+                        Unlock with Premium Plus
+                      </Link>
+                    )}
+                  </div>
+
+                  {qualityCheckMessage && (
+                    <p className="mb-3 text-sm text-zinc-500">
+                      {qualityCheckMessage}
+                    </p>
+                  )}
+
+                  {qualityCheck && (
+                    <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
+                      {qualityCheck}
+                    </div>
+                  )}
+                </section>
+              )}
+
+              {activeCreateTool === "rewrite" && (
+                <section className="mt-4 rounded-2xl border border-zinc-800 bg-black p-3 sm:p-5">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                        Premium Plus AI
+                      </p>
+
+                      <h3 className="text-base font-medium">
+                        Rewrite for clarity
+                      </h3>
+
+                      <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                        Generate a clearer version. It will not replace your text unless you apply it.
+                      </p>
+                    </div>
+
+                    {canUseQualityCheck ? (
+                      <button
+                        type="button"
+                        onClick={runClarityRewrite}
+                        disabled={generatingRewrite || publishing}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                      >
+                        {generatingRewrite ? "Rewriting..." : "Generate rewrite"}
+                      </button>
+                    ) : (
+                      <Link
+                        href="/premium"
+                        className="w-full rounded-full border border-zinc-800 px-4 py-2.5 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white sm:w-fit"
+                      >
+                        Unlock with Premium Plus
+                      </Link>
+                    )}
+                  </div>
+
+                  {rewriteMessage && (
+                    <p className="mb-3 text-sm text-zinc-500">
+                      {rewriteMessage}
+                    </p>
+                  )}
+
+                  {clarityRewrite && (
+                    <div className="space-y-4">
+                      <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
+                        {clarityRewrite}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={applyClarityRewrite}
+                        className="inline-flex w-full justify-center rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white sm:w-fit"
+                      >
+                        Use rewrite
+                      </button>
+                    </div>
+                  )}
+                </section>
+              )}
+            </section>
+
             <section className="hidden">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -1533,13 +1690,13 @@ export default function CreatePage() {
               )}
             </section>
 
-            <div className="md:hidden">
-              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
-                Composer tools
-              </p>
+            {!isEditMode && (
+              <div className="md:hidden">
+                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Composer tools
+                </p>
 
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Create composer tools rail">
-                {!isEditMode && (
+                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Create composer tools rail">
                   <button
                     type="button"
                     onClick={() => toggleCreateTool("attachments")}
@@ -1552,35 +1709,9 @@ export default function CreatePage() {
                   >
                     {attachmentFiles.length > 0 ? `${attachmentFiles.length} attached` : "Attachments"}
                   </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => toggleCreateTool("quality")}
-                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                    activeCreateTool === "quality"
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                  }`}
-                  aria-expanded={activeCreateTool === "quality"}
-                >
-                  Quality Check
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => toggleCreateTool("rewrite")}
-                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                    activeCreateTool === "rewrite"
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                  }`}
-                  aria-expanded={activeCreateTool === "rewrite"}
-                >
-                  Rewrite
-                </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {!isEditMode && activeCreateTool === "attachments" && (
               <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
@@ -1633,108 +1764,6 @@ export default function CreatePage() {
                   <p className="mt-3 text-sm text-zinc-500">
                     {attachmentMessage}
                   </p>
-                )}
-              </section>
-            )}
-
-            {activeCreateTool === "quality" && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
-                <div className="mb-3 flex flex-col gap-3">
-                  <div>
-                    <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
-                      Premium Plus AI
-                    </p>
-
-                    <h2 className="text-base font-medium">
-                      Discussion quality check
-                    </h2>
-                  </div>
-
-                  {canUseQualityCheck ? (
-                    <button
-                      type="button"
-                      onClick={runQualityCheck}
-                      disabled={generatingQualityCheck || publishing}
-                      className="w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                    >
-                      {generatingQualityCheck ? "Checking..." : "Run quality check"}
-                    </button>
-                  ) : (
-                    <Link
-                      href="/premium"
-                      className="w-full rounded-full border border-zinc-800 px-4 py-2.5 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-                    >
-                      Unlock with Premium Plus
-                    </Link>
-                  )}
-                </div>
-
-                {qualityCheckMessage && (
-                  <p className="mb-3 text-sm text-zinc-500">
-                    {qualityCheckMessage}
-                  </p>
-                )}
-
-                {qualityCheck && (
-                  <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
-                    {qualityCheck}
-                  </div>
-                )}
-              </section>
-            )}
-
-            {activeCreateTool === "rewrite" && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
-                <div className="mb-3 flex flex-col gap-3">
-                  <div>
-                    <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
-                      Premium Plus AI
-                    </p>
-
-                    <h2 className="text-base font-medium">
-                      Rewrite for clarity
-                    </h2>
-                  </div>
-
-                  {canUseQualityCheck ? (
-                    <button
-                      type="button"
-                      onClick={runClarityRewrite}
-                      disabled={generatingRewrite || publishing}
-                      className="w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                    >
-                      {generatingRewrite ? "Rewriting..." : "Generate rewrite"}
-                    </button>
-                  ) : (
-                    <Link
-                      href="/premium"
-                      className="w-full rounded-full border border-zinc-800 px-4 py-2.5 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-                    >
-                      Unlock with Premium Plus
-                    </Link>
-                  )}
-                </div>
-
-                {rewriteMessage && (
-                  <p className="mb-3 text-sm text-zinc-500">
-                    {rewriteMessage}
-                  </p>
-                )}
-
-                {clarityRewrite && (
-                  <div className="space-y-4">
-                    <div className="whitespace-pre-wrap rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-300">
-                      {clarityRewrite}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={applyClarityRewrite}
-                      className="inline-flex w-full justify-center rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                    >
-                      Use rewrite
-                    </button>
-                  </div>
                 )}
               </section>
             )}
@@ -1820,7 +1849,7 @@ export default function CreatePage() {
               </section>
             )}
 
-            <section className="hidden rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 md:block xl:hidden">
+            <section className="hidden">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
@@ -2068,6 +2097,24 @@ export default function CreatePage() {
                     Shows the direction: learning, contribution, mastery, or community.
                   </p>
                 </div>
+
+                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  <p className="mb-1 text-sm font-medium text-zinc-300">
+                    Quality Check
+                  </p>
+                  <p className="text-xs leading-relaxed text-zinc-600">
+                    Reviews the post before publishing.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  <p className="mb-1 text-sm font-medium text-zinc-300">
+                    Rewrite
+                  </p>
+                  <p className="text-xs leading-relaxed text-zinc-600">
+                    Helps make the body clearer.
+                  </p>
+                </div>
               </div>
 
               <div className="grid gap-2">
@@ -2085,17 +2132,7 @@ export default function CreatePage() {
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => setShowWritingTools((current) => !current)}
-                  className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-                  aria-expanded={showWritingTools}
-                >
-                  <span>Optional writing tools</span>
-                  <span className="text-xs text-zinc-600">
-                    {showWritingTools ? "Hide" : "Open"}
-                  </span>
-                </button>
+
               </div>
             </section>
           )}
@@ -2242,7 +2279,7 @@ export default function CreatePage() {
             </section>
           )}
 
-          {authChecked && isLoggedIn && showWritingTools && (
+          {false && authChecked && isLoggedIn && showWritingTools && (
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
               <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
                 Optional writing tools
