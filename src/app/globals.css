@@ -751,6 +751,20 @@ html[data-loombus-theme="light"] .loombus-mobile-visitor-existing {
   --loombus-right-rail-width: 320px;
 }
 
+@media (min-width: 1024px) {
+  :root {
+    --loombus-tablet-right-rail-width: 280px;
+  }
+
+  body:has(.loombus-right-rail) main {
+    padding-right: var(--loombus-tablet-right-rail-width) !important;
+  }
+
+  .loombus-right-rail {
+    width: var(--loombus-tablet-right-rail-width) !important;
+  }
+}
+
 @media (min-width: 1280px) {
   .loombus-shell-with-right-rail {
     padding-right: var(--loombus-right-rail-width) !important;

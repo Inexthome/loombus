@@ -2018,7 +2018,7 @@ export default function CreatePage() {
             {message && <p className="text-sm text-zinc-400">{message}</p>}
           </form>
         )}
-      <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl xl:block">
+      <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
         <div className="space-y-4">
           {authChecked && isLoggedIn && !isEditMode && (
             <ProgressiveGuide
