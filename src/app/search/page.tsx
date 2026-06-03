@@ -27,6 +27,138 @@ type BlockRow = {
   blocked_id: string;
 };
 
+type PlatformSearchResult = {
+  title: string;
+  description: string;
+  href: string;
+  category: string;
+  keywords: string[];
+};
+
+const PLATFORM_SEARCH_RESULTS: PlatformSearchResult[] = [
+  {
+    title: "Labs",
+    description: "Request, vote on, and review experimental Loombus features.",
+    href: "/labs",
+    category: "Premium tools",
+    keywords: ["labs", "lab", "experiments", "experimental", "features", "requests", "vote", "premium"],
+  },
+  {
+    title: "Settings",
+    description: "Manage your account, billing, notifications, privacy, and preferences.",
+    href: "/settings",
+    category: "Account",
+    keywords: ["settings", "account", "billing", "manage billing", "preferences", "privacy", "password", "security"],
+  },
+  {
+    title: "Alerts",
+    description: "Open notifications, topic alerts, follows, replies, and platform updates.",
+    href: "/notifications",
+    category: "Activity",
+    keywords: ["alerts", "notifications", "notification", "topic alerts", "replies", "follows", "activity"],
+  },
+  {
+    title: "Saved",
+    description: "Return to saved discussions, private notes, folders, and bookmarks.",
+    href: "/saved",
+    category: "Library",
+    keywords: ["saved", "bookmarks", "bookmark", "folders", "notes", "private notes", "saved discussions"],
+  },
+  {
+    title: "Create discussion",
+    description: "Start a new discussion, save a draft, add tags, and use composer tools.",
+    href: "/create",
+    category: "Create",
+    keywords: ["create", "new discussion", "post", "write", "draft", "composer", "publish", "tags"],
+  },
+  {
+    title: "People",
+    description: "Find people you follow, followers, suggested contributors, and profiles.",
+    href: "/people",
+    category: "Network",
+    keywords: ["people", "members", "profiles", "contributors", "following", "followers", "suggested", "network"],
+  },
+  {
+    title: "Profile",
+    description: "Edit your public profile, bio, avatar, creator tools, and support links.",
+    href: "/profile",
+    category: "Account",
+    keywords: ["profile", "bio", "avatar", "public profile", "creator", "support link", "identity"],
+  },
+  {
+    title: "Premium",
+    description: "Review Premium plans, Premium Plus, AI limits, and Extra AI Pack options.",
+    href: "/premium",
+    category: "Subscription",
+    keywords: ["premium", "premium plus", "subscription", "upgrade", "ai", "extra ai pack", "plans"],
+  },
+  {
+    title: "AI usage",
+    description: "Check AI usage, monthly limits, and premium AI activity.",
+    href: "/ai-usage",
+    category: "Premium tools",
+    keywords: ["ai usage", "usage", "limits", "monthly limit", "premium ai", "ai actions"],
+  },
+  {
+    title: "My Activity",
+    description: "Review your discussions, replies, saved shortcuts, and activity history.",
+    href: "/my-activity",
+    category: "Activity",
+    keywords: ["my activity", "activity", "my discussions", "my replies", "history", "shortcuts"],
+  },
+  {
+    title: "My Discussions",
+    description: "Manage your published discussions and drafts.",
+    href: "/my-discussions",
+    category: "Activity",
+    keywords: ["my discussions", "published", "drafts", "manage posts", "my posts"],
+  },
+  {
+    title: "My Replies",
+    description: "Review replies you have written across discussions.",
+    href: "/my-replies",
+    category: "Activity",
+    keywords: ["my replies", "replies", "comments", "responses"],
+  },
+  {
+    title: "Reading History",
+    description: "Return to discussions you recently viewed.",
+    href: "/reading-history",
+    category: "Library",
+    keywords: ["reading history", "history", "viewed", "recently viewed", "read"],
+  },
+  {
+    title: "Following Feed",
+    description: "See discussions and replies from people you follow.",
+    href: "/following",
+    category: "Network",
+    keywords: ["following", "following feed", "people i follow", "followed discussions", "followed replies"],
+  },
+  {
+    title: "Blocked Users",
+    description: "Review and manage blocked members.",
+    href: "/blocked-users",
+    category: "Safety",
+    keywords: ["blocked", "blocked users", "block", "unblock", "safety"],
+  },
+];
+
+function matchesPlatformResult(result: PlatformSearchResult, cleanQuery: string) {
+  if (!cleanQuery) {
+    return true;
+  }
+
+  return [
+    result.title,
+    result.description,
+    result.category,
+    ...result.keywords,
+  ]
+    .join(" ")
+    .toLowerCase()
+    .includes(cleanQuery);
+}
+
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
@@ -156,6 +288,12 @@ export default function SearchPage() {
 
   const cleanQuery = query.trim().toLowerCase();
 
+  const platformResults = useMemo(() => {
+    return PLATFORM_SEARCH_RESULTS.filter((result) =>
+      matchesPlatformResult(result, cleanQuery)
+    ).slice(0, cleanQuery ? 12 : 8);
+  }, [cleanQuery]);
+
   const discussionResults = useMemo(() => {
     if (!cleanQuery) {
       return discussions.slice(0, 8);
@@ -222,7 +360,7 @@ export default function SearchPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-            Find discussions, topics, contributors, and useful signals faster.
+            Find discussions, people, platform pages, settings, tools, and useful signals faster.
           </p>
 
           <label htmlFor="global-search" className="mt-5 block xl:hidden">
@@ -235,7 +373,7 @@ export default function SearchPage() {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search discussions, topics, people, or ideas..."
+              placeholder="Search labs, settings, saved, alerts, discussions, or people..."
               autoFocus
               className="w-full rounded-2xl border border-zinc-800 bg-black px-5 py-4 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500 sm:text-lg"
             />
@@ -257,6 +395,10 @@ export default function SearchPage() {
             )}
 
             <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+              {loading ? "Loading..." : `${platformResults.length} platform`}
+            </span>
+
+            <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
               {loading ? "Loading..." : `${discussionResults.length} discussions`}
             </span>
 
@@ -267,6 +409,50 @@ export default function SearchPage() {
             )}
           </div>
         </section>
+
+        {platformResults.length > 0 && (
+          <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-8 sm:p-6">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Platform
+                </p>
+
+                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  Platform pages and tools
+                </h2>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {platformResults.map((result) => (
+                <Link
+                  key={result.href}
+                  href={result.href}
+                  className="group rounded-2xl border border-zinc-800 bg-black/40 p-4 transition hover:border-zinc-600"
+                >
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="font-medium text-zinc-100 transition group-hover:text-white">
+                      {result.title}
+                    </p>
+
+                    <span className="shrink-0 rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
+                      {result.category}
+                    </span>
+                  </div>
+
+                  <p className="text-sm leading-relaxed text-zinc-500">
+                    {result.description}
+                  </p>
+
+                  <p className="mt-3 text-xs text-zinc-600 transition group-hover:text-zinc-400">
+                    Open {result.title} →
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {message && (
           <p className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
@@ -471,7 +657,7 @@ export default function SearchPage() {
                       type="search"
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search discussions, people, topics, or ideas..."
+                      placeholder="Search labs, settings, saved, alerts, discussions, or people..."
                       autoFocus
                       className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
                     />
