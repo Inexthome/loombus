@@ -10,6 +10,7 @@ export function TopicAlertsControl({
   canUseTopicAlerts: boolean;
 }) {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [showTopicAlerts, setShowTopicAlerts] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -120,17 +121,40 @@ export function TopicAlertsControl({
 
   return (
     <section className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
-      <div className="mb-5">
-        <p className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-600">
-          Premium alerts
-        </p>
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-600">
+            Premium alerts
+          </p>
 
-        <h2 className="text-xl font-semibold text-white">Topic alerts</h2>
+          <h2 className="text-xl font-semibold text-white">Topic alerts</h2>
 
-        <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-          Choose topic lanes you want to track. Loombus will send an in-app
-          notification when a new discussion is published in those topics.
-        </p>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+            Choose topic lanes you want to track. Loombus will send an in-app
+            notification when a new discussion is published in those topics.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowTopicAlerts((current) => !current)}
+          className="w-full shrink-0 rounded-full border border-zinc-800 px-4 py-2.5 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white sm:w-fit"
+          aria-expanded={showTopicAlerts}
+        >
+          {showTopicAlerts ? "Hide alerts" : "Show alerts"}
+        </button>
+      </div>
+
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+          {loading ? "Loading alerts" : `${selectedTopics.length} selected`}
+        </span>
+
+        {!showTopicAlerts && selectedTopics.length > 0 && (
+          <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+            Hidden
+          </span>
+        )}
       </div>
 
       {!canUseTopicAlerts && (
@@ -140,42 +164,46 @@ export function TopicAlertsControl({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {DISCUSSION_TOPICS.map((topic) => {
-          const selected = selectedTopicSet.has(topic);
+      {showTopicAlerts && (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {DISCUSSION_TOPICS.map((topic) => {
+              const selected = selectedTopicSet.has(topic);
 
-          return (
+              return (
+                <button
+                  key={topic}
+                  type="button"
+                  onClick={() => toggleTopic(topic)}
+                  disabled={!canUseTopicAlerts || loading}
+                  className={
+                    selected
+                      ? "rounded-full border border-white bg-white px-4 py-2 text-sm text-black disabled:cursor-not-allowed"
+                      : "rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+                  }
+                >
+                  {topic}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
-              key={topic}
               type="button"
-              onClick={() => toggleTopic(topic)}
-              disabled={!canUseTopicAlerts || loading}
-              className={
-                selected
-                  ? "rounded-full border border-white bg-white px-4 py-2 text-sm text-black disabled:cursor-not-allowed"
-                  : "rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
-              }
+              onClick={saveTopicAlerts}
+              disabled={!canUseTopicAlerts || loading || saving}
+              className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
             >
-              {topic}
+              {saving ? "Saving alerts..." : "Save topic alerts"}
             </button>
-          );
-        })}
-      </div>
 
-      <div className="mt-5 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={saveTopicAlerts}
-          disabled={!canUseTopicAlerts || loading || saving}
-          className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
-        >
-          {saving ? "Saving alerts..." : "Save topic alerts"}
-        </button>
-
-        <span className="text-sm text-zinc-600">
-          {selectedTopics.length} selected
-        </span>
-      </div>
+            <span className="text-sm text-zinc-600">
+              {selectedTopics.length} selected
+            </span>
+          </div>
+        </>
+      )}
 
       {message && (
         <p className="mt-3 text-sm text-zinc-500">
