@@ -1053,7 +1053,7 @@ export default function CreatePage() {
             onKeyDown={handleFormKeyDown}
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
-            <div className="md:hidden">
+            <div>
               <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
                 Discussion details
               </p>
@@ -1138,7 +1138,7 @@ export default function CreatePage() {
             </div>
 
             {activeCreateMetadataTool === "tags" && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3">
                 <label className="mb-2 block text-sm text-zinc-400">
                   Optional Tags
                 </label>
@@ -1168,14 +1168,14 @@ export default function CreatePage() {
 
             {activeCreateMetadataTool !== "none" && activeCreateMetadataTool !== "tags" && (
               <section
-                className={`fixed inset-0 z-50 flex bg-black/70 p-3 backdrop-blur-sm md:hidden ${
-                  activeCreateMetadataTool === "other" ? "items-center" : "items-end"
+                className={`fixed inset-0 z-50 flex bg-black/70 p-3 backdrop-blur-sm ${
+                  activeCreateMetadataTool === "other" ? "items-center" : "items-end md:items-center"
                 }`}
                 role="dialog"
                 aria-modal="true"
                 aria-label="Create signal selector"
               >
-                <div className="max-h-[82vh] w-full overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/60">
+                <div className="mx-auto max-h-[82vh] w-full overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/60 md:max-w-xl md:p-5">
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
                       <p className="mb-1 text-xs uppercase tracking-[0.22em] text-zinc-600">
@@ -1414,7 +1414,7 @@ export default function CreatePage() {
 
             </div>
 
-            <section className="hidden rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 md:block xl:hidden">
+            <section className="hidden">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
@@ -2027,35 +2027,50 @@ export default function CreatePage() {
 
           {authChecked && isLoggedIn && (
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <div className="mb-5 flex items-start justify-between gap-3">
-                <div>
-                  <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                    Create tools
+              <div className="mb-5">
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  Create signal guide
+                </p>
+
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Shape the post.
+                </h2>
+
+                <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                  Use the Create shell rail to classify the discussion before publishing.
+                </p>
+              </div>
+
+              <div className="mb-4 grid gap-2">
+                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  <p className="mb-1 text-sm font-medium text-zinc-300">
+                    Topic
                   </p>
+                  <p className="text-xs leading-relaxed text-zinc-600">
+                    Public category for discovery. Choose Other when a signal fits better.
+                  </p>
+                </div>
 
-                  <h2 className="text-xl font-semibold tracking-tight">
-                    Shape the post.
-                  </h2>
+                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  <p className="mb-1 text-sm font-medium text-zinc-300">
+                    Reality Lens
+                  </p>
+                  <p className="text-xs leading-relaxed text-zinc-600">
+                    Adds the human-life context behind the discussion.
+                  </p>
+                </div>
 
-                  <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                    Details, attachments, and writing tools live here. The center stays focused on writing.
+                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                  <p className="mb-1 text-sm font-medium text-zinc-300">
+                    Purpose Lane
+                  </p>
+                  <p className="text-xs leading-relaxed text-zinc-600">
+                    Shows the direction: learning, contribution, mastery, or community.
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowOptionalDetails((current) => !current)}
-                  className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-                  aria-expanded={showOptionalDetails}
-                >
-                  <span>Optional details</span>
-                  <span className="text-xs text-zinc-600">
-                    {showOptionalDetails ? "Hide" : "Show"}
-                  </span>
-                </button>
-
                 {!isEditMode && (
                   <button
                     type="button"
@@ -2085,7 +2100,7 @@ export default function CreatePage() {
             </section>
           )}
 
-          {authChecked && isLoggedIn && showOptionalDetails && (
+          {false && authChecked && isLoggedIn && showOptionalDetails && (
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
               <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
                 Optional details
