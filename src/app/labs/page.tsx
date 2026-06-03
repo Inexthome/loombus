@@ -48,7 +48,7 @@ const STATUS_CLASSES: Record<LabsFeatureRequestStatus, string> = {
 };
 
 function hasLabsAccess(entitlement: AiEntitlement, isAdmin: boolean) {
-  if (isAdmin) {
+  if (isAdmin || entitlement?.tier === "admin") {
     return true;
   }
 
@@ -99,7 +99,8 @@ export default function LabsPage() {
             .maybeSingle(),
         ]);
 
-      const resolvedIsAdmin = Boolean(profileData?.is_admin);
+      const resolvedIsAdmin =
+        Boolean(profileData?.is_admin) || entitlementData?.tier === "admin";
       const resolvedEntitlement = (entitlementData ?? null) as AiEntitlement;
       const resolvedCanUseLabs = hasLabsAccess(
         resolvedEntitlement,

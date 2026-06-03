@@ -535,6 +535,7 @@ export default function PeoplePage() {
 
   function showAllPeople() {
     setActivePeopleTool("none");
+    setSearchQuery("");
   }
 
   const peopleViewLabel =
