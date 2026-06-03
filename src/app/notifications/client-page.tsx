@@ -494,6 +494,35 @@ export default function NotificationsClientPage() {
     },
   ];
 
+  function showAllAlerts() {
+    setFilterMode("all");
+    setTypeFilter("all");
+    setSortMode("newest");
+  }
+
+  function showUnreadAlerts() {
+    setFilterMode("unread");
+    setTypeFilter("all");
+    setSortMode("newest");
+  }
+
+  function showTypeAlerts(type: NotificationTypeFilter) {
+    setFilterMode("all");
+    setTypeFilter(type);
+    setSortMode("newest");
+  }
+
+  const activeMobileAlertsView =
+    filterMode === "unread"
+      ? "Unread"
+      : canUseAdvancedControls && typeFilter === "reply"
+        ? "Replies"
+        : canUseAdvancedControls && typeFilter === "follow"
+          ? "Follows"
+          : canUseAdvancedControls && typeFilter === "mention"
+            ? "Mentions"
+            : "All alerts";
+
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12 loombus-shell-with-right-rail">
       <div className="mx-auto max-w-[46rem]">
@@ -544,6 +573,101 @@ export default function NotificationsClientPage() {
             )}
           </div>
         </section>
+
+        {!loading && alerts.length > 0 && (
+          <section className="mb-4 xl:hidden">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Alerts tools rail">
+              <button
+                type="button"
+                onClick={showAllAlerts}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  filterMode === "all" && typeFilter === "all"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                All
+              </button>
+
+              <button
+                type="button"
+                onClick={showUnreadAlerts}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  filterMode === "unread"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Unread
+              </button>
+
+              <button
+                type="button"
+                onClick={() => showTypeAlerts("reply")}
+                disabled={!canUseAdvancedControls}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  canUseAdvancedControls && typeFilter === "reply"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                }`}
+              >
+                Replies
+              </button>
+
+              <button
+                type="button"
+                onClick={() => showTypeAlerts("follow")}
+                disabled={!canUseAdvancedControls}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  canUseAdvancedControls && typeFilter === "follow"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                }`}
+              >
+                Follows
+              </button>
+
+              <button
+                type="button"
+                onClick={() => showTypeAlerts("mention")}
+                disabled={!canUseAdvancedControls}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  canUseAdvancedControls && typeFilter === "mention"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                }`}
+              >
+                Mentions
+              </button>
+
+              <Link
+                href="/settings"
+                className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-4 py-2.5 text-base text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+              >
+                Settings
+              </Link>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                {activeMobileAlertsView}
+              </span>
+
+              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                {filteredNotifications.length} of {alerts.length} alerts
+              </span>
+
+              {!canUseAdvancedControls && (
+                <Link
+                  href="/premium"
+                  className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Unlock type filters
+                </Link>
+              )}
+            </div>
+          </section>
+        )}
 
         <div className="hidden md:block">
           <ProgressiveGuide
@@ -612,7 +736,7 @@ export default function NotificationsClientPage() {
         )}
 
         {!loading && alerts.length > 0 && (
-          <div className="mb-5 grid grid-cols-3 gap-2 sm:mb-8 sm:flex sm:flex-wrap sm:gap-3">
+          <div className="mb-5 hidden grid-cols-3 gap-2 sm:mb-8 sm:flex sm:flex-wrap sm:gap-3 xl:flex">
             {filterOptions.map((option) => (
               <button
                 key={option.value}
