@@ -2119,17 +2119,15 @@ export default function CreatePage() {
 
               <div className="grid gap-2">
                 {!isEditMode && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAttachmentsPanel((current) => !current)}
-                    className="flex items-center justify-between rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-                    aria-expanded={showAttachmentsPanel}
-                  >
-                    <span>Optional attachments</span>
-                    <span className="text-xs text-zinc-600">
-                      {attachmentFiles.length > 0 ? `${attachmentFiles.length} selected` : showAttachmentsPanel ? "Hide" : "Add"}
-                    </span>
-                  </button>
+                  <div className="rounded-2xl border border-zinc-800 bg-black px-4 py-3">
+                    <p className="mb-1 text-sm font-medium text-zinc-300">
+                      Optional attachments
+                    </p>
+                    <p className="text-xs leading-relaxed text-zinc-600">
+                      Add up to 3 images or PDFs. Max 10 MB each.
+                      {attachmentFiles.length > 0 ? ` ${attachmentFiles.length} selected.` : ""}
+                    </p>
+                  </div>
                 )}
 
 
@@ -2221,8 +2219,9 @@ export default function CreatePage() {
             </section>
           )}
 
-          {authChecked && isLoggedIn && !isEditMode && showAttachmentsPanel && (
+          {authChecked && isLoggedIn && !isEditMode && (
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              {/* Right rail attachments visible. */}
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
