@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { isIosNativeApp, purchaseApplePlan } from "@/lib/apple-purchases";
 
 type PremiumPlanCheckoutButtonProps = {
   planKey: string;
@@ -29,6 +30,12 @@ export function PremiumPlanCheckoutButton({
 
       if (!sessionData.session) {
         window.location.href = "/login";
+        return;
+      }
+
+      if (isIosNativeApp()) {
+        await purchaseApplePlan(planKey);
+        setMessage("Apple purchase completed. Your Loombus access is being updated.");
         return;
       }
 
@@ -69,7 +76,7 @@ export function PremiumPlanCheckoutButton({
     } catch (error) {
       const errorMessage =
         error instanceof DOMException && error.name === "AbortError"
-          ? "Checkout request timed out. Please try again, and check the Stripe/Vercel configuration if it continues."
+          ? "Checkout request timed out. Please try again."
           : error instanceof Error
             ? error.message
             : "Unable to start Premium checkout.";
