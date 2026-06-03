@@ -206,7 +206,7 @@ export default function CreatePage() {
   const [showAttachmentsPanel, setShowAttachmentsPanel] = useState(false);
   const [showWritingTools, setShowWritingTools] = useState(false);
   const [activeCreateMetadataTool, setActiveCreateMetadataTool] =
-    useState<"none" | "topic" | "reality" | "purpose" | "tags">("none");
+    useState<"none" | "topic" | "other" | "reality" | "purpose" | "tags">("none");
   const [activeCreateTool, setActiveCreateTool] =
     useState<"none" | "attachments" | "quality" | "rewrite">("none");
   const [publishing, setPublishing] = useState(false);
@@ -815,7 +815,7 @@ export default function CreatePage() {
   function selectOtherTopicValue() {
     setTopic("Other");
     setTopicManuallySelected(true);
-    setActiveCreateMetadataTool("reality");
+    setActiveCreateMetadataTool("other");
   }
 
   function selectRealityLensValue(nextLens: string) {
@@ -1183,11 +1183,11 @@ export default function CreatePage() {
                       <h2 className="text-lg font-semibold tracking-tight">
                         {activeCreateMetadataTool === "topic"
                           ? "Choose a topic"
-                          : activeCreateMetadataTool === "reality"
-                            ? "Choose a Reality Lens"
-                            : activeCreateMetadataTool === "purpose"
-                              ? "Choose a Purpose Lane"
-                              : "Add optional tags"}
+                          : activeCreateMetadataTool === "other"
+                            ? "Choose signal type"
+                            : activeCreateMetadataTool === "reality"
+                              ? "Choose a Reality Lens"
+                              : "Choose a Purpose Lane"}
                       </h2>
                     </div>
 
@@ -1238,6 +1238,34 @@ export default function CreatePage() {
                             )}
                           </button>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeCreateMetadataTool === "other" && (
+                    <div>
+                      <p className="mb-3 text-sm leading-relaxed text-zinc-500">
+                        Other requires one additional signal. Choose whether this discussion is better framed by a Reality Lens or a Purpose Lane.
+                      </p>
+
+                      <div className="space-y-2" data-create-signal-list="other">
+                        <button
+                          type="button"
+                          onClick={() => setActiveCreateMetadataTool("reality")}
+                          className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-black/40 px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                        >
+                          <span>Reality Lens</span>
+                          <span className="text-xs text-zinc-600">Choose</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveCreateMetadataTool("purpose")}
+                          className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-black/40 px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                        >
+                          <span>Purpose Lane</span>
+                          <span className="text-xs text-zinc-600">Choose</span>
+                        </button>
                       </div>
                     </div>
                   )}
