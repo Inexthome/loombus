@@ -892,6 +892,62 @@ export default function PeoplePage() {
                   />
                 </label>
 
+                <div className="mt-4">
+                  <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-700">
+                    View
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2" aria-label="Desktop People view filters">
+                    <button
+                      type="button"
+                      onClick={showAllPeople}
+                      className={`rounded-2xl border px-3 py-2 text-left text-sm transition ${
+                        activePeopleTool === "none"
+                          ? "border-zinc-500 bg-zinc-900 text-white"
+                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      All
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => togglePeopleTool("following")}
+                      className={`rounded-2xl border px-3 py-2 text-left text-sm transition ${
+                        activePeopleTool === "following"
+                          ? "border-zinc-500 bg-zinc-900 text-white"
+                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      Following
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => togglePeopleTool("followers")}
+                      className={`rounded-2xl border px-3 py-2 text-left text-sm transition ${
+                        activePeopleTool === "followers"
+                          ? "border-zinc-500 bg-zinc-900 text-white"
+                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      Followers
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => togglePeopleTool("suggested")}
+                      className={`rounded-2xl border px-3 py-2 text-left text-sm transition ${
+                        activePeopleTool === "suggested"
+                          ? "border-zinc-500 bg-zinc-900 text-white"
+                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      Suggested
+                    </button>
+                  </div>
+                </div>
+
                 <div className="mt-4 flex flex-wrap gap-2">
                   {hasActivePeopleSearch ? (
                     <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
