@@ -66,7 +66,7 @@ export default function AuthCallbackPage() {
       }
 
       setErrorMessage(
-        "Loombus could not finish the Google sign-in session. Please return to login and try again."
+        "Loombus could not finish the sign-in session. Please return to login and try again."
       );
     }
 
@@ -112,7 +112,7 @@ export default function AuthCallbackPage() {
         </h1>
 
         <p className="leading-relaxed text-zinc-400">
-          Please wait while Loombus completes your Google sign-in.
+          Please wait while Loombus completes your sign-in.
         </p>
       </div>
     </main>
