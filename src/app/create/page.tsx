@@ -177,7 +177,7 @@ function getSafeAttachmentFileName(fileName: string) {
 export default function CreatePage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState<string>(DEFAULT_DISCUSSION_TOPIC);
-  const [topicManuallySelected, setTopicManuallySelected] = useState(false);
+  const [topicManuallySelected, setTopicManuallySelected] = useState(true);
   const [realityLens, setRealityLens] = useState<string>("");
   const [purposeLane, setPurposeLane] = useState<string>("");
   const [body, setBody] = useState("");
@@ -700,6 +700,13 @@ export default function CreatePage() {
       return;
     }
 
+    if (topic === "Other" && !realityLens && !purposeLane) {
+      setMessage("Choose a Reality Lens or Purpose Lane when Topic is Other.");
+      setActiveCreateMetadataTool("reality");
+      setPublishing(false);
+      return;
+    }
+
     const { data: sessionData } = await supabase.auth.getSession();
 
     if (!sessionData.session) {
@@ -805,10 +812,10 @@ export default function CreatePage() {
     setActiveCreateMetadataTool("none");
   }
 
-  function clearTopicSelection() {
-    setTopic(DEFAULT_DISCUSSION_TOPIC);
-    setTopicManuallySelected(false);
-    setActiveCreateMetadataTool("none");
+  function selectOtherTopicValue() {
+    setTopic("Other");
+    setTopicManuallySelected(true);
+    setActiveCreateMetadataTool("reality");
   }
 
   function selectRealityLensValue(nextLens: string) {
@@ -1107,7 +1114,7 @@ export default function CreatePage() {
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                  {topicManuallySelected ? topic : "Topic optional"}
+                  {topic}
                 </span>
 
                 {realityLens && (
@@ -1130,7 +1137,36 @@ export default function CreatePage() {
               </div>
             </div>
 
-            {activeCreateMetadataTool !== "none" && (
+            {activeCreateMetadataTool === "tags" && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+                <label className="mb-2 block text-sm text-zinc-400">
+                  Optional Tags
+                </label>
+
+                <input
+                  type="text"
+                  value={tagsInput}
+                  onChange={(event) => updateTagsValue(event.target.value)}
+                  onBlur={closeTagsPanel}
+                  placeholder="AI ethics, publishing, startups"
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                />
+
+                <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600">
+                  <p>
+                    {tagInputHelper}
+                  </p>
+
+                  {!isEditMode && draftId && (
+                    <p>
+                      Tags are saved when publishing, not while saving drafts.
+                    </p>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {activeCreateMetadataTool !== "none" && activeCreateMetadataTool !== "tags" && (
               <section
                 className="fixed inset-0 z-50 flex items-end bg-black/70 p-3 backdrop-blur-sm md:hidden"
                 role="dialog"
@@ -1168,24 +1204,24 @@ export default function CreatePage() {
                   {activeCreateMetadataTool === "topic" && (
                     <div>
                       <p className="mb-3 text-sm leading-relaxed text-zinc-500">
-                        Topic is optional from the composer. If you do not choose one, Loombus will keep the default topic internally so the discussion can still publish.
+                        Choose a topic. Select Other when the discussion is better framed by Reality Lens or Purpose Lane.
                       </p>
 
                       <div className="space-y-2" data-create-signal-list="topic">
                         <button
                           type="button"
-                          onClick={clearTopicSelection}
+                          onClick={selectOtherTopicValue}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
-                            !topicManuallySelected
+                            topic === "Other"
                               ? "border-zinc-400 bg-white text-black"
                               : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
                           }`}
                         >
-                          <span>No topic</span>
-                          {!topicManuallySelected && <span className="text-xs">Selected</span>}
+                          <span>Other</span>
+                          {topic === "Other" && <span className="text-xs">Selected</span>}
                         </button>
 
-                        {DISCUSSION_TOPICS.map((topicOption) => (
+                        {DISCUSSION_TOPICS.filter((topicOption) => topicOption !== "Other").map((topicOption) => (
                           <button
                             key={topicOption}
                             type="button"
@@ -1209,7 +1245,7 @@ export default function CreatePage() {
                   {activeCreateMetadataTool === "reality" && (
                     <div>
                       <p className="mb-3 text-sm leading-relaxed text-zinc-500">
-                        Optional. Use this when the discussion is better framed by a human-life reality than a standard topic.
+                        Optional. Required if Topic is Other. Use this when the discussion is better framed by a human-life reality than a standard topic.
                       </p>
 
                       <div className="space-y-2" data-create-signal-list="reality">
@@ -1248,7 +1284,7 @@ export default function CreatePage() {
                   {activeCreateMetadataTool === "purpose" && (
                     <div>
                       <p className="mb-3 text-sm leading-relaxed text-zinc-500">
-                        Optional. Use this when the discussion points toward learning, contribution, mastery, community, or direction.
+                        Optional. Required if Topic is Other. Use this when the discussion points toward learning, contribution, mastery, community, or direction.
                       </p>
 
                       <div className="space-y-2" data-create-signal-list="purpose">
@@ -1284,34 +1320,6 @@ export default function CreatePage() {
                     </div>
                   )}
 
-                  {activeCreateMetadataTool === "tags" && (
-                    <div>
-                      <label className="mb-2 block text-sm text-zinc-400">
-                        Optional Tags
-                      </label>
-
-                      <input
-                        type="text"
-                        value={tagsInput}
-                        onChange={(event) => updateTagsValue(event.target.value)}
-                        onBlur={closeTagsPanel}
-                        placeholder="AI ethics, publishing, startups"
-                        className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-                      />
-
-                      <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600">
-                        <p>
-                          {tagInputHelper}
-                        </p>
-
-                        {!isEditMode && draftId && (
-                          <p>
-                            Tags are saved when publishing, not while saving drafts.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </section>
             )}

@@ -21,6 +21,7 @@ export const DISCUSSION_TOPICS = [
   "Science",
   "Systems",
   "Technology",
+  "Other"
 ] as const;
 
 export type DiscussionTopic = (typeof DISCUSSION_TOPICS)[number];
