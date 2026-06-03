@@ -10,6 +10,7 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  FlaskConical,
   Menu,
   MessageCircle,
   Search,
@@ -604,6 +605,11 @@ export default function ClientLayout({
               <DesktopRailTooltip label="Profile" />
             </Link>
 
+            <Link href="/labs" aria-label="Labs" title="Labs" className={desktopRailLinkClass("/labs")}>
+              <FlaskConical aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Labs" />
+            </Link>
+
             {isAdmin && (
               <Link href="/admin" aria-label="Admin" title="Admin" className={desktopRailLinkClass("/admin")}>
                 <ShieldCheck aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
@@ -725,6 +731,9 @@ export default function ClientLayout({
                       </Link>
                       <Link href="/profile" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         Profile
+                      </Link>
+                      <Link href="/labs" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Labs
                       </Link>
                       <Link href="/settings" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         Settings
@@ -983,6 +992,10 @@ export default function ClientLayout({
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/settings" onClick={closeMobileMenu} className={mobileNavLinkClass("/settings")}>
                     Settings
+                  </Link>
+
+                  <Link href="/labs" onClick={closeMobileMenu} className={mobileNavLinkClass("/labs")}>
+                    Labs
                   </Link>
 
                   <Link href="/premium" onClick={closeMobileMenu} className={mobileNavLinkClass("/premium")}>
