@@ -414,7 +414,9 @@ export default function PeoplePage() {
       }
 
       if (activePeopleTool === "suggested") {
-        return suggestedIds.has(profile.id);
+        // Admin Suggestions view should stay broad because Admin accounts need
+        // full platform visibility, not relationship-limited discovery.
+        return isAdmin ? true : suggestedIds.has(profile.id);
       }
 
       return true;
@@ -541,7 +543,9 @@ export default function PeoplePage() {
       : activePeopleTool === "followers"
         ? "Followers"
         : activePeopleTool === "suggested"
-          ? "Suggested"
+          ? isAdmin
+            ? "Suggested platform view"
+            : "Suggested"
           : isAdmin
             ? "All people"
             : "All visible people";

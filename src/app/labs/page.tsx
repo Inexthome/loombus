@@ -389,6 +389,15 @@ export default function LabsPage() {
           <p className="max-w-3xl leading-relaxed text-zinc-400">
             Labs is where Premium Plus members get early access to upcoming Loombus capabilities, submit feature requests, vote on requests, and track request status as ideas move through review.
           </p>
+
+          {isAdmin && (
+            <Link
+              href="/admin/labs"
+              className="mt-6 inline-flex rounded-full border border-sky-800 px-5 py-3 text-sm text-sky-300 transition hover:border-sky-600 hover:text-sky-200"
+            >
+              Open Admin Labs
+            </Link>
+          )}
         </div>
 
         {!canUseLabs && (
