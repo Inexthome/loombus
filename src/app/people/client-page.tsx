@@ -207,6 +207,7 @@ export default function PeoplePage() {
         hiddenIds.forEach((profileId) => directRelationshipIds.delete(profileId));
 
         const suggestedProfileIds = new Set<string>();
+        const viewerSuggestedProfileIds = new Set<string>();
         const suggestionSourceIds = directFollowingIds.filter(
           (profileId) => !hiddenIds.has(profileId)
         );
@@ -240,10 +241,64 @@ export default function PeoplePage() {
           }
         }
 
+        const authoredDiscussionsResult = await supabase
+          .from("discussions")
+          .select("id")
+          .eq("user_id", viewerId)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if (authoredDiscussionsResult.error) {
+          console.error(
+            "Unable to load People viewer suggestion source discussions.",
+            authoredDiscussionsResult.error
+          );
+        } else {
+          const authoredDiscussionIds = (authoredDiscussionsResult.data ?? [])
+            .map((discussion) => discussion.id)
+            .filter((discussionId): discussionId is string => Boolean(discussionId));
+
+          if (authoredDiscussionIds.length > 0) {
+            const discussionViewersResult = await supabase
+              .from("discussion_views")
+              .select("viewer_id, created_at")
+              .in("discussion_id", authoredDiscussionIds)
+              .not("viewer_id", "is", null)
+              .order("created_at", { ascending: false })
+              .limit(120);
+
+            if (discussionViewersResult.error) {
+              console.error(
+                "Unable to load People viewer suggestions.",
+                discussionViewersResult.error
+              );
+            } else {
+              (discussionViewersResult.data ?? []).forEach((row) => {
+                const profileId = (row as { viewer_id: string | null }).viewer_id;
+
+                if (
+                  profileId &&
+                  profileId !== viewerId &&
+                  !hiddenIds.has(profileId) &&
+                  !directRelationshipIds.has(profileId)
+                ) {
+                  viewerSuggestedProfileIds.add(profileId);
+                }
+              });
+            }
+          }
+        }
+
+        const combinedSuggestedProfileIds = new Set<string>([
+          ...Array.from(viewerSuggestedProfileIds),
+          ...Array.from(suggestedProfileIds),
+        ]);
+
         let visibleProfileIds = Array.from(
           new Set<string>([
             ...directRelationshipIds,
-            ...Array.from(suggestedProfileIds).slice(0, 24),
+            ...Array.from(combinedSuggestedProfileIds).slice(0, 24),
           ])
         );
 
@@ -276,7 +331,7 @@ export default function PeoplePage() {
         }
 
         setProfiles(loadedProfiles);
-        setSuggestedIds(new Set(suggestedProfileIds));
+        setSuggestedIds(new Set(combinedSuggestedProfileIds));
 
         const nextFollowCounts: FollowCounts = Object.fromEntries(
           visibleProfileIds.map((profileId) => [
@@ -803,7 +858,7 @@ export default function PeoplePage() {
                     <p className="mt-3 text-sm leading-relaxed text-zinc-500">
                       {isAdmin
                         ? "Search all visible member profiles here."
-                        : "Search people you follow, people who follow you, and relationship-based suggestions here."}
+                        : "Search people you follow, people who follow you, and network or public-interest suggestions here."}
                     </p>
                   </div>
 
