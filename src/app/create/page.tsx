@@ -1168,7 +1168,9 @@ export default function CreatePage() {
 
             {activeCreateMetadataTool !== "none" && activeCreateMetadataTool !== "tags" && (
               <section
-                className="fixed inset-0 z-50 flex items-end bg-black/70 p-3 backdrop-blur-sm md:hidden"
+                className={`fixed inset-0 z-50 flex bg-black/70 p-3 backdrop-blur-sm md:hidden ${
+                  activeCreateMetadataTool === "other" ? "items-center" : "items-end"
+                }`}
                 role="dialog"
                 aria-modal="true"
                 aria-label="Create signal selector"
