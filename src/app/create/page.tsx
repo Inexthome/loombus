@@ -1164,23 +1164,25 @@ export default function CreatePage() {
                     </button>
                   </div>
 
+                  {/* Create signal popup dropdown list polish. */}
                   {activeCreateMetadataTool === "topic" && (
                     <div>
                       <p className="mb-3 text-sm leading-relaxed text-zinc-500">
                         Topic is optional from the composer. If you do not choose one, Loombus will keep the default topic internally so the discussion can still publish.
                       </p>
 
-                      <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                      <div className="space-y-2" data-create-signal-list="topic">
                         <button
                           type="button"
                           onClick={clearTopicSelection}
-                          className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             !topicManuallySelected
-                              ? "bg-white text-black"
-                              : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                              ? "border-zinc-400 bg-white text-black"
+                              : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
                           }`}
                         >
-                          No topic
+                          <span>No topic</span>
+                          {!topicManuallySelected && <span className="text-xs">Selected</span>}
                         </button>
 
                         {DISCUSSION_TOPICS.map((topicOption) => (
@@ -1188,13 +1190,16 @@ export default function CreatePage() {
                             key={topicOption}
                             type="button"
                             onClick={() => selectTopicValue(topicOption)}
-                            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                            className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               topicManuallySelected && topic === topicOption
-                                ? "bg-white text-black"
-                                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                                ? "border-zinc-400 bg-white text-black"
+                                : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
                             }`}
                           >
-                            {topicOption}
+                            <span>{topicOption}</span>
+                            {topicManuallySelected && topic === topicOption && (
+                              <span className="text-xs">Selected</span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -1207,17 +1212,18 @@ export default function CreatePage() {
                         Optional. Use this when the discussion is better framed by a human-life reality than a standard topic.
                       </p>
 
-                      <div className="flex gap-2 overflow-x-auto pb-1">
+                      <div className="space-y-2" data-create-signal-list="reality">
                         <button
                           type="button"
                           onClick={() => selectRealityLensValue("")}
-                          className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             !realityLens
-                              ? "bg-white text-black"
-                              : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                              ? "border-zinc-400 bg-white text-black"
+                              : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
                           }`}
                         >
-                          None
+                          <span>None</span>
+                          {!realityLens && <span className="text-xs">Selected</span>}
                         </button>
 
                         {REALITY_LENSES.map((lens) => (
@@ -1225,13 +1231,14 @@ export default function CreatePage() {
                             key={lens}
                             type="button"
                             onClick={() => selectRealityLensValue(lens)}
-                            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                            className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               realityLens === lens
-                                ? "bg-white text-black"
-                                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                                ? "border-zinc-400 bg-white text-black"
+                                : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
                             }`}
                           >
-                            {lens}
+                            <span>{lens}</span>
+                            {realityLens === lens && <span className="text-xs">Selected</span>}
                           </button>
                         ))}
                       </div>
@@ -1244,17 +1251,18 @@ export default function CreatePage() {
                         Optional. Use this when the discussion points toward learning, contribution, mastery, community, or direction.
                       </p>
 
-                      <div className="flex gap-2 overflow-x-auto pb-1">
+                      <div className="space-y-2" data-create-signal-list="purpose">
                         <button
                           type="button"
                           onClick={() => selectPurposeLaneValue("")}
-                          className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             !purposeLane
-                              ? "bg-white text-black"
-                              : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                              ? "border-zinc-400 bg-white text-black"
+                              : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
                           }`}
                         >
-                          None
+                          <span>None</span>
+                          {!purposeLane && <span className="text-xs">Selected</span>}
                         </button>
 
                         {PURPOSE_LANES.map((lane) => (
@@ -1262,13 +1270,14 @@ export default function CreatePage() {
                             key={lane}
                             type="button"
                             onClick={() => selectPurposeLaneValue(lane)}
-                            className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                            className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               purposeLane === lane
-                                ? "bg-white text-black"
-                                : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                                ? "border-zinc-400 bg-white text-black"
+                                : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
                             }`}
                           >
-                            {lane}
+                            <span>{lane}</span>
+                            {purposeLane === lane && <span className="text-xs">Selected</span>}
                           </button>
                         ))}
                       </div>
