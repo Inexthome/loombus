@@ -198,6 +198,11 @@ export default function SavedPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState("all");
   const [savedSearchQuery, setSavedSearchQuery] = useState("");
+  const [activeSavedTool, setActiveSavedTool] =
+    useState<"none" | "search" | "folders" | "notes">("none");
+  const [activeSavedInsight, setActiveSavedInsight] =
+    useState<"none" | "knowledge" | "purpose" | "learning" | "path">("none");
+  const [showSavedNotesOnly, setShowSavedNotesOnly] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState("");
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [creatingCollection, setCreatingCollection] = useState(false);
@@ -334,13 +339,19 @@ export default function SavedPage() {
           ? saved.filter((item) => !item.collection_id)
           : saved.filter((item) => item.collection_id === selectedCollectionId);
 
+    const noteFiltered = showSavedNotesOnly
+      ? collectionFiltered.filter((item) =>
+          (noteDrafts[item.id] ?? item.private_note ?? "").trim()
+        )
+      : collectionFiltered;
+
     const query = savedSearchQuery.trim().toLowerCase();
 
     if (!query) {
-      return collectionFiltered;
+      return noteFiltered;
     }
 
-    return collectionFiltered.filter((item) => {
+    return noteFiltered.filter((item) => {
       const discussion = item.discussions;
       const note = noteDrafts[item.id] ?? item.private_note ?? "";
 
@@ -352,7 +363,7 @@ export default function SavedPage() {
         note.toLowerCase().includes(query)
       );
     });
-  }, [saved, selectedCollectionId, savedSearchQuery, noteDrafts]);
+  }, [saved, selectedCollectionId, savedSearchQuery, noteDrafts, showSavedNotesOnly]);
 
   const knowledgeSnapshot = useMemo(() => {
     const topicCounts: Record<string, number> = {};
@@ -543,30 +554,63 @@ export default function SavedPage() {
 
   const activeSavedSearch = savedSearchQuery.trim();
   const hasActiveSavedSearch = activeSavedSearch.length > 0;
-  const hasActiveSavedFilters = hasActiveSavedSearch || selectedCollectionId !== "all";
+  const hasActiveSavedFilters =
+    hasActiveSavedSearch || selectedCollectionId !== "all" || showSavedNotesOnly;
 
   function resetSavedFilters() {
     setSavedSearchQuery("");
     setSelectedCollectionId("all");
+    setShowSavedNotesOnly(false);
+    setActiveSavedTool("none");
   }
 
   function showAllSaved() {
     setSelectedCollectionId("all");
     setSavedSearchQuery("");
+    setShowSavedNotesOnly(false);
+    setActiveSavedTool("none");
   }
 
   function showUnfiledSaved() {
     setSelectedCollectionId("unfiled");
+    setShowSavedNotesOnly(false);
+    setActiveSavedTool("none");
   }
 
-  function focusSavedSearch() {
-    window.setTimeout(() => {
-      document.getElementById("saved-search")?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-      (document.getElementById("saved-search") as HTMLInputElement | null)?.focus();
-    }, 0);
+  function toggleSavedTool(tool: "search" | "folders" | "notes") {
+    setActiveSavedInsight("none");
+
+    setActiveSavedTool((current) => {
+      const next = current === tool ? "none" : tool;
+
+      if (tool === "notes") {
+        setShowSavedNotesOnly(next === "notes");
+        setSavedSearchQuery("");
+      }
+
+      if (tool !== "notes" && next !== "notes") {
+        setShowSavedNotesOnly(false);
+      }
+
+      if (tool === "search" && next === "search") {
+        window.setTimeout(() => {
+          document.getElementById("saved-search")?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+          (document.getElementById("saved-search") as HTMLInputElement | null)?.focus();
+        }, 0);
+      }
+
+      return next;
+    });
+  }
+
+  function toggleSavedInsight(
+    insight: "knowledge" | "purpose" | "learning" | "path"
+  ) {
+    setActiveSavedTool("none");
+    setActiveSavedInsight((current) => current === insight ? "none" : insight);
   }
 
   const savedItemsWithNotesCount = saved.filter((item) =>
@@ -574,11 +618,13 @@ export default function SavedPage() {
   ).length;
 
   const activeMobileSavedView =
-    hasActiveSavedSearch
-      ? `Search: “${activeSavedSearch}”`
-      : selectedCollectionId === "all"
-        ? "All saved"
-        : selectedCollectionLabel;
+    showSavedNotesOnly
+      ? "Saved with notes"
+      : hasActiveSavedSearch
+        ? `Search: “${activeSavedSearch}”`
+        : selectedCollectionId === "all"
+          ? "All saved"
+          : selectedCollectionLabel;
 
   async function createCollection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1019,7 +1065,10 @@ export default function SavedPage() {
                 type="button"
                 onClick={showAllSaved}
                 className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  selectedCollectionId === "all" && !hasActiveSavedSearch
+                  selectedCollectionId === "all" &&
+                  activeSavedTool !== "search" &&
+                  !hasActiveSavedSearch &&
+                  !showSavedNotesOnly
                     ? "bg-white text-black"
                     : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
                 }`}
@@ -1029,7 +1078,7 @@ export default function SavedPage() {
 
               <button
                 type="button"
-                onClick={focusSavedSearch}
+                onClick={() => toggleSavedTool("search")}
                 className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
                   hasActiveSavedSearch
                     ? "bg-white text-black"
@@ -1053,12 +1102,7 @@ export default function SavedPage() {
 
               <button
                 type="button"
-                onClick={() => {
-                  const firstCollectionId = collections[0]?.id;
-                  if (firstCollectionId) {
-                    setSelectedCollectionId(firstCollectionId);
-                  }
-                }}
+                onClick={() => toggleSavedTool("folders")}
                 disabled={!canUseCollections || collections.length === 0}
                 className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-4 py-2.5 text-base text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
               >
@@ -1067,9 +1111,13 @@ export default function SavedPage() {
 
               <button
                 type="button"
-                onClick={() => setSavedSearchQuery("note")}
+                onClick={() => toggleSavedTool("notes")}
                 disabled={!canUsePrivateNotes || savedItemsWithNotesCount === 0}
-                className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-4 py-2.5 text-base text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  showSavedNotesOnly
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                }`}
               >
                 Notes
               </button>
@@ -1100,6 +1148,60 @@ export default function SavedPage() {
                   Reset
                 </button>
               )}
+            </div>
+          </section>
+        )}
+
+        {!loading && saved.length > 0 && (
+          <section className="mb-4 xl:hidden">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Saved insight tools rail">
+              <button
+                type="button"
+                onClick={() => toggleSavedInsight("knowledge")}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  activeSavedInsight === "knowledge"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Knowledge
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleSavedInsight("purpose")}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  activeSavedInsight === "purpose"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Purpose
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleSavedInsight("learning")}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  activeSavedInsight === "learning"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Learning
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleSavedInsight("path")}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  activeSavedInsight === "path"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Purpose Path
+              </button>
             </div>
           </section>
         )}
@@ -1180,7 +1282,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length > 0 && (
-          <section className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block">
+          <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 ${activeSavedInsight === "knowledge" ? "block" : "hidden"} md:block`}>
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -1277,7 +1379,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length > 0 && (
-          <section className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block">
+          <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 ${activeSavedInsight === "purpose" ? "block" : "hidden"} md:block`}>
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -1331,7 +1433,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length > 0 && (
-          <section className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block">
+          <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 ${activeSavedInsight === "learning" || activeSavedInsight === "path" ? "block" : "hidden"} md:block`}>
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -1348,7 +1450,7 @@ export default function SavedPage() {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <div className={`grid gap-4 md:grid md:grid-cols-2 xl:grid-cols-5 ${activeSavedInsight === "path" ? "hidden" : "grid"}`}>
               {learningPath.map((step, index) => (
                 <LearningPathCard
                   key={`${step.title}-${index}`}
@@ -1358,7 +1460,7 @@ export default function SavedPage() {
               ))}
             </div>
 
-            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black/40 p-4 sm:p-5">
+            <div className={`mt-5 rounded-2xl border border-zinc-900 bg-black/40 p-4 sm:p-5 ${activeSavedInsight === "learning" ? "hidden" : "block"} md:block`}>
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
@@ -1393,7 +1495,7 @@ export default function SavedPage() {
         )}
 
         {canExportSavedNotes && (
-          <section className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block">
+          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -1436,7 +1538,7 @@ export default function SavedPage() {
         {canUseCollections && (
           <form
             onSubmit={createCollection}
-            className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block"
+            className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6"
           >
             <h2 className="mb-2 text-xl font-medium sm:text-2xl">
               Create saved folder
@@ -1474,7 +1576,7 @@ export default function SavedPage() {
           </p>
         )}
 
-        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-8 sm:rounded-3xl sm:p-5">
+        <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-8 sm:rounded-3xl sm:p-5 ${activeSavedTool === "search" ? "block" : "hidden"} md:block`}>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="saved-search" className="mb-2 block text-sm font-medium text-zinc-300">
@@ -1541,7 +1643,7 @@ export default function SavedPage() {
           )}
         </section>
 
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-2 sm:mb-8 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:pb-0">
+        <div className={`mb-6 gap-2 overflow-x-auto pb-2 sm:mb-8 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:pb-0 ${activeSavedTool === "folders" ? "flex" : "hidden"} md:flex`}>
           <button
             type="button"
             onClick={() => setSelectedCollectionId("all")}
