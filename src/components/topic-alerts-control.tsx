@@ -120,7 +120,7 @@ export function TopicAlertsControl({
   }
 
   return (
-    <section className="rounded-3xl border border-zinc-900 bg-zinc-950 p-6">
+    <section className="mb-6 rounded-3xl border border-zinc-900 bg-zinc-950 p-6 sm:mb-8">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-zinc-600">
