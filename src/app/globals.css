@@ -766,6 +766,10 @@ html[data-loombus-theme="light"] .loombus-mobile-visitor-existing {
 }
 
 @media (min-width: 1280px) {
+  body:has(.loombus-right-rail) main {
+    padding-right: var(--loombus-right-rail-width) !important;
+  }
+
   .loombus-shell-with-right-rail {
     padding-right: var(--loombus-right-rail-width) !important;
   }
