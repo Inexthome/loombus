@@ -1153,6 +1153,46 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length > 0 && (
+          <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 xl:hidden" aria-label="Saved Cards shell">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                  Saved cards
+                </p>
+
+                <h2 className="text-xl font-semibold tracking-tight">
+                  Your saved discussions.
+                </h2>
+
+                <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                  Use the rails to filter, search, organize, or open private snapshots without pushing your saved cards too far down.
+                </p>
+              </div>
+
+              <span className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
+                {filteredSaved.length}
+              </span>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                {activeMobileSavedView}
+              </span>
+
+              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                {saved.length} total
+              </span>
+
+              {savedItemsWithNotesCount > 0 && (
+                <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                  {savedItemsWithNotesCount} notes
+                </span>
+              )}
+            </div>
+          </section>
+        )}
+
+        {!loading && saved.length > 0 && (
           <section className="mb-4 xl:hidden">
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Saved insight tools rail">
               <button
