@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
 
   async function handleLogin(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -44,31 +44,31 @@ export default function LoginPage() {
     window.location.replace("/dashboard");
   }
 
-  async function handleGoogleLogin() {
-    if (loading || googleLoading) {
+  async function handleOAuthLogin(provider: "google" | "apple") {
+    if (loading || oauthLoading) {
       return;
     }
 
     setMessage("");
-    setGoogleLoading(true);
+    setOauthLoading(provider);
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (error) {
-        setMessage(`Google login error: ${error.message}`);
-        setGoogleLoading(false);
+        setMessage(`${provider === "apple" ? "Apple" : "Google"} login error: ${error.message}`);
+        setOauthLoading(null);
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to start Google login.";
-      setMessage(`Google login error: ${message}`);
-      setGoogleLoading(false);
+        error instanceof Error ? error.message : "Unable to start OAuth login.";
+      setMessage(`${provider === "apple" ? "Apple" : "Google"} login error: ${message}`);
+      setOauthLoading(null);
     }
   }
 
@@ -94,11 +94,20 @@ export default function LoginPage() {
         <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
           <button
             type="button"
-            onClick={handleGoogleLogin}
-            disabled={loading || googleLoading}
+            onClick={() => handleOAuthLogin("apple")}
+            disabled={loading || Boolean(oauthLoading)}
+            className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {oauthLoading === "apple" ? "Opening Apple..." : "Continue with Apple"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleOAuthLogin("google")}
+            disabled={loading || Boolean(oauthLoading)}
             className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {googleLoading ? "Opening Google..." : "Continue with Google"}
+            {oauthLoading === "google" ? "Opening Google..." : "Continue with Google"}
           </button>
 
           <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
@@ -147,7 +156,7 @@ export default function LoginPage() {
           {message && <p className="text-sm text-zinc-400">{message}</p>}
 
           <p className="text-xs leading-relaxed text-zinc-500">
-            By logging in or continuing with Google, you agree to the{" "}
+            By logging in or continuing with Apple, Google, or email, you agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
             </Link>

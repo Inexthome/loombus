@@ -12,7 +12,7 @@ export default function SignupPage() {
   const [message, setMessage] = useState("");
   const [signupComplete, setSignupComplete] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
 
   async function handleSignup(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -68,41 +68,41 @@ export default function SignupPage() {
     setLoading(false);
   }
 
-  async function handleGoogleSignup() {
-    if (loading || googleLoading) {
+  async function handleOAuthSignup(provider: "google" | "apple") {
+    if (loading || oauthLoading) {
       return;
     }
 
     setMessage("");
 
     const ageConfirmed = window.confirm(
-      "Loombus is not available to children under 13. Please confirm that you are at least 13 years old to sign up with Google."
+      "Loombus is not available to children under 13. Please confirm that you are at least 13 years old to continue."
     );
 
     if (!ageConfirmed) {
-      setMessage("You must confirm that you are at least 13 years old to sign up with Google.");
+      setMessage("You must confirm that you are at least 13 years old to create a Loombus account.");
       return;
     }
 
-    setGoogleLoading(true);
+    setOauthLoading(provider);
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
+        provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
       if (error) {
-        setMessage(`Google signup error: ${error.message}`);
-        setGoogleLoading(false);
+        setMessage(`${provider === "apple" ? "Apple" : "Google"} signup error: ${error.message}`);
+        setOauthLoading(null);
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to start Google signup.";
-      setMessage(`Google signup error: ${message}`);
-      setGoogleLoading(false);
+        error instanceof Error ? error.message : "Unable to start OAuth signup.";
+      setMessage(`${provider === "apple" ? "Apple" : "Google"} signup error: ${message}`);
+      setOauthLoading(null);
     }
   }
 
@@ -129,11 +129,20 @@ export default function SignupPage() {
           <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 loombus-mobile-visitor-auth-card">
             <button
               type="button"
-              onClick={handleGoogleSignup}
-              disabled={loading || googleLoading}
+              onClick={() => handleOAuthSignup("apple")}
+              disabled={loading || Boolean(oauthLoading)}
+              className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {oauthLoading === "apple" ? "Opening Apple..." : "Sign up with Apple"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOAuthSignup("google")}
+              disabled={loading || Boolean(oauthLoading)}
               className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {googleLoading ? "Opening Google..." : "Sign up with Google"}
+              {oauthLoading === "google" ? "Opening Google..." : "Sign up with Google"}
             </button>
 
             <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
@@ -255,7 +264,7 @@ export default function SignupPage() {
           )}
 
           <p className="text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
-            By creating an account or continuing with Google, you confirm that you are at least 13 years old and agree to the{" "}
+            By creating an account or continuing with Apple, Google, or email, you confirm that you are at least 13 years old and agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
             </Link>

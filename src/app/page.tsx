@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
-type OAuthProvider = "google";
+type OAuthProvider = "google" | "apple";
 type HomeAuthState = "checking" | "logged_out" | "logged_in";
 
 type HomeProfile = {
@@ -250,7 +250,7 @@ export default function Home() {
 
       if (error) {
         setMessage(
-          "Google sign up is not available yet. Please create an account with email instead."
+          "Apple or Google sign up is not available yet. Please create an account with email instead."
         );
       }
     } finally {
@@ -572,6 +572,15 @@ export default function Home() {
         <div className="w-full rounded-3xl border border-zinc-900 bg-zinc-950/60 p-5 shadow-2xl shadow-black/30 space-y-3 loombus-mobile-visitor-auth-card">
           <button
             type="button"
+            onClick={() => signUpWithProvider("apple")}
+            disabled={Boolean(workingProvider)}
+            className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}
+          </button>
+
+          <button
+            type="button"
             onClick={() => signUpWithProvider("google")}
             disabled={Boolean(workingProvider)}
             className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
@@ -593,7 +602,7 @@ export default function Home() {
           </Link>
 
           <p className="pt-3 text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
-            By creating an account or continuing with Google, you confirm that you are at least 13 years old and agree to the{" "}
+            By creating an account or continuing with Apple, Google, or email, you confirm that you are at least 13 years old and agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
             </Link>
