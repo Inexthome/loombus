@@ -964,7 +964,8 @@ export default function NotificationsClientPage() {
             return (
               <article
                 key={notification.id}
-                className={`group rounded-2xl border p-4 shadow-2xl shadow-black/15 transition hover:border-zinc-700 sm:p-5 ${
+                data-alert-state={notification.read_at ? "read" : "unread"}
+                className={`loombus-alert-card group rounded-2xl border p-4 shadow-2xl shadow-black/15 transition hover:border-zinc-700 sm:p-5 ${
                   notification.read_at
                     ? "border-zinc-900 bg-zinc-950/80"
                     : "border-zinc-700 bg-zinc-950"
