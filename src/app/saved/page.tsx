@@ -1152,60 +1152,6 @@ export default function SavedPage() {
           </section>
         )}
 
-        {!loading && saved.length > 0 && (
-          <section className="mb-4 xl:hidden">
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Saved insight tools rail">
-              <button
-                type="button"
-                onClick={() => toggleSavedInsight("knowledge")}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  activeSavedInsight === "knowledge"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-              >
-                Knowledge
-              </button>
-
-              <button
-                type="button"
-                onClick={() => toggleSavedInsight("purpose")}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  activeSavedInsight === "purpose"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-              >
-                Purpose
-              </button>
-
-              <button
-                type="button"
-                onClick={() => toggleSavedInsight("learning")}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  activeSavedInsight === "learning"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-              >
-                Learning
-              </button>
-
-              <button
-                type="button"
-                onClick={() => toggleSavedInsight("path")}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  activeSavedInsight === "path"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-              >
-                Purpose Path
-              </button>
-            </div>
-          </section>
-        )}
-
         <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Saved discussions guide
@@ -1281,218 +1227,11 @@ export default function SavedPage() {
           </div>
         )}
 
-        {!loading && saved.length > 0 && (
-          <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 ${activeSavedInsight === "knowledge" ? "block" : "hidden"} md:block`}>
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                  Saved knowledge snapshot
-                </p>
 
-                <h2 className="text-xl font-medium sm:text-2xl">
-                  What your saved discussions are becoming.
-                </h2>
 
-                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
-                  This is a private, on-page snapshot based only on your saved discussions, folders, and private notes.
-                </p>
-              </div>
 
-              <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
-                {saved.length} saved
-              </span>
-            </div>
 
-            <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
-                  Saved recently
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
-                  {knowledgeSnapshot.recentSavedCount}
-                </p>
-              </div>
 
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
-                  Private notes
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
-                  {knowledgeSnapshot.notesCount}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
-                  Topic signals
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
-                  {knowledgeSnapshot.topics.length}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
-                  Reality signals
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
-                  {knowledgeSnapshot.lenses.length}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
-                  Purpose signals
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
-                  {knowledgeSnapshot.purposeSignals.length}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <KnowledgeSignalGroup
-                title="Saved topics"
-                empty="No topic signals yet."
-                signals={knowledgeSnapshot.topics}
-              />
-
-              <KnowledgeSignalGroup
-                title="Reality Lenses"
-                empty="No Reality Lens signals yet."
-                signals={knowledgeSnapshot.lenses}
-              />
-
-              <KnowledgeSignalGroup
-                title="Purpose Lanes"
-                empty="No Purpose Lane signals yet."
-                signals={knowledgeSnapshot.purposeSignals}
-              />
-
-              <KnowledgeSignalGroup
-                title="Folders"
-                empty="No folder signals yet."
-                signals={knowledgeSnapshot.folders}
-              />
-            </div>
-          </section>
-        )}
-
-        {!loading && saved.length > 0 && (
-          <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 ${activeSavedInsight === "purpose" ? "block" : "hidden"} md:block`}>
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                  Purpose snapshot
-                </p>
-
-                <h2 className="text-xl font-medium sm:text-2xl">
-                  What direction your saved library is forming.
-                </h2>
-
-                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
-                  This private snapshot uses saved Purpose Lanes only. It is not therapy, diagnosis, life coaching, scoring, or ranking.
-                </p>
-              </div>
-
-              <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
-                Private
-              </span>
-            </div>
-
-            {knowledgeSnapshot.purposeSignals.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {knowledgeSnapshot.purposeSignals.map((signal) => (
-                  <Link
-                    key={signal.label}
-                    href={`/saved?search=${encodeURIComponent(signal.label)}`}
-                    className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700"
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <h3 className="text-base font-medium text-zinc-200">
-                        {signal.label}
-                      </h3>
-
-                      <span className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
-                        {signal.count} saved
-                      </span>
-                    </div>
-
-                    <p className="text-sm leading-relaxed text-zinc-600">
-                      Revisit saved discussions in this lane to see what learning, contribution, mastery, or community direction is emerging.
-                    </p>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-600">
-                Save discussions with Purpose Lanes to build a private purpose snapshot.
-              </p>
-            )}
-          </section>
-        )}
-
-        {!loading && saved.length > 0 && (
-          <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 ${activeSavedInsight === "learning" || activeSavedInsight === "path" ? "block" : "hidden"} md:block`}>
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                  Learning path snapshot
-                </p>
-
-                <h2 className="text-xl font-medium sm:text-2xl">
-                  What to read, revisit, and organize next.
-                </h2>
-
-                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
-                  This path is generated on-page from your saved topics, Reality Lenses, folders, and notes. It is private to your saved library.
-                </p>
-              </div>
-            </div>
-
-            <div className={`grid gap-4 md:grid md:grid-cols-2 xl:grid-cols-5 ${activeSavedInsight === "path" ? "hidden" : "grid"}`}>
-              {learningPath.map((step, index) => (
-                <LearningPathCard
-                  key={`${step.title}-${index}`}
-                  step={step}
-                  index={index}
-                />
-              ))}
-            </div>
-
-            <div className={`mt-5 rounded-2xl border border-zinc-900 bg-black/40 p-4 sm:p-5 ${activeSavedInsight === "learning" ? "hidden" : "block"} md:block`}>
-              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                    Purpose-aware path
-                  </p>
-
-                  <h3 className="text-lg font-medium text-zinc-200">
-                    Connect what you save to what you may learn, build, or contribute.
-                  </h3>
-                </div>
-
-                <span className="w-fit rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
-                  Private
-                </span>
-              </div>
-
-              <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-600">
-                This stays private and uses saved topics, Purpose Lanes, and notes. It does not diagnose, coach, score, or rank you.
-              </p>
-
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {purposePathCards.map((step, index) => (
-                  <LearningPathCard
-                    key={`${step.title}-${index}`}
-                    step={step}
-                    index={index}
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
 
         {canExportSavedNotes && (
           <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
@@ -1955,6 +1694,274 @@ export default function SavedPage() {
             );
           })}
         </div>
+
+        {/* Saved insight rail moved below cards. */}
+        {!loading && saved.length > 0 && (
+          <section className="mb-4 xl:hidden">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Saved insight tools rail">
+              <button
+                type="button"
+                onClick={() => toggleSavedInsight("knowledge")}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  activeSavedInsight === "knowledge"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Knowledge
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleSavedInsight("purpose")}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  activeSavedInsight === "purpose"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Purpose
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleSavedInsight("learning")}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  activeSavedInsight === "learning"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Learning
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleSavedInsight("path")}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  activeSavedInsight === "path"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Purpose Path
+              </button>
+            </div>
+          </section>
+        )}
+
+        {!loading && saved.length > 0 && (
+          <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 ${activeSavedInsight === "knowledge" ? "block" : "hidden"} md:block`}>
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                  Saved knowledge snapshot
+                </p>
+
+                <h2 className="text-xl font-medium sm:text-2xl">
+                  What your saved discussions are becoming.
+                </h2>
+
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                  This is a private, on-page snapshot based only on your saved discussions, folders, and private notes.
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
+                {saved.length} saved
+              </span>
+            </div>
+
+            <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Saved recently
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.recentSavedCount}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Private notes
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.notesCount}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Topic signals
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.topics.length}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Reality signals
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.lenses.length}
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Purpose signals
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white">
+                  {knowledgeSnapshot.purposeSignals.length}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <KnowledgeSignalGroup
+                title="Saved topics"
+                empty="No topic signals yet."
+                signals={knowledgeSnapshot.topics}
+              />
+
+              <KnowledgeSignalGroup
+                title="Reality Lenses"
+                empty="No Reality Lens signals yet."
+                signals={knowledgeSnapshot.lenses}
+              />
+
+              <KnowledgeSignalGroup
+                title="Purpose Lanes"
+                empty="No Purpose Lane signals yet."
+                signals={knowledgeSnapshot.purposeSignals}
+              />
+
+              <KnowledgeSignalGroup
+                title="Folders"
+                empty="No folder signals yet."
+                signals={knowledgeSnapshot.folders}
+              />
+            </div>
+          </section>
+        )}
+
+        {!loading && saved.length > 0 && (
+          <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 ${activeSavedInsight === "purpose" ? "block" : "hidden"} md:block`}>
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                  Purpose snapshot
+                </p>
+
+                <h2 className="text-xl font-medium sm:text-2xl">
+                  What direction your saved library is forming.
+                </h2>
+
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                  This private snapshot uses saved Purpose Lanes only. It is not therapy, diagnosis, life coaching, scoring, or ranking.
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
+                Private
+              </span>
+            </div>
+
+            {knowledgeSnapshot.purposeSignals.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {knowledgeSnapshot.purposeSignals.map((signal) => (
+                  <Link
+                    key={signal.label}
+                    href={`/saved?search=${encodeURIComponent(signal.label)}`}
+                    className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700"
+                  >
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <h3 className="text-base font-medium text-zinc-200">
+                        {signal.label}
+                      </h3>
+
+                      <span className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500">
+                        {signal.count} saved
+                      </span>
+                    </div>
+
+                    <p className="text-sm leading-relaxed text-zinc-600">
+                      Revisit saved discussions in this lane to see what learning, contribution, mastery, or community direction is emerging.
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-600">
+                Save discussions with Purpose Lanes to build a private purpose snapshot.
+              </p>
+            )}
+          </section>
+        )}
+
+        {!loading && saved.length > 0 && (
+          <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 ${activeSavedInsight === "learning" || activeSavedInsight === "path" ? "block" : "hidden"} md:block`}>
+            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                  Learning path snapshot
+                </p>
+
+                <h2 className="text-xl font-medium sm:text-2xl">
+                  What to read, revisit, and organize next.
+                </h2>
+
+                <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
+                  This path is generated on-page from your saved topics, Reality Lenses, folders, and notes. It is private to your saved library.
+                </p>
+              </div>
+            </div>
+
+            <div className={`grid gap-4 md:grid md:grid-cols-2 xl:grid-cols-5 ${activeSavedInsight === "path" ? "hidden" : "grid"}`}>
+              {learningPath.map((step, index) => (
+                <LearningPathCard
+                  key={`${step.title}-${index}`}
+                  step={step}
+                  index={index}
+                />
+              ))}
+            </div>
+
+            <div className={`mt-5 rounded-2xl border border-zinc-900 bg-black/40 p-4 sm:p-5 ${activeSavedInsight === "learning" ? "hidden" : "block"} md:block`}>
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                    Purpose-aware path
+                  </p>
+
+                  <h3 className="text-lg font-medium text-zinc-200">
+                    Connect what you save to what you may learn, build, or contribute.
+                  </h3>
+                </div>
+
+                <span className="w-fit rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                  Private
+                </span>
+              </div>
+
+              <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-600">
+                This stays private and uses saved topics, Purpose Lanes, and notes. It does not diagnose, coach, score, or rank you.
+              </p>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {purposePathCards.map((step, index) => (
+                  <LearningPathCard
+                    key={`${step.title}-${index}`}
+                    step={step}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
           </div>
 
           <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl xl:block">
