@@ -204,7 +204,8 @@ export default function CreatePage() {
   const [showOptionalDetails, setShowOptionalDetails] = useState(false);
   const [showAttachmentsPanel, setShowAttachmentsPanel] = useState(false);
   const [showWritingTools, setShowWritingTools] = useState(false);
-  const [showComposerMetadataMenu, setShowComposerMetadataMenu] = useState(false);
+  const [activeCreateMetadataTool, setActiveCreateMetadataTool] =
+    useState<"none" | "topic" | "reality" | "purpose" | "tags">("none");
   const [activeCreateTool, setActiveCreateTool] =
     useState<"none" | "attachments" | "quality" | "rewrite">("none");
   const [publishing, setPublishing] = useState(false);
@@ -347,36 +348,6 @@ export default function CreatePage() {
 
     loadProfileStatus();
   }, []);
-
-  useEffect(() => {
-    if (!showComposerMetadataMenu) {
-      return;
-    }
-
-    function handleCreateMetadataMenuOutsideClick(event: MouseEvent) {
-      const target = event.target as HTMLElement | null;
-
-      if (target?.closest("[data-create-metadata-menu]")) {
-        return;
-      }
-
-      setShowComposerMetadataMenu(false);
-    }
-
-    function handleCreateMetadataMenuKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") {
-        setShowComposerMetadataMenu(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleCreateMetadataMenuOutsideClick);
-    document.addEventListener("keydown", handleCreateMetadataMenuKeyDown);
-
-    return () => {
-      document.removeEventListener("mousedown", handleCreateMetadataMenuOutsideClick);
-      document.removeEventListener("keydown", handleCreateMetadataMenuKeyDown);
-    };
-  }, [showComposerMetadataMenu]);
 
   const missingProfileFields = useMemo(
     () => getMissingProfileFields(profile),
@@ -818,7 +789,38 @@ export default function CreatePage() {
     }
   }
 
+  function toggleCreateMetadataTool(
+    tool: "topic" | "reality" | "purpose" | "tags"
+  ) {
+    setActiveCreateTool("none");
+    setActiveCreateMetadataTool((current) => current === tool ? "none" : tool);
+  }
+
+  function selectTopicValue(nextTopic: string) {
+    setTopic(nextTopic);
+    setActiveCreateMetadataTool("none");
+  }
+
+  function selectRealityLensValue(nextLens: string) {
+    setRealityLens(nextLens);
+    setActiveCreateMetadataTool("none");
+  }
+
+  function selectPurposeLaneValue(nextLane: string) {
+    setPurposeLane(nextLane);
+    setActiveCreateMetadataTool("none");
+  }
+
+  function updateTagsValue(nextTags: string) {
+    setTagsInput(nextTags);
+  }
+
+  function closeTagsPanel() {
+    setActiveCreateMetadataTool("none");
+  }
+
   function toggleCreateTool(tool: "attachments" | "quality" | "rewrite") {
+    setActiveCreateMetadataTool("none");
     setActiveCreateTool((current) => current === tool ? "none" : tool);
   }
 
@@ -1034,118 +1036,214 @@ export default function CreatePage() {
             onKeyDown={handleFormKeyDown}
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
-            <div className="flex items-center justify-between gap-3 md:hidden" data-create-metadata-menu>
-              <p className="text-xs uppercase tracking-[0.18em] text-zinc-600">
-                Composer
+            <div className="md:hidden">
+              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                Discussion details
               </p>
 
-              <button
-                type="button"
-                onClick={() => setShowComposerMetadataMenu((current) => !current)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 bg-black text-xl leading-none text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-                aria-expanded={showComposerMetadataMenu}
-                aria-label="Open discussion details"
-              >
-                ⋮
-              </button>
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Create metadata tools rail">
+                <button
+                  type="button"
+                  onClick={() => toggleCreateMetadataTool("topic")}
+                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                    activeCreateMetadataTool === "topic"
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                  }`}
+                  aria-expanded={activeCreateMetadataTool === "topic"}
+                >
+                  Topic
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => toggleCreateMetadataTool("reality")}
+                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                    activeCreateMetadataTool === "reality" || Boolean(realityLens)
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                  }`}
+                  aria-expanded={activeCreateMetadataTool === "reality"}
+                >
+                  Reality Lens
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => toggleCreateMetadataTool("purpose")}
+                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                    activeCreateMetadataTool === "purpose" || Boolean(purposeLane)
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                  }`}
+                  aria-expanded={activeCreateMetadataTool === "purpose"}
+                >
+                  Purpose Lane
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => toggleCreateMetadataTool("tags")}
+                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                    activeCreateMetadataTool === "tags" || getTagInputItems(tagsInput).length > 0
+                      ? "bg-white text-black"
+                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                  }`}
+                  aria-expanded={activeCreateMetadataTool === "tags"}
+                >
+                  Optional Tags
+                </button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                  {topic}
+                </span>
+
+                {realityLens && (
+                  <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                    {realityLens}
+                  </span>
+                )}
+
+                {purposeLane && (
+                  <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                    {purposeLane}
+                  </span>
+                )}
+
+                {getTagInputItems(tagsInput).length > 0 && (
+                  <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                    {getTagInputItems(tagsInput).length} tags
+                  </span>
+                )}
+              </div>
             </div>
 
-            {showComposerMetadataMenu && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden" data-create-metadata-menu>
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-600">
-                      Details
-                    </p>
+            {activeCreateMetadataTool === "topic" && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+                <p className="mb-3 text-sm text-zinc-500">
+                  Choose the lane that best frames the discussion.
+                </p>
 
-                    <h2 className="text-base font-medium">
-                      Discussion metadata
-                    </h2>
-                  </div>
+                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                  {DISCUSSION_TOPICS.map((topicOption) => (
+                    <button
+                      key={topicOption}
+                      type="button"
+                      onClick={() => selectTopicValue(topicOption)}
+                      className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                        topic === topicOption
+                          ? "bg-white text-black"
+                          : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      {topicOption}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
 
+            {activeCreateMetadataTool === "reality" && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+                <p className="mb-3 text-sm text-zinc-500">
+                  Optional. Add a human-reality lens if the discussion touches deeper life experience.
+                </p>
+
+                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
                   <button
                     type="button"
-                    onClick={() => setShowComposerMetadataMenu(false)}
-                    className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                    onClick={() => selectRealityLensValue("")}
+                    className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                      !realityLens
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    }`}
                   >
-                    Close
+                    None
                   </button>
+
+                  {REALITY_LENSES.map((lens) => (
+                    <button
+                      key={lens}
+                      type="button"
+                      onClick={() => selectRealityLensValue(lens)}
+                      className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                        realityLens === lens
+                          ? "bg-white text-black"
+                          : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      {lens}
+                    </button>
+                  ))}
                 </div>
+              </section>
+            )}
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
-                      Topic
-                    </label>
+            {activeCreateMetadataTool === "purpose" && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+                <p className="mb-3 text-sm text-zinc-500">
+                  Optional. Add a direction if this points toward learning, contribution, mastery, or community.
+                </p>
 
-                    <select
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                  <button
+                    type="button"
+                    onClick={() => selectPurposeLaneValue("")}
+                    className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                      !purposeLane
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    }`}
+                  >
+                    None
+                  </button>
+
+                  {PURPOSE_LANES.map((lane) => (
+                    <button
+                      key={lane}
+                      type="button"
+                      onClick={() => selectPurposeLaneValue(lane)}
+                      className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
+                        purposeLane === lane
+                          ? "bg-white text-black"
+                          : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      }`}
                     >
-                      {DISCUSSION_TOPICS.map((topicOption) => (
-                        <option key={topicOption} value={topicOption}>
-                          {topicOption}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      {lane}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
 
-                  <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
-                      Reality Lens optional
-                    </label>
+            {activeCreateMetadataTool === "tags" && (
+              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+                <label className="mb-2 block text-sm text-zinc-400">
+                  Optional Tags
+                </label>
 
-                    <select
-                      value={realityLens}
-                      onChange={(e) => setRealityLens(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
-                    >
-                      <option value="">No reality lens</option>
-                      {REALITY_LENSES.map((lens) => (
-                        <option key={lens} value={lens}>
-                          {lens}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <input
+                  type="text"
+                  value={tagsInput}
+                  onChange={(event) => updateTagsValue(event.target.value)}
+                  onBlur={closeTagsPanel}
+                  placeholder="AI ethics, publishing, startups"
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                />
 
-                  <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
-                      Purpose Lane optional
-                    </label>
+                <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600">
+                  <p>
+                    {tagInputHelper}
+                  </p>
 
-                    <select
-                      value={purposeLane}
-                      onChange={(e) => setPurposeLane(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
-                    >
-                      <option value="">No purpose lane</option>
-                      {PURPOSE_LANES.map((lane) => (
-                        <option key={lane} value={lane}>
-                          {lane}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
-                      Optional Tags
-                    </label>
-
-                    <input
-                      type="text"
-                      value={tagsInput}
-                      onChange={(event) => setTagsInput(event.target.value)}
-                      placeholder="AI ethics, publishing, startups"
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-                    />
-
-                    <p className="mt-2 text-xs text-zinc-600">
-                      {tagInputHelper}
+                  {!isEditMode && draftId && (
+                    <p>
+                      Tags are saved when publishing, not while saving drafts.
                     </p>
-                  </div>
+                  )}
                 </div>
               </section>
             )}
