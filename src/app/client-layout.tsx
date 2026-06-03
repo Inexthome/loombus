@@ -24,6 +24,7 @@ import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
+import { AppUpdateNotice } from "@/components/app-update-notice";
 
 type NavProfile = {
   username: string | null;
@@ -824,6 +825,7 @@ export default function ClientLayout({
       )}
 
       {children}
+      <AppUpdateNotice />
       </div>
 
       {user && hasDesktopRightRail && (
