@@ -833,3 +833,27 @@ html[data-loombus-theme="dark"] .loombus-mobile-visitor-signin:hover {
   color: rgb(255 255 255) !important;
   text-decoration-color: rgb(255 255 255) !important;
 }
+
+/* Light-only desktop rail active-state polish.
+   Keeps Dark appearance untouched while preventing previously clicked desktop
+   rail icons from looking active/highlighted in Light mode. */
+html[data-loombus-theme="light"] .loombus-desktop-rail a {
+  background: transparent !important;
+  color: rgb(82 82 91) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-loombus-theme="light"] .loombus-desktop-rail a:hover {
+  background: rgb(244 244 245) !important;
+  color: rgb(24 24 27) !important;
+  border-color: rgb(212 212 216) !important;
+}
+
+html[data-loombus-theme="light"] .loombus-desktop-rail a[aria-current="page"],
+html[data-loombus-theme="light"] .loombus-desktop-rail a[data-active="true"] {
+  background: rgb(24 24 27) !important;
+  color: rgb(255 255 255) !important;
+  border-color: rgb(24 24 27) !important;
+  box-shadow: 0 18px 45px rgb(24 24 27 / 0.16) !important;
+}

@@ -551,37 +551,37 @@ export default function ClientLayout({
           </Link>
 
           <nav aria-label="Primary desktop navigation" className="flex flex-1 flex-col items-center gap-2">
-            <Link href="/" aria-label="Home" title="Home" className={desktopRailLinkClass("/")}>
+            <Link href="/" aria-label="Home" title="Home" aria-current={isActivePath("/") ? "page" : undefined} data-active={isActivePath("/") ? "true" : undefined} className={desktopRailLinkClass("/")}>
               <Home aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Home" />
             </Link>
 
-            <Link href="/discussions" aria-label="Discussions" title="Discussions" className={desktopRailLinkClass("/discussions", true)}>
+            <Link href="/discussions" aria-label="Discussions" title="Discussions" aria-current={isActivePath("/discussions") ? "page" : undefined} data-active={isActivePath("/discussions") ? "true" : undefined} className={desktopRailLinkClass("/discussions", true)}>
               <MessageCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Discussions" />
             </Link>
 
-            <Link href="/create" aria-label="Create" title="Create" className={desktopRailLinkClass("/create", true)}>
+            <Link href="/create" aria-label="Create" title="Create" aria-current={isActivePath("/create") ? "page" : undefined} data-active={isActivePath("/create") ? "true" : undefined} className={desktopRailLinkClass("/create", true)}>
               <Edit3 aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Create" />
             </Link>
 
-            <Link href="/search" aria-label="Search" title="Search" className={desktopRailLinkClass("/search")}>
+            <Link href="/search" aria-label="Search" title="Search" aria-current={isActivePath("/search") ? "page" : undefined} data-active={isActivePath("/search") ? "true" : undefined} className={desktopRailLinkClass("/search")}>
               <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Search" />
             </Link>
 
-            <Link href="/people" aria-label="People" title="People" className={desktopRailLinkClass("/people")}>
+            <Link href="/people" aria-label="People" title="People" aria-current={isActivePath("/people") ? "page" : undefined} data-active={isActivePath("/people") ? "true" : undefined} className={desktopRailLinkClass("/people")}>
               <Users aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="People" />
             </Link>
 
-            <Link href="/saved" aria-label="Saved" title="Saved" className={desktopRailLinkClass("/saved")}>
+            <Link href="/saved" aria-label="Saved" title="Saved" aria-current={isActivePath("/saved") ? "page" : undefined} data-active={isActivePath("/saved") ? "true" : undefined} className={desktopRailLinkClass("/saved")}>
               <Bookmark aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Saved" />
             </Link>
 
-            <Link href="/notifications" aria-label="Alerts" title="Alerts" className={desktopRailLinkClass("/notifications")}>
+            <Link href="/notifications" aria-label="Alerts" title="Alerts" aria-current={isActivePath("/notifications") ? "page" : undefined} data-active={isActivePath("/notifications") ? "true" : undefined} className={desktopRailLinkClass("/notifications")}>
               <span className="relative">
                 <Bell aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
                 {notificationCount > 0 && (
@@ -595,29 +595,29 @@ export default function ClientLayout({
           </nav>
 
           <div className="flex flex-col items-center gap-2">
-            <Link href="/dashboard" aria-label="Home status" title="Home status" className={desktopRailLinkClass("/dashboard")}>
+            <Link href="/dashboard" aria-label="Home status" title="Home status" aria-current={isActivePath("/dashboard") ? "page" : undefined} data-active={isActivePath("/dashboard") ? "true" : undefined} className={desktopRailLinkClass("/dashboard")}>
               <LayoutDashboard aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Home status" />
             </Link>
 
-            <Link href="/profile" aria-label="Profile" title="Profile" className={desktopRailLinkClass("/profile")}>
+            <Link href="/profile" aria-label="Profile" title="Profile" aria-current={isActivePath("/profile") ? "page" : undefined} data-active={isActivePath("/profile") ? "true" : undefined} className={desktopRailLinkClass("/profile")}>
               <UserCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Profile" />
             </Link>
 
-            <Link href="/labs" aria-label="Labs" title="Labs" className={desktopRailLinkClass("/labs")}>
+            <Link href="/labs" aria-label="Labs" title="Labs" aria-current={isActivePath("/labs") ? "page" : undefined} data-active={isActivePath("/labs") ? "true" : undefined} className={desktopRailLinkClass("/labs")}>
               <FlaskConical aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Labs" />
             </Link>
 
             {isAdmin && (
-              <Link href="/admin" aria-label="Admin" title="Admin" className={desktopRailLinkClass("/admin")}>
+              <Link href="/admin" aria-label="Admin" title="Admin" aria-current={isActivePath("/admin") ? "page" : undefined} data-active={isActivePath("/admin") ? "true" : undefined} className={desktopRailLinkClass("/admin")}>
                 <ShieldCheck aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
                 <DesktopRailTooltip label="Admin" />
               </Link>
             )}
 
-            <Link href="/settings" aria-label="Settings" title="Settings" className={desktopRailLinkClass("/settings")}>
+            <Link href="/settings" aria-label="Settings" title="Settings" aria-current={isActivePath("/settings") ? "page" : undefined} data-active={isActivePath("/settings") ? "true" : undefined} className={desktopRailLinkClass("/settings")}>
               <SettingsIcon aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Settings" />
             </Link>
