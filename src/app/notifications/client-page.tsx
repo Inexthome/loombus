@@ -132,7 +132,6 @@ export default function NotificationsClientPage() {
   const loadingRef = useRef(true);
   const [message, setMessage] = useState("");
   const [working, setWorking] = useState(false);
-  const [openAlertActionMenuId, setOpenAlertActionMenuId] = useState<string | null>(null);
 
   const canUseAdvancedControls = hasAdvancedNotificationAccess(
     aiEntitlement,
@@ -319,7 +318,6 @@ export default function NotificationsClientPage() {
       return;
     }
 
-    setOpenAlertActionMenuId(null);
     setMessage("");
     await markNotificationIdsRead([id], currentUserId);
   }
@@ -344,7 +342,6 @@ export default function NotificationsClientPage() {
       return;
     }
 
-    setOpenAlertActionMenuId(null);
     setMessage("");
     setWorking(true);
 
@@ -1001,59 +998,38 @@ export default function NotificationsClientPage() {
                   </div>
                 </div>
 
-                <div className="relative border-t border-zinc-900 pt-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-zinc-600">
-                      {href ? "Open or manage this alert." : "Manage this alert."}
-                    </p>
+                <div className="border-t border-zinc-900 pt-4">
+                  <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Alert card action rail">
+                    {href && (
+                      <button
+                        type="button"
+                        onClick={() => openNotification(notification, href)}
+                        className="shrink-0 rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                      >
+                        {getNotificationActionLabel(notification)}
+                      </button>
+                    )}
+
+                    {!notification.read_at && (
+                      <button
+                        type="button"
+                        onClick={() => markRead(notification.id)}
+                        disabled={working}
+                        className="shrink-0 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        Mark read
+                      </button>
+                    )}
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setOpenAlertActionMenuId((current) =>
-                          current === notification.id ? null : notification.id
-                        )
-                      }
-                      aria-expanded={openAlertActionMenuId === notification.id}
-                      className="rounded-full border border-zinc-800 px-3 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                      onClick={() => deleteNotification(notification.id)}
+                      disabled={working}
+                      className="shrink-0 rounded-full border border-zinc-900 px-4 py-2 text-sm text-red-300 transition hover:border-red-900 hover:bg-red-950/20 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                     >
-                      ⋮
+                      Delete
                     </button>
                   </div>
-
-                  {openAlertActionMenuId === notification.id && (
-                    <div className="absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/40">
-                      {href && (
-                        <button
-                          type="button"
-                          onClick={() => openNotification(notification, href)}
-                          className="block w-full px-4 py-3 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
-                        >
-                          {getNotificationActionLabel(notification)}
-                        </button>
-                      )}
-
-                      {!notification.read_at && (
-                        <button
-                          type="button"
-                          onClick={() => markRead(notification.id)}
-                          disabled={working}
-                          className="block w-full px-4 py-3 text-left text-sm text-zinc-400 transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
-                        >
-                          Mark read
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => deleteNotification(notification.id)}
-                        disabled={working}
-                        className="block w-full px-4 py-3 text-left text-sm text-red-300 transition hover:bg-red-950/30 disabled:cursor-not-allowed disabled:text-zinc-700"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
                 </div>
               </article>
             );
