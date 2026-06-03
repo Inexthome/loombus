@@ -20,7 +20,18 @@ export type ApplePlanKey = keyof typeof APPLE_PRODUCT_IDS;
 let appleStoreInitialized = false;
 
 export function isIosNativeApp() {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
+  if (typeof window === "undefined") return false;
+
+  const capacitorRuntime = (window as any).Capacitor;
+  const runtimePlatform =
+    capacitorRuntime?.getPlatform?.() ??
+    Capacitor.getPlatform();
+
+  const nativeRuntime =
+    capacitorRuntime?.isNativePlatform?.() ??
+    Capacitor.isNativePlatform();
+
+  return Boolean(nativeRuntime) && runtimePlatform === "ios";
 }
 
 function getCdvPurchase() {
