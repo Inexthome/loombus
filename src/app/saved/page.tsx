@@ -550,6 +550,36 @@ export default function SavedPage() {
     setSelectedCollectionId("all");
   }
 
+  function showAllSaved() {
+    setSelectedCollectionId("all");
+    setSavedSearchQuery("");
+  }
+
+  function showUnfiledSaved() {
+    setSelectedCollectionId("unfiled");
+  }
+
+  function focusSavedSearch() {
+    window.setTimeout(() => {
+      document.getElementById("saved-search")?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      (document.getElementById("saved-search") as HTMLInputElement | null)?.focus();
+    }, 0);
+  }
+
+  const savedItemsWithNotesCount = saved.filter((item) =>
+    (noteDrafts[item.id] ?? item.private_note ?? "").trim()
+  ).length;
+
+  const activeMobileSavedView =
+    hasActiveSavedSearch
+      ? `Search: “${activeSavedSearch}”`
+      : selectedCollectionId === "all"
+        ? "All saved"
+        : selectedCollectionLabel;
+
   async function createCollection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
@@ -982,6 +1012,98 @@ export default function SavedPage() {
           )}
         </div>
 
+        {!loading && (
+          <section className="mb-4 xl:hidden">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Saved tools rail">
+              <button
+                type="button"
+                onClick={showAllSaved}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  selectedCollectionId === "all" && !hasActiveSavedSearch
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                All
+              </button>
+
+              <button
+                type="button"
+                onClick={focusSavedSearch}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  hasActiveSavedSearch
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Search
+              </button>
+
+              <button
+                type="button"
+                onClick={showUnfiledSaved}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  selectedCollectionId === "unfiled"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                }`}
+              >
+                Unfiled
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const firstCollectionId = collections[0]?.id;
+                  if (firstCollectionId) {
+                    setSelectedCollectionId(firstCollectionId);
+                  }
+                }}
+                disabled={!canUseCollections || collections.length === 0}
+                className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-4 py-2.5 text-base text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                Folders
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSavedSearchQuery("note")}
+                disabled={!canUsePrivateNotes || savedItemsWithNotesCount === 0}
+                className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-4 py-2.5 text-base text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                Notes
+              </button>
+
+              <Link
+                href="/discussions"
+                className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-4 py-2.5 text-base text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+              >
+                Add more
+              </Link>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                {activeMobileSavedView}
+              </span>
+
+              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                {filteredSaved.length} of {saved.length} saved
+              </span>
+
+              {hasActiveSavedFilters && (
+                <button
+                  type="button"
+                  onClick={resetSavedFilters}
+                  className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
         <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
           <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
             Saved discussions guide
@@ -1058,7 +1180,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length > 0 && (
-          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
+          <section className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -1155,7 +1277,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length > 0 && (
-          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
+          <section className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -1209,7 +1331,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length > 0 && (
-          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
+          <section className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
@@ -1271,7 +1393,7 @@ export default function SavedPage() {
         )}
 
         {canExportSavedNotes && (
-          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
+          <section className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
@@ -1314,7 +1436,7 @@ export default function SavedPage() {
         {canUseCollections && (
           <form
             onSubmit={createCollection}
-            className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6"
+            className="mb-5 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6 md:block"
           >
             <h2 className="mb-2 text-xl font-medium sm:text-2xl">
               Create saved folder
@@ -1352,7 +1474,7 @@ export default function SavedPage() {
           </p>
         )}
 
-        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-5">
+        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-8 sm:rounded-3xl sm:p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1">
               <label htmlFor="saved-search" className="mb-2 block text-sm font-medium text-zinc-300">
