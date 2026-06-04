@@ -32,6 +32,8 @@ export default function MessagesPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [threadLoading, setThreadLoading] = useState(false);
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
+  const [composerText, setComposerText] = useState("");
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     async function loadConversations() {
@@ -127,6 +129,85 @@ export default function MessagesPage() {
       ) ?? null,
     [conversations, selectedConversationId]
   );
+
+  async function reloadThread(conversationId: string) {
+    const session = await supabase.auth.getSession();
+
+    const response = await fetch(
+      `/api/messages/thread?id=${encodeURIComponent(conversationId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+        },
+      }
+    );
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error ?? "Unable to load messages.");
+    }
+
+    setThreadMessages((payload.messages ?? []) as ThreadMessage[]);
+  }
+
+  async function handleSendMessage() {
+    if (!selectedConversationId) {
+      return;
+    }
+
+    const body = composerText.trim();
+
+    if (!body) {
+      return;
+    }
+
+    setSending(true);
+
+    try {
+      const session = await supabase.auth.getSession();
+
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({
+          conversationId: selectedConversationId,
+          body,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setMessage(payload.error ?? "Unable to send message.");
+        setSending(false);
+        return;
+      }
+
+      setComposerText("");
+
+      await reloadThread(selectedConversationId);
+
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.id === selectedConversationId
+            ? {
+                ...conversation,
+                lastMessagePreview: body,
+                lastMessageAt: new Date().toISOString(),
+              }
+            : conversation
+        )
+      );
+    } catch {
+      setMessage("Unable to send message.");
+    }
+
+    setSending(false);
+  }
 
   if (loading) {
     return (
@@ -283,6 +364,29 @@ export default function MessagesPage() {
                     })}
                   </div>
                 )}
+
+                <div className="mt-6 border-t border-zinc-900 pt-4">
+                  <textarea
+                    value={composerText}
+                    onChange={(event) =>
+                      setComposerText(event.target.value)
+                    }
+                    placeholder="Write a message..."
+                    rows={4}
+                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm text-white outline-none focus:border-zinc-700"
+                  />
+
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      disabled={sending || !composerText.trim()}
+                      onClick={handleSendMessage}
+                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {sending ? "Sending..." : "Send"}
+                    </button>
+                  </div>
+                </div>
               </>
             ) : (
               <p className="text-sm text-zinc-500">
