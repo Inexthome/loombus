@@ -1175,40 +1175,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {hasUnsavedProfileChanges && !pendingNavigationHref && (
-        <aside className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] z-40 mx-auto max-w-2xl rounded-3xl border border-zinc-800 bg-zinc-950/95 p-4 text-white shadow-2xl shadow-black/70 backdrop-blur-xl md:bottom-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium">
-                You have unsaved profile changes.
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                Save now so your profile updates are not lost.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                onClick={restoreSavedProfileSnapshot}
-                className="rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-              >
-                Discard
-              </button>
-
-              <button
-                type="button"
-                onClick={() => void saveProfile()}
-                disabled={saving}
-                className="rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
-              >
-                {saving ? "Saving..." : "Save changes"}
-              </button>
-            </div>
-          </div>
-        </aside>
-      )}
-
       {pendingNavigationHref && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
           <section
