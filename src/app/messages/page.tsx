@@ -14,11 +14,24 @@ type Conversation = {
   lastMessageAt: string | null;
 };
 
+type ThreadMessage = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+  editedAt: string | null;
+  deletedBySender: boolean;
+};
+
 export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
 
   useEffect(() => {
     async function loadConversations() {
@@ -28,6 +41,8 @@ export default function MessagesPage() {
         window.location.href = "/login";
         return;
       }
+
+      setCurrentUserId(userData.user.id);
 
       try {
         const session = await supabase.auth.getSession();
@@ -62,6 +77,48 @@ export default function MessagesPage() {
 
     loadConversations();
   }, []);
+
+  useEffect(() => {
+    async function loadThread() {
+      if (!selectedConversationId) {
+        setThreadMessages([]);
+        return;
+      }
+
+      setThreadLoading(true);
+
+      try {
+        const session = await supabase.auth.getSession();
+
+        const response = await fetch(
+          `/api/messages/thread?id=${encodeURIComponent(selectedConversationId)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+            },
+          }
+        );
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          setMessage(payload.error ?? "Unable to load messages.");
+          setThreadMessages([]);
+          setThreadLoading(false);
+          return;
+        }
+
+        setThreadMessages((payload.messages ?? []) as ThreadMessage[]);
+      } catch {
+        setMessage("Unable to load messages.");
+        setThreadMessages([]);
+      }
+
+      setThreadLoading(false);
+    }
+
+    loadThread();
+  }, [selectedConversationId]);
 
   const selectedConversation = useMemo(
     () =>
@@ -176,15 +233,56 @@ export default function MessagesPage() {
           <div className="p-6">
             {selectedConversation ? (
               <>
-                <div className="mb-2 text-lg font-medium text-white">
+                <div className="mb-4 text-lg font-medium text-white">
                   {selectedConversation.otherFullName ??
                     selectedConversation.otherUsername ??
                     "Member"}
                 </div>
 
-                <p className="text-sm text-zinc-500">
-                  Thread view and message composer will be added next.
-                </p>
+                {threadLoading ? (
+                  <p className="text-sm text-zinc-500">
+                    Loading messages...
+                  </p>
+                ) : threadMessages.length === 0 ? (
+                  <div>
+                    <p className="text-sm text-zinc-500">
+                      No messages yet.
+                    </p>
+
+                    <p className="mt-2 text-sm text-zinc-600">
+                      Start the conversation once the composer is added.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {threadMessages.map((threadMessage) => {
+                      const mine = threadMessage.senderId === currentUserId;
+
+                      return (
+                        <div
+                          key={threadMessage.id}
+                          className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                        >
+                          <div
+                            className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                              mine
+                                ? "bg-zinc-800 text-white"
+                                : "bg-zinc-950 text-zinc-200"
+                            }`}
+                          >
+                            <p className="whitespace-pre-wrap break-words">
+                              {threadMessage.body}
+                            </p>
+
+                            <p className="mt-2 text-[11px] text-zinc-500">
+                              {new Date(threadMessage.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </>
             ) : (
               <p className="text-sm text-zinc-500">
