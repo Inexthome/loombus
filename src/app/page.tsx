@@ -171,6 +171,7 @@ export default function Home() {
   const [profile, setProfile] = useState<HomeProfile | null>(null);
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -194,6 +195,25 @@ export default function Home() {
         }
 
         setEmail(data.user.email ?? null);
+
+        const session = await supabase.auth.getSession();
+
+        if (session.data.session?.access_token) {
+          fetch("/api/messages/unread-count", {
+            headers: {
+              Authorization: `Bearer ${session.data.session.access_token}`,
+            },
+          })
+            .then((response) => response.ok ? response.json() : null)
+            .then((payload) => {
+              if (payload && typeof payload.unreadCount === "number") {
+                setUnreadMessageCount(payload.unreadCount);
+              }
+            })
+            .catch(() => {
+              setUnreadMessageCount(0);
+            });
+        }
 
         const { data: profileData, error: profileError } = await withTimeout(
           supabase
