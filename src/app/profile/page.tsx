@@ -65,6 +65,36 @@ function isValidOptionalUrl(value: string) {
   return /^https?:\/\//i.test(clean);
 }
 
+type ProfileSnapshot = {
+  fullName: string;
+  username: string;
+  bio: string;
+  perspectiveMarker: string;
+  avatarUrl: string;
+  creatorWebsiteUrl: string;
+  creatorSupportUrl: string;
+  creatorSupportLabel: string;
+  repliesEnabled: boolean;
+  followsEnabled: boolean;
+  mentionsEnabled: boolean;
+  followedDiscussionsEnabled: boolean;
+  followedRepliesEnabled: boolean;
+  emailDigestEnabled: boolean;
+  emailDigestFrequency: string;
+};
+
+function profileSnapshotToString(snapshot: ProfileSnapshot) {
+  return JSON.stringify(snapshot);
+}
+
+function parseProfileSnapshot(snapshot: string): ProfileSnapshot | null {
+  try {
+    return JSON.parse(snapshot) as ProfileSnapshot;
+  } catch {
+    return null;
+  }
+}
+
 export default function ProfilePage() {
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -94,6 +124,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [savedProfileSnapshot, setSavedProfileSnapshot] = useState("");
+  const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -154,6 +186,27 @@ export default function ProfilePage() {
         );
       }
 
+      setSavedProfileSnapshot(
+        profileSnapshotToString({
+          fullName: data?.full_name ?? "",
+          username: data?.username ?? "",
+          bio: data?.bio ?? "",
+          perspectiveMarker: data?.perspective_marker ?? "",
+          avatarUrl: data?.avatar_url ?? "",
+          creatorWebsiteUrl: data?.creator_website_url ?? "",
+          creatorSupportUrl: data?.creator_support_url ?? "",
+          creatorSupportLabel: data?.creator_support_label ?? "",
+          repliesEnabled: preferences?.replies_enabled ?? true,
+          followsEnabled: preferences?.follows_enabled ?? true,
+          mentionsEnabled: preferences?.mentions_enabled ?? true,
+          followedDiscussionsEnabled: preferences?.followed_discussions_enabled ?? true,
+          followedRepliesEnabled: preferences?.followed_replies_enabled ?? false,
+          emailDigestEnabled: preferences?.email_digest_enabled ?? false,
+          emailDigestFrequency:
+            preferences?.email_digest_frequency === "daily" ? "daily" : "weekly",
+        })
+      );
+
       setLoading(false);
     }
 
@@ -192,6 +245,125 @@ export default function ProfilePage() {
     .map((item) => item.label.toLowerCase());
 
   const canUseCreatorTools = hasCreatorToolsAccess(aiEntitlement, isAdmin);
+
+  const currentProfileSnapshot = profileSnapshotToString({
+    fullName,
+    username,
+    bio,
+    perspectiveMarker,
+    avatarUrl,
+    creatorWebsiteUrl,
+    creatorSupportUrl,
+    creatorSupportLabel,
+    repliesEnabled,
+    followsEnabled,
+    mentionsEnabled,
+    followedDiscussionsEnabled,
+    followedRepliesEnabled,
+    emailDigestEnabled,
+    emailDigestFrequency,
+  });
+
+  const hasUnsavedProfileChanges =
+    !loading &&
+    Boolean(savedProfileSnapshot) &&
+    currentProfileSnapshot !== savedProfileSnapshot;
+
+  function restoreSavedProfileSnapshot() {
+    const snapshot = parseProfileSnapshot(savedProfileSnapshot);
+
+    if (!snapshot) {
+      return;
+    }
+
+    setFullName(snapshot.fullName);
+    setUsername(snapshot.username);
+    setBio(snapshot.bio);
+    setPerspectiveMarker(snapshot.perspectiveMarker);
+    setAvatarUrl(snapshot.avatarUrl);
+    setCreatorWebsiteUrl(snapshot.creatorWebsiteUrl);
+    setCreatorSupportUrl(snapshot.creatorSupportUrl);
+    setCreatorSupportLabel(snapshot.creatorSupportLabel);
+    setRepliesEnabled(snapshot.repliesEnabled);
+    setFollowsEnabled(snapshot.followsEnabled);
+    setMentionsEnabled(snapshot.mentionsEnabled);
+    setFollowedDiscussionsEnabled(snapshot.followedDiscussionsEnabled);
+    setFollowedRepliesEnabled(snapshot.followedRepliesEnabled);
+    setEmailDigestEnabled(snapshot.emailDigestEnabled);
+    setEmailDigestFrequency(snapshot.emailDigestFrequency);
+    setMessage("Unsaved profile changes discarded.");
+  }
+
+  useEffect(() => {
+    if (!hasUnsavedProfileChanges) {
+      return;
+    }
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedProfileChanges]);
+
+  useEffect(() => {
+    if (!hasUnsavedProfileChanges || saving) {
+      return;
+    }
+
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const anchor = target.closest("a[href]") as HTMLAnchorElement | null;
+
+      if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) {
+        return;
+      }
+
+      const destination = new URL(anchor.href);
+
+      if (destination.origin !== window.location.origin) {
+        return;
+      }
+
+      const currentUrl = new URL(window.location.href);
+
+      if (
+        destination.pathname === currentUrl.pathname &&
+        destination.search === currentUrl.search &&
+        destination.hash
+      ) {
+        return;
+      }
+
+      if (
+        destination.pathname === currentUrl.pathname &&
+        destination.search === currentUrl.search &&
+        destination.hash === currentUrl.hash
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setPendingNavigationHref(destination.href);
+    }
+
+    document.addEventListener("click", handleDocumentClick, true);
+
+    return () => {
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  }, [hasUnsavedProfileChanges, saving]);
 
   async function handleAvatarUpload(event: ChangeEvent<HTMLInputElement>) {
     setMessage("");
@@ -271,7 +443,20 @@ export default function ProfilePage() {
         return;
       }
 
-      setAvatarUrl(result.avatarUrl ?? publicUrl);
+      const uploadedAvatarUrl = result.avatarUrl ?? publicUrl;
+      setAvatarUrl(uploadedAvatarUrl);
+      setSavedProfileSnapshot((current) => {
+        const snapshot = parseProfileSnapshot(current);
+
+        if (!snapshot) {
+          return current;
+        }
+
+        return profileSnapshotToString({
+          ...snapshot,
+          avatarUrl: uploadedAvatarUrl,
+        });
+      });
       setMessage("Avatar updated successfully.");
     } finally {
       setUploadingAvatar(false);
@@ -279,11 +464,11 @@ export default function ProfilePage() {
     }
   }
 
-  async function saveProfile(event?: FormEvent<HTMLFormElement> | KeyboardEvent<HTMLFormElement>) {
+  async function saveProfile(event?: FormEvent<HTMLFormElement> | KeyboardEvent<HTMLFormElement>): Promise<boolean> {
     event?.preventDefault();
 
     if (saving) {
-      return;
+      return false;
     }
 
     setMessage("");
@@ -297,7 +482,7 @@ export default function ProfilePage() {
     if (!/^[a-z0-9_]{2,30}$/.test(cleanUsername)) {
       setSaving(false);
       setMessage("Username must be 2-30 characters and can only use letters, numbers, and underscores.");
-      return;
+      return false;
     }
 
     const cleanCreatorWebsiteUrl = creatorWebsiteUrl.trim();
@@ -312,19 +497,19 @@ export default function ProfilePage() {
     if (hasCreatorFields && !canUseCreatorTools) {
       setSaving(false);
       setMessage("Creator/supporter profile tools require Premium Plus access. Clear those fields to save your basic profile.");
-      return;
+      return false;
     }
 
     if (!isValidOptionalUrl(cleanCreatorWebsiteUrl)) {
       setSaving(false);
       setMessage("Creator website URL must start with http:// or https://.");
-      return;
+      return false;
     }
 
     if (!isValidOptionalUrl(cleanCreatorSupportUrl)) {
       setSaving(false);
       setMessage("Support URL must start with http:// or https://.");
-      return;
+      return false;
     }
 
     const { data: sessionData } = await supabase.auth.getSession();
@@ -333,7 +518,7 @@ export default function ProfilePage() {
     if (!accessToken) {
       setSaving(false);
       window.location.href = "/login";
-      return;
+      return false;
     }
 
     try {
@@ -368,14 +553,63 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         setMessage(result.error ?? "Unable to save profile.");
-        return;
+        return false;
       }
 
-      setUsername(result.profile?.username ?? cleanUsername);
+      const savedUsername = result.profile?.username ?? cleanUsername;
+      const savedCreatorWebsiteUrl = cleanCreatorWebsiteUrl;
+      const savedCreatorSupportUrl = cleanCreatorSupportUrl;
+      const savedCreatorSupportLabel = cleanCreatorSupportLabel;
+
+      setUsername(savedUsername);
+      setCreatorWebsiteUrl(savedCreatorWebsiteUrl);
+      setCreatorSupportUrl(savedCreatorSupportUrl);
+      setCreatorSupportLabel(savedCreatorSupportLabel);
+      setSavedProfileSnapshot(
+        profileSnapshotToString({
+          fullName,
+          username: savedUsername,
+          bio,
+          perspectiveMarker,
+          avatarUrl,
+          creatorWebsiteUrl: savedCreatorWebsiteUrl,
+          creatorSupportUrl: savedCreatorSupportUrl,
+          creatorSupportLabel: savedCreatorSupportLabel,
+          repliesEnabled,
+          followsEnabled,
+          mentionsEnabled,
+          followedDiscussionsEnabled,
+          followedRepliesEnabled,
+          emailDigestEnabled,
+          emailDigestFrequency,
+        })
+      );
       setMessage("Profile and notification settings updated successfully.");
+      return true;
     } catch {
       setSaving(false);
       setMessage("Unable to save profile.");
+      return false;
+    }
+  }
+
+  async function saveAndContinueNavigation() {
+    const destination = pendingNavigationHref;
+    const saved = await saveProfile();
+
+    if (saved && destination) {
+      setPendingNavigationHref(null);
+      window.location.href = destination;
+    }
+  }
+
+  function discardAndContinueNavigation() {
+    const destination = pendingNavigationHref;
+    restoreSavedProfileSnapshot();
+    setPendingNavigationHref(null);
+
+    if (destination) {
+      window.location.href = destination;
     }
   }
 
@@ -940,6 +1174,90 @@ export default function ProfilePage() {
           </aside>
         </div>
       </div>
+
+      {hasUnsavedProfileChanges && !pendingNavigationHref && (
+        <aside className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] z-40 mx-auto max-w-2xl rounded-3xl border border-zinc-800 bg-zinc-950/95 p-4 text-white shadow-2xl shadow-black/70 backdrop-blur-xl md:bottom-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium">
+                You have unsaved profile changes.
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                Save now so your profile updates are not lost.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={restoreSavedProfileSnapshot}
+                className="rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Discard
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void saveProfile()}
+                disabled={saving}
+                className="rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+              >
+                {saving ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      {pendingNavigationHref && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-unsaved-changes-title"
+            className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-950 p-5 text-white shadow-2xl shadow-black/70 sm:p-6"
+          >
+            <p className="mb-2 text-xs uppercase tracking-[0.24em] text-zinc-500">
+              Unsaved profile
+            </p>
+
+            <h2 id="profile-unsaved-changes-title" className="text-2xl font-semibold tracking-tight">
+              Save your profile changes?
+            </h2>
+
+            <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+              You changed your profile or notification settings. Save before leaving so those updates are not lost.
+            </p>
+
+            <div className="mt-6 grid gap-3">
+              <button
+                type="button"
+                onClick={() => void saveAndContinueNavigation()}
+                disabled={saving}
+                className="rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+              >
+                {saving ? "Saving..." : "Save changes and leave"}
+              </button>
+
+              <button
+                type="button"
+                onClick={discardAndContinueNavigation}
+                className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Discard changes and leave
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPendingNavigationHref(null)}
+                className="rounded-full border border-zinc-900 px-5 py-3 text-sm text-zinc-500 transition hover:border-zinc-700 hover:text-white"
+              >
+                Keep editing
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
