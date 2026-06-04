@@ -971,3 +971,66 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
     background-color: #3f3f46 !important;
   }
 }
+
+/* Loombus system light dark-surface text contrast repair */
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .bg-black .text-white,
+  html[data-loombus-theme="system"] .bg-black\/40 .text-white,
+  html[data-loombus-theme="system"] .bg-zinc-950 .text-white,
+  html[data-loombus-theme="system"] .bg-zinc-950\/60 .text-white,
+  html[data-loombus-theme="system"] .bg-zinc-950\/70 .text-white,
+  html[data-loombus-theme="system"] .bg-zinc-950\/80 .text-white {
+    color: #18181b !important;
+  }
+
+  html[data-loombus-theme="system"] .bg-black .text-zinc-50,
+  html[data-loombus-theme="system"] .bg-black .text-zinc-100,
+  html[data-loombus-theme="system"] .bg-black .text-zinc-200,
+  html[data-loombus-theme="system"] .bg-black\/40 .text-zinc-50,
+  html[data-loombus-theme="system"] .bg-black\/40 .text-zinc-100,
+  html[data-loombus-theme="system"] .bg-black\/40 .text-zinc-200,
+  html[data-loombus-theme="system"] .bg-zinc-950 .text-zinc-50,
+  html[data-loombus-theme="system"] .bg-zinc-950 .text-zinc-100,
+  html[data-loombus-theme="system"] .bg-zinc-950 .text-zinc-200,
+  html[data-loombus-theme="system"] .bg-zinc-950\/60 .text-zinc-50,
+  html[data-loombus-theme="system"] .bg-zinc-950\/60 .text-zinc-100,
+  html[data-loombus-theme="system"] .bg-zinc-950\/60 .text-zinc-200,
+  html[data-loombus-theme="system"] .bg-zinc-950\/70 .text-zinc-50,
+  html[data-loombus-theme="system"] .bg-zinc-950\/70 .text-zinc-100,
+  html[data-loombus-theme="system"] .bg-zinc-950\/70 .text-zinc-200,
+  html[data-loombus-theme="system"] .bg-zinc-950\/80 .text-zinc-50,
+  html[data-loombus-theme="system"] .bg-zinc-950\/80 .text-zinc-100,
+  html[data-loombus-theme="system"] .bg-zinc-950\/80 .text-zinc-200 {
+    color: #27272a !important;
+  }
+
+  html[data-loombus-theme="system"] .bg-black .text-zinc-300,
+  html[data-loombus-theme="system"] .bg-black .text-zinc-400,
+  html[data-loombus-theme="system"] .bg-black\/40 .text-zinc-300,
+  html[data-loombus-theme="system"] .bg-black\/40 .text-zinc-400,
+  html[data-loombus-theme="system"] .bg-zinc-950 .text-zinc-300,
+  html[data-loombus-theme="system"] .bg-zinc-950 .text-zinc-400,
+  html[data-loombus-theme="system"] .bg-zinc-950\/60 .text-zinc-300,
+  html[data-loombus-theme="system"] .bg-zinc-950\/60 .text-zinc-400,
+  html[data-loombus-theme="system"] .bg-zinc-950\/70 .text-zinc-300,
+  html[data-loombus-theme="system"] .bg-zinc-950\/70 .text-zinc-400,
+  html[data-loombus-theme="system"] .bg-zinc-950\/80 .text-zinc-300,
+  html[data-loombus-theme="system"] .bg-zinc-950\/80 .text-zinc-400 {
+    color: #52525b !important;
+  }
+
+  html[data-loombus-theme="system"] .bg-black .text-zinc-500,
+  html[data-loombus-theme="system"] .bg-black\/40 .text-zinc-500,
+  html[data-loombus-theme="system"] .bg-zinc-950 .text-zinc-500,
+  html[data-loombus-theme="system"] .bg-zinc-950\/60 .text-zinc-500,
+  html[data-loombus-theme="system"] .bg-zinc-950\/70 .text-zinc-500,
+  html[data-loombus-theme="system"] .bg-zinc-950\/80 .text-zinc-500 {
+    color: #71717a !important;
+  }
+
+  html[data-loombus-theme="system"] .bg-black .placeholder\:text-zinc-600::placeholder,
+  html[data-loombus-theme="system"] .bg-black\/40 .placeholder\:text-zinc-600::placeholder,
+  html[data-loombus-theme="system"] .bg-zinc-950 .placeholder\:text-zinc-600::placeholder {
+    color: #71717a !important;
+  }
+}
