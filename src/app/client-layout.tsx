@@ -577,6 +577,11 @@ export default function ClientLayout({
               <DesktopRailTooltip label="People" />
             </Link>
 
+            <Link href="/messages" aria-label="Messages" title="Messages" aria-current={isActivePath("/messages") ? "page" : undefined} data-active={isActivePath("/messages") ? "true" : undefined} className={desktopRailLinkClass("/messages")}>
+              <MessageCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Messages" />
+            </Link>
+
             <Link href="/saved" aria-label="Saved" title="Saved" aria-current={isActivePath("/saved") ? "page" : undefined} data-active={isActivePath("/saved") ? "true" : undefined} className={desktopRailLinkClass("/saved")}>
               <Bookmark aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Saved" />
@@ -715,6 +720,9 @@ export default function ClientLayout({
                       </Link>
                       <Link href="/following" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         Following
+                      </Link>
+                      <Link href="/messages" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Messages
                       </Link>
                       <Link href="/saved" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         Saved
@@ -938,6 +946,10 @@ export default function ClientLayout({
 
                   <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
                     Following
+                  </Link>
+
+                  <Link href="/messages" onClick={closeMobileMenu} className={mobileNavLinkClass("/messages")}>
+                    Messages
                   </Link>
 
                   <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
