@@ -928,3 +928,46 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950,
 html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
   background: rgb(244 244 245) !important;
 }
+
+/* Loombus system dark mobile visitor auth cleanup */
+@media (max-width: 767px) and (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] .loombus-mobile-visitor-auth-card {
+    background: rgba(9, 9, 11, 0.86) !important;
+    color: #f4f4f5 !important;
+    border-color: rgba(63, 63, 70, 0.95) !important;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.42) !important;
+  }
+
+  html[data-loombus-theme="system"] .loombus-mobile-visitor-create {
+    background: transparent !important;
+    color: #e4e4e7 !important;
+    border-color: rgba(113, 113, 122, 0.72) !important;
+    opacity: 1 !important;
+  }
+
+  html[data-loombus-theme="system"] .loombus-mobile-visitor-create:hover {
+    background: #18181b !important;
+    color: #ffffff !important;
+  }
+
+  html[data-loombus-theme="system"] .loombus-mobile-visitor-legal,
+  html[data-loombus-theme="system"] .loombus-mobile-visitor-existing {
+    color: #a1a1aa !important;
+    opacity: 1 !important;
+  }
+
+  html[data-loombus-theme="system"] .loombus-mobile-visitor-legal a,
+  html[data-loombus-theme="system"] .loombus-mobile-visitor-signin {
+    color: #e4e4e7 !important;
+    text-decoration-color: rgba(228, 228, 231, 0.72) !important;
+    opacity: 1 !important;
+  }
+
+  html[data-loombus-theme="system"] .loombus-mobile-visitor-auth-card .text-zinc-700 {
+    color: #71717a !important;
+  }
+
+  html[data-loombus-theme="system"] .loombus-mobile-visitor-auth-card .bg-zinc-900 {
+    background-color: #3f3f46 !important;
+  }
+}
