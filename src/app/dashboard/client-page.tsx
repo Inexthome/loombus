@@ -1108,34 +1108,6 @@ export default function DashboardClientPage() {
           </Link>
         </MobileDashboardShell>
 
-        <MobileDashboardShell
-          eyebrow="Messages"
-          title="Private conversations"
-          summary="Continue direct conversations with mutual followers without adding more clutter to the main rail."
-          storageKey="loombus-dashboard-shell-messages-v1"
-        >
-          <Link
-            href="/messages"
-            className="block rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-medium text-zinc-100">
-                  Messages
-                </h2>
-
-                <p className="mt-1 text-sm leading-relaxed text-zinc-600">
-                  Open your inbox, read threads, and send private messages.
-                </p>
-              </div>
-
-              <span className="shrink-0 rounded-full bg-white px-4 py-2 text-sm text-black">
-                Open inbox
-              </span>
-            </div>
-          </Link>
-        </MobileDashboardShell>
-
         <ProgressiveGuide
           storageKey="loombus-guide-dashboard-getting-started-v1"
           eyebrow="Guide"

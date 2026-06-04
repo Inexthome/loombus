@@ -88,6 +88,11 @@ const memberSections = [
         href: "/notifications",
       },
       {
+        title: "Messages",
+        description: "Open private conversations with mutual followers.",
+        href: "/messages",
+      },
+      {
         title: "Saved",
         description: "Return to discussions you saved.",
         href: "/saved",
