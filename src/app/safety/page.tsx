@@ -22,8 +22,6 @@ export default function SafetyPage() {
         }
       />
 
-      <LegalReviewNotice label="Safety page" />
-
       <div className="space-y-8 leading-relaxed text-zinc-400">
         <Panel tone="danger">
           <h2 className="mb-4 text-2xl font-semibold text-white">

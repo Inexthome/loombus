@@ -22,8 +22,6 @@ export default function TermsPage() {
         }
       />
 
-      <LegalReviewNotice label="Terms of Service" />
-
       <div className="space-y-8 leading-relaxed text-zinc-400">
         <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
