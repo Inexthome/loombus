@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
 
@@ -84,6 +84,9 @@ export default function MessagesPage() {
   const [composerText, setComposerText] = useState("");
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   const [attachmentMessage, setAttachmentMessage] = useState("");
+  const [typingUserName, setTypingUserName] = useState("");
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingSentRef = useRef(0);
   const [sending, setSending] = useState(false);
   const [peopleSearchQuery, setPeopleSearchQuery] = useState("");
   const [conversationSearchQuery, setConversationSearchQuery] = useState("");
@@ -220,6 +223,41 @@ export default function MessagesPage() {
 
     loadThread();
   }, [selectedConversationId]);
+
+  useEffect(() => {
+    if (!selectedConversationId || !currentUserId) {
+      setTypingUserName("");
+      return;
+    }
+
+    const channel = supabase.channel(`private-message-typing:${selectedConversationId}`);
+
+    channel
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if (!payload || payload.userId === currentUserId) {
+          return;
+        }
+
+        setTypingUserName(String(payload.name ?? "Someone"));
+
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+
+        typingTimeoutRef.current = setTimeout(() => {
+          setTypingUserName("");
+        }, 4000);
+      })
+      .subscribe();
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      supabase.removeChannel(channel);
+    };
+  }, [selectedConversationId, currentUserId]);
 
   useEffect(() => {
     const query = peopleSearchQuery.trim();
@@ -532,6 +570,36 @@ export default function MessagesPage() {
     }
 
     setConversationAction(null);
+  }
+
+  function sendTypingIndicator() {
+    if (!selectedConversationId || !currentUserId) {
+      return;
+    }
+
+    const now = Date.now();
+
+    if (now - lastTypingSentRef.current < 1500) {
+      return;
+    }
+
+    lastTypingSentRef.current = now;
+
+    const name =
+      selectedConversation?.otherFullName ||
+      selectedConversation?.otherUsername ||
+      "Someone";
+
+    supabase
+      .channel(`private-message-typing:${selectedConversationId}`)
+      .send({
+        type: "broadcast",
+        event: "typing",
+        payload: {
+          userId: currentUserId,
+          name,
+        },
+      });
   }
 
   function handleAttachmentSelection(event: ChangeEvent<HTMLInputElement>) {
@@ -1181,6 +1249,12 @@ Send the first message when you're ready.
                   </div>
                 )}
 
+                {typingUserName && (
+                  <p className="mt-3 text-xs text-zinc-500">
+                    {typingUserName} is typing...
+                  </p>
+                )}
+
                 <div className="sticky bottom-0 mt-6 border-t border-zinc-900 bg-black/95 pt-4 backdrop-blur-xl">
                   {attachmentFiles.length > 0 && (
                     <div className="mb-2 rounded-2xl border border-zinc-900 bg-zinc-950 p-3">
@@ -1236,9 +1310,10 @@ Send the first message when you're ready.
 
                     <textarea
                       value={composerText}
-                      onChange={(event) =>
-                        setComposerText(event.target.value)
-                      }
+                      onChange={(event) => {
+                        setComposerText(event.target.value);
+                        sendTypingIndicator();
+                      }}
                       placeholder="Write a message..."
                       rows={1}
                       className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-sm text-white outline-none placeholder:text-zinc-600"
