@@ -174,11 +174,18 @@ export async function POST(request: NextRequest) {
 
   const recipientId = otherMembers[0].user_id;
 
-  const { data: recipientProfile } = await supabase
-    .from("profiles")
-    .select("account_status, enforcement_reason, suspended_until")
-    .eq("id", recipientId)
-    .maybeSingle();
+  const [{ data: recipientProfile }, { data: senderProfile }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("account_status, enforcement_reason, suspended_until")
+      .eq("id", recipientId)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("full_name, username")
+      .eq("id", user.id)
+      .maybeSingle(),
+  ]);
 
   const recipientEnforcement = getAccountEnforcementResult(
     (recipientProfile ?? null) as ProfileAccess | null
@@ -262,13 +269,18 @@ export async function POST(request: NextRequest) {
     .eq("conversation_id", conversationId)
     .in("user_id", [user.id, recipientId]);
 
+  const senderName =
+    senderProfile?.full_name?.trim() ||
+    senderProfile?.username?.trim() ||
+    "Someone";
+
   const { error: notificationError } = await createNotification({
     user_id: recipientId,
     actor_id: user.id,
     type: conversation.last_message_at ? "message_reply" : "new_message",
     target_type: "conversation",
     target_id: conversationId,
-    message: "You have a new private message.",
+    message: `${senderName} sent you a message.`,
   });
 
   if (notificationError) {
