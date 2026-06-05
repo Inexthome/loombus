@@ -532,9 +532,17 @@ export default function Home() {
                           : "border-zinc-800 bg-black/40 text-white hover:bg-zinc-900"
                       }`}
                     >
-                      <h3 className="mb-2 text-lg font-semibold sm:mb-3 sm:text-xl">
-                        {card.title}
-                      </h3>
+                      <div className="mb-2 flex items-start justify-between gap-3 sm:mb-3">
+                        <h3 className="text-lg font-semibold sm:text-xl">
+                          {card.title}
+                        </h3>
+
+                        {card.href === "/messages" && unreadMessageCount > 0 ? (
+                          <span className="shrink-0 rounded-full border border-emerald-300 bg-emerald-400 px-2.5 py-1 text-xs font-semibold text-black shadow-[0_0_0_3px_rgba(52,211,153,0.18)]">
+                            {unreadMessageCount > 9 ? "9+" : unreadMessageCount} unread
+                          </span>
+                        ) : null}
+                      </div>
 
                       <p
                         className={`text-sm leading-relaxed ${
