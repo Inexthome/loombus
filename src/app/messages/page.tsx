@@ -1048,9 +1048,55 @@ Send the first message when you're ready.
                                 : "border border-zinc-900 bg-zinc-950 text-zinc-200"
                             }`}
                           >
-                            <p className="whitespace-pre-wrap break-words">
-                              {threadMessage.body}
-                            </p>
+                            {threadMessage.body && threadMessage.body !== "[Attachment]" && (
+                              <p className="whitespace-pre-wrap break-words">
+                                {threadMessage.body}
+                              </p>
+                            )}
+
+                            {threadMessage.attachments && threadMessage.attachments.length > 0 && (
+                              <div className="mt-3 space-y-2">
+                                {threadMessage.attachments.map((attachment) => (
+                                  <div
+                                    key={attachment.id}
+                                    className={`overflow-hidden rounded-xl border ${
+                                      mine
+                                        ? "border-zinc-300/20 bg-black/10"
+                                        : "border-zinc-800 bg-black"
+                                    }`}
+                                  >
+                                    {attachment.attachmentKind === "image" ? (
+                                      <a
+                                        href={attachment.publicUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        <img
+                                          src={attachment.publicUrl}
+                                          alt={attachment.fileName}
+                                          className="max-h-72 w-full object-cover"
+                                        />
+                                      </a>
+                                    ) : (
+                                      <a
+                                        href={attachment.publicUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="block p-3"
+                                      >
+                                        <p className="text-sm font-medium">
+                                          PDF
+                                        </p>
+
+                                        <p className="mt-1 truncate text-xs opacity-70">
+                                          {attachment.fileName}
+                                        </p>
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
 
                             <p className={`mt-2 text-[11px] ${mine ? "text-zinc-600" : "text-zinc-500"}`}>
                               {new Date(threadMessage.createdAt).toLocaleString()}
