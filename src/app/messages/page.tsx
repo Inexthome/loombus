@@ -138,6 +138,27 @@ export default function MessagesPage() {
         }
 
         setThreadMessages((payload.messages ?? []) as ThreadMessage[]);
+
+        await fetch("/api/messages/mark-read", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+          },
+          body: JSON.stringify({
+            conversationId: selectedConversationId,
+          }),
+        });
+
+        setConversations((current) =>
+          current.map((conversation) =>
+            conversation.id === selectedConversationId
+              ? { ...conversation, hasUnread: false }
+              : conversation
+          )
+        );
+
+        window.dispatchEvent(new Event("loombus:messages-changed"));
       } catch {
         setMessage("Unable to load messages.");
         setThreadMessages([]);
@@ -230,6 +251,27 @@ export default function MessagesPage() {
     }
 
     setThreadMessages((payload.messages ?? []) as ThreadMessage[]);
+
+    await fetch("/api/messages/mark-read", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+      },
+      body: JSON.stringify({
+        conversationId,
+      }),
+    });
+
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === conversationId
+          ? { ...conversation, hasUnread: false }
+          : conversation
+      )
+    );
+
+    window.dispatchEvent(new Event("loombus:messages-changed"));
   }
 
   async function reloadConversationsAndSelect(conversationId: string) {
