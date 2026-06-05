@@ -50,6 +50,9 @@ export default function MessagesPage() {
   const [startingConversation, setStartingConversation] = useState<string | null>(null);
   const [conversationAction, setConversationAction] = useState<string | null>(null);
   const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
+  const [reportPanelOpen, setReportPanelOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("harassment");
+  const [reportNotes, setReportNotes] = useState("");
 
   useEffect(() => {
     async function loadConversations() {
@@ -338,9 +341,16 @@ export default function MessagesPage() {
   }
 
   async function runConversationAction(
-    action: "archive" | "delete" | "report"
+    action: "archive" | "delete" | "report",
+    reportOptions?: { reason?: string; notes?: string }
   ) {
     if (!selectedConversationId) {
+      return;
+    }
+
+    if (action === "report" && !reportOptions) {
+      setConversationMenuOpen(false);
+      setReportPanelOpen(true);
       return;
     }
 
@@ -349,7 +359,7 @@ export default function MessagesPage() {
         ? window.confirm("Archive this conversation from your inbox?")
         : action === "delete"
           ? window.confirm("Delete this conversation from your inbox? This only removes it for you.")
-          : window.confirm("Report this conversation for review?");
+          : true;
 
     if (!confirmed) {
       return;
@@ -370,6 +380,12 @@ export default function MessagesPage() {
         },
         body: JSON.stringify({
           conversationId: selectedConversationId,
+          ...(action === "report"
+            ? {
+                reason: reportOptions?.reason ?? reportReason,
+                notes: reportOptions?.notes ?? reportNotes,
+              }
+            : {}),
         }),
       });
 
@@ -379,6 +395,13 @@ export default function MessagesPage() {
         setMessage(payload.error ?? `Unable to ${action} conversation.`);
         setConversationAction(null);
         return;
+      }
+
+      if (action === "report") {
+        setReportPanelOpen(false);
+        setReportNotes("");
+        setReportReason("harassment");
+        setMessage("Conversation reported for review.");
       }
 
       if (action === "archive" || action === "delete") {
@@ -690,7 +713,7 @@ export default function MessagesPage() {
                         onClick={() => runConversationAction("report")}
                         className="block w-full px-4 py-3 text-left text-sm text-red-300 transition hover:bg-red-950/20 disabled:cursor-not-allowed disabled:text-zinc-700"
                       >
-                        {conversationAction === "report" ? "Reporting..." : "Report"}
+                        Report
                       </button>
                     </div>
                   ) : null}
@@ -706,6 +729,91 @@ export default function MessagesPage() {
           <div className="p-4 sm:p-6">
             {selectedConversation ? (
               <>
+                {reportPanelOpen && (
+                  <div className="mb-4 rounded-2xl border border-red-950 bg-red-950/10 p-4">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-red-200">
+                          Report conversation
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                          Choose the closest reason. Reports are reviewed by Loombus admins.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setReportPanelOpen(false)}
+                        className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {[
+                        ["spam", "Spam"],
+                        ["harassment", "Harassment"],
+                        ["abuse", "Abuse"],
+                        ["impersonation", "Impersonation"],
+                        ["scam", "Scam"],
+                        ["other", "Other"],
+                      ].map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setReportReason(value)}
+                          className={`rounded-xl border px-3 py-2 text-left text-sm transition ${
+                            reportReason === value
+                              ? "border-red-700 bg-red-950/30 text-red-100"
+                              : "border-zinc-900 bg-black text-zinc-500 hover:border-zinc-700 hover:text-white"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <label className="mt-3 block">
+                      <span className="mb-2 block text-xs text-zinc-500">
+                        Notes optional
+                      </span>
+                      <textarea
+                        value={reportNotes}
+                        onChange={(event) => setReportNotes(event.target.value)}
+                        placeholder="Add anything admins should know."
+                        rows={3}
+                        maxLength={1000}
+                        className="w-full rounded-xl border border-zinc-800 bg-black px-3 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-600"
+                      />
+                    </label>
+
+                    <div className="mt-3 flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setReportPanelOpen(false)}
+                        className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={conversationAction === "report"}
+                        onClick={() =>
+                          runConversationAction("report", {
+                            reason: reportReason,
+                            notes: reportNotes,
+                          })
+                        }
+                        className="rounded-full border border-red-800 px-4 py-2 text-sm text-red-200 transition hover:border-red-600 hover:text-red-100 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        {conversationAction === "report" ? "Submitting..." : "Submit report"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {threadLoading ? (
                   <p className="text-sm text-zinc-500">
                     Loading messages...
