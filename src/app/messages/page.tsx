@@ -10,6 +10,7 @@ type Conversation = {
   otherUsername: string | null;
   otherFullName: string | null;
   otherAvatarUrl: string | null;
+  hasUnread: boolean;
   lastMessagePreview: string | null;
   lastMessageAt: string | null;
 };
@@ -542,10 +543,16 @@ export default function MessagesPage() {
                     />
 
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-white">
-                        {conversation.otherFullName ??
-                          conversation.otherUsername ??
-                          "Member"}
+                      <div className="flex items-center gap-2">
+                        <div className="truncate text-sm font-medium text-white">
+                          {conversation.otherFullName ??
+                            conversation.otherUsername ??
+                            "Member"}
+                        </div>
+
+                        {conversation.hasUnread ? (
+                          <span className="h-2 w-2 rounded-full bg-white" />
+                        ) : null}
                       </div>
 
                       <div className="mt-1 truncate text-xs text-zinc-500">

@@ -212,6 +212,7 @@ export async function GET(request: NextRequest) {
       `
       conversation_id,
       deleted_at,
+      last_read_at,
       private_conversations (
         id,
         created_by,
@@ -300,6 +301,22 @@ export async function GET(request: NextRequest) {
       const otherProfile = otherMember ? profileMap.get(otherMember.user_id) : null;
       const lastMessage = lastMessageMap.get(conversation.id);
 
+      const membership =
+        membershipRowsForList.find(
+          (row) => row.conversation_id === conversation.id
+        ) ?? null;
+
+      const lastReadAt =
+        (membership as any)?.last_read_at ?? null;
+
+      const hasUnread =
+        Boolean(conversation.last_message_at) &&
+        (
+          !lastReadAt ||
+          new Date(conversation.last_message_at!).getTime() >
+            new Date(lastReadAt).getTime()
+        );
+
       return {
         id: conversation.id,
         createdBy: conversation.created_by,
@@ -310,6 +327,7 @@ export async function GET(request: NextRequest) {
         otherUsername: otherProfile?.username ?? null,
         otherFullName: otherProfile?.full_name ?? null,
         otherAvatarUrl: otherProfile?.avatar_url ?? null,
+        hasUnread,
         lastMessagePreview: lastMessage?.body
           ? String(lastMessage.body).slice(0, 140)
           : null,
