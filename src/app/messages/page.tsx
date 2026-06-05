@@ -49,6 +49,7 @@ export default function MessagesPage() {
   const [peopleSearchLoading, setPeopleSearchLoading] = useState(false);
   const [startingConversation, setStartingConversation] = useState<string | null>(null);
   const [conversationAction, setConversationAction] = useState<string | null>(null);
+  const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
 
   useEffect(() => {
     async function loadConversations() {
@@ -355,6 +356,7 @@ export default function MessagesPage() {
     }
 
     setConversationAction(action);
+    setConversationMenuOpen(false);
     setMessage("");
 
     try {
@@ -650,33 +652,48 @@ export default function MessagesPage() {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                    <button
-                      type="button"
-                      disabled={Boolean(conversationAction)}
-                      onClick={() => runConversationAction("archive")}
-                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {conversationAction === "archive" ? "Archiving..." : "Archive"}
-                    </button>
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    aria-label="Conversation actions"
+                    aria-expanded={conversationMenuOpen}
+                    disabled={Boolean(conversationAction)}
+                    onClick={() => setConversationMenuOpen((current) => !current)}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-800 text-lg leading-none text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    ⋯
+                  </button>
 
-                    <button
-                      type="button"
-                      disabled={Boolean(conversationAction)}
-                      onClick={() => runConversationAction("delete")}
-                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {conversationAction === "delete" ? "Deleting..." : "Delete"}
-                    </button>
+                  {conversationMenuOpen ? (
+                    <div className="absolute right-0 top-11 z-20 w-44 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/40">
+                      <button
+                        type="button"
+                        disabled={Boolean(conversationAction)}
+                        onClick={() => runConversationAction("archive")}
+                        className="block w-full px-4 py-3 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-700"
+                      >
+                        {conversationAction === "archive" ? "Archiving..." : "Archive"}
+                      </button>
 
-                    <button
-                      type="button"
-                      disabled={Boolean(conversationAction)}
-                      onClick={() => runConversationAction("report")}
-                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {conversationAction === "report" ? "Reporting..." : "Report"}
-                    </button>
+                      <button
+                        type="button"
+                        disabled={Boolean(conversationAction)}
+                        onClick={() => runConversationAction("delete")}
+                        className="block w-full px-4 py-3 text-left text-sm text-red-300 transition hover:bg-red-950/20 disabled:cursor-not-allowed disabled:text-zinc-700"
+                      >
+                        {conversationAction === "delete" ? "Deleting..." : "Delete"}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={Boolean(conversationAction)}
+                        onClick={() => runConversationAction("report")}
+                        className="block w-full px-4 py-3 text-left text-sm text-red-300 transition hover:bg-red-950/20 disabled:cursor-not-allowed disabled:text-zinc-700"
+                      >
+                        {conversationAction === "report" ? "Reporting..." : "Report"}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : (
