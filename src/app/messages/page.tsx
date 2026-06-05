@@ -24,6 +24,14 @@ type ThreadMessage = {
   deletedBySender: boolean;
 };
 
+type PeopleSearchResult = {
+  id: string;
+  username: string | null;
+  fullName: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+};
+
 export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -34,6 +42,10 @@ export default function MessagesPage() {
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
   const [composerText, setComposerText] = useState("");
   const [sending, setSending] = useState(false);
+  const [peopleSearchQuery, setPeopleSearchQuery] = useState("");
+  const [peopleSearchResults, setPeopleSearchResults] = useState<PeopleSearchResult[]>([]);
+  const [peopleSearchLoading, setPeopleSearchLoading] = useState(false);
+  const [startingConversation, setStartingConversation] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadConversations() {
@@ -122,6 +134,60 @@ export default function MessagesPage() {
     loadThread();
   }, [selectedConversationId]);
 
+  useEffect(() => {
+    const query = peopleSearchQuery.trim();
+
+    if (query.length < 2) {
+      setPeopleSearchResults([]);
+      setPeopleSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function searchPeople() {
+      setPeopleSearchLoading(true);
+
+      try {
+        const session = await supabase.auth.getSession();
+
+        const response = await fetch(
+          `/api/messages/people-search?q=${encodeURIComponent(query)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+            },
+          }
+        );
+
+        const payload = await response.json();
+
+        if (!cancelled) {
+          if (response.ok) {
+            setPeopleSearchResults((payload.people ?? []) as PeopleSearchResult[]);
+          } else {
+            setPeopleSearchResults([]);
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setPeopleSearchResults([]);
+        }
+      }
+
+      if (!cancelled) {
+        setPeopleSearchLoading(false);
+      }
+    }
+
+    const timeoutId = window.setTimeout(searchPeople, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [peopleSearchQuery]);
+
   const selectedConversation = useMemo(
     () =>
       conversations.find(
@@ -149,6 +215,63 @@ export default function MessagesPage() {
     }
 
     setThreadMessages((payload.messages ?? []) as ThreadMessage[]);
+  }
+
+  async function reloadConversationsAndSelect(conversationId: string) {
+    const session = await supabase.auth.getSession();
+
+    const response = await fetch("/api/messages/conversations", {
+      headers: {
+        Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+      },
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error ?? "Unable to load conversations.");
+    }
+
+    setConversations((payload.conversations ?? []) as Conversation[]);
+    setSelectedConversationId(conversationId);
+  }
+
+  async function handleStartConversation(person: PeopleSearchResult) {
+    setStartingConversation(person.id);
+    setMessage("");
+
+    try {
+      const session = await supabase.auth.getSession();
+
+      const response = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({
+          targetUserId: person.id,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setMessage(payload.error ?? "Unable to start conversation.");
+        setStartingConversation(null);
+        return;
+      }
+
+      setPeopleSearchQuery("");
+      setPeopleSearchResults([]);
+      setComposerText("");
+
+      await reloadConversationsAndSelect(payload.conversationId);
+    } catch {
+      setMessage("Unable to start conversation.");
+    }
+
+    setStartingConversation(null);
   }
 
   async function handleSendMessage() {
@@ -243,6 +366,66 @@ export default function MessagesPage() {
         <div className="rounded-2xl border border-zinc-900 bg-black">
           <div className="border-b border-zinc-900 px-4 py-3">
             <h2 className="text-sm font-medium text-zinc-300">
+              Start a message
+            </h2>
+
+            <p className="mt-1 text-xs text-zinc-600">
+              Search mutual followers to open a private conversation.
+            </p>
+
+            <input
+              value={peopleSearchQuery}
+              onChange={(event) => setPeopleSearchQuery(event.target.value)}
+              placeholder="Search people..."
+              className="mt-3 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-700"
+            />
+
+            {peopleSearchQuery.trim().length >= 2 ? (
+              <div className="mt-3 space-y-2">
+                {peopleSearchLoading ? (
+                  <p className="text-xs text-zinc-600">
+                    Searching...
+                  </p>
+                ) : peopleSearchResults.length === 0 ? (
+                  <p className="text-xs text-zinc-600">
+                    No matching members found.
+                  </p>
+                ) : (
+                  peopleSearchResults.map((person) => (
+                    <button
+                      key={person.id}
+                      type="button"
+                      disabled={startingConversation === person.id}
+                      onClick={() => handleStartConversation(person)}
+                      className="flex w-full items-start gap-3 rounded-xl border border-zinc-900 bg-black px-3 py-3 text-left transition hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <ProfileAvatar
+                        profile={{
+                          avatar_url: person.avatarUrl,
+                          full_name: person.fullName,
+                          username: person.username,
+                        }}
+                        size="sm"
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-medium text-white">
+                          {person.fullName ?? person.username ?? "Member"}
+                        </div>
+
+                        <div className="mt-1 truncate text-xs text-zinc-500">
+                          {person.username ? `@${person.username}` : "Open conversation"}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="border-b border-zinc-900 px-4 py-3">
+            <h2 className="text-sm font-medium text-zinc-300">
               Conversations
             </h2>
           </div>
@@ -331,7 +514,7 @@ export default function MessagesPage() {
                     </p>
 
                     <p className="mt-2 text-sm text-zinc-600">
-                      Start the conversation once the composer is added.
+Send the first message below.
                     </p>
                   </div>
                 ) : (
