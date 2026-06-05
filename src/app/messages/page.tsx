@@ -534,7 +534,7 @@ export default function MessagesPage() {
                   </p>
                 ) : peopleSearchResults.length === 0 ? (
                   <p className="text-xs text-zinc-600">
-                    No matching members found.
+                    No mutual followers match that search.
                   </p>
                 ) : (
                   peopleSearchResults.map((person) => (
@@ -579,11 +579,11 @@ export default function MessagesPage() {
           {conversations.length === 0 ? (
             <div className="p-6">
               <p className="text-sm text-zinc-500">
-                No messages yet.
+                No conversations yet.
               </p>
 
               <p className="mt-2 text-sm text-zinc-600">
-                Messages become available when you and another member follow each other.
+                Private messages open when you and another member follow each other. Search mutual followers above to start.
               </p>
             </div>
           ) : (
@@ -630,7 +630,7 @@ export default function MessagesPage() {
 
                       <div className="mt-1 truncate text-xs text-zinc-500">
                         {conversation.lastMessagePreview ??
-                          "No messages yet."}
+                          "Conversation ready."}
                       </div>
                     </div>
                   </button>
@@ -816,16 +816,16 @@ export default function MessagesPage() {
 
                 {threadLoading ? (
                   <p className="text-sm text-zinc-500">
-                    Loading messages...
+                    Loading conversation...
                   </p>
                 ) : threadMessages.length === 0 ? (
                   <div>
                     <p className="text-sm text-zinc-500">
-                      No messages yet.
+                      No conversations yet.
                     </p>
 
                     <p className="mt-2 text-sm text-zinc-600">
-Send the first message below.
+Send the first message when you're ready.
                     </p>
                   </div>
                 ) : (
@@ -884,7 +884,7 @@ Send the first message below.
               </>
             ) : (
               <p className="text-sm text-zinc-500">
-                Select a conversation.
+                Choose a conversation from your inbox or start a new one from search.
               </p>
             )}
           </div>
