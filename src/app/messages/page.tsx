@@ -616,37 +616,41 @@ export default function MessagesPage() {
         </div>
 
         <div className={`rounded-2xl border border-zinc-900 bg-black ${mobileThreadOpen ? "block" : "hidden lg:block"}`}>
-          <div className="flex items-center gap-3 border-b border-zinc-900 px-4 py-3">
-            <button
-              type="button"
-              onClick={() => setMobileThreadOpen(false)}
-              className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white lg:hidden"
-            >
-              Back
-            </button>
-
-            <h2 className="text-sm font-medium text-zinc-300">
-              Conversation
-            </h2>
-          </div>
-
-          <div className="p-6">
+          <div className="border-b border-zinc-900 px-4 py-3">
             {selectedConversation ? (
-              <>
-                <div className="mb-4 flex flex-col gap-3 border-b border-zinc-900 pb-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="text-lg font-medium text-white">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMobileThreadOpen(false)}
+                    className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white lg:hidden"
+                  >
+                    Back
+                  </button>
+
+                  <ProfileAvatar
+                    profile={{
+                      avatar_url: selectedConversation.otherAvatarUrl,
+                      full_name: selectedConversation.otherFullName,
+                      username: selectedConversation.otherUsername,
+                    }}
+                    size="sm"
+                  />
+
+                  <div className="min-w-0">
+                    <h2 className="truncate text-sm font-semibold text-white">
                       {selectedConversation.otherFullName ??
                         selectedConversation.otherUsername ??
                         "Member"}
-                    </div>
+                    </h2>
 
-                    <p className="mt-1 text-xs text-zinc-600">
+                    <p className="mt-0.5 truncate text-xs text-zinc-600">
                       Private conversation
                     </p>
                   </div>
+                </div>
 
-                  <div className="flex flex-wrap gap-2">
+                <div className="flex shrink-0 flex-wrap justify-end gap-2">
                     <button
                       type="button"
                       disabled={Boolean(conversationAction)}
@@ -673,9 +677,18 @@ export default function MessagesPage() {
                     >
                       {conversationAction === "report" ? "Reporting..." : "Report"}
                     </button>
-                  </div>
                 </div>
+              </div>
+            ) : (
+              <h2 className="text-sm font-medium text-zinc-300">
+                Conversation
+              </h2>
+            )}
+          </div>
 
+          <div className="p-4 sm:p-6">
+            {selectedConversation ? (
+              <>
                 {threadLoading ? (
                   <p className="text-sm text-zinc-500">
                     Loading messages...
@@ -691,7 +704,7 @@ Send the first message below.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="min-h-[45vh] space-y-3 pb-2">
                     {threadMessages.map((threadMessage) => {
                       const mine = threadMessage.senderId === currentUserId;
 
@@ -701,17 +714,17 @@ Send the first message below.
                           className={`flex ${mine ? "justify-end" : "justify-start"}`}
                         >
                           <div
-                            className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                            className={`max-w-[84%] rounded-[1.35rem] px-4 py-3 text-sm leading-relaxed shadow-lg ${
                               mine
-                                ? "bg-zinc-800 text-white"
-                                : "bg-zinc-950 text-zinc-200"
+                                ? "bg-white text-black"
+                                : "border border-zinc-900 bg-zinc-950 text-zinc-200"
                             }`}
                           >
                             <p className="whitespace-pre-wrap break-words">
                               {threadMessage.body}
                             </p>
 
-                            <p className="mt-2 text-[11px] text-zinc-500">
+                            <p className={`mt-2 text-[11px] ${mine ? "text-zinc-600" : "text-zinc-500"}`}>
                               {new Date(threadMessage.createdAt).toLocaleString()}
                             </p>
                           </div>
@@ -721,25 +734,25 @@ Send the first message below.
                   </div>
                 )}
 
-                <div className="mt-6 border-t border-zinc-900 pt-4">
-                  <textarea
-                    value={composerText}
-                    onChange={(event) =>
-                      setComposerText(event.target.value)
-                    }
-                    placeholder="Write a message..."
-                    rows={4}
-                    className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm text-white outline-none focus:border-zinc-700"
-                  />
+                <div className="sticky bottom-0 mt-6 border-t border-zinc-900 bg-black/95 pt-4 backdrop-blur-xl">
+                  <div className="flex items-end gap-2 rounded-[1.5rem] border border-zinc-800 bg-zinc-950 px-3 py-2">
+                    <textarea
+                      value={composerText}
+                      onChange={(event) =>
+                        setComposerText(event.target.value)
+                      }
+                      placeholder="Write a message..."
+                      rows={1}
+                      className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-sm text-white outline-none placeholder:text-zinc-600"
+                    />
 
-                  <div className="mt-3 flex justify-end">
                     <button
                       type="button"
                       disabled={sending || !composerText.trim()}
                       onClick={handleSendMessage}
-                      className="rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="mb-1 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-600"
                     >
-                      {sending ? "Sending..." : "Send"}
+                      {sending ? "..." : "Send"}
                     </button>
                   </div>
                 </div>
