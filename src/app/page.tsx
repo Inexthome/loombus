@@ -153,11 +153,6 @@ const mobileSignalShortcuts = [
     description: "Revisit what you opened.",
     href: "/reading-history",
   },
-  {
-    title: "AI Usage",
-    description: "Check Premium AI activity.",
-    href: "/ai-usage",
-  },
 ];
 
 export default function Home() {
@@ -378,28 +373,28 @@ export default function Home() {
 
             <section className="mb-5 grid grid-cols-2 gap-3">
               <Link
-                href="/discussions"
+                href="/messages"
                 className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
               >
                 <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
-                  Read
+                  Private
                 </p>
-                <h2 className="text-lg font-semibold">Discussions</h2>
+                <h2 className="text-lg font-semibold">Messages</h2>
                 <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
-                  Browse focused conversations.
+                  Open mutual-follower conversations.
                 </p>
               </Link>
 
               <Link
-                href="/notifications"
+                href="/my-replies"
                 className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
               >
                 <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
                   Return
                 </p>
-                <h2 className="text-lg font-semibold">Alerts</h2>
+                <h2 className="text-lg font-semibold">My Replies</h2>
                 <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
-                  See replies, follows, and mentions.
+                  Continue conversations you joined.
                 </p>
               </Link>
 
@@ -430,19 +425,6 @@ export default function Home() {
               </Link>
 
               <Link
-                href="/messages"
-                className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
-              >
-                <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
-                  Private
-                </p>
-                <h2 className="text-lg font-semibold">Messages</h2>
-                <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
-                  Open mutual-follower conversations.
-                </p>
-              </Link>
-
-              <Link
                 href="/labs"
                 className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
               >
@@ -452,6 +434,19 @@ export default function Home() {
                 <h2 className="text-lg font-semibold">Labs</h2>
                 <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
                   Preview experimental Loombus features.
+                </p>
+              </Link>
+
+              <Link
+                href="/ai-usage"
+                className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
+              >
+                <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
+                  AI
+                </p>
+                <h2 className="text-lg font-semibold">AI Usage</h2>
+                <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
+                  Review your AI activity and limits.
                 </p>
               </Link>
             </section>
