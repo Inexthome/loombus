@@ -37,6 +37,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [threadLoading, setThreadLoading] = useState(false);
@@ -96,6 +97,10 @@ export default function MessagesPage() {
           setSelectedConversationId(
             requestedConversation?.id ?? loadedConversations[0].id
           );
+
+          if (requestedConversation?.id) {
+            setMobileThreadOpen(true);
+          }
         }
       } catch {
         setMessage("Unable to load conversations.");
@@ -479,7 +484,7 @@ export default function MessagesPage() {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="rounded-2xl border border-zinc-900 bg-black">
+        <div className={`rounded-2xl border border-zinc-900 bg-black ${mobileThreadOpen ? "hidden lg:block" : "block"}`}>
           <div className="border-b border-zinc-900 px-4 py-3">
             <h2 className="text-sm font-medium text-zinc-300">
               Start a message
@@ -566,9 +571,10 @@ export default function MessagesPage() {
                   <button
                     key={conversation.id}
                     type="button"
-                    onClick={() =>
-                      setSelectedConversationId(conversation.id)
-                    }
+                    onClick={() => {
+                      setSelectedConversationId(conversation.id);
+                      setMobileThreadOpen(true);
+                    }}
                     className={`flex w-full items-start gap-3 border-b border-zinc-900 px-4 py-4 text-left transition ${
                       selected
                         ? "bg-zinc-950"
@@ -609,8 +615,16 @@ export default function MessagesPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-zinc-900 bg-black">
-          <div className="border-b border-zinc-900 px-4 py-3">
+        <div className={`rounded-2xl border border-zinc-900 bg-black ${mobileThreadOpen ? "block" : "hidden lg:block"}`}>
+          <div className="flex items-center gap-3 border-b border-zinc-900 px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setMobileThreadOpen(false)}
+              className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white lg:hidden"
+            >
+              Back
+            </button>
+
             <h2 className="text-sm font-medium text-zinc-300">
               Conversation
             </h2>
