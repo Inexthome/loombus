@@ -393,9 +393,31 @@ export async function POST(request: NextRequest) {
   );
 
   if (existingConversationId) {
+    let serviceSupabase;
+
+    try {
+      serviceSupabase = getSupabaseServiceRole();
+    } catch {
+      return jsonError("Server configuration error.", 500);
+    }
+
+    const { error: restoreError } = await serviceSupabase
+      .from("private_conversation_members")
+      .update({
+        deleted_at: null,
+        archived_at: null,
+      })
+      .eq("conversation_id", existingConversationId)
+      .eq("user_id", user.id);
+
+    if (restoreError) {
+      return jsonError(restoreError.message, 500);
+    }
+
     return NextResponse.json({
       conversationId: existingConversationId,
       created: false,
+      restored: true,
     });
   }
 
