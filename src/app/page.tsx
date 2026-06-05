@@ -144,9 +144,9 @@ const mobileSignalShortcuts = [
     href: "/my-activity",
   },
   {
-    title: "Following",
-    description: "Read people you follow.",
-    href: "/following",
+    title: "My Discussions",
+    description: "Return to discussions you started.",
+    href: "/my-discussions",
   },
   {
     title: "Reading History",
