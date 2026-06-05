@@ -45,6 +45,7 @@ export default function MessagesPage() {
   const [composerText, setComposerText] = useState("");
   const [sending, setSending] = useState(false);
   const [peopleSearchQuery, setPeopleSearchQuery] = useState("");
+  const [conversationSearchQuery, setConversationSearchQuery] = useState("");
   const [peopleSearchResults, setPeopleSearchResults] = useState<PeopleSearchResult[]>([]);
   const [peopleSearchLoading, setPeopleSearchLoading] = useState(false);
   const [startingConversation, setStartingConversation] = useState<string | null>(null);
@@ -240,6 +241,30 @@ export default function MessagesPage() {
       ) ?? null,
     [conversations, selectedConversationId]
   );
+
+  const filteredConversations = useMemo(() => {
+    const query = conversationSearchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return conversations;
+    }
+
+    return conversations.filter((conversation) => {
+      return (
+        (conversation.otherFullName ?? "")
+          .toLowerCase()
+          .includes(query) ||
+        (conversation.otherUsername ?? "")
+          .toLowerCase()
+          .includes(query) ||
+        (conversation.lastMessagePreview ?? "")
+          .toLowerCase()
+          .includes(query)
+      );
+    });
+  }, [conversations, conversationSearchQuery]);
+
+
 
   async function reloadThread(conversationId: string) {
     const session = await supabase.auth.getSession();
@@ -574,6 +599,15 @@ export default function MessagesPage() {
             <h2 className="text-sm font-medium text-zinc-300">
               Conversations
             </h2>
+
+            <input
+              value={conversationSearchQuery}
+              onChange={(event) =>
+                setConversationSearchQuery(event.target.value)
+              }
+              placeholder="Search conversations..."
+              className="mt-3 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-700"
+            />
           </div>
 
           {conversations.length === 0 ? (
@@ -588,7 +622,17 @@ export default function MessagesPage() {
             </div>
           ) : (
             <div>
-              {conversations.map((conversation) => {
+              {filteredConversations.length === 0 ? (
+                <div className="p-6">
+                  <p className="text-sm text-zinc-500">
+                    No conversations match that search.
+                  </p>
+
+                  <p className="mt-2 text-sm text-zinc-600">
+                    Try a name, username, or message preview keyword.
+                  </p>
+                </div>
+              ) : filteredConversations.map((conversation) => {
                 const selected =
                   conversation.id === selectedConversationId;
 
