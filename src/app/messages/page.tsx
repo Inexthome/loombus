@@ -34,6 +34,7 @@ type Conversation = {
   otherFullName: string | null;
   otherAvatarUrl: string | null;
   hasUnread: boolean;
+  mutedAt: string | null;
   lastMessagePreview: string | null;
   lastMessageAt: string | null;
 };
@@ -406,10 +407,58 @@ export default function MessagesPage() {
   }
 
   async function runConversationAction(
-    action: "archive" | "delete" | "report",
+    action: "archive" | "delete" | "report" | "mute" | "unmute",
     reportOptions?: { reason?: string; notes?: string }
   ) {
     if (!selectedConversationId) {
+      return;
+    }
+
+    if ((action === "mute" || action === "unmute") && selectedConversation) {
+      setConversationAction(action);
+      setConversationMenuOpen(false);
+      setMessage("");
+
+      try {
+        const session = await supabase.auth.getSession();
+
+        const response = await fetch("/api/messages/mute", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+          },
+          body: JSON.stringify({
+            conversationId: selectedConversationId,
+            muted: action === "mute",
+          }),
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          setMessage(payload.error ?? "Unable to update mute setting.");
+          setConversationAction(null);
+          return;
+        }
+
+        setConversations((current) =>
+          current.map((conversation) =>
+            conversation.id === selectedConversationId
+              ? {
+                  ...conversation,
+                  mutedAt: payload.mutedAt,
+                }
+              : conversation
+          )
+        );
+
+        setMessage(action === "mute" ? "Conversation muted." : "Conversation unmuted.");
+      } catch {
+        setMessage("Unable to update mute setting.");
+      }
+
+      setConversationAction(null);
       return;
     }
 
@@ -830,6 +879,12 @@ export default function MessagesPage() {
                         {conversation.hasUnread ? (
                           <span className="h-2.5 w-2.5 rounded-full border border-emerald-300 bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.18)]" />
                         ) : null}
+
+                        {conversation.mutedAt ? (
+                          <span className="rounded-full border border-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+                            Muted
+                          </span>
+                        ) : null}
                       </div>
 
                       <div className="mt-1 truncate text-xs text-zinc-500">
@@ -874,7 +929,7 @@ export default function MessagesPage() {
                     </h2>
 
                     <p className="mt-0.5 truncate text-xs text-zinc-600">
-                      Private conversation
+                      {selectedConversation.mutedAt ? "Muted conversation" : "Private conversation"}
                     </p>
                   </div>
                 </div>
@@ -900,6 +955,23 @@ export default function MessagesPage() {
                         className="block w-full px-4 py-3 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-700"
                       >
                         {conversationAction === "archive" ? "Archiving..." : "Archive"}
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={Boolean(conversationAction)}
+                        onClick={() =>
+                          runConversationAction(selectedConversation.mutedAt ? "unmute" : "mute")
+                        }
+                        className="block w-full px-4 py-3 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-700"
+                      >
+                        {conversationAction === "mute"
+                          ? "Muting..."
+                          : conversationAction === "unmute"
+                            ? "Unmuting..."
+                            : selectedConversation.mutedAt
+                              ? "Unmute"
+                              : "Mute"}
                       </button>
 
                       <button
