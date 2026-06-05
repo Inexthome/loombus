@@ -357,7 +357,7 @@ export default function MessagesPage() {
       </div>
 
       {message ? (
-        <div className="mb-4 rounded-xl border border-red-900 bg-red-950/30 p-3 text-sm text-red-300">
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
           {message}
         </div>
       ) : null}
