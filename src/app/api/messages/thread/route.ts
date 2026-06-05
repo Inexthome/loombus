@@ -143,6 +143,30 @@ export async function GET(request: NextRequest) {
     return jsonError(messagesError.message, 500);
   }
 
+  const messageRows = (messages ?? []) as any[];
+  const messageIds = messageRows.map((message) => message.id);
+
+  const { data: attachments, error: attachmentsError } =
+    messageIds.length > 0
+      ? await supabase
+          .from("private_message_attachments")
+          .select("id, message_id, conversation_id, user_id, storage_bucket, storage_path, public_url, file_name, mime_type, file_size_bytes, attachment_kind, sort_order, created_at")
+          .in("message_id", messageIds)
+          .order("sort_order", { ascending: true })
+      : { data: [], error: null };
+
+  if (attachmentsError) {
+    return jsonError(attachmentsError.message, 500);
+  }
+
+  const attachmentMap = new Map<string, any[]>();
+
+  for (const attachment of attachments ?? []) {
+    const existing = attachmentMap.get(attachment.message_id) ?? [];
+    existing.push(attachment);
+    attachmentMap.set(attachment.message_id, existing);
+  }
+
   return NextResponse.json({
     conversation: {
       id: conversation.id,
@@ -166,7 +190,7 @@ export async function GET(request: NextRequest) {
       })),
       otherProfiles: profiles ?? [],
     },
-    messages: ((messages ?? []) as any[]).map((message) => ({
+    messages: messageRows.map((message) => ({
       id: message.id,
       conversationId: message.conversation_id,
       senderId: message.sender_id,
@@ -176,6 +200,21 @@ export async function GET(request: NextRequest) {
       editedAt: message.edited_at,
       deletedBySender: message.deleted_by_sender,
       readByRecipientAt: message.read_by_recipient_at,
+      attachments: (attachmentMap.get(message.id) ?? []).map((attachment) => ({
+        id: attachment.id,
+        messageId: attachment.message_id,
+        conversationId: attachment.conversation_id,
+        userId: attachment.user_id,
+        storageBucket: attachment.storage_bucket,
+        storagePath: attachment.storage_path,
+        publicUrl: attachment.public_url,
+        fileName: attachment.file_name,
+        mimeType: attachment.mime_type,
+        fileSizeBytes: attachment.file_size_bytes,
+        attachmentKind: attachment.attachment_kind,
+        sortOrder: attachment.sort_order,
+        createdAt: attachment.created_at,
+      })),
     })),
   });
 }

@@ -112,7 +112,9 @@ export async function POST(request: NextRequest) {
   }
 
   const conversationId = String((body as Record<string, unknown>).conversationId ?? "").trim();
-  const messageBody = String((body as Record<string, unknown>).body ?? "").trim();
+  const rawBody = String((body as Record<string, unknown>).body ?? "").trim();
+  const hasAttachments = Boolean((body as Record<string, unknown>).hasAttachments);
+  const messageBody = rawBody || (hasAttachments ? "[Attachment]" : "");
 
   if (!isValidUuid(conversationId)) {
     return jsonError("Invalid conversation id.", 400);
