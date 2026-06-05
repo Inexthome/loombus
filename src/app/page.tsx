@@ -144,11 +144,6 @@ const mobileSignalShortcuts = [
     href: "/my-activity",
   },
   {
-    title: "Saved",
-    description: "Return to discussions you kept.",
-    href: "/saved",
-  },
-  {
     title: "Following",
     description: "Read people you follow.",
     href: "/following",
@@ -431,6 +426,32 @@ export default function Home() {
                 <h2 className="text-lg font-semibold">Saved</h2>
                 <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
                   Revisit what is worth keeping.
+                </p>
+              </Link>
+
+              <Link
+                href="/messages"
+                className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
+              >
+                <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
+                  Private
+                </p>
+                <h2 className="text-lg font-semibold">Messages</h2>
+                <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
+                  Open mutual-follower conversations.
+                </p>
+              </Link>
+
+              <Link
+                href="/labs"
+                className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
+              >
+                <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
+                  Early
+                </p>
+                <h2 className="text-lg font-semibold">Labs</h2>
+                <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
+                  Preview experimental Loombus features.
                 </p>
               </Link>
             </section>
