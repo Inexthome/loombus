@@ -46,6 +46,7 @@ export default function MessagesPage() {
   const [peopleSearchResults, setPeopleSearchResults] = useState<PeopleSearchResult[]>([]);
   const [peopleSearchLoading, setPeopleSearchLoading] = useState(false);
   const [startingConversation, setStartingConversation] = useState<string | null>(null);
+  const [conversationAction, setConversationAction] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadConversations() {
@@ -274,6 +275,65 @@ export default function MessagesPage() {
     setStartingConversation(null);
   }
 
+  async function runConversationAction(
+    action: "archive" | "delete" | "report"
+  ) {
+    if (!selectedConversationId) {
+      return;
+    }
+
+    const confirmed =
+      action === "archive"
+        ? window.confirm("Archive this conversation from your inbox?")
+        : action === "delete"
+          ? window.confirm("Delete this conversation from your inbox? This only removes it for you.")
+          : window.confirm("Report this conversation for review?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    setConversationAction(action);
+    setMessage("");
+
+    try {
+      const session = await supabase.auth.getSession();
+
+      const response = await fetch(`/api/messages/${action}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({
+          conversationId: selectedConversationId,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setMessage(payload.error ?? `Unable to ${action} conversation.`);
+        setConversationAction(null);
+        return;
+      }
+
+      if (action === "archive" || action === "delete") {
+        setConversations((current) =>
+          current.filter((conversation) => conversation.id !== selectedConversationId)
+        );
+        setSelectedConversationId(null);
+        setThreadMessages([]);
+      } else {
+        setMessage("Conversation reported for review.");
+      }
+    } catch {
+      setMessage(`Unable to ${action} conversation.`);
+    }
+
+    setConversationAction(null);
+  }
+
   async function handleSendMessage() {
     if (!selectedConversationId) {
       return;
@@ -497,10 +557,47 @@ export default function MessagesPage() {
           <div className="p-6">
             {selectedConversation ? (
               <>
-                <div className="mb-4 text-lg font-medium text-white">
-                  {selectedConversation.otherFullName ??
-                    selectedConversation.otherUsername ??
-                    "Member"}
+                <div className="mb-4 flex flex-col gap-3 border-b border-zinc-900 pb-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="text-lg font-medium text-white">
+                      {selectedConversation.otherFullName ??
+                        selectedConversation.otherUsername ??
+                        "Member"}
+                    </div>
+
+                    <p className="mt-1 text-xs text-zinc-600">
+                      Private conversation
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={Boolean(conversationAction)}
+                      onClick={() => runConversationAction("archive")}
+                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {conversationAction === "archive" ? "Archiving..." : "Archive"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={Boolean(conversationAction)}
+                      onClick={() => runConversationAction("delete")}
+                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {conversationAction === "delete" ? "Deleting..." : "Delete"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={Boolean(conversationAction)}
+                      onClick={() => runConversationAction("report")}
+                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-red-900 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {conversationAction === "report" ? "Reporting..." : "Report"}
+                    </button>
+                  </div>
                 </div>
 
                 {threadLoading ? (
