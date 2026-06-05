@@ -551,7 +551,7 @@ export default function MessagesPage() {
                         </div>
 
                         {conversation.hasUnread ? (
-                          <span className="h-2 w-2 rounded-full bg-white" />
+                          <span className="h-2.5 w-2.5 rounded-full border border-emerald-300 bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.18)]" />
                         ) : null}
                       </div>
 
