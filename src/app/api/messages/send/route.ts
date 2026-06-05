@@ -33,6 +33,22 @@ function getSupabaseForRequest(request: NextRequest) {
   );
 }
 
+function getSupabaseServiceRole() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase service role configuration.");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 function isValidUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_PATTERN.test(value);
 }
@@ -193,7 +209,15 @@ export async function POST(request: NextRequest) {
     return jsonError("Please wait before sending another message.", 429);
   }
 
-  await supabase.from("action_rate_events").insert({
+  let serviceSupabase;
+
+  try {
+    serviceSupabase = getSupabaseServiceRole();
+  } catch {
+    return jsonError("Server configuration error.", 500);
+  }
+
+  await serviceSupabase.from("action_rate_events").insert({
     user_id: user.id,
     action_key: "message_send",
     target_id: conversationId,
@@ -201,7 +225,7 @@ export async function POST(request: NextRequest) {
 
   const now = new Date().toISOString();
 
-  const { data: message, error: messageError } = await supabase
+  const { data: message, error: messageError } = await serviceSupabase
     .from("private_messages")
     .insert({
       conversation_id: conversationId,
@@ -217,7 +241,7 @@ export async function POST(request: NextRequest) {
     return jsonError(messageError?.message ?? "Unable to send message.", 500);
   }
 
-  const { error: conversationUpdateError } = await supabase
+  const { error: conversationUpdateError } = await serviceSupabase
     .from("private_conversations")
     .update({
       updated_at: now,
@@ -229,7 +253,7 @@ export async function POST(request: NextRequest) {
     console.error("Private message conversation timestamp update failed:", conversationUpdateError.message);
   }
 
-  await supabase
+  await serviceSupabase
     .from("private_conversation_members")
     .update({
       deleted_at: null,
