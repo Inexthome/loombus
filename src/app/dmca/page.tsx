@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LegalReviewNotice, PageHeader, PageShell, Panel } from "@/components/ui";
+import { PageHeader, PageShell, Panel } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,8 +23,6 @@ export default function DmcaPage() {
           </>
         }
       />
-
-      <LegalReviewNotice label="Copyright and DMCA Process page" />
 
       <div className="space-y-8 leading-relaxed text-zinc-400">
         <Panel>

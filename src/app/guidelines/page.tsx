@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LegalReviewNotice, PageHeader, PageShell, Panel } from "@/components/ui";
+import { PageHeader, PageShell, Panel } from "@/components/ui";
 
 const supportEmail = "support@loombus.com";
 
