@@ -1,8 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
+
+const ATTACHMENT_BUCKET = "message-attachments";
+const MAX_ATTACHMENT_FILES = 3;
+const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+]);
+
+function formatAttachmentFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function getSafeAttachmentFileName(fileName: string) {
+  return fileName.trim().replace(/[\\/]/g, "-").slice(0, 120);
+}
 
 type Conversation = {
   id: string;
@@ -15,6 +38,20 @@ type Conversation = {
   lastMessageAt: string | null;
 };
 
+type MessageAttachment = {
+  id: string;
+  messageId: string;
+  conversationId: string;
+  userId: string;
+  publicUrl: string;
+  fileName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  attachmentKind: "image" | "pdf";
+  sortOrder: number;
+  createdAt: string;
+};
+
 type ThreadMessage = {
   id: string;
   conversationId: string;
@@ -23,6 +60,7 @@ type ThreadMessage = {
   createdAt: string;
   editedAt: string | null;
   deletedBySender: boolean;
+  attachments?: MessageAttachment[];
 };
 
 type PeopleSearchResult = {
@@ -43,6 +81,8 @@ export default function MessagesPage() {
   const [threadLoading, setThreadLoading] = useState(false);
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
   const [composerText, setComposerText] = useState("");
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+  const [attachmentMessage, setAttachmentMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [peopleSearchQuery, setPeopleSearchQuery] = useState("");
   const [conversationSearchQuery, setConversationSearchQuery] = useState("");
@@ -445,14 +485,117 @@ export default function MessagesPage() {
     setConversationAction(null);
   }
 
+  function handleAttachmentSelection(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    setAttachmentMessage("");
+
+    if (selectedFiles.length === 0) {
+      setAttachmentFiles([]);
+      return;
+    }
+
+    if (selectedFiles.length > MAX_ATTACHMENT_FILES) {
+      setAttachmentFiles([]);
+      setAttachmentMessage("You can attach up to 3 files.");
+      event.target.value = "";
+      return;
+    }
+
+    const invalidFile = selectedFiles.find(
+      (file) =>
+        !ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type) ||
+        file.size <= 0 ||
+        file.size > MAX_ATTACHMENT_SIZE_BYTES
+    );
+
+    if (invalidFile) {
+      setAttachmentFiles([]);
+      setAttachmentMessage("Attachments must be JPG, PNG, WebP, GIF, or PDF files up to 10 MB each.");
+      event.target.value = "";
+      return;
+    }
+
+    setAttachmentFiles(selectedFiles);
+    setAttachmentMessage(`${selectedFiles.length} attachment${selectedFiles.length === 1 ? "" : "s"} ready.`);
+  }
+
+  function clearAttachments() {
+    setAttachmentFiles([]);
+    setAttachmentMessage("");
+  }
+
+  async function uploadMessageAttachments({
+    conversationId,
+    messageId,
+    accessToken,
+  }: {
+    conversationId: string;
+    messageId: string;
+    accessToken: string;
+  }) {
+    if (!currentUserId || attachmentFiles.length === 0) {
+      return true;
+    }
+
+    for (const [index, file] of attachmentFiles.entries()) {
+      const extension = getSafeAttachmentFileName(file.name).split(".").pop() || "file";
+      const storagePath = `${currentUserId}/${conversationId}/${messageId}/${crypto.randomUUID()}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(ATTACHMENT_BUCKET)
+        .upload(storagePath, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        setAttachmentMessage(`${file.name} could not upload.`);
+        return false;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from(ATTACHMENT_BUCKET)
+        .getPublicUrl(storagePath);
+
+      const response = await fetch("/api/messages/attachments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          conversationId,
+          messageId,
+          storagePath,
+          publicUrl: publicUrlData.publicUrl,
+          fileName: file.name,
+          mimeType: file.type,
+          fileSizeBytes: file.size,
+          sortOrder: index,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        await supabase.storage.from(ATTACHMENT_BUCKET).remove([storagePath]);
+        setAttachmentMessage(result.error ?? `${file.name} could not be attached.`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   async function handleSendMessage() {
     if (!selectedConversationId) {
       return;
     }
 
     const body = composerText.trim();
+    const hasAttachments = attachmentFiles.length > 0;
 
-    if (!body) {
+    if (!body && !hasAttachments) {
       return;
     }
 
@@ -470,6 +613,7 @@ export default function MessagesPage() {
         body: JSON.stringify({
           conversationId: selectedConversationId,
           body,
+          hasAttachments,
         }),
       });
 
@@ -481,7 +625,22 @@ export default function MessagesPage() {
         return;
       }
 
+      if (hasAttachments) {
+        const attachmentsUploaded = await uploadMessageAttachments({
+          conversationId: selectedConversationId,
+          messageId: payload.message.id,
+          accessToken: session.data.session?.access_token ?? "",
+        });
+
+        if (!attachmentsUploaded) {
+          setSending(false);
+          setMessage("Message sent, but one or more attachments could not be saved.");
+          return;
+        }
+      }
+
       setComposerText("");
+      clearAttachments();
 
       await reloadThread(selectedConversationId);
 
@@ -904,7 +1063,58 @@ Send the first message when you're ready.
                 )}
 
                 <div className="sticky bottom-0 mt-6 border-t border-zinc-900 bg-black/95 pt-4 backdrop-blur-xl">
+                  {attachmentFiles.length > 0 && (
+                    <div className="mb-2 rounded-2xl border border-zinc-900 bg-zinc-950 p-3">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <p className="text-xs text-zinc-500">
+                          {attachmentFiles.length} attachment{attachmentFiles.length === 1 ? "" : "s"} selected
+                        </p>
+
+                        <button
+                          type="button"
+                          onClick={clearAttachments}
+                          disabled={sending}
+                          className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+                        >
+                          Clear
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {attachmentFiles.map((file) => (
+                          <div
+                            key={`${file.name}-${file.size}-${file.lastModified}`}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-zinc-900 bg-black px-3 py-2 text-xs text-zinc-400"
+                          >
+                            <span className="truncate">{file.name}</span>
+                            <span className="shrink-0 text-zinc-600">
+                              {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {attachmentMessage && (
+                    <p className="mb-2 text-xs text-zinc-500">
+                      {attachmentMessage}
+                    </p>
+                  )}
+
                   <div className="flex items-end gap-2 rounded-[1.5rem] border border-zinc-800 bg-zinc-950 px-3 py-2">
+                    <label className="mb-1 cursor-pointer rounded-full border border-zinc-800 px-3 py-2 text-xs text-zinc-400 transition hover:border-zinc-600 hover:text-white">
+                      +
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                        onChange={handleAttachmentSelection}
+                        disabled={sending}
+                        className="hidden"
+                      />
+                    </label>
+
                     <textarea
                       value={composerText}
                       onChange={(event) =>
@@ -917,7 +1127,7 @@ Send the first message when you're ready.
 
                     <button
                       type="button"
-                      disabled={sending || !composerText.trim()}
+                      disabled={sending || (!composerText.trim() && attachmentFiles.length === 0)}
                       onClick={handleSendMessage}
                       className="mb-1 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-600"
                     >
