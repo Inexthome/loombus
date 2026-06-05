@@ -276,17 +276,26 @@ export async function POST(request: NextRequest) {
     senderProfile?.username?.trim() ||
     "Someone";
 
-  const { error: notificationError } = await createNotification({
-    user_id: recipientId,
-    actor_id: user.id,
-    type: conversation.last_message_at ? "message_reply" : "new_message",
-    target_type: "conversation",
-    target_id: conversationId,
-    message: `${senderName} sent you a message.`,
-  });
+  const { data: recipientMembership } = await serviceSupabase
+    .from("private_conversation_members")
+    .select("muted_at")
+    .eq("conversation_id", conversationId)
+    .eq("user_id", recipientId)
+    .maybeSingle();
 
-  if (notificationError) {
-    console.error("Private message notification failed:", notificationError.message);
+  if (!recipientMembership?.muted_at) {
+    const { error: notificationError } = await createNotification({
+      user_id: recipientId,
+      actor_id: user.id,
+      type: conversation.last_message_at ? "message_reply" : "new_message",
+      target_type: "conversation",
+      target_id: conversationId,
+      message: `${senderName} sent you a message.`,
+    });
+
+    if (notificationError) {
+      console.error("Private message notification failed:", notificationError.message);
+    }
   }
 
   await logAuditEvent({

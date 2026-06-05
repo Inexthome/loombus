@@ -213,6 +213,7 @@ export async function GET(request: NextRequest) {
       conversation_id,
       deleted_at,
       last_read_at,
+      muted_at,
       private_conversations (
         id,
         created_by,
@@ -328,6 +329,7 @@ export async function GET(request: NextRequest) {
         otherFullName: otherProfile?.full_name ?? null,
         otherAvatarUrl: otherProfile?.avatar_url ?? null,
         hasUnread,
+        mutedAt: (membership as any)?.muted_at ?? null,
         lastMessagePreview: lastMessage?.body
           ? String(lastMessage.body).slice(0, 140)
           : null,

@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
 
   const { data: membership, error: membershipError } = await supabase
     .from("private_conversation_members")
-    .select("conversation_id, user_id, joined_at, last_read_message_id, last_read_at, archived_at, deleted_at")
+    .select("conversation_id, user_id, joined_at, last_read_message_id, last_read_at, archived_at, deleted_at, muted_at")
     .eq("conversation_id", conversationId)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -181,6 +181,7 @@ export async function GET(request: NextRequest) {
         lastReadAt: membership.last_read_at,
         archivedAt: membership.archived_at,
         deletedAt: membership.deleted_at,
+        mutedAt: membership.muted_at,
       },
       members: ((members ?? []) as any[]).map((member) => ({
         userId: member.user_id,
