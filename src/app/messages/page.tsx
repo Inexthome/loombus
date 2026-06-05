@@ -81,7 +81,20 @@ export default function MessagesPage() {
         setConversations(loadedConversations);
 
         if (loadedConversations.length > 0) {
-          setSelectedConversationId(loadedConversations[0].id);
+          const requestedConversationId =
+            typeof window !== "undefined"
+              ? new URLSearchParams(window.location.search).get("conversation")
+              : null;
+
+          const requestedConversation = requestedConversationId
+            ? loadedConversations.find(
+                (conversation) => conversation.id === requestedConversationId
+              )
+            : null;
+
+          setSelectedConversationId(
+            requestedConversation?.id ?? loadedConversations[0].id
+          );
         }
       } catch {
         setMessage("Unable to load conversations.");
