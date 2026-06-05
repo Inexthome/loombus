@@ -40,6 +40,22 @@ function getSupabaseForRequest(request: NextRequest) {
   );
 }
 
+function getSupabaseServiceRole() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase service role configuration.");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 function isValidUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_PATTERN.test(value);
 }
@@ -115,6 +131,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  let serviceSupabase;
+
+  try {
+    serviceSupabase = getSupabaseServiceRole();
+  } catch {
+    return jsonError("Server configuration error.", 500);
+  }
+
   if (messageId) {
     if (!isValidUuid(messageId)) {
       return jsonError("Invalid message id.", 400);
@@ -141,7 +165,7 @@ export async function POST(request: NextRequest) {
       return jsonError("Message not found.", 404);
     }
 
-    const { error: reportError } = await supabase
+    const { error: reportError } = await serviceSupabase
       .from("reports")
       .insert({
         reporter_id: user.id,
@@ -158,7 +182,7 @@ export async function POST(request: NextRequest) {
       return jsonError(reportError.message, 500);
     }
 
-    await supabase
+    await serviceSupabase
       .from("private_messages")
       .update({
         reported_count: 1,
@@ -186,7 +210,7 @@ export async function POST(request: NextRequest) {
     return jsonError("Conversation not found.", 404);
   }
 
-  const { error: reportError } = await supabase
+  const { error: reportError } = await serviceSupabase
     .from("reports")
     .insert({
       reporter_id: user.id,
