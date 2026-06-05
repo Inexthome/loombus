@@ -48,6 +48,22 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
+function getSupabaseServiceRole() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase service role configuration.");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 function jsonError(message: string, status: number, code?: string) {
   return NextResponse.json(
     code ? { error: message, code } : { error: message },
@@ -400,13 +416,21 @@ export async function POST(request: NextRequest) {
     return jsonError("Please wait before starting another conversation.", 429);
   }
 
-  await supabase.from("action_rate_events").insert({
+  let serviceSupabase;
+
+  try {
+    serviceSupabase = getSupabaseServiceRole();
+  } catch {
+    return jsonError("Server configuration error.", 500);
+  }
+
+  await serviceSupabase.from("action_rate_events").insert({
     user_id: user.id,
     action_key: "message_conversation_create",
     target_id: targetUserId,
   });
 
-  const { data: conversation, error: conversationError } = await supabase
+  const { data: conversation, error: conversationError } = await serviceSupabase
     .from("private_conversations")
     .insert({
       created_by: user.id,
@@ -422,7 +446,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { error: memberError } = await supabase
+  const { error: memberError } = await serviceSupabase
     .from("private_conversation_members")
     .insert([
       {
