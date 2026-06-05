@@ -152,6 +152,41 @@ function getMessageReportMetadata(report: { resolution_note: string | null }) {
   return null;
 }
 
+type MessageEvidence = {
+  report: {
+    id: string;
+    reason: string;
+    reporterId: string;
+    createdAt: string;
+    notes: string;
+    type: string;
+    messageId: string | null;
+    conversationId: string;
+  };
+  participants: {
+    userId: string;
+    username: string | null;
+    fullName: string | null;
+    avatarUrl: string | null;
+    accountStatus: string | null;
+    joinedAt: string | null;
+    archivedAt: string | null;
+    deletedAt: string | null;
+  }[];
+  messages: {
+    id: string;
+    senderId: string;
+    messageType: string;
+    body: string;
+    createdAt: string;
+    editedAt: string | null;
+    deletedBySender: boolean;
+    readByRecipientAt: string | null;
+    reportedCount: number | null;
+    isReportedMessage: boolean;
+  }[];
+};
+
 type Report = {
   id: string;
   reason: string;
@@ -191,6 +226,8 @@ export default function AdminReportsPage() {
   const [enforcementNotes, setEnforcementNotes] = useState<Record<string, string>>({});
   const [suspensionDays, setSuspensionDays] = useState<Record<string, string>>({});
   const [enforcingProfileId, setEnforcingProfileId] = useState<string | null>(null);
+  const [messageEvidence, setMessageEvidence] = useState<Record<string, MessageEvidence>>({});
+  const [loadingEvidenceId, setLoadingEvidenceId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [message, setMessage] = useState("");
@@ -541,6 +578,68 @@ export default function AdminReportsPage() {
     } finally {
       setEnforcingProfileId(null);
     }
+  }
+
+  async function loadMessageEvidence(reportId: string) {
+    if (messageEvidence[reportId]) {
+      setMessageEvidence((current) => {
+        const next = { ...current };
+        delete next[reportId];
+        return next;
+      });
+      return;
+    }
+
+    setMessage("");
+    setLoadingEvidenceId(reportId);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch(
+        `/api/admin/messages/evidence?reportId=${encodeURIComponent(reportId)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to load message evidence.");
+        return;
+      }
+
+      setMessageEvidence((current) => ({
+        ...current,
+        [reportId]: result as MessageEvidence,
+      }));
+    } catch {
+      setMessage("Unable to load message evidence.");
+    } finally {
+      setLoadingEvidenceId(null);
+    }
+  }
+
+  function getEvidenceParticipantLabel(
+    evidence: MessageEvidence,
+    userId: string
+  ) {
+    const participant = evidence.participants.find((item) => item.userId === userId);
+
+    return (
+      participant?.fullName ||
+      participant?.username ||
+      `Member ${userId.slice(0, 8)}`
+    );
   }
 
   function getReplyAuthorLabel(reply: ReplyRef) {
@@ -926,6 +1025,109 @@ export default function AdminReportsPage() {
                         </div>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {isMessageReport && (
+                  <div className="mb-4">
+                    <button
+                      type="button"
+                      onClick={() => loadMessageEvidence(report.id)}
+                      disabled={loadingEvidenceId === report.id}
+                      className="rounded-full border border-sky-900 px-4 py-2 text-sm text-sky-300 transition hover:border-sky-700 hover:text-sky-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    >
+                      {loadingEvidenceId === report.id
+                        ? "Loading evidence..."
+                        : messageEvidence[report.id]
+                          ? "Hide evidence"
+                          : "View evidence"}
+                    </button>
+
+                    {messageEvidence[report.id] && (
+                      <div className="mt-4 rounded-2xl border border-zinc-900 bg-black p-4">
+                        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="mb-2 text-sm text-zinc-500">
+                              Message evidence
+                            </p>
+
+                            <p className="text-sm text-zinc-400">
+                              Conversation {messageEvidence[report.id].report.conversationId}
+                            </p>
+                          </div>
+
+                          <p className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                            {messageEvidence[report.id].messages.length} messages shown
+                          </p>
+                        </div>
+
+                        <div className="mb-4 rounded-2xl border border-zinc-900 bg-zinc-950 p-4">
+                          <p className="mb-3 text-xs uppercase tracking-[0.18em] text-zinc-700">
+                            Participants
+                          </p>
+
+                          <div className="grid gap-2 md:grid-cols-2">
+                            {messageEvidence[report.id].participants.map((participant) => (
+                              <div
+                                key={participant.userId}
+                                className="rounded-xl border border-zinc-900 bg-black p-3 text-sm"
+                              >
+                                <p className="font-medium text-zinc-300">
+                                  {participant.fullName || participant.username || "Loombus member"}
+                                </p>
+
+                                <p className="mt-1 text-xs text-zinc-600">
+                                  {participant.username ? `@${participant.username}` : participant.userId}
+                                </p>
+
+                                {participant.accountStatus && (
+                                  <p className="mt-2 text-xs text-zinc-500">
+                                    Status: {participant.accountStatus}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          {messageEvidence[report.id].messages.map((evidenceMessage) => (
+                            <div
+                              key={evidenceMessage.id}
+                              className={`rounded-2xl border p-4 ${
+                                evidenceMessage.isReportedMessage
+                                  ? "border-amber-800 bg-amber-950/20"
+                                  : "border-zinc-900 bg-zinc-950"
+                              }`}
+                            >
+                              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                <p className="text-sm font-medium text-zinc-300">
+                                  {getEvidenceParticipantLabel(
+                                    messageEvidence[report.id],
+                                    evidenceMessage.senderId
+                                  )}
+                                  {evidenceMessage.isReportedMessage ? " · Reported message" : ""}
+                                </p>
+
+                                <p className="text-xs text-zinc-600">
+                                  {new Date(evidenceMessage.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+
+                              {evidenceMessage.deletedBySender ? (
+                                <p className="text-sm italic text-zinc-600">
+                                  Message deleted by sender.
+                                </p>
+                              ) : (
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-400">
+                                  {evidenceMessage.body || "(empty message)"}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
