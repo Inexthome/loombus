@@ -53,7 +53,9 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowedByProfile, setIsFollowedByProfile] = useState(false);
   const [followMessage, setFollowMessage] = useState("");
+  const [messageWorking, setMessageWorking] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
   const [blockMessage, setBlockMessage] = useState("");
   const [followWorking, setFollowWorking] = useState(false);
@@ -106,14 +108,23 @@ export default function UserProfilePage() {
       setCurrentUserId(viewerId);
 
       if (viewerId && viewerId !== profileData.id) {
-        const { data: followData } = await supabase
-          .from("follows")
-          .select("*")
-          .eq("follower_id", viewerId)
-          .eq("following_id", profileData.id)
-          .maybeSingle();
+        const [{ data: followData }, { data: followedByData }] = await Promise.all([
+          supabase
+            .from("follows")
+            .select("*")
+            .eq("follower_id", viewerId)
+            .eq("following_id", profileData.id)
+            .maybeSingle(),
+          supabase
+            .from("follows")
+            .select("*")
+            .eq("follower_id", profileData.id)
+            .eq("following_id", viewerId)
+            .maybeSingle(),
+        ]);
 
         setIsFollowing(Boolean(followData));
+        setIsFollowedByProfile(Boolean(followedByData));
 
         const { data: reportData } = await supabase
           .from("reports")
@@ -220,6 +231,11 @@ export default function UserProfilePage() {
       setFollowerCount((count) =>
         result.following ? count + 1 : Math.max(0, count - 1)
       );
+
+      if (!result.following) {
+        setIsFollowedByProfile(false);
+      }
+
       setFollowMessage(result.following ? "Following." : "Unfollowed.");
     } finally {
       setFollowWorking(false);
@@ -274,6 +290,43 @@ export default function UserProfilePage() {
       }
     } finally {
       setBlockWorking(false);
+    }
+  }
+
+  async function startMessageConversation() {
+    if (!profile || messageWorking) {
+      return;
+    }
+
+    setFollowMessage("");
+    setMessageWorking(true);
+
+    try {
+      const session = await supabase.auth.getSession();
+
+      const response = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.data.session?.access_token ?? ""}`,
+        },
+        body: JSON.stringify({
+          targetUserId: profile.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setFollowMessage(result.error ?? "Unable to start message.");
+        setMessageWorking(false);
+        return;
+      }
+
+      window.location.href = `/messages?conversation=${encodeURIComponent(result.conversationId)}`;
+    } catch {
+      setFollowMessage("Unable to start message.");
+      setMessageWorking(false);
     }
   }
 
@@ -401,7 +454,7 @@ export default function UserProfilePage() {
               </div>
             </div>
 
-            <div className="shrink-0">
+            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
               {!currentUserId && (
                 <Link
                   href="/login"
@@ -412,13 +465,26 @@ export default function UserProfilePage() {
               )}
 
               {currentUserId && currentUserId !== profile.id && !isBlockedByProfile && !isBlocked && (
-                <button
-                  onClick={toggleFollow}
-                  disabled={followWorking}
-                  className="inline-flex w-full justify-center rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-fit"
-                >
-                  {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
-                </button>
+                <>
+                  <button
+                    onClick={toggleFollow}
+                    disabled={followWorking}
+                    className="inline-flex w-full justify-center rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 sm:w-fit"
+                  >
+                    {followWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
+                  </button>
+
+                  {isFollowing && isFollowedByProfile ? (
+                    <button
+                      type="button"
+                      onClick={startMessageConversation}
+                      disabled={messageWorking}
+                      className="inline-flex w-full justify-center rounded-full border border-zinc-700 px-6 py-3 text-sm text-zinc-200 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                    >
+                      {messageWorking ? "Opening..." : "Message"}
+                    </button>
+                  ) : null}
+                </>
               )}
             </div>
           </div>
