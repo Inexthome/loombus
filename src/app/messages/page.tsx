@@ -549,6 +549,7 @@ export default function MessagesPage() {
         });
 
       if (uploadError) {
+        setMessage(`Attachment upload failed: ${uploadError.message}`);
         setAttachmentMessage(`${file.name} could not upload.`);
         return false;
       }
@@ -579,6 +580,7 @@ export default function MessagesPage() {
 
       if (!response.ok) {
         await supabase.storage.from(ATTACHMENT_BUCKET).remove([storagePath]);
+        setMessage(`Attachment save failed: ${result.error ?? "Unknown attachment error."}`);
         setAttachmentMessage(result.error ?? `${file.name} could not be attached.`);
         return false;
       }
@@ -634,7 +636,6 @@ export default function MessagesPage() {
 
         if (!attachmentsUploaded) {
           setSending(false);
-          setMessage("Message sent, but one or more attachments could not be saved.");
           return;
         }
       }
