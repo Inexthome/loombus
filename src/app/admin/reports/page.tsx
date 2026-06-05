@@ -124,6 +124,34 @@ type Profile = {
   suspended_until: string | null;
 };
 
+type MessageReportMetadata = {
+  type?: string;
+  message_id?: string;
+  conversation_id?: string;
+  notes?: string;
+};
+
+function getMessageReportMetadata(report: { resolution_note: string | null }) {
+  if (!report.resolution_note) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(report.resolution_note) as MessageReportMetadata;
+
+    if (
+      parsed?.type === "private_message" ||
+      parsed?.type === "private_conversation"
+    ) {
+      return parsed;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 type Report = {
   id: string;
   reason: string;
@@ -151,7 +179,8 @@ type ReportFilter =
   | "actioned"
   | "discussions"
   | "replies"
-  | "profiles";
+  | "profiles"
+  | "messages";
 
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -534,8 +563,10 @@ export default function AdminReportsPage() {
       return normalizeReportStatus(report.status) === filterMode;
     }
 
+    const messageMetadata = getMessageReportMetadata(report);
+
     if (filterMode === "discussions") {
-      return !report.reply_id && !report.reported_profile_id;
+      return !report.reply_id && !report.reported_profile_id && !messageMetadata;
     }
 
     if (filterMode === "replies") {
@@ -544,6 +575,10 @@ export default function AdminReportsPage() {
 
     if (filterMode === "profiles") {
       return Boolean(report.reported_profile_id);
+    }
+
+    if (filterMode === "messages") {
+      return Boolean(messageMetadata);
     }
 
     return true;
@@ -582,7 +617,7 @@ export default function AdminReportsPage() {
     {
       label: "Discussions",
       value: "discussions",
-      count: reports.filter((report) => !report.reply_id && !report.reported_profile_id).length,
+      count: reports.filter((report) => !report.reply_id && !report.reported_profile_id && !getMessageReportMetadata(report)).length,
     },
     {
       label: "Replies",
@@ -593,6 +628,11 @@ export default function AdminReportsPage() {
       label: "Profiles",
       value: "profiles",
       count: reports.filter((report) => Boolean(report.reported_profile_id)).length,
+    },
+    {
+      label: "Messages",
+      value: "messages",
+      count: reports.filter((report) => Boolean(getMessageReportMetadata(report))).length,
     },
   ];
 
@@ -738,6 +778,10 @@ export default function AdminReportsPage() {
 
         <div className="space-y-6">
           {filteredReports.map((report) => {
+            const messageMetadata = getMessageReportMetadata(report);
+            const isMessageReport = Boolean(messageMetadata);
+            const isPrivateMessageReport = messageMetadata?.type === "private_message";
+            const isPrivateConversationReport = messageMetadata?.type === "private_conversation";
             const isReplyReport = Boolean(report.reply_id);
             const isProfileReport = Boolean(report.reported_profile_id);
             const reportedProfile = report.reported_profile_id
@@ -759,17 +803,25 @@ export default function AdminReportsPage() {
                     </p>
 
                     <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                      {isProfileReport
-                        ? "Profile report"
-                        : isReplyReport
-                          ? "Reply report"
-                          : "Discussion report"}
+                      {isMessageReport
+                        ? isPrivateMessageReport
+                          ? "Message report"
+                          : "Conversation report"
+                        : isProfileReport
+                          ? "Profile report"
+                          : isReplyReport
+                            ? "Reply report"
+                            : "Discussion report"}
                     </p>
 
                     <h2 className="text-2xl font-medium">
-                      {isProfileReport
-                        ? reportedProfile?.full_name || reportedProfile?.username || "Profile unavailable"
-                        : report.discussions?.title ?? "Discussion unavailable"}
+                      {isMessageReport
+                        ? isPrivateMessageReport
+                          ? "Private message report"
+                          : "Private conversation report"
+                        : isProfileReport
+                          ? reportedProfile?.full_name || reportedProfile?.username || "Profile unavailable"
+                          : report.discussions?.title ?? "Discussion unavailable"}
                     </h2>
                   </div>
 
@@ -817,11 +869,63 @@ export default function AdminReportsPage() {
                       </p>
                     )}
 
-                    {report.resolution_note && (
+                    {report.resolution_note && !isMessageReport && (
                       <p className="mt-2 whitespace-pre-wrap leading-relaxed">
                         Note: {report.resolution_note}
                       </p>
                     )}
+                  </div>
+                )}
+
+                {isMessageReport && messageMetadata && (
+                  <div className="mb-4 rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-3 text-sm text-zinc-500">
+                      Message moderation metadata
+                    </p>
+
+                    <div className="grid gap-3 text-sm md:grid-cols-2">
+                      <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-3">
+                        <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-700">
+                          Type
+                        </p>
+                        <p className="text-zinc-300">
+                          {isPrivateConversationReport ? "Private conversation" : "Private message"}
+                        </p>
+                      </div>
+
+                      {messageMetadata.conversation_id && (
+                        <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-3">
+                          <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-700">
+                            Conversation ID
+                          </p>
+                          <p className="break-all text-zinc-300">
+                            {messageMetadata.conversation_id}
+                          </p>
+                        </div>
+                      )}
+
+                      {messageMetadata.message_id && (
+                        <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-3">
+                          <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-700">
+                            Message ID
+                          </p>
+                          <p className="break-all text-zinc-300">
+                            {messageMetadata.message_id}
+                          </p>
+                        </div>
+                      )}
+
+                      {messageMetadata.notes && (
+                        <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-3 md:col-span-2">
+                          <p className="mb-1 text-xs uppercase tracking-[0.18em] text-zinc-700">
+                            Reporter notes
+                          </p>
+                          <p className="whitespace-pre-wrap text-zinc-300">
+                            {messageMetadata.notes}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1053,7 +1157,7 @@ export default function AdminReportsPage() {
                   )}
 
 
-                  {!isReplyReport && !isProfileReport && report.discussions && (
+                  {!isReplyReport && !isProfileReport && !isMessageReport && report.discussions && (
                     <button
                       onClick={() => softDeleteDiscussion(report.discussions?.id)}
                       className="rounded-full border border-red-900 px-4 py-2 text-sm text-red-400 transition hover:border-red-700 hover:text-red-300"
