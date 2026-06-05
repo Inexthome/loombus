@@ -172,6 +172,8 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [savedCount, setSavedCount] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -213,6 +215,39 @@ export default function Home() {
             .catch(() => {
               setUnreadMessageCount(0);
             });
+
+          supabase
+            .from("notifications")
+            .select("id", { count: "exact", head: true })
+            .is("read_at", null)
+            .then(
+              ({ count }) => {
+                if (isMounted) {
+                  setUnreadNotificationCount(count ?? 0);
+                }
+              },
+              () => {
+                if (isMounted) {
+                  setUnreadNotificationCount(0);
+                }
+              }
+            );
+
+          supabase
+            .from("bookmarks")
+            .select("id", { count: "exact", head: true })
+            .then(
+              ({ count }) => {
+                if (isMounted) {
+                  setSavedCount(count ?? 0);
+                }
+              },
+              () => {
+                if (isMounted) {
+                  setSavedCount(0);
+                }
+              }
+            );
         }
 
         const { data: profileData, error: profileError } = await withTimeout(
@@ -540,6 +575,18 @@ export default function Home() {
                         {card.href === "/messages" && unreadMessageCount > 0 ? (
                           <span className="shrink-0 rounded-full border border-emerald-300 bg-emerald-400 px-2.5 py-1 text-xs font-semibold text-black shadow-[0_0_0_3px_rgba(52,211,153,0.18)]">
                             {unreadMessageCount > 9 ? "9+" : unreadMessageCount} unread
+                          </span>
+                        ) : null}
+
+                        {card.href === "/notifications" && unreadNotificationCount > 0 ? (
+                          <span className="shrink-0 rounded-full border border-emerald-300 bg-emerald-400 px-2.5 py-1 text-xs font-semibold text-black shadow-[0_0_0_3px_rgba(52,211,153,0.18)]">
+                            {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount} unread
+                          </span>
+                        ) : null}
+
+                        {card.href === "/saved" && savedCount > 0 ? (
+                          <span className="shrink-0 rounded-full border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs font-semibold text-zinc-200">
+                            {savedCount > 99 ? "99+" : savedCount} saved
                           </span>
                         ) : null}
                       </div>
