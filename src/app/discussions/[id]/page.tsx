@@ -2158,19 +2158,6 @@ export default function DiscussionPage() {
             AI
           </button>
 
-          {relatedDiscussions.length > 0 && (
-            <button
-              type="button"
-              onClick={openDetailRelated}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                activeDetailTool === "related"
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              Related
-            </button>
-          )}
 
           {currentUserId && (
             <button
@@ -2182,7 +2169,7 @@ export default function DiscussionPage() {
                   : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
               }`}
             >
-              Helpers
+              Prompts
             </button>
           )}
 
@@ -2208,10 +2195,10 @@ export default function DiscussionPage() {
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-zinc-600">
-                    Thread controls
+                    More tools
                   </p>
                   <h2 className="mt-1 text-lg font-medium">
-                    Manage carefully.
+                    Secondary actions.
                   </h2>
                 </div>
 
@@ -2225,6 +2212,16 @@ export default function DiscussionPage() {
               </div>
 
               <div className="space-y-3">
+                {relatedDiscussions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={openDetailRelated}
+                    className="w-full rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    View related discussions
+                  </button>
+                )}
+
                 {canManageDiscussionStatus && (
                   <button
                     type="button"
@@ -2785,7 +2782,7 @@ export default function DiscussionPage() {
           {showReplyHelpersPanel && currentUserId && (
             <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 shadow-2xl shadow-black/20 sm:mb-8 sm:rounded-[1.5rem] sm:p-4">
               <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                Optional reply helpers
+                Reply prompts
               </p>
 
               <div className="space-y-3">
@@ -2793,7 +2790,7 @@ export default function DiscussionPage() {
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-zinc-500">
-                    Community angle prompts
+                    Community angles
                   </p>
 
                   <h3 className="text-lg font-medium text-white sm:text-xl">
@@ -2802,12 +2799,12 @@ export default function DiscussionPage() {
                 </div>
 
                 <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
-                  Reply helper
+                  Prompt set
                 </span>
               </div>
 
               <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
-                Use these prompts to explore a local or community angle without collecting location data, organizing action, or pressuring anyone to participate. They prefill the reply box and never post automatically.
+                Use these prompts to explore a local or community angle. They prefill the reply box and never post automatically.
               </p>
 
               <div className="flex flex-wrap gap-2">
@@ -2837,12 +2834,12 @@ export default function DiscussionPage() {
                 </div>
 
                 <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
-                  Reply helper
+                  Prompt set
                 </span>
               </div>
 
               <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
-                Use these prompts to think through learning, practical detail, skills, or community direction. They prefill the reply box and never post automatically.
+                Use these prompts to add learning, practical detail, skills, or community direction. They prefill the reply box only.
               </p>
 
               <div className="flex flex-wrap gap-2">
@@ -2872,12 +2869,12 @@ export default function DiscussionPage() {
                 </div>
 
                 <span className="w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500">
-                  Structured reply helper
+                  Structured prompts
                 </span>
               </div>
 
               <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
-                Use these prompts when a point needs more detail, context, evidence, or practical explanation. They prefill the reply box and do not create scores, penalties, or verification labels.
+                Use these prompts when a point needs more detail, context, evidence, or practical explanation. They do not create scores or labels.
               </p>
 
               <div className="flex flex-wrap gap-2">
