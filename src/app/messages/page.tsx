@@ -79,6 +79,7 @@ export default function MessagesPage() {
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState("Someone");
   const [threadLoading, setThreadLoading] = useState(false);
   const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
   const [composerText, setComposerText] = useState("");
@@ -109,6 +110,20 @@ export default function MessagesPage() {
       }
 
       setCurrentUserId(userData.user.id);
+      setCurrentUserName(userData.user.email?.split("@")[0] ?? "Someone");
+
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("full_name, username")
+        .eq("id", userData.user.id)
+        .maybeSingle();
+
+      setCurrentUserName(
+        currentProfile?.full_name?.trim() ||
+          currentProfile?.username?.trim() ||
+          userData.user.email?.split("@")[0] ||
+          "Someone"
+      );
 
       try {
         const session = await supabase.auth.getSession();
@@ -585,10 +600,7 @@ export default function MessagesPage() {
 
     lastTypingSentRef.current = now;
 
-    const name =
-      selectedConversation?.otherFullName ||
-      selectedConversation?.otherUsername ||
-      "Someone";
+    const name = currentUserName || "Someone";
 
     supabase
       .channel(`private-message-typing:${selectedConversationId}`)
