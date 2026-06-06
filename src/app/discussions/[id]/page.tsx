@@ -63,6 +63,11 @@ type RelatedDiscussion = {
   created_at: string;
 };
 
+type BookmarkCollection = {
+  id: string;
+  name: string;
+};
+
 
 type DiscussionSummary = {
   id: string;
@@ -399,6 +404,9 @@ export default function DiscussionPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [savedBookmarkId, setSavedBookmarkId] = useState<string | null>(null);
   const [savingBookmark, setSavingBookmark] = useState(false);
+  const [bookmarkCollections, setBookmarkCollections] = useState<BookmarkCollection[]>([]);
+  const [selectedSaveCollectionId, setSelectedSaveCollectionId] = useState("unfiled");
+  const [showSaveFolderPanel, setShowSaveFolderPanel] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
   const [reportReason, setReportReason] = useState(DEFAULT_REPORT_REASON);
   const [showMobileThreadActions, setShowMobileThreadActions] = useState(false);
@@ -800,7 +808,7 @@ export default function DiscussionPage() {
       return;
     }
 
-    handleBookmark();
+    openSaveFolderPanel();
   }
 
   function startClarificationRequest(request: ClarificationRequest) {
@@ -1691,11 +1699,52 @@ export default function DiscussionPage() {
     }
   }
 
-  async function handleBookmark() {
+  async function loadBookmarkCollectionsForSave() {
+    if (!currentUserId || !canUseSavedFolders) {
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("bookmark_collections")
+      .select("id, name")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setBookmarkMessage("Unable to load saved folders.");
+      return;
+    }
+
+    setBookmarkCollections((data ?? []) as BookmarkCollection[]);
+  }
+
+  async function openSaveFolderPanel() {
+    setBookmarkMessage("");
+
+    if (!currentUserId || !canUseSavedFolders) {
+      await handleBookmark();
+      return;
+    }
+
+    await loadBookmarkCollectionsForSave();
+    setSelectedSaveCollectionId("unfiled");
+    setShowSaveFolderPanel(true);
+  }
+
+  async function handleSaveWithSelectedFolder() {
+    const collectionId =
+      selectedSaveCollectionId === "unfiled" ? null : selectedSaveCollectionId;
+    const saved = await handleBookmark(collectionId);
+
+    if (saved) {
+      setShowSaveFolderPanel(false);
+    }
+  }
+
+  async function handleBookmark(collectionId: string | null = null) {
     setBookmarkMessage("");
 
     if (savingBookmark) {
-      return;
+      return false;
     }
 
     setSavingBookmark(true);
@@ -1706,7 +1755,7 @@ export default function DiscussionPage() {
 
       if (!accessToken) {
         window.location.href = "/login";
-        return;
+        return false;
       }
 
       const response = await fetch("/api/bookmarks", {
@@ -1724,12 +1773,69 @@ export default function DiscussionPage() {
 
       if (!response.ok) {
         setBookmarkMessage(result.error ?? "Already saved or unable to save.");
-        return;
+        return false;
       }
 
+      const nextBookmarkId = result.bookmark?.id ?? null;
+
       setIsSaved(true);
-      setSavedBookmarkId(result.bookmark?.id ?? null);
-      setBookmarkMessage("Discussion saved.");
+      setSavedBookmarkId(nextBookmarkId);
+
+      if (nextBookmarkId && collectionId) {
+        const moveResponse = await fetch("/api/bookmarks/move", selectedSaveCollectionId;
+    const saved = await handleBookmark(collectionId);
+
+    if (saved) {
+      setShowSaveFolderPanel(false);
+    }
+  }
+
+  async function handleBookmark(collectionId: string | null = null) {
+    setBookmarkMessage("");
+
+    if (savingBookmark) {
+      return false;
+    }
+
+    setSavingBookmark(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/ {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            bookmarkId: nextBookmarkId,
+            collectionId,
+          }),
+        });
+
+        const moveResult = await moveResponse.json().catch(() => ({}));
+
+        if (!moveResponse.ok) {
+          setBookmarkMessage(
+            moveResult.error ??
+              "Discussion saved, but it could not be moved into the selected folder."
+          );
+          return false;
+        }
+
+        setBookmarkMessage("Discussion saved to folder.");
+        return true;
+      }
+
+      setBookmarkMessage(
+        canUseSavedFolders
+          ? "Discussion saved to Unfiled."
+          : "Discussion saved. Premium users can organize saved discussions into folders."
+      );
+      return true;
     } finally {
       setSavingBookmark(false);
     }
@@ -1773,6 +1879,8 @@ export default function DiscussionPage() {
 
       setIsSaved(false);
       setSavedBookmarkId(null);
+      setShowSaveFolderPanel(false);
+      setSelectedSaveCollectionId("unfiled");
       setBookmarkMessage("Saved discussion removed.");
     } finally {
       setSavingBookmark(false);
@@ -1900,6 +2008,7 @@ export default function DiscussionPage() {
   const canUseAiSummary = ["premium", "premium_plus", "admin"].includes(
     subscriptionDisplayKey
   );
+  const canUseSavedFolders = canUseAiSummary;
   const canReplyWithIdentity = true;
 
   const monthlySummaryLimit = aiEntitlement?.monthly_summary_limit ?? 0;
@@ -2257,7 +2366,7 @@ export default function DiscussionPage() {
                 ) : (
                   <button
                     type="button"
-                    onClick={handleBookmark}
+                    onClick={openSaveFolderPanel}
                     disabled={savingBookmark}
                     className="w-full rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                   >
@@ -2336,7 +2445,7 @@ export default function DiscussionPage() {
             </button>
           ) : (
             <button
-              onClick={handleBookmark}
+              onClick={openSaveFolderPanel}
               disabled={savingBookmark}
               className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
             >
@@ -2376,6 +2485,75 @@ export default function DiscussionPage() {
             </p>
           )}
         </div>
+
+        {showSaveFolderPanel && currentUserId && canUseSavedFolders && !isSaved && (
+          <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-3xl sm:p-6">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  Save to folder
+                </p>
+
+                <h2 className="text-xl font-medium sm:text-2xl">
+                  Choose where to save this discussion.
+                </h2>
+
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
+                  Save it as Unfiled or place it into one of your existing saved folders.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowSaveFolderPanel(false)}
+                className="w-fit rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <label className="min-w-0 flex-1 text-sm text-zinc-500">
+                <span className="mb-2 block">Folder</span>
+
+                <select
+                  value={selectedSaveCollectionId}
+                  onChange={(event) => setSelectedSaveCollectionId(event.target.value)}
+                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                >
+                  <option value="unfiled">Unfiled</option>
+                  {bookmarkCollections.map((collection) => (
+                    <option key={collection.id} value={collection.id}>
+                      {collection.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button
+                type="button"
+                onClick={handleSaveWithSelectedFolder}
+                disabled={savingBookmark}
+                className="w-full rounded-full border border-zinc-700 px-5 py-3 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:mt-7 sm:w-fit"
+              >
+                {savingBookmark ? "Saving..." : "Save"}
+              </button>
+            </div>
+
+            {bookmarkCollections.length === 0 && (
+              <p className="mt-4 text-sm leading-relaxed text-zinc-500">
+                No folders yet. Save this discussion as Unfiled now, then create folders from{" "}
+                <Link
+                  href="/saved"
+                  className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
+                >
+                  Saved
+                </Link>
+                .
+              </p>
+            )}
+          </section>
+        )}
 
         <div id="intelligence-layer" className="scroll-mt-24" />
 
@@ -3317,7 +3495,7 @@ export default function DiscussionPage() {
               ) : (
                 <button
                   type="button"
-                  onClick={handleBookmark}
+                  onClick={openSaveFolderPanel}
                   disabled={savingBookmark}
                   className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                 >
