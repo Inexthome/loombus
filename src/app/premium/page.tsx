@@ -275,6 +275,54 @@ export default function PremiumPage() {
         </section>
 
         <section className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
+          <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
+            Subscription details and legal
+          </p>
+
+          <h2 className="text-3xl font-semibold tracking-tight">
+            Premium subscription information.
+          </h2>
+
+          <div className="mt-5 space-y-3 text-sm leading-relaxed text-zinc-500">
+            <p>
+              Premium Monthly is an auto-renewable monthly subscription. Premium Annual is
+              an auto-renewable annual subscription.
+            </p>
+
+            <p>
+              Premium Plus Monthly is an auto-renewable monthly subscription. Premium Plus
+              Annual is an auto-renewable annual subscription.
+            </p>
+
+            <p>
+              Pricing is shown before purchase. Subscriptions renew automatically unless
+              canceled according to the App Store subscription settings.
+            </p>
+
+            <p>
+              Review the{" "}
+              <Link href="/privacy" className="text-zinc-300 underline-offset-4 hover:underline">
+                Privacy Policy
+              </Link>
+              {", "}
+              <Link href="/terms" className="text-zinc-300 underline-offset-4 hover:underline">
+                Terms
+              </Link>
+              {", and "}
+              <a
+                href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+                className="text-zinc-300 underline-offset-4 hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Apple Standard EULA
+              </a>
+              .
+            </p>
+          </div>
+        </section>
+
+        <section className="mb-12 rounded-3xl border border-zinc-800 bg-zinc-950 p-8 shadow-2xl shadow-black/30">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="mb-3 text-sm uppercase tracking-wide text-zinc-500">
