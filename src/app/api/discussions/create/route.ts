@@ -193,11 +193,14 @@ export async function POST(request: NextRequest) {
     const reality_lens = normalizeRealityLens(body.realityLens ?? body.reality_lens);
     const purpose_lane = normalizePurposeLane(body.purposeLane ?? body.purpose_lane);
 
-    const topic: DiscussionTopic = DISCUSSION_TOPICS.includes(
-      requestedTopic as DiscussionTopic
-    )
-      ? requestedTopic as DiscussionTopic
-      : "General";
+    if (!DISCUSSION_TOPICS.includes(requestedTopic as DiscussionTopic)) {
+      return NextResponse.json(
+        { error: "Choose a discussion topic." },
+        { status: 400 }
+      );
+    }
+
+    const topic = requestedTopic as DiscussionTopic;
 
     const content = String(body.body ?? "").trim();
     const tagResult = normalizeDiscussionTags(body.tags);

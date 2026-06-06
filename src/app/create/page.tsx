@@ -6,7 +6,7 @@ import { SafetyWarningModal, getSafetyWarningFromResult, type SafetyWarningState
 import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { REALITY_LENSES, normalizeRealityLens } from "@/lib/reality-lenses";
 import { PURPOSE_LANES, normalizePurposeLane } from "@/lib/purpose-lanes";
 
@@ -174,10 +174,76 @@ function getSafeAttachmentFileName(fileName: string) {
   return fileName.trim().replace(/[\\/]/g, "-").slice(0, 120);
 }
 
+function getRecommendedDiscussionTopic(title: string, body: string) {
+  const text = `${title} ${body}`.toLowerCase();
+
+  if (!text.trim()) {
+    return "";
+  }
+
+  const topicSignals: Array<{
+    topic: (typeof DISCUSSION_TOPICS)[number];
+    keywords: string[];
+  }> = [
+    {
+      topic: "AI & Society",
+      keywords: ["artificial intelligence", "chatgpt", "openai", "machine learning", "automation", "algorithm", "ai tool", "ai model"],
+    },
+    {
+      topic: "Books & Writing",
+      keywords: ["book", "author", "writing", "publishing", "manuscript", "reader", "novel"],
+    },
+    {
+      topic: "Business",
+      keywords: ["business", "company", "customer", "market", "strategy", "revenue", "startup"],
+    },
+    {
+      topic: "Education",
+      keywords: ["school", "student", "teacher", "classroom", "college", "university", "education"],
+    },
+    {
+      topic: "Future of Work",
+      keywords: ["future of work", "job", "career", "workplace", "hiring", "remote work", "labor"],
+    },
+    {
+      topic: "Money & Finance",
+      keywords: ["money", "finance", "investing", "stock", "crypto", "bank", "debt", "loan"],
+    },
+    {
+      topic: "Law & Justice",
+      keywords: ["law", "court", "justice", "legal", "policy", "rights", "crime"],
+    },
+    {
+      topic: "Healthcare",
+      keywords: ["health", "doctor", "hospital", "medical", "patient", "medicine", "healthcare"],
+    },
+    {
+      topic: "Local Community",
+      keywords: ["local", "community", "city", "neighborhood", "county", "school board"],
+    },
+    {
+      topic: "Politics & Policy",
+      keywords: ["politics", "election", "government", "policy", "congress", "president", "senate"],
+    },
+    {
+      topic: "Science",
+      keywords: ["science", "research", "physics", "biology", "chemistry", "experiment"],
+    },
+    {
+      topic: "Technology",
+      keywords: ["technology", "software", "app", "platform", "device", "data", "internet"],
+    },
+  ];
+
+  return topicSignals.find((signal) =>
+    signal.keywords.some((keyword) => text.includes(keyword))
+  )?.topic ?? "";
+}
+
 export default function CreatePage() {
   const [title, setTitle] = useState("");
-  const [topic, setTopic] = useState<string>(DEFAULT_DISCUSSION_TOPIC);
-  const [topicManuallySelected, setTopicManuallySelected] = useState(true);
+  const [topic, setTopic] = useState<string>("");
+  const [topicManuallySelected, setTopicManuallySelected] = useState(false);
   const [realityLens, setRealityLens] = useState<string>("");
   const [purposeLane, setPurposeLane] = useState<string>("");
   const [body, setBody] = useState("");
@@ -225,6 +291,13 @@ export default function CreatePage() {
   const isBodyOverLimit = bodyCharacterCount > maxDiscussionLength;
   const tagInputHelper = getTagInputHelper(tagsInput);
   const isEditMode = Boolean(editingDiscussionId);
+  const recommendedTopic = useMemo(() => {
+    if (topic || topicManuallySelected) {
+      return "";
+    }
+
+    return getRecommendedDiscussionTopic(title, body);
+  }, [body, title, topic, topicManuallySelected]);
 
   useEffect(() => {
     async function loadProfileStatus() {
@@ -283,13 +356,12 @@ export default function CreatePage() {
             setEditingDiscussionMeta(discussion);
             setTitle(discussion.title ?? "");
 
-            setTopic(
-              DISCUSSION_TOPICS.includes(discussion.topic as typeof DISCUSSION_TOPICS[number])
-                ? discussion.topic
-                : DEFAULT_DISCUSSION_TOPIC
-            );
+            const loadedTopic = DISCUSSION_TOPICS.includes(discussion.topic as typeof DISCUSSION_TOPICS[number])
+              ? discussion.topic
+              : "";
 
-            setTopicManuallySelected(true);
+            setTopic(loadedTopic);
+            setTopicManuallySelected(Boolean(loadedTopic));
             setRealityLens(normalizeRealityLens(discussion.reality_lens) ?? "");
             setPurposeLane(normalizePurposeLane(discussion.purpose_lane) ?? "");
             setBody(discussion.body ?? "");
@@ -330,13 +402,12 @@ export default function CreatePage() {
           setDraftId(draft.id);
           setTitle(draft.title ?? "");
 
-          setTopic(
-            DISCUSSION_TOPICS.includes(draft.topic as typeof DISCUSSION_TOPICS[number])
-              ? draft.topic
-              : DEFAULT_DISCUSSION_TOPIC
-          );
+          const loadedTopic = DISCUSSION_TOPICS.includes(draft.topic as typeof DISCUSSION_TOPICS[number])
+            ? draft.topic
+            : "";
 
-          setTopicManuallySelected(true);
+          setTopic(loadedTopic);
+          setTopicManuallySelected(Boolean(loadedTopic));
           setRealityLens(normalizeRealityLens(draft.reality_lens) ?? "");
           setPurposeLane(normalizePurposeLane(draft.purpose_lane) ?? "");
           setBody(draft.body ?? "");
@@ -700,6 +771,13 @@ export default function CreatePage() {
       return;
     }
 
+    if (!topic || !DISCUSSION_TOPICS.includes(topic as typeof DISCUSSION_TOPICS[number])) {
+      setMessage("Choose a topic before publishing.");
+      setActiveCreateMetadataTool("topic");
+      setPublishing(false);
+      return;
+    }
+
     if (topic === "Other" && !realityLens && !purposeLane) {
       setMessage("Choose a Reality Lens or Purpose Lane when Topic is Other.");
       setActiveCreateMetadataTool("reality");
@@ -816,6 +894,14 @@ export default function CreatePage() {
     setTopic("Other");
     setTopicManuallySelected(true);
     setActiveCreateMetadataTool("other");
+  }
+
+  function applyRecommendedTopic() {
+    if (!recommendedTopic) {
+      return;
+    }
+
+    selectTopicValue(recommendedTopic);
   }
 
   function selectRealityLensValue(nextLens: string) {
@@ -1114,7 +1200,7 @@ export default function CreatePage() {
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                  {topic}
+                  {topic || "Select topic"}
                 </span>
 
                 {realityLens && (
@@ -1208,6 +1294,22 @@ export default function CreatePage() {
                       <p className="mb-3 text-sm leading-relaxed text-zinc-500">
                         Choose a topic. Select Other when the discussion is better framed by Reality Lens or Purpose Lane.
                       </p>
+
+                      {!topic && recommendedTopic && (
+                        <button
+                          type="button"
+                          onClick={applyRecommendedTopic}
+                          className="mb-4 w-full rounded-2xl border border-zinc-700 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                        >
+                          Recommended topic: {recommendedTopic}
+                        </button>
+                      )}
+
+                      {!topic && !recommendedTopic && (
+                        <p className="mb-4 rounded-2xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-500">
+                          Select the topic that best matches this discussion before publishing.
+                        </p>
+                      )}
 
                       <div className="space-y-2" data-create-signal-list="topic">
                         <button
@@ -1603,9 +1705,10 @@ export default function CreatePage() {
 
                       <select
                         value={topic}
-                        onChange={(e) => setTopic(e.target.value)}
+                        onChange={(e) => { setTopic(e.target.value); setTopicManuallySelected(Boolean(e.target.value)); }}
                         className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
                       >
+                        <option value="">Select a topic</option>
                         {DISCUSSION_TOPICS.map((topicOption) => (
                           <option key={topicOption} value={topicOption}>
                             {topicOption}
@@ -2149,9 +2252,10 @@ export default function CreatePage() {
 
                   <select
                     value={topic}
-                    onChange={(event) => setTopic(event.target.value)}
+                    onChange={(event) => { setTopic(event.target.value); setTopicManuallySelected(Boolean(event.target.value)); }}
                     className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
                   >
+                    <option value="">Select a topic</option>
                     {DISCUSSION_TOPICS.map((topicOption) => (
                       <option key={topicOption} value={topicOption}>
                         {topicOption}
