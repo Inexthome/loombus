@@ -59,7 +59,7 @@ export default function PeoplePage() {
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [activePeopleTool, setActivePeopleTool] =
-    useState<"none" | "search" | "following" | "followers" | "suggested">("none");
+    useState<"none" | "search" | "following" | "followers" | "suggested" | "mutual">("none");
   const [loading, setLoading] = useState(true);
   const loadingRef = useRef(true);
 
@@ -413,6 +413,13 @@ export default function PeoplePage() {
         return followerIds.has(profile.id);
       }
 
+      if (activePeopleTool === "mutual") {
+        return (
+          followingIds.has(profile.id) &&
+          followerIds.has(profile.id)
+        );
+      }
+
       if (activePeopleTool === "suggested") {
         // Admin Suggestions view should stay broad because Admin accounts need
         // full platform visibility, not relationship-limited discovery.
@@ -519,7 +526,9 @@ export default function PeoplePage() {
     setSearchQuery("");
   }
 
-  function togglePeopleTool(tool: "search" | "following" | "followers" | "suggested") {
+  function togglePeopleTool(
+    tool: "search" | "following" | "followers" | "suggested" | "mutual"
+  ) {
     setActivePeopleTool((current) => current === tool ? "none" : tool);
 
     if (tool === "search") {
@@ -543,7 +552,9 @@ export default function PeoplePage() {
       ? "Following"
       : activePeopleTool === "followers"
         ? "Followers"
-        : activePeopleTool === "suggested"
+        : activePeopleTool === "mutual"
+          ? "Mutual Connections"
+          : activePeopleTool === "suggested"
           ? isAdmin
             ? "Suggested platform view"
             : "Suggested"
@@ -668,6 +679,19 @@ export default function PeoplePage() {
 
             <button
               type="button"
+              onClick={() => togglePeopleTool("mutual")}
+              className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                activePeopleTool === "mutual"
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
+              aria-expanded={activePeopleTool === "mutual"}
+            >
+              Mutual
+            </button>
+
+            <button
+              type="button"
               onClick={() => togglePeopleTool("suggested")}
               className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
                 activePeopleTool === "suggested"
@@ -775,6 +799,9 @@ export default function PeoplePage() {
           {filteredProfiles.map((profile) => {
             const isSelf = currentUserId === profile.id;
             const isFollowing = followingIds.has(profile.id);
+            const isMutual =
+              followingIds.has(profile.id) &&
+              followerIds.has(profile.id);
             const isWorking = workingFollowId === profile.id;
             const badge = profileBadges[profile.id];
 
@@ -796,6 +823,12 @@ export default function PeoplePage() {
                       <p className="text-sm text-zinc-500">
                         {profile.username ? `@${profile.username}` : "No username yet"}
                       </p>
+
+                      {isMutual && (
+                        <span className="rounded-full border border-sky-800 bg-sky-950/40 px-2.5 py-1 text-[0.7rem] font-medium text-sky-300">
+                          Mutual
+                        </span>
+                      )}
 
                       {badge && (
                         <span
@@ -937,6 +970,18 @@ export default function PeoplePage() {
 
                     <button
                       type="button"
+                      onClick={() => togglePeopleTool("mutual")}
+                      className={`rounded-2xl border px-3 py-2 text-left text-sm transition ${
+                        activePeopleTool === "mutual"
+                          ? "border-zinc-500 bg-zinc-900 text-white"
+                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      Mutual
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => togglePeopleTool("suggested")}
                       className={`rounded-2xl border px-3 py-2 text-left text-sm transition ${
                         activePeopleTool === "suggested"
@@ -1059,6 +1104,21 @@ export default function PeoplePage() {
                     </p>
                     <p className="mt-1 text-sm text-zinc-300">
                       {followingIds.size}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-3">
+                    <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
+                      Mutual
+                    </p>
+                    <p className="mt-1 text-sm text-zinc-300">
+                      {
+                        profiles.filter(
+                          (profile) =>
+                            followingIds.has(profile.id) &&
+                            followerIds.has(profile.id)
+                        ).length
+                      }
                     </p>
                   </div>
                 </div>
