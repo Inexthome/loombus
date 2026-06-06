@@ -1,7 +1,27 @@
 "use client";
 
 import { useState } from "react";
+import { isIosNativeApp } from "@/lib/native-app";
 import { supabase } from "@/lib/supabase/client";
+
+type CdvPurchaseWindow = Window & {
+  CdvPurchase?: {
+    store?: {
+      manageSubscriptions?: () => Promise<void> | void;
+    };
+  };
+};
+
+async function openAppleSubscriptionManagement() {
+  const store = (window as CdvPurchaseWindow).CdvPurchase?.store;
+
+  if (store?.manageSubscriptions) {
+    await store.manageSubscriptions();
+    return;
+  }
+
+  window.location.href = "https://apps.apple.com/account/subscriptions";
+}
 
 export function BillingPortalButton({
   children = "Manage billing",
@@ -20,6 +40,23 @@ export function BillingPortalButton({
 
     setOpeningPortal(true);
     setMessage("");
+
+    if (isIosNativeApp()) {
+      try {
+        await openAppleSubscriptionManagement();
+        setMessage(
+          "Apple subscription management opened. You can view renewal status, receipts, or cancel from your Apple ID subscriptions."
+        );
+      } catch {
+        setMessage(
+          "Unable to open Apple subscription management. Open Settings, tap your Apple ID, then Subscriptions to manage or cancel."
+        );
+      } finally {
+        setOpeningPortal(false);
+      }
+
+      return;
+    }
 
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
