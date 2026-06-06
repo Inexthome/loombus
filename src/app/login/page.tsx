@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { isIosNativeApp } from "@/lib/native-app";
 
@@ -11,6 +11,11 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
+  const [nativeIosApp, setNativeIosApp] = useState(false);
+
+  useEffect(() => {
+    setNativeIosApp(isIosNativeApp());
+  }, []);
 
   async function handleLogin(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -46,7 +51,7 @@ export default function LoginPage() {
   }
 
   async function handleOAuthLogin(provider: "google" | "apple") {
-    if (isIosNativeApp()) {
+    if (nativeIosApp || isIosNativeApp()) {
       setMessage("Use email and password to log in inside the Loombus iOS app. Apple and Google login remain available on the web.");
       return;
     }
@@ -97,29 +102,42 @@ export default function LoginPage() {
         </p>
 
         <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-          <button
-            type="button"
-            onClick={() => handleOAuthLogin("apple")}
-            disabled={loading || Boolean(oauthLoading)}
-            className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {oauthLoading === "apple" ? "Opening Apple..." : "Continue with Apple"}
-          </button>
+          {nativeIosApp ? (
+            <div>
+              <p className="text-sm leading-relaxed text-zinc-400">
+                Use email and password to log in inside the Loombus iOS app.
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+                Apple and Google login remain available on the web.
+              </p>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin("apple")}
+                disabled={loading || Boolean(oauthLoading)}
+                className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {oauthLoading === "apple" ? "Opening Apple..." : "Continue with Apple"}
+              </button>
 
-          <button
-            type="button"
-            onClick={() => handleOAuthLogin("google")}
-            disabled={loading || Boolean(oauthLoading)}
-            className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {oauthLoading === "google" ? "Opening Google..." : "Continue with Google"}
-          </button>
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin("google")}
+                disabled={loading || Boolean(oauthLoading)}
+                className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {oauthLoading === "google" ? "Opening Google..." : "Continue with Google"}
+              </button>
 
-          <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
-            <span className="h-px flex-1 bg-zinc-900" />
-            Or log in with email
-            <span className="h-px flex-1 bg-zinc-900" />
-          </div>
+              <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
+                <span className="h-px flex-1 bg-zinc-900" />
+                Or log in with email
+                <span className="h-px flex-1 bg-zinc-900" />
+              </div>
+            </>
+          )}
         </div>
 
         <form

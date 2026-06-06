@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { isIosNativeApp } from "@/lib/native-app";
 
@@ -14,6 +14,11 @@ export default function SignupPage() {
   const [signupComplete, setSignupComplete] = useState(false);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
+  const [nativeIosApp, setNativeIosApp] = useState(false);
+
+  useEffect(() => {
+    setNativeIosApp(isIosNativeApp());
+  }, []);
 
   async function handleSignup(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
@@ -70,7 +75,7 @@ export default function SignupPage() {
   }
 
   async function handleOAuthSignup(provider: "google" | "apple") {
-    if (isIosNativeApp()) {
+    if (nativeIosApp || isIosNativeApp()) {
       setMessage("Use email and password to create an account inside the Loombus iOS app. Apple and Google signup remain available on the web.");
       return;
     }
@@ -132,29 +137,50 @@ export default function SignupPage() {
 
         {!signupComplete && (
           <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 loombus-mobile-visitor-auth-card">
-            <button
-              type="button"
-              onClick={() => handleOAuthSignup("apple")}
-              disabled={loading || Boolean(oauthLoading)}
-              className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {oauthLoading === "apple" ? "Opening Apple..." : "Sign up with Apple"}
-            </button>
+            {nativeIosApp ? (
+              <div>
+                <a
+                  href="#email-signup"
+                  className="block w-full rounded-full bg-white px-6 py-3 text-center text-sm font-medium text-black transition hover:bg-zinc-200"
+                >
+                  Sign up with email
+                </a>
 
-            <button
-              type="button"
-              onClick={() => handleOAuthSignup("google")}
-              disabled={loading || Boolean(oauthLoading)}
-              className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {oauthLoading === "google" ? "Opening Google..." : "Sign up with Google"}
-            </button>
+                <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+                  Use email and password to create an account inside the Loombus iOS app.
+                </p>
 
-            <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
-              <span className="h-px flex-1 bg-zinc-900" />
-              Or create with email
-              <span className="h-px flex-1 bg-zinc-900" />
-            </div>
+                <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+                  Apple and Google signup remain available on the web.
+                </p>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleOAuthSignup("apple")}
+                  disabled={loading || Boolean(oauthLoading)}
+                  className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {oauthLoading === "apple" ? "Opening Apple..." : "Sign up with Apple"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleOAuthSignup("google")}
+                  disabled={loading || Boolean(oauthLoading)}
+                  className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {oauthLoading === "google" ? "Opening Google..." : "Sign up with Google"}
+                </button>
+
+                <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
+                  <span className="h-px flex-1 bg-zinc-900" />
+                  Or create with email
+                  <span className="h-px flex-1 bg-zinc-900" />
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -193,6 +219,7 @@ export default function SignupPage() {
           </div>
         ) : (
           <form
+          id="email-signup"
             onSubmit={handleSignup}
             className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
           >
