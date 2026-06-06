@@ -2384,572 +2384,344 @@ export default function DiscussionPage() {
 
         {showAiToolsPanel && (
           <div className="discussion-detail-center-ai-panel mb-6 lg:hidden">
-        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
-          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                Idea Structure
-              </p>
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/30 sm:rounded-[1.5rem] sm:p-6">
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                      AI tools
+                    </p>
 
-              <h2 className="text-lg font-medium sm:text-2xl">
-                Conversation Map
-              </h2>
-            </div>
+                    <h2 className="text-lg font-medium sm:text-2xl">
+                      {openPremiumAiTool === "keyTakeaways"
+                        ? "Key Takeaways"
+                        : openPremiumAiTool === "whatChanged"
+                          ? "What Changed"
+                          : openPremiumAiTool === "disagreementMap"
+                            ? "Disagreement Map"
+                            : openPremiumAiTool === "conversationMap"
+                              ? "Conversation Map"
+                              : openPremiumAiTool === "relatedIdeas"
+                                ? "Related Ideas"
+                                : "Discussion Summary"}
+                    </h2>
 
-            {openPremiumAiTool === "conversationMap" && currentUserId && canUseAiSummary && (
-              <button
-                type="button"
-                onClick={handleGenerateConversationMap}
-                disabled={generatingConversationMap}
-                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
-              >
-                {generatingConversationMap ? "Generating..." : "Generate Conversation Map"}
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setOpenPremiumAiTool((current) =>
-                current === "conversationMap" ? "" : "conversationMap"
-              )
-            }
-            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
-          >
-            {openPremiumAiTool === "conversationMap" ? "Hide tool" : "Open tool"}
-          </button>
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                      {!currentUserId
+                        ? "Log in to use available AI tools for this discussion."
+                        : canUseAiSummary
+                          ? "Choose one AI tool at a time to understand this discussion without cluttering the thread."
+                          : (
+                            <>
+                              AI tools are available with Premium or Premium Plus.{" "}
+                              <Link
+                                href="/premium"
+                                className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
+                              >
+                                View Premium
+                              </Link>
+                            </>
+                          )}
+                    </p>
+                  </div>
 
-          {openPremiumAiTool === "conversationMap" && (
-            <>
-              {conversationMap ? (
-                <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
-                  {conversationMap}
-                  <AiOutputRatingControls
-                    featureKey="conversation_map"
-                    currentRating={aiOutputRatings["conversation_map"]}
-                    working={ratingFeatureKey === "conversation_map"}
-                    onRate={handleRateAiOutput}
-                  />
+                  <div className="flex shrink-0">
+                    {openPremiumAiTool === "summary" && !discussionSummary && currentUserId && canUseAiSummary && (
+                      <button
+                        type="button"
+                        onClick={handleGenerateSummary}
+                        disabled={generatingSummary}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                      >
+                        {generatingSummary ? "Generating..." : "Generate Summary"}
+                      </button>
+                    )}
+
+                    {openPremiumAiTool === "keyTakeaways" && currentUserId && canUseAiSummary && (
+                      <button
+                        type="button"
+                        onClick={handleGenerateKeyTakeaways}
+                        disabled={generatingTakeaways}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                      >
+                        {generatingTakeaways ? "Generating..." : "Generate Key Takeaways"}
+                      </button>
+                    )}
+
+                    {openPremiumAiTool === "whatChanged" && currentUserId && canUseAiSummary && (
+                      <button
+                        type="button"
+                        onClick={handleGenerateWhatChanged}
+                        disabled={generatingWhatChanged}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                      >
+                        {generatingWhatChanged ? "Generating..." : "Generate What Changed"}
+                      </button>
+                    )}
+
+                    {openPremiumAiTool === "disagreementMap" && currentUserId && canUseAiSummary && (
+                      <button
+                        type="button"
+                        onClick={handleGenerateDisagreementMap}
+                        disabled={generatingDisagreement}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                      >
+                        {generatingDisagreement ? "Generating..." : "Generate Disagreement Map"}
+                      </button>
+                    )}
+
+                    {openPremiumAiTool === "conversationMap" && currentUserId && canUseAiSummary && (
+                      <button
+                        type="button"
+                        onClick={handleGenerateConversationMap}
+                        disabled={generatingConversationMap}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                      >
+                        {generatingConversationMap ? "Generating..." : "Generate Conversation Map"}
+                      </button>
+                    )}
+
+                    {openPremiumAiTool === "relatedIdeas" && currentUserId && canUseAiSummary && (
+                      <button
+                        type="button"
+                        onClick={handleGenerateRelatedIdeas}
+                        disabled={generatingRelatedIdeas}
+                        className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
+                      >
+                        {generatingRelatedIdeas ? "Generating..." : "Generate Related Ideas"}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
-                  {!currentUserId
-                    ? "Log in to generate an AI conversation map for this discussion."
-                    : canUseAiSummary
-                      ? "Map the core idea, supporting points, open questions, tensions, and related directions."
-                      : (
+
+                <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
+                  {[
+                    ["summary", "Summary"],
+                    ["keyTakeaways", "Key Takeaways"],
+                    ["whatChanged", "What Changed"],
+                    ["disagreementMap", "Disagreement"],
+                    ["conversationMap", "Map"],
+                    ["relatedIdeas", "Related"],
+                  ].map(([toolKey, label]) => (
+                    <button
+                      key={toolKey}
+                      type="button"
+                      onClick={() => setOpenPremiumAiTool(toolKey)}
+                      className={`rounded-2xl border px-3 py-2 text-left transition ${
+                        openPremiumAiTool === toolKey
+                          ? "border-zinc-500 bg-black text-white"
+                          : "border-zinc-900 bg-black/40 text-zinc-500 hover:border-zinc-700 hover:text-white"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {currentUserId && (
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-4 text-sm leading-relaxed text-zinc-500">
+                    Current plan: {subscriptionDisplay.label}. Included AI usage: {aiUsageLabel}.
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                  {!openPremiumAiTool && (
+                    <p className="text-sm leading-relaxed text-zinc-500">
+                      Choose an AI tool above.
+                    </p>
+                  )}
+
+                  {openPremiumAiTool === "summary" && (
+                    <>
+                      {discussionSummary ? (
                         <>
-                          Conversation mapping is available with Premium or Premium Plus.{" "}
-                          <Link
-                            href="/premium"
-                            className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
-                          >
-                            View Premium
-                          </Link>
+                          <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
+                            {discussionSummary.summary}
+                          </div>
+
+                          <p className="mt-4 text-xs text-zinc-600">
+                            Generated {new Date(discussionSummary.generated_at).toLocaleString()}
+                            {discussionSummary.model_name ? ` · ${discussionSummary.model_name}` : ""}
+                            {" "}· {discussionSummary.source_reply_count} replies counted
+                          </p>
+
+                          <AiOutputRatingControls
+                            featureKey="thread_summary"
+                            currentRating={aiOutputRatings["thread_summary"]}
+                            working={ratingFeatureKey === "thread_summary"}
+                            onRate={handleRateAiOutput}
+                          />
                         </>
+                      ) : (
+                        <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
+                          {!currentUserId
+                            ? "Log in to generate an AI-assisted summary for this discussion."
+                            : canUseAiSummary
+                              ? "No summary has been generated yet. Generate one to cache it for future readers."
+                              : "Upgrade to use AI-assisted summaries."}
+                        </p>
                       )}
-                </p>
-              )}
 
-              {currentUserId && canUseAiSummary && (
-                <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
-                  {isAdmin ? (
-                    <p>
-                      Unlimited conversation maps available.
-                    </p>
-                  ) : (
-                    <p>
-                      {subscriptionDisplay.label} AI conversation map usage: {monthlyConversationMapUsage} of {monthlySummaryLimit} used this month.
-                      {" "}Remaining: {monthlyConversationMapRemaining}.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {conversationMapMessage && (
-                <p className="mt-4 text-sm text-zinc-500">
-                  {conversationMapMessage}
-                </p>
-              )}
-            </>
-          )}
-        </section>
-
-        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
-          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                Idea Graph
-              </p>
-
-              <h2 className="text-lg font-medium sm:text-2xl">
-                Related Ideas
-              </h2>
-            </div>
-
-            {openPremiumAiTool === "relatedIdeas" && currentUserId && canUseAiSummary && (
-              <button
-                type="button"
-                onClick={handleGenerateRelatedIdeas}
-                disabled={generatingRelatedIdeas}
-                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
-              >
-                {generatingRelatedIdeas ? "Generating..." : "Generate Related Ideas"}
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setOpenPremiumAiTool((current) =>
-                current === "relatedIdeas" ? "" : "relatedIdeas"
-              )
-            }
-            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
-          >
-            {openPremiumAiTool === "relatedIdeas" ? "Hide tool" : "Open tool"}
-          </button>
-
-          {openPremiumAiTool === "relatedIdeas" && (
-            <>
-              {relatedIdeas ? (
-                <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
-                  {relatedIdeas}
-                  <AiOutputRatingControls
-                    featureKey="related_ideas"
-                    currentRating={aiOutputRatings["related_ideas"]}
-                    working={ratingFeatureKey === "related_ideas"}
-                    onRate={handleRateAiOutput}
-                  />
-                </div>
-              ) : (
-                <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
-                  {!currentUserId
-                    ? "Log in to generate related ideas for this discussion."
-                    : canUseAiSummary
-                      ? "Generate adjacent ideas that can become the foundation for an idea graph."
-                      : (
-                        <>
-                          Related ideas are available with Premium or Premium Plus.{" "}
-                          <Link
-                            href="/premium"
-                            className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
-                          >
-                            View Premium
-                          </Link>
-                        </>
+                      {summaryMessage && (
+                        <p className="mt-4 text-sm text-zinc-500">
+                          {summaryMessage}
+                        </p>
                       )}
-                </p>
-              )}
+                    </>
+                  )}
 
-              {currentUserId && canUseAiSummary && (
-                <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
-                  {isAdmin ? (
-                    <p>
-                      Unlimited related idea maps available.
-                    </p>
-                  ) : (
-                    <p>
-                      {subscriptionDisplay.label} AI related ideas usage: {monthlyRelatedIdeasUsage} of {monthlySummaryLimit} used this month.
-                      {" "}Remaining: {monthlyRelatedIdeasRemaining}.
-                    </p>
+                  {openPremiumAiTool === "keyTakeaways" && (
+                    <>
+                      {keyTakeaways ? (
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
+                          {keyTakeaways}
+                          <AiOutputRatingControls
+                            featureKey="key_takeaways"
+                            currentRating={aiOutputRatings["key_takeaways"]}
+                            working={ratingFeatureKey === "key_takeaways"}
+                            onRate={handleRateAiOutput}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
+                          {!currentUserId
+                            ? "Log in to generate AI-assisted key takeaways for this discussion."
+                            : canUseAiSummary
+                              ? "Generate concise key takeaways from the discussion and visible replies."
+                              : "Upgrade to use AI-assisted key takeaways."}
+                        </p>
+                      )}
+
+                      {takeawaysMessage && (
+                        <p className="mt-4 text-sm text-zinc-500">
+                          {takeawaysMessage}
+                        </p>
+                      )}
+                    </>
+                  )}
+
+                  {openPremiumAiTool === "whatChanged" && (
+                    <>
+                      {whatChanged ? (
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
+                          {whatChanged}
+                          <AiOutputRatingControls
+                            featureKey="what_changed"
+                            currentRating={aiOutputRatings["what_changed"]}
+                            working={ratingFeatureKey === "what_changed"}
+                            onRate={handleRateAiOutput}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
+                          {!currentUserId
+                            ? "Log in to generate what changed in this thread."
+                            : canUseAiSummary
+                              ? "Generate a concise view of how replies changed or expanded the original discussion."
+                              : "Upgrade to use what-changed analysis."}
+                        </p>
+                      )}
+
+                      {whatChangedMessage && (
+                        <p className="mt-4 text-sm text-zinc-500">
+                          {whatChangedMessage}
+                        </p>
+                      )}
+                    </>
+                  )}
+
+                  {openPremiumAiTool === "disagreementMap" && (
+                    <>
+                      {disagreementMap ? (
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
+                          {disagreementMap}
+                          <AiOutputRatingControls
+                            featureKey="disagreement_map"
+                            currentRating={aiOutputRatings["disagreement_map"]}
+                            working={ratingFeatureKey === "disagreement_map"}
+                            onRate={handleRateAiOutput}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
+                          {!currentUserId
+                            ? "Log in to generate a neutral disagreement map for this discussion."
+                            : canUseAiSummary
+                              ? "Map real disagreement, different assumptions, and unresolved questions without picking a winner."
+                              : "Upgrade to use disagreement mapping."}
+                        </p>
+                      )}
+
+                      {disagreementMessage && (
+                        <p className="mt-4 text-sm text-zinc-500">
+                          {disagreementMessage}
+                        </p>
+                      )}
+                    </>
+                  )}
+
+                  {openPremiumAiTool === "conversationMap" && (
+                    <>
+                      {conversationMap ? (
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
+                          {conversationMap}
+                          <AiOutputRatingControls
+                            featureKey="conversation_map"
+                            currentRating={aiOutputRatings["conversation_map"]}
+                            working={ratingFeatureKey === "conversation_map"}
+                            onRate={handleRateAiOutput}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
+                          {!currentUserId
+                            ? "Log in to generate an AI conversation map for this discussion."
+                            : canUseAiSummary
+                              ? "Map the core idea, supporting points, open questions, tensions, and related directions."
+                              : "Upgrade to use conversation mapping."}
+                        </p>
+                      )}
+
+                      {conversationMapMessage && (
+                        <p className="mt-4 text-sm text-zinc-500">
+                          {conversationMapMessage}
+                        </p>
+                      )}
+                    </>
+                  )}
+
+                  {openPremiumAiTool === "relatedIdeas" && (
+                    <>
+                      {relatedIdeas ? (
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
+                          {relatedIdeas}
+                          <AiOutputRatingControls
+                            featureKey="related_ideas"
+                            currentRating={aiOutputRatings["related_ideas"]}
+                            working={ratingFeatureKey === "related_ideas"}
+                            onRate={handleRateAiOutput}
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
+                          {!currentUserId
+                            ? "Log in to generate related ideas for this discussion."
+                            : canUseAiSummary
+                              ? "Generate adjacent ideas that can become the foundation for an idea graph."
+                              : "Upgrade to use related ideas."}
+                        </p>
+                      )}
+
+                      {relatedIdeasMessage && (
+                        <p className="mt-4 text-sm text-zinc-500">
+                          {relatedIdeasMessage}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
-              )}
-
-              {relatedIdeasMessage && (
-                <p className="mt-4 text-sm text-zinc-500">
-                  {relatedIdeasMessage}
-                </p>
-              )}
-            </>
-          )}
-        </section>
-
-        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
-          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                Thread Evolution
-              </p>
-
-              <h2 className="text-lg font-medium sm:text-2xl">
-                What Changed in This Thread
-              </h2>
-            </div>
-
-            {openPremiumAiTool === "whatChanged" && currentUserId && canUseAiSummary && (
-              <button
-                type="button"
-                onClick={handleGenerateWhatChanged}
-                disabled={generatingWhatChanged}
-                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
-              >
-                {generatingWhatChanged ? "Generating..." : "Generate What Changed"}
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setOpenPremiumAiTool((current) =>
-                current === "whatChanged" ? "" : "whatChanged"
-              )
-            }
-            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
-          >
-            {openPremiumAiTool === "whatChanged" ? "Hide tool" : "Open tool"}
-          </button>
-
-          {openPremiumAiTool === "whatChanged" && (
-            <>
-
-
-          {whatChanged ? (
-            <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
-              {whatChanged}
-              <AiOutputRatingControls
-                featureKey="what_changed"
-                currentRating={aiOutputRatings["what_changed"]}
-                working={ratingFeatureKey === "what_changed"}
-                onRate={handleRateAiOutput}
-              />
-            </div>
-          ) : (
-            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
-              {!currentUserId
-                ? "Log in to generate what changed in this thread."
-                : canUseAiSummary
-                  ? "Generate a concise view of how replies changed or expanded the original discussion."
-                  : (
-                    <>
-                      What-changed analysis is available with Premium or Premium Plus.{" "}
-                      <Link
-                        href="/premium"
-                        className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
-                      >
-                        View Premium
-                      </Link>
-                    </>
-                  )}
-            </p>
-          )}
-
-          {currentUserId && canUseAiSummary && (
-            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
-              {isAdmin ? (
-                <p>
-                  Unlimited what-changed analyses available.
-                </p>
-              ) : (
-                <p>
-                  {subscriptionDisplay.label} AI what-changed usage: {monthlyWhatChangedUsage} of {monthlySummaryLimit} used this month.
-                  {" "}Remaining: {monthlyWhatChangedRemaining}.
-                </p>
-              )}
-            </div>
-          )}
-
-          {whatChangedMessage && (
-            <p className="mt-4 text-sm text-zinc-500">
-              {whatChangedMessage}
-            </p>
-          )}
-        
-            </>
-          )}
-        </section>
-
-        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
-          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                Viewpoint Map
-              </p>
-
-              <h2 className="text-lg font-medium sm:text-2xl">
-                Disagreement Mapping
-              </h2>
-            </div>
-
-            {openPremiumAiTool === "disagreementMap" && currentUserId && canUseAiSummary && (
-              <button
-                type="button"
-                onClick={handleGenerateDisagreementMap}
-                disabled={generatingDisagreement}
-                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
-              >
-                {generatingDisagreement ? "Generating..." : "Generate Disagreement Map"}
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setOpenPremiumAiTool((current) =>
-                current === "disagreementMap" ? "" : "disagreementMap"
-              )
-            }
-            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
-          >
-            {openPremiumAiTool === "disagreementMap" ? "Hide tool" : "Open tool"}
-          </button>
-
-          {openPremiumAiTool === "disagreementMap" && (
-            <>
-
-
-          {disagreementMap ? (
-            <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
-              {disagreementMap}
-              <AiOutputRatingControls
-                featureKey="disagreement_map"
-                currentRating={aiOutputRatings["disagreement_map"]}
-                working={ratingFeatureKey === "disagreement_map"}
-                onRate={handleRateAiOutput}
-              />
-            </div>
-          ) : (
-            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
-              {!currentUserId
-                ? "Log in to generate a neutral disagreement map for this discussion."
-                : canUseAiSummary
-                  ? "Map real disagreement, different assumptions, and unresolved questions without picking a winner."
-                  : (
-                    <>
-                      Disagreement mapping is available with Premium or Premium Plus.{" "}
-                      <Link
-                        href="/premium"
-                        className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
-                      >
-                        View Premium
-                      </Link>
-                    </>
-                  )}
-            </p>
-          )}
-
-          {currentUserId && canUseAiSummary && (
-            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
-              {isAdmin ? (
-                <p>
-                  Unlimited disagreement maps available.
-                </p>
-              ) : (
-                <p>
-                  {subscriptionDisplay.label} AI disagreement map usage: {monthlyDisagreementUsage} of {monthlySummaryLimit} used this month.
-                  {" "}Remaining: {monthlyDisagreementRemaining}.
-                </p>
-              )}
-            </div>
-          )}
-
-          {disagreementMessage && (
-            <p className="mt-4 text-sm text-zinc-500">
-              {disagreementMessage}
-            </p>
-          )}
-        
-            </>
-          )}
-        </section>
-
-        <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
-          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                High-Signal Takeaways
-              </p>
-
-              <h2 className="text-lg font-medium sm:text-2xl">
-                Key Takeaways
-              </h2>
-            </div>
-
-            {openPremiumAiTool === "keyTakeaways" && currentUserId && canUseAiSummary && (
-              <button
-                type="button"
-                onClick={handleGenerateKeyTakeaways}
-                disabled={generatingTakeaways}
-                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
-              >
-                {generatingTakeaways ? "Generating..." : "Generate Key Takeaways"}
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setOpenPremiumAiTool((current) =>
-                current === "keyTakeaways" ? "" : "keyTakeaways"
-              )
-            }
-            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
-          >
-            {openPremiumAiTool === "keyTakeaways" ? "Hide tool" : "Open tool"}
-          </button>
-
-          {openPremiumAiTool === "keyTakeaways" && (
-            <>
-
-
-          {keyTakeaways ? (
-            <div className="whitespace-pre-wrap rounded-2xl border border-zinc-900 bg-black p-4 leading-relaxed text-zinc-300">
-              {keyTakeaways}
-              <AiOutputRatingControls
-                featureKey="key_takeaways"
-                currentRating={aiOutputRatings["key_takeaways"]}
-                working={ratingFeatureKey === "key_takeaways"}
-                onRate={handleRateAiOutput}
-              />
-            </div>
-          ) : (
-            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
-              {!currentUserId
-                ? "Log in to generate AI-assisted key takeaways for this discussion."
-                : canUseAiSummary
-                  ? "Generate concise key takeaways from the discussion and visible replies."
-                  : (
-                    <>
-                      AI-assisted key takeaways are available with Premium or Premium Plus.{" "}
-                      <Link
-                        href="/premium"
-                        className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
-                      >
-                        View Premium
-                      </Link>
-                    </>
-                  )}
-            </p>
-          )}
-
-          {currentUserId && canUseAiSummary && (
-            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
-              {isAdmin ? (
-                <p>
-                  Unlimited key takeaways available.
-                </p>
-              ) : (
-                <p>
-                  {subscriptionDisplay.label} AI key takeaways usage: {monthlyTakeawaysUsage} of {monthlySummaryLimit} used this month.
-                  {" "}Remaining: {monthlyTakeawaysRemaining}.
-                </p>
-              )}
-            </div>
-          )}
-
-          {takeawaysMessage && (
-            <p className="mt-4 text-sm text-zinc-500">
-              {takeawaysMessage}
-            </p>
-          )}
-        
-            </>
-          )}
-        </section>
-
-        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 shadow-2xl shadow-black/30 sm:mb-10 sm:rounded-[1.5rem] sm:p-7">
-          <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-600">
-                AI-assisted
-              </p>
-
-              <h2 className="text-lg font-medium sm:text-2xl">
-                Discussion Summary
-              </h2>
-            </div>
-
-            {!discussionSummary && currentUserId && canUseAiSummary && (
-              <button
-                type="button"
-                onClick={handleGenerateSummary}
-                disabled={generatingSummary}
-                className="w-full rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 sm:w-fit"
-              >
-                {generatingSummary ? "Generating..." : "Generate Summary"}
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              setOpenPremiumAiTool((current) =>
-                current === "summary" ? "" : "summary"
-              )
-            }
-            className="mb-3 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white sm:mb-4"
-          >
-            {openPremiumAiTool === "summary" ? "Hide tool" : "Open tool"}
-          </button>
-
-          {openPremiumAiTool === "summary" && (
-            <>
-
-
-          {discussionSummary ? (
-            <>
-              <div className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
-                {discussionSummary.summary}
               </div>
-
-              <p className="mt-4 text-xs text-zinc-600">
-                Generated {new Date(discussionSummary.generated_at).toLocaleString()}
-                {discussionSummary.model_name ? ` · ${discussionSummary.model_name}` : ""}
-                {" "}· {discussionSummary.source_reply_count} replies counted
-              </p>
-
-              <AiOutputRatingControls
-                featureKey="thread_summary"
-                currentRating={aiOutputRatings["thread_summary"]}
-                working={ratingFeatureKey === "thread_summary"}
-                onRate={handleRateAiOutput}
-              />
-            </>
-          ) : (
-            <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
-              {!currentUserId
-                ? "Log in to generate an AI-assisted summary for this discussion."
-                : canUseAiSummary
-                  ? "No summary has been generated yet. Generate one to cache it for future readers."
-                  : (
-                    <>
-                      AI-assisted summaries are available with Premium or Premium Plus.{" "}
-                      <Link
-                        href="/premium"
-                        className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
-                      >
-                        View Premium
-                      </Link>
-                    </>
-                  )}
-            </p>
-          )}
-
-          {openPremiumAiTool === "summary" && currentUserId && canUseAiSummary && (
-            <div className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-500">
-              {isAdmin ? (
-                <p>
-                  Unlimited summaries available.
-                </p>
-              ) : (
-                <p>
-                  {subscriptionDisplay.label} AI summary usage: {monthlySummaryUsage} of {monthlySummaryLimit} summaries used this month.
-                  {" "}Remaining: {monthlySummaryRemaining}.
-                </p>
-              )}
-            </div>
-          )}
-
-          {summaryMessage && (
-            <p className="mt-4 text-sm text-zinc-500">
-              {summaryMessage}
-            </p>
-          )}
-        
-            </>
-          )}
-        </section>
+            </section>
           </div>
         )}
 
@@ -3669,9 +3441,7 @@ export default function DiscussionPage() {
                   type="button"
                   onClick={() => {
                     setShowAiToolsPanel(true);
-                    setOpenPremiumAiTool((current) =>
-                      current === toolKey ? "" : toolKey
-                    );
+                    setOpenPremiumAiTool(toolKey);
 
                     window.setTimeout(() => {
                       document.getElementById("intelligence-layer")?.scrollIntoView({
