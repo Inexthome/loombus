@@ -143,10 +143,10 @@ export default function OnboardingPage() {
             </div>
 
             <Link
-              href="/dashboard"
+              href="/discussions"
               className="inline-flex rounded-full border border-zinc-300 px-5 py-3 text-sm font-bold text-zinc-800 transition hover:border-zinc-950 hover:text-zinc-950"
             >
-              Continue to dashboard
+              Continue to discussions
             </Link>
           </div>
 

@@ -47,7 +47,7 @@ export default function LoginPage() {
     }
 
     setMessage("Login successful.");
-    window.location.replace("/dashboard");
+    window.location.replace("/discussions");
   }
 
   async function handleOAuthLogin(provider: "google" | "apple") {
