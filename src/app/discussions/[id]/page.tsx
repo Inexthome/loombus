@@ -2383,7 +2383,7 @@ export default function DiscussionPage() {
         <div id="intelligence-layer" className="scroll-mt-24" />
 
         {showAiToolsPanel && (
-          <div className="discussion-detail-center-ai-panel mb-6 xl:hidden">
+          <div className="discussion-detail-center-ai-panel mb-6 lg:hidden">
         <section className="mb-2.5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-4 sm:rounded-3xl sm:p-6">
           <div className="mb-3 flex flex-col gap-3 sm:mb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
             <div>
@@ -3505,11 +3505,11 @@ export default function DiscussionPage() {
             </p>
 
             <h2 className="text-xl font-semibold tracking-tight">
-              Discussion controls.
+              Discussion tools.
             </h2>
 
             <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-              Manage the thread, save it, report concerns, open AI tools, or continue into related discussions.
+              Jump to replies, use AI tools, save this discussion, or continue reading related threads.
             </p>
 
             <div className="mt-5 space-y-2">
@@ -3639,7 +3639,7 @@ export default function DiscussionPage() {
                 </p>
 
                 <h2 className="text-lg font-semibold tracking-tight">
-                  Understand the thread.
+                  Use AI on this thread.
                 </h2>
               </div>
 
