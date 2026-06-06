@@ -56,6 +56,7 @@ export default function PeoplePage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [workingFollowId, setWorkingFollowId] = useState<string | null>(null);
+  const [startingMessageProfileId, setStartingMessageProfileId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [activePeopleTool, setActivePeopleTool] =
@@ -451,6 +452,56 @@ export default function PeoplePage() {
     suggestedIds,
   ]);
 
+  async function startMessage(
+    event: MouseEvent<HTMLButtonElement>,
+    profile: Profile
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!currentUserId || profile.id === currentUserId || startingMessageProfileId) {
+      return;
+    }
+
+    setMessage("");
+    setStartingMessageProfileId(profile.id);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+
+      if (!sessionData.session) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({
+          targetUserId: profile.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to start message.");
+        setStartingMessageProfileId(null);
+        return;
+      }
+
+      window.location.href = `/messages?conversation=${encodeURIComponent(
+        result.conversationId
+      )}`;
+    } catch {
+      setMessage("Unable to start message.");
+      setStartingMessageProfileId(null);
+    }
+  }
+
   async function toggleFollow(
     event: MouseEvent<HTMLButtonElement>,
     profile: Profile
@@ -830,6 +881,12 @@ export default function PeoplePage() {
                         </span>
                       )}
 
+                      {isMutual && !isSelf && (
+                        <span className="rounded-full border border-emerald-800 bg-emerald-950/40 px-2.5 py-1 text-[0.7rem] font-medium text-emerald-300">
+                          Can message
+                        </span>
+                      )}
+
                       {badge && (
                         <span
                           className={`rounded-full border px-2.5 py-1 text-[0.7rem] font-medium ${getBadgeClassName(badge)}`}
@@ -856,18 +913,31 @@ export default function PeoplePage() {
                       You
                     </span>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={(event) => toggleFollow(event, profile)}
-                      disabled={isWorking}
-                      className={`rounded-full px-4 py-2 text-center text-sm transition disabled:cursor-not-allowed ${
-                        isFollowing
-                          ? "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
-                          : "bg-white text-black hover:bg-zinc-200"
-                      }`}
-                    >
-                      {isWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
-                    </button>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      {isMutual && (
+                        <button
+                          type="button"
+                          onClick={(event) => startMessage(event, profile)}
+                          disabled={startingMessageProfileId === profile.id}
+                          className="rounded-full bg-white px-4 py-2 text-center text-sm text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-600"
+                        >
+                          {startingMessageProfileId === profile.id ? "Opening..." : "Message"}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={(event) => toggleFollow(event, profile)}
+                        disabled={isWorking}
+                        className={`rounded-full px-4 py-2 text-center text-sm transition disabled:cursor-not-allowed ${
+                          isFollowing
+                            ? "border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                            : "bg-white text-black hover:bg-zinc-200"
+                        }`}
+                      >
+                        {isWorking ? "Updating..." : isFollowing ? "Following" : "Follow"}
+                      </button>
+                    </div>
                   )}
                 </div>
 
