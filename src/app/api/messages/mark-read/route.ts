@@ -150,6 +150,22 @@ export async function POST(request: NextRequest) {
     return jsonError(updateError.message, 500);
   }
 
+  const { error: notificationUpdateError } = await serviceSupabase
+    .from("notifications")
+    .update({ read_at: now })
+    .eq("user_id", user.id)
+    .eq("target_type", "conversation")
+    .eq("target_id", conversationId)
+    .in("type", ["new_message", "message_reply"])
+    .is("read_at", null);
+
+  if (notificationUpdateError) {
+    console.error(
+      "Unable to mark message notifications read:",
+      notificationUpdateError.message
+    );
+  }
+
   return NextResponse.json({
     success: true,
     lastReadAt: now,
