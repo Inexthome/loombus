@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { isIosNativeApp } from "@/lib/native-app";
 
 type OAuthProvider = "google" | "apple";
 type HomeAuthState = "checking" | "logged_out" | "logged_in";
@@ -278,6 +279,10 @@ export default function Home() {
   }, []);
 
   async function signUpWithProvider(provider: OAuthProvider) {
+    if (isIosNativeApp()) {
+      setMessage("Use email and password to create an account inside the Loombus iOS app. Apple and Google signup remain available on the web.");
+      return;
+    }
     setMessage("");
     const ageConfirmed = window.confirm(
       "Loombus is not available to children under 13. Please confirm that you are at least 13 years old to create an account."

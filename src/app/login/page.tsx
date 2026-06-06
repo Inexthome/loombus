@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { isIosNativeApp } from "@/lib/native-app";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -45,6 +46,10 @@ export default function LoginPage() {
   }
 
   async function handleOAuthLogin(provider: "google" | "apple") {
+    if (isIosNativeApp()) {
+      setMessage("Use email and password to log in inside the Loombus iOS app. Apple and Google login remain available on the web.");
+      return;
+    }
     if (loading || oauthLoading) {
       return;
     }

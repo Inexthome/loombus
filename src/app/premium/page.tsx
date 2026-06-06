@@ -172,10 +172,33 @@ export default function PremiumPage() {
                 </PremiumPlanCheckoutButton>
               </div>
 
-              <p className="text-xs leading-relaxed text-zinc-600">
-                Secure live checkout is handled by Stripe. Your plan is
-                activated after payment succeeds.
-              </p>
+              <div className="space-y-2 text-xs leading-relaxed text-zinc-600">
+                <p>
+                  Premium Monthly is an auto-renewable monthly subscription. Premium Annual is
+                  an auto-renewable annual subscription. Pricing is shown before purchase and
+                  your plan is activated after payment succeeds.
+                </p>
+                <p>
+                  Review the{" "}
+                  <Link href="/privacy" className="text-zinc-300 underline-offset-4 hover:underline">
+                    Privacy Policy
+                  </Link>
+                  {", "}
+                  <Link href="/terms" className="text-zinc-300 underline-offset-4 hover:underline">
+                    Terms
+                  </Link>
+                  {", and "}
+                  <a
+                    href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+                    className="text-zinc-300 underline-offset-4 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Apple Standard EULA
+                  </a>
+                  .
+                </p>
+              </div>
             </div>
 
             <FeatureList features={premiumFeatures} />
@@ -218,10 +241,33 @@ export default function PremiumPage() {
                 </PremiumPlanCheckoutButton>
               </div>
 
-              <p className="text-xs leading-relaxed text-zinc-600">
-                Secure live checkout is handled by Stripe. Your plan is
-                activated after payment succeeds.
-              </p>
+              <div className="space-y-2 text-xs leading-relaxed text-zinc-600">
+                <p>
+                  Premium Plus Monthly is an auto-renewable monthly subscription. Premium Plus Annual is
+                  an auto-renewable annual subscription. Pricing is shown before purchase and
+                  your plan is activated after payment succeeds.
+                </p>
+                <p>
+                  Review the{" "}
+                  <Link href="/privacy" className="text-zinc-300 underline-offset-4 hover:underline">
+                    Privacy Policy
+                  </Link>
+                  {", "}
+                  <Link href="/terms" className="text-zinc-300 underline-offset-4 hover:underline">
+                    Terms
+                  </Link>
+                  {", and "}
+                  <a
+                    href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+                    className="text-zinc-300 underline-offset-4 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Apple Standard EULA
+                  </a>
+                  .
+                </p>
+              </div>
             </div>
 
             <FeatureList features={premiumPlusFeatures} />
