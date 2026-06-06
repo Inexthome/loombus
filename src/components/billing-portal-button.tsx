@@ -17,10 +17,10 @@ async function openAppleSubscriptionManagement() {
 
   if (store?.manageSubscriptions) {
     await store.manageSubscriptions();
-    return;
+    return true;
   }
 
-  window.location.href = "https://apps.apple.com/account/subscriptions";
+  return false;
 }
 
 export function BillingPortalButton({
@@ -43,13 +43,16 @@ export function BillingPortalButton({
 
     if (isIosNativeApp()) {
       try {
-        await openAppleSubscriptionManagement();
+        const opened = await openAppleSubscriptionManagement();
+
         setMessage(
-          "Apple subscription management opened. You can view renewal status, receipts, or cancel from your Apple ID subscriptions."
+          opened
+            ? "Apple subscription management opened. You can view renewal status, receipts, or cancel from Apple subscriptions."
+            : "To manage or cancel while testing in TestFlight, open iPhone Settings, Developer, Sandbox Apple Account, then Manage. For live App Store purchases, open Settings, tap your Apple ID, then Subscriptions."
         );
       } catch {
         setMessage(
-          "Unable to open Apple subscription management. Open Settings, tap your Apple ID, then Subscriptions to manage or cancel."
+          "To manage or cancel while testing in TestFlight, open iPhone Settings, Developer, Sandbox Apple Account, then Manage. For live App Store purchases, open Settings, tap your Apple ID, then Subscriptions."
         );
       } finally {
         setOpeningPortal(false);
