@@ -1733,6 +1733,7 @@ export default function DiscussionPage() {
   async function handleSaveWithSelectedFolder() {
     const collectionId =
       selectedSaveCollectionId === "unfiled" ? null : selectedSaveCollectionId;
+
     const saved = await handleBookmark(collectionId);
 
     if (saved) {
@@ -1782,29 +1783,7 @@ export default function DiscussionPage() {
       setSavedBookmarkId(nextBookmarkId);
 
       if (nextBookmarkId && collectionId) {
-        const moveResponse = await fetch("/api/bookmarks/move", selectedSaveCollectionId;
-    const saved = await handleBookmark(collectionId);
-
-    if (saved) {
-      setShowSaveFolderPanel(false);
-    }
-  }
-
-  async function handleBookmark(collectionId: string | null = null) {
-    setBookmarkMessage("");
-
-    if (savingBookmark) {
-      return false;
-    }
-
-    setSavingBookmark(true);
-
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-
-      if (!accessToken) {
-        window.location.href = "/ {
+        const moveResponse = await fetch("/api/bookmarks/move", {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
