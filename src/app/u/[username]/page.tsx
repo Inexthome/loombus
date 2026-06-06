@@ -450,6 +450,10 @@ export default function UserProfilePage() {
                   >
                     <span className="text-white">{followingCount}</span> following
                   </Link>
+
+                  <span>
+                    <span className="text-white">{discussions.length}</span> discussions
+                  </span>
                 </div>
               </div>
             </div>
