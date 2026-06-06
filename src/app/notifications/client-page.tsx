@@ -36,7 +36,8 @@ type NotificationTypeFilter =
   | "mention"
   | "follow"
   | "followed_discussion"
-  | "followed_reply";
+  | "followed_reply"
+  | "messages";
 type NotificationSortMode = "newest" | "oldest";
 
 type AiEntitlement = {
@@ -73,6 +74,13 @@ function getNotificationMessage(
 
   if (notification.type === "follow") {
     return `${getProfileName(actorProfile)} followed you.`;
+  }
+
+  if (
+    notification.type === "new_message" ||
+    notification.type === "message_reply"
+  ) {
+    return notification.message;
   }
 
   return notification.message;
@@ -456,7 +464,14 @@ export default function NotificationsClientPage() {
         return false;
       }
 
-      if (
+      if (activeTypeFilter === "messages") {
+        if (
+          notification.type !== "new_message" &&
+          notification.type !== "message_reply"
+        ) {
+          return false;
+        }
+      } else if (
         activeTypeFilter !== "all" &&
         notification.type !== activeTypeFilter
       ) {
@@ -529,7 +544,9 @@ export default function NotificationsClientPage() {
           ? "Follows"
           : canUseAdvancedControls && typeFilter === "mention"
             ? "Mentions"
-            : "All alerts";
+            : canUseAdvancedControls && typeFilter === "messages"
+              ? "Messages"
+              : "All alerts";
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12 loombus-shell-with-right-rail">
@@ -548,7 +565,7 @@ export default function NotificationsClientPage() {
               </h1>
 
               <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-                Updates from replies, follows, mentions, and conversations connected to you.
+                Updates from replies, follows, mentions, messages, and conversations connected to you.
               </p>
             </div>
 
@@ -646,6 +663,19 @@ export default function NotificationsClientPage() {
                 }`}
               >
                 Mentions
+              </button>
+
+              <button
+                type="button"
+                onClick={() => showTypeAlerts("messages")}
+                disabled={!canUseAdvancedControls}
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  canUseAdvancedControls && typeFilter === "messages"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                }`}
+              >
+                Messages
               </button>
 
               <Link
@@ -801,6 +831,7 @@ export default function NotificationsClientPage() {
                   ["follow", "Follows"],
                   ["followed_discussion", "Followed discussions"],
                   ["followed_reply", "Followed replies"],
+                  ["messages", "Messages"],
                 ].map(([value, label]) => (
                   <button
                     key={value}
