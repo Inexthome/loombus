@@ -731,24 +731,24 @@ export default function DiscussionsPage() {
       <div className="mx-auto max-w-[46rem]">
         <div className="discussion-shell-grid">
           <div className="min-w-0">
-        <section className="sticky top-0 z-20 mb-5 hidden border-b border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-zinc-900 dark:bg-black/95 md:block">
+        <section className="sticky top-0 z-20 mb-5 hidden border-b border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 backdrop-blur-xl md:block">
           <nav
             aria-label="Discussion feed views"
-            className="grid grid-cols-3 border-y border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-zinc-900 dark:bg-black/95"
+            className="grid grid-cols-3 border-y border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 backdrop-blur-xl"
           >
             <button
               type="button"
               onClick={openAllFeed}
               className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
                 allFeedActive
-                  ? "text-zinc-950 dark:text-white"
-                  : "text-zinc-500 hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-zinc-200"
+                  ? "text-[var(--loombus-text)]"
+                  : "text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
               }`}
             >
               All
               <span
                 className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  allFeedActive ? "bg-zinc-950 dark:bg-white" : "bg-transparent"
+                  allFeedActive ? "bg-[var(--loombus-text)]" : "bg-transparent"
                 }`}
                 aria-hidden="true"
               />
@@ -759,14 +759,14 @@ export default function DiscussionsPage() {
               onClick={openFollowingFeed}
               className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
                 followingFeedActive
-                  ? "text-zinc-950 dark:text-white"
-                  : "text-zinc-500 hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-zinc-200"
+                  ? "text-[var(--loombus-text)]"
+                  : "text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
               }`}
             >
               Following
               <span
                 className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  followingFeedActive ? "bg-zinc-950 dark:bg-white" : "bg-transparent"
+                  followingFeedActive ? "bg-[var(--loombus-text)]" : "bg-transparent"
                 }`}
                 aria-hidden="true"
               />
@@ -777,14 +777,14 @@ export default function DiscussionsPage() {
               onClick={openSignalFeed}
               className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
                 signalFeedActive
-                  ? "text-zinc-950 dark:text-white"
-                  : "text-zinc-500 hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-zinc-200"
+                  ? "text-[var(--loombus-text)]"
+                  : "text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
               }`}
             >
               Active
               <span
                 className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  signalFeedActive ? "bg-zinc-950 dark:bg-white" : "bg-transparent"
+                  signalFeedActive ? "bg-[var(--loombus-text)]" : "bg-transparent"
                 }`}
                 aria-hidden="true"
               />
