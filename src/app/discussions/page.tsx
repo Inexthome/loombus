@@ -667,8 +667,23 @@ export default function DiscussionsPage() {
   }
 
   function openSignalFeed() {
-    applyDiscussionFeedMode("signal", {
-      openFilters: true,
+    setFeedMode("signal");
+    setSearchQuery("");
+    setTopicFilter("All");
+    setPurposeLaneFilter("All");
+    setSortMode("Signal");
+    setAdvancedFilter("All activity");
+    setActiveDiscussionTool("none");
+    setShowExploreFilters(true);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(DISCUSSION_FILTER_DRAWER_STORAGE_KEY, "open");
+    }
+
+    updateUrlParams({
+      feed: "signal",
+      topic: null,
+      purpose: null,
     });
   }
 
