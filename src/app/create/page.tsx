@@ -1609,12 +1609,12 @@ export default function CreatePage() {
                 Discussion Body
               </label>
 
-              <div className="overflow-hidden rounded-xl border border-zinc-800 bg-black focus-within:border-zinc-500">
-                <div className="flex items-center gap-1 border-b border-zinc-800 bg-zinc-950/80 px-3 py-2">
+              <div className="overflow-hidden rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] focus-within:border-[var(--loombus-text-subtle)]">
+                <div className="flex items-center gap-1 border-b border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-3 py-2">
                   <button
                     type="button"
                     onClick={() => runBodyEditorCommand("bold")}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base font-bold text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base font-bold text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                     aria-label="Bold selected text"
                     title="Bold"
                   >
@@ -1624,7 +1624,7 @@ export default function CreatePage() {
                   <button
                     type="button"
                     onClick={() => runBodyEditorCommand("italic")}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base italic text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base italic text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                     aria-label="Italicize selected text"
                     title="Italic"
                   >
@@ -1638,7 +1638,7 @@ export default function CreatePage() {
                         onClick={openBodyAttachmentPicker}
                         disabled={publishing}
                         className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-base transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${
-                          attachmentFiles.length > 0 ? "text-white" : "text-zinc-300"
+                          attachmentFiles.length > 0 ? "text-[var(--loombus-text)]" : "text-[var(--loombus-text-muted)]"
                         }`}
                         aria-label="Attach files"
                         title="Attach files"
@@ -1669,15 +1669,15 @@ export default function CreatePage() {
                     </>
                   )}
 
-                  <span className="mx-2 h-6 w-px bg-zinc-800" aria-hidden="true" />
+                  <span className="mx-2 h-6 w-px bg-[var(--loombus-border)]" aria-hidden="true" />
 
                   <button
                     type="button"
                     onClick={() => toggleCreateTool("quality")}
                     className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-medium transition hover:bg-zinc-900 hover:text-white ${
                       activeCreateTool === "quality"
-                        ? "bg-white text-black hover:bg-white hover:text-black"
-                        : "text-zinc-300"
+                        ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] hover:bg-[var(--loombus-primary-bg)] hover:text-[var(--loombus-primary-text)]"
+                        : "text-[var(--loombus-text-muted)]"
                     }`}
                     aria-label="Run quality check"
                     title="Quality Check"
@@ -1690,8 +1690,8 @@ export default function CreatePage() {
                     onClick={() => toggleCreateTool("rewrite")}
                     className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-medium transition hover:bg-zinc-900 hover:text-white ${
                       activeCreateTool === "rewrite"
-                        ? "bg-white text-black hover:bg-white hover:text-black"
-                        : "text-zinc-300"
+                        ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] hover:bg-[var(--loombus-primary-bg)] hover:text-[var(--loombus-primary-text)]"
+                        : "text-[var(--loombus-text-muted)]"
                     }`}
                     aria-label="Generate rewrite"
                     title="Generate Rewrite"
@@ -1702,7 +1702,7 @@ export default function CreatePage() {
 
                 <div className="relative">
                   {!bodyPlainText.trim() && (
-                    <span className="pointer-events-none absolute left-4 top-4 text-base text-zinc-700">
+                    <span className="pointer-events-none absolute left-4 top-4 text-base text-[var(--loombus-text-subtle)]">
                       Write your discussion...
                     </span>
                   )}
@@ -1717,7 +1717,7 @@ export default function CreatePage() {
                     onInput={syncBodyFromEditor}
                     onBlur={syncBodyFromEditor}
                     onPaste={handleBodyEditorPaste}
-                    className="min-h-[22rem] w-full overflow-y-auto whitespace-pre-wrap break-words border-0 bg-black px-4 py-4 text-base leading-relaxed text-white outline-none"
+                    className="min-h-[22rem] w-full overflow-y-auto whitespace-pre-wrap break-words border-0 bg-[var(--loombus-surface)] px-4 py-4 text-base leading-relaxed text-[var(--loombus-text)] outline-none"
                   />
                 </div>
               </div>
