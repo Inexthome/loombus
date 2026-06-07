@@ -1360,12 +1360,20 @@ export default function CreatePage() {
 
             {activeCreateMetadataTool !== "none" && activeCreateMetadataTool !== "tags" && (
               <section
-                className="relative z-20 rounded-2xl border border-zinc-800 bg-black/80 p-3 shadow-2xl shadow-black/30 sm:p-4"
-                role="region"
+                className="fixed inset-0 z-50 pointer-events-none"
+                role="dialog"
+                aria-modal="false"
                 aria-label="Create signal selector"
               >
-                <div className="max-h-[20rem] overflow-y-auto">
-                  <div className="mb-3 flex items-start justify-between gap-3">
+                <button
+                  type="button"
+                  aria-label="Close selector"
+                  onClick={() => setActiveCreateMetadataTool("none")}
+                  className="absolute inset-0 pointer-events-auto cursor-default bg-transparent"
+                />
+
+                <div className="pointer-events-auto absolute left-4 right-4 top-[calc(env(safe-area-inset-top)+10rem)] mx-auto max-h-[22rem] max-w-md overflow-y-auto rounded-[1.75rem] border border-zinc-800 bg-zinc-950/95 p-3 shadow-2xl shadow-black/60 backdrop-blur-xl sm:left-auto sm:right-auto sm:w-[26rem]">
+                  <div className="mb-3 flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
                     <div>
                       <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-zinc-600">
                         Select
@@ -1418,7 +1426,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={selectOtherTopicValue}
-                          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             topic === "Other"
                               ? "border-zinc-400 bg-white text-black"
                               : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1433,7 +1441,7 @@ export default function CreatePage() {
                             key={topicOption}
                             type="button"
                             onClick={() => selectTopicValue(topicOption)}
-                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                            className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               topicManuallySelected && topic === topicOption
                                 ? "border-zinc-400 bg-white text-black"
                                 : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1459,7 +1467,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={() => setActiveCreateMetadataTool("reality")}
-                          className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-black/40 px-3 py-2.5 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                          className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-black/40 px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
                         >
                           <span>Reality Lens</span>
                           <span className="text-xs text-zinc-600">Choose</span>
@@ -1468,7 +1476,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={() => setActiveCreateMetadataTool("purpose")}
-                          className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-black/40 px-3 py-2.5 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                          className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-black/40 px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
                         >
                           <span>Purpose Lane</span>
                           <span className="text-xs text-zinc-600">Choose</span>
@@ -1487,7 +1495,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={() => selectRealityLensValue("")}
-                          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             !realityLens
                               ? "border-zinc-400 bg-white text-black"
                               : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1502,7 +1510,7 @@ export default function CreatePage() {
                             key={lens}
                             type="button"
                             onClick={() => selectRealityLensValue(lens)}
-                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                            className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               realityLens === lens
                                 ? "border-zinc-400 bg-white text-black"
                                 : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1526,7 +1534,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={() => selectPurposeLaneValue("")}
-                          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             !purposeLane
                               ? "border-zinc-400 bg-white text-black"
                               : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1541,7 +1549,7 @@ export default function CreatePage() {
                             key={lane}
                             type="button"
                             onClick={() => selectPurposeLaneValue(lane)}
-                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
+                            className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               purposeLane === lane
                                 ? "border-zinc-400 bg-white text-black"
                                 : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
