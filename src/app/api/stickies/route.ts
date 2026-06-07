@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 
 type StickyItem = {
   id: string;
@@ -51,6 +52,33 @@ function stripHtml(value: string) {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function getCleanTopic(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  const clean = value.trim();
+
+  return (
+    DISCUSSION_TOPICS.find(
+      (topic) => topic.toLowerCase() === clean.toLowerCase()
+    ) ?? ""
+  );
+}
+
+function getCleanUsername(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value
+    .trim()
+    .replace(/^@/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 40);
 }
 
 function getDiscussionIdFromInput(value: unknown) {
@@ -178,6 +206,105 @@ export async function POST(request: NextRequest) {
         position: count ?? 0,
         updated_at: new Date().toISOString(),
       })
+      .select("id, user_id, item_type, source_key, title, subtitle, href, position, created_at, updated_at")
+      .single();
+
+    if (insertError) {
+      return jsonError(insertError.message, 500);
+    }
+
+    return NextResponse.json({
+      sticky,
+    });
+  }
+
+  if (itemType === "topic") {
+    const topic = getCleanTopic(body.topic ?? body.source);
+
+    if (!topic) {
+      return jsonError("Choose a valid topic.");
+    }
+
+    const { count } = await context.supabase
+      .from("sticky_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.user.id);
+
+    const { data: sticky, error: insertError } = await context.supabase
+      .from("sticky_items")
+      .upsert(
+        {
+          user_id: context.user.id,
+          item_type: "topic",
+          source_key: topic,
+          title: topic,
+          subtitle: "Pinned topic workspace card.",
+          href: `/discussions?topic=${encodeURIComponent(topic)}`,
+          position: count ?? 0,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id,item_type,source_key",
+        }
+      )
+      .select("id, user_id, item_type, source_key, title, subtitle, href, position, created_at, updated_at")
+      .single();
+
+    if (insertError) {
+      return jsonError(insertError.message, 500);
+    }
+
+    return NextResponse.json({
+      sticky,
+    });
+  }
+
+  if (itemType === "person") {
+    const username = getCleanUsername(body.username ?? body.source);
+
+    if (!username) {
+      return jsonError("Enter a valid username.");
+    }
+
+    const { data: profile, error: profileError } = await context.supabase
+      .from("profiles")
+      .select("id, username, full_name, bio")
+      .eq("username", username)
+      .maybeSingle();
+
+    if (profileError) {
+      return jsonError(profileError.message, 500);
+    }
+
+    if (!profile?.username) {
+      return jsonError("Profile not found.", 404);
+    }
+
+    const { count } = await context.supabase
+      .from("sticky_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.user.id);
+
+    const displayName =
+      profile.full_name?.trim() || `@${profile.username}`;
+
+    const { data: sticky, error: insertError } = await context.supabase
+      .from("sticky_items")
+      .upsert(
+        {
+          user_id: context.user.id,
+          item_type: "person",
+          source_key: profile.id,
+          title: displayName,
+          subtitle: profile.bio || `@${profile.username}`,
+          href: `/u/${profile.username}`,
+          position: count ?? 0,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id,item_type,source_key",
+        }
+      )
       .select("id, user_id, item_type, source_key, title, subtitle, href, position, created_at, updated_at")
       .single();
 

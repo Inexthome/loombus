@@ -18,6 +18,8 @@ type StickyItem = {
 export default function StickiesPage() {
   const [items, setItems] = useState<StickyItem[]>([]);
   const [discussionInput, setDiscussionInput] = useState("");
+  const [topicInput, setTopicInput] = useState("");
+  const [personInput, setPersonInput] = useState("");
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
   const [message, setMessage] = useState("");
@@ -117,6 +119,104 @@ export default function StickiesPage() {
 
     setDiscussionInput("");
     setMessage("Added to Stickies.");
+
+    await loadStickies();
+  }
+
+  async function addTopicSticky(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (working) {
+      return;
+    }
+
+    setWorking(true);
+    setMessage("");
+
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      setWorking(false);
+      setIsLoggedIn(false);
+      return;
+    }
+
+    const response = await fetch("/api/stickies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        itemType: "topic",
+        topic: topicInput,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setWorking(false);
+
+    if (!response.ok) {
+      if (response.status === 403 && result.upgradeRequired) {
+        setUpgradeRequired(true);
+      }
+
+      setMessage(result.error ?? "Unable to add topic.");
+      return;
+    }
+
+    setTopicInput("");
+    setMessage("Topic added to Stickies.");
+
+    await loadStickies();
+  }
+
+  async function addPersonSticky(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (working) {
+      return;
+    }
+
+    setWorking(true);
+    setMessage("");
+
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      setWorking(false);
+      setIsLoggedIn(false);
+      return;
+    }
+
+    const response = await fetch("/api/stickies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        itemType: "person",
+        username: personInput,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setWorking(false);
+
+    if (!response.ok) {
+      if (response.status === 403 && result.upgradeRequired) {
+        setUpgradeRequired(true);
+      }
+
+      setMessage(result.error ?? "Unable to add person.");
+      return;
+    }
+
+    setPersonInput("");
+    setMessage("Person added to Stickies.");
 
     await loadStickies();
   }
@@ -368,6 +468,70 @@ export default function StickiesPage() {
               </p>
             </form>
 
+            <div className="mb-5 grid gap-4 md:grid-cols-2">
+              <form
+                onSubmit={addTopicSticky}
+                className="rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
+              >
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
+                  Add topic card
+                </label>
+
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={topicInput}
+                    onChange={(event) => setTopicInput(event.target.value)}
+                    placeholder="Topic name"
+                    className="min-h-12 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={working || !topicInput.trim()}
+                    className="rounded-full border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {working ? "Adding..." : "Add Topic"}
+                  </button>
+                </div>
+
+                <p className="mt-3 text-xs leading-relaxed text-zinc-600">
+                  Topic cards open the matching discussion lane.
+                </p>
+              </form>
+
+              <form
+                onSubmit={addPersonSticky}
+                className="rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
+              >
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
+                  Add person card
+                </label>
+
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={personInput}
+                    onChange={(event) => setPersonInput(event.target.value)}
+                    placeholder="@username"
+                    className="min-h-12 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={working || !personInput.trim()}
+                    className="rounded-full border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {working ? "Adding..." : "Add Person"}
+                  </button>
+                </div>
+
+                <p className="mt-3 text-xs leading-relaxed text-zinc-600">
+                  Person cards link to public profile pages.
+                </p>
+              </form>
+            </div>
+
             <form
               onSubmit={addNoteSticky}
               className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
@@ -432,7 +596,13 @@ export default function StickiesPage() {
                   >
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        {item.item_type === "note" ? "Note" : item.item_type}
+                        {item.item_type === "note"
+                          ? "Note"
+                          : item.item_type === "person"
+                            ? "Person"
+                            : item.item_type === "topic"
+                              ? "Topic"
+                              : item.item_type}
                       </p>
 
                       <div className="flex shrink-0 flex-wrap justify-end gap-2">
