@@ -234,18 +234,6 @@ export default function DiscussionsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (feedMode !== "signal") {
-      return;
-    }
-
-    setShowExploreFilters(true);
-
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(DISCUSSION_FILTER_DRAWER_STORAGE_KEY, "open");
-    }
-  }, [feedMode]);
-
 
   function toggleExploreFilters() {
     setShowExploreFilters((current) => {
@@ -646,10 +634,7 @@ export default function DiscussionsPage() {
     return "all";
   }
 
-  function applyDiscussionFeedMode(
-    nextFeedMode: FeedMode,
-    options: { openFilters?: boolean } = {}
-  ) {
+  function applyDiscussionFeedMode(nextFeedMode: FeedMode) {
     setFeedMode(nextFeedMode);
     setSearchQuery("");
     setTopicFilter("All");
@@ -657,10 +642,6 @@ export default function DiscussionsPage() {
     setSortMode(nextFeedMode === "signal" ? "Signal" : "Newest");
     setAdvancedFilter("All activity");
     setActiveDiscussionTool("none");
-
-    if (nextFeedMode === "signal" && options.openFilters === true) {
-      persistExploreFiltersOpen();
-    }
 
     updateUrlParams({
       feed: nextFeedMode === "all" ? null : nextFeedMode,
@@ -680,24 +661,7 @@ export default function DiscussionsPage() {
   }
 
   function openSignalFeed() {
-    setFeedMode("signal");
-    setSearchQuery("");
-    setTopicFilter("All");
-    setPurposeLaneFilter("All");
-    setSortMode("Signal");
-    setAdvancedFilter("All activity");
-    setActiveDiscussionTool("none");
-    setShowExploreFilters(true);
-
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(DISCUSSION_FILTER_DRAWER_STORAGE_KEY, "open");
-    }
-
-    updateUrlParams({
-      feed: "signal",
-      topic: null,
-      purpose: null,
-    });
+    applyDiscussionFeedMode("signal");
   }
 
   useEffect(() => {
@@ -713,33 +677,17 @@ export default function DiscussionsPage() {
     }
 
     function handleMobileDiscussionFeed(event: Event) {
-      const customEvent = event as CustomEvent<{
-        feed?: string;
-        openFilters?: boolean;
-      }>;
-
-      const nextFeedMode = getSafeFeedMode(customEvent.detail?.feed);
-
-      applyDiscussionFeedMode(nextFeedMode, {
-        openFilters: customEvent.detail?.openFilters === true,
-      });
+      const customEvent = event as CustomEvent<{ feed?: string }>;
+      applyDiscussionFeedMode(getSafeFeedMode(customEvent.detail?.feed));
     }
 
     window.addEventListener(
       "loombus:discussion-feed",
       handleMobileDiscussionFeed
     );
-    document.addEventListener(
-      "loombus:discussion-feed",
-      handleMobileDiscussionFeed
-    );
 
     return () => {
       window.removeEventListener(
-        "loombus:discussion-feed",
-        handleMobileDiscussionFeed
-      );
-      document.removeEventListener(
         "loombus:discussion-feed",
         handleMobileDiscussionFeed
       );

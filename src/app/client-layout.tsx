@@ -347,6 +347,9 @@ export default function ClientLayout({
       params.set("feed", feed);
     }
 
+    params.delete("topic");
+    params.delete("purpose");
+
     const queryString = params.toString();
     const nextUrl = queryString
       ? `${window.location.pathname}?${queryString}`
@@ -354,24 +357,11 @@ export default function ClientLayout({
 
     window.history.replaceState(null, "", nextUrl);
 
-    const discussionFeedEvent = new CustomEvent("loombus:discussion-feed", {
-      detail: { feed, openFilters: feed === "signal" },
-    });
-
-    window.dispatchEvent(discussionFeedEvent);
-    document.dispatchEvent(
+    window.dispatchEvent(
       new CustomEvent("loombus:discussion-feed", {
-        detail: { feed, openFilters: feed === "signal" },
+        detail: { feed },
       })
     );
-
-    window.setTimeout(() => {
-      window.dispatchEvent(
-        new CustomEvent("loombus:discussion-feed", {
-          detail: { feed, openFilters: feed === "signal" },
-        })
-      );
-    }, 0);
   }
 
   function closeMobileMenu() {
