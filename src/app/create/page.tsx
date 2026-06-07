@@ -1643,7 +1643,21 @@ export default function CreatePage() {
                         aria-label="Attach files"
                         title="Attach files"
                       >
-                        📎
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          className="h-5 w-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" />
+                          <path d="M14 2v5h5" />
+                          <path d="M12 11v6" />
+                          <path d="M9 14h6" />
+                        </svg>
                       </button>
 
                       <input
