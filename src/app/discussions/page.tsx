@@ -691,8 +691,8 @@ export default function DiscussionsPage() {
       <div className="mx-auto max-w-[46rem]">
         <div className="discussion-shell-grid">
           <div className="min-w-0">
-        <section className="sticky top-0 z-20 mb-5 border-b border-zinc-900 bg-black/95 pb-5 pt-3 backdrop-blur-xl md:top-0">
-          <div className="flex items-start justify-between gap-4">
+        <section className="sticky top-0 z-20 mb-5 border-b border-zinc-900 bg-black/95 pb-5 pt-3 backdrop-blur-xl md:top-0 lg:pb-0 lg:pt-0">
+          <div className="flex items-start justify-between gap-4 lg:hidden">
             <div className="min-w-0">
               <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                 Discussions
@@ -1166,6 +1166,20 @@ export default function DiscussionsPage() {
         <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
           <div className="space-y-4">
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+              <div className="mb-5 border-b border-zinc-900 pb-5">
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                  Discussions
+                </p>
+
+                <h2 className="text-2xl font-semibold tracking-tight text-white">
+                  Discussion feed
+                </h2>
+
+                <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                  Read everything, follow your circle, or jump into the strongest signal.
+                </p>
+              </div>
+
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
