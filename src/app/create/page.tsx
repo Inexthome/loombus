@@ -4,7 +4,7 @@ import { ProgressiveGuide } from "@/components/progressive-guide";
 import { SafetyWarningModal, getSafetyWarningFromResult, type SafetyWarningState } from "@/components/safety-warning-modal";
 
 import Link from "next/link";
-import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { REALITY_LENSES, normalizeRealityLens } from "@/lib/reality-lenses";
@@ -275,6 +275,8 @@ export default function CreatePage() {
     useState<"none" | "topic" | "other" | "reality" | "purpose" | "tags">("none");
   const [activeCreateTool, setActiveCreateTool] =
     useState<"none" | "attachments" | "quality" | "rewrite">("none");
+  const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const bodyAttachmentInputRef = useRef<HTMLInputElement | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
 
@@ -927,6 +929,37 @@ export default function CreatePage() {
     setActiveCreateTool((current) => current === tool ? "none" : tool);
   }
 
+  function applyBodyMarkdown(marker: "**" | "*") {
+    const textarea = bodyTextareaRef.current;
+    const selectionStart = textarea?.selectionStart ?? body.length;
+    const selectionEnd = textarea?.selectionEnd ?? body.length;
+    const selectedText = body.slice(selectionStart, selectionEnd);
+    const nextSelectedText = selectedText || "text";
+    const replacement = `${marker}${nextSelectedText}${marker}`;
+    const nextBody =
+      body.slice(0, selectionStart) + replacement + body.slice(selectionEnd);
+
+    setBody(nextBody);
+
+    window.setTimeout(() => {
+      const nextCursorStart = selectionStart + marker.length;
+      const nextCursorEnd = nextCursorStart + nextSelectedText.length;
+
+      bodyTextareaRef.current?.focus();
+      bodyTextareaRef.current?.setSelectionRange(nextCursorStart, nextCursorEnd);
+    }, 0);
+  }
+
+  function openBodyAttachmentPicker() {
+    if (isEditMode || publishing) {
+      return;
+    }
+
+    setActiveCreateMetadataTool("none");
+    setActiveCreateTool("attachments");
+    bodyAttachmentInputRef.current?.click();
+  }
+
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16 loombus-shell-with-right-rail">
       <SafetyWarningModal
@@ -1492,15 +1525,97 @@ export default function CreatePage() {
                 Discussion Body
               </label>
 
-              <textarea
-                rows={7}
-                value={body}
-                required
-                maxLength={maxDiscussionLength}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Write your discussion..."
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
-              />
+              <div className="overflow-hidden rounded-xl border border-zinc-800 bg-black focus-within:border-zinc-500">
+                <div className="flex items-center gap-1 border-b border-zinc-800 bg-zinc-950/80 px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => applyBodyMarkdown("**")}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base font-bold text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+                    aria-label="Bold selected text"
+                    title="Bold"
+                  >
+                    B
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => applyBodyMarkdown("*")}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base italic text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
+                    aria-label="Italicize selected text"
+                    title="Italic"
+                  >
+                    I
+                  </button>
+
+                  {!isEditMode && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={openBodyAttachmentPicker}
+                        disabled={publishing}
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-base transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${
+                          attachmentFiles.length > 0 ? "text-white" : "text-zinc-300"
+                        }`}
+                        aria-label="Attach files"
+                        title="Attach files"
+                      >
+                        📎
+                      </button>
+
+                      <input
+                        ref={bodyAttachmentInputRef}
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                        onChange={handleAttachmentSelection}
+                        disabled={publishing}
+                        className="hidden"
+                      />
+                    </>
+                  )}
+
+                  <span className="mx-2 h-6 w-px bg-zinc-800" aria-hidden="true" />
+
+                  <button
+                    type="button"
+                    onClick={() => toggleCreateTool("quality")}
+                    className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-medium transition hover:bg-zinc-900 hover:text-white ${
+                      activeCreateTool === "quality"
+                        ? "bg-white text-black hover:bg-white hover:text-black"
+                        : "text-zinc-300"
+                    }`}
+                    aria-label="Run quality check"
+                    title="Quality Check"
+                  >
+                    QC
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleCreateTool("rewrite")}
+                    className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-medium transition hover:bg-zinc-900 hover:text-white ${
+                      activeCreateTool === "rewrite"
+                        ? "bg-white text-black hover:bg-white hover:text-black"
+                        : "text-zinc-300"
+                    }`}
+                    aria-label="Generate rewrite"
+                    title="Generate Rewrite"
+                  >
+                    ✨ Rewrite
+                  </button>
+                </div>
+
+                <textarea
+                  ref={bodyTextareaRef}
+                  rows={10}
+                  value={body}
+                  required
+                  maxLength={maxDiscussionLength}
+                  onChange={(e) => setBody(e.target.value)}
+                  placeholder="Write your discussion..."
+                  className="min-h-[22rem] w-full resize-y border-0 bg-black px-4 py-4 text-base text-white outline-none placeholder:text-zinc-700"
+                />
+              </div>
 
               <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
                 <p className={isBodyOverLimit ? "text-red-400" : ""}>
@@ -1514,11 +1629,31 @@ export default function CreatePage() {
                 </p>
               </div>
 
+              {attachmentFiles.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {attachmentFiles.map((file) => (
+                    <span
+                      key={`${file.name}-${file.size}-${file.lastModified}`}
+                      className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs text-zinc-500"
+                    >
+                      {file.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {attachmentMessage && (
+                <p className="mt-3 text-sm text-zinc-500">
+                  {attachmentMessage}
+                </p>
+              )}
             </div>
 
             {/* AI Assist shell */}
-            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
-              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <section className={`rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 ${
+              activeCreateTool === "quality" || activeCreateTool === "rewrite" ? "block" : "hidden"
+            }`}>
+              <div className="hidden">
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
                     AI Assist
@@ -1534,7 +1669,7 @@ export default function CreatePage() {
                 </div>
               </div>
 
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Create AI Assist rail">
+              <div className="hidden" aria-label="Create AI Assist rail">
                 <button
                   type="button"
                   onClick={() => toggleCreateTool("quality")}
