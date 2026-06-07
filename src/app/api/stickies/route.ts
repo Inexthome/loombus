@@ -149,6 +149,47 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
+  const itemType = typeof body.itemType === "string" ? body.itemType.trim() : "discussion";
+
+  if (itemType === "note") {
+    const title = typeof body.title === "string" ? body.title.trim().slice(0, 240) : "";
+    const note = typeof body.note === "string" ? body.note.trim().slice(0, 500) : "";
+
+    if (!title && !note) {
+      return jsonError("Add a note title or note body.");
+    }
+
+    const { count } = await context.supabase
+      .from("sticky_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.user.id);
+
+    const sourceKey = `note:${crypto.randomUUID()}`;
+
+    const { data: sticky, error: insertError } = await context.supabase
+      .from("sticky_items")
+      .insert({
+        user_id: context.user.id,
+        item_type: "note",
+        source_key: sourceKey,
+        title: title || "Untitled note",
+        subtitle: note || null,
+        href: "/stickies",
+        position: count ?? 0,
+        updated_at: new Date().toISOString(),
+      })
+      .select("id, user_id, item_type, source_key, title, subtitle, href, position, created_at, updated_at")
+      .single();
+
+    if (insertError) {
+      return jsonError(insertError.message, 500);
+    }
+
+    return NextResponse.json({
+      sticky,
+    });
+  }
+
   const discussionId = getDiscussionIdFromInput(
     body.discussionId ?? body.discussionUrl ?? body.source
   );

@@ -18,6 +18,8 @@ type StickyItem = {
 export default function StickiesPage() {
   const [items, setItems] = useState<StickyItem[]>([]);
   const [discussionInput, setDiscussionInput] = useState("");
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteBody, setNoteBody] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -115,6 +117,57 @@ export default function StickiesPage() {
 
     setDiscussionInput("");
     setMessage("Added to Stickies.");
+
+    await loadStickies();
+  }
+
+  async function addNoteSticky(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (working) {
+      return;
+    }
+
+    setWorking(true);
+    setMessage("");
+
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      setWorking(false);
+      setIsLoggedIn(false);
+      return;
+    }
+
+    const response = await fetch("/api/stickies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        itemType: "note",
+        title: noteTitle,
+        note: noteBody,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setWorking(false);
+
+    if (!response.ok) {
+      if (response.status === 403 && result.upgradeRequired) {
+        setUpgradeRequired(true);
+      }
+
+      setMessage(result.error ?? "Unable to add note.");
+      return;
+    }
+
+    setNoteTitle("");
+    setNoteBody("");
+    setMessage("Note added to Stickies.");
 
     await loadStickies();
   }
@@ -258,6 +311,45 @@ export default function StickiesPage() {
               </p>
             </form>
 
+            <form
+              onSubmit={addNoteSticky}
+              className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
+            >
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Add custom note
+              </label>
+
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={noteTitle}
+                  onChange={(event) => setNoteTitle(event.target.value)}
+                  placeholder="Note title"
+                  className="min-h-12 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                />
+
+                <textarea
+                  value={noteBody}
+                  onChange={(event) => setNoteBody(event.target.value)}
+                  placeholder="Write a short note for your workspace..."
+                  rows={4}
+                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                />
+
+                <button
+                  type="submit"
+                  disabled={working || (!noteTitle.trim() && !noteBody.trim())}
+                  className="rounded-full border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {working ? "Adding..." : "Add Note"}
+                </button>
+              </div>
+
+              <p className="mt-3 text-xs leading-relaxed text-zinc-600">
+                Notes are private workspace stickies and are separate from Saved notes.
+              </p>
+            </form>
+
             {message && (
               <p className="mb-4 text-sm text-zinc-500">
                 {message}
@@ -283,7 +375,7 @@ export default function StickiesPage() {
                   >
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        {item.item_type}
+                        {item.item_type === "note" ? "Note" : item.item_type}
                       </p>
 
                       <button
@@ -296,17 +388,31 @@ export default function StickiesPage() {
                       </button>
                     </div>
 
-                    <Link href={item.href} className="block">
-                      <h2 className="text-xl font-semibold tracking-tight text-white transition hover:text-zinc-300">
-                        {item.title}
-                      </h2>
+                    {item.item_type === "note" ? (
+                      <div>
+                        <h2 className="text-xl font-semibold tracking-tight text-white">
+                          {item.title}
+                        </h2>
 
-                      {item.subtitle && (
-                        <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-zinc-500">
-                          {item.subtitle}
-                        </p>
-                      )}
-                    </Link>
+                        {item.subtitle && (
+                          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-500">
+                            {item.subtitle}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <Link href={item.href} className="block">
+                        <h2 className="text-xl font-semibold tracking-tight text-white transition hover:text-zinc-300">
+                          {item.title}
+                        </h2>
+
+                        {item.subtitle && (
+                          <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-zinc-500">
+                            {item.subtitle}
+                          </p>
+                        )}
+                      </Link>
+                    )}
                   </article>
                 ))}
               </section>
