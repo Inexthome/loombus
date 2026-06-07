@@ -355,20 +355,20 @@ export default function ClientLayout({
     window.history.replaceState(null, "", nextUrl);
 
     const discussionFeedEvent = new CustomEvent("loombus:discussion-feed", {
-      detail: { feed, openActiveTopics: feed === "signal" },
+      detail: { feed, openFilters: feed === "signal" },
     });
 
     window.dispatchEvent(discussionFeedEvent);
     document.dispatchEvent(
       new CustomEvent("loombus:discussion-feed", {
-        detail: { feed, openActiveTopics: feed === "signal" },
+        detail: { feed, openFilters: feed === "signal" },
       })
     );
 
     window.setTimeout(() => {
       window.dispatchEvent(
         new CustomEvent("loombus:discussion-feed", {
-          detail: { feed, openActiveTopics: feed === "signal" },
+          detail: { feed, openFilters: feed === "signal" },
         })
       );
     }, 0);
