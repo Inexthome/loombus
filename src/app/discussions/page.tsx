@@ -278,6 +278,9 @@ export default function DiscussionsPage() {
     useState<AdvancedFilterMode>("All activity");
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [stickiedDiscussionIds, setStickiedDiscussionIds] = useState<Set<string>>(() => new Set());
+  const [addingStickyDiscussionId, setAddingStickyDiscussionId] = useState<string | null>(null);
+  const [stickiesMessage, setStickiesMessage] = useState("");
 
   const canUseAdvancedFilters = hasAdvancedFilterAccess(aiEntitlement, isAdmin);
 
@@ -689,6 +692,58 @@ export default function DiscussionsPage() {
     setAdvancedFilter("All activity");
   }
 
+  async function addDiscussionToStickies(discussionId: string) {
+    setStickiesMessage("");
+
+    if (addingStickyDiscussionId || stickiedDiscussionIds.has(discussionId)) {
+      return;
+    }
+
+    if (!canUseAdvancedFilters) {
+      setStickiesMessage("Stickies requires Premium access.");
+      return;
+    }
+
+    setAddingStickyDiscussionId(discussionId);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/stickies", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          discussionId,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setStickiesMessage(result.error ?? "Unable to add to Stickies.");
+        return;
+      }
+
+      setStickiedDiscussionIds((current) => {
+        const next = new Set(current);
+        next.add(discussionId);
+        return next;
+      });
+      setStickiesMessage("Discussion added to Stickies.");
+    } finally {
+      setAddingStickyDiscussionId(null);
+    }
+  }
+
   function getSafeFeedMode(value: string | null | undefined): FeedMode {
     if (value === "following" || value === "signal") {
       return value;
@@ -1033,6 +1088,12 @@ export default function DiscussionsPage() {
           </div>
         )}
 
+        {stickiesMessage && (
+          <p className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-500">
+            {stickiesMessage}
+          </p>
+        )}
+
         <div className="space-y-3 sm:space-y-5">
           {filteredDiscussions.map((discussion) => {
             const profile = profiles[discussion.user_id];
@@ -1139,6 +1200,27 @@ export default function DiscussionsPage() {
                     </span>
                   </div>
                 </Link>
+
+                {canUseAdvancedFilters && (
+                  <div className="border-t border-zinc-900 px-4 py-3 sm:px-6">
+                    <button
+                      type="button"
+                      onClick={() => addDiscussionToStickies(discussion.id)}
+                      disabled={addingStickyDiscussionId === discussion.id || stickiedDiscussionIds.has(discussion.id)}
+                      className={`rounded-full border px-4 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                        stickiedDiscussionIds.has(discussion.id)
+                          ? "border-zinc-800 bg-zinc-950 text-zinc-500"
+                          : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      {addingStickyDiscussionId === discussion.id
+                        ? "Adding..."
+                        : stickiedDiscussionIds.has(discussion.id)
+                          ? "Added to Stickies"
+                          : "Add to Stickies"}
+                    </button>
+                  </div>
+                )}
               </article>
             );
           })}
