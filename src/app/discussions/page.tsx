@@ -731,31 +731,10 @@ export default function DiscussionsPage() {
       <div className="mx-auto max-w-[46rem]">
         <div className="discussion-shell-grid">
           <div className="min-w-0">
-        <section className="sticky top-0 z-20 mb-5 hidden border-b border-zinc-900 bg-black/95 pb-5 pt-3 backdrop-blur-xl md:block md:top-0 lg:pb-0 lg:pt-0">
-          <div className="flex items-start justify-between gap-4 lg:hidden">
-            <div className="min-w-0">
-              <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                Discussions
-              </h1>
-
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-                Read everything, follow your circle, or jump into active conversations.
-              </p>
-            </div>
-
-            <Link
-              href="/create"
-              aria-label="Create discussion"
-              className="shrink-0 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200 sm:px-5"
-            >
-              <span className="hidden sm:inline">Create</span>
-              <span className="text-xl leading-none sm:hidden">+</span>
-            </Link>
-          </div>
-
+        <section className="sticky top-0 z-20 mb-5 border-b border-zinc-900 bg-black/95 backdrop-blur-xl">
           <nav
             aria-label="Discussion feed views"
-            className="mt-5 hidden border-y border-zinc-900 bg-black/95 backdrop-blur-xl md:grid md:grid-cols-3"
+            className="grid grid-cols-3 border-y border-zinc-900 bg-black/95 backdrop-blur-xl"
           >
             <button
               type="button"
@@ -811,66 +790,6 @@ export default function DiscussionsPage() {
               />
             </button>
           </nav>
-
-          <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:pt-1 lg:hidden">
-            <button
-              type="button"
-              onClick={openDiscussionSearch}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                activeDiscussionTool === "search" || searchQuery.trim()
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              Search
-            </button>
-
-            <button
-              type="button"
-              onClick={openDiscussionGuide}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                activeDiscussionTool === "guide"
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              Guide
-            </button>
-
-            <button
-              type="button"
-              onClick={openDiscussionTopics}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                activeDiscussionTool === "topics" || selectedTopic !== "All"
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              Topics
-            </button>
-
-            <button
-              type="button"
-              onClick={openDiscussionPurpose}
-              className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                activeDiscussionTool === "purpose" || selectedPurposeLane !== "All"
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              Purpose
-            </button>
-
-            {hasActiveDiscussionFilters && (
-              <button
-                type="button"
-                onClick={resetDiscussionFilters}
-                className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-3.5 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-              >
-                Clear
-              </button>
-            )}
-          </div>
         </section>
 
         {activeDiscussionTool === "search" && (
