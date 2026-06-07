@@ -234,6 +234,19 @@ export default function DiscussionsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (feedMode !== "signal") {
+      return;
+    }
+
+    setShowExploreFilters(true);
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(DISCUSSION_FILTER_DRAWER_STORAGE_KEY, "open");
+    }
+  }, [feedMode]);
+
+
   function toggleExploreFilters() {
     setShowExploreFilters((current) => {
       const next = !current;
