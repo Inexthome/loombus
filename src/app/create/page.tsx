@@ -4,7 +4,7 @@ import { ProgressiveGuide } from "@/components/progressive-guide";
 import { SafetyWarningModal, getSafetyWarningFromResult, type SafetyWarningState } from "@/components/safety-warning-modal";
 
 import Link from "next/link";
-import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type ClipboardEvent, type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { REALITY_LENSES, normalizeRealityLens } from "@/lib/reality-lenses";
@@ -240,6 +240,74 @@ function getRecommendedDiscussionTopic(title: string, body: string) {
   )?.topic ?? "";
 }
 
+function escapeLimitedHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function hasLimitedFormattingHtml(value: string) {
+  return /<\/?(strong|b|em|i|br|p|div)\b/i.test(value);
+}
+
+function sanitizeLimitedDiscussionHtml(value: string) {
+  const pattern = /<\/?(strong|b|em|i|br|p|div)\b[^>]*>/gi;
+  let safe = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(value)) !== null) {
+    safe += escapeLimitedHtml(value.slice(lastIndex, match.index));
+
+    const rawTag = match[0].toLowerCase();
+    const tagName = match[1].toLowerCase();
+    const normalizedTag =
+      tagName === "b" ? "strong" : tagName === "i" ? "em" : tagName;
+
+    if (normalizedTag === "br") {
+      safe += "<br>";
+    } else if (rawTag.startsWith("</")) {
+      safe += `</${normalizedTag}>`;
+    } else {
+      safe += `<${normalizedTag}>`;
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  safe += escapeLimitedHtml(value.slice(lastIndex));
+
+  return safe
+    .replace(/<div><br><\/div>/gi, "<br>")
+    .replace(/<p><br><\/p>/gi, "<br>");
+}
+
+function bodyValueToEditorHtml(value: string) {
+  if (!value) {
+    return "";
+  }
+
+  if (hasLimitedFormattingHtml(value)) {
+    return sanitizeLimitedDiscussionHtml(value);
+  }
+
+  return escapeLimitedHtml(value).replace(/\n/g, "<br>");
+}
+
+function getPlainTextFromLimitedHtml(value: string) {
+  return value
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/(p|div)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"');
+}
+
 export default function CreatePage() {
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState<string>("");
@@ -275,7 +343,7 @@ export default function CreatePage() {
     useState<"none" | "topic" | "other" | "reality" | "purpose" | "tags">("none");
   const [activeCreateTool, setActiveCreateTool] =
     useState<"none" | "attachments" | "quality" | "rewrite">("none");
-  const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const bodyEditorRef = useRef<HTMLDivElement | null>(null);
   const bodyAttachmentInputRef = useRef<HTMLInputElement | null>(null);
   const [publishing, setPublishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
@@ -289,7 +357,8 @@ export default function CreatePage() {
   const maxDiscussionLength = canUseLongPosts
     ? LONG_DISCUSSION_MAX_LENGTH
     : STANDARD_DISCUSSION_MAX_LENGTH;
-  const bodyCharacterCount = body.length;
+  const bodyPlainText = useMemo(() => getPlainTextFromLimitedHtml(body), [body]);
+  const bodyCharacterCount = bodyPlainText.length;
   const isBodyOverLimit = bodyCharacterCount > maxDiscussionLength;
   const tagInputHelper = getTagInputHelper(tagsInput);
   const isEditMode = Boolean(editingDiscussionId);
@@ -449,7 +518,7 @@ export default function CreatePage() {
       return;
     }
 
-    if (!title.trim() && !body.trim()) {
+    if (!title.trim() && !bodyPlainText.trim()) {
       setMessage("Add a title or body before saving a draft.");
       return;
     }
@@ -519,7 +588,7 @@ export default function CreatePage() {
       return;
     }
 
-    if (!body.trim() || body.trim().length < 8) {
+    if (!bodyPlainText.trim() || bodyPlainText.trim().length < 8) {
       setQualityCheckMessage("Add more discussion content before running the quality check.");
       return;
     }
@@ -543,7 +612,7 @@ export default function CreatePage() {
         body: JSON.stringify({
           title,
           topic,
-          body,
+          body: bodyPlainText,
         }),
       });
 
@@ -579,7 +648,7 @@ export default function CreatePage() {
       return;
     }
 
-    if (!body.trim() || body.trim().length < 8) {
+    if (!bodyPlainText.trim() || bodyPlainText.trim().length < 8) {
       setRewriteMessage("Add more discussion content before running the rewrite.");
       return;
     }
@@ -603,7 +672,7 @@ export default function CreatePage() {
         body: JSON.stringify({
           title,
           topic,
-          body,
+          body: bodyPlainText,
         }),
       });
 
@@ -761,13 +830,13 @@ export default function CreatePage() {
       return;
     }
 
-    if (!body.trim()) {
+    if (!bodyPlainText.trim()) {
       setMessage("Please enter discussion content.");
       setPublishing(false);
       return;
     }
 
-    if (body.trim().length > maxDiscussionLength) {
+    if (bodyCharacterCount > maxDiscussionLength) {
       setMessage(`Discussion content is too long. Your current limit is ${maxDiscussionLength.toLocaleString()} characters.`);
       setPublishing(false);
       return;
@@ -929,25 +998,30 @@ export default function CreatePage() {
     setActiveCreateTool((current) => current === tool ? "none" : tool);
   }
 
-  function applyBodyMarkdown(marker: "**" | "*") {
-    const textarea = bodyTextareaRef.current;
-    const selectionStart = textarea?.selectionStart ?? body.length;
-    const selectionEnd = textarea?.selectionEnd ?? body.length;
-    const selectedText = body.slice(selectionStart, selectionEnd);
-    const nextSelectedText = selectedText || "text";
-    const replacement = `${marker}${nextSelectedText}${marker}`;
-    const nextBody =
-      body.slice(0, selectionStart) + replacement + body.slice(selectionEnd);
+  function syncBodyFromEditor() {
+    const rawHtml = bodyEditorRef.current?.innerHTML ?? "";
+    const nextBody = sanitizeLimitedDiscussionHtml(rawHtml);
 
     setBody(nextBody);
+  }
 
-    window.setTimeout(() => {
-      const nextCursorStart = selectionStart + marker.length;
-      const nextCursorEnd = nextCursorStart + nextSelectedText.length;
+  function runBodyEditorCommand(command: "bold" | "italic") {
+    bodyEditorRef.current?.focus();
+    document.execCommand(command, false);
+    syncBodyFromEditor();
+  }
 
-      bodyTextareaRef.current?.focus();
-      bodyTextareaRef.current?.setSelectionRange(nextCursorStart, nextCursorEnd);
-    }, 0);
+  function handleBodyEditorPaste(event: ClipboardEvent<HTMLDivElement>) {
+    event.preventDefault();
+
+    const pastedText = event.clipboardData.getData("text/plain");
+
+    if (!pastedText) {
+      return;
+    }
+
+    document.execCommand("insertText", false, pastedText);
+    syncBodyFromEditor();
   }
 
   function openBodyAttachmentPicker() {
@@ -959,6 +1033,24 @@ export default function CreatePage() {
     setActiveCreateTool("attachments");
     bodyAttachmentInputRef.current?.click();
   }
+
+  useEffect(() => {
+    const editor = bodyEditorRef.current;
+
+    if (!editor) {
+      return;
+    }
+
+    const nextHtml = bodyValueToEditorHtml(body);
+
+    if (document.activeElement === editor) {
+      return;
+    }
+
+    if (editor.innerHTML !== nextHtml) {
+      editor.innerHTML = nextHtml;
+    }
+  }, [body]);
 
   return (
     <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16 loombus-shell-with-right-rail">
@@ -1529,7 +1621,7 @@ export default function CreatePage() {
                 <div className="flex items-center gap-1 border-b border-zinc-800 bg-zinc-950/80 px-3 py-2">
                   <button
                     type="button"
-                    onClick={() => applyBodyMarkdown("**")}
+                    onClick={() => runBodyEditorCommand("bold")}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base font-bold text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
                     aria-label="Bold selected text"
                     title="Bold"
@@ -1539,7 +1631,7 @@ export default function CreatePage() {
 
                   <button
                     type="button"
-                    onClick={() => applyBodyMarkdown("*")}
+                    onClick={() => runBodyEditorCommand("italic")}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base italic text-zinc-300 transition hover:bg-zinc-900 hover:text-white"
                     aria-label="Italicize selected text"
                     title="Italic"
@@ -1605,16 +1697,26 @@ export default function CreatePage() {
                   </button>
                 </div>
 
-                <textarea
-                  ref={bodyTextareaRef}
-                  rows={10}
-                  value={body}
-                  required
-                  maxLength={maxDiscussionLength}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder="Write your discussion..."
-                  className="min-h-[22rem] w-full resize-y border-0 bg-black px-4 py-4 text-base text-white outline-none placeholder:text-zinc-700"
-                />
+                <div className="relative">
+                  {!bodyPlainText.trim() && (
+                    <span className="pointer-events-none absolute left-4 top-4 text-base text-zinc-700">
+                      Write your discussion...
+                    </span>
+                  )}
+
+                  <div
+                    ref={bodyEditorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    role="textbox"
+                    aria-multiline="true"
+                    aria-label="Discussion body"
+                    onInput={syncBodyFromEditor}
+                    onBlur={syncBodyFromEditor}
+                    onPaste={handleBodyEditorPaste}
+                    className="min-h-[22rem] w-full overflow-y-auto whitespace-pre-wrap break-words border-0 bg-black px-4 py-4 text-base leading-relaxed text-white outline-none"
+                  />
+                </div>
               </div>
 
               <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">

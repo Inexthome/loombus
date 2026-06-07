@@ -277,55 +277,76 @@ function getDiscussionEditLabel(discussion: Discussion) {
   return parts.join(" · ");
 }
 
-function renderInlineDiscussionFormatting(text: string) {
-  const parts: React.ReactNode[] = [];
-  const pattern = /(\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
+function escapeLimitedHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function hasLimitedFormattingHtml(value: string) {
+  return /<\/?(strong|b|em|i|br|p|div)\b/i.test(value);
+}
+
+function sanitizeLimitedDiscussionHtml(value: string) {
+  const pattern = /<\/?(strong|b|em|i|br|p|div)\b[^>]*>/gi;
+  let safe = "";
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
+  while ((match = pattern.exec(value)) !== null) {
+    safe += escapeLimitedHtml(value.slice(lastIndex, match.index));
 
-    if (match[2]) {
-      parts.push(
-        <strong key={`bold-${match.index}`} className="font-semibold text-zinc-100">
-          {match[2]}
-        </strong>
-      );
-    } else if (match[3]) {
-      parts.push(
-        <em key={`italic-${match.index}`} className="italic">
-          {match[3]}
-        </em>
-      );
+    const rawTag = match[0].toLowerCase();
+    const tagName = match[1].toLowerCase();
+    const normalizedTag =
+      tagName === "b" ? "strong" : tagName === "i" ? "em" : tagName;
+
+    if (normalizedTag === "br") {
+      safe += "<br>";
+    } else if (rawTag.startsWith("</")) {
+      safe += `</${normalizedTag}>`;
+    } else {
+      safe += `<${normalizedTag}>`;
     }
 
     lastIndex = pattern.lastIndex;
   }
 
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
+  safe += escapeLimitedHtml(value.slice(lastIndex));
+
+  return safe
+    .replace(/<div><br><\/div>/gi, "<br>")
+    .replace(/<p><br><\/p>/gi, "<br>");
+}
+
+function legacyMarkdownBodyToSafeHtml(value: string) {
+  const escaped = escapeLimitedHtml(value)
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+
+  return escaped
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
+function discussionBodyToSafeHtml(content: string) {
+  if (hasLimitedFormattingHtml(content)) {
+    return sanitizeLimitedDiscussionHtml(content);
   }
 
-  return parts;
+  return sanitizeLimitedDiscussionHtml(legacyMarkdownBodyToSafeHtml(content));
 }
 
 function renderDiscussionBody(content: string) {
-  return content.split(/\n{2,}/).map((paragraph, index) => (
-    <p
-      key={`discussion-body-${index}`}
-      className="mb-4 last:mb-0"
-    >
-      {paragraph.split("\n").map((line, lineIndex) => (
-        <span key={`discussion-body-${index}-${lineIndex}`}>
-          {lineIndex > 0 && <br />}
-          {renderInlineDiscussionFormatting(line)}
-        </span>
-      ))}
-    </p>
-  ));
+  return (
+    <div
+      className="space-y-4"
+      dangerouslySetInnerHTML={{ __html: discussionBodyToSafeHtml(content) }}
+    />
+  );
 }
 
 function formatAttachmentFileSize(bytes: number) {
