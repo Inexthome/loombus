@@ -473,6 +473,9 @@ export default function DiscussionPage() {
   const [pinMessage, setPinMessage] = useState("");
   const [pinWorkingReplyId, setPinWorkingReplyId] = useState<string | null>(null);
   const [bookmarkMessage, setBookmarkMessage] = useState("");
+  const [stickiesMessage, setStickiesMessage] = useState("");
+  const [isStickied, setIsStickied] = useState(false);
+  const [addingSticky, setAddingSticky] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [savedBookmarkId, setSavedBookmarkId] = useState<string | null>(null);
   const [savingBookmark, setSavingBookmark] = useState(false);
@@ -1892,6 +1895,49 @@ export default function DiscussionPage() {
     }
   }
 
+  async function handleAddToStickies() {
+    setStickiesMessage("");
+
+    if (addingSticky) {
+      return;
+    }
+
+    setAddingSticky(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/stickies", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          discussionId: id,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setStickiesMessage(result.error ?? "Unable to add to Stickies.");
+        return;
+      }
+
+      setIsStickied(true);
+      setStickiesMessage("Added to Stickies.");
+    } finally {
+      setAddingSticky(false);
+    }
+  }
+
   async function handleRemoveBookmark() {
     setBookmarkMessage("");
 
@@ -2060,6 +2106,7 @@ export default function DiscussionPage() {
     subscriptionDisplayKey
   );
   const canUseSavedFolders = canUseAiSummary;
+  const canUseStickies = canUseAiSummary;
   const canReplyWithIdentity = true;
 
   const monthlySummaryLimit = aiEntitlement?.monthly_summary_limit ?? 0;
@@ -2452,9 +2499,9 @@ export default function DiscussionPage() {
                   </label>
                 )}
 
-                {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
+                {(pinMessage || statusMessage || bookmarkMessage || stickiesMessage || reportMessage) && (
                   <p className="text-sm text-zinc-500">
-                    {pinMessage || statusMessage || bookmarkMessage || reportMessage}
+                    {pinMessage || statusMessage || bookmarkMessage || stickiesMessage || reportMessage}
                   </p>
                 )}
               </div>
@@ -2504,6 +2551,28 @@ export default function DiscussionPage() {
             </button>
           )}
 
+          {canUseStickies ? (
+            <button
+              type="button"
+              onClick={handleAddToStickies}
+              disabled={addingSticky || isStickied}
+              className={`rounded-full border px-5 py-3 text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                isStickied
+                  ? "border-zinc-700 bg-zinc-950 text-zinc-400"
+                  : "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+              }`}
+            >
+              {addingSticky ? "Adding..." : isStickied ? "Added to Stickies" : "Add to Stickies"}
+            </button>
+          ) : currentUserId ? (
+            <Link
+              href="/premium"
+              className="rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+            >
+              Stickies
+            </Link>
+          ) : null}
+
           <button
             onClick={handleReport}
             disabled={reportedDiscussion}
@@ -2530,9 +2599,9 @@ export default function DiscussionPage() {
             </label>
           )}
 
-          {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
+          {(pinMessage || statusMessage || bookmarkMessage || stickiesMessage || reportMessage) && (
             <p className="text-sm text-zinc-500">
-              {pinMessage || statusMessage || bookmarkMessage || reportMessage}
+              {pinMessage || statusMessage || bookmarkMessage || stickiesMessage || reportMessage}
             </p>
           )}
         </div>
@@ -3553,6 +3622,28 @@ export default function DiscussionPage() {
                   {savingBookmark ? "Saving..." : "Save Discussion"}
                 </button>
               )}
+
+              {canUseStickies ? (
+                <button
+                  type="button"
+                  onClick={handleAddToStickies}
+                  disabled={addingSticky || isStickied}
+                  className={`w-full rounded-2xl border bg-black px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                    isStickied
+                      ? "border-zinc-800 text-zinc-500"
+                      : "border-zinc-800 text-zinc-300 hover:border-zinc-600 hover:text-white"
+                  }`}
+                >
+                  {addingSticky ? "Adding..." : isStickied ? "Added to Stickies" : "Add to Stickies"}
+                </button>
+              ) : currentUserId ? (
+                <Link
+                  href="/premium"
+                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Unlock Stickies
+                </Link>
+              ) : null}
 
               <button
                 type="button"
