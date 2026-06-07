@@ -1649,14 +1649,11 @@ export default function CreatePage() {
                           className="h-5 w-5"
                           fill="none"
                           stroke="currentColor"
-                          strokeWidth="2"
+                          strokeWidth="2.2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         >
-                          <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" />
-                          <path d="M14 2v5h5" />
-                          <path d="M12 11v6" />
-                          <path d="M9 14h6" />
+                          <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.55-9.55a4 4 0 1 1 5.66 5.66l-9.9 9.9a2 2 0 1 1-2.83-2.83l8.84-8.84" />
                         </svg>
                       </button>
 
