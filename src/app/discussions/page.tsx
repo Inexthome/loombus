@@ -603,7 +603,7 @@ export default function DiscussionsPage() {
   const hasActiveDiscussionFilters = activeFilterLabels.length > 0;
   const filterSummary = hasActiveDiscussionFilters
     ? activeFilterLabels.join(" · ")
-    : feedMode === "following" ? "Following discussions" : feedMode === "signal" ? "Signal discussions" : "All discussions";
+    : feedMode === "following" ? "Following discussions" : feedMode === "signal" ? "Active discussions" : "All discussions";
 
   const topicDiscoveryItems = (
     showAllTopicDiscovery ? DISCUSSION_TOPICS : []
@@ -735,7 +735,7 @@ export default function DiscussionsPage() {
               </h1>
 
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
-                Read everything, follow your circle, or jump into the strongest signal.
+                Read everything, follow your circle, or jump into active conversations.
               </p>
             </div>
 
@@ -798,7 +798,7 @@ export default function DiscussionsPage() {
                   : "text-zinc-500 hover:text-zinc-200"
               }`}
             >
-              Signal
+              Active
               <span
                 className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
                   signalFeedActive ? "bg-white" : "bg-transparent"
@@ -1171,7 +1171,7 @@ export default function DiscussionsPage() {
                 </h2>
 
                 <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                  Read everything, follow your circle, or jump into the strongest signal.
+                  Read everything, follow your circle, or jump into active conversations.
                 </p>
               </div>
 

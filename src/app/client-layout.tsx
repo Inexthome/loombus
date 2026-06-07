@@ -871,7 +871,7 @@ export default function ClientLayout({
               {([
                 ["all", "All"],
                 ["following", "Following"],
-                ["signal", "Signal"],
+                ["signal", "Active"],
               ] as const).map(([feed, label]) => (
                 <button
                   key={feed}
