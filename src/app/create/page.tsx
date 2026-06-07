@@ -291,17 +291,6 @@ export default function CreatePage() {
   const isBodyOverLimit = bodyCharacterCount > maxDiscussionLength;
   const tagInputHelper = getTagInputHelper(tagsInput);
   const isEditMode = Boolean(editingDiscussionId);
-  const createHeading = isEditMode
-    ? "Edit discussion."
-    : draftId
-      ? "Edit draft."
-      : "Create a discussion.";
-  const createDescription = isEditMode
-    ? "Make a clear, accountable update to your published discussion."
-    : "Start a thoughtful discussion designed around signal, clarity, and meaningful contribution.";
-  const primaryCreateActionLabel = publishing
-    ? isEditMode ? "Saving..." : "Publishing..."
-    : isEditMode ? "Save Changes" : "Publish Discussion";
   const recommendedTopic = useMemo(() => {
     if (topic || topicManuallySelected) {
       return "";
@@ -953,51 +942,23 @@ export default function CreatePage() {
           ← Back to {isEditMode ? "discussion" : "discussions"}
         </Link>
 
-        <section className="mb-6 gap-6 lg:flex lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="mb-1.5 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-3 sm:text-sm sm:tracking-[0.3em]">
-              {isEditMode ? "Edit Discussion" : "New Discussion"}
-            </p>
+        <p className="mb-1.5 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:mb-3 sm:text-sm sm:tracking-[0.3em]">
+          {isEditMode ? "Edit Discussion" : "New Discussion"}
+        </p>
 
-            <h1 className="mb-2 text-3xl font-semibold tracking-tight sm:mb-4 sm:text-5xl">
-              {createHeading}
-            </h1>
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-5xl">
+          {isEditMode
+            ? "Edit discussion."
+            : draftId
+              ? "Edit draft."
+              : "Create a discussion."}
+        </h1>
 
-            <p className="max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-              {createDescription}
-            </p>
-          </div>
-
-          {authChecked && isLoggedIn && canCreateOrEditDiscussion && (
-            <div className="mt-5 hidden shrink-0 flex-col items-start gap-3 lg:flex">
-              <div className="flex items-center gap-3">
-                <button
-                  type="submit"
-                  form="loombus-create-discussion-form"
-                  disabled={publishing}
-                  className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {primaryCreateActionLabel}
-                </button>
-
-                {!isEditMode && (
-                  <button
-                    type="button"
-                    onClick={saveDraft}
-                    disabled={savingDraft}
-                    className="rounded-full border border-zinc-800 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {savingDraft ? "Saving..." : "Save Draft"}
-                  </button>
-                )}
-              </div>
-
-              <p className="text-sm text-zinc-500">
-                Press Cmd+Enter or Ctrl+Enter to publish.
-              </p>
-            </div>
-          )}
-        </section>
+        <p className="mb-4 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
+          {isEditMode
+            ? "Make a clear, accountable update to your published discussion."
+            : "Start a thoughtful discussion designed around signal, clarity, and meaningful contribution."}
+        </p>
 
         {!authChecked && (
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
@@ -1173,13 +1134,14 @@ export default function CreatePage() {
         )}
 
         {authChecked && isLoggedIn && (
-          <form id="loombus-create-discussion-form" onSubmit={handleCreate}
+          <form
+            onSubmit={handleCreate}
             onKeyDown={handleFormKeyDown}
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
-                1. Content & Metadata
+                Discussion details
               </p>
 
               <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Create metadata tools rail">
@@ -1555,7 +1517,7 @@ export default function CreatePage() {
             </div>
 
             {/* AI Assist shell */}
-            <section className="lg:hidden rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
+            <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5">
               <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
@@ -2161,84 +2123,6 @@ export default function CreatePage() {
         )}
       <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
         <div className="space-y-4">
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-            <p className="mb-3 text-xs uppercase tracking-[0.25em] text-zinc-600">
-              2. AI Assist Panel
-            </p>
-
-            <h2 className="text-xl font-semibold tracking-tight">
-              Improve before publishing.
-            </h2>
-
-            <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-              Check quality or generate a clearer version before you publish.
-            </p>
-
-            <div className="mt-5 space-y-3">
-              <button
-                type="button"
-                onClick={runQualityCheck}
-                disabled={generatingQualityCheck}
-                className="w-full rounded-full bg-white px-4 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {generatingQualityCheck ? "Checking..." : "Quality Check"}
-              </button>
-
-              <button
-                type="button"
-                onClick={runClarityRewrite}
-                disabled={generatingRewrite}
-                className="w-full rounded-full border border-zinc-800 px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {generatingRewrite ? "Rewriting..." : "Generate Clarified Rewrite"}
-              </button>
-            </div>
-
-            {(qualityCheckMessage || rewriteMessage) && (
-              <div className="mt-5 rounded-2xl border border-zinc-800 bg-black p-4 text-sm leading-relaxed text-zinc-400">
-                {qualityCheckMessage && <p>{qualityCheckMessage}</p>}
-                {rewriteMessage && <p className={qualityCheckMessage ? "mt-2" : ""}>{rewriteMessage}</p>}
-              </div>
-            )}
-
-            {qualityCheck && (
-              <div className="mt-4 rounded-2xl border border-zinc-800 bg-black p-4">
-                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
-                  Quality feedback
-                </p>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-400">
-                  {qualityCheck}
-                </p>
-              </div>
-            )}
-
-            {clarityRewrite && (
-              <div className="mt-4 rounded-2xl border border-zinc-800 bg-black p-4">
-                <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
-                  Clarified rewrite
-                </p>
-
-                <p className="max-h-56 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-zinc-400">
-                  {clarityRewrite}
-                </p>
-
-                <button
-                  type="button"
-                  onClick={applyClarityRewrite}
-                  className="mt-4 rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                >
-                  Apply rewrite
-                </button>
-              </div>
-            )}
-
-            {!canUseQualityCheck && (
-              <p className="mt-4 text-xs leading-relaxed text-zinc-600">
-                AI quality tools require Premium Plus access.
-              </p>
-            )}
-          </section>
-
           {authChecked && isLoggedIn && !isEditMode && (
             <ProgressiveGuide
               storageKey="loombus-guide-create-first-discussion-v1"
