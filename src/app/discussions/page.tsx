@@ -663,7 +663,7 @@ export default function DiscussionsPage() {
       <div className="mx-auto max-w-[46rem]">
         <div className="discussion-shell-grid">
           <div className="min-w-0">
-        <section className="mb-5 border-b border-zinc-900 pb-5">
+        <section className="sticky top-0 z-20 mb-5 border-b border-zinc-900 bg-black/95 pb-5 pt-3 backdrop-blur-xl md:top-0">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
@@ -687,7 +687,55 @@ export default function DiscussionsPage() {
 
           <nav
             aria-label="Discussion feed views"
-            className="mt-5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+            className="mt-5 hidden border-y border-zinc-900 bg-black/95 backdrop-blur-xl md:grid md:grid-cols-3"
+          >
+            <button
+              type="button"
+              onClick={openAllFeed}
+              className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
+                allFeedActive
+                  ? "text-white"
+                  : "text-zinc-500 hover:text-zinc-200"
+              }`}
+            >
+              All
+              <span
+                className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
+                  allFeedActive ? "bg-white" : "bg-transparent"
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+
+            <Link
+              href="/following"
+              className="relative flex h-14 items-center justify-center text-sm font-semibold text-zinc-500 transition hover:text-zinc-200"
+            >
+              Following
+            </Link>
+
+            <button
+              type="button"
+              onClick={openSignalFeed}
+              className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
+                signalFeedActive
+                  ? "text-white"
+                  : "text-zinc-500 hover:text-zinc-200"
+              }`}
+            >
+              Signal
+              <span
+                className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
+                  signalFeedActive ? "bg-white" : "bg-transparent"
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+          </nav>
+
+          <nav
+            aria-label="Mobile discussion feed views"
+            className="mt-5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:hidden"
           >
             <button
               type="button"
