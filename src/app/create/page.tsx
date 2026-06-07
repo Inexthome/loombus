@@ -1372,8 +1372,14 @@ export default function CreatePage() {
                   className="absolute inset-0 pointer-events-auto cursor-default bg-transparent"
                 />
 
-                <div className="pointer-events-auto absolute left-4 right-4 top-[calc(env(safe-area-inset-top)+10rem)] mx-auto max-h-[22rem] max-w-md overflow-y-auto rounded-[1.75rem] border border-zinc-800 bg-zinc-950/95 p-3 shadow-2xl shadow-black/60 backdrop-blur-xl sm:left-auto sm:right-auto sm:w-[26rem]">
-                  <div className="mb-3 flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+                <div
+                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+11.25rem)] z-50 max-h-[22rem] w-[min(calc(100vw-2rem),42rem)] -translate-x-1/2 overflow-y-auto rounded-[1.75rem] border border-white/15 p-3 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12.5rem)] sm:p-4"
+                  style={{
+                    backgroundColor:
+                      "color-mix(in srgb, var(--loombus-surface) 72%, transparent)",
+                  }}
+                >
+                  <div className="mb-3 flex items-start justify-between gap-3 border-b border-white/10 pb-3">
                     <div>
                       <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-zinc-600">
                         Select
@@ -1393,7 +1399,7 @@ export default function CreatePage() {
                     <button
                       type="button"
                       onClick={() => setActiveCreateMetadataTool("none")}
-                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                      className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-white/25 hover:text-white"
                     >
                       Close
                     </button>
