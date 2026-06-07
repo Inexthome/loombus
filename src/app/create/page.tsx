@@ -1360,21 +1360,18 @@ export default function CreatePage() {
 
             {activeCreateMetadataTool !== "none" && activeCreateMetadataTool !== "tags" && (
               <section
-                className={`fixed inset-0 z-50 flex bg-black/70 p-3 backdrop-blur-sm ${
-                  activeCreateMetadataTool === "other" ? "items-center" : "items-end md:items-center"
-                }`}
-                role="dialog"
-                aria-modal="true"
+                className="relative z-20 rounded-2xl border border-zinc-800 bg-black/80 p-3 shadow-2xl shadow-black/30 sm:p-4"
+                role="region"
                 aria-label="Create signal selector"
               >
-                <div className="mx-auto max-h-[82vh] w-full overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/60 md:max-w-xl md:p-5">
-                  <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="max-h-[20rem] overflow-y-auto">
+                  <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
-                      <p className="mb-1 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                        Discussion signal
+                      <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-zinc-600">
+                        Select
                       </p>
 
-                      <h2 className="text-lg font-semibold tracking-tight">
+                      <h2 className="text-sm font-semibold tracking-tight text-zinc-200">
                         {activeCreateMetadataTool === "topic"
                           ? "Choose a topic"
                           : activeCreateMetadataTool === "other"
@@ -1405,14 +1402,14 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={applyRecommendedTopic}
-                          className="mb-4 w-full rounded-2xl border border-zinc-700 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                          className="mb-3 w-full rounded-xl border border-zinc-700 bg-black px-3 py-2.5 text-left text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
                         >
                           Recommended topic: {recommendedTopic}
                         </button>
                       )}
 
                       {!topic && !recommendedTopic && (
-                        <p className="mb-4 rounded-2xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-500">
+                        <p className="mb-3 rounded-xl border border-zinc-900 bg-black px-3 py-2.5 text-sm text-zinc-500">
                           Select the topic that best matches this discussion before publishing.
                         </p>
                       )}
@@ -1421,7 +1418,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={selectOtherTopicValue}
-                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
                             topic === "Other"
                               ? "border-zinc-400 bg-white text-black"
                               : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1436,7 +1433,7 @@ export default function CreatePage() {
                             key={topicOption}
                             type="button"
                             onClick={() => selectTopicValue(topicOption)}
-                            className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
                               topicManuallySelected && topic === topicOption
                                 ? "border-zinc-400 bg-white text-black"
                                 : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1462,7 +1459,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={() => setActiveCreateMetadataTool("reality")}
-                          className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-black/40 px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                          className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-black/40 px-3 py-2.5 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
                         >
                           <span>Reality Lens</span>
                           <span className="text-xs text-zinc-600">Choose</span>
@@ -1471,7 +1468,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={() => setActiveCreateMetadataTool("purpose")}
-                          className="flex w-full items-center justify-between rounded-2xl border border-zinc-800 bg-black/40 px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                          className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-black/40 px-3 py-2.5 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
                         >
                           <span>Purpose Lane</span>
                           <span className="text-xs text-zinc-600">Choose</span>
@@ -1490,7 +1487,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={() => selectRealityLensValue("")}
-                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
                             !realityLens
                               ? "border-zinc-400 bg-white text-black"
                               : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1505,7 +1502,7 @@ export default function CreatePage() {
                             key={lens}
                             type="button"
                             onClick={() => selectRealityLensValue(lens)}
-                            className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
                               realityLens === lens
                                 ? "border-zinc-400 bg-white text-black"
                                 : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1529,7 +1526,7 @@ export default function CreatePage() {
                         <button
                           type="button"
                           onClick={() => selectPurposeLaneValue("")}
-                          className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
                             !purposeLane
                               ? "border-zinc-400 bg-white text-black"
                               : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
@@ -1544,7 +1541,7 @@ export default function CreatePage() {
                             key={lane}
                             type="button"
                             onClick={() => selectPurposeLaneValue(lane)}
-                            className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm transition ${
                               purposeLane === lane
                                 ? "border-zinc-400 bg-white text-black"
                                 : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
