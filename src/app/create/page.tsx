@@ -2036,7 +2036,7 @@ export default function CreatePage() {
             </section>
 
             {!isEditMode && (
-              <div className="md:hidden">
+              <div className="hidden">
                 <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
                   Composer tools
                 </p>
@@ -2059,7 +2059,7 @@ export default function CreatePage() {
             )}
 
             {!isEditMode && activeCreateTool === "attachments" && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3 md:hidden">
+              <section className="hidden">
                 <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <p className="text-sm leading-relaxed text-zinc-500">
                     Optional. Attach files that support the discussion. Max 10 MB each.
@@ -2114,7 +2114,7 @@ export default function CreatePage() {
             )}
 
             {!isEditMode && (
-              <section className="hidden rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 md:block xl:hidden">
+              <section className="hidden">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
