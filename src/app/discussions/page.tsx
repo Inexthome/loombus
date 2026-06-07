@@ -68,6 +68,69 @@ function hasAdvancedFilterAccess(entitlement: AiEntitlement, isAdmin: boolean) {
   );
 }
 
+function escapeLimitedHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function hasLimitedFormattingHtml(value: string) {
+  return /<\/?(strong|b|em|i|br|p|div)\b/i.test(value);
+}
+
+function sanitizeLimitedDiscussionHtml(value: string) {
+  const pattern = /<\/?(strong|b|em|i|br|p|div)\b[^>]*>/gi;
+  let safe = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(value)) !== null) {
+    safe += escapeLimitedHtml(value.slice(lastIndex, match.index));
+
+    const rawTag = match[0].toLowerCase();
+    const tagName = match[1].toLowerCase();
+    const normalizedTag =
+      tagName === "b" ? "strong" : tagName === "i" ? "em" : tagName;
+
+    if (normalizedTag === "br") {
+      safe += "<br>";
+    } else if (rawTag.startsWith("</")) {
+      safe += `</${normalizedTag}>`;
+    } else {
+      safe += `<${normalizedTag}>`;
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  safe += escapeLimitedHtml(value.slice(lastIndex));
+
+  return safe
+    .replace(/<div><br><\/div>/gi, "<br>")
+    .replace(/<p><br><\/p>/gi, "<br>");
+}
+
+function legacyMarkdownBodyToSafeHtml(value: string) {
+  const escaped = escapeLimitedHtml(value)
+    .replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+
+  return escaped
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
+function discussionBodyToSafeHtml(content: string) {
+  if (hasLimitedFormattingHtml(content)) {
+    return sanitizeLimitedDiscussionHtml(content);
+  }
+
+  return sanitizeLimitedDiscussionHtml(legacyMarkdownBodyToSafeHtml(content));
+}
+
 function getDiscussionStatusLabel(discussion: Discussion) {
   return discussion.discussion_status === "resolved" ? "Resolved" : "Open";
 }
@@ -1031,9 +1094,10 @@ export default function DiscussionsPage() {
                     {discussion.title}
                   </h2>
 
-                  <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-4 sm:line-clamp-3 sm:text-base">
-                    {discussion.body}
-                  </p>
+                  <div
+                    className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-4 sm:line-clamp-3 sm:text-base [&_em]:italic [&_strong]:font-semibold [&_strong]:text-zinc-200"
+                    dangerouslySetInnerHTML={{ __html: discussionBodyToSafeHtml(discussion.body) }}
+                  />
 
                   {discussionTags[discussion.id]?.length > 0 && (
                     <div className="mb-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
