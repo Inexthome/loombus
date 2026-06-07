@@ -277,6 +277,57 @@ function getDiscussionEditLabel(discussion: Discussion) {
   return parts.join(" · ");
 }
 
+function renderInlineDiscussionFormatting(text: string) {
+  const parts: React.ReactNode[] = [];
+  const pattern = /(\*\*([^*]+)\*\*|\*([^*]+)\*)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[2]) {
+      parts.push(
+        <strong key={`bold-${match.index}`} className="font-semibold text-zinc-100">
+          {match[2]}
+        </strong>
+      );
+    } else if (match[3]) {
+      parts.push(
+        <em key={`italic-${match.index}`} className="italic">
+          {match[3]}
+        </em>
+      );
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+function renderDiscussionBody(content: string) {
+  return content.split(/\n{2,}/).map((paragraph, index) => (
+    <p
+      key={`discussion-body-${index}`}
+      className="mb-4 last:mb-0"
+    >
+      {paragraph.split("\n").map((line, lineIndex) => (
+        <span key={`discussion-body-${index}-${lineIndex}`}>
+          {lineIndex > 0 && <br />}
+          {renderInlineDiscussionFormatting(line)}
+        </span>
+      ))}
+    </p>
+  ));
+}
+
 function formatAttachmentFileSize(bytes: number) {
   if (bytes >= 1024 * 1024) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -2132,9 +2183,9 @@ export default function DiscussionPage() {
           </div>
         </div>
 
-        <p className="mb-5 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
-          {discussion.body}
-        </p>
+        <div className="mb-5 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
+          {renderDiscussionBody(discussion.body)}
+        </div>
 
         {discussionAttachments.length > 0 && (
           <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-10 sm:rounded-3xl sm:p-6">
