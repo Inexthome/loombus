@@ -869,7 +869,7 @@ export default function ClientLayout({
           {isDiscussionsIndex && (
             <nav
               aria-label="Mobile discussion feed views"
-              className="mx-auto mt-3 grid max-w-md grid-cols-3 border-t border-zinc-900 pt-2"
+              className="mx-auto mt-3 grid max-w-md grid-cols-3 border-t border-zinc-200 pt-2 dark:border-zinc-900"
             >
               {([
                 ["all", "All"],
@@ -882,15 +882,15 @@ export default function ClientLayout({
                   onClick={() => selectMobileDiscussionFeed(feed)}
                   className={`relative flex h-10 items-center justify-center text-sm font-semibold transition ${
                     mobileDiscussionFeed === feed
-                      ? "text-white"
-                      : "text-zinc-500"
+                      ? "text-zinc-950 dark:text-white"
+                      : "text-zinc-500 dark:text-zinc-500"
                   }`}
                 >
                   {label}
                   <span
                     className={`absolute bottom-0 h-1 rounded-full transition ${
                       mobileDiscussionFeed === feed
-                        ? "bg-white"
+                        ? "bg-zinc-950 dark:bg-white"
                         : "bg-transparent"
                     } ${feed === "following" ? "w-20" : "w-14"}`}
                     aria-hidden="true"

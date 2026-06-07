@@ -731,24 +731,24 @@ export default function DiscussionsPage() {
       <div className="mx-auto max-w-[46rem]">
         <div className="discussion-shell-grid">
           <div className="min-w-0">
-        <section className="sticky top-0 z-20 mb-5 hidden border-b border-zinc-900 bg-black/95 backdrop-blur-xl md:block">
+        <section className="sticky top-0 z-20 mb-5 hidden border-b border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-zinc-900 dark:bg-black/95 md:block">
           <nav
             aria-label="Discussion feed views"
-            className="grid grid-cols-3 border-y border-zinc-900 bg-black/95 backdrop-blur-xl"
+            className="grid grid-cols-3 border-y border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-zinc-900 dark:bg-black/95"
           >
             <button
               type="button"
               onClick={openAllFeed}
               className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
                 allFeedActive
-                  ? "text-white"
-                  : "text-zinc-500 hover:text-zinc-200"
+                  ? "text-zinc-950 dark:text-white"
+                  : "text-zinc-500 hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-zinc-200"
               }`}
             >
               All
               <span
                 className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  allFeedActive ? "bg-white" : "bg-transparent"
+                  allFeedActive ? "bg-zinc-950 dark:bg-white" : "bg-transparent"
                 }`}
                 aria-hidden="true"
               />
@@ -759,14 +759,14 @@ export default function DiscussionsPage() {
               onClick={openFollowingFeed}
               className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
                 followingFeedActive
-                  ? "text-white"
-                  : "text-zinc-500 hover:text-zinc-200"
+                  ? "text-zinc-950 dark:text-white"
+                  : "text-zinc-500 hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-zinc-200"
               }`}
             >
               Following
               <span
                 className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  followingFeedActive ? "bg-white" : "bg-transparent"
+                  followingFeedActive ? "bg-zinc-950 dark:bg-white" : "bg-transparent"
                 }`}
                 aria-hidden="true"
               />
@@ -777,14 +777,14 @@ export default function DiscussionsPage() {
               onClick={openSignalFeed}
               className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
                 signalFeedActive
-                  ? "text-white"
-                  : "text-zinc-500 hover:text-zinc-200"
+                  ? "text-zinc-950 dark:text-white"
+                  : "text-zinc-500 hover:text-zinc-950 dark:text-zinc-500 dark:hover:text-zinc-200"
               }`}
             >
               Active
               <span
                 className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  signalFeedActive ? "bg-white" : "bg-transparent"
+                  signalFeedActive ? "bg-zinc-950 dark:bg-white" : "bg-transparent"
                 }`}
                 aria-hidden="true"
               />
