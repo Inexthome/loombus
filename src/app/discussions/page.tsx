@@ -47,6 +47,8 @@ type AdvancedFilterMode =
   | "High signal"
   | "Recently active";
 
+type FeedMode = "all" | "following" | "signal";
+
 const ADVANCED_FILTERS: AdvancedFilterMode[] = [
   "All activity",
   "Has replies",
@@ -207,6 +209,8 @@ export default function DiscussionsPage() {
     useState<"none" | "search" | "guide" | "topics" | "purpose">("none");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState("Newest");
+  const [feedMode, setFeedMode] = useState<FeedMode>("all");
+  const [followingUserIds, setFollowingUserIds] = useState<string[]>([]);
   const [advancedFilter, setAdvancedFilter] =
     useState<AdvancedFilterMode>("All activity");
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement>(null);
@@ -285,6 +289,20 @@ export default function DiscussionsPage() {
               block.blocker_id === viewerData.user.id ? block.blocked_id : block.blocker_id
             );
           }
+
+          const { data: followsData } = await supabase
+            .from("follows")
+            .select("following_id")
+            .eq("follower_id", viewerData.user.id);
+
+          setFollowingUserIds(
+            (followsData ?? [])
+              .map((follow) => follow.following_id)
+              .filter(
+                (id): id is string =>
+                  typeof id === "string" && !hiddenProfileIds.has(id)
+              )
+          );
         }
 
         const visibleDiscussions = data.filter(
@@ -485,8 +503,13 @@ export default function DiscussionsPage() {
       ? advancedFilter
       : "All activity";
 
+    const followingUserIdSet = new Set(followingUserIds);
+
     const filtered = discussions.filter((discussion) => {
       const profile = profiles[discussion.user_id];
+
+      const matchesFeedMode =
+        feedMode !== "following" || followingUserIdSet.has(discussion.user_id);
 
       const matchesTopic =
         selectedTopic === "All" || discussion.topic === selectedTopic;
@@ -513,7 +536,7 @@ export default function DiscussionsPage() {
         latestReplyDates
       );
 
-      return matchesTopic && matchesPurposeLane && matchesSearch && matchesAdvanced;
+      return matchesFeedMode && matchesTopic && matchesPurposeLane && matchesSearch && matchesAdvanced;
     });
 
     if (sortMode === "Most replied") {
@@ -559,6 +582,8 @@ export default function DiscussionsPage() {
     selectedPurposeLane,
     searchQuery,
     sortMode,
+    feedMode,
+    followingUserIds,
     advancedFilter,
     canUseAdvancedFilters,
     replyCounts,
@@ -578,7 +603,7 @@ export default function DiscussionsPage() {
   const hasActiveDiscussionFilters = activeFilterLabels.length > 0;
   const filterSummary = hasActiveDiscussionFilters
     ? activeFilterLabels.join(" · ")
-    : sortMode === "Signal" ? "Signal discussions" : "All discussions";
+    : feedMode === "following" ? "Following discussions" : feedMode === "signal" ? "Signal discussions" : "All discussions";
 
   const topicDiscoveryItems = (
     showAllTopicDiscovery ? DISCUSSION_TOPICS : []
@@ -587,21 +612,12 @@ export default function DiscussionsPage() {
     description: getTopicDiscoveryDescription(topic),
   }));
 
-  const allFeedActive =
-    sortMode !== "Signal" &&
-    selectedTopic === "All" &&
-    selectedPurposeLane === "All" &&
-    advancedFilter === "All activity" &&
-    !searchQuery.trim();
-
-  const signalFeedActive =
-    sortMode === "Signal" &&
-    selectedTopic === "All" &&
-    selectedPurposeLane === "All" &&
-    advancedFilter === "All activity" &&
-    !searchQuery.trim();
+  const allFeedActive = feedMode === "all";
+  const followingFeedActive = feedMode === "following";
+  const signalFeedActive = feedMode === "signal";
 
   function resetDiscussionFilters() {
+    setFeedMode("all");
     setSearchQuery("");
     setTopicFilter("All");
     setPurposeLaneFilter("All");
@@ -610,6 +626,17 @@ export default function DiscussionsPage() {
   }
 
   function openAllFeed() {
+    setFeedMode("all");
+    setSearchQuery("");
+    setTopicFilter("All");
+    setPurposeLaneFilter("All");
+    setSortMode("Newest");
+    setAdvancedFilter("All activity");
+    setActiveDiscussionTool("none");
+  }
+
+  function openFollowingFeed() {
+    setFeedMode("following");
     setSearchQuery("");
     setTopicFilter("All");
     setPurposeLaneFilter("All");
@@ -619,6 +646,7 @@ export default function DiscussionsPage() {
   }
 
   function openSignalFeed() {
+    setFeedMode("signal");
     setSearchQuery("");
     setTopicFilter("All");
     setPurposeLaneFilter("All");
@@ -707,12 +735,23 @@ export default function DiscussionsPage() {
               />
             </button>
 
-            <Link
-              href="/following"
-              className="relative flex h-14 items-center justify-center text-sm font-semibold text-zinc-500 transition hover:text-zinc-200"
+            <button
+              type="button"
+              onClick={openFollowingFeed}
+              className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
+                followingFeedActive
+                  ? "text-white"
+                  : "text-zinc-500 hover:text-zinc-200"
+              }`}
             >
               Following
-            </Link>
+              <span
+                className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
+                  followingFeedActive ? "bg-white" : "bg-transparent"
+                }`}
+                aria-hidden="true"
+              />
+            </button>
 
             <button
               type="button"
@@ -749,12 +788,17 @@ export default function DiscussionsPage() {
               All
             </button>
 
-            <Link
-              href="/following"
-              className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-5 py-2.5 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+            <button
+              type="button"
+              onClick={openFollowingFeed}
+              className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-medium transition ${
+                followingFeedActive
+                  ? "bg-white text-black"
+                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+              }`}
             >
               Following
-            </Link>
+            </button>
 
             <button
               type="button"
