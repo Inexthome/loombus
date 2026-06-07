@@ -731,7 +731,7 @@ export default function DiscussionsPage() {
       <div className="mx-auto max-w-[46rem]">
         <div className="discussion-shell-grid">
           <div className="min-w-0">
-        <section className="sticky top-0 z-20 mb-5 border-b border-zinc-900 bg-black/95 backdrop-blur-xl">
+        <section className="sticky top-0 z-20 mb-5 hidden border-b border-zinc-900 bg-black/95 backdrop-blur-xl md:block">
           <nav
             aria-label="Discussion feed views"
             className="grid grid-cols-3 border-y border-zinc-900 bg-black/95 backdrop-blur-xl"
