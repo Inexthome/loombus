@@ -763,6 +763,9 @@ export default function ClientLayout({
                       <Link href="/saved" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
                         Saved
                       </Link>
+                      <Link href="/stickies" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        Stickies
+                      </Link>
 
                       <p className="mt-2 px-4 py-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
                         Account
@@ -1023,6 +1026,9 @@ export default function ClientLayout({
 
                   <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
                     Saved
+                  </Link>
+                  <Link href="/stickies" onClick={closeMobileMenu} className={mobileNavLinkClass("/stickies")}>
+                    Stickies
                   </Link>
                 </div>
               </section>
