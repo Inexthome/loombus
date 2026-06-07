@@ -1373,7 +1373,7 @@ export default function CreatePage() {
                 />
 
                 <div
-                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+11.25rem)] z-50 max-h-[22rem] w-[min(calc(100vw-2rem),42rem)] -translate-x-1/2 overflow-y-auto rounded-[1.75rem] border border-white/15 p-3 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12.5rem)] sm:p-4"
+                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+10.5rem)] z-50 max-h-[20rem] w-[min(calc(100vw-4rem),22rem)] -translate-x-1/2 overflow-y-auto rounded-[1.5rem] border border-white/15 p-3 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12rem)] sm:w-[24rem]"
                   style={{
                     backgroundColor:
                       "color-mix(in srgb, var(--loombus-surface) 72%, transparent)",
