@@ -254,6 +254,61 @@ export async function POST(request: NextRequest) {
   });
 }
 
+export async function PATCH(request: NextRequest) {
+  const context = await getUserAndAccess(request);
+
+  if ("error" in context) {
+    return context.error;
+  }
+
+  const body = await request.json().catch(() => ({}));
+  const orderedIds = Array.isArray(body.orderedIds)
+    ? body.orderedIds.filter((id: unknown): id is string => typeof id === "string" && id.trim().length > 0)
+    : [];
+
+  if (orderedIds.length === 0) {
+    return jsonError("Missing sticky order.");
+  }
+
+  const { data: existingItems, error: existingError } = await context.supabase
+    .from("sticky_items")
+    .select("id")
+    .eq("user_id", context.user.id);
+
+  if (existingError) {
+    return jsonError(existingError.message, 500);
+  }
+
+  const ownedIds = new Set((existingItems ?? []).map((item: { id: string }) => item.id));
+  const hasUnknownId = orderedIds.some((id) => !ownedIds.has(id));
+
+  if (hasUnknownId) {
+    return jsonError("One or more stickies could not be reordered.", 403);
+  }
+
+  const updates = orderedIds.map((id, index) =>
+    context.supabase
+      .from("sticky_items")
+      .update({
+        position: index,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("user_id", context.user.id)
+  );
+
+  const results = await Promise.all(updates);
+  const failed = results.find((result) => result.error);
+
+  if (failed?.error) {
+    return jsonError(failed.error.message, 500);
+  }
+
+  return NextResponse.json({
+    ok: true,
+  });
+}
+
 export async function DELETE(request: NextRequest) {
   const context = await getUserAndAccess(request);
 

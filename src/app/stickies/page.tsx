@@ -172,6 +172,63 @@ export default function StickiesPage() {
     await loadStickies();
   }
 
+  async function moveSticky(stickyId: string, direction: "up" | "down") {
+    if (working) {
+      return;
+    }
+
+    const currentIndex = items.findIndex((item) => item.id === stickyId);
+
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    if (nextIndex < 0 || nextIndex >= items.length) {
+      return;
+    }
+
+    const nextItems = [...items];
+    const [movedItem] = nextItems.splice(currentIndex, 1);
+    nextItems.splice(nextIndex, 0, movedItem);
+
+    setItems(nextItems);
+    setWorking(true);
+    setMessage("");
+
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      setWorking(false);
+      setIsLoggedIn(false);
+      return;
+    }
+
+    const response = await fetch("/api/stickies", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        orderedIds: nextItems.map((item) => item.id),
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setWorking(false);
+
+    if (!response.ok) {
+      setItems(items);
+      setMessage(result.error ?? "Unable to reorder stickies.");
+      return;
+    }
+
+    setMessage("Stickies reordered.");
+  }
+
   async function removeSticky(stickyId: string) {
     if (working) {
       return;
@@ -368,7 +425,7 @@ export default function StickiesPage() {
               </section>
             ) : (
               <section className="grid gap-4">
-                {items.map((item) => (
+                {items.map((item, index) => (
                   <article
                     key={item.id}
                     className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20"
@@ -378,14 +435,34 @@ export default function StickiesPage() {
                         {item.item_type === "note" ? "Note" : item.item_type}
                       </p>
 
-                      <button
-                        type="button"
-                        onClick={() => removeSticky(item.id)}
-                        disabled={working}
-                        className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:opacity-50"
-                      >
-                        Remove
-                      </button>
+                      <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => moveSticky(item.id, "up")}
+                          disabled={working || index === 0}
+                          className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Up
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => moveSticky(item.id, "down")}
+                          disabled={working || index === items.length - 1}
+                          className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Down
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => removeSticky(item.id)}
+                          disabled={working}
+                          className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
 
                     {item.item_type === "note" ? (
