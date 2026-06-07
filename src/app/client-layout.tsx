@@ -33,6 +33,8 @@ type NavProfile = {
 };
 
 const RIGHT_RAIL_WIDTH_STORAGE_KEY = "loombus:right-rail-width";
+
+type DiscussionFeedMode = "all" | "following" | "signal";
 const DEFAULT_RIGHT_RAIL_WIDTH = 320;
 const MIN_RIGHT_RAIL_WIDTH = 280;
 const MAX_RIGHT_RAIL_WIDTH = 480;
@@ -62,6 +64,9 @@ export default function ClientLayout({
   const lastNotificationLoadRef = useRef<{ userId: string; loadedAt: number } | null>(null);
   const rightRailDragStartRef = useRef<{ pointerX: number; width: number } | null>(null);
   const pathname = usePathname();
+  const isDiscussionsIndex = pathname === "/discussions";
+  const [mobileDiscussionFeed, setMobileDiscussionFeed] =
+    useState<DiscussionFeedMode>("all");
   const hasDesktopRightRail =
     [
       "/discussions",
@@ -326,6 +331,35 @@ export default function ClientLayout({
       subscription.unsubscribe();
     };
   }, []);
+
+  function selectMobileDiscussionFeed(feed: DiscussionFeedMode) {
+    setMobileDiscussionFeed(feed);
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (feed === "all") {
+      params.delete("feed");
+    } else {
+      params.set("feed", feed);
+    }
+
+    const queryString = params.toString();
+    const nextUrl = queryString
+      ? `${window.location.pathname}?${queryString}`
+      : window.location.pathname;
+
+    window.history.replaceState(null, "", nextUrl);
+
+    window.dispatchEvent(
+      new CustomEvent("loombus:discussion-feed", {
+        detail: { feed },
+      })
+    );
+  }
 
   function closeMobileMenu() {
     setMobileMenuOpen(false);
@@ -828,6 +862,40 @@ export default function ClientLayout({
               </button>
             </div>
           </div>
+
+          {isDiscussionsIndex && (
+            <nav
+              aria-label="Mobile discussion feed views"
+              className="mx-auto mt-3 grid max-w-md grid-cols-3 border-t border-zinc-900 pt-2"
+            >
+              {([
+                ["all", "All"],
+                ["following", "Following"],
+                ["signal", "Signal"],
+              ] as const).map(([feed, label]) => (
+                <button
+                  key={feed}
+                  type="button"
+                  onClick={() => selectMobileDiscussionFeed(feed)}
+                  className={`relative flex h-10 items-center justify-center text-sm font-semibold transition ${
+                    mobileDiscussionFeed === feed
+                      ? "text-white"
+                      : "text-zinc-500"
+                  }`}
+                >
+                  {label}
+                  <span
+                    className={`absolute bottom-0 h-1 rounded-full transition ${
+                      mobileDiscussionFeed === feed
+                        ? "bg-white"
+                        : "bg-transparent"
+                    } ${feed === "following" ? "w-20" : "w-14"}`}
+                    aria-hidden="true"
+                  />
+                </button>
+              ))}
+            </nav>
+          )}
         </div>
       )}
 

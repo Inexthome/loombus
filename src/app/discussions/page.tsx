@@ -625,35 +625,71 @@ export default function DiscussionsPage() {
     setAdvancedFilter("All activity");
   }
 
-  function openAllFeed() {
-    setFeedMode("all");
+  function getSafeFeedMode(value: string | null | undefined): FeedMode {
+    if (value === "following" || value === "signal") {
+      return value;
+    }
+
+    return "all";
+  }
+
+  function applyDiscussionFeedMode(nextFeedMode: FeedMode) {
+    setFeedMode(nextFeedMode);
     setSearchQuery("");
     setTopicFilter("All");
     setPurposeLaneFilter("All");
-    setSortMode("Newest");
+    setSortMode(nextFeedMode === "signal" ? "Signal" : "Newest");
     setAdvancedFilter("All activity");
     setActiveDiscussionTool("none");
+    updateUrlParams({
+      feed: nextFeedMode === "all" ? null : nextFeedMode,
+      topic: null,
+      purpose: null,
+    });
+  }
+
+  function openAllFeed() {
+    applyDiscussionFeedMode("all");
   }
 
   function openFollowingFeed() {
-    setFeedMode("following");
-    setSearchQuery("");
-    setTopicFilter("All");
-    setPurposeLaneFilter("All");
-    setSortMode("Newest");
-    setAdvancedFilter("All activity");
-    setActiveDiscussionTool("none");
+    applyDiscussionFeedMode("following");
   }
 
   function openSignalFeed() {
-    setFeedMode("signal");
-    setSearchQuery("");
-    setTopicFilter("All");
-    setPurposeLaneFilter("All");
-    setSortMode("Signal");
-    setAdvancedFilter("All activity");
-    setActiveDiscussionTool("none");
+    applyDiscussionFeedMode("signal");
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const initialFeedMode = getSafeFeedMode(params.get("feed"));
+
+    if (initialFeedMode !== feedMode) {
+      applyDiscussionFeedMode(initialFeedMode);
+    }
+
+    function handleMobileDiscussionFeed(event: Event) {
+      const customEvent = event as CustomEvent<{ feed?: string }>;
+      applyDiscussionFeedMode(getSafeFeedMode(customEvent.detail?.feed));
+    }
+
+    window.addEventListener(
+      "loombus:discussion-feed",
+      handleMobileDiscussionFeed
+    );
+
+    return () => {
+      window.removeEventListener(
+        "loombus:discussion-feed",
+        handleMobileDiscussionFeed
+      );
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function persistExploreFiltersOpen() {
     setShowExploreFilters(true);
@@ -769,47 +805,6 @@ export default function DiscussionsPage() {
                 }`}
                 aria-hidden="true"
               />
-            </button>
-          </nav>
-
-          <nav
-            aria-label="Mobile discussion feed views"
-            className="mt-5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:hidden"
-          >
-            <button
-              type="button"
-              onClick={openAllFeed}
-              className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-medium transition ${
-                allFeedActive
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              All
-            </button>
-
-            <button
-              type="button"
-              onClick={openFollowingFeed}
-              className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-medium transition ${
-                followingFeedActive
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              Following
-            </button>
-
-            <button
-              type="button"
-              onClick={openSignalFeed}
-              className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-medium transition ${
-                signalFeedActive
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-            >
-              Signal
             </button>
           </nav>
 
