@@ -354,11 +354,24 @@ export default function ClientLayout({
 
     window.history.replaceState(null, "", nextUrl);
 
-    window.dispatchEvent(
+    const discussionFeedEvent = new CustomEvent("loombus:discussion-feed", {
+      detail: { feed, openActiveTopics: feed === "signal" },
+    });
+
+    window.dispatchEvent(discussionFeedEvent);
+    document.dispatchEvent(
       new CustomEvent("loombus:discussion-feed", {
         detail: { feed, openActiveTopics: feed === "signal" },
       })
     );
+
+    window.setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("loombus:discussion-feed", {
+          detail: { feed, openActiveTopics: feed === "signal" },
+        })
+      );
+    }, 0);
   }
 
   function closeMobileMenu() {

@@ -757,9 +757,17 @@ export default function DiscussionsPage() {
       "loombus:discussion-feed",
       handleMobileDiscussionFeed
     );
+    document.addEventListener(
+      "loombus:discussion-feed",
+      handleMobileDiscussionFeed
+    );
 
     return () => {
       window.removeEventListener(
+        "loombus:discussion-feed",
+        handleMobileDiscussionFeed
+      );
+      document.removeEventListener(
         "loombus:discussion-feed",
         handleMobileDiscussionFeed
       );
