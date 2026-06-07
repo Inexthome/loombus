@@ -727,7 +727,7 @@ export default function DiscussionsPage() {
       <div className="mx-auto max-w-[46rem]">
         <div className="discussion-shell-grid">
           <div className="min-w-0">
-        <section className="sticky top-0 z-20 mb-5 border-b border-zinc-900 bg-black/95 pb-5 pt-3 backdrop-blur-xl md:top-0 lg:pb-0 lg:pt-0">
+        <section className="sticky top-0 z-20 mb-5 hidden border-b border-zinc-900 bg-black/95 pb-5 pt-3 backdrop-blur-xl md:block md:top-0 lg:pb-0 lg:pt-0">
           <div className="flex items-start justify-between gap-4 lg:hidden">
             <div className="min-w-0">
               <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
@@ -808,7 +808,7 @@ export default function DiscussionsPage() {
             </button>
           </nav>
 
-          <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:hidden">
+          <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:pt-1 lg:hidden">
             <button
               type="button"
               onClick={openDiscussionSearch}
