@@ -207,6 +207,7 @@ export default function DiscussionsPage() {
   const [showExploreFilters, setShowExploreFilters] = useState(false);
   const [activeDiscussionTool, setActiveDiscussionTool] =
     useState<"none" | "search" | "guide" | "topics" | "purpose">("none");
+  const [showActiveTopicMenu, setShowActiveTopicMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState("Newest");
   const [feedMode, setFeedMode] = useState<FeedMode>("all");
@@ -612,6 +613,47 @@ export default function DiscussionsPage() {
     description: getTopicDiscoveryDescription(topic),
   }));
 
+  const activeTopicMenuItems = useMemo(() => {
+    const topicScores: Record<string, { topic: string; score: number; count: number }> = {};
+
+    for (const discussion of discussions) {
+      const score = getSignalScore(
+        discussion.id,
+        replyCounts,
+        bookmarkCounts,
+        viewCounts
+      );
+
+      const current = topicScores[discussion.topic] ?? {
+        topic: discussion.topic,
+        score: 0,
+        count: 0,
+      };
+
+      current.score += score;
+      current.count += 1;
+      topicScores[discussion.topic] = current;
+    }
+
+    return Object.values(topicScores)
+      .sort((a, b) => {
+        const scoreDifference = b.score - a.score;
+
+        if (scoreDifference !== 0) {
+          return scoreDifference;
+        }
+
+        const countDifference = b.count - a.count;
+
+        if (countDifference !== 0) {
+          return countDifference;
+        }
+
+        return a.topic.localeCompare(b.topic);
+      })
+      .slice(0, 7);
+  }, [discussions, replyCounts, bookmarkCounts, viewCounts]);
+
   const allFeedActive = feedMode === "all";
   const followingFeedActive = feedMode === "following";
   const signalFeedActive = feedMode === "signal";
@@ -633,7 +675,10 @@ export default function DiscussionsPage() {
     return "all";
   }
 
-  function applyDiscussionFeedMode(nextFeedMode: FeedMode) {
+  function applyDiscussionFeedMode(
+    nextFeedMode: FeedMode,
+    options: { openActiveTopics?: boolean } = {}
+  ) {
     setFeedMode(nextFeedMode);
     setSearchQuery("");
     setTopicFilter("All");
@@ -641,6 +686,10 @@ export default function DiscussionsPage() {
     setSortMode(nextFeedMode === "signal" ? "Signal" : "Newest");
     setAdvancedFilter("All activity");
     setActiveDiscussionTool("none");
+    setShowActiveTopicMenu(
+      nextFeedMode === "signal" && options.openActiveTopics === true
+    );
+
     updateUrlParams({
       feed: nextFeedMode === "all" ? null : nextFeedMode,
       topic: null,
@@ -657,7 +706,26 @@ export default function DiscussionsPage() {
   }
 
   function openSignalFeed() {
-    applyDiscussionFeedMode("signal");
+    applyDiscussionFeedMode("signal", {
+      openActiveTopics: !showActiveTopicMenu,
+    });
+  }
+
+  function selectActiveTopic(topic: string | null) {
+    setFeedMode("signal");
+    setSearchQuery("");
+    setSelectedTopic(topic ?? "All");
+    setPurposeLaneFilter("All");
+    setSortMode("Signal");
+    setAdvancedFilter("All activity");
+    setActiveDiscussionTool("none");
+    setShowActiveTopicMenu(false);
+
+    updateUrlParams({
+      feed: "signal",
+      topic,
+      purpose: null,
+    });
   }
 
   useEffect(() => {
@@ -673,8 +741,16 @@ export default function DiscussionsPage() {
     }
 
     function handleMobileDiscussionFeed(event: Event) {
-      const customEvent = event as CustomEvent<{ feed?: string }>;
-      applyDiscussionFeedMode(getSafeFeedMode(customEvent.detail?.feed));
+      const customEvent = event as CustomEvent<{
+        feed?: string;
+        openActiveTopics?: boolean;
+      }>;
+
+      const nextFeedMode = getSafeFeedMode(customEvent.detail?.feed);
+
+      applyDiscussionFeedMode(nextFeedMode, {
+        openActiveTopics: customEvent.detail?.openActiveTopics === true,
+      });
     }
 
     window.addEventListener(
@@ -789,23 +865,60 @@ export default function DiscussionsPage() {
               />
             </button>
 
-            <button
-              type="button"
-              onClick={openSignalFeed}
-              className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
-                signalFeedActive
-                  ? "text-white"
-                  : "text-zinc-500 hover:text-zinc-200"
-              }`}
-            >
-              Active
-              <span
-                className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  signalFeedActive ? "bg-white" : "bg-transparent"
+            <div className="relative">
+              <button
+                type="button"
+                onClick={openSignalFeed}
+                className={`relative flex h-14 w-full items-center justify-center text-sm font-semibold transition ${
+                  signalFeedActive
+                    ? "text-white"
+                    : "text-zinc-500 hover:text-zinc-200"
                 }`}
-                aria-hidden="true"
-              />
-            </button>
+                aria-expanded={showActiveTopicMenu}
+              >
+                Active
+                <span
+                  className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
+                    signalFeedActive ? "bg-white" : "bg-transparent"
+                  }`}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {showActiveTopicMenu && signalFeedActive && (
+                <div className="absolute right-0 top-full z-30 mt-2 w-56 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/40">
+                  <button
+                    type="button"
+                    onClick={() => selectActiveTopic(null)}
+                    className={`block w-full px-4 py-3 text-left text-sm transition ${
+                      selectedTopic === "All"
+                        ? "bg-white text-black"
+                        : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
+                    }`}
+                  >
+                    All active
+                  </button>
+
+                  {activeTopicMenuItems.map((item) => (
+                    <button
+                      key={item.topic}
+                      type="button"
+                      onClick={() => selectActiveTopic(item.topic)}
+                      className={`block w-full px-4 py-3 text-left text-sm transition ${
+                        selectedTopic === item.topic
+                          ? "bg-white text-black"
+                          : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                      }`}
+                    >
+                      <span className="block">{item.topic}</span>
+                      <span className="mt-0.5 block text-xs opacity-60">
+                        {item.count} discussion{item.count === 1 ? "" : "s"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 md:pt-1 lg:hidden">
@@ -868,6 +981,40 @@ export default function DiscussionsPage() {
             )}
           </div>
         </section>
+
+        {showActiveTopicMenu && signalFeedActive && (
+          <div className="fixed left-4 right-4 top-[calc(env(safe-area-inset-top)+6.5rem)] z-30 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/50 md:hidden">
+            <button
+              type="button"
+              onClick={() => selectActiveTopic(null)}
+              className={`block w-full px-4 py-3 text-left text-sm transition ${
+                selectedTopic === "All"
+                  ? "bg-white text-black"
+                  : "text-zinc-300 hover:bg-zinc-900 hover:text-white"
+              }`}
+            >
+              All active
+            </button>
+
+            {activeTopicMenuItems.map((item) => (
+              <button
+                key={item.topic}
+                type="button"
+                onClick={() => selectActiveTopic(item.topic)}
+                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                  selectedTopic === item.topic
+                    ? "bg-white text-black"
+                    : "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                }`}
+              >
+                <span className="block">{item.topic}</span>
+                <span className="mt-0.5 block text-xs opacity-60">
+                  {item.count} discussion{item.count === 1 ? "" : "s"}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {activeDiscussionTool === "search" && (
           <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">

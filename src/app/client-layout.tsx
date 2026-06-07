@@ -356,7 +356,7 @@ export default function ClientLayout({
 
     window.dispatchEvent(
       new CustomEvent("loombus:discussion-feed", {
-        detail: { feed },
+        detail: { feed, openActiveTopics: feed === "signal" },
       })
     );
   }
