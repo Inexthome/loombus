@@ -1264,92 +1264,72 @@ export default function CreatePage() {
             onKeyDown={handleFormKeyDown}
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
-                Discussion details
-              </p>
+            <section className="space-y-5">
+              <div>
+                <p className="mb-4 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                  Discussion details
+                </p>
 
-              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Create metadata tools rail">
-                <button
-                  type="button"
-                  onClick={() => toggleCreateMetadataTool("topic")}
-                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                    activeCreateMetadataTool === "topic" || topicManuallySelected
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                  }`}
-                  aria-expanded={activeCreateMetadataTool === "topic"}
-                >
-                  Topic
-                </button>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Topic
+                    </label>
 
-                <button
-                  type="button"
-                  onClick={() => toggleCreateMetadataTool("reality")}
-                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                    activeCreateMetadataTool === "reality" || Boolean(realityLens)
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                  }`}
-                  aria-expanded={activeCreateMetadataTool === "reality"}
-                >
-                  Reality Lens
-                </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleCreateMetadataTool("topic")}
+                      className={`flex min-h-14 w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-base transition ${
+                        activeCreateMetadataTool === "topic" || topicManuallySelected
+                          ? "border-zinc-600 bg-black text-white"
+                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                      }`}
+                      aria-expanded={activeCreateMetadataTool === "topic"}
+                    >
+                      <span className="truncate">{topic || "Select topic"}</span>
+                      <span className="ml-3 text-zinc-600">⌄</span>
+                    </button>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => toggleCreateMetadataTool("purpose")}
-                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                    activeCreateMetadataTool === "purpose" || Boolean(purposeLane)
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                  }`}
-                  aria-expanded={activeCreateMetadataTool === "purpose"}
-                >
-                  Purpose Lane
-                </button>
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Categorization
+                    </label>
 
-                <button
-                  type="button"
-                  onClick={() => toggleCreateMetadataTool("tags")}
-                  className={`shrink-0 rounded-full px-3.5 py-2 text-sm transition ${
-                    activeCreateMetadataTool === "tags" || getTagInputItems(tagsInput).length > 0
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                  }`}
-                  aria-expanded={activeCreateMetadataTool === "tags"}
-                >
-                  Optional Tags
-                </button>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleCreateMetadataTool("reality")}
+                        className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left text-base transition ${
+                          activeCreateMetadataTool === "reality" || Boolean(realityLens)
+                            ? "border-zinc-600 bg-black text-white"
+                            : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                        }`}
+                        aria-expanded={activeCreateMetadataTool === "reality"}
+                      >
+                        <span className="truncate">{realityLens || "Reality Lens"}</span>
+                        <span className="ml-3 text-zinc-600">⌄</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleCreateMetadataTool("purpose")}
+                        className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left text-base transition ${
+                          activeCreateMetadataTool === "purpose" || Boolean(purposeLane)
+                            ? "border-zinc-600 bg-black text-white"
+                            : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                        }`}
+                        aria-expanded={activeCreateMetadataTool === "purpose"}
+                      >
+                        <span className="truncate">{purposeLane || "Purpose Lane"}</span>
+                        <span className="ml-3 text-zinc-600">⌄</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                  {topic || "Select topic"}
-                </span>
-
-                {realityLens && (
-                  <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                    {realityLens}
-                  </span>
-                )}
-
-                {purposeLane && (
-                  <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                    {purposeLane}
-                  </span>
-                )}
-
-                {getTagInputItems(tagsInput).length > 0 && (
-                  <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                    {getTagInputItems(tagsInput).length} tags
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {activeCreateMetadataTool === "tags" && (
-              <section className="rounded-2xl border border-zinc-800 bg-black/40 p-3">
+              <div>
                 <label className="mb-2 block text-sm text-zinc-400">
                   Optional Tags
                 </label>
@@ -1358,12 +1338,13 @@ export default function CreatePage() {
                   type="text"
                   value={tagsInput}
                   onChange={(event) => updateTagsValue(event.target.value)}
+                  onFocus={() => setActiveCreateMetadataTool("tags")}
                   onBlur={closeTagsPanel}
-                  placeholder="AI ethics, publishing, startups"
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                  placeholder="Optional Tags"
+                  className="min-h-14 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
                 />
 
-                <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600">
+                <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
                   <p>
                     {tagInputHelper}
                   </p>
@@ -1374,8 +1355,8 @@ export default function CreatePage() {
                     </p>
                   )}
                 </div>
-              </section>
-            )}
+              </div>
+            </section>
 
             {activeCreateMetadataTool !== "none" && activeCreateMetadataTool !== "tags" && (
               <section
