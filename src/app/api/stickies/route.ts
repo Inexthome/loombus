@@ -262,8 +262,11 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const orderedIds = Array.isArray(body.orderedIds)
-    ? body.orderedIds.filter((id: unknown): id is string => typeof id === "string" && id.trim().length > 0)
+  const orderedIds: string[] = Array.isArray(body.orderedIds)
+    ? body.orderedIds.filter(
+        (id: unknown): id is string =>
+          typeof id === "string" && id.trim().length > 0
+      )
     : [];
 
   if (orderedIds.length === 0) {
