@@ -1637,8 +1637,10 @@ export default function CreatePage() {
                         type="button"
                         onClick={openBodyAttachmentPicker}
                         disabled={publishing}
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-base transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 ${
-                          attachmentFiles.length > 0 ? "text-[var(--loombus-text)]" : "text-[var(--loombus-text-muted)]"
+                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                          attachmentFiles.length > 0
+                            ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
+                            : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                         }`}
                         aria-label="Attach files"
                         title="Attach files"
@@ -1674,10 +1676,10 @@ export default function CreatePage() {
                   <button
                     type="button"
                     onClick={() => toggleCreateTool("quality")}
-                    className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-medium transition hover:bg-zinc-900 hover:text-white ${
+                    className={`inline-flex h-9 items-center justify-center rounded-full border px-4 text-xs font-semibold tracking-wide transition ${
                       activeCreateTool === "quality"
-                        ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] hover:bg-[var(--loombus-primary-bg)] hover:text-[var(--loombus-primary-text)]"
-                        : "text-[var(--loombus-text-muted)]"
+                        ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
+                        : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                     }`}
                     aria-label="Run quality check"
                     title="Quality Check"
@@ -1688,10 +1690,10 @@ export default function CreatePage() {
                   <button
                     type="button"
                     onClick={() => toggleCreateTool("rewrite")}
-                    className={`inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-medium transition hover:bg-zinc-900 hover:text-white ${
+                    className={`inline-flex h-9 items-center justify-center rounded-full border px-4 text-xs font-semibold tracking-wide transition ${
                       activeCreateTool === "rewrite"
-                        ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] hover:bg-[var(--loombus-primary-bg)] hover:text-[var(--loombus-primary-text)]"
-                        : "text-[var(--loombus-text-muted)]"
+                        ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
+                        : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                     }`}
                     aria-label="Generate rewrite"
                     title="Generate Rewrite"
