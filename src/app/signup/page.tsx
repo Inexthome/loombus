@@ -55,7 +55,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/discussions`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/home`,
         data: {
           full_name: fullName.trim(),
           date_of_birth: dateOfBirth,
@@ -91,27 +91,13 @@ export default function SignupPage() {
 
     setMessage("");
 
-    const ageBand = getAgeBandFromDateOfBirth(dateOfBirth);
-
-    if (!ageBand) {
-      setMessage("Enter a valid date of birth before continuing.");
-      return;
-    }
-
-    if (ageBand === "under_13") {
-      setMessage("Loombus is not available to children under 13.");
-      return;
-    }
-
-    window.localStorage.setItem("loombus:pending-date-of-birth", dateOfBirth);
-
     setOauthLoading(provider);
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/home`,
         },
       });
 

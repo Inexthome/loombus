@@ -320,8 +320,36 @@ export default function Home() {
   }, []);
 
   async function signUpWithProvider(provider: OAuthProvider) {
-    setMessage("Enter your date of birth on the signup page before continuing.");
-    window.location.href = `/signup?provider=${provider}`;
+    if (nativeIosApp || isIosNativeApp()) {
+      setMessage("Use email and password to create an account inside the Loombus iOS app. Apple and Google signup remain available on the web.");
+      return;
+    }
+
+    if (workingProvider) {
+      return;
+    }
+
+    setMessage("");
+    setWorkingProvider(provider);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/home`,
+        },
+      });
+
+      if (error) {
+        setMessage(`${provider === "apple" ? "Apple" : "Google"} signup error: ${error.message}`);
+        setWorkingProvider(null);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to start OAuth signup.";
+      setMessage(`${provider === "apple" ? "Apple" : "Google"} signup error: ${message}`);
+      setWorkingProvider(null);
+    }
   }
 
   if (authState === "checking") {

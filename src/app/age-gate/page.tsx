@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase/client";
 
 function getSafeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/discussions";
+    return "/home";
   }
 
   return value;
@@ -17,7 +17,7 @@ export default function AgeGatePage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
-  const [next, setNext] = useState("/discussions");
+  const [next, setNext] = useState("/home");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
