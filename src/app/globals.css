@@ -1861,3 +1861,139 @@ html[data-loombus-theme="light"] .loombus-discussion-footer-signal {
     border-color: #fed7aa;
   }
 }
+
+/* Mobile menu pill navigation + floating utility stack v1.
+   Turns the mobile menu into app-style pill buttons and adds Appearance/Stickies
+   quick actions above the existing Messages floating button. */
+html[data-loombus-theme] .loombus-mobile-menu-pill {
+  display: inline-flex;
+  min-height: 4.25rem;
+  align-items: center;
+  gap: 0.75rem;
+  border-color: color-mix(in srgb, var(--loombus-border) 72%, var(--loombus-text) 12%) !important;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--loombus-surface) 88%, white 5%),
+      color-mix(in srgb, var(--loombus-surface) 94%, var(--loombus-page-bg) 6%)
+    ) !important;
+  color: var(--loombus-text);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 color-mix(in srgb, white 12%, transparent);
+}
+
+html[data-loombus-theme] .loombus-mobile-menu-pill:hover,
+html[data-loombus-theme] .loombus-mobile-menu-pill:focus-visible {
+  border-color: color-mix(in srgb, var(--loombus-text-subtle) 72%, var(--loombus-border) 28%) !important;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--loombus-surface-strong) 90%, white 6%),
+      var(--loombus-surface-strong)
+    ) !important;
+  color: var(--loombus-text);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
+  transform: translateY(-1px);
+}
+
+html[data-loombus-theme] .loombus-mobile-menu-link-active.loombus-mobile-menu-pill {
+  border-color: color-mix(in srgb, var(--loombus-primary-bg) 48%, var(--loombus-border) 52%) !important;
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--loombus-primary-bg) 16%, transparent), transparent 10rem),
+    color-mix(in srgb, var(--loombus-surface-strong) 88%, var(--loombus-primary-bg) 8%) !important;
+  color: var(--loombus-text);
+}
+
+html[data-loombus-theme] .loombus-mobile-menu-logout {
+  display: inline-flex;
+  min-height: 4.1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border-color: color-mix(in srgb, #ef4444 70%, var(--loombus-border) 30%) !important;
+  color: #fca5a5 !important;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--loombus-surface) 90%, #ef4444 5%),
+      var(--loombus-surface)
+    ) !important;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 color-mix(in srgb, white 10%, transparent);
+}
+
+html[data-loombus-theme] .loombus-mobile-menu-logout:hover {
+  border-color: #f87171 !important;
+  color: #fecaca !important;
+}
+
+html[data-loombus-theme] .loombus-floating-utility-stack {
+  bottom: calc(env(safe-area-inset-bottom) + 9.85rem);
+}
+
+html[data-loombus-theme] .loombus-floating-utility-button {
+  display: inline-flex;
+  height: 3.05rem;
+  width: 3.05rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--loombus-border) 70%, var(--loombus-text) 12%);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--loombus-surface) 88%, white 6%),
+      var(--loombus-surface)
+    );
+  color: var(--loombus-text);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 color-mix(in srgb, white 14%, transparent);
+  backdrop-filter: blur(18px) saturate(1.08);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+html[data-loombus-theme] .loombus-floating-utility-button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--loombus-text-subtle) 72%, var(--loombus-border) 28%);
+  box-shadow:
+    0 24px 58px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
+}
+
+html[data-loombus-theme="light"] .loombus-mobile-menu-pill,
+html[data-loombus-theme="light"] .loombus-floating-utility-button {
+  box-shadow:
+    0 16px 38px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .loombus-mobile-menu-pill,
+  html[data-loombus-theme="system"] .loombus-floating-utility-button {
+    box-shadow:
+      0 16px 38px rgba(15, 23, 42, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-loombus-theme] .loombus-mobile-menu-pill,
+  html[data-loombus-theme] .loombus-floating-utility-button {
+    transition: none !important;
+  }
+
+  html[data-loombus-theme] .loombus-mobile-menu-pill:hover,
+  html[data-loombus-theme] .loombus-floating-utility-button:hover {
+    transform: none !important;
+  }
+}

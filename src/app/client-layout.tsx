@@ -4,8 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import {
+  Activity,
   Bell,
   Bookmark,
+  Bot,
+  Clock3,
   Edit3,
   Home,
   LayoutDashboard,
@@ -13,9 +16,12 @@ import {
   FlaskConical,
   Menu,
   MessageCircle,
+  MessageSquareReply,
+  Palette,
   Search,
   Settings as SettingsIcon,
   ShieldCheck,
+  Sparkles,
   StickyNote,
   UserCircle,
   Users,
@@ -243,8 +249,8 @@ export default function ClientLayout({
 
   function mobileNavLinkClass(href: string) {
     return isActivePath(href)
-      ? "loombus-mobile-menu-link-active rounded-2xl border px-4 py-3 text-sm font-medium transition"
-      : "loombus-mobile-menu-link-inactive rounded-2xl border px-4 py-3 text-sm font-medium transition";
+      ? "loombus-mobile-menu-link-active loombus-mobile-menu-pill rounded-2xl border px-4 py-3 text-base font-semibold transition"
+      : "loombus-mobile-menu-link-inactive loombus-mobile-menu-pill rounded-2xl border px-4 py-3 text-base font-semibold transition";
   }
 
   function appTabClass(href: string) {
@@ -309,6 +315,52 @@ export default function ClientLayout({
     }
 
     return <Bell aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+  }
+
+
+  function MobileMenuItemIcon({
+    name,
+  }: {
+    name:
+      | "search"
+      | "people"
+      | "following"
+      | "messages"
+      | "saved"
+      | "stickies"
+      | "profile"
+      | "activity"
+      | "discussions"
+      | "replies"
+      | "reading"
+      | "dashboard"
+      | "settings"
+      | "labs"
+      | "premium"
+      | "ai"
+      | "admin";
+  }) {
+    const iconClass = "h-5 w-5 shrink-0";
+    const strokeWidth = 2.1;
+
+    if (name === "search") return <Search aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "people") return <Users aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "following") return <Activity aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "messages") return <MessageCircle aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "saved") return <Bookmark aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "stickies") return <StickyNote aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "profile") return <UserCircle aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "activity") return <Activity aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "discussions") return <MessageCircle aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "replies") return <MessageSquareReply aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "reading") return <Clock3 aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "dashboard") return <Home aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "settings") return <SettingsIcon aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "labs") return <FlaskConical aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "premium") return <Sparkles aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+    if (name === "ai") return <Bot aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
+
+    return <ShieldCheck aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
   }
 
   async function loadNotificationCount(
@@ -2078,26 +2130,32 @@ export default function ClientLayout({
 
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/search" onClick={closeMobileMenu} className={mobileNavLinkClass("/search")}>
-                    Search
+                    <MobileMenuItemIcon name="search" />
+                    <span>Search</span>
                   </Link>
 
                   <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
-                    People
+                    <MobileMenuItemIcon name="people" />
+                    <span>People</span>
                   </Link>
 
                   <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
-                    Following
+                    <MobileMenuItemIcon name="following" />
+                    <span>Following</span>
                   </Link>
 
                   <Link href="/messages" onClick={closeMobileMenu} className={mobileNavLinkClass("/messages")}>
-                    Messages
+                    <MobileMenuItemIcon name="messages" />
+                    <span>Messages</span>
                   </Link>
 
                   <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
-                    Saved
+                    <MobileMenuItemIcon name="saved" />
+                    <span>Saved</span>
                   </Link>
                   <Link href="/stickies" onClick={closeMobileMenu} className={mobileNavLinkClass("/stickies")}>
-                    Stickies
+                    <MobileMenuItemIcon name="stickies" />
+                    <span>Stickies</span>
                   </Link>
                 </div>
               </section>
@@ -2109,19 +2167,23 @@ export default function ClientLayout({
 
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/profile" onClick={closeMobileMenu} className={mobileNavLinkClass("/profile")}>
-                    Profile
+                    <MobileMenuItemIcon name="profile" />
+                    <span>Profile</span>
                   </Link>
 
                   <Link href="/my-activity" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-activity")}>
-                    My Activity
+                    <MobileMenuItemIcon name="activity" />
+                    <span>My Activity</span>
                   </Link>
 
                   <Link href="/my-discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-discussions")}>
-                    My Discussions
+                    <MobileMenuItemIcon name="discussions" />
+                    <span>My Discussions</span>
                   </Link>
 
                   <Link href="/my-replies" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-replies")}>
-                    My Replies
+                    <MobileMenuItemIcon name="replies" />
+                    <span>My Replies</span>
                   </Link>
                 </div>
               </section>
@@ -2133,11 +2195,13 @@ export default function ClientLayout({
 
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/reading-history" onClick={closeMobileMenu} className={mobileNavLinkClass("/reading-history")}>
-                    Reading History
+                    <MobileMenuItemIcon name="reading" />
+                    <span>Reading History</span>
                   </Link>
 
                   <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
-                    Home status
+                    <MobileMenuItemIcon name="dashboard" />
+                    <span>Home status</span>
                   </Link>
                 </div>
               </section>
@@ -2149,24 +2213,29 @@ export default function ClientLayout({
 
                 <div className="grid grid-cols-2 gap-2">
                   <Link href="/settings" onClick={closeMobileMenu} className={mobileNavLinkClass("/settings")}>
-                    Settings
+                    <MobileMenuItemIcon name="settings" />
+                    <span>Settings</span>
                   </Link>
 
                   <Link href="/labs" onClick={closeMobileMenu} className={mobileNavLinkClass("/labs")}>
-                    Labs
+                    <MobileMenuItemIcon name="labs" />
+                    <span>Labs</span>
                   </Link>
 
                   <Link href="/premium" onClick={closeMobileMenu} className={mobileNavLinkClass("/premium")}>
-                    Premium
+                    <MobileMenuItemIcon name="premium" />
+                    <span>Premium</span>
                   </Link>
 
                   <Link href="/ai-usage" onClick={closeMobileMenu} className={mobileNavLinkClass("/ai-usage")}>
-                    AI Usage
+                    <MobileMenuItemIcon name="ai" />
+                    <span>AI Usage</span>
                   </Link>
 
                   {isAdmin && (
                     <Link href="/admin" onClick={closeMobileMenu} className={mobileNavLinkClass("/admin")}>
-                      Admin
+                      <MobileMenuItemIcon name="admin" />
+                    <span>Admin</span>
                     </Link>
                   )}
                 </div>
@@ -2177,9 +2246,10 @@ export default function ClientLayout({
                   closeMobileMenu();
                   await handleLogout();
                 }}
-                className="loombus-mobile-menu-logout rounded-2xl border px-4 py-3 text-left text-sm font-medium transition"
+                className="loombus-mobile-menu-logout rounded-2xl border px-4 py-3 text-left text-base font-semibold transition"
               >
-                Logout
+                <LogOut aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.1} />
+                <span>Logout</span>
               </button>
             </div>
           </div>
@@ -2188,6 +2258,26 @@ export default function ClientLayout({
 
       {user && !mobileMenuOpen && (
         <>
+          <div className="loombus-floating-utility-stack fixed right-4 z-50 flex flex-col gap-2 md:hidden">
+            <Link
+              href="/settings"
+              aria-label="Open appearance settings"
+              title="Appearance"
+              className="loombus-floating-utility-button"
+            >
+              <Palette aria-hidden="true" className="h-5 w-5" strokeWidth={2.1} />
+            </Link>
+
+            <Link
+              href="/stickies"
+              aria-label="Open Stickies"
+              title="Stickies"
+              className="loombus-floating-utility-button"
+            >
+              <StickyNote aria-hidden="true" className="h-5 w-5" strokeWidth={2.1} />
+            </Link>
+          </div>
+
           <button
             type="button"
             onClick={() => setFloatingMessagesOpen((current) => !current)}
