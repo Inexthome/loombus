@@ -100,6 +100,30 @@ async function hasBlockRelationship(supabase: any, userId: string, otherUserId: 
   return Boolean(blocks && blocks.length > 0);
 }
 
+function getPrivateMessageAbuseError(text: string) {
+  const normalized = text
+    .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const directInsultWords =
+    "(?:ugly|stupid|dumb|idiot|idiotic|moron|worthless|shameful|ashamed|pathetic|disgusting|gross|trash|garbage|loser|fool|clown|nasty)";
+
+  const directAbusePatterns = [
+    new RegExp(`\\b(?:you are|you're|youre|u are|ur|you r)\\s+(?:so\\s+|such\\s+)?${directInsultWords}\\b`, "i"),
+    new RegExp(`\\b(?:you look|you sound|u look|u sound)\\s+(?:so\\s+)?${directInsultWords}\\b`, "i"),
+    new RegExp(`\\b(?:you|u)\\s+(?:are\\s+)?(?:a\\s+|an\\s+)?${directInsultWords}\\b`, "i"),
+    /\b(?:nobody likes you|everyone hates you|shame on you|shut up)\b/i,
+  ];
+
+  if (directAbusePatterns.some((pattern) => pattern.test(normalized))) {
+    return "Private messages cannot include direct name-calling, shaming, or personal insults. Please rewrite it respectfully.";
+  }
+
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   const supabase = getSupabaseForRequest(request);
   const { user, error } = await getCurrentUser(supabase);
@@ -132,6 +156,26 @@ export async function POST(request: NextRequest) {
   }
 
   if (rawBody) {
+    const privateMessageAbuseError = getPrivateMessageAbuseError(rawBody);
+
+    if (privateMessageAbuseError) {
+      await logRuleBasedSafetyEvent({
+        userId: user.id,
+        contentType: "reply",
+        content: rawBody,
+        message: privateMessageAbuseError,
+        targetId: conversationId,
+      });
+
+      return NextResponse.json(
+        {
+          error: privateMessageAbuseError,
+          code: "message_abusive_name_calling_blocked",
+        },
+        { status: 400 }
+      );
+    }
+
     const moderationError = validateContent(rawBody);
 
     if (moderationError) {
