@@ -1657,7 +1657,7 @@ export default function ClientLayout({
           </Link>
 
           <nav aria-label="Primary desktop navigation" className="flex flex-1 flex-col items-center gap-2">
-            <Link href="/" aria-label="Home" title="Home" aria-current={isActivePath("/") ? "page" : undefined} data-active={isActivePath("/") ? "true" : undefined} className={desktopRailLinkClass("/")}>
+            <Link href="/home" aria-label="Home" title="Home" aria-current={isActivePath("/home") ? "page" : undefined} data-active={isActivePath("/home") ? "true" : undefined} className={desktopRailLinkClass("/home")}>
               <Home aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Home" />
             </Link>
@@ -1773,7 +1773,7 @@ export default function ClientLayout({
               </button>
 
               <nav className="hidden items-center gap-5 text-sm text-zinc-400 md:flex">
-                <Link href="/" onClick={closeMoreMenu} className={navLinkClass("/")}>
+                <Link href="/home" onClick={closeMoreMenu} className={navLinkClass("/home")}>
                   Home
                 </Link>
 
@@ -2818,7 +2818,7 @@ export default function ClientLayout({
           }`}
         >
           <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-            <Link href="/" aria-label="Home" title="Home" onClick={closeMobileMenu} className={appTabClass("/")}>
+            <Link href="/home" aria-label="Home" title="Home" onClick={closeMobileMenu} className={appTabClass("/home")}>
               <MobileNavIcon name="home" />
             </Link>
 
