@@ -26,6 +26,10 @@ type ProfileRow = {
   identity_verified_at: string | null;
   legal_name_verified: boolean | null;
   identity_restriction_reason: string | null;
+  date_of_birth: string | null;
+  age_band: string | null;
+  teen_safety_mode: boolean | null;
+  guardian_required: boolean | null;
 };
 
 type EntitlementRow = {
@@ -75,6 +79,39 @@ function accountStatusClass(status: string | null | undefined) {
   return "border-zinc-800 text-zinc-400";
 }
 
+function normalizeAgeBand(value: string | null | undefined) {
+  if (
+    value === "unknown" ||
+    value === "under_13" ||
+    value === "teen" ||
+    value === "adult"
+  ) {
+    return value;
+  }
+
+  return "unknown";
+}
+
+function formatAgeBandLabel(value: string | null | undefined) {
+  const ageBand = normalizeAgeBand(value);
+
+  if (ageBand === "under_13") return "Under 13";
+  if (ageBand === "teen") return "Teen";
+  if (ageBand === "adult") return "Adult";
+
+  return "Unknown";
+}
+
+function ageBandClass(value: string | null | undefined) {
+  const ageBand = normalizeAgeBand(value);
+
+  if (ageBand === "under_13") return "border-red-900 text-red-300";
+  if (ageBand === "teen") return "border-amber-900 text-amber-300";
+  if (ageBand === "adult") return "border-emerald-900 text-emerald-300";
+
+  return "border-zinc-800 text-zinc-500";
+}
+
 function formatIdentityStatusLabel(status: IdentityVerificationStatus) {
   return status.replaceAll("_", " ");
 }
@@ -102,6 +139,7 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
   const [identityFilter, setIdentityFilter] = useState("all");
+  const [ageFilter, setAgeFilter] = useState("all");
   const [identityReasonByUserId, setIdentityReasonByUserId] = useState<Record<string, string>>({});
   const [workingIdentityUserId, setWorkingIdentityUserId] = useState<string | null>(null);
 
@@ -137,7 +175,7 @@ export default function AdminUsersPage() {
 
       const { data: profileRows, error: profileError } = await supabase
         .from("profiles")
-        .select("id, username, full_name, avatar_url, is_admin, account_status, identity_verification_status, identity_verification_provider, identity_verified_at, legal_name_verified, identity_restriction_reason")
+        .select("id, username, full_name, avatar_url, is_admin, account_status, identity_verification_status, identity_verification_provider, identity_verified_at, legal_name_verified, identity_restriction_reason, date_of_birth, age_band, teen_safety_mode, guardian_required")
         .order("username", { ascending: true });
 
       if (profileError) {
@@ -205,6 +243,9 @@ export default function AdminUsersPage() {
           profile.identity_verification_status
         );
         const identityDisplay = getIdentityVerificationDisplay(identityStatus);
+        const ageBand = normalizeAgeBand(profile.age_band);
+        const teenSafetyMode = Boolean(profile.teen_safety_mode);
+        const guardianRequired = Boolean(profile.guardian_required);
 
         return {
           profile,
@@ -214,6 +255,9 @@ export default function AdminUsersPage() {
           accountStatus,
           identityStatus,
           identityDisplay,
+          ageBand,
+          teenSafetyMode,
+          guardianRequired,
         };
       })
       .filter((row) => {
@@ -229,6 +273,23 @@ export default function AdminUsersPage() {
           return false;
         }
 
+        if (ageFilter === "teen_safety" && !row.teenSafetyMode) {
+          return false;
+        }
+
+        if (ageFilter === "guardian_required" && !row.guardianRequired) {
+          return false;
+        }
+
+        if (
+          ageFilter !== "all" &&
+          ageFilter !== "teen_safety" &&
+          ageFilter !== "guardian_required" &&
+          row.ageBand !== ageFilter
+        ) {
+          return false;
+        }
+
         if (!query) {
           return true;
         }
@@ -241,6 +302,10 @@ export default function AdminUsersPage() {
           row.identityStatus,
           row.profile.identity_verification_provider,
           row.profile.identity_restriction_reason,
+          row.ageBand,
+          row.teenSafetyMode ? "teen safety teen_safety_mode" : "",
+          row.guardianRequired ? "guardian required guardian_required" : "",
+          row.profile.date_of_birth ? "date of birth on file dob on file" : "date of birth missing",
           row.planKey,
           row.planDisplay.label,
           row.entitlement?.stripe_subscription_status,
@@ -253,7 +318,7 @@ export default function AdminUsersPage() {
 
         return searchable.includes(query);
       });
-  }, [profiles, entitlements, searchQuery, statusFilter, planFilter, identityFilter]);
+  }, [profiles, entitlements, searchQuery, statusFilter, planFilter, identityFilter, ageFilter]);
 
   const counts = useMemo(() => {
     const allRows = profiles.map((profile) => {
@@ -265,6 +330,9 @@ export default function AdminUsersPage() {
         identityStatus: normalizeIdentityVerificationStatus(
           profile.identity_verification_status
         ),
+        ageBand: normalizeAgeBand(profile.age_band),
+        teenSafetyMode: Boolean(profile.teen_safety_mode),
+        guardianRequired: Boolean(profile.guardian_required),
         hasStripeCustomer: Boolean(entitlement?.stripe_customer_id),
       };
     });
@@ -278,6 +346,9 @@ export default function AdminUsersPage() {
       restricted: allRows.filter((row) => row.accountStatus !== "active").length,
       identityVerified: allRows.filter((row) => row.identityStatus === "verified").length,
       identityUnverified: allRows.filter((row) => row.identityStatus === "unverified").length,
+      teenSafety: allRows.filter((row) => row.teenSafetyMode).length,
+      ageUnknown: allRows.filter((row) => row.ageBand === "unknown").length,
+      under13: allRows.filter((row) => row.ageBand === "under_13" || row.guardianRequired).length,
     };
   }, [profiles, entitlements]);
 
@@ -412,7 +483,7 @@ export default function AdminUsersPage() {
           </p>
         )}
 
-        <section className="mb-8 grid gap-4 md:grid-cols-4 lg:grid-cols-8">
+        <section className="mb-8 grid gap-4 md:grid-cols-4 lg:grid-cols-11">
           <Metric label="Users" value={counts.total} />
           <Metric label="Admins" value={counts.admins} />
           <Metric label="Premium" value={counts.premium} />
@@ -421,10 +492,13 @@ export default function AdminUsersPage() {
           <Metric label="Restricted" value={counts.restricted} />
           <Metric label="ID verified" value={counts.identityVerified} />
           <Metric label="Unverified" value={counts.identityUnverified} />
+          <Metric label="Teen Safety" value={counts.teenSafety} />
+          <Metric label="Age unknown" value={counts.ageUnknown} />
+          <Metric label="Under 13" value={counts.under13} />
         </section>
 
         <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="grid gap-4 lg:grid-cols-[1fr_220px_220px_220px]">
+          <div className="grid gap-4 xl:grid-cols-[1fr_200px_200px_200px_200px]">
             <label>
               <span className="mb-2 block text-sm text-zinc-400">Search users</span>
               <input
@@ -483,6 +557,23 @@ export default function AdminUsersPage() {
                 <option value="restricted">Restricted</option>
               </select>
             </label>
+
+            <label>
+              <span className="mb-2 block text-sm text-zinc-400">Age safety</span>
+              <select
+                value={ageFilter}
+                onChange={(event) => setAgeFilter(event.target.value)}
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+              >
+                <option value="all">All age safety</option>
+                <option value="unknown">Age unknown</option>
+                <option value="teen">Teen</option>
+                <option value="adult">Adult</option>
+                <option value="under_13">Under 13</option>
+                <option value="teen_safety">Teen Safety Mode</option>
+                <option value="guardian_required">Guardian required</option>
+              </select>
+            </label>
           </div>
 
           <p className="mt-4 text-sm text-zinc-600">
@@ -499,7 +590,7 @@ export default function AdminUsersPage() {
               </p>
             </div>
           ) : (
-            rows.map(({ profile, entitlement, planDisplay, accountStatus, identityStatus, identityDisplay }) => (
+            rows.map(({ profile, entitlement, planDisplay, accountStatus, identityStatus, identityDisplay, ageBand, teenSafetyMode, guardianRequired }) => (
               <article
                 key={profile.id}
                 className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6"
@@ -536,6 +627,22 @@ export default function AdminUsersPage() {
                       ID: {identityDisplay.label}
                     </span>
 
+                    <span className={`rounded-full border px-3 py-1 text-xs ${ageBandClass(ageBand)}`}>
+                      Age: {formatAgeBandLabel(ageBand)}
+                    </span>
+
+                    {teenSafetyMode && (
+                      <span className="rounded-full border border-amber-900 px-3 py-1 text-xs text-amber-300">
+                        Teen Safety
+                      </span>
+                    )}
+
+                    {guardianRequired && (
+                      <span className="rounded-full border border-red-900 px-3 py-1 text-xs text-red-300">
+                        Guardian required
+                      </span>
+                    )}
+
                     {profile.is_admin && (
                       <span className="rounded-full border border-violet-900 px-3 py-1 text-xs text-violet-300">
                         Admin
@@ -554,6 +661,10 @@ export default function AdminUsersPage() {
                   <Info label="Legal name" value={profile.legal_name_verified ? "Verified" : "Not verified"} />
                   <Info label="Identity verified at" value={formatOptionalDate(profile.identity_verified_at)} />
                   <Info label="Identity reason" value={profile.identity_restriction_reason ?? "—"} />
+                  <Info label="Age band" value={formatAgeBandLabel(ageBand)} />
+                  <Info label="Teen safety mode" value={teenSafetyMode ? "Enabled" : "No"} />
+                  <Info label="DOB on file" value={profile.date_of_birth ? "Yes" : "No"} />
+                  <Info label="Guardian required" value={guardianRequired ? "Yes" : "No"} />
                   <Info label="Stripe status" value={entitlement?.stripe_subscription_status ?? "—"} />
                   <Info label="Stripe customer" value={maskId(entitlement?.stripe_customer_id)} />
                   <Info label="Stripe subscription" value={maskId(entitlement?.stripe_subscription_id)} />
