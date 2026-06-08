@@ -1035,14 +1035,14 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
   }
 }
 
-/* Loombus shared shell effects */
-.loombus-page-canvas {
+/* Loombus authenticated Home shell effects */
+.loombus-home-canvas {
   background:
     radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--loombus-primary-bg) 8%, transparent), transparent 34rem),
     var(--loombus-bg);
 }
 
-.loombus-section-shell {
+.loombus-home-shell {
   position: relative;
   overflow: hidden;
   border-color: color-mix(in oklab, var(--loombus-border) 86%, var(--loombus-text) 14%);
@@ -1054,7 +1054,7 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
     inset 0 1px 0 color-mix(in oklab, white 72%, transparent);
 }
 
-.loombus-section-shell::before {
+.loombus-home-shell::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1065,19 +1065,19 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
   opacity: 0.55;
 }
 
-.loombus-section-shell > * {
+.loombus-home-shell > * {
   position: relative;
   z-index: 1;
 }
 
-.loombus-hero-shell {
+.loombus-home-hero-shell {
   box-shadow:
     0 34px 110px color-mix(in oklab, black 18%, transparent),
     inset 0 1px 0 color-mix(in oklab, white 80%, transparent);
 }
 
-.loombus-status-card,
-.loombus-action-tile {
+.loombus-home-status-card,
+.loombus-home-tile {
   border-color: color-mix(in oklab, var(--loombus-border) 88%, var(--loombus-text) 12%);
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--loombus-surface-muted) 92%, white 8%), var(--loombus-surface-muted));
@@ -1086,8 +1086,8 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
     inset 0 1px 0 color-mix(in oklab, white 64%, transparent);
 }
 
-.loombus-status-card,
-.loombus-action-tile {
+.loombus-home-status-card,
+.loombus-home-tile {
   transform: translateY(0);
   transition:
     transform 180ms ease,
@@ -1096,8 +1096,8 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
     background 180ms ease;
 }
 
-.loombus-status-card:hover,
-.loombus-action-tile:hover {
+.loombus-home-status-card:hover,
+.loombus-home-tile:hover {
   transform: translateY(-2px);
   border-color: color-mix(in oklab, var(--loombus-text-subtle) 72%, var(--loombus-border));
   box-shadow:
@@ -1105,7 +1105,7 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
     inset 0 1px 0 color-mix(in oklab, white 72%, transparent);
 }
 
-.loombus-primary-action-tile {
+.loombus-home-primary-tile {
   border-color: color-mix(in oklab, var(--loombus-primary-bg) 42%, black);
   background:
     radial-gradient(circle at 18% 0%, color-mix(in oklab, var(--loombus-primary-bg) 20%, transparent), transparent 18rem),
@@ -1117,7 +1117,7 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
     inset 0 1px 0 color-mix(in oklab, white 16%, transparent);
 }
 
-.loombus-primary-action-tile:hover {
+.loombus-home-primary-tile:hover {
   border-color: color-mix(in oklab, var(--loombus-primary-bg) 68%, white 10%);
   box-shadow:
     0 24px 70px color-mix(in oklab, black 34%, transparent),
@@ -1125,11 +1125,11 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
     inset 0 1px 0 color-mix(in oklab, white 22%, transparent);
 }
 
-.loombus-secondary-action-tile {
+.loombus-home-secondary-tile {
   color: var(--loombus-text);
 }
 
-.dark .loombus-section-shell {
+.dark .loombus-home-shell {
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--loombus-surface) 92%, white 3%), var(--loombus-surface)),
     var(--loombus-surface);
@@ -1138,19 +1138,11 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
     inset 0 1px 0 color-mix(in oklab, white 9%, transparent);
 }
 
-.dark .loombus-status-card,
-.dark .loombus-action-tile {
+.dark .loombus-home-status-card,
+.dark .loombus-home-tile {
   background:
     linear-gradient(180deg, color-mix(in oklab, var(--loombus-surface-muted) 88%, white 3%), var(--loombus-surface-muted));
   box-shadow:
     0 16px 44px color-mix(in oklab, black 34%, transparent),
     inset 0 1px 0 color-mix(in oklab, white 8%, transparent);
-}
-
-
-/* Loombus shell backward compatibility aliases */
-.loombus-home-canvas {
-  background:
-    radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--loombus-primary-bg) 8%, transparent), transparent 34rem),
-    var(--loombus-bg);
 }

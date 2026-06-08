@@ -346,9 +346,9 @@ export default function Home() {
     const greetingName = getGreetingName(profile, email);
 
     return (
-      <main className="loombus-page-canvas min-h-screen px-4 py-8 text-[var(--loombus-text)] sm:px-6 lg:py-12">
+      <main className="loombus-home-canvas min-h-screen px-4 py-8 text-[var(--loombus-text)] sm:px-6 lg:py-12">
         <div className="mx-auto max-w-6xl">
-          <section className="loombus-section-shell loombus-hero-shell rounded-[2rem] border p-6 sm:p-8 lg:p-10">
+          <section className="loombus-home-shell loombus-home-hero-shell rounded-[2rem] border p-6 sm:p-8 lg:p-10">
             <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
               Loombus Home
             </p>
@@ -364,7 +364,7 @@ export default function Home() {
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <Link
                 href="/messages"
-                className="loombus-status-card rounded-2xl border p-5 transition"
+                className="loombus-home-status-card rounded-2xl border p-5 transition"
               >
                 <p className="text-sm text-zinc-500">Messages</p>
                 <p className="mt-2 text-3xl font-semibold">{unreadMessageCount}</p>
@@ -373,7 +373,7 @@ export default function Home() {
 
               <Link
                 href="/notifications"
-                className="loombus-status-card rounded-2xl border p-5 transition"
+                className="loombus-home-status-card rounded-2xl border p-5 transition"
               >
                 <p className="text-sm text-zinc-500">Notifications</p>
                 <p className="mt-2 text-3xl font-semibold">{unreadNotificationCount}</p>
@@ -382,7 +382,7 @@ export default function Home() {
 
               <Link
                 href="/saved"
-                className="loombus-status-card rounded-2xl border p-5 transition"
+                className="loombus-home-status-card rounded-2xl border p-5 transition"
               >
                 <p className="text-sm text-zinc-500">Saved</p>
                 <p className="mt-2 text-3xl font-semibold">{savedCount}</p>
@@ -395,7 +395,7 @@ export default function Home() {
             {memberSections.map((section) => (
               <section
                 key={section.heading}
-                className="loombus-section-shell rounded-[2rem] border p-6 sm:p-8"
+                className="loombus-home-shell rounded-[2rem] border p-6 sm:p-8"
               >
                 <div className="mb-5">
                   <h2 className="text-2xl font-semibold tracking-tight">
@@ -411,10 +411,10 @@ export default function Home() {
                     <Link
                       key={card.href}
                       href={card.href}
-                      className={`loombus-action-tile rounded-2xl border p-5 transition ${
+                      className={`loombus-home-tile rounded-2xl border p-5 transition ${
                         card.primary
-                          ? "loombus-primary-action-tile"
-                          : "loombus-secondary-action-tile"
+                          ? "loombus-home-primary-tile"
+                          : "loombus-home-secondary-tile"
                       }`}
                     >
                       <h3 className="text-lg font-semibold">{card.title}</h3>
@@ -430,7 +430,7 @@ export default function Home() {
             ))}
           </div>
 
-          <section className="loombus-section-shell mt-8 rounded-[2rem] border p-6 sm:p-8 md:hidden">
+          <section className="loombus-home-shell mt-8 rounded-[2rem] border p-6 sm:p-8 md:hidden">
             <h2 className="text-2xl font-semibold tracking-tight">
               Quick shortcuts
             </h2>
@@ -440,7 +440,7 @@ export default function Home() {
                 <Link
                   key={shortcut.href}
                   href={shortcut.href}
-                  className="loombus-action-tile loombus-secondary-action-tile rounded-2xl border p-4 transition"
+                  className="loombus-home-tile loombus-home-secondary-tile rounded-2xl border p-4 transition"
                 >
                   <p className="font-semibold">{shortcut.title}</p>
                   <p className="mt-1 text-sm text-zinc-500">{shortcut.description}</p>
