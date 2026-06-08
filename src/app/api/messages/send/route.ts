@@ -137,9 +137,10 @@ export async function POST(request: NextRequest) {
     if (moderationError) {
       await logRuleBasedSafetyEvent({
         userId: user.id,
-        targetType: "private_message",
-        targetId: conversationId,
+        contentType: "reply",
+        content: rawBody,
         message: moderationError,
+        targetId: conversationId,
       });
 
       return NextResponse.json(
@@ -159,7 +160,8 @@ export async function POST(request: NextRequest) {
     if (aiSafetyReview.action === "block") {
       await logAiSafetyEvent({
         userId: user.id,
-        targetType: "private_message",
+        contentType: "reply",
+        content: rawBody,
         targetId: conversationId,
         review: aiSafetyReview,
       });
@@ -176,7 +178,8 @@ export async function POST(request: NextRequest) {
     if (aiSafetyReview.action === "warn") {
       await logAiSafetyEvent({
         userId: user.id,
-        targetType: "private_message",
+        contentType: "reply",
+        content: rawBody,
         targetId: conversationId,
         review: aiSafetyReview,
       });
