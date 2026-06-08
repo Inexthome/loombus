@@ -139,6 +139,7 @@ export default function ClientLayout({
   const [floatingTypingUserName, setFloatingTypingUserName] = useState("");
   const [floatingAttachmentFiles, setFloatingAttachmentFiles] = useState<File[]>([]);
   const [floatingAttachmentMessage, setFloatingAttachmentMessage] = useState("");
+  const [floatingAiAssistWorking, setFloatingAiAssistWorking] = useState<string | null>(null);
   const [floatingNewMessageOpen, setFloatingNewMessageOpen] = useState(false);
   const [floatingPeopleSearchResults, setFloatingPeopleSearchResults] = useState<FloatingPeopleSearchResult[]>([]);
   const [floatingPeopleSearchLoading, setFloatingPeopleSearchLoading] = useState(false);
@@ -1068,6 +1069,7 @@ export default function ClientLayout({
     setFloatingTypingUserName("");
     setFloatingAttachmentFiles([]);
     setFloatingAttachmentMessage("");
+    setFloatingAiAssistWorking(null);
     setFloatingSafetyOpen(false);
     setFloatingReportNotes("");
     setFloatingReportReason("harassment");
@@ -1144,6 +1146,7 @@ export default function ClientLayout({
     setFloatingTypingUserName("");
     setFloatingAttachmentFiles([]);
     setFloatingAttachmentMessage("");
+    setFloatingAiAssistWorking(null);
     setFloatingSafetyOpen(false);
     setFloatingReportNotes("");
     setFloatingReportReason("harassment");
@@ -1388,6 +1391,60 @@ export default function ClientLayout({
           name,
         },
       });
+  }
+
+  async function runFloatingAiAssist(mode: "clearer" | "warmer" | "shorter" | "rewrite") {
+    if (floatingAiAssistWorking) {
+      return;
+    }
+
+    const draft = floatingComposerText.trim();
+
+    if (draft.length < 3) {
+      setFloatingMessagesMessage("Write a message draft first.");
+      return;
+    }
+
+    setFloatingAiAssistWorking(mode);
+    setFloatingMessagesMessage("");
+
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token ?? "";
+
+    if (!accessToken) {
+      setFloatingAiAssistWorking(null);
+      setFloatingMessagesMessage("Log in to use AI message assist.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/messages/ai-assist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          text: draft,
+          mode,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setFloatingMessagesMessage(payload.error ?? "Unable to improve this message.");
+        setFloatingAiAssistWorking(null);
+        return;
+      }
+
+      setFloatingComposerText(String(payload.assistedText ?? draft));
+      setFloatingMessagesMessage("AI assist updated your draft.");
+    } catch {
+      setFloatingMessagesMessage("Unable to improve this message.");
+    }
+
+    setFloatingAiAssistWorking(null);
   }
 
   async function sendFloatingMessage() {
@@ -2345,6 +2402,29 @@ export default function ClientLayout({
                     )}
 
                     <div className="border-t border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        {([
+                          ["clearer", "Clearer"],
+                          ["warmer", "Warmer"],
+                          ["shorter", "Shorter"],
+                          ["rewrite", "Rewrite"],
+                        ] as const).map(([mode, label]) => (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => runFloatingAiAssist(mode)}
+                            disabled={Boolean(floatingAiAssistWorking) || floatingComposerText.trim().length < 3}
+                            className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {floatingAiAssistWorking === mode ? "Working..." : label}
+                          </button>
+                        ))}
+
+                        <span className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-subtle)]">
+                          Premium Plus AI
+                        </span>
+                      </div>
+
                       {floatingAttachmentFiles.length > 0 && (
                         <div className="mb-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3">
                           <div className="mb-2 flex items-center justify-between gap-3">
