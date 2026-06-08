@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { validateContent } from "@/lib/moderation/content";
-import { getAiSafetyErrorPayload, reviewContentSafety } from "@/lib/moderation/ai-safety";
-import { logAiSafetyEvent, logRuleBasedSafetyEvent } from "@/lib/moderation/safety-events";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 
 const FREE_REPLY_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const PREMIUM_REPLY_EDIT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -132,36 +130,23 @@ export async function POST(request: NextRequest) {
       return jsonError("Please enter a reply.", 400);
     }
 
-    const moderationError = validateContent(content);
-
-    if (moderationError) {
-      await logRuleBasedSafetyEvent({
-        userId: user.id,
-        contentType: "reply",
-        content,
-        message: moderationError,
-        targetId: replyId,
-      });
-
-      return jsonError(moderationError, 400);
-    }
-
-    const aiSafetyReview = await reviewContentSafety({
+    const safetyDecision = await reviewLoombusSafety({
+      userId: user.id,
       content,
-      contentType: "reply",
+      mode: "public_reply",
+      targetId: replyId,
     });
 
-    if (aiSafetyReview.action !== "allow") {
-      await logAiSafetyEvent({
-        userId: user.id,
-        contentType: "reply",
-        content,
-        review: aiSafetyReview,
-        targetId: replyId,
-      });
-
+    if (!safetyDecision.allowed) {
       return NextResponse.json(
-        getAiSafetyErrorPayload(aiSafetyReview),
+        {
+          error:
+            safetyDecision.message ??
+            "This content appears to violate Loombus safety rules. Please revise before posting.",
+          code: safetyDecision.code ?? "content_safety_blocked",
+          category: safetyDecision.category,
+          provider: safetyDecision.provider,
+        },
         { status: 400 }
       );
     }

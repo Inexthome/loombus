@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { validateContent } from "@/lib/moderation/content";
-import { getAiSafetyErrorPayload, reviewContentSafety } from "@/lib/moderation/ai-safety";
-import { logAiSafetyEvent, logRuleBasedSafetyEvent } from "@/lib/moderation/safety-events";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 import { normalizeRealityLens } from "@/lib/reality-lenses";
 import { normalizePurposeLane } from "@/lib/purpose-lanes";
 import { normalizeDiscussionTags } from "@/lib/discussion-tags";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotifications } from "@/lib/notifications";
 import { validatePublicProfileName } from "@/lib/profile-name-quality";
 
@@ -296,39 +294,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const moderationError = validateContent(content, {
+    const safetyDecision = await reviewLoombusSafety({
+      userId: user.id,
+      content,
+      mode: "public_content",
+      targetId: null,
       maxLength: maxDiscussionLength,
     });
 
-    if (moderationError) {
-      await logRuleBasedSafetyEvent({
-        userId: user.id,
-        contentType: "discussion",
-        content,
-        message: moderationError,
-      });
-
+    if (!safetyDecision.allowed) {
       return NextResponse.json(
-        { error: moderationError },
-        { status: 400 }
-      );
-    }
-
-    const aiSafetyReview = await reviewContentSafety({
-      content,
-      contentType: "discussion",
-    });
-
-    if (aiSafetyReview.action !== "allow") {
-      await logAiSafetyEvent({
-        userId: user.id,
-        contentType: "discussion",
-        content,
-        review: aiSafetyReview,
-      });
-
-      return NextResponse.json(
-        getAiSafetyErrorPayload(aiSafetyReview),
+        {
+          error:
+            safetyDecision.message ??
+            "This content appears to violate Loombus safety rules. Please revise before posting.",
+          code: safetyDecision.code ?? "content_safety_blocked",
+          category: safetyDecision.category,
+          provider: safetyDecision.provider,
+        },
         { status: 400 }
       );
     }

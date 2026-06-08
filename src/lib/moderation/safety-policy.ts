@@ -11,6 +11,7 @@ import {
 
 export type LoombusSafetyMode =
   | "public_content"
+  | "public_reply"
   | "private_message"
   | "profile_text";
 
@@ -69,7 +70,11 @@ function getPrivateMessageAbuseError(text: string) {
   return null;
 }
 
-function getRuleBasedSafetyError(text: string, mode: LoombusSafetyMode) {
+function getRuleBasedSafetyError(
+  text: string,
+  mode: LoombusSafetyMode,
+  maxLength?: number
+) {
   if (mode === "private_message") {
     const privateMessageError = getPrivateMessageAbuseError(text);
 
@@ -81,7 +86,10 @@ function getRuleBasedSafetyError(text: string, mode: LoombusSafetyMode) {
     }
   }
 
-  const moderationError = validateContent(text);
+  const moderationError = validateContent(
+    text,
+    typeof maxLength === "number" ? { maxLength } : {}
+  );
 
   if (moderationError) {
     return {
@@ -105,11 +113,13 @@ export async function reviewLoombusSafety({
   content,
   mode,
   targetId = null,
+  maxLength,
 }: {
   userId: string;
   content: string;
   mode: LoombusSafetyMode;
   targetId?: string | null;
+  maxLength?: number;
 }): Promise<LoombusSafetyDecision> {
   const cleanContent = content.trim();
 
@@ -120,7 +130,11 @@ export async function reviewLoombusSafety({
     };
   }
 
-  const ruleBasedError = getRuleBasedSafetyError(cleanContent, mode);
+  const ruleBasedError = getRuleBasedSafetyError(
+    cleanContent,
+    mode,
+    maxLength
+  );
 
   if (ruleBasedError) {
     await logRuleBasedSafetyEvent({
