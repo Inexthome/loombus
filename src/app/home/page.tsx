@@ -176,30 +176,33 @@ export default function Home() {
 
     async function checkAuthState() {
       try {
-        const { data, error } = await withTimeout(
-          supabase.auth.getUser(),
-          "Home authentication check"
+        const { data: sessionData, error: sessionError } = await withTimeout(
+          supabase.auth.getSession(),
+          "Home session check"
         );
 
         if (!isMounted) {
           return;
         }
 
-        if (error || !data.user) {
+        const session = sessionData.session;
+        const currentUser = session?.user ?? null;
+
+        if (sessionError || !currentUser) {
           setEmail(null);
           setProfile(null);
           setAuthState("logged_out");
           return;
         }
 
-        setEmail(data.user.email ?? null);
+        setEmail(currentUser.email ?? null);
 
-        const session = await supabase.auth.getSession();
+        const accessToken = session?.access_token ?? "";
 
-        if (session.data.session?.access_token) {
+        if (accessToken) {
           fetch("/api/messages/unread-count", {
             headers: {
-              Authorization: `Bearer ${session.data.session.access_token}`,
+              Authorization: `Bearer ${accessToken}`,
             },
           })
             .then((response) => response.ok ? response.json() : null)
@@ -250,7 +253,7 @@ export default function Home() {
           supabase
             .from("profiles")
             .select("full_name, username")
-            .eq("id", data.user.id)
+            .eq("id", currentUser.id)
             .maybeSingle(),
           "Home profile check"
         );
