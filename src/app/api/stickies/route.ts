@@ -218,6 +218,87 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  if (itemType === "saved") {
+    const bookmarkId = getDiscussionIdFromInput(body.bookmarkId ?? body.source);
+
+    if (!bookmarkId) {
+      return jsonError("Missing saved discussion ID.");
+    }
+
+    const { data: bookmark, error: bookmarkError } = await context.supabase
+      .from("bookmarks")
+      .select("id, discussion_id, private_note")
+      .eq("id", bookmarkId)
+      .eq("user_id", context.user.id)
+      .maybeSingle();
+
+    if (bookmarkError) {
+      return jsonError(bookmarkError.message, 500);
+    }
+
+    if (!bookmark?.discussion_id) {
+      return jsonError("Saved discussion not found.", 404);
+    }
+
+    const { data: discussion, error: discussionError } = await context.supabase
+      .from("discussions")
+      .select("id, title, topic, body")
+      .eq("id", bookmark.discussion_id)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (discussionError) {
+      return jsonError(discussionError.message, 500);
+    }
+
+    if (!discussion) {
+      return jsonError("Discussion not found.", 404);
+    }
+
+    const { count } = await context.supabase
+      .from("sticky_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.user.id);
+
+    const cleanBody = stripHtml(discussion.body ?? "");
+    const notePreview = stripHtml(bookmark.private_note ?? "");
+    const subtitle = [
+      "Saved discussion",
+      discussion.topic,
+      notePreview ? `Note: ${notePreview.slice(0, 140)}` : cleanBody.slice(0, 160),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+    const { data: sticky, error: insertError } = await context.supabase
+      .from("sticky_items")
+      .upsert(
+        {
+          user_id: context.user.id,
+          item_type: "saved",
+          source_key: bookmark.id,
+          title: discussion.title,
+          subtitle,
+          href: `/discussions/${discussion.id}`,
+          position: count ?? 0,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id,item_type,source_key",
+        }
+      )
+      .select("id, user_id, item_type, source_key, title, subtitle, href, position, created_at, updated_at")
+      .single();
+
+    if (insertError) {
+      return jsonError(insertError.message, 500);
+    }
+
+    return NextResponse.json({
+      sticky,
+    });
+  }
+
   if (itemType === "topic") {
     const topic = getCleanTopic(body.topic ?? body.source);
 
