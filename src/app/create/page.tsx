@@ -1262,9 +1262,9 @@ export default function CreatePage() {
   }
 
   function getDiscussionModeShellClass(isActive: boolean) {
-    return `min-h-[8.75rem] rounded-[1.45rem] border p-4 text-left transition ${
+    return `rounded-[1.5rem] border p-4 text-left transition active:scale-[0.99] ${
       isActive
-        ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-xl shadow-black/10"
+        ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-lg shadow-black/10"
         : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-strong)] hover:text-[var(--loombus-text)]"
     }`;
   }
@@ -1760,7 +1760,7 @@ export default function CreatePage() {
                         className={getDiscussionModeShellClass(modeActive)}
                         aria-pressed={modeActive}
                       >
-                        <span className="block text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
+                        <span className="block text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
                           {mode.value === "open_discussion"
                             ? "Open"
                             : mode.value === "research_question"
@@ -1770,11 +1770,11 @@ export default function CreatePage() {
                                 : "Debate"}
                         </span>
 
-                        <span className="mt-5 block text-xl font-semibold leading-tight tracking-tight text-[var(--loombus-text)]">
+                        <span className="mt-2 block text-xl font-semibold leading-tight tracking-tight text-[var(--loombus-text)]">
                           {mode.label}
                         </span>
 
-                        <span className="mt-2 block text-sm font-medium leading-snug text-[var(--loombus-text-muted)]">
+                        <span className="mt-2 block text-xs font-medium leading-snug text-[var(--loombus-text-muted)]">
                           {getDiscussionModeShortDescription(mode.value)}
                         </span>
                       </button>
