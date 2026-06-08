@@ -51,6 +51,20 @@ function withTimeout<T>(
   });
 }
 
+async function waitForHomeSession(maxAttempts = 20) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const { data } = await supabase.auth.getSession();
+
+    if (data.session) {
+      return data.session;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  return null;
+}
+
 const memberSections = [
   {
     heading: "Create and read",
@@ -163,11 +177,9 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
   const [nativeIosApp, setNativeIosApp] = useState(false);
-  const [currentPath, setCurrentPath] = useState("");
 
   useEffect(() => {
     setNativeIosApp(isIosNativeApp());
-    setCurrentPath(window.location.pathname);
   }, []);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -180,8 +192,6 @@ export default function Home() {
       if (session?.user) {
         setEmail(session.user.email ?? null);
         setAuthState("logged_in");
-      } else if (window.location.pathname === "/home") {
-        window.location.replace("/login?next=/home");
       } else {
         setEmail(null);
         setProfile(null);
@@ -199,27 +209,21 @@ export default function Home() {
 
     async function checkAuthState() {
       try {
-        const { data: sessionData, error: sessionError } = await withTimeout(
-          supabase.auth.getSession(),
-          "Home session check"
+        const session = await withTimeout(
+          waitForHomeSession(),
+          "Home session check",
+          7000
         );
 
         if (!isMounted) {
           return;
         }
 
-        const session = sessionData.session;
         const currentUser = session?.user ?? null;
 
-        if (sessionError || !currentUser) {
+        if (!currentUser) {
           setEmail(null);
           setProfile(null);
-
-          if (window.location.pathname === "/home") {
-            window.location.replace("/login?next=/home");
-            return;
-          }
-
           setAuthState("logged_out");
           return;
         }
