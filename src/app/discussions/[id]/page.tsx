@@ -410,12 +410,12 @@ function StructuredDiscussionCard({ discussion }: { discussion: Discussion }) {
   );
 
   return (
-    <section className="rounded-3xl border border-zinc-900 bg-zinc-950/70 p-5">
+    <section className="rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 text-[color:var(--loombus-text)]">
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs font-semibold text-zinc-300">
+        <span className="rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-muted-surface)] px-3 py-1 text-xs font-semibold text-[color:var(--loombus-text)]">
           {getDiscussionModeLabel(discussion.discussion_type)}
         </span>
-        <span className="text-xs text-zinc-600">
+        <span className="text-xs text-[color:var(--loombus-muted-text)]">
           Structured discussion mode
         </span>
       </div>
@@ -423,11 +423,11 @@ function StructuredDiscussionCard({ discussion }: { discussion: Discussion }) {
       {sections.length > 0 && (
         <div className="grid gap-3">
           {sections.map(([label, value]) => (
-            <div key={label} className="rounded-2xl border border-zinc-900 bg-black/30 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+            <div key={label} className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-muted-surface)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--loombus-muted-text)]">
                 {label}
               </p>
-              <div className="mt-2 text-sm leading-6 text-zinc-300">
+              <div className="mt-2 text-sm leading-6 text-[color:var(--loombus-text)]">
                 <MentionText text={String(value)} />
               </div>
             </div>
