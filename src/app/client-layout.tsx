@@ -87,8 +87,8 @@ export default function ClientLayout({
 
   function navLinkClass(href: string) {
     return isActivePath(href)
-      ? "text-white transition hover:text-white"
-      : "transition hover:text-white";
+      ? "text-[var(--loombus-text)] transition hover:text-[var(--loombus-text)]"
+      : "text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]";
   }
 
   function mobileNavLinkClass(href: string) {
@@ -113,18 +113,18 @@ export default function ClientLayout({
 
     if (emphasis) {
       return active
-        ? "group relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-black shadow-2xl shadow-white/10 transition"
-        : "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-800 bg-zinc-950 text-zinc-300 transition hover:border-zinc-600 hover:text-white";
+        ? "group relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-2xl shadow-black/10 transition"
+        : "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]";
     }
 
     return active
-      ? "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-700 bg-zinc-900 text-white shadow-xl shadow-black/20 transition"
-      : "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent text-zinc-500 transition hover:border-zinc-800 hover:bg-zinc-950 hover:text-white";
+      ? "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text)] shadow-xl shadow-black/10 transition"
+      : "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]";
   }
 
   function DesktopRailTooltip({ label }: { label: string }) {
     return (
-      <span className="pointer-events-none absolute left-[3.65rem] z-50 whitespace-nowrap rounded-full border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-300 opacity-0 shadow-2xl transition group-hover:opacity-100">
+      <span className="pointer-events-none absolute left-[3.65rem] z-50 whitespace-nowrap rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-1.5 text-xs text-[var(--loombus-text)] opacity-0 shadow-2xl shadow-black/10 transition group-hover:opacity-100">
         {label}
       </span>
     );
@@ -133,8 +133,8 @@ export default function ClientLayout({
   function appMenuButtonClass() {
     return `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2.5 text-[11px] font-medium transition ${
       mobileMenuOpen
-        ? "border-white bg-white text-black shadow-lg shadow-white/10"
-        : "border-transparent text-zinc-500 hover:border-zinc-800 hover:bg-zinc-950 hover:text-white"
+        ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-lg shadow-black/10"
+        : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
     }`;
   }
 
@@ -570,15 +570,15 @@ export default function ClientLayout({
   }
 
   return (
-    <div className="min-h-screen bg-black text-white antialiased">
+    <div className="min-h-screen bg-[var(--loombus-bg)] text-[var(--loombus-text)] antialiased">
       {/* Desktop Signal Rail: U2 app-shell foundation. Mobile keeps the existing floating top/bottom shell. */}
       {user && (
-        <aside className="loombus-desktop-rail fixed inset-y-0 left-0 z-40 hidden w-24 border-r border-zinc-900 bg-black/95 px-3 py-4 backdrop-blur-xl md:flex md:flex-col md:items-center">
+        <aside className="loombus-desktop-rail fixed inset-y-0 left-0 z-40 hidden w-24 border-r border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 px-3 py-4 backdrop-blur-xl md:flex md:flex-col md:items-center">
           <Link
             href="/"
             aria-label="Loombus home"
             title="Loombus"
-            className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-zinc-900 bg-zinc-950 transition hover:border-zinc-700"
+            className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] transition hover:border-[var(--loombus-text-subtle)]"
           >
             <img
               src="/assets/brand/loombus-mark-transparent.png"
@@ -627,7 +627,7 @@ export default function ClientLayout({
               <span className="relative">
                 <Bell aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
                 {notificationCount > 0 && (
-                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-white px-1 text-center text-[9px] font-semibold leading-4 text-black">
+                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-[var(--loombus-primary-bg)] px-1 text-center text-[9px] font-semibold leading-4 text-[var(--loombus-primary-text)]">
                     {notificationCount > 9 ? "9+" : notificationCount}
                   </span>
                 )}
@@ -669,7 +669,7 @@ export default function ClientLayout({
               onClick={handleLogout}
               aria-label="Logout"
               title="Logout"
-              className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent text-zinc-600 transition hover:border-red-950 hover:bg-red-950/20 hover:text-red-300"
+              className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent text-[var(--loombus-text-subtle)] transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-500"
             >
               <LogOut aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Logout" />
@@ -723,7 +723,7 @@ export default function ClientLayout({
                 <Link href="/notifications" onClick={closeMoreMenu} className={navLinkClass("/notifications")}>
                   Alerts
                   {notificationCount > 0 && (
-                    <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs text-black">
+                    <span className="ml-2 rounded-full bg-[var(--loombus-primary-bg)] px-2 py-0.5 text-xs text-[var(--loombus-primary-text)]">
                       {notificationCount}
                     </span>
                   )}
@@ -737,61 +737,61 @@ export default function ClientLayout({
                     type="button"
                     onClick={() => setMoreMenuOpen((current) => !current)}
                     aria-expanded={moreMenuOpen}
-                    className="rounded-full border border-zinc-800 px-4 py-2 text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                    className="rounded-full border border-[var(--loombus-border)] px-4 py-2 text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                   >
                     More
                   </button>
 
                   {moreMenuOpen && (
-                    <div className="absolute right-0 z-50 mt-3 w-60 rounded-2xl border border-zinc-800 bg-zinc-950 p-2 shadow-2xl">
-                      <p className="px-4 py-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                    <div className="absolute right-0 z-50 mt-3 w-60 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-2 shadow-2xl shadow-black/10">
+                      <p className="px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
                         Explore
                       </p>
 
-                      <Link href="/search" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/search" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Search
                       </Link>
-                      <Link href="/people" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/people" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         People
                       </Link>
-                      <Link href="/following" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/following" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Following
                       </Link>
-                      <Link href="/messages" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/messages" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Messages
                       </Link>
-                      <Link href="/saved" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/saved" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Saved
                       </Link>
-                      <Link href="/stickies" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/stickies" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Stickies
                       </Link>
 
-                      <p className="mt-2 px-4 py-2 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                      <p className="mt-2 px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
                         Account
                       </p>
 
-                      <Link href="/dashboard" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/dashboard" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Home status
                       </Link>
-                      <Link href="/my-activity" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/my-activity" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         My Activity
                       </Link>
-                      <Link href="/profile" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/profile" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Profile
                       </Link>
-                      <Link href="/labs" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/labs" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Labs
                       </Link>
-                      <Link href="/settings" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/settings" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Settings
                       </Link>
-                      <Link href="/premium" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                      <Link href="/premium" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                         Premium
                       </Link>
 
                       {isAdmin && (
-                        <Link href="/admin" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 transition hover:bg-zinc-900 hover:text-white">
+                        <Link href="/admin" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
                           Admin
                         </Link>
                       )}
@@ -801,7 +801,7 @@ export default function ClientLayout({
                           closeMoreMenu();
                           await handleLogout();
                         }}
-                        className="mt-2 block w-full rounded-xl border border-zinc-800 px-4 py-3 text-left text-zinc-400 transition hover:border-zinc-700 hover:bg-zinc-900 hover:text-white"
+                        className="mt-2 block w-full rounded-xl border border-[var(--loombus-border)] px-4 py-3 text-left text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                       >
                         Logout
                       </button>
