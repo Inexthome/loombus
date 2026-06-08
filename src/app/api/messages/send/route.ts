@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
-import { validateContent } from "@/lib/moderation/content";
-import { getAiSafetyErrorPayload, reviewContentSafety } from "@/lib/moderation/ai-safety";
-import { logAiSafetyEvent, logRuleBasedSafetyEvent } from "@/lib/moderation/safety-events";
+import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotification } from "@/lib/notifications";
 import { logAuditEvent } from "@/lib/audit-log";
 
@@ -100,38 +98,6 @@ async function hasBlockRelationship(supabase: any, userId: string, otherUserId: 
   return Boolean(blocks && blocks.length > 0);
 }
 
-function getPrivateMessageAbuseError(text: string) {
-  const normalized = text
-    .toLowerCase()
-    .replace(/[’']/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  const directInsultWords =
-    "(?:ugly|stupid|dumb|idiot|idiotic|moron|worthless|shameful|ashamed|pathetic|disgusting|gross|trash|garbage|loser|fool|clown|nasty|weak|weirdo|creep|evil|horrible)";
-
-  const severeDirectProfanityWords =
-    "(?:motherfucker|mfer|mf|fucker|fuckface|fuckhead|shithead|asshole|arsehole|bitch|bastard|cunt|dickhead|prick|piece of shit|piece-of-shit)";
-
-  const standaloneProfanityWords =
-    "(?:fuck|fucking|fucked|fucker|shit|bullshit|motherfucker|mfer|mf|asshole|bitch|bastard|cunt|dickhead|prick)";
-
-  const directAbusePatterns = [
-    new RegExp(`\\b(?:you are|you're|youre|u are|ur|you r)\\s+(?:so\\s+|such\\s+)?(?:a\\s+|an\\s+)?(?:${directInsultWords}|${severeDirectProfanityWords})\\b`, "i"),
-    new RegExp(`\\b(?:you look|you sound|u look|u sound)\\s+(?:so\\s+)?(?:${directInsultWords}|${severeDirectProfanityWords})\\b`, "i"),
-    new RegExp(`\\b(?:you|u)\\s+(?:are\\s+)?(?:a\\s+|an\\s+)?(?:${directInsultWords}|${severeDirectProfanityWords})\\b`, "i"),
-    new RegExp(`\\b(?:${severeDirectProfanityWords})\\b`, "i"),
-    new RegExp(`\\b(?:${standaloneProfanityWords})\\b`, "i"),
-    /\b(?:nobody likes you|everyone hates you|shame on you|shut up)\b/i,
-  ];
-
-  if (directAbusePatterns.some((pattern) => pattern.test(normalized))) {
-    return "Private messages cannot include profanity, direct name-calling, shaming, or personal insults. Please rewrite it respectfully.";
-  }
-
-  return null;
-}
-
 export async function POST(request: NextRequest) {
   const supabase = getSupabaseForRequest(request);
   const { user, error } = await getCurrentUser(supabase);
@@ -164,79 +130,28 @@ export async function POST(request: NextRequest) {
   }
 
   if (rawBody) {
-    const privateMessageAbuseError = getPrivateMessageAbuseError(rawBody);
-
-    if (privateMessageAbuseError) {
-      await logRuleBasedSafetyEvent({
-        userId: user.id,
-        contentType: "reply",
-        content: rawBody,
-        message: privateMessageAbuseError,
-        targetId: conversationId,
-      });
-
-      return NextResponse.json(
-        {
-          error: privateMessageAbuseError,
-          code: "message_abusive_name_calling_blocked",
-        },
-        { status: 400 }
-      );
-    }
-
-    const moderationError = validateContent(rawBody);
-
-    if (moderationError) {
-      await logRuleBasedSafetyEvent({
-        userId: user.id,
-        contentType: "reply",
-        content: rawBody,
-        message: moderationError,
-        targetId: conversationId,
-      });
-
-      return NextResponse.json(
-        {
-          error: moderationError,
-          code: "message_safety_blocked",
-        },
-        { status: 400 }
-      );
-    }
-
-    const aiSafetyReview = await reviewContentSafety({
+    const safetyDecision = await reviewLoombusSafety({
+      userId: user.id,
       content: rawBody,
-      contentType: "reply",
+      mode: "private_message",
+      targetId: conversationId,
     });
 
-    if (aiSafetyReview.action === "block") {
-      await logAiSafetyEvent({
-        userId: user.id,
-        contentType: "reply",
-        content: rawBody,
-        targetId: conversationId,
-        review: aiSafetyReview,
-      });
-
+    if (!safetyDecision.allowed) {
       return NextResponse.json(
         {
-          ...getAiSafetyErrorPayload(aiSafetyReview),
-          code: "message_safety_blocked",
+          error:
+            safetyDecision.message ??
+            "This message appears to violate Loombus safety rules. Please revise it before sending.",
+          code: safetyDecision.code ?? "message_safety_blocked",
+          category: safetyDecision.category,
+          provider: safetyDecision.provider,
         },
         { status: 400 }
       );
     }
-
-    if (aiSafetyReview.action === "warn") {
-      await logAiSafetyEvent({
-        userId: user.id,
-        contentType: "reply",
-        content: rawBody,
-        targetId: conversationId,
-        review: aiSafetyReview,
-      });
-    }
   }
+
 
   const { data: senderMembership, error: senderMembershipError } = await supabase
     .from("private_conversation_members")
