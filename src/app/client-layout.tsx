@@ -123,6 +123,7 @@ export default function ClientLayout({
   const [navProfile, setNavProfile] = useState<NavProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [messageUnreadCount, setMessageUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [floatingMessagesOpen, setFloatingMessagesOpen] = useState(false);
@@ -666,6 +667,32 @@ export default function ClientLayout({
     return getFloatingConversationName(conversation).charAt(0).toUpperCase();
   }
 
+  async function loadMessageUnreadCount() {
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token ?? "";
+
+    if (!accessToken) {
+      setMessageUnreadCount(0);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/messages/unread-count", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        setMessageUnreadCount(Number(payload.unreadCount ?? 0));
+      }
+    } catch {
+      // Keep the last known unread count.
+    }
+  }
+
   async function loadFloatingConversations() {
     if (floatingMessagesLoading) {
       return;
@@ -707,17 +734,45 @@ export default function ClientLayout({
   }
 
   useEffect(() => {
+    if (!user) {
+      setMessageUnreadCount(0);
+      return;
+    }
+
+    loadMessageUnreadCount();
+
+    const unreadInterval = window.setInterval(() => {
+      loadMessageUnreadCount();
+    }, 15000);
+
+    return () => {
+      window.clearInterval(unreadInterval);
+    };
+  }, [user]);
+
+  useEffect(() => {
     if (!user || !floatingMessagesOpen) {
       return;
     }
 
+    loadMessageUnreadCount();
     loadFloatingConversations();
   }, [user, floatingMessagesOpen]);
 
   useEffect(() => {
     function handleMessagesChanged() {
-      if (user && floatingMessagesOpen) {
+      if (!user) {
+        return;
+      }
+
+      loadMessageUnreadCount();
+
+      if (floatingMessagesOpen) {
         loadFloatingConversations();
+
+        if (selectedFloatingConversationId) {
+          loadFloatingThread(selectedFloatingConversationId);
+        }
       }
     }
 
@@ -726,7 +781,7 @@ export default function ClientLayout({
     return () => {
       window.removeEventListener("loombus:messages-changed", handleMessagesChanged);
     };
-  }, [user, floatingMessagesOpen]);
+  }, [user, floatingMessagesOpen, selectedFloatingConversationId]);
 
   useEffect(() => {
     if (!user || !floatingMessagesOpen) {
@@ -734,6 +789,7 @@ export default function ClientLayout({
     }
 
     const refreshInterval = window.setInterval(() => {
+      loadMessageUnreadCount();
       loadFloatingConversations();
 
       if (selectedFloatingConversationId) {
@@ -989,9 +1045,13 @@ export default function ClientLayout({
     );
   });
 
-  const floatingUnreadCount = floatingConversations.filter(
+  const floatingConversationUnreadCount = floatingConversations.filter(
     (conversation) => conversation.hasUnread
   ).length;
+  const floatingUnreadCount = Math.max(
+    messageUnreadCount,
+    floatingConversationUnreadCount
+  );
 
   const selectedFloatingConversation = selectedFloatingConversationId
     ? floatingConversations.find((conversation) => conversation.id === selectedFloatingConversationId) ?? null
@@ -1060,6 +1120,7 @@ export default function ClientLayout({
         )
       );
 
+      await loadMessageUnreadCount();
       window.dispatchEvent(new Event("loombus:messages-changed"));
     } catch {
       setFloatingThreadMessages([]);
@@ -1287,6 +1348,7 @@ export default function ClientLayout({
 
       await loadFloatingThread(selectedFloatingConversationId);
       await loadFloatingConversations();
+      await loadMessageUnreadCount();
       window.dispatchEvent(new Event("loombus:messages-changed"));
     } catch {
       setFloatingMessagesMessage("Unable to send message.");
