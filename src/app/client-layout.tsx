@@ -1856,7 +1856,7 @@ export default function ClientLayout({
             onClick={() => setFloatingMessagesOpen((current) => !current)}
             aria-label={floatingMessagesOpen ? "Close messages" : "Open messages"}
             aria-expanded={floatingMessagesOpen}
-            className="fixed bottom-6 right-6 z-50 hidden h-14 w-14 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-2xl shadow-black/20 transition hover:opacity-90 md:flex"
+            className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] right-4 z-50 flex h-13 w-13 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-2xl shadow-black/20 transition hover:opacity-90 md:bottom-6 md:right-6 md:h-14 md:w-14"
           >
             <span className="relative">
               <MessageCircle aria-hidden="true" className="h-6 w-6" strokeWidth={2.05} />
@@ -1871,7 +1871,7 @@ export default function ClientLayout({
           {floatingMessagesOpen && (
             <aside
               aria-label="Messages preview"
-              className="fixed bottom-24 right-6 z-50 hidden w-[26rem] max-w-[calc(100vw-8rem)] overflow-hidden rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/25 md:block"
+              className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+1rem)] top-[calc(env(safe-area-inset-top)+1rem)] z-50 flex flex-col overflow-hidden rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/25 md:inset-auto md:bottom-24 md:right-6 md:block md:w-[26rem] md:max-w-[calc(100vw-8rem)]"
             >
               <div className="border-b border-[var(--loombus-border)] p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
@@ -1918,9 +1918,9 @@ export default function ClientLayout({
                 </label>
               </div>
 
-              <div className="max-h-[32rem] min-h-[24rem] overflow-y-auto">
+              <div className="flex-1 overflow-y-auto md:max-h-[32rem] md:min-h-[24rem]">
                 {selectedFloatingConversation ? (
-                  <div className="flex min-h-[28rem] flex-col">
+                  <div className="flex min-h-full flex-col md:min-h-[28rem]">
                     <div className="flex items-center gap-3 border-b border-[var(--loombus-border)] px-5 py-4">
                       <button
                         type="button"
@@ -2346,7 +2346,7 @@ export default function ClientLayout({
         </>
       )}
 
-      {user && !mobileMenuOpen && (
+      {user && !mobileMenuOpen && !floatingMessagesOpen && (
         <nav
           aria-label="Mobile app navigation"
           className={`loombus-mobile-bottom-nav fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 rounded-[1.75rem] border p-2 backdrop-blur-xl transition-transform duration-300 md:hidden ${
