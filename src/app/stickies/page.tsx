@@ -780,17 +780,17 @@ export default function StickiesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12 loombus-shell-with-right-rail">
+    <main className="min-h-screen bg-[var(--loombus-bg)] px-4 pb-24 pt-4 text-[var(--loombus-text)] sm:px-6 sm:py-10 lg:py-12 loombus-shell-with-right-rail">
       <div className="mx-auto max-w-[46rem]">
         <Link
           href="/discussions"
-          className="mb-3 inline-block text-sm text-zinc-500 hover:text-white sm:mb-10"
+          className="mb-3 inline-block text-sm text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)] sm:mb-10"
         >
           ← Back to discussions
         </Link>
 
-        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20 sm:p-7">
-          <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+        <section className="mb-6 rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10 sm:p-7">
+          <p className="mb-2 text-xs uppercase tracking-[0.25em] text-[var(--loombus-text-subtle)]">
             Premium Workspace
           </p>
 
@@ -798,24 +798,24 @@ export default function StickiesPage() {
             Stickies
           </h1>
 
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--loombus-text-muted)] sm:text-base">
             Stickies are your personal workspace for pinning Loombus cards you want visible right now. Saved is your library. Stickies are your board.
           </p>
         </section>
 
         {!loading && !isLoggedIn && (
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
+          <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
             <h2 className="text-xl font-semibold">
               Log in to use Stickies.
             </h2>
 
-            <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+            <p className="mt-2 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
               Stickies are tied to your account.
             </p>
 
             <Link
               href="/login"
-              className="mt-5 inline-flex rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+              className="mt-5 inline-flex rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90"
             >
               Log In
             </Link>
@@ -823,8 +823,8 @@ export default function StickiesPage() {
         )}
 
         {!loading && isLoggedIn && upgradeRequired && (
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
-            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
+          <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
               Premium Required
             </p>
 
@@ -832,13 +832,13 @@ export default function StickiesPage() {
               Stickies are a Premium workspace feature.
             </h2>
 
-            <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+            <p className="mt-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
               Free users can keep using Saved. Premium users can build a visible workspace board from Loombus cards.
             </p>
 
             <Link
               href="/premium"
-              className="mt-5 inline-flex rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+              className="mt-5 inline-flex rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90"
             >
               View Premium
             </Link>
@@ -849,14 +849,14 @@ export default function StickiesPage() {
           <>
             <form
               onSubmit={addSmartSticky}
-              className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
+              className="mb-5 rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-2xl shadow-black/10 sm:p-5"
             >
               <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <label className="text-sm font-medium text-zinc-300">
+                <label className="text-sm font-medium text-[var(--loombus-text)]">
                   Smart Add
                 </label>
 
-                <span className="w-fit rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                <span className="w-fit rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1 text-xs text-[var(--loombus-text-muted)]">
                   One field
                 </span>
               </div>
@@ -867,54 +867,54 @@ export default function StickiesPage() {
                   onChange={(event) => setSmartAddInput(event.target.value)}
                   placeholder="Paste a discussion link, type @username, enter a topic, write note:..., or ask ai:..."
                   rows={3}
-                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                  className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
                 />
 
                 <button
                   type="submit"
                   disabled={working || !smartAddInput.trim()}
-                  className="w-full rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
+                  className="w-full rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
                 >
                   {working ? "Adding..." : "Add to Stickies"}
                 </button>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
                   discussion link
                 </span>
-                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
                   @username
                 </span>
-                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
                   topic name
                 </span>
-                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
                   note: your note
                 </span>
-                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
                   ai: your prompt
                 </span>
               </div>
 
-              <p className="mt-3 text-xs leading-relaxed text-zinc-600">
+              <p className="mt-3 text-xs leading-relaxed text-[var(--loombus-text-subtle)]">
                 Saved discussions can still be added directly from the Saved page.
               </p>
             </form>
 
             {message && (
-              <p className="mb-4 text-sm text-zinc-500">
+              <p className="mb-4 text-sm text-[var(--loombus-text-muted)]">
                 {message}
               </p>
             )}
 
             {items.length === 0 ? (
-              <section className="rounded-3xl border border-dashed border-zinc-800 bg-zinc-950/60 p-6 text-center">
+              <section className="rounded-3xl border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 text-center">
                 <h2 className="text-xl font-semibold">
                   Your board is empty.
                 </h2>
 
-                <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                <p className="mt-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                   Add a discussion card to start building your visible workspace.
                 </p>
               </section>
@@ -925,12 +925,12 @@ export default function StickiesPage() {
                     key={item.id}
                     onDragOver={handleStickyDragOver}
                     onDrop={() => handleStickyDrop(item.id)}
-                    className={`rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20 transition ${
-                      draggedStickyId === item.id ? "opacity-60 ring-1 ring-zinc-600" : ""
+                    className={`rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10 transition ${
+                      draggedStickyId === item.id ? "opacity-60 ring-1 ring-[var(--loombus-text-subtle)]" : ""
                     }`}
                   >
                     <div className="mb-3 flex items-start justify-between gap-3">
-                      <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-zinc-500">
+                      <p className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--loombus-text-muted)]">
                         {getStickyTypeLabel(item.item_type)}
                       </p>
 
@@ -939,7 +939,7 @@ export default function StickiesPage() {
                           draggable={!working}
                           onDragStart={() => handleStickyDragStart(item.id)}
                           onDragEnd={() => setDraggedStickyId(null)}
-                          className="cursor-grab rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white active:cursor-grabbing"
+                          className="cursor-grab rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] active:cursor-grabbing"
                           title="Drag to reorder"
                         >
                           Drag
@@ -949,7 +949,7 @@ export default function StickiesPage() {
                           type="button"
                           onClick={() => moveSticky(item.id, "up")}
                           disabled={working || index === 0}
-                          className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           Up
                         </button>
@@ -958,7 +958,7 @@ export default function StickiesPage() {
                           type="button"
                           onClick={() => moveSticky(item.id, "down")}
                           disabled={working || index === items.length - 1}
-                          className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           Down
                         </button>
@@ -968,7 +968,7 @@ export default function StickiesPage() {
                             type="button"
                             onClick={() => startEditingNote(item)}
                             disabled={working || editingNoteId === item.id}
-                            className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                            className="rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             Edit
                           </button>
@@ -978,7 +978,7 @@ export default function StickiesPage() {
                           type="button"
                           onClick={() => removeSticky(item.id)}
                           disabled={working}
-                          className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:opacity-50"
+                          className="rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:opacity-50"
                         >
                           Remove
                         </button>
@@ -993,7 +993,7 @@ export default function StickiesPage() {
                             value={editingNoteTitle}
                             onChange={(event) => setEditingNoteTitle(event.target.value)}
                             placeholder="Note title"
-                            className="min-h-12 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                            className="min-h-12 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
                           />
 
                           <textarea
@@ -1001,7 +1001,7 @@ export default function StickiesPage() {
                             onChange={(event) => setEditingNoteBody(event.target.value)}
                             placeholder="Write a short note for your workspace..."
                             rows={4}
-                            className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                            className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
                           />
 
                           <div className="flex flex-wrap gap-2">
@@ -1009,7 +1009,7 @@ export default function StickiesPage() {
                               type="button"
                               onClick={() => updateNoteSticky(item.id)}
                               disabled={working || (!editingNoteTitle.trim() && !editingNoteBody.trim())}
-                              className="rounded-full bg-white px-4 py-2 text-xs font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="rounded-full bg-[var(--loombus-primary-bg)] px-4 py-2 text-xs font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {working ? "Saving..." : "Save Note"}
                             </button>
@@ -1018,7 +1018,7 @@ export default function StickiesPage() {
                               type="button"
                               onClick={cancelEditingNote}
                               disabled={working}
-                              className="rounded-full border border-zinc-800 px-4 py-2 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:opacity-50"
+                              className="rounded-full border border-[var(--loombus-border)] px-4 py-2 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:opacity-50"
                             >
                               Cancel
                             </button>
@@ -1026,12 +1026,12 @@ export default function StickiesPage() {
                         </div>
                       ) : (
                         <div>
-                          <h2 className="text-xl font-semibold tracking-tight text-white">
+                          <h2 className="text-xl font-semibold tracking-tight text-[var(--loombus-text)]">
                             {item.title}
                           </h2>
 
                           {item.subtitle && (
-                            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-500">
+                            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                               {item.subtitle}
                             </p>
                           )}
@@ -1039,12 +1039,12 @@ export default function StickiesPage() {
                       )
                     ) : (
                       <Link href={item.href} className="block">
-                        <h2 className="text-xl font-semibold tracking-tight text-white transition hover:text-zinc-300">
+                        <h2 className="text-xl font-semibold tracking-tight text-[var(--loombus-text)] transition hover:text-[var(--loombus-text-muted)]">
                           {item.title}
                         </h2>
 
                         {item.subtitle && (
-                          <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-zinc-500">
+                          <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                             {item.subtitle}
                           </p>
                         )}
@@ -1058,7 +1058,7 @@ export default function StickiesPage() {
         )}
 
         {loading && (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-[var(--loombus-text-muted)]">
             Loading Stickies...
           </p>
         )}
