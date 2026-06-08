@@ -16,6 +16,7 @@ import {
   Search,
   Settings as SettingsIcon,
   ShieldCheck,
+  StickyNote,
   UserCircle,
   Users,
 } from "lucide-react";
@@ -54,6 +55,7 @@ export default function ClientLayout({
   const [notificationCount, setNotificationCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [floatingMessagesOpen, setFloatingMessagesOpen] = useState(false);
   const [bottomNavHidden, setBottomNavHidden] = useState(false);
   const [topNavHidden, setTopNavHidden] = useState(false);
   const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
@@ -613,9 +615,9 @@ export default function ClientLayout({
               <DesktopRailTooltip label="People" />
             </Link>
 
-            <Link href="/messages" aria-label="Messages" title="Messages" aria-current={isActivePath("/messages") ? "page" : undefined} data-active={isActivePath("/messages") ? "true" : undefined} className={desktopRailLinkClass("/messages")}>
-              <MessageCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Messages" />
+            <Link href="/stickies" aria-label="Stickies" title="Stickies" aria-current={isActivePath("/stickies") ? "page" : undefined} data-active={isActivePath("/stickies") ? "true" : undefined} className={desktopRailLinkClass("/stickies")}>
+              <StickyNote aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+              <DesktopRailTooltip label="Stickies" />
             </Link>
 
             <Link href="/saved" aria-label="Saved" title="Saved" aria-current={isActivePath("/saved") ? "page" : undefined} data-active={isActivePath("/saved") ? "true" : undefined} className={desktopRailLinkClass("/saved")}>
@@ -1115,6 +1117,81 @@ export default function ClientLayout({
             </div>
           </div>
         </div>
+      )}
+
+      {user && !mobileMenuOpen && (
+        <>
+          <button
+            type="button"
+            onClick={() => setFloatingMessagesOpen((current) => !current)}
+            aria-label={floatingMessagesOpen ? "Close messages" : "Open messages"}
+            aria-expanded={floatingMessagesOpen}
+            className="fixed bottom-6 right-6 z-50 hidden h-14 w-14 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-2xl shadow-black/20 transition hover:opacity-90 md:flex"
+          >
+            <MessageCircle aria-hidden="true" className="h-6 w-6" strokeWidth={2.05} />
+          </button>
+
+          {floatingMessagesOpen && (
+            <aside
+              aria-label="Messages preview"
+              className="fixed bottom-24 right-6 z-50 hidden w-[26rem] max-w-[calc(100vw-8rem)] overflow-hidden rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/25 md:block"
+            >
+              <div className="border-b border-[var(--loombus-border)] p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h2 className="text-2xl font-semibold tracking-tight">
+                    Chat
+                  </h2>
+
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href="/messages"
+                      onClick={() => setFloatingMessagesOpen(false)}
+                      className="rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-medium text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)]"
+                    >
+                      Open
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => setFloatingMessagesOpen(false)}
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--loombus-border)] text-xl leading-none text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                      aria-label="Close messages"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-[var(--loombus-text-muted)]">
+                  <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+                  <span className="text-sm">
+                    Search messages
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex min-h-[24rem] flex-col items-center justify-center px-6 py-10 text-center">
+                <MessageCircle aria-hidden="true" className="mb-6 h-20 w-20 text-[var(--loombus-text)]" strokeWidth={1.6} />
+
+                <h3 className="text-2xl font-semibold tracking-tight">
+                  Empty inbox
+                </h3>
+
+                <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
+                  Message someone or open your full inbox.
+                </p>
+
+                <Link
+                  href="/messages"
+                  onClick={() => setFloatingMessagesOpen(false)}
+                  className="mt-6 rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90"
+                >
+                  Open Messages
+                </Link>
+              </div>
+            </aside>
+          )}
+        </>
       )}
 
       {user && !mobileMenuOpen && (
