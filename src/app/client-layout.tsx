@@ -2213,7 +2213,7 @@ export default function ClientLayout({
               <div className="border-b border-[var(--loombus-border)] p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h2 className="text-2xl font-semibold tracking-tight">
-                    Chat
+                    Messages
                   </h2>
 
                   <div className="flex items-center gap-2">
