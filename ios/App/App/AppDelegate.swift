@@ -2,12 +2,15 @@ import UIKit
 import Capacitor
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate {
 
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        DispatchQueue.main.async {
+            self.enableWebViewZoom()
+        }
+
         return true
     }
 
@@ -26,11 +29,48 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        DispatchQueue.main.async {
+            self.enableWebViewZoom()
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+    }
+
+    private func enableWebViewZoom() {
+        guard let bridgeController = findBridgeViewController(from: window?.rootViewController),
+              let webView = bridgeController.webView else {
+            return
+        }
+
+        let scrollView = webView.scrollView
+        scrollView.minimumZoomScale = 1.0
+        scrollView.maximumZoomScale = 5.0
+        scrollView.bouncesZoom = true
+        scrollView.delegate = self
+    }
+
+    private func findBridgeViewController(from controller: UIViewController?) -> CAPBridgeViewController? {
+        if let bridgeController = controller as? CAPBridgeViewController {
+            return bridgeController
+        }
+
+        for child in controller?.children ?? [] {
+            if let bridgeController = findBridgeViewController(from: child) {
+                return bridgeController
+            }
+        }
+
+        if let presentedController = controller?.presentedViewController {
+            return findBridgeViewController(from: presentedController)
+        }
+
+        return nil
+    }
+
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        return scrollView.subviews.first
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
