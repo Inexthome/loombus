@@ -22,6 +22,9 @@ export default function StickiesPage() {
   const [personInput, setPersonInput] = useState("");
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteTitle, setEditingNoteTitle] = useState("");
+  const [editingNoteBody, setEditingNoteBody] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -270,6 +273,71 @@ export default function StickiesPage() {
     setMessage("Note added to Stickies.");
 
     await loadStickies();
+  }
+
+  function startEditingNote(item: StickyItem) {
+    if (item.item_type !== "note") {
+      return;
+    }
+
+    setEditingNoteId(item.id);
+    setEditingNoteTitle(item.title);
+    setEditingNoteBody(item.subtitle ?? "");
+    setMessage("");
+  }
+
+  function cancelEditingNote() {
+    setEditingNoteId(null);
+    setEditingNoteTitle("");
+    setEditingNoteBody("");
+  }
+
+  async function updateNoteSticky(stickyId: string) {
+    if (working) {
+      return;
+    }
+
+    setWorking(true);
+    setMessage("");
+
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      setWorking(false);
+      setIsLoggedIn(false);
+      return;
+    }
+
+    const response = await fetch("/api/stickies", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        action: "update_note",
+        stickyId,
+        title: editingNoteTitle,
+        note: editingNoteBody,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setWorking(false);
+
+    if (!response.ok) {
+      setMessage(result.error ?? "Unable to update note.");
+      return;
+    }
+
+    const updatedSticky = result.sticky as StickyItem;
+
+    setItems((current) =>
+      current.map((item) => (item.id === stickyId ? updatedSticky : item))
+    );
+    cancelEditingNote();
+    setMessage("Note updated.");
   }
 
   async function moveSticky(stickyId: string, direction: "up" | "down") {
@@ -624,6 +692,17 @@ export default function StickiesPage() {
                           Down
                         </button>
 
+                        {item.item_type === "note" && (
+                          <button
+                            type="button"
+                            onClick={() => startEditingNote(item)}
+                            disabled={working || editingNoteId === item.id}
+                            className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            Edit
+                          </button>
+                        )}
+
                         <button
                           type="button"
                           onClick={() => removeSticky(item.id)}
@@ -636,17 +715,57 @@ export default function StickiesPage() {
                     </div>
 
                     {item.item_type === "note" ? (
-                      <div>
-                        <h2 className="text-xl font-semibold tracking-tight text-white">
-                          {item.title}
-                        </h2>
+                      editingNoteId === item.id ? (
+                        <div className="space-y-3">
+                          <input
+                            type="text"
+                            value={editingNoteTitle}
+                            onChange={(event) => setEditingNoteTitle(event.target.value)}
+                            placeholder="Note title"
+                            className="min-h-12 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                          />
 
-                        {item.subtitle && (
-                          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-500">
-                            {item.subtitle}
-                          </p>
-                        )}
-                      </div>
+                          <textarea
+                            value={editingNoteBody}
+                            onChange={(event) => setEditingNoteBody(event.target.value)}
+                            placeholder="Write a short note for your workspace..."
+                            rows={4}
+                            className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                          />
+
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => updateNoteSticky(item.id)}
+                              disabled={working || (!editingNoteTitle.trim() && !editingNoteBody.trim())}
+                              className="rounded-full bg-white px-4 py-2 text-xs font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {working ? "Saving..." : "Save Note"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={cancelEditingNote}
+                              disabled={working}
+                              className="rounded-full border border-zinc-800 px-4 py-2 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <h2 className="text-xl font-semibold tracking-tight text-white">
+                            {item.title}
+                          </h2>
+
+                          {item.subtitle && (
+                            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-500">
+                              {item.subtitle}
+                            </p>
+                          )}
+                        </div>
+                      )
                     ) : (
                       <Link href={item.href} className="block">
                         <h2 className="text-xl font-semibold tracking-tight text-white transition hover:text-zinc-300">

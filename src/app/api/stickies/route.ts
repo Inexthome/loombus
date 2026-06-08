@@ -389,6 +389,42 @@ export async function PATCH(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
+
+  if (body.action === "update_note") {
+    const stickyId = typeof body.stickyId === "string" ? body.stickyId.trim() : "";
+    const title = typeof body.title === "string" ? body.title.trim().slice(0, 240) : "";
+    const note = typeof body.note === "string" ? body.note.trim().slice(0, 500) : "";
+
+    if (!stickyId) {
+      return jsonError("Missing sticky ID.");
+    }
+
+    if (!title && !note) {
+      return jsonError("Add a note title or note body.");
+    }
+
+    const { data: sticky, error } = await context.supabase
+      .from("sticky_items")
+      .update({
+        title: title || "Untitled note",
+        subtitle: note || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", stickyId)
+      .eq("user_id", context.user.id)
+      .eq("item_type", "note")
+      .select("id, user_id, item_type, source_key, title, subtitle, href, position, created_at, updated_at")
+      .single();
+
+    if (error) {
+      return jsonError(error.message, 500);
+    }
+
+    return NextResponse.json({
+      sticky,
+    });
+  }
+
   const orderedIds: string[] = Array.isArray(body.orderedIds)
     ? body.orderedIds.filter(
         (id: unknown): id is string =>
