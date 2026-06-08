@@ -532,6 +532,8 @@ export default function CreatePage() {
     useState<"none" | "topic" | "mode" | "other" | "reality" | "purpose" | "tags">("none");
   const [activeCreateTool, setActiveCreateTool] =
     useState<"none" | "attachments" | "quality" | "rewrite">("none");
+  const [createSignalBarHidden, setCreateSignalBarHidden] = useState(false);
+  const createSignalLastScrollRef = useRef(0);
   const bodyEditorRef = useRef<HTMLDivElement | null>(null);
   const bodyAttachmentInputRef = useRef<HTMLInputElement | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -569,6 +571,48 @@ export default function CreatePage() {
       }),
     [bodyPlainText, memoryDiscussions, title, topic]
   );
+
+  useEffect(() => {
+    let frameId = 0;
+
+    function handleCreateSignalBarScroll() {
+      if (frameId) {
+        return;
+      }
+
+      frameId = window.requestAnimationFrame(() => {
+        const currentScrollY =
+          window.scrollY ||
+          document.documentElement.scrollTop ||
+          document.body.scrollTop ||
+          0;
+        const lastScrollY = createSignalLastScrollRef.current;
+        const delta = currentScrollY - lastScrollY;
+
+        if (currentScrollY < 80) {
+          setCreateSignalBarHidden(false);
+        } else if (delta > 8 && currentScrollY > 160) {
+          setCreateSignalBarHidden(true);
+        } else if (delta < -8) {
+          setCreateSignalBarHidden(false);
+        }
+
+        createSignalLastScrollRef.current = currentScrollY;
+        frameId = 0;
+      });
+    }
+
+    handleCreateSignalBarScroll();
+    window.addEventListener("scroll", handleCreateSignalBarScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleCreateSignalBarScroll);
+
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     async function loadProfileStatus() {
@@ -1209,6 +1253,14 @@ export default function CreatePage() {
     }
   }
 
+  function getCreateSignalChipClass(isActive: boolean) {
+    return `shrink-0 rounded-full border px-3 py-2 text-left text-[0.72rem] font-medium transition ${
+      isActive
+        ? "border-zinc-400 bg-white text-black shadow-lg shadow-black/10"
+        : "border-white/10 bg-black/20 text-zinc-500 hover:border-zinc-500 hover:text-white"
+    }`;
+  }
+
   function toggleCreateMetadataTool(
     tool: "topic" | "reality" | "purpose" | "tags"
   ) {
@@ -1525,13 +1577,72 @@ export default function CreatePage() {
             onKeyDown={handleFormKeyDown}
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
+            <div
+              className={`fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+4.65rem)] z-40 px-4 transition-transform duration-300 md:hidden ${
+                createSignalBarHidden ? "-translate-y-[calc(100%+5.75rem)]" : "translate-y-0"
+              }`}
+              aria-label="Create signal controls"
+            >
+              <div
+                className="mx-auto max-w-xl overflow-x-auto rounded-full border border-white/10 p-1 shadow-2xl shadow-black/25 backdrop-blur-xl"
+                style={{
+                  backgroundColor:
+                    "color-mix(in srgb, var(--loombus-surface) 84%, transparent)",
+                }}
+              >
+                <div className="flex min-w-max gap-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleCreateMetadataTool("topic")}
+                    className={getCreateSignalChipClass(activeCreateMetadataTool === "topic" || Boolean(topic))}
+                    aria-expanded={activeCreateMetadataTool === "topic"}
+                  >
+                    <span className="block text-[0.58rem] uppercase tracking-[0.16em] opacity-60">
+                      Topic
+                    </span>
+                    <span className="block max-w-[8.75rem] truncate">
+                      {topic || "Choose topic"}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleCreateMetadataTool("reality")}
+                    className={getCreateSignalChipClass(activeCreateMetadataTool === "reality" || Boolean(realityLens))}
+                    aria-expanded={activeCreateMetadataTool === "reality"}
+                  >
+                    <span className="block text-[0.58rem] uppercase tracking-[0.16em] opacity-60">
+                      Reality Lens
+                    </span>
+                    <span className="block max-w-[8.75rem] truncate">
+                      {realityLens || "Select lens"}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleCreateMetadataTool("purpose")}
+                    className={getCreateSignalChipClass(activeCreateMetadataTool === "purpose" || Boolean(purposeLane))}
+                    aria-expanded={activeCreateMetadataTool === "purpose"}
+                  >
+                    <span className="block text-[0.58rem] uppercase tracking-[0.16em] opacity-60">
+                      Purpose Lane
+                    </span>
+                    <span className="block max-w-[8.75rem] truncate">
+                      {purposeLane || "Select lane"}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <section className="space-y-5">
               <div>
                 <p className="mb-4 text-xs uppercase tracking-[0.18em] text-zinc-600">
                   Discussion details
                 </p>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="hidden gap-4 md:grid md:grid-cols-2">
                   <div>
                     <label className="mb-2 block text-sm text-zinc-400">
                       Topic
