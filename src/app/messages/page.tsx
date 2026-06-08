@@ -89,8 +89,7 @@ export default function MessagesPage() {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingSentRef = useRef(0);
   const [sending, setSending] = useState(false);
-  const [peopleSearchQuery, setPeopleSearchQuery] = useState("");
-  const [conversationSearchQuery, setConversationSearchQuery] = useState("");
+  const [messageSearchQuery, setMessageSearchQuery] = useState("");
   const [peopleSearchResults, setPeopleSearchResults] = useState<PeopleSearchResult[]>([]);
   const [peopleSearchLoading, setPeopleSearchLoading] = useState(false);
   const [startingConversation, setStartingConversation] = useState<string | null>(null);
@@ -275,7 +274,7 @@ export default function MessagesPage() {
   }, [selectedConversationId, currentUserId]);
 
   useEffect(() => {
-    const query = peopleSearchQuery.trim();
+    const query = messageSearchQuery.trim();
 
     if (query.length < 2) {
       setPeopleSearchResults([]);
@@ -326,7 +325,7 @@ export default function MessagesPage() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [peopleSearchQuery]);
+  }, [messageSearchQuery]);
 
   const selectedConversation = useMemo(
     () =>
@@ -337,7 +336,7 @@ export default function MessagesPage() {
   );
 
   const filteredConversations = useMemo(() => {
-    const query = conversationSearchQuery.trim().toLowerCase();
+    const query = messageSearchQuery.trim().toLowerCase();
 
     if (!query) {
       return conversations;
@@ -356,7 +355,7 @@ export default function MessagesPage() {
           .includes(query)
       );
     });
-  }, [conversations, conversationSearchQuery]);
+  }, [conversations, messageSearchQuery]);
 
 
 
@@ -447,7 +446,7 @@ export default function MessagesPage() {
         return;
       }
 
-      setPeopleSearchQuery("");
+      setMessageSearchQuery("");
       setPeopleSearchResults([]);
       setComposerText("");
 
@@ -826,21 +825,21 @@ export default function MessagesPage() {
         <div className={`rounded-2xl border border-zinc-900 bg-black ${mobileThreadOpen ? "hidden lg:block" : "block"}`}>
           <div className="border-b border-zinc-900 px-4 py-3">
             <h2 className="text-sm font-medium text-zinc-300">
-              Start a message
+              Search messages
             </h2>
 
             <p className="mt-1 text-xs text-zinc-600">
-              Search mutual followers to open a private conversation.
+              Search mutual followers or existing conversations.
             </p>
 
             <input
-              value={peopleSearchQuery}
-              onChange={(event) => setPeopleSearchQuery(event.target.value)}
-              placeholder="Search people..."
+              value={messageSearchQuery}
+              onChange={(event) => setMessageSearchQuery(event.target.value)}
+              placeholder="Search people or conversations..."
               className="mt-3 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-700"
             />
 
-            {peopleSearchQuery.trim().length >= 2 ? (
+            {messageSearchQuery.trim().length >= 2 ? (
               <div className="mt-3 space-y-2">
                 {peopleSearchLoading ? (
                   <p className="text-xs text-zinc-600">
@@ -889,14 +888,10 @@ export default function MessagesPage() {
               Conversations
             </h2>
 
-            <input
-              value={conversationSearchQuery}
-              onChange={(event) =>
-                setConversationSearchQuery(event.target.value)
-              }
-              placeholder="Search conversations..."
-              className="mt-3 w-full rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-700"
-            />
+            <p className="mt-1 text-xs text-zinc-600">
+              The search above filters this list too.
+            </p>
+
           </div>
 
           {conversations.length === 0 ? (
