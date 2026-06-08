@@ -143,6 +143,10 @@ export default function ClientLayout({
   const [floatingPeopleSearchResults, setFloatingPeopleSearchResults] = useState<FloatingPeopleSearchResult[]>([]);
   const [floatingPeopleSearchLoading, setFloatingPeopleSearchLoading] = useState(false);
   const [floatingStartingConversationId, setFloatingStartingConversationId] = useState<string | null>(null);
+  const [floatingSafetyOpen, setFloatingSafetyOpen] = useState(false);
+  const [floatingConversationAction, setFloatingConversationAction] = useState<string | null>(null);
+  const [floatingReportReason, setFloatingReportReason] = useState("harassment");
+  const [floatingReportNotes, setFloatingReportNotes] = useState("");
   const [bottomNavHidden, setBottomNavHidden] = useState(false);
   const [topNavHidden, setTopNavHidden] = useState(false);
   const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
@@ -1064,6 +1068,9 @@ export default function ClientLayout({
     setFloatingTypingUserName("");
     setFloatingAttachmentFiles([]);
     setFloatingAttachmentMessage("");
+    setFloatingSafetyOpen(false);
+    setFloatingReportNotes("");
+    setFloatingReportReason("harassment");
     setFloatingMessagesMessage("");
   }
 
@@ -1137,7 +1144,114 @@ export default function ClientLayout({
     setFloatingTypingUserName("");
     setFloatingAttachmentFiles([]);
     setFloatingAttachmentMessage("");
+    setFloatingSafetyOpen(false);
+    setFloatingReportNotes("");
+    setFloatingReportReason("harassment");
     await loadFloatingThread(conversationId);
+  }
+
+  async function runFloatingConversationAction(
+    action: "archive" | "delete" | "report" | "mute" | "unmute"
+  ) {
+    if (!selectedFloatingConversationId || floatingConversationAction) {
+      return;
+    }
+
+    setFloatingConversationAction(action);
+    setFloatingMessagesMessage("");
+
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token ?? "";
+
+    if (!accessToken) {
+      setFloatingConversationAction(null);
+      setFloatingMessagesMessage("Log in to manage this conversation.");
+      return;
+    }
+
+    const endpoint =
+      action === "mute" || action === "unmute"
+        ? "/api/messages/mute"
+        : action === "report"
+          ? "/api/messages/report"
+          : `/api/messages/${action}`;
+
+    const body =
+      action === "mute" || action === "unmute"
+        ? {
+            conversationId: selectedFloatingConversationId,
+            muted: action === "mute",
+          }
+        : action === "report"
+          ? {
+              conversationId: selectedFloatingConversationId,
+              reason: floatingReportReason,
+              notes: floatingReportNotes,
+            }
+          : {
+              conversationId: selectedFloatingConversationId,
+            };
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setFloatingMessagesMessage(payload.error ?? "Unable to update conversation.");
+        setFloatingConversationAction(null);
+        return;
+      }
+
+      if (action === "mute" || action === "unmute") {
+        setFloatingConversations((current) =>
+          current.map((conversation) =>
+            conversation.id === selectedFloatingConversationId
+              ? {
+                  ...conversation,
+                  mutedAt: action === "mute" ? payload.mutedAt ?? new Date().toISOString() : null,
+                }
+              : conversation
+          )
+        );
+
+        setFloatingMessagesMessage(action === "mute" ? "Conversation muted." : "Conversation unmuted.");
+      }
+
+      if (action === "report") {
+        setFloatingSafetyOpen(false);
+        setFloatingReportNotes("");
+        setFloatingReportReason("harassment");
+        setFloatingMessagesMessage("Conversation reported for review.");
+      }
+
+      if (action === "archive" || action === "delete") {
+        const conversationId = selectedFloatingConversationId;
+
+        setFloatingConversations((current) =>
+          current.filter((conversation) => conversation.id !== conversationId)
+        );
+        closeFloatingThread();
+        setFloatingMessagesMessage(
+          action === "archive" ? "Conversation archived." : "Conversation deleted."
+        );
+      }
+
+      await loadFloatingConversations();
+      await loadMessageUnreadCount();
+      window.dispatchEvent(new Event("loombus:messages-changed"));
+    } catch {
+      setFloatingMessagesMessage("Unable to update conversation.");
+    }
+
+    setFloatingConversationAction(null);
   }
 
   function handleFloatingAttachmentSelection(event: ChangeEvent<HTMLInputElement>) {
@@ -2016,6 +2130,14 @@ export default function ClientLayout({
                         </p>
                       </div>
 
+                      <button
+                        type="button"
+                        onClick={() => setFloatingSafetyOpen((current) => !current)}
+                        className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                      >
+                        Safety
+                      </button>
+
                       <Link
                         href={`/messages?conversation=${selectedFloatingConversation.id}`}
                         onClick={() => setFloatingMessagesOpen(false)}
@@ -2024,6 +2146,99 @@ export default function ClientLayout({
                         Full
                       </Link>
                     </div>
+
+                    {floatingSafetyOpen && (
+                      <div className="border-b border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-5 py-4">
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              runFloatingConversationAction(
+                                selectedFloatingConversation.mutedAt ? "unmute" : "mute"
+                              )
+                            }
+                            disabled={Boolean(floatingConversationAction)}
+                            className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {floatingConversationAction === "mute"
+                              ? "Muting..."
+                              : floatingConversationAction === "unmute"
+                                ? "Unmuting..."
+                                : selectedFloatingConversation.mutedAt
+                                  ? "Unmute"
+                                  : "Mute"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => runFloatingConversationAction("archive")}
+                            disabled={Boolean(floatingConversationAction)}
+                            className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {floatingConversationAction === "archive" ? "Archiving..." : "Archive"}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => runFloatingConversationAction("delete")}
+                            disabled={Boolean(floatingConversationAction)}
+                            className="rounded-full border border-red-500/40 px-3 py-1.5 text-xs text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {floatingConversationAction === "delete" ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
+
+                        <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3">
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className="text-xs font-medium text-[var(--loombus-text)]">
+                              Report conversation
+                            </p>
+
+                            <button
+                              type="button"
+                              onClick={() => runFloatingConversationAction("report")}
+                              disabled={Boolean(floatingConversationAction)}
+                              className="rounded-full border border-red-500/40 px-3 py-1 text-xs text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {floatingConversationAction === "report" ? "Submitting..." : "Submit"}
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              ["harassment", "Harassment"],
+                              ["spam", "Spam"],
+                              ["abuse", "Abuse"],
+                              ["scam", "Scam"],
+                              ["impersonation", "Impersonation"],
+                              ["other", "Other"],
+                            ].map(([value, label]) => (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={() => setFloatingReportReason(value)}
+                                className={`rounded-xl border px-3 py-2 text-left text-xs transition ${
+                                  floatingReportReason === value
+                                    ? "border-red-500/60 bg-red-500/10 text-red-500"
+                                    : "border-[var(--loombus-border)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                                }`}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+
+                          <textarea
+                            value={floatingReportNotes}
+                            onChange={(event) => setFloatingReportNotes(event.target.value)}
+                            placeholder="Optional notes for admins..."
+                            rows={2}
+                            maxLength={1000}
+                            className="mt-3 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-2 text-sm text-[var(--loombus-text)] outline-none placeholder:text-[var(--loombus-text-muted)]"
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {floatingMessagesMessage && (
                       <p className="border-b border-[var(--loombus-border)] px-5 py-3 text-sm text-[var(--loombus-text-muted)]">
