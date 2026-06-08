@@ -374,8 +374,153 @@ export default function Home() {
     const greetingName = getGreetingName(profile, email);
 
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 lg:py-12">
-        <div className="mx-auto max-w-6xl">
+      <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 lg:py-12">
+        <div className="mx-auto max-w-md md:hidden">
+          <section className="loombus-mobile-home-card loombus-mobile-home-hero mb-5 rounded-[2rem] border p-5 shadow-2xl">
+            <p className="loombus-mobile-home-eyebrow mb-3 text-xs uppercase tracking-[0.24em]">
+              Signal Hub
+            </p>
+
+            <h1 className="loombus-mobile-home-title mb-3 text-3xl font-semibold tracking-tight">
+              {greetingName ? `Welcome back, ${greetingName}.` : "Welcome back."}
+            </h1>
+
+            <p className="loombus-mobile-home-muted text-sm leading-relaxed">
+              Create, read, reply, and return to the highest-signal parts of Loombus.
+            </p>
+
+            {email && (
+              <p className="loombus-mobile-home-subtle mt-4 truncate text-xs">
+                {email}
+              </p>
+            )}
+          </section>
+
+          <Link
+            href="/create"
+            className="loombus-mobile-home-primary-card mb-5 block rounded-[1.75rem] border p-5 shadow-2xl active:scale-[0.99]"
+          >
+            <p className="loombus-mobile-home-primary-eyebrow mb-2 text-xs font-semibold uppercase tracking-[0.2em]">
+              Start Signal
+            </p>
+            <h2 className="loombus-mobile-home-primary-title text-2xl font-semibold tracking-tight">
+              Create a discussion
+            </h2>
+            <p className="loombus-mobile-home-primary-muted mt-2 text-sm leading-relaxed">
+              Turn a clear thought, question, or claim into a focused thread.
+            </p>
+          </Link>
+
+          <div className="mb-5 grid grid-cols-2 gap-4">
+            <Link
+              href="/discussions"
+              className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
+            >
+              <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
+                Read
+              </p>
+              <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
+                Discussions
+              </h2>
+              <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
+                Browse focused conversations.
+              </p>
+            </Link>
+
+            <Link
+              href="/notifications"
+              className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
+            >
+              <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
+                Return
+              </p>
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
+                  Alerts
+                </h2>
+                {unreadNotificationCount > 0 && (
+                  <span className="loombus-mobile-home-pill rounded-full border px-2 py-0.5 text-[0.65rem]">
+                    {unreadNotificationCount}
+                  </span>
+                )}
+              </div>
+              <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
+                See replies, follows, and mentions.
+              </p>
+            </Link>
+
+            <Link
+              href="/following"
+              className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
+            >
+              <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
+                People
+              </p>
+              <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
+                Following
+              </h2>
+              <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
+                Follow selective signal.
+              </p>
+            </Link>
+
+            <Link
+              href="/saved"
+              className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
+            >
+              <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
+                Memory
+              </p>
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
+                  Saved
+                </h2>
+                {savedCount > 0 && (
+                  <span className="loombus-mobile-home-pill rounded-full border px-2 py-0.5 text-[0.65rem]">
+                    {savedCount}
+                  </span>
+                )}
+              </div>
+              <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
+                Revisit what is worth keeping.
+              </p>
+            </Link>
+          </div>
+
+          <section className="loombus-mobile-home-card rounded-3xl border p-5">
+            <p className="loombus-mobile-home-eyebrow mb-3 text-xs uppercase tracking-[0.24em]">
+              Mobile Shortcuts
+            </p>
+
+            <h2 className="loombus-mobile-home-title mb-3 text-2xl font-semibold tracking-tight">
+              Move faster.
+            </h2>
+
+            <div className="grid gap-3">
+              {mobileSignalShortcuts.map((shortcut) => (
+                <Link
+                  key={shortcut.href}
+                  href={shortcut.href}
+                  className="loombus-mobile-home-row rounded-2xl border p-4 transition"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="loombus-mobile-home-row-title text-sm font-medium">
+                        {shortcut.title}
+                      </p>
+                      <p className="loombus-mobile-home-subtle mt-1 text-xs leading-relaxed">
+                        {shortcut.description}
+                      </p>
+                    </div>
+                    <span className="loombus-mobile-home-subtle">→</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <div className="mx-auto hidden max-w-6xl md:block">
           <section className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-8 lg:p-10">
             <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
               Loombus Home
@@ -457,25 +602,6 @@ export default function Home() {
               </section>
             ))}
           </div>
-
-          <section className="mt-8 rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 sm:p-8 md:hidden">
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Quick shortcuts
-            </h2>
-
-            <div className="mt-5 grid gap-3">
-              {mobileSignalShortcuts.map((shortcut) => (
-                <Link
-                  key={shortcut.href}
-                  href={shortcut.href}
-                  className="rounded-2xl border border-zinc-800 bg-black p-4 transition hover:border-zinc-600"
-                >
-                  <p className="font-semibold">{shortcut.title}</p>
-                  <p className="mt-1 text-sm text-zinc-500">{shortcut.description}</p>
-                </Link>
-              ))}
-            </div>
-          </section>
         </div>
       </main>
     );
