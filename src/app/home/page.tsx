@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { isIosNativeApp } from "@/lib/native-app";
 
 type OAuthProvider = "google" | "apple";
 type HomeAuthState = "checking" | "logged_out" | "logged_in";
@@ -181,11 +180,6 @@ export default function Home() {
   const [profile, setProfile] = useState<HomeProfile | null>(null);
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
-  const [nativeIosApp, setNativeIosApp] = useState(false);
-
-  useEffect(() => {
-    setNativeIosApp(isIosNativeApp());
-  }, []);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
@@ -325,11 +319,6 @@ export default function Home() {
   }, []);
 
   async function signUpWithProvider(provider: OAuthProvider) {
-    if (nativeIosApp || isIosNativeApp()) {
-      setMessage("Use email and password to create an account inside the Loombus iOS app. Apple and Google signup remain available on the web.");
-      return;
-    }
-
     if (workingProvider) {
       return;
     }
@@ -630,53 +619,38 @@ export default function Home() {
         </p>
 
         <div className="w-full rounded-3xl border border-zinc-900 bg-zinc-950/60 p-5 shadow-2xl shadow-black/30 space-y-3 loombus-mobile-visitor-auth-card">
-          {nativeIosApp ? (
-            <>
-              <Link
-                href="/signup"
-                className="block w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 loombus-mobile-visitor-create"
-              >
-                Sign up with email
-              </Link>
+          <>
+            <button
+              type="button"
+              onClick={() => signUpWithProvider("apple")}
+              disabled={Boolean(workingProvider)}
+              className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}
+            </button>
 
-              <p className="text-xs leading-relaxed text-zinc-500">
-                Use email and password to create an account inside the Loombus iOS app.
-              </p>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => signUpWithProvider("apple")}
-                disabled={Boolean(workingProvider)}
-                className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}
-              </button>
+            <button
+              type="button"
+              onClick={() => signUpWithProvider("google")}
+              disabled={Boolean(workingProvider)}
+              className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}
+            </button>
 
-              <button
-                type="button"
-                onClick={() => signUpWithProvider("google")}
-                disabled={Boolean(workingProvider)}
-                className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}
-              </button>
+            <div className="flex items-center gap-3 py-2 text-xs uppercase tracking-[0.2em] text-zinc-700">
+              <span className="h-px flex-1 bg-zinc-900" />
+              Or
+              <span className="h-px flex-1 bg-zinc-900" />
+            </div>
 
-              <div className="flex items-center gap-3 py-2 text-xs uppercase tracking-[0.2em] text-zinc-700">
-                <span className="h-px flex-1 bg-zinc-900" />
-                Or
-                <span className="h-px flex-1 bg-zinc-900" />
-              </div>
-
-              <Link
-                href="/signup"
-                className="block w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white loombus-mobile-visitor-create"
-              >
-                Create Account
-              </Link>
-            </>
-          )}
+            <Link
+              href="/signup"
+              className="block w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white loombus-mobile-visitor-create"
+            >
+              Create Account
+            </Link>
+          </>
 
           <p className="pt-3 text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
             By creating an account or continuing with Apple, Google, or email, you confirm that you are at least 13 years old and agree to the{" "}
