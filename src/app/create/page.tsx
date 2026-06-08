@@ -1254,11 +1254,35 @@ export default function CreatePage() {
   }
 
   function getCreateSignalTabClass(isActive: boolean) {
-    return `relative flex h-10 items-center justify-center text-sm font-semibold transition ${
+    return `relative flex h-10 items-center justify-center text-[0.95rem] font-semibold tracking-tight transition ${
       isActive
         ? "text-[var(--loombus-text)]"
         : "text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
     }`;
+  }
+
+  function getDiscussionModeShellClass(isActive: boolean) {
+    return `min-h-[8.75rem] rounded-[1.45rem] border p-4 text-left transition ${
+      isActive
+        ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-xl shadow-black/10"
+        : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-strong)] hover:text-[var(--loombus-text)]"
+    }`;
+  }
+
+  function getDiscussionModeShortDescription(mode: DiscussionMode) {
+    if (mode === "debate") {
+      return "Structured claim + argument";
+    }
+
+    if (mode === "research_question") {
+      return "Background + open questions";
+    }
+
+    if (mode === "problem_solving") {
+      return "Problem + constraints";
+    }
+
+    return "Share a thought or question";
   }
 
   function toggleCreateMetadataTool(
@@ -1578,8 +1602,8 @@ export default function CreatePage() {
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
             <div
-              className={`fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+4.2rem)] z-40 px-4 pb-3 backdrop-blur-xl transition-transform duration-300 md:hidden ${
-                createSignalBarHidden ? "-translate-y-[calc(100%+4.25rem)]" : "translate-y-0"
+              className={`fixed left-0 right-0 top-0 z-30 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+4.32rem)] backdrop-blur-xl transition-transform duration-300 md:hidden ${
+                createSignalBarHidden ? "-translate-y-full" : "translate-y-0"
               }`}
               style={{
                 backgroundColor:
@@ -1724,28 +1748,38 @@ export default function CreatePage() {
                   </span>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {DISCUSSION_MODES.map((mode) => (
-                    <button
-                      key={mode.value}
-                      type="button"
-                      onClick={() => setDiscussionType(mode.value)}
-                      className={`rounded-2xl border px-4 py-3 text-left transition ${
-                        discussionType === mode.value
-                          ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
-                          : "border-zinc-800 bg-black text-zinc-400 hover:border-zinc-600 hover:text-white"
-                      }`}
-                    >
-                      <span className="block text-sm font-medium">
-                        {mode.label}
-                      </span>
-                      <span className={`mt-1 block text-xs leading-relaxed ${
-                        discussionType === mode.value ? "text-zinc-700" : "text-zinc-600"
-                      }`}>
-                        {mode.description}
-                      </span>
-                    </button>
-                  ))}
+                <div className="grid grid-cols-2 gap-3">
+                  {DISCUSSION_MODES.map((mode) => {
+                    const modeActive = discussionType === mode.value;
+
+                    return (
+                      <button
+                        key={mode.value}
+                        type="button"
+                        onClick={() => setDiscussionType(mode.value)}
+                        className={getDiscussionModeShellClass(modeActive)}
+                        aria-pressed={modeActive}
+                      >
+                        <span className="block text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
+                          {mode.value === "open_discussion"
+                            ? "Open"
+                            : mode.value === "research_question"
+                              ? "Research"
+                              : mode.value === "problem_solving"
+                                ? "Solve"
+                                : "Debate"}
+                        </span>
+
+                        <span className="mt-5 block text-xl font-semibold leading-tight tracking-tight text-[var(--loombus-text)]">
+                          {mode.label}
+                        </span>
+
+                        <span className="mt-2 block text-sm font-medium leading-snug text-[var(--loombus-text-muted)]">
+                          {getDiscussionModeShortDescription(mode.value)}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 {discussionType === "debate" && (
@@ -1892,7 +1926,7 @@ export default function CreatePage() {
                 />
 
                 <div
-                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+8.35rem)] z-50 max-h-[min(62vh,28rem)] w-[min(calc(100vw-2rem),25rem)] -translate-x-1/2 overflow-y-auto rounded-[2rem] border border-white/15 p-3 shadow-2xl shadow-black/35 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12rem)] sm:w-[26rem]"
+                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+8.65rem)] z-50 max-h-[min(62vh,28rem)] w-[min(calc(100vw-2rem),25rem)] -translate-x-1/2 overflow-y-auto rounded-[2rem] border border-white/15 p-3 shadow-2xl shadow-black/35 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12rem)] sm:w-[26rem]"
                   style={{
                     backgroundColor:
                       "color-mix(in srgb, var(--loombus-surface) 88%, transparent)",
