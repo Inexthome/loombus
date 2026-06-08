@@ -56,6 +56,14 @@ type FloatingThreadMessage = {
   readByRecipientAt: string | null;
 };
 
+type FloatingPeopleSearchResult = {
+  id: string;
+  username: string | null;
+  fullName: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+};
+
 const RIGHT_RAIL_WIDTH_STORAGE_KEY = "loombus:right-rail-width";
 
 type DiscussionFeedMode = "all" | "following" | "signal";
@@ -88,6 +96,11 @@ export default function ClientLayout({
   const [floatingThreadLoading, setFloatingThreadLoading] = useState(false);
   const [floatingComposerText, setFloatingComposerText] = useState("");
   const [floatingSending, setFloatingSending] = useState(false);
+  const [floatingNewMessageOpen, setFloatingNewMessageOpen] = useState(false);
+  const [floatingPeopleSearchQuery, setFloatingPeopleSearchQuery] = useState("");
+  const [floatingPeopleSearchResults, setFloatingPeopleSearchResults] = useState<FloatingPeopleSearchResult[]>([]);
+  const [floatingPeopleSearchLoading, setFloatingPeopleSearchLoading] = useState(false);
+  const [floatingStartingConversationId, setFloatingStartingConversationId] = useState<string | null>(null);
   const [bottomNavHidden, setBottomNavHidden] = useState(false);
   const [topNavHidden, setTopNavHidden] = useState(false);
   const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
@@ -672,6 +685,171 @@ export default function ClientLayout({
     };
   }, [user, floatingMessagesOpen]);
 
+  useEffect(() => {
+    if (!user || !floatingMessagesOpen || !floatingNewMessageOpen) {
+      return;
+    }
+
+    const query = floatingPeopleSearchQuery.trim();
+
+    if (query.length < 2) {
+      setFloatingPeopleSearchResults([]);
+      setFloatingPeopleSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function searchFloatingPeople() {
+      setFloatingPeopleSearchLoading(true);
+
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token ?? "";
+
+      if (!accessToken) {
+        setFloatingPeopleSearchResults([]);
+        setFloatingPeopleSearchLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/messages/people-search?q=${encodeURIComponent(query)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!cancelled) {
+          setFloatingPeopleSearchResults(
+            response.ok ? ((payload.people ?? []) as FloatingPeopleSearchResult[]) : []
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setFloatingPeopleSearchResults([]);
+        }
+      }
+
+      if (!cancelled) {
+        setFloatingPeopleSearchLoading(false);
+      }
+    }
+
+    const timeoutId = window.setTimeout(searchFloatingPeople, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [user, floatingMessagesOpen, floatingNewMessageOpen, floatingPeopleSearchQuery]);
+
+  function openFloatingNewMessage() {
+    setSelectedFloatingConversationId(null);
+    setFloatingThreadMessages([]);
+    setFloatingComposerText("");
+    setFloatingMessagesMessage("");
+    setFloatingNewMessageOpen(true);
+  }
+
+  function closeFloatingNewMessage() {
+    setFloatingNewMessageOpen(false);
+    setFloatingPeopleSearchQuery("");
+    setFloatingPeopleSearchResults([]);
+    setFloatingPeopleSearchLoading(false);
+    setFloatingStartingConversationId(null);
+    setFloatingMessagesMessage("");
+  }
+
+  function getFloatingPersonName(person: FloatingPeopleSearchResult) {
+    return person.fullName?.trim() || person.username?.trim() || "Loombus member";
+  }
+
+  function getFloatingPersonInitial(person: FloatingPeopleSearchResult) {
+    return getFloatingPersonName(person).charAt(0).toUpperCase();
+  }
+
+  async function startFloatingConversation(person: FloatingPeopleSearchResult) {
+    if (floatingStartingConversationId) {
+      return;
+    }
+
+    setFloatingStartingConversationId(person.id);
+    setFloatingMessagesMessage("");
+
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token ?? "";
+
+    if (!accessToken) {
+      setFloatingStartingConversationId(null);
+      setFloatingMessagesMessage("Log in to start messages.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          targetUserId: person.id,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setFloatingMessagesMessage(payload.error ?? "Unable to start conversation.");
+        setFloatingStartingConversationId(null);
+        return;
+      }
+
+      const conversationId = String(payload.conversationId ?? "");
+
+      if (!conversationId) {
+        setFloatingMessagesMessage("Unable to start conversation.");
+        setFloatingStartingConversationId(null);
+        return;
+      }
+
+      setFloatingConversations((current) => {
+        if (current.some((conversation) => conversation.id === conversationId)) {
+          return current;
+        }
+
+        return [
+          {
+            id: conversationId,
+            otherUserId: person.id,
+            otherUsername: person.username,
+            otherFullName: person.fullName,
+            otherAvatarUrl: person.avatarUrl,
+            hasUnread: false,
+            mutedAt: null,
+            lastMessagePreview: null,
+            lastMessageAt: null,
+          },
+          ...current,
+        ];
+      });
+
+      closeFloatingNewMessage();
+      setSelectedFloatingConversationId(conversationId);
+      await loadFloatingConversations();
+      await loadFloatingThread(conversationId);
+    } catch {
+      setFloatingMessagesMessage("Unable to start conversation.");
+    }
+
+    setFloatingStartingConversationId(null);
+  }
+
   const filteredFloatingConversations = floatingConversations.filter((conversation) => {
     const query = floatingMessageSearch.trim().toLowerCase();
 
@@ -764,6 +942,7 @@ export default function ClientLayout({
   }
 
   async function openFloatingConversation(conversationId: string) {
+    closeFloatingNewMessage();
     setSelectedFloatingConversationId(conversationId);
     setFloatingComposerText("");
     await loadFloatingThread(conversationId);
@@ -1408,6 +1587,14 @@ export default function ClientLayout({
                   </h2>
 
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={openFloatingNewMessage}
+                      className="rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-medium text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)]"
+                    >
+                      New
+                    </button>
+
                     <Link
                       href="/messages"
                       onClick={() => setFloatingMessagesOpen(false)}
@@ -1563,6 +1750,100 @@ export default function ClientLayout({
                           {floatingSending ? "..." : "Send"}
                         </button>
                       </div>
+                    </div>
+                  </div>
+                ) : floatingNewMessageOpen ? (
+                  <div className="min-h-[24rem]">
+                    <div className="border-b border-[var(--loombus-border)] px-5 py-4">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-lg font-semibold tracking-tight">
+                            New message
+                          </h3>
+
+                          <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">
+                            Search mutual followers to start a private conversation.
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={closeFloatingNewMessage}
+                          className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+
+                      <label className="flex items-center gap-3 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-[var(--loombus-text-muted)]">
+                        <Search aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.05} />
+                        <input
+                          value={floatingPeopleSearchQuery}
+                          onChange={(event) => setFloatingPeopleSearchQuery(event.target.value)}
+                          placeholder="Search people..."
+                          className="min-w-0 flex-1 bg-transparent text-sm text-[var(--loombus-text)] outline-none placeholder:text-[var(--loombus-text-muted)]"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="p-5">
+                      {floatingPeopleSearchQuery.trim().length < 2 ? (
+                        <p className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-sm text-[var(--loombus-text-muted)]">
+                          Type at least 2 characters to search people you can message.
+                        </p>
+                      ) : floatingPeopleSearchLoading ? (
+                        <p className="text-sm text-[var(--loombus-text-muted)]">
+                          Searching...
+                        </p>
+                      ) : floatingPeopleSearchResults.length === 0 ? (
+                        <p className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-sm text-[var(--loombus-text-muted)]">
+                          No mutual followers match that search.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {floatingPeopleSearchResults.map((person) => (
+                            <button
+                              key={person.id}
+                              type="button"
+                              onClick={() => startFloatingConversation(person)}
+                              disabled={floatingStartingConversationId === person.id}
+                              className="flex w-full items-start gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-left transition hover:border-[var(--loombus-text-subtle)] disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-sm font-semibold text-[var(--loombus-text)]">
+                                {person.avatarUrl ? (
+                                  <img
+                                    src={person.avatarUrl}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  getFloatingPersonInitial(person)
+                                )}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-semibold text-[var(--loombus-text)]">
+                                  {getFloatingPersonName(person)}
+                                </p>
+
+                                <p className="mt-1 truncate text-xs text-[var(--loombus-text-muted)]">
+                                  {person.username ? `@${person.username}` : "Start conversation"}
+                                </p>
+                              </div>
+
+                              <span className="shrink-0 rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)]">
+                                {floatingStartingConversationId === person.id ? "Starting..." : "Message"}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {floatingMessagesMessage && (
+                        <p className="mt-4 text-sm text-[var(--loombus-text-muted)]">
+                          {floatingMessagesMessage}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ) : floatingMessagesLoading ? (
