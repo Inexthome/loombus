@@ -1602,13 +1602,9 @@ export default function CreatePage() {
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
             <div
-              className={`fixed left-0 right-0 top-0 z-30 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+4.32rem)] backdrop-blur-xl transition-transform duration-300 md:hidden ${
+              className={`loombus-mobile-topbar fixed left-0 right-0 top-0 z-30 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+4.32rem)] backdrop-blur-xl transition-transform duration-300 md:hidden ${
                 createSignalBarHidden ? "-translate-y-full" : "translate-y-0"
               }`}
-              style={{
-                backgroundColor:
-                  "color-mix(in srgb, var(--loombus-page-bg) 90%, transparent)",
-              }}
             >
               <nav
                 aria-label="Create signal controls"
@@ -1926,13 +1922,18 @@ export default function CreatePage() {
                 />
 
                 <div
-                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+8.65rem)] z-50 max-h-[min(62vh,28rem)] w-[min(calc(100vw-2rem),25rem)] -translate-x-1/2 overflow-y-auto rounded-[2rem] border border-white/15 p-3 shadow-2xl shadow-black/35 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12rem)] sm:w-[26rem]"
+                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+8.65rem)] z-50 max-h-[min(62vh,28rem)] w-[min(calc(100vw-5rem),21rem)] -translate-x-1/2 overflow-y-auto rounded-[1.75rem] border border-[var(--loombus-text-subtle)] p-3 shadow-2xl shadow-black/35 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12rem)] sm:w-[22rem]"
                   style={{
                     backgroundColor:
-                      "color-mix(in srgb, var(--loombus-surface) 88%, transparent)",
+                      "color-mix(in srgb, var(--loombus-surface-muted) 88%, var(--loombus-page-bg) 12%)",
                   }}
                 >
-                  <div className="mb-3 flex items-start justify-between gap-3 rounded-[1.4rem] border border-white/10 px-3 py-3">
+                  <div className="mb-3 flex items-start justify-between gap-3 rounded-[1.35rem] border border-[var(--loombus-border)] px-3 py-3"
+                    style={{
+                      backgroundColor:
+                        "color-mix(in srgb, var(--loombus-surface) 76%, var(--loombus-page-bg) 24%)",
+                    }}
+                  >
                     <div>
                       <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-zinc-600">
                         Create Signal
