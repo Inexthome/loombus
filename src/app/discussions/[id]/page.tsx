@@ -2778,7 +2778,7 @@ export default function DiscussionPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                      AI tools
+                      State of the Discussion
                     </p>
 
                     <h2 className="text-lg font-medium sm:text-2xl">
@@ -2797,12 +2797,12 @@ export default function DiscussionPage() {
 
                     <p className="mt-2 text-sm leading-relaxed text-zinc-500">
                       {!currentUserId
-                        ? "Log in to use available AI tools for this discussion."
+                        ? "Log in to generate a State of the Discussion for this thread."
                         : canUseAiSummary
-                          ? "Choose one AI tool at a time to understand this discussion without cluttering the thread."
+                          ? "Use Loombus intelligence tools to understand the thread without reading every reply."
                           : (
                             <>
-                              AI tools are available with Premium or Premium Plus.{" "}
+                              State of the Discussion tools are available with Premium or Premium Plus.{" "}
                               <Link
                                 href="/premium"
                                 className="text-zinc-300 underline-offset-4 hover:text-white hover:underline"
@@ -2885,12 +2885,12 @@ export default function DiscussionPage() {
 
                 <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                   {[
-                    ["summary", "Summary"],
+                    ["summary", "Overview"],
                     ["keyTakeaways", "Key Takeaways"],
                     ["whatChanged", "What Changed"],
                     ["disagreementMap", "Disagreement"],
-                    ["conversationMap", "Map"],
-                    ["relatedIdeas", "Related"],
+                    ["conversationMap", "Structure"],
+                    ["relatedIdeas", "Related Ideas"],
                   ].map(([toolKey, label]) => (
                     <button
                       key={toolKey}
@@ -3670,7 +3670,7 @@ export default function DiscussionPage() {
             </h2>
 
             <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-              Jump to replies, use AI tools, save this discussion, or continue reading related threads.
+              Jump to replies, open the State of the Discussion, save this discussion, or continue reading related threads.
             </p>
 
             <div className="mt-5 space-y-2">
@@ -3809,7 +3809,7 @@ export default function DiscussionPage() {
                 }}
                 className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
               >
-                AI tools
+                State of the Discussion
               </button>
             </div>
           </section>
@@ -3818,11 +3818,11 @@ export default function DiscussionPage() {
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                  AI tools
+                  State of the Discussion
                 </p>
 
                 <h2 className="text-lg font-semibold tracking-tight">
-                  Use AI on this thread.
+                  Understand this thread.
                 </h2>
               </div>
 
@@ -3834,17 +3834,17 @@ export default function DiscussionPage() {
               </p>
             ) : (
               <p className="text-sm leading-relaxed text-zinc-500">
-                Log in to use available AI tools for this discussion.
+                Log in to generate a State of the Discussion for this thread.
               </p>
             )}
 
             <div className="mt-4 grid gap-2 text-sm">
               {[
-                ["summary", "Summary"],
+                ["summary", "Overview"],
                 ["keyTakeaways", "Key Takeaways"],
                 ["whatChanged", "What Changed"],
                 ["disagreementMap", "Disagreement Map"],
-                ["conversationMap", "Conversation Map"],
+                ["conversationMap", "Conversation Structure"],
                 ["relatedIdeas", "Related Ideas"],
               ].map(([toolKey, label]) => (
                 <button
