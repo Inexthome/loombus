@@ -368,7 +368,7 @@ export default function Home() {
     const greetingName = getGreetingName(profile, email);
 
     return (
-      <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 lg:py-12">
+      <main className="loombus-home-canvas min-h-screen px-4 py-6 text-[var(--loombus-text)] sm:px-6 lg:py-12">
         <div className="mx-auto max-w-md md:hidden">
           <section className="loombus-mobile-home-card loombus-mobile-home-hero mb-5 rounded-[2rem] border p-5 shadow-2xl">
             <p className="loombus-mobile-home-eyebrow mb-3 text-xs uppercase tracking-[0.24em]">
@@ -508,7 +508,7 @@ export default function Home() {
         </div>
 
         <div className="mx-auto hidden max-w-6xl md:block">
-          <section className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-8 lg:p-10">
+          <section className="loombus-home-shell loombus-home-hero-shell rounded-[2rem] border p-6 sm:p-8 lg:p-10">
             <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
               Loombus Home
             </p>
@@ -524,7 +524,7 @@ export default function Home() {
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <Link
                 href="/messages"
-                className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-600"
+                className="loombus-home-status-card rounded-2xl border p-5 transition"
               >
                 <p className="text-sm text-zinc-500">Messages</p>
                 <p className="mt-2 text-3xl font-semibold">{unreadMessageCount}</p>
@@ -533,7 +533,7 @@ export default function Home() {
 
               <Link
                 href="/notifications"
-                className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-600"
+                className="loombus-home-status-card rounded-2xl border p-5 transition"
               >
                 <p className="text-sm text-zinc-500">Notifications</p>
                 <p className="mt-2 text-3xl font-semibold">{unreadNotificationCount}</p>
@@ -542,7 +542,7 @@ export default function Home() {
 
               <Link
                 href="/saved"
-                className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-600"
+                className="loombus-home-status-card rounded-2xl border p-5 transition"
               >
                 <p className="text-sm text-zinc-500">Saved</p>
                 <p className="mt-2 text-3xl font-semibold">{savedCount}</p>
@@ -555,7 +555,7 @@ export default function Home() {
             {memberSections.map((section) => (
               <section
                 key={section.heading}
-                className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 sm:p-8"
+                className="loombus-home-shell rounded-[2rem] border p-6 sm:p-8"
               >
                 <div className="mb-5">
                   <h2 className="text-2xl font-semibold tracking-tight">
@@ -571,10 +571,10 @@ export default function Home() {
                     <Link
                       key={card.href}
                       href={card.href}
-                      className={`rounded-2xl border p-5 transition ${
+                      className={`loombus-home-tile rounded-2xl border p-5 transition ${
                         card.primary
-                          ? "border-white bg-white text-black hover:bg-zinc-200"
-                          : "border-zinc-800 bg-black text-white hover:border-zinc-600"
+                          ? "loombus-home-primary-tile"
+                          : "loombus-home-secondary-tile"
                       }`}
                     >
                       <h3 className="text-lg font-semibold">{card.title}</h3>

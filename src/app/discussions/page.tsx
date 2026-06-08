@@ -845,14 +845,14 @@ export default function DiscussionsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-10 lg:py-12 loombus-shell-with-right-rail">
+    <main className="loombus-discussions-canvas min-h-screen px-4 pb-24 pt-4 text-[var(--loombus-text)] sm:px-6 sm:py-10 lg:py-12 loombus-shell-with-right-rail">
       <div className="mx-auto max-w-[46rem]">
         <div className="discussion-shell-grid">
           <div className="min-w-0">
-        <section className="sticky top-0 z-20 mb-5 hidden border-b border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 backdrop-blur-xl md:block">
+        <section className="loombus-discussions-tabs-shell sticky top-0 z-20 mb-5 hidden border-b border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 backdrop-blur-xl md:block">
           <nav
             aria-label="Discussion feed views"
-            className="grid grid-cols-3 border-y border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 backdrop-blur-xl"
+            className="loombus-discussions-tabs grid grid-cols-3 border-y border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 backdrop-blur-xl"
           >
             <button
               type="button"
@@ -911,7 +911,7 @@ export default function DiscussionsPage() {
         </section>
 
         {activeDiscussionTool === "search" && (
-          <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
+          <section className="loombus-discussions-tool-panel mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
             <label htmlFor="discussion-search" className="block">
               <span className="sr-only">
                 Search discussions
@@ -930,7 +930,7 @@ export default function DiscussionsPage() {
         )}
 
         {activeDiscussionTool === "guide" && (
-          <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
+          <section className="loombus-discussions-tool-panel mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
             <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-500">
               Guide
             </p>
@@ -946,7 +946,7 @@ export default function DiscussionsPage() {
         )}
 
         {activeDiscussionTool === "topics" && (
-          <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
+          <section className="loombus-discussions-tool-panel mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
                 Topics
@@ -987,7 +987,7 @@ export default function DiscussionsPage() {
         )}
 
         {activeDiscussionTool === "purpose" && (
-          <section className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
+          <section className="loombus-discussions-tool-panel mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
             <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
               Purpose
             </p>
@@ -1057,7 +1057,7 @@ export default function DiscussionsPage() {
         )}
 
         {!loading && filteredDiscussions.length === 0 && (
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
+          <div className="loombus-discussions-empty-state rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
             <h2 className="mb-3 text-2xl font-medium">
               No discussions found.
             </h2>
@@ -1089,7 +1089,7 @@ export default function DiscussionsPage() {
         )}
 
         {stickiesMessage && (
-          <p className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-500">
+          <p className="loombus-discussions-message mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-500">
             {stickiesMessage}
           </p>
         )}
@@ -1101,7 +1101,7 @@ export default function DiscussionsPage() {
             return (
               <article
                 key={discussion.id}
-                className="group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700 sm:rounded-[1.75rem]"
+                className="loombus-discussions-card group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700 sm:rounded-[1.75rem]"
               >
                 <Link
                   href={`/discussions/${discussion.id}`}
@@ -1227,9 +1227,9 @@ export default function DiscussionsPage() {
         </div>
         </div>
 
-        <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
+        <aside className="loombus-right-rail loombus-discussions-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
           <div className="space-y-4">
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+            <section className="loombus-discussions-rail-card rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
               <div className="mb-5 border-b border-zinc-900 pb-5">
                 <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
                   Discussions
@@ -1512,7 +1512,7 @@ export default function DiscussionsPage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+            <section className="loombus-discussions-rail-card rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
               <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
                 Current lens
               </p>
@@ -1557,7 +1557,7 @@ export default function DiscussionsPage() {
               )}
             </section>
 
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+            <section className="loombus-discussions-rail-card rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
               <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
                 Reply standard
               </p>
@@ -1577,7 +1577,7 @@ export default function DiscussionsPage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+            <section className="loombus-discussions-rail-card rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
               <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
                 Save standard
               </p>
