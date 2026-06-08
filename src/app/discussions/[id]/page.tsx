@@ -48,6 +48,21 @@ type Profile = {
   identity_verification_status?: string | null;
 };
 
+type ReplyReactionType =
+  | "helpful"
+  | "insightful"
+  | "well_reasoned"
+  | "changed_my_view"
+  | "needs_evidence";
+
+type ReplyReactionCounts = Partial<Record<ReplyReactionType, number>>;
+
+type ReplyReactionRow = {
+  reply_id: string;
+  user_id: string;
+  reaction_type: ReplyReactionType;
+};
+
 type Reply = {
   id: string;
   user_id: string;
@@ -124,6 +139,18 @@ type CommunityPrompt = {
   label: string;
   body: string;
 };
+
+const REPLY_REACTIONS: Array<{
+  type: ReplyReactionType;
+  label: string;
+  icon: string;
+}> = [
+  { type: "helpful", label: "Helpful", icon: "✓" },
+  { type: "insightful", label: "Insightful", icon: "💡" },
+  { type: "well_reasoned", label: "Well-Reasoned", icon: "🧠" },
+  { type: "changed_my_view", label: "Changed My View", icon: "↺" },
+  { type: "needs_evidence", label: "Needs Evidence", icon: "📚" },
+];
 
 const CLARIFICATION_REQUESTS: ClarificationRequest[] = [
   {
@@ -551,6 +578,9 @@ export default function DiscussionPage() {
   const [reportingReplyId, setReportingReplyId] = useState<string | null>(null);
   const [reportedDiscussion, setReportedDiscussion] = useState(false);
   const [reportedReplyIds, setReportedReplyIds] = useState<string[]>([]);
+  const [replyReactionCounts, setReplyReactionCounts] = useState<Record<string, ReplyReactionCounts>>({});
+  const [myReplyReactions, setMyReplyReactions] = useState<Record<string, ReplyReactionType[]>>({});
+  const [reactionWorkingKey, setReactionWorkingKey] = useState("");
   const [openReplyActionMenuId, setOpenReplyActionMenuId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [viewerIdentityStatus, setViewerIdentityStatus] = useState("unverified");
@@ -708,6 +738,10 @@ export default function DiscussionPage() {
 
       setCurrentUserId(viewerData.user?.id ?? null);
 
+      if (!viewerData.user) {
+        setMyReplyReactions({});
+      }
+
       await supabase.from("discussion_views").insert({
         discussion_id: id,
         viewer_id: viewerData.user?.id ?? null,
@@ -737,6 +771,30 @@ export default function DiscussionPage() {
         const replyIds = visibleReplies.map((reply) => reply.id);
 
         if (replyIds.length > 0) {
+          const { data: reactionRows } = await supabase
+            .from("reply_reactions")
+            .select("reply_id, user_id, reaction_type")
+            .in("reply_id", replyIds);
+
+          const reactionCounts: Record<string, ReplyReactionCounts> = {};
+          const viewerReactions: Record<string, ReplyReactionType[]> = {};
+
+          for (const row of (reactionRows ?? []) as ReplyReactionRow[]) {
+            const counts = reactionCounts[row.reply_id] ?? {};
+            counts[row.reaction_type] = (counts[row.reaction_type] ?? 0) + 1;
+            reactionCounts[row.reply_id] = counts;
+
+            if (row.user_id === viewerData.user.id) {
+              viewerReactions[row.reply_id] = [
+                ...(viewerReactions[row.reply_id] ?? []),
+                row.reaction_type,
+              ];
+            }
+          }
+
+          setReplyReactionCounts(reactionCounts);
+          setMyReplyReactions(viewerReactions);
+
           const { data: existingReplyReports } = await supabase
             .from("reports")
             .select("reply_id")
@@ -2072,6 +2130,109 @@ export default function DiscussionPage() {
     } finally {
       setSavingBookmark(false);
     }
+  }
+
+  async function handleToggleReplyReaction(
+    replyId: string,
+    reactionType: ReplyReactionType
+  ) {
+    if (reactionWorkingKey) {
+      return;
+    }
+
+    if (!currentUserId) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const workingKey = `${replyId}:${reactionType}`;
+    setReactionWorkingKey(workingKey);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+
+    if (!accessToken) {
+      setReactionWorkingKey("");
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch("/api/replies/react", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        replyId,
+        reactionType,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setReactionWorkingKey("");
+
+    if (!response.ok) {
+      setReportMessage(result.error ?? "Unable to update reaction.");
+      return;
+    }
+
+    const counts = result.counts ?? {};
+    setReplyReactionCounts((current) => ({
+      ...current,
+      [replyId]: counts,
+    }));
+
+    setMyReplyReactions((current) => {
+      const currentTypes = new Set(current[replyId] ?? []);
+
+      if (result.reacted) {
+        currentTypes.add(reactionType);
+      } else {
+        currentTypes.delete(reactionType);
+      }
+
+      return {
+        ...current,
+        [replyId]: Array.from(currentTypes),
+      };
+    });
+  }
+
+  function ReplyReactionChips({ reply }: { reply: Reply }) {
+    const counts = replyReactionCounts[reply.id] ?? {};
+    const myTypes = new Set(myReplyReactions[reply.id] ?? []);
+    const isOwnReply = currentUserId === reply.user_id;
+
+    return (
+      <div className="mt-4 flex flex-wrap gap-2">
+        {REPLY_REACTIONS.map((reaction) => {
+          const count = counts[reaction.type] ?? 0;
+          const selected = myTypes.has(reaction.type);
+          const working = reactionWorkingKey === `${reply.id}:${reaction.type}`;
+
+          return (
+            <button
+              key={reaction.type}
+              type="button"
+              onClick={() => handleToggleReplyReaction(reply.id, reaction.type)}
+              disabled={working || isOwnReply}
+              title={isOwnReply ? "You cannot react to your own reply." : reaction.label}
+              className={`rounded-full border px-3 py-1.5 text-xs transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                selected
+                  ? "border-zinc-400 bg-white text-black"
+                  : "border-[color:var(--loombus-border)] bg-[color:var(--loombus-muted-surface)] text-[color:var(--loombus-muted-text)] hover:border-zinc-500 hover:text-[color:var(--loombus-text)]"
+              }`}
+            >
+              <span className="mr-1">{reaction.icon}</span>
+              {reaction.label}
+              {count > 0 && <span className="ml-1">{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+    );
   }
 
   async function handleReport() {
@@ -3631,6 +3792,8 @@ export default function DiscussionPage() {
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
                         <MentionText text={reply.body} />
                       </p>
+
+                      <ReplyReactionChips reply={reply} />
 
                       {replyEditLabel && (
                         <p className="mt-4 text-xs text-zinc-600">
