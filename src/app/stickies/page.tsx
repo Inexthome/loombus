@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type DragEvent, type FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 
 type StickyItem = {
   id: string;
@@ -26,8 +27,118 @@ function getStickyTypeLabel(type: string) {
   return type;
 }
 
+function getSmartAddPayload(input: string) {
+  const clean = input.trim();
+
+  if (!clean) {
+    return null;
+  }
+
+  const lower = clean.toLowerCase();
+  const uuidMatch = clean.match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i
+  );
+
+  if (uuidMatch || lower.includes("/discussions/")) {
+    return {
+      body: {
+        discussionUrl: clean,
+      },
+      label: "Discussion",
+    };
+  }
+
+  if (lower.startsWith("ai:")) {
+    return {
+      body: {
+        itemType: "ai_summary",
+        prompt: clean.slice(3).trim(),
+      },
+      label: "AI card",
+    };
+  }
+
+  if (lower.startsWith("note:")) {
+    const note = clean.slice(5).trim();
+    const firstLine = note.split("\n")[0]?.trim() ?? "";
+
+    return {
+      body: {
+        itemType: "note",
+        title: firstLine.slice(0, 80) || "Untitled note",
+        note,
+      },
+      label: "Note",
+    };
+  }
+
+  if (lower.startsWith("topic:")) {
+    return {
+      body: {
+        itemType: "topic",
+        topic: clean.slice(6).trim(),
+      },
+      label: "Topic",
+    };
+  }
+
+  if (lower.startsWith("person:")) {
+    return {
+      body: {
+        itemType: "person",
+        username: clean.slice(7).trim(),
+      },
+      label: "Person",
+    };
+  }
+
+  if (clean.startsWith("@")) {
+    return {
+      body: {
+        itemType: "person",
+        username: clean,
+      },
+      label: "Person",
+    };
+  }
+
+  const matchedTopic = DISCUSSION_TOPICS.find(
+    (topic) => topic.toLowerCase() === lower
+  );
+
+  if (matchedTopic) {
+    return {
+      body: {
+        itemType: "topic",
+        topic: matchedTopic,
+      },
+      label: "Topic",
+    };
+  }
+
+  if (/^[a-z0-9_-]{3,40}$/i.test(clean)) {
+    return {
+      body: {
+        itemType: "person",
+        username: clean,
+      },
+      label: "Person",
+    };
+  }
+
+  return {
+    body: {
+      itemType: "note",
+      title: clean.slice(0, 80),
+      note: clean,
+    },
+    label: "Note",
+  };
+}
+
 export default function StickiesPage() {
   const [items, setItems] = useState<StickyItem[]>([]);
+  const [smartAddInput, setSmartAddInput] = useState("");
   const [discussionInput, setDiscussionInput] = useState("");
   const [topicInput, setTopicInput] = useState("");
   const [personInput, setPersonInput] = useState("");
@@ -90,6 +201,59 @@ export default function StickiesPage() {
   useEffect(() => {
     loadStickies();
   }, []);
+
+  async function addSmartSticky(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (working) {
+      return;
+    }
+
+    const payload = getSmartAddPayload(smartAddInput);
+
+    if (!payload) {
+      setMessage("Add a discussion link, @username, topic, note:, or ai: prompt.");
+      return;
+    }
+
+    setWorking(true);
+    setMessage("");
+
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      setWorking(false);
+      setIsLoggedIn(false);
+      return;
+    }
+
+    const response = await fetch("/api/stickies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload.body),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setWorking(false);
+
+    if (!response.ok) {
+      if (response.status === 403 && result.upgradeRequired) {
+        setUpgradeRequired(true);
+      }
+
+      setMessage(result.error ?? "Unable to add to Stickies.");
+      return;
+    }
+
+    setSmartAddInput("");
+    setMessage(`${payload.label} added to Stickies.`);
+
+    await loadStickies();
+  }
 
   async function addDiscussionSticky(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -642,173 +806,57 @@ export default function StickiesPage() {
         {!loading && isLoggedIn && !upgradeRequired && (
           <>
             <form
-              onSubmit={addDiscussionSticky}
-              className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
-            >
-              <label className="mb-2 block text-sm font-medium text-zinc-300">
-                Add discussion to Stickies
-              </label>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <input
-                  type="text"
-                  value={discussionInput}
-                  onChange={(event) => setDiscussionInput(event.target.value)}
-                  placeholder="Paste discussion link or ID"
-                  className="min-h-12 flex-1 rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-                />
-
-                <button
-                  type="submit"
-                  disabled={working || !discussionInput.trim()}
-                  className="rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {working ? "Adding..." : "Add"}
-                </button>
-              </div>
-
-              <p className="mt-3 text-xs leading-relaxed text-zinc-600">
-                V1 supports discussion cards. More card types can come later.
-              </p>
-            </form>
-
-            <div className="mb-5 grid gap-4 md:grid-cols-2">
-              <form
-                onSubmit={addTopicSticky}
-                className="rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
-              >
-                <label className="mb-2 block text-sm font-medium text-zinc-300">
-                  Add topic card
-                </label>
-
-                <div className="flex flex-col gap-3">
-                  <input
-                    type="text"
-                    value={topicInput}
-                    onChange={(event) => setTopicInput(event.target.value)}
-                    placeholder="Topic name"
-                    className="min-h-12 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={working || !topicInput.trim()}
-                    className="rounded-full border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {working ? "Adding..." : "Add Topic"}
-                  </button>
-                </div>
-
-                <p className="mt-3 text-xs leading-relaxed text-zinc-600">
-                  Topic cards open the matching discussion lane.
-                </p>
-              </form>
-
-              <form
-                onSubmit={addPersonSticky}
-                className="rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
-              >
-                <label className="mb-2 block text-sm font-medium text-zinc-300">
-                  Add person card
-                </label>
-
-                <div className="flex flex-col gap-3">
-                  <input
-                    type="text"
-                    value={personInput}
-                    onChange={(event) => setPersonInput(event.target.value)}
-                    placeholder="@username"
-                    className="min-h-12 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={working || !personInput.trim()}
-                    className="rounded-full border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {working ? "Adding..." : "Add Person"}
-                  </button>
-                </div>
-
-                <p className="mt-3 text-xs leading-relaxed text-zinc-600">
-                  Person cards link to public profile pages.
-                </p>
-              </form>
-            </div>
-
-            <form
-              onSubmit={addAiSticky}
+              onSubmit={addSmartSticky}
               className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
             >
               <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <label className="text-sm font-medium text-zinc-300">
-                  Generate AI workspace card
+                  Smart Add
                 </label>
 
                 <span className="w-fit rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
-                  Premium Plus AI
+                  One field
                 </span>
               </div>
 
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 <textarea
-                  value={aiPrompt}
-                  onChange={(event) => setAiPrompt(event.target.value)}
-                  placeholder="Describe a goal, question, or idea you want turned into a workspace card..."
-                  rows={4}
+                  value={smartAddInput}
+                  onChange={(event) => setSmartAddInput(event.target.value)}
+                  placeholder="Paste a discussion link, type @username, enter a topic, write note:..., or ask ai:..."
+                  rows={3}
                   className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
                 />
 
                 <button
                   type="submit"
-                  disabled={working || !aiPrompt.trim()}
-                  className="rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={working || !smartAddInput.trim()}
+                  className="w-full rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
                 >
-                  {working ? "Generating..." : "Generate AI Card"}
+                  {working ? "Adding..." : "Add to Stickies"}
                 </button>
               </div>
 
-              <p className="mt-3 text-xs leading-relaxed text-zinc-600">
-                Generates a private title, summary, and next action for your Stickies board.
-              </p>
-            </form>
-
-            <form
-              onSubmit={addNoteSticky}
-              className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
-            >
-              <label className="mb-2 block text-sm font-medium text-zinc-300">
-                Add custom note
-              </label>
-
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={noteTitle}
-                  onChange={(event) => setNoteTitle(event.target.value)}
-                  placeholder="Note title"
-                  className="min-h-12 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-                />
-
-                <textarea
-                  value={noteBody}
-                  onChange={(event) => setNoteBody(event.target.value)}
-                  placeholder="Write a short note for your workspace..."
-                  rows={4}
-                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-                />
-
-                <button
-                  type="submit"
-                  disabled={working || (!noteTitle.trim() && !noteBody.trim())}
-                  className="rounded-full border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {working ? "Adding..." : "Add Note"}
-                </button>
+              <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                  discussion link
+                </span>
+                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                  @username
+                </span>
+                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                  topic name
+                </span>
+                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                  note: your note
+                </span>
+                <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-zinc-500">
+                  ai: your prompt
+                </span>
               </div>
 
               <p className="mt-3 text-xs leading-relaxed text-zinc-600">
-                Notes are private workspace stickies and are separate from Saved notes.
+                Saved discussions can still be added directly from the Saved page.
               </p>
             </form>
 
