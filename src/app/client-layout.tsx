@@ -2407,7 +2407,7 @@ export default function ClientLayout({
                       </p>
                     )}
 
-                    <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+                    <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
                       {floatingThreadLoading ? (
                         <p className="text-sm text-[var(--loombus-text-muted)]">
                           Loading conversation...
@@ -2428,10 +2428,10 @@ export default function ClientLayout({
                               className={`flex ${mine ? "justify-end" : "justify-start"}`}
                             >
                               <div
-                                className={`max-w-[84%] rounded-[1.35rem] px-4 py-3 text-sm leading-relaxed shadow-lg shadow-black/10 ${
+                                className={`max-w-[78%] rounded-2xl px-3 py-2 text-[13px] leading-snug ${
                                   mine
                                     ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)]"
-                                    : "border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text)]"
+                                    : "bg-[var(--loombus-surface-muted)] text-[var(--loombus-text)]"
                                 }`}
                               >
                                 {threadMessage.body && threadMessage.body !== "[Attachment]" && (
@@ -2484,13 +2484,16 @@ export default function ClientLayout({
                                 )}
 
                                 <p
-                                  className={`mt-2 text-[10px] ${
+                                  className={`mt-1 text-[10px] leading-none ${
                                     mine
                                       ? "opacity-70"
                                       : "text-[var(--loombus-text-muted)]"
                                   }`}
                                 >
-                                  {new Date(threadMessage.createdAt).toLocaleString()}
+                                  {new Date(threadMessage.createdAt).toLocaleTimeString([], {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                  })}
                                 </p>
                               </div>
                             </div>
