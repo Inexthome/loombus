@@ -1262,27 +1262,27 @@ export default function CreatePage() {
   }
 
   function getDiscussionModeShellClass(isActive: boolean) {
-    return `rounded-[1.5rem] border p-4 text-left transition active:scale-[0.99] ${
+    return `rounded-[1.15rem] border px-3 py-3 text-left transition active:scale-[0.99] ${
       isActive
-        ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-lg shadow-black/10"
+        ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-md shadow-black/10"
         : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-strong)] hover:text-[var(--loombus-text)]"
     }`;
   }
 
   function getDiscussionModeShortDescription(mode: DiscussionMode) {
     if (mode === "debate") {
-      return "Structured claim + argument";
+      return "Claim + argument";
     }
 
     if (mode === "research_question") {
-      return "Background + open questions";
+      return "Context + questions";
     }
 
     if (mode === "problem_solving") {
       return "Problem + constraints";
     }
 
-    return "Share a thought or question";
+    return "Thought or question";
   }
 
   function toggleCreateMetadataTool(
@@ -1729,53 +1729,49 @@ export default function CreatePage() {
               </div>
 
               <div className="rounded-2xl border border-zinc-900 bg-black/40 p-4">
-                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <label className="block text-sm text-zinc-400">
+                <div className="rounded-[1.25rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)]/60 p-3">
+                  <div className="mb-2">
+                    <label className="block text-sm font-medium text-[var(--loombus-text)]">
                       Discussion Type
                     </label>
-                    <p className="mt-1 text-xs text-zinc-600">
-                      Open Discussion is the default. Choose a structure when the conversation needs more focus.
+                    <p className="mt-1 text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                      Choose a structure when the conversation needs more focus.
                     </p>
                   </div>
 
-                  <span className="text-xs text-zinc-600">
-                    {DISCUSSION_MODES.find((mode) => mode.value === discussionType)?.label}
-                  </span>
-                </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {DISCUSSION_MODES.map((mode) => {
+                      const modeActive = discussionType === mode.value;
 
-                <div className="grid grid-cols-2 gap-3">
-                  {DISCUSSION_MODES.map((mode) => {
-                    const modeActive = discussionType === mode.value;
+                      return (
+                        <button
+                          key={mode.value}
+                          type="button"
+                          onClick={() => setDiscussionType(mode.value)}
+                          className={getDiscussionModeShellClass(modeActive)}
+                          aria-pressed={modeActive}
+                        >
+                          <span className="block text-[0.55rem] font-semibold uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
+                            {mode.value === "open_discussion"
+                              ? "Open"
+                              : mode.value === "research_question"
+                                ? "Research"
+                                : mode.value === "problem_solving"
+                                  ? "Solve"
+                                  : "Debate"}
+                          </span>
 
-                    return (
-                      <button
-                        key={mode.value}
-                        type="button"
-                        onClick={() => setDiscussionType(mode.value)}
-                        className={getDiscussionModeShellClass(modeActive)}
-                        aria-pressed={modeActive}
-                      >
-                        <span className="block text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
-                          {mode.value === "open_discussion"
-                            ? "Open"
-                            : mode.value === "research_question"
-                              ? "Research"
-                              : mode.value === "problem_solving"
-                                ? "Solve"
-                                : "Debate"}
-                        </span>
+                          <span className="mt-2 block text-lg font-semibold leading-tight tracking-tight text-[var(--loombus-text)]">
+                            {mode.label}
+                          </span>
 
-                        <span className="mt-2 block text-xl font-semibold leading-tight tracking-tight text-[var(--loombus-text)]">
-                          {mode.label}
-                        </span>
-
-                        <span className="mt-2 block text-xs font-medium leading-snug text-[var(--loombus-text-muted)]">
-                          {getDiscussionModeShortDescription(mode.value)}
-                        </span>
-                      </button>
-                    );
-                  })}
+                          <span className="mt-1.5 block text-xs font-medium leading-snug text-[var(--loombus-text-muted)]">
+                            {getDiscussionModeShortDescription(mode.value)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {discussionType === "debate" && (
