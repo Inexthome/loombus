@@ -27,6 +27,28 @@ function getStickyTypeLabel(type: string) {
   return type;
 }
 
+function looksLikeAiRequest(value: string) {
+  const lower = value.toLowerCase();
+
+  return [
+    "help me",
+    "create a",
+    "make a",
+    "generate",
+    "summarize",
+    "organize",
+    "brainstorm",
+    "plan",
+    "turn this into",
+    "what should i",
+    "how should i",
+    "give me",
+    "ideas for",
+    "next steps",
+    "workspace card",
+  ].some((phrase) => lower.includes(phrase));
+}
+
 function getSmartAddPayload(input: string) {
   const clean = input.trim();
 
@@ -45,6 +67,7 @@ function getSmartAddPayload(input: string) {
         discussionUrl: clean,
       },
       label: "Discussion",
+      buttonLabel: "Add Discussion",
     };
   }
 
@@ -54,7 +77,8 @@ function getSmartAddPayload(input: string) {
         itemType: "ai_summary",
         prompt: clean.slice(3).trim(),
       },
-      label: "AI card",
+      label: "AI workspace card",
+      buttonLabel: "Generate AI Card",
     };
   }
 
@@ -69,6 +93,7 @@ function getSmartAddPayload(input: string) {
         note,
       },
       label: "Note",
+      buttonLabel: "Add Note",
     };
   }
 
@@ -79,6 +104,7 @@ function getSmartAddPayload(input: string) {
         topic: clean.slice(6).trim(),
       },
       label: "Topic",
+      buttonLabel: "Add Topic",
     };
   }
 
@@ -89,6 +115,7 @@ function getSmartAddPayload(input: string) {
         username: clean.slice(7).trim(),
       },
       label: "Person",
+      buttonLabel: "Add Person",
     };
   }
 
@@ -99,6 +126,7 @@ function getSmartAddPayload(input: string) {
         username: clean,
       },
       label: "Person",
+      buttonLabel: "Add Person",
     };
   }
 
@@ -113,6 +141,18 @@ function getSmartAddPayload(input: string) {
         topic: matchedTopic,
       },
       label: "Topic",
+      buttonLabel: "Add Topic",
+    };
+  }
+
+  if (looksLikeAiRequest(clean)) {
+    return {
+      body: {
+        itemType: "ai_summary",
+        prompt: clean,
+      },
+      label: "AI workspace card",
+      buttonLabel: "Generate AI Card",
     };
   }
 
@@ -123,6 +163,7 @@ function getSmartAddPayload(input: string) {
         username: clean,
       },
       label: "Person",
+      buttonLabel: "Add Person",
     };
   }
 
@@ -133,6 +174,7 @@ function getSmartAddPayload(input: string) {
       note: clean,
     },
     label: "Note",
+    buttonLabel: "Add Note",
   };
 }
 
