@@ -40,6 +40,14 @@ type DiscussionMode = "open_discussion" | "debate" | "research_question" | "prob
 
 type DiscussionMetadata = Record<string, string>;
 
+type MemoryDiscussion = {
+  id: string;
+  title: string;
+  topic: string;
+  body: string;
+  created_at: string;
+};
+
 type EditableDiscussion = {
   id: string;
   user_id: string;
@@ -88,6 +96,40 @@ const LONG_DISCUSSION_MAX_LENGTH = 12000;
 const ATTACHMENT_BUCKET = "discussion-attachments";
 const MAX_ATTACHMENT_FILES = 3;
 const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
+const SIMILAR_DISCUSSION_STOP_WORDS = new Set([
+  "about",
+  "after",
+  "again",
+  "against",
+  "also",
+  "because",
+  "before",
+  "being",
+  "between",
+  "could",
+  "discussion",
+  "from",
+  "have",
+  "into",
+  "more",
+  "should",
+  "that",
+  "their",
+  "there",
+  "these",
+  "they",
+  "this",
+  "through",
+  "what",
+  "when",
+  "where",
+  "which",
+  "while",
+  "will",
+  "with",
+  "would",
+]);
+
 const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -95,6 +137,106 @@ const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
   "image/gif",
   "application/pdf",
 ]);
+
+function getDiscussionMemoryTerms(value: string) {
+  return [
+    ...new Set(
+      value
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .map((term) => term.trim())
+        .filter(
+          (term) =>
+            term.length >= 3 &&
+            !SIMILAR_DISCUSSION_STOP_WORDS.has(term)
+        )
+    ),
+  ].slice(0, 18);
+}
+
+function getSimilarDiscussionScore({
+  candidate,
+  title,
+  body,
+  topic,
+}: {
+  candidate: MemoryDiscussion;
+  title: string;
+  body: string;
+  topic: string;
+}) {
+  const titleTerms = getDiscussionMemoryTerms(title);
+  const bodyTerms = getDiscussionMemoryTerms(body).slice(0, 10);
+  const allTerms = [...new Set([...titleTerms, ...bodyTerms])];
+
+  if (allTerms.length === 0) {
+    return 0;
+  }
+
+  const candidateText = `${candidate.title} ${candidate.body} ${candidate.topic}`.toLowerCase();
+  let score = 0;
+
+  for (const term of titleTerms) {
+    if (candidate.title.toLowerCase().includes(term)) {
+      score += 4;
+    } else if (candidateText.includes(term)) {
+      score += 2;
+    }
+  }
+
+  for (const term of bodyTerms) {
+    if (candidateText.includes(term)) {
+      score += 1;
+    }
+  }
+
+  if (topic && candidate.topic === topic) {
+    score += 3;
+  }
+
+  return score;
+}
+
+function getSimilarDiscussions({
+  discussions,
+  title,
+  body,
+  topic,
+}: {
+  discussions: MemoryDiscussion[];
+  title: string;
+  body: string;
+  topic: string;
+}) {
+  if (title.trim().length < 15) {
+    return [];
+  }
+
+  return discussions
+    .map((discussion) => ({
+      discussion,
+      score: getSimilarDiscussionScore({
+        candidate: discussion,
+        title,
+        body,
+        topic,
+      }),
+    }))
+    .filter((item) => item.score >= 3)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+
+      return (
+        new Date(b.discussion.created_at).getTime() -
+        new Date(a.discussion.created_at).getTime()
+      );
+    })
+    .slice(0, 3)
+    .map((item) => item.discussion);
+}
 
 function getMissingProfileFields(profile: Profile | null) {
   const missing = [];
@@ -369,6 +511,7 @@ export default function CreatePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | null>(null);
+  const [memoryDiscussions, setMemoryDiscussions] = useState<MemoryDiscussion[]>([]);
   const [editingDiscussionId, setEditingDiscussionId] = useState<string | null>(null);
   const [editingDiscussionMeta, setEditingDiscussionMeta] =
     useState<EditableDiscussion | null>(null);
@@ -416,6 +559,17 @@ export default function CreatePage() {
     return getRecommendedDiscussionTopic(title, body);
   }, [body, title, topic, topicManuallySelected]);
 
+  const similarDiscussions = useMemo(
+    () =>
+      getSimilarDiscussions({
+        discussions: memoryDiscussions,
+        title,
+        body: bodyPlainText,
+        topic,
+      }),
+    [bodyPlainText, memoryDiscussions, title, topic]
+  );
+
   useEffect(() => {
     async function loadProfileStatus() {
       const { data: userData } = await supabase.auth.getUser();
@@ -428,6 +582,15 @@ export default function CreatePage() {
 
       setIsLoggedIn(true);
       setCurrentUserId(userData.user.id);
+
+      const { data: memoryDiscussionData } = await supabase
+        .from("discussions")
+        .select("id, title, topic, body, created_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      setMemoryDiscussions((memoryDiscussionData ?? []) as MemoryDiscussion[]);
 
       const requestedDraftId = getQueryParam("draft");
       const requestedEditId = getQueryParam("edit");
@@ -1840,6 +2003,40 @@ export default function CreatePage() {
                 placeholder="How AI changes trust online"
                 className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
               />
+
+              {similarDiscussions.length > 0 && !isEditMode && (
+                <div className="mt-4 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-[color:var(--loombus-text)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--loombus-muted-text)]">
+                    Discussion Memory
+                  </p>
+
+                  <h3 className="mt-2 text-sm font-semibold">
+                    Similar discussions already exist
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-relaxed text-[color:var(--loombus-muted-text)]">
+                    Loombus found related discussions you may want to read or build on before publishing.
+                  </p>
+
+                  <div className="mt-3 grid gap-2">
+                    {similarDiscussions.map((discussion) => (
+                      <Link
+                        key={discussion.id}
+                        href={`/discussions/${discussion.id}`}
+                        target="_blank"
+                        className="rounded-xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-muted-surface)] p-3 transition hover:border-zinc-500"
+                      >
+                        <p className="text-[11px] uppercase tracking-[0.18em] text-[color:var(--loombus-muted-text)]">
+                          {discussion.topic}
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-[color:var(--loombus-text)]">
+                          {discussion.title}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
