@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import {
   Bell,
   Bookmark,
@@ -45,6 +45,20 @@ type FloatingConversation = {
   lastMessageAt: string | null;
 };
 
+type FloatingMessageAttachment = {
+  id: string;
+  messageId: string;
+  conversationId: string;
+  userId: string;
+  publicUrl: string;
+  fileName: string;
+  mimeType: string;
+  fileSizeBytes: number;
+  attachmentKind: "image" | "pdf";
+  sortOrder: number;
+  createdAt: string;
+};
+
 type FloatingThreadMessage = {
   id: string;
   conversationId: string;
@@ -54,6 +68,7 @@ type FloatingThreadMessage = {
   editedAt: string | null;
   deletedBySender: boolean;
   readByRecipientAt: string | null;
+  attachments?: FloatingMessageAttachment[];
 };
 
 type FloatingPeopleSearchResult = {
@@ -65,6 +80,30 @@ type FloatingPeopleSearchResult = {
 };
 
 const RIGHT_RAIL_WIDTH_STORAGE_KEY = "loombus:right-rail-width";
+
+const FLOATING_ATTACHMENT_BUCKET = "message-attachments";
+const FLOATING_MAX_ATTACHMENT_FILES = 3;
+const FLOATING_MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
+const FLOATING_ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+]);
+
+function formatFloatingAttachmentFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function getFloatingSafeAttachmentFileName(fileName: string) {
+  return fileName.trim().replace(/[\\/]/g, "-").slice(0, 120);
+}
+
 
 type DiscussionFeedMode = "all" | "following" | "signal";
 const DEFAULT_RIGHT_RAIL_WIDTH = 320;
@@ -97,6 +136,8 @@ export default function ClientLayout({
   const [floatingComposerText, setFloatingComposerText] = useState("");
   const [floatingSending, setFloatingSending] = useState(false);
   const [floatingTypingUserName, setFloatingTypingUserName] = useState("");
+  const [floatingAttachmentFiles, setFloatingAttachmentFiles] = useState<File[]>([]);
+  const [floatingAttachmentMessage, setFloatingAttachmentMessage] = useState("");
   const [floatingNewMessageOpen, setFloatingNewMessageOpen] = useState(false);
   const [floatingPeopleSearchResults, setFloatingPeopleSearchResults] = useState<FloatingPeopleSearchResult[]>([]);
   const [floatingPeopleSearchLoading, setFloatingPeopleSearchLoading] = useState(false);
@@ -961,6 +1002,8 @@ export default function ClientLayout({
     setFloatingThreadMessages([]);
     setFloatingComposerText("");
     setFloatingTypingUserName("");
+    setFloatingAttachmentFiles([]);
+    setFloatingAttachmentMessage("");
     setFloatingMessagesMessage("");
   }
 
@@ -1031,7 +1074,114 @@ export default function ClientLayout({
     setSelectedFloatingConversationId(conversationId);
     setFloatingComposerText("");
     setFloatingTypingUserName("");
+    setFloatingAttachmentFiles([]);
+    setFloatingAttachmentMessage("");
     await loadFloatingThread(conversationId);
+  }
+
+  function handleFloatingAttachmentSelection(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    setFloatingAttachmentMessage("");
+
+    if (selectedFiles.length === 0) {
+      setFloatingAttachmentFiles([]);
+      return;
+    }
+
+    if (selectedFiles.length > FLOATING_MAX_ATTACHMENT_FILES) {
+      setFloatingAttachmentFiles([]);
+      setFloatingAttachmentMessage("You can attach up to 3 files.");
+      event.target.value = "";
+      return;
+    }
+
+    const invalidFile = selectedFiles.find(
+      (file) =>
+        !FLOATING_ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type) ||
+        file.size <= 0 ||
+        file.size > FLOATING_MAX_ATTACHMENT_SIZE_BYTES
+    );
+
+    if (invalidFile) {
+      setFloatingAttachmentFiles([]);
+      setFloatingAttachmentMessage("Attachments must be JPG, PNG, WebP, GIF, or PDF files up to 10 MB each.");
+      event.target.value = "";
+      return;
+    }
+
+    setFloatingAttachmentFiles(selectedFiles);
+    setFloatingAttachmentMessage(`${selectedFiles.length} attachment${selectedFiles.length === 1 ? "" : "s"} ready.`);
+  }
+
+  function clearFloatingAttachments() {
+    setFloatingAttachmentFiles([]);
+    setFloatingAttachmentMessage("");
+  }
+
+  async function uploadFloatingMessageAttachments({
+    conversationId,
+    messageId,
+    accessToken,
+  }: {
+    conversationId: string;
+    messageId: string;
+    accessToken: string;
+  }) {
+    if (!user?.id || floatingAttachmentFiles.length === 0) {
+      return true;
+    }
+
+    for (const [index, file] of floatingAttachmentFiles.entries()) {
+      const extension =
+        getFloatingSafeAttachmentFileName(file.name).split(".").pop() || "file";
+      const storagePath = `${user.id}/${conversationId}/${messageId}/${crypto.randomUUID()}.${extension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(FLOATING_ATTACHMENT_BUCKET)
+        .upload(storagePath, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        setFloatingMessagesMessage(`Attachment upload failed: ${uploadError.message}`);
+        setFloatingAttachmentMessage(`${file.name} could not upload.`);
+        return false;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from(FLOATING_ATTACHMENT_BUCKET)
+        .getPublicUrl(storagePath);
+
+      const response = await fetch("/api/messages/attachments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          conversationId,
+          messageId,
+          storagePath,
+          publicUrl: publicUrlData.publicUrl,
+          fileName: file.name,
+          mimeType: file.type,
+          fileSizeBytes: file.size,
+          sortOrder: index,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        await supabase.storage.from(FLOATING_ATTACHMENT_BUCKET).remove([storagePath]);
+        setFloatingMessagesMessage(`Attachment save failed: ${result.error ?? "Unknown attachment error."}`);
+        setFloatingAttachmentMessage(result.error ?? `${file.name} could not be attached.`);
+        return false;
+      }
+    }
+
+    return true;
   }
 
   function sendFloatingTypingIndicator() {
@@ -1071,8 +1221,9 @@ export default function ClientLayout({
     }
 
     const body = floatingComposerText.trim();
+    const hasAttachments = floatingAttachmentFiles.length > 0;
 
-    if (!body) {
+    if (!body && !hasAttachments) {
       return;
     }
 
@@ -1098,6 +1249,7 @@ export default function ClientLayout({
         body: JSON.stringify({
           conversationId: selectedFloatingConversationId,
           body,
+          hasAttachments,
         }),
       });
 
@@ -1109,7 +1261,30 @@ export default function ClientLayout({
         return;
       }
 
+      if (hasAttachments) {
+        const messageId = String(payload.message?.id ?? "");
+
+        if (!messageId) {
+          setFloatingMessagesMessage("Message sent, but attachment upload could not start.");
+          setFloatingSending(false);
+          return;
+        }
+
+        const attachmentsUploaded = await uploadFloatingMessageAttachments({
+          conversationId: selectedFloatingConversationId,
+          messageId,
+          accessToken,
+        });
+
+        if (!attachmentsUploaded) {
+          setFloatingSending(false);
+          return;
+        }
+      }
+
       setFloatingComposerText("");
+      clearFloatingAttachments();
+
       await loadFloatingThread(selectedFloatingConversationId);
       await loadFloatingConversations();
       window.dispatchEvent(new Event("loombus:messages-changed"));
@@ -1119,6 +1294,7 @@ export default function ClientLayout({
 
     setFloatingSending(false);
   }
+
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -1826,6 +2002,49 @@ export default function ClientLayout({
                                   </p>
                                 )}
 
+                                {threadMessage.attachments && threadMessage.attachments.length > 0 && (
+                                  <div className="mt-3 space-y-2">
+                                    {threadMessage.attachments.map((attachment) => (
+                                      <div
+                                        key={attachment.id}
+                                        className={`overflow-hidden rounded-xl border ${
+                                          mine
+                                            ? "border-black/10 bg-black/10"
+                                            : "border-[var(--loombus-border)] bg-[var(--loombus-surface)]"
+                                        }`}
+                                      >
+                                        {attachment.attachmentKind === "image" ? (
+                                          <a
+                                            href={attachment.publicUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                          >
+                                            <img
+                                              src={attachment.publicUrl}
+                                              alt={attachment.fileName}
+                                              className="max-h-48 w-full object-cover"
+                                            />
+                                          </a>
+                                        ) : (
+                                          <a
+                                            href={attachment.publicUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="block p-3"
+                                          >
+                                            <p className="text-sm font-medium">
+                                              PDF
+                                            </p>
+                                            <p className="mt-1 truncate text-xs opacity-70">
+                                              {attachment.fileName}
+                                            </p>
+                                          </a>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
                                 <p
                                   className={`mt-2 text-[10px] ${
                                     mine
@@ -1849,7 +2068,58 @@ export default function ClientLayout({
                     )}
 
                     <div className="border-t border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
+                      {floatingAttachmentFiles.length > 0 && (
+                        <div className="mb-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3">
+                          <div className="mb-2 flex items-center justify-between gap-3">
+                            <p className="text-xs text-[var(--loombus-text-muted)]">
+                              {floatingAttachmentFiles.length} attachment{floatingAttachmentFiles.length === 1 ? "" : "s"} selected
+                            </p>
+
+                            <button
+                              type="button"
+                              onClick={clearFloatingAttachments}
+                              disabled={floatingSending}
+                              className="rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Clear
+                            </button>
+                          </div>
+
+                          <div className="space-y-2">
+                            {floatingAttachmentFiles.map((file) => (
+                              <div
+                                key={`${file.name}-${file.size}-${file.lastModified}`}
+                                className="flex items-center justify-between gap-3 rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-2 text-xs text-[var(--loombus-text-muted)]"
+                              >
+                                <span className="truncate">{file.name}</span>
+                                <span className="shrink-0 text-[var(--loombus-text-subtle)]">
+                                  {file.type === "application/pdf" ? "PDF" : "Image"} · {formatFloatingAttachmentFileSize(file.size)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {floatingAttachmentMessage && (
+                        <p className="mb-2 text-xs text-[var(--loombus-text-muted)]">
+                          {floatingAttachmentMessage}
+                        </p>
+                      )}
+
                       <div className="flex items-end gap-2 rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2">
+                        <label className="mb-1 cursor-pointer rounded-full border border-[var(--loombus-border)] px-3 py-2 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]">
+                          +
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                            onChange={handleFloatingAttachmentSelection}
+                            disabled={floatingSending}
+                            className="hidden"
+                          />
+                        </label>
+
                         <textarea
                           value={floatingComposerText}
                           onChange={(event) => {
@@ -1869,7 +2139,7 @@ export default function ClientLayout({
 
                         <button
                           type="button"
-                          disabled={floatingSending || !floatingComposerText.trim()}
+                          disabled={floatingSending || (!floatingComposerText.trim() && floatingAttachmentFiles.length === 0)}
                           onClick={sendFloatingMessage}
                           className="mb-1 rounded-full bg-[var(--loombus-primary-bg)] px-4 py-2 text-xs font-semibold text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
