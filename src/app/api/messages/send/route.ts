@@ -9,6 +9,9 @@ type ProfileAccess = {
   account_status: string | null;
   enforcement_reason: string | null;
   suspended_until: string | null;
+  age_band: string | null;
+  teen_safety_mode: boolean | null;
+  guardian_required: boolean | null;
 };
 
 const UUID_PATTERN =
@@ -66,7 +69,7 @@ async function getCurrentUser(supabase: any) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("account_status, enforcement_reason, suspended_until")
+    .select("account_status, enforcement_reason, suspended_until, age_band, teen_safety_mode, guardian_required")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -83,7 +86,7 @@ async function getCurrentUser(supabase: any) {
     };
   }
 
-  return { user, error: null };
+  return { user, profile, error: null };
 }
 
 async function hasBlockRelationship(supabase: any, userId: string, otherUserId: string) {
@@ -98,12 +101,86 @@ async function hasBlockRelationship(supabase: any, userId: string, otherUserId: 
   return Boolean(blocks && blocks.length > 0);
 }
 
+function normalizeAgeBand(value: unknown) {
+  if (
+    value === "unknown" ||
+    value === "under_13" ||
+    value === "teen" ||
+    value === "adult"
+  ) {
+    return value;
+  }
+
+  return "unknown";
+}
+
+function getMessagingAgeRestriction(
+  profile: ProfileAccess | null,
+  role: "sender" | "recipient"
+) {
+  const ageBand = normalizeAgeBand(profile?.age_band);
+
+  if (ageBand === "under_13" || profile?.guardian_required) {
+    return {
+      code: "under_13_not_allowed",
+      message: "Loombus is not available to children under 13.",
+    };
+  }
+
+  if (ageBand === "unknown") {
+    return {
+      code: role === "sender" ? "age_gate_required" : "recipient_age_gate_required",
+      message:
+        role === "sender"
+          ? "Complete age safety before using private messages."
+          : "This member must complete age safety before private messages can continue.",
+    };
+  }
+
+  return null;
+}
+
+function getTeenMessagingContext(
+  senderProfile: ProfileAccess | null,
+  recipientProfile: ProfileAccess | null
+) {
+  const senderAgeBand = normalizeAgeBand(senderProfile?.age_band);
+  const recipientAgeBand = normalizeAgeBand(recipientProfile?.age_band);
+  const senderTeenSafetyMode = Boolean(senderProfile?.teen_safety_mode);
+  const recipientTeenSafetyMode = Boolean(recipientProfile?.teen_safety_mode);
+  const teenMessageInvolved = senderTeenSafetyMode || recipientTeenSafetyMode;
+
+  return {
+    teen_safety_surface: "private_message",
+    sender_age_band: senderAgeBand,
+    recipient_age_band: recipientAgeBand,
+    sender_teen_safety_mode: senderTeenSafetyMode,
+    recipient_teen_safety_mode: recipientTeenSafetyMode,
+    teen_message_involved: teenMessageInvolved,
+    adult_to_teen_message: senderAgeBand === "adult" && recipientAgeBand === "teen",
+    teen_to_adult_message: senderAgeBand === "teen" && recipientAgeBand === "adult",
+  };
+}
+
 export async function POST(request: NextRequest) {
   const supabase = getSupabaseForRequest(request);
-  const { user, error } = await getCurrentUser(supabase);
+  const { user, profile: currentProfile, error } = await getCurrentUser(supabase);
 
   if (error || !user) {
     return error ?? jsonError("Unauthorized.", 401);
+  }
+
+  const senderAgeRestriction = getMessagingAgeRestriction(
+    currentProfile as ProfileAccess | null,
+    "sender"
+  );
+
+  if (senderAgeRestriction) {
+    return jsonError(
+      senderAgeRestriction.message,
+      403,
+      senderAgeRestriction.code
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -128,30 +205,6 @@ export async function POST(request: NextRequest) {
   if (messageBody.length > MAX_MESSAGE_LENGTH) {
     return jsonError("Message is too long.", 400);
   }
-
-  if (rawBody) {
-    const safetyDecision = await reviewLoombusSafety({
-      userId: user.id,
-      content: rawBody,
-      mode: "private_message",
-      targetId: conversationId,
-    });
-
-    if (!safetyDecision.allowed) {
-      return NextResponse.json(
-        {
-          error:
-            safetyDecision.message ??
-            "This message appears to violate Loombus safety rules. Please revise it before sending.",
-          code: safetyDecision.code ?? "message_safety_blocked",
-          category: safetyDecision.category,
-          provider: safetyDecision.provider,
-        },
-        { status: 400 }
-      );
-    }
-  }
-
 
   const { data: senderMembership, error: senderMembershipError } = await supabase
     .from("private_conversation_members")
@@ -204,7 +257,7 @@ export async function POST(request: NextRequest) {
   const [{ data: recipientProfile }, { data: senderProfile }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("account_status, enforcement_reason, suspended_until")
+      .select("account_status, enforcement_reason, suspended_until, age_band, teen_safety_mode, guardian_required")
       .eq("id", recipientId)
       .maybeSingle(),
     supabase
@@ -226,6 +279,51 @@ export async function POST(request: NextRequest) {
 
   if (blocked) {
     return jsonError("You cannot message this member.", 403);
+  }
+
+  const recipientAgeRestriction = getMessagingAgeRestriction(
+    recipientProfile as ProfileAccess | null,
+    "recipient"
+  );
+
+  if (recipientAgeRestriction) {
+    return jsonError(
+      recipientAgeRestriction.message,
+      403,
+      recipientAgeRestriction.code
+    );
+  }
+
+  const teenMessagingContext = getTeenMessagingContext(
+    currentProfile as ProfileAccess | null,
+    recipientProfile as ProfileAccess | null
+  );
+
+  if (rawBody) {
+    const safetyDecision = await reviewLoombusSafety({
+      userId: user.id,
+      content: rawBody,
+      mode: "private_message",
+      targetId: conversationId,
+      metadata: {
+        ...teenMessagingContext,
+        recipient_id: recipientId,
+      },
+    });
+
+    if (!safetyDecision.allowed) {
+      return NextResponse.json(
+        {
+          error:
+            safetyDecision.message ??
+            "This message appears to violate Loombus safety rules. Please revise it before sending.",
+          code: safetyDecision.code ?? "message_safety_blocked",
+          category: safetyDecision.category,
+          provider: safetyDecision.provider,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   const cooldownSince = new Date(Date.now() - SEND_COOLDOWN_SECONDS * 1000).toISOString();
@@ -332,6 +430,8 @@ export async function POST(request: NextRequest) {
       conversation_id: conversationId,
       recipient_id: recipientId,
       private_message_safety_checked: Boolean(rawBody),
+      teen_safety_checked: true,
+      ...teenMessagingContext,
     },
   });
 

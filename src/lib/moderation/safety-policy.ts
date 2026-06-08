@@ -130,12 +130,14 @@ export async function reviewLoombusSafety({
   mode,
   targetId = null,
   maxLength,
+  metadata = null,
 }: {
   userId: string;
   content: string;
   mode: LoombusSafetyMode;
   targetId?: string | null;
   maxLength?: number;
+  metadata?: Record<string, unknown> | null;
 }): Promise<LoombusSafetyDecision> {
   const cleanContent = content.trim();
 
@@ -159,6 +161,7 @@ export async function reviewLoombusSafety({
       content: cleanContent,
       message: ruleBasedError.message,
       targetId,
+      metadata,
     });
 
     return {
@@ -183,6 +186,7 @@ export async function reviewLoombusSafety({
       content: cleanContent,
       targetId,
       review: aiSafetyReview,
+      metadata,
     });
 
     const payload = getAiSafetyErrorPayload(aiSafetyReview);
@@ -208,6 +212,7 @@ export async function reviewLoombusSafety({
       content: cleanContent,
       targetId,
       review: aiSafetyReview,
+      metadata,
     });
 
     return {

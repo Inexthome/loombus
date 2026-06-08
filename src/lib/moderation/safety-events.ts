@@ -21,12 +21,14 @@ export async function logRuleBasedSafetyEvent({
   content,
   message,
   targetId = null,
+  metadata = null,
 }: {
   userId: string;
   contentType: ContentSafetyContentType;
   content: string;
   message: string;
   targetId?: string | null;
+  metadata?: Record<string, unknown> | null;
 }) {
   await logAuditEvent({
     actor_id: userId,
@@ -40,6 +42,7 @@ export async function logRuleBasedSafetyEvent({
       message,
       content_preview: getContentPreview(content),
       content_length: content.trim().length,
+      ...(metadata ?? {}),
     },
   });
 }
@@ -50,12 +53,14 @@ export async function logAiSafetyEvent({
   content,
   review,
   targetId = null,
+  metadata = null,
 }: {
   userId: string;
   contentType: ContentSafetyContentType;
   content: string;
   review: AiSafetyReview;
   targetId?: string | null;
+  metadata?: Record<string, unknown> | null;
 }) {
   const outcome: ContentSafetyOutcome =
     review.action === "block" ? "blocked" : "warned";
@@ -77,6 +82,7 @@ export async function logAiSafetyEvent({
       model_name: review.modelName,
       content_preview: getContentPreview(content),
       content_length: content.trim().length,
+      ...(metadata ?? {}),
     },
   });
 }

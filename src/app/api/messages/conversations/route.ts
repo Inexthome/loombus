@@ -7,6 +7,9 @@ type ProfileAccess = {
   account_status: string | null;
   enforcement_reason: string | null;
   suspended_until: string | null;
+  age_band: string | null;
+  teen_safety_mode: boolean | null;
+  guardian_required: boolean | null;
 };
 
 type ConversationMemberRow = {
@@ -75,6 +78,45 @@ function isValidUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_PATTERN.test(value);
 }
 
+function normalizeAgeBand(value: unknown) {
+  if (
+    value === "unknown" ||
+    value === "under_13" ||
+    value === "teen" ||
+    value === "adult"
+  ) {
+    return value;
+  }
+
+  return "unknown";
+}
+
+function getMessagingAgeRestriction(
+  profile: ProfileAccess | null,
+  role: "sender" | "recipient"
+) {
+  const ageBand = normalizeAgeBand(profile?.age_band);
+
+  if (ageBand === "under_13" || profile?.guardian_required) {
+    return {
+      code: "under_13_not_allowed",
+      message: "Loombus is not available to children under 13.",
+    };
+  }
+
+  if (ageBand === "unknown") {
+    return {
+      code: role === "sender" ? "age_gate_required" : "recipient_age_gate_required",
+      message:
+        role === "sender"
+          ? "Complete age safety before using private messages."
+          : "This member must complete age safety before private messages can start.",
+    };
+  }
+
+  return null;
+}
+
 async function getCurrentUserAndProfile(supabase: any) {
   const {
     data: { user },
@@ -87,7 +129,7 @@ async function getCurrentUserAndProfile(supabase: any) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("account_status, enforcement_reason, suspended_until")
+    .select("account_status, enforcement_reason, suspended_until, age_band, teen_safety_mode, guardian_required")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -355,10 +397,23 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const { user, error } = await getCurrentUserAndProfile(supabase);
+  const { user, profile, error } = await getCurrentUserAndProfile(supabase);
 
   if (error || !user) {
     return error ?? jsonError("Unauthorized.", 401);
+  }
+
+  const senderAgeRestriction = getMessagingAgeRestriction(
+    profile as ProfileAccess | null,
+    "sender"
+  );
+
+  if (senderAgeRestriction) {
+    return jsonError(
+      senderAgeRestriction.message,
+      403,
+      senderAgeRestriction.code
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -379,7 +434,7 @@ export async function POST(request: NextRequest) {
 
   const { data: targetProfile } = await supabase
     .from("profiles")
-    .select("id, account_status, enforcement_reason, suspended_until")
+    .select("id, account_status, enforcement_reason, suspended_until, age_band, teen_safety_mode, guardian_required")
     .eq("id", targetUserId)
     .maybeSingle();
 
@@ -393,6 +448,19 @@ export async function POST(request: NextRequest) {
 
   if (!targetEnforcement.allowed) {
     return jsonError("You cannot message this member.", 403);
+  }
+
+  const targetAgeRestriction = getMessagingAgeRestriction(
+    targetProfile as ProfileAccess,
+    "recipient"
+  );
+
+  if (targetAgeRestriction) {
+    return jsonError(
+      targetAgeRestriction.message,
+      403,
+      targetAgeRestriction.code
+    );
   }
 
   const blocked = await hasBlockRelationship(supabase, user.id, targetUserId);

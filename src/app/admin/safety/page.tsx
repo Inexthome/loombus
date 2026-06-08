@@ -351,6 +351,9 @@ export default function AdminSafetyPage() {
           event.action === "content_safety.warned" &&
           getMetadataString(event.metadata, "stage") === "ai_assisted"
       ).length,
+      teenSafetyEvents: events.filter(
+        (event) => getMetadataString(event.metadata, "teen_message_involved") === "true"
+      ).length,
       rageBaitOrBroadShaming: events.filter((event) => {
         const text = getPatternPreviewText(event);
         return text.includes("rage bait") || text.includes("broad shaming");
@@ -394,6 +397,13 @@ export default function AdminSafetyPage() {
         description: "AI safety review flagged content that may need admin context review.",
         count: signalCounts.aiAssistedWarnings,
         severity: getPatternSeverity(signalCounts.aiAssistedWarnings),
+      },
+      {
+        key: "teenSafetyEvents",
+        label: "Teen safety events",
+        description: "Private-message safety events involving at least one teen-safety account.",
+        count: signalCounts.teenSafetyEvents,
+        severity: getPatternSeverity(signalCounts.teenSafetyEvents),
       },
       {
         key: "rageBaitOrBroadShaming",
@@ -939,6 +949,9 @@ export default function AdminSafetyPage() {
             const message = getMetadataString(metadata, "message");
             const preview = getMetadataString(metadata, "content_preview");
             const contentLength = getMetadataString(metadata, "content_length");
+            const teenMessageInvolved = getMetadataString(metadata, "teen_message_involved");
+            const senderAgeBand = getMetadataString(metadata, "sender_age_band");
+            const recipientAgeBand = getMetadataString(metadata, "recipient_age_band");
 
             return (
               <article
@@ -1009,6 +1022,11 @@ export default function AdminSafetyPage() {
                       <p>Provider: {provider || "rule-based"}</p>
                       <p>Model: {modelName || "—"}</p>
                       <p>Length: {contentLength || "—"}</p>
+                      {teenMessageInvolved === "true" && (
+                        <p className="text-amber-300">
+                          Teen safety: sender {senderAgeBand || "unknown"} · recipient {recipientAgeBand || "unknown"}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
