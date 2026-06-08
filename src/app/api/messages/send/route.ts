@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { validateContent } from "@/lib/moderation/content";
+import { getAiSafetyErrorPayload, reviewContentSafety } from "@/lib/moderation/ai-safety";
+import { logAiSafetyEvent, logRuleBasedSafetyEvent } from "@/lib/moderation/safety-events";
 import { createNotification } from "@/lib/notifications";
 import { logAuditEvent } from "@/lib/audit-log";
 
@@ -126,6 +129,58 @@ export async function POST(request: NextRequest) {
 
   if (messageBody.length > MAX_MESSAGE_LENGTH) {
     return jsonError("Message is too long.", 400);
+  }
+
+  if (rawBody) {
+    const moderationError = validateContent(rawBody);
+
+    if (moderationError) {
+      await logRuleBasedSafetyEvent({
+        userId: user.id,
+        targetType: "private_message",
+        targetId: conversationId,
+        message: moderationError,
+      });
+
+      return NextResponse.json(
+        {
+          error: moderationError,
+          code: "message_safety_blocked",
+        },
+        { status: 400 }
+      );
+    }
+
+    const aiSafetyReview = await reviewContentSafety({
+      content: rawBody,
+      contentType: "reply",
+    });
+
+    if (aiSafetyReview.action === "block") {
+      await logAiSafetyEvent({
+        userId: user.id,
+        targetType: "private_message",
+        targetId: conversationId,
+        review: aiSafetyReview,
+      });
+
+      return NextResponse.json(
+        {
+          ...getAiSafetyErrorPayload(aiSafetyReview),
+          code: "message_safety_blocked",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (aiSafetyReview.action === "warn") {
+      await logAiSafetyEvent({
+        userId: user.id,
+        targetType: "private_message",
+        targetId: conversationId,
+        review: aiSafetyReview,
+      });
+    }
   }
 
   const { data: senderMembership, error: senderMembershipError } = await supabase
@@ -306,6 +361,7 @@ export async function POST(request: NextRequest) {
     metadata: {
       conversation_id: conversationId,
       recipient_id: recipientId,
+      private_message_safety_checked: Boolean(rawBody),
     },
   });
 
