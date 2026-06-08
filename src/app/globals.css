@@ -1778,3 +1778,86 @@ html[data-loombus-theme="light"] .loombus-mobile-home-primary-card h3 {
     color: var(--loombus-text) !important;
   }
 }
+
+/* Clean discussion card footer v1.
+   Compact engagement row: replies, saves, views, stickies, and Signal pill. */
+html[data-loombus-theme] .loombus-discussion-card-footer {
+  border-color: color-mix(in srgb, var(--loombus-border) 72%, var(--loombus-text) 8%) !important;
+}
+
+html[data-loombus-theme] .loombus-discussion-footer-metric,
+html[data-loombus-theme] .loombus-discussion-footer-sticky {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0.35rem 0.5rem;
+  color: var(--loombus-text-muted);
+  line-height: 1;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+html[data-loombus-theme] .loombus-discussion-footer-sticky {
+  cursor: pointer;
+  background-color: color-mix(in srgb, var(--loombus-surface) 54%, transparent);
+  border-color: color-mix(in srgb, var(--loombus-border) 72%, transparent);
+}
+
+html[data-loombus-theme] .loombus-discussion-footer-sticky:hover:not(:disabled) {
+  color: var(--loombus-text);
+  border-color: color-mix(in srgb, var(--loombus-text-subtle) 72%, var(--loombus-border) 28%);
+  background-color: color-mix(in srgb, var(--loombus-surface-muted) 74%, transparent);
+  transform: translateY(-1px);
+}
+
+html[data-loombus-theme] .loombus-discussion-footer-sticky:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+html[data-loombus-theme] .loombus-discussion-footer-sticky-active {
+  color: var(--loombus-text-subtle);
+  background-color: color-mix(in srgb, var(--loombus-surface-muted) 64%, transparent);
+}
+
+html[data-loombus-theme] .loombus-discussion-footer-signal {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--loombus-primary-bg) 48%, var(--loombus-border) 52%);
+  background:
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--loombus-primary-bg) 18%, transparent), transparent 9rem),
+    color-mix(in srgb, var(--loombus-surface) 82%, var(--loombus-primary-bg) 8%);
+  padding: 0.35rem 0.7rem;
+  color: var(--loombus-text);
+  font-weight: 700;
+  line-height: 1;
+  box-shadow:
+    0 10px 26px color-mix(in srgb, var(--loombus-primary-bg) 10%, rgba(0, 0, 0, 0.18)),
+    inset 0 1px 0 color-mix(in srgb, white 12%, transparent);
+}
+
+html[data-loombus-theme="light"] .loombus-discussion-footer-signal {
+  background:
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--loombus-primary-bg) 9%, transparent), transparent 9rem),
+    #fff7ed;
+  color: #7c2d12;
+  border-color: #fed7aa;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .loombus-discussion-footer-signal {
+    background:
+      radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--loombus-primary-bg) 9%, transparent), transparent 9rem),
+      #fff7ed;
+    color: #7c2d12;
+    border-color: #fed7aa;
+  }
+}

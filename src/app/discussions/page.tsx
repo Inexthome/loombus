@@ -1173,54 +1173,83 @@ export default function DiscussionsPage() {
                     </div>
                   )}
 
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-zinc-900 pt-4 text-xs text-zinc-500 sm:text-sm">
-                    <span>
-                      {replyCounts[discussion.id] ?? 0} replies
-                    </span>
-
-                    <span>
-                      {bookmarkCounts[discussion.id] ?? 0} saves
-                    </span>
-
-                    <span>
-                      {viewCounts[discussion.id] ?? 0} views
-                    </span>
-
-                    <span>
-                      Signal {getSignalScore(
-                        discussion.id,
-                        replyCounts,
-                        bookmarkCounts,
-                        viewCounts
-                      )}
-                    </span>
-
-                    <span className="ml-auto hidden text-zinc-400 sm:inline">
-                      Open discussion →
-                    </span>
-                  </div>
                 </Link>
 
-                {canUseAdvancedFilters && (
-                  <div className="border-t border-zinc-900 px-4 py-3 sm:px-6">
-                    <button
-                      type="button"
-                      onClick={() => addDiscussionToStickies(discussion.id)}
-                      disabled={addingStickyDiscussionId === discussion.id || stickiedDiscussionIds.has(discussion.id)}
-                      className={`rounded-full border px-4 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                        stickiedDiscussionIds.has(discussion.id)
-                          ? "border-zinc-800 bg-zinc-950 text-zinc-500"
-                          : "border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                      }`}
+                <div className="loombus-discussion-card-footer flex flex-wrap items-center gap-2 border-t border-zinc-900 px-4 py-3 text-xs text-zinc-500 sm:px-6 sm:text-sm">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span
+                      className="loombus-discussion-footer-metric"
+                      aria-label={`${replyCounts[discussion.id] ?? 0} replies`}
+                      title={`${replyCounts[discussion.id] ?? 0} replies`}
                     >
-                      {addingStickyDiscussionId === discussion.id
-                        ? "Adding..."
-                        : stickiedDiscussionIds.has(discussion.id)
-                          ? "Added to Stickies"
-                          : "Add to Stickies"}
-                    </button>
+                      <span aria-hidden="true">💬</span>
+                      <span>{replyCounts[discussion.id] ?? 0}</span>
+                    </span>
+
+                    <span
+                      className="loombus-discussion-footer-metric"
+                      aria-label={`${bookmarkCounts[discussion.id] ?? 0} saves`}
+                      title={`${bookmarkCounts[discussion.id] ?? 0} saves`}
+                    >
+                      <span aria-hidden="true">🔖</span>
+                      <span>{bookmarkCounts[discussion.id] ?? 0}</span>
+                    </span>
+
+                    <span
+                      className="loombus-discussion-footer-metric"
+                      aria-label={`${viewCounts[discussion.id] ?? 0} views`}
+                      title={`${viewCounts[discussion.id] ?? 0} views`}
+                    >
+                      <span aria-hidden="true">👁</span>
+                      <span>{viewCounts[discussion.id] ?? 0}</span>
+                    </span>
+
+                    {canUseAdvancedFilters && (
+                      <button
+                        type="button"
+                        onClick={() => addDiscussionToStickies(discussion.id)}
+                        disabled={addingStickyDiscussionId === discussion.id || stickiedDiscussionIds.has(discussion.id)}
+                        className={`loombus-discussion-footer-sticky ${
+                          stickiedDiscussionIds.has(discussion.id)
+                            ? "loombus-discussion-footer-sticky-active"
+                            : ""
+                        }`}
+                        aria-label={
+                          addingStickyDiscussionId === discussion.id
+                            ? "Adding discussion to Stickies"
+                            : stickiedDiscussionIds.has(discussion.id)
+                              ? "Discussion added to Stickies"
+                              : "Add discussion to Stickies"
+                        }
+                        title={
+                          addingStickyDiscussionId === discussion.id
+                            ? "Adding..."
+                            : stickiedDiscussionIds.has(discussion.id)
+                              ? "Added to Stickies"
+                              : "Add to Stickies"
+                        }
+                      >
+                        <span aria-hidden="true">📌</span>
+                        <span className="hidden sm:inline">
+                          {addingStickyDiscussionId === discussion.id
+                            ? "Adding"
+                            : stickiedDiscussionIds.has(discussion.id)
+                              ? "Added"
+                              : "Add"}
+                        </span>
+                      </button>
+                    )}
                   </div>
-                )}
+
+                  <span className="loombus-discussion-footer-signal ml-auto">
+                    Signal {getSignalScore(
+                      discussion.id,
+                      replyCounts,
+                      bookmarkCounts,
+                      viewCounts
+                    )}
+                  </span>
+                </div>
               </article>
             );
           })}
