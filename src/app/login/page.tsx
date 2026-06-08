@@ -17,6 +17,36 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function redirectIfAlreadyLoggedIn() {
+      const params = new URLSearchParams(window.location.search);
+      const next = getSafeNext(params.get("next"));
+      const { data } = await supabase.auth.getSession();
+
+      if (mounted && data.session) {
+        window.location.replace(next);
+      }
+    }
+
+    redirectIfAlreadyLoggedIn();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        const params = new URLSearchParams(window.location.search);
+        window.location.replace(getSafeNext(params.get("next")));
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
   const [nativeIosApp, setNativeIosApp] = useState(false);
