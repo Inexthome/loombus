@@ -1254,9 +1254,11 @@ export default function CreatePage() {
   }
 
   function getCreateSignalTabClass(isActive: boolean) {
-    return `relative flex-1 px-2 pb-3 pt-1 text-center text-sm font-semibold tracking-tight transition ${
-      isActive ? "text-white after:bg-current" : "text-zinc-500 hover:text-zinc-200 after:bg-transparent"
-    } after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-16 after:-translate-x-1/2 after:rounded-full after:transition`;
+    return `relative flex h-10 items-center justify-center text-sm font-semibold transition ${
+      isActive
+        ? "text-[var(--loombus-text)]"
+        : "text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
+    }`;
   }
 
   function toggleCreateMetadataTool(
@@ -1576,53 +1578,69 @@ export default function CreatePage() {
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
             <div
-              className={`fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+4.65rem)] z-40 transition-transform duration-300 md:hidden ${
-                createSignalBarHidden ? "-translate-y-[calc(100%+5.75rem)]" : "translate-y-0"
+              className={`fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+4.2rem)] z-40 px-4 pb-3 backdrop-blur-xl transition-transform duration-300 md:hidden ${
+                createSignalBarHidden ? "-translate-y-[calc(100%+4.25rem)]" : "translate-y-0"
               }`}
-              aria-label="Create signal controls"
+              style={{
+                backgroundColor:
+                  "color-mix(in srgb, var(--loombus-page-bg) 90%, transparent)",
+              }}
             >
-              <div
-                className="border-y border-white/10 px-4 pb-0 pt-3 shadow-xl shadow-black/10 backdrop-blur-xl"
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--loombus-page-bg) 88%, transparent)",
-                }}
+              <nav
+                aria-label="Create signal controls"
+                className="mx-auto grid max-w-md grid-cols-3 border-t border-[var(--loombus-border)] pt-2"
               >
-                <div className="mx-auto flex max-w-xl items-end justify-between gap-1">
-                  <button
-                    type="button"
-                    onClick={() => toggleCreateMetadataTool("topic")}
-                    className={getCreateSignalTabClass(activeCreateMetadataTool === "topic" || Boolean(topic))}
-                    aria-expanded={activeCreateMetadataTool === "topic"}
-                  >
-                    Topic
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => toggleCreateMetadataTool("topic")}
+                  className={getCreateSignalTabClass(activeCreateMetadataTool === "topic" || Boolean(topic))}
+                  aria-expanded={activeCreateMetadataTool === "topic"}
+                >
+                  Topic
+                  <span
+                    className={`absolute bottom-0 h-1 w-14 rounded-full transition ${
+                      activeCreateMetadataTool === "topic" || Boolean(topic)
+                        ? "bg-[var(--loombus-text)]"
+                        : "bg-transparent"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => toggleCreateMetadataTool("reality")}
-                    className={getCreateSignalTabClass(activeCreateMetadataTool === "reality" || Boolean(realityLens))}
-                    aria-expanded={activeCreateMetadataTool === "reality"}
-                  >
-                    Reality Lens
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => toggleCreateMetadataTool("reality")}
+                  className={getCreateSignalTabClass(activeCreateMetadataTool === "reality" || Boolean(realityLens))}
+                  aria-expanded={activeCreateMetadataTool === "reality"}
+                >
+                  Reality Lens
+                  <span
+                    className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
+                      activeCreateMetadataTool === "reality" || Boolean(realityLens)
+                        ? "bg-[var(--loombus-text)]"
+                        : "bg-transparent"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => toggleCreateMetadataTool("purpose")}
-                    className={getCreateSignalTabClass(activeCreateMetadataTool === "purpose" || Boolean(purposeLane))}
-                    aria-expanded={activeCreateMetadataTool === "purpose"}
-                  >
-                    Purpose Lane
-                  </button>
-                </div>
-
-                <div className="mx-auto flex max-w-xl justify-between gap-1 px-2 pb-2 text-[0.65rem] text-zinc-600">
-                  <span className="max-w-[30%] truncate">{topic || "Choose topic"}</span>
-                  <span className="max-w-[32%] truncate text-center">{realityLens || "Select lens"}</span>
-                  <span className="max-w-[32%] truncate text-right">{purposeLane || "Select lane"}</span>
-                </div>
-              </div>
+                <button
+                  type="button"
+                  onClick={() => toggleCreateMetadataTool("purpose")}
+                  className={getCreateSignalTabClass(activeCreateMetadataTool === "purpose" || Boolean(purposeLane))}
+                  aria-expanded={activeCreateMetadataTool === "purpose"}
+                >
+                  Purpose Lane
+                  <span
+                    className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
+                      activeCreateMetadataTool === "purpose" || Boolean(purposeLane)
+                        ? "bg-[var(--loombus-text)]"
+                        : "bg-transparent"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+              </nav>
             </div>
 
             <section className="space-y-5">
@@ -1874,7 +1892,7 @@ export default function CreatePage() {
                 />
 
                 <div
-                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+11.25rem)] z-50 max-h-[min(62vh,28rem)] w-[min(calc(100vw-2rem),25rem)] -translate-x-1/2 overflow-y-auto rounded-[2rem] border border-white/15 p-3 shadow-2xl shadow-black/35 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12rem)] sm:w-[26rem]"
+                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+8.35rem)] z-50 max-h-[min(62vh,28rem)] w-[min(calc(100vw-2rem),25rem)] -translate-x-1/2 overflow-y-auto rounded-[2rem] border border-white/15 p-3 shadow-2xl shadow-black/35 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12rem)] sm:w-[26rem]"
                   style={{
                     backgroundColor:
                       "color-mix(in srgb, var(--loombus-surface) 88%, transparent)",
