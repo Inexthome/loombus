@@ -108,17 +108,21 @@ function getPrivateMessageAbuseError(text: string) {
     .trim();
 
   const directInsultWords =
-    "(?:ugly|stupid|dumb|idiot|idiotic|moron|worthless|shameful|ashamed|pathetic|disgusting|gross|trash|garbage|loser|fool|clown|nasty)";
+    "(?:ugly|stupid|dumb|idiot|idiotic|moron|worthless|shameful|ashamed|pathetic|disgusting|gross|trash|garbage|loser|fool|clown|nasty|weak|weirdo|creep|evil|horrible)";
+
+  const severeDirectProfanityWords =
+    "(?:motherfucker|mfer|mf|fucker|fuckface|fuckhead|shithead|asshole|arsehole|bitch|bastard|cunt|dickhead|prick|piece of shit|piece-of-shit)";
 
   const directAbusePatterns = [
-    new RegExp(`\\b(?:you are|you're|youre|u are|ur|you r)\\s+(?:so\\s+|such\\s+)?${directInsultWords}\\b`, "i"),
-    new RegExp(`\\b(?:you look|you sound|u look|u sound)\\s+(?:so\\s+)?${directInsultWords}\\b`, "i"),
-    new RegExp(`\\b(?:you|u)\\s+(?:are\\s+)?(?:a\\s+|an\\s+)?${directInsultWords}\\b`, "i"),
+    new RegExp(`\\b(?:you are|you're|youre|u are|ur|you r)\\s+(?:so\\s+|such\\s+)?(?:a\\s+|an\\s+)?(?:${directInsultWords}|${severeDirectProfanityWords})\\b`, "i"),
+    new RegExp(`\\b(?:you look|you sound|u look|u sound)\\s+(?:so\\s+)?(?:${directInsultWords}|${severeDirectProfanityWords})\\b`, "i"),
+    new RegExp(`\\b(?:you|u)\\s+(?:are\\s+)?(?:a\\s+|an\\s+)?(?:${directInsultWords}|${severeDirectProfanityWords})\\b`, "i"),
+    new RegExp(`\\b(?:${severeDirectProfanityWords})\\b`, "i"),
     /\b(?:nobody likes you|everyone hates you|shame on you|shut up)\b/i,
   ];
 
   if (directAbusePatterns.some((pattern) => pattern.test(normalized))) {
-    return "Private messages cannot include direct name-calling, shaming, or personal insults. Please rewrite it respectfully.";
+    return "Private messages cannot include direct profanity, name-calling, shaming, or personal insults. Please rewrite it respectfully.";
   }
 
   return null;
