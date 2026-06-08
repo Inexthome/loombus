@@ -96,6 +96,7 @@ export default function ClientLayout({
   const [floatingThreadLoading, setFloatingThreadLoading] = useState(false);
   const [floatingComposerText, setFloatingComposerText] = useState("");
   const [floatingSending, setFloatingSending] = useState(false);
+  const [floatingTypingUserName, setFloatingTypingUserName] = useState("");
   const [floatingNewMessageOpen, setFloatingNewMessageOpen] = useState(false);
   const [floatingPeopleSearchResults, setFloatingPeopleSearchResults] = useState<FloatingPeopleSearchResult[]>([]);
   const [floatingPeopleSearchLoading, setFloatingPeopleSearchLoading] = useState(false);
@@ -108,6 +109,8 @@ export default function ClientLayout({
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
   const loadingNotificationCountRef = useRef(false);
   const lastNotificationLoadRef = useRef<{ userId: string; loadedAt: number } | null>(null);
+  const floatingTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFloatingTypingSentRef = useRef(0);
   const rightRailDragStartRef = useRef<{ pointerX: number; width: number } | null>(null);
   const pathname = usePathname();
   const isDiscussionsIndex = pathname === "/discussions";
@@ -685,6 +688,87 @@ export default function ClientLayout({
   }, [user, floatingMessagesOpen]);
 
   useEffect(() => {
+    if (!user || !floatingMessagesOpen) {
+      return;
+    }
+
+    const refreshInterval = window.setInterval(() => {
+      loadFloatingConversations();
+
+      if (selectedFloatingConversationId) {
+        loadFloatingThread(selectedFloatingConversationId);
+      }
+    }, 15000);
+
+    return () => {
+      window.clearInterval(refreshInterval);
+    };
+  }, [user, floatingMessagesOpen, selectedFloatingConversationId]);
+
+  useEffect(() => {
+    if (!user || !floatingMessagesOpen || !selectedFloatingConversationId) {
+      return;
+    }
+
+    const channel = supabase.channel(`floating-message-realtime:${selectedFloatingConversationId}`);
+
+    channel
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "private_messages",
+          filter: `conversation_id=eq.${selectedFloatingConversationId}`,
+        },
+        () => {
+          loadFloatingThread(selectedFloatingConversationId);
+          loadFloatingConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, floatingMessagesOpen, selectedFloatingConversationId]);
+
+  useEffect(() => {
+    if (!user || !selectedFloatingConversationId) {
+      setFloatingTypingUserName("");
+      return;
+    }
+
+    const channel = supabase.channel(`private-message-typing:${selectedFloatingConversationId}`);
+
+    channel
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if (!payload || payload.userId === user.id) {
+          return;
+        }
+
+        setFloatingTypingUserName(String(payload.name ?? "Someone"));
+
+        if (floatingTypingTimeoutRef.current) {
+          clearTimeout(floatingTypingTimeoutRef.current);
+        }
+
+        floatingTypingTimeoutRef.current = setTimeout(() => {
+          setFloatingTypingUserName("");
+        }, 4000);
+      })
+      .subscribe();
+
+    return () => {
+      if (floatingTypingTimeoutRef.current) {
+        clearTimeout(floatingTypingTimeoutRef.current);
+      }
+
+      supabase.removeChannel(channel);
+    };
+  }, [user, selectedFloatingConversationId]);
+
+  useEffect(() => {
     if (!user || !floatingMessagesOpen || !floatingNewMessageOpen) {
       return;
     }
@@ -876,6 +960,7 @@ export default function ClientLayout({
     setSelectedFloatingConversationId(null);
     setFloatingThreadMessages([]);
     setFloatingComposerText("");
+    setFloatingTypingUserName("");
     setFloatingMessagesMessage("");
   }
 
@@ -945,7 +1030,39 @@ export default function ClientLayout({
     closeFloatingNewMessage();
     setSelectedFloatingConversationId(conversationId);
     setFloatingComposerText("");
+    setFloatingTypingUserName("");
     await loadFloatingThread(conversationId);
+  }
+
+  function sendFloatingTypingIndicator() {
+    if (!selectedFloatingConversationId || !user?.id) {
+      return;
+    }
+
+    const now = Date.now();
+
+    if (now - lastFloatingTypingSentRef.current < 1500) {
+      return;
+    }
+
+    lastFloatingTypingSentRef.current = now;
+
+    const name =
+      navProfile?.full_name?.trim() ||
+      navProfile?.username?.trim() ||
+      user.email?.split("@")[0] ||
+      "Someone";
+
+    supabase
+      .channel(`private-message-typing:${selectedFloatingConversationId}`)
+      .send({
+        type: "broadcast",
+        event: "typing",
+        payload: {
+          userId: user.id,
+          name,
+        },
+      });
   }
 
   async function sendFloatingMessage() {
@@ -1725,11 +1842,20 @@ export default function ClientLayout({
                       )}
                     </div>
 
+                    {floatingTypingUserName && (
+                      <p className="px-5 pb-3 text-xs text-[var(--loombus-text-muted)]">
+                        {floatingTypingUserName} is typing...
+                      </p>
+                    )}
+
                     <div className="border-t border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
                       <div className="flex items-end gap-2 rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2">
                         <textarea
                           value={floatingComposerText}
-                          onChange={(event) => setFloatingComposerText(event.target.value)}
+                          onChange={(event) => {
+                            setFloatingComposerText(event.target.value);
+                            sendFloatingTypingIndicator();
+                          }}
                           onKeyDown={(event) => {
                             if (event.key === "Enter" && !event.shiftKey) {
                               event.preventDefault();
