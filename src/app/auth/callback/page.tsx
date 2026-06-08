@@ -26,6 +26,67 @@ async function waitForSession(maxAttempts = 20) {
   return null;
 }
 
+async function getPostAuthRedirect(next: string) {
+  const { data } = await supabase.auth.getSession();
+  const session = data.session;
+
+  if (!session) {
+    return next;
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("age_band")
+    .eq("id", session.user.id)
+    .maybeSingle();
+
+  if (profile?.age_band && profile.age_band !== "unknown") {
+    return next;
+  }
+
+  const metadataDateOfBirth =
+    typeof session.user.user_metadata?.date_of_birth === "string"
+      ? session.user.user_metadata.date_of_birth
+      : "";
+
+  const pendingDateOfBirth =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem("loombus:pending-date-of-birth") ?? ""
+      : "";
+
+  const dateOfBirth = metadataDateOfBirth || pendingDateOfBirth;
+
+  if (dateOfBirth) {
+    const response = await fetch("/api/profile/age-gate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        dateOfBirth,
+      }),
+    });
+
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("loombus:pending-date-of-birth");
+    }
+
+    if (response.ok) {
+      return next;
+    }
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (payload.code === "under_13_not_allowed") {
+      await supabase.auth.signOut();
+      return "/signup?under13=1";
+    }
+  }
+
+  return `/age-gate?next=${encodeURIComponent(next)}`;
+}
+
 export default function AuthCallbackPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -49,7 +110,7 @@ export default function AuthCallbackPage() {
           return;
         }
 
-        window.location.replace(next);
+        window.location.replace(await getPostAuthRedirect(next));
         return;
       }
 
@@ -61,7 +122,7 @@ export default function AuthCallbackPage() {
       const existingSession = await waitForSession(hashHasSession ? 30 : 12);
 
       if (existingSession) {
-        window.location.replace(next);
+        window.location.replace(await getPostAuthRedirect(next));
         return;
       }
 

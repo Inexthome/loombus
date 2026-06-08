@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
+import { getAgeBandFromDateOfBirth, getDateYearsAgo } from "@/lib/age-safety";
 import { supabase } from "@/lib/supabase/client";
 import { isIosNativeApp } from "@/lib/native-app";
 
@@ -10,6 +11,7 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [message, setMessage] = useState("");
   const [signupComplete, setSignupComplete] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,12 +37,15 @@ export default function SignupPage() {
       return;
     }
 
-    const ageConfirmed = window.confirm(
-      "Loombus is not available to children under 13. Please confirm that you are at least 13 years old to create an account."
-    );
+    const ageBand = getAgeBandFromDateOfBirth(dateOfBirth);
 
-    if (!ageConfirmed) {
-      setMessage("You must confirm that you are at least 13 years old to create a Loombus account.");
+    if (!ageBand) {
+      setMessage("Enter a valid date of birth.");
+      return;
+    }
+
+    if (ageBand === "under_13") {
+      setMessage("Loombus is not available to children under 13.");
       return;
     }
 
@@ -53,6 +58,7 @@ export default function SignupPage() {
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/discussions`,
         data: {
           full_name: fullName.trim(),
+          date_of_birth: dateOfBirth,
         },
       },
     });
@@ -85,14 +91,19 @@ export default function SignupPage() {
 
     setMessage("");
 
-    const ageConfirmed = window.confirm(
-      "Loombus is not available to children under 13. Please confirm that you are at least 13 years old to continue."
-    );
+    const ageBand = getAgeBandFromDateOfBirth(dateOfBirth);
 
-    if (!ageConfirmed) {
-      setMessage("You must confirm that you are at least 13 years old to create a Loombus account.");
+    if (!ageBand) {
+      setMessage("Enter a valid date of birth before continuing.");
       return;
     }
+
+    if (ageBand === "under_13") {
+      setMessage("Loombus is not available to children under 13.");
+      return;
+    }
+
+    window.localStorage.setItem("loombus:pending-date-of-birth", dateOfBirth);
 
     setOauthLoading(provider);
 
@@ -255,6 +266,25 @@ export default function SignupPage() {
 
           <div>
             <label className="mb-2 block text-sm text-zinc-400">
+              Date of birth
+            </label>
+
+            <input
+              type="date"
+              value={dateOfBirth}
+              required
+              max={getDateYearsAgo(13)}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+            />
+
+            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+              Members under 13 cannot create Loombus accounts. Ages 13–17 receive Teen Safety Mode protections.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm text-zinc-400">
               Password
             </label>
 
@@ -296,7 +326,7 @@ export default function SignupPage() {
           )}
 
           <p className="text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
-            By creating an account or continuing with Apple, Google, or email, you confirm that you are at least 13 years old and agree to the{" "}
+            By creating an account or continuing with Apple, Google, or email, you confirm that your date of birth is accurate, that you are at least 13 years old, and agree to the{" "}
             <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
               Terms
             </Link>
