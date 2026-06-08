@@ -105,6 +105,22 @@ function getRuleBasedSafetyError(
 }
 
 function getSafetyContentType(mode: LoombusSafetyMode) {
+  if (mode === "public_content") {
+    return "discussion";
+  }
+
+  if (mode === "private_message") {
+    return "private_message";
+  }
+
+  if (mode === "profile_text") {
+    return "profile";
+  }
+
+  return "reply";
+}
+
+function getAiSafetyContentType(mode: LoombusSafetyMode) {
   return mode === "public_content" ? "discussion" : "reply";
 }
 
@@ -157,7 +173,7 @@ export async function reviewLoombusSafety({
 
   const aiSafetyReview = await reviewContentSafety({
     content: cleanContent,
-    contentType: getSafetyContentType(mode),
+    contentType: getAiSafetyContentType(mode),
   });
 
   if (aiSafetyReview.action === "block") {

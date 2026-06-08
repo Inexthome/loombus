@@ -1,7 +1,7 @@
 import { logAuditEvent } from "@/lib/audit-log";
 import type { AiSafetyReview } from "@/lib/moderation/ai-safety";
 
-type ContentSafetyContentType = "discussion" | "reply";
+type ContentSafetyContentType = "discussion" | "reply" | "private_message" | "profile";
 type ContentSafetyOutcome = "blocked" | "warned";
 type ContentSafetyStage = "rule_based" | "ai_assisted";
 

@@ -101,6 +101,59 @@ function getPatternClassName(severity: SafetyPatternSignal["severity"]) {
   return "border-zinc-800 bg-black/40 text-zinc-300";
 }
 
+function getRepeatRiskLevel({
+  blocked,
+  warned,
+  total,
+}: {
+  blocked: number;
+  warned: number;
+  total: number;
+}): SafetyPatternSignal["severity"] {
+  if (blocked >= 3 || total >= 6) {
+    return "high";
+  }
+
+  if (blocked >= 2 || warned >= 3 || total >= 4) {
+    return "elevated";
+  }
+
+  return "watch";
+}
+
+function getRepeatRiskLabel(severity: SafetyPatternSignal["severity"]) {
+  if (severity === "high") {
+    return "Urgent review";
+  }
+
+  if (severity === "elevated") {
+    return "Elevated review";
+  }
+
+  return "Watch";
+}
+
+function getRepeatRiskBadgeClassName(severity: SafetyPatternSignal["severity"]) {
+  if (severity === "high") {
+    return "border-red-700 bg-red-950/40 text-red-200";
+  }
+
+  if (severity === "elevated") {
+    return "border-amber-700 bg-amber-950/40 text-amber-200";
+  }
+
+  return "border-zinc-700 bg-zinc-950 text-zinc-300";
+}
+
+function getSafetySurfaceLabel(targetType: string) {
+  if (targetType === "private_message") return "Private messages";
+  if (targetType === "discussion") return "Discussions";
+  if (targetType === "reply") return "Replies";
+  if (targetType === "profile") return "Profiles";
+
+  return targetType || "Content";
+}
+
 function getPatternPreviewText(event: SafetyEvent) {
   return [
     getMetadataString(event.metadata, "category"),
@@ -152,7 +205,7 @@ export default function AdminSafetyPage() {
         .select("id, action, target_type, target_id, metadata, created_at, actor_id")
         .in("action", ["content_safety.blocked", "content_safety.warned"])
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(250);
 
       const loadedEvents = (data ?? []) as SafetyEvent[];
       setEvents(loadedEvents);
@@ -190,7 +243,6 @@ export default function AdminSafetyPage() {
   const warnedCount = events.filter((event) => event.action === "content_safety.warned").length;
   const aiCount = events.filter((event) => getMetadataString(event.metadata, "stage") === "ai_assisted").length;
   const ruleCount = events.filter((event) => getMetadataString(event.metadata, "stage") === "rule_based").length;
-
   const repeatOffenders = useMemo(() => {
     const groups: Record<
       string,
@@ -200,7 +252,9 @@ export default function AdminSafetyPage() {
         blocked: number;
         warned: number;
         latestAt: string | null;
+        latestEvent: SafetyEvent | null;
         categories: Set<string>;
+        targetTypes: Set<string>;
       }
     > = {};
 
@@ -216,7 +270,9 @@ export default function AdminSafetyPage() {
           blocked: 0,
           warned: 0,
           latestAt: null,
+          latestEvent: null,
           categories: new Set<string>(),
+          targetTypes: new Set<string>(),
         };
       }
 
@@ -237,11 +293,16 @@ export default function AdminSafetyPage() {
         group.categories.add(category);
       }
 
+      if (event.target_type) {
+        group.targetTypes.add(event.target_type);
+      }
+
       if (
         !group.latestAt ||
         new Date(event.created_at).getTime() > new Date(group.latestAt).getTime()
       ) {
         group.latestAt = event.created_at;
+        group.latestEvent = event;
       }
     }
 
@@ -258,12 +319,29 @@ export default function AdminSafetyPage() {
 
         return new Date(b.latestAt ?? 0).getTime() - new Date(a.latestAt ?? 0).getTime();
       })
-      .slice(0, 6)
-      .map((group) => ({
-        ...group,
-        categories: [...group.categories].slice(0, 3),
-      }));
+      .slice(0, 12)
+      .map((group) => {
+        const riskLevel = getRepeatRiskLevel({
+          blocked: group.blocked,
+          warned: group.warned,
+          total: group.total,
+        });
+
+        return {
+          ...group,
+          riskLevel,
+          categories: [...group.categories].slice(0, 4),
+          targetTypes: [...group.targetTypes].slice(0, 4),
+        };
+      });
   }, [events]);
+
+  const urgentRepeatCount = repeatOffenders.filter(
+    (group) => group.riskLevel === "high"
+  ).length;
+  const elevatedRepeatCount = repeatOffenders.filter(
+    (group) => group.riskLevel === "elevated"
+  ).length;
 
   const patternSignals = useMemo(() => {
     const signalCounts = {
@@ -525,7 +603,7 @@ export default function AdminSafetyPage() {
           </div>
         </div>
 
-        <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
             <p className="mb-2 text-sm text-zinc-500">Blocked</p>
             <p className="text-4xl font-semibold">{blockedCount}</p>
@@ -544,6 +622,16 @@ export default function AdminSafetyPage() {
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5">
             <p className="mb-2 text-sm text-zinc-500">Rule-based</p>
             <p className="text-4xl font-semibold">{ruleCount}</p>
+          </div>
+
+          <div className="rounded-3xl border border-amber-900 bg-amber-950/20 p-5">
+            <p className="mb-2 text-sm text-amber-300">Elevated</p>
+            <p className="text-4xl font-semibold text-amber-200">{elevatedRepeatCount}</p>
+          </div>
+
+          <div className="rounded-3xl border border-red-950 bg-red-950/20 p-5">
+            <p className="mb-2 text-sm text-red-300">Urgent</p>
+            <p className="text-4xl font-semibold text-red-200">{urgentRepeatCount}</p>
           </div>
         </section>
 
@@ -642,6 +730,10 @@ export default function AdminSafetyPage() {
                         <p className="truncate text-xs text-zinc-600">
                           {profile?.username ? `@${profile.username}` : group.actorId}
                         </p>
+
+                        <p className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] ${getRepeatRiskBadgeClassName(group.riskLevel)}`}>
+                          {getRepeatRiskLabel(group.riskLevel)}
+                        </p>
                       </div>
                     </div>
 
@@ -675,6 +767,19 @@ export default function AdminSafetyPage() {
                       </div>
                     )}
 
+                    {group.targetTypes.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {group.targetTypes.map((targetType) => (
+                          <span
+                            key={targetType}
+                            className="rounded-full border border-zinc-800 px-2.5 py-1 text-xs text-zinc-500"
+                          >
+                            {getSafetySurfaceLabel(targetType)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     {group.latestAt && (
                       <p className="mt-3 text-xs text-zinc-600">
                         Latest: {new Date(group.latestAt).toLocaleString()}
@@ -701,6 +806,39 @@ export default function AdminSafetyPage() {
                       >
                         Show events
                       </button>
+
+                      {group.latestEvent && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => enforceFromSafetyQueue(group.latestEvent!, "warn_user")}
+                            disabled={Boolean(enforcingEventId)}
+                            className="rounded-full border border-sky-900 px-3 py-1.5 text-xs text-sky-300 transition hover:border-sky-700 hover:text-sky-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          >
+                            Warn
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => enforceFromSafetyQueue(group.latestEvent!, "suspend_user")}
+                            disabled={Boolean(enforcingEventId)}
+                            className="rounded-full border border-amber-800 px-3 py-1.5 text-xs text-amber-300 transition hover:border-amber-600 hover:text-amber-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          >
+                            Suspend
+                          </button>
+
+                          {group.riskLevel === "high" && (
+                            <button
+                              type="button"
+                              onClick={() => enforceFromSafetyQueue(group.latestEvent!, "ban_user")}
+                              disabled={Boolean(enforcingEventId)}
+                              className="rounded-full border border-red-900 px-3 py-1.5 text-xs text-red-300 transition hover:border-red-700 hover:text-red-200 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                            >
+                              Ban
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 );
@@ -778,6 +916,8 @@ export default function AdminSafetyPage() {
                 <option value="all">All content</option>
                 <option value="discussion">Discussions</option>
                 <option value="reply">Replies</option>
+                <option value="private_message">Private messages</option>
+                <option value="profile">Profiles</option>
               </select>
             </label>
           </div>
