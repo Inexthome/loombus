@@ -113,16 +113,20 @@ function getPrivateMessageAbuseError(text: string) {
   const severeDirectProfanityWords =
     "(?:motherfucker|mfer|mf|fucker|fuckface|fuckhead|shithead|asshole|arsehole|bitch|bastard|cunt|dickhead|prick|piece of shit|piece-of-shit)";
 
+  const standaloneProfanityWords =
+    "(?:fuck|fucking|fucked|fucker|shit|bullshit|motherfucker|mfer|mf|asshole|bitch|bastard|cunt|dickhead|prick)";
+
   const directAbusePatterns = [
     new RegExp(`\\b(?:you are|you're|youre|u are|ur|you r)\\s+(?:so\\s+|such\\s+)?(?:a\\s+|an\\s+)?(?:${directInsultWords}|${severeDirectProfanityWords})\\b`, "i"),
     new RegExp(`\\b(?:you look|you sound|u look|u sound)\\s+(?:so\\s+)?(?:${directInsultWords}|${severeDirectProfanityWords})\\b`, "i"),
     new RegExp(`\\b(?:you|u)\\s+(?:are\\s+)?(?:a\\s+|an\\s+)?(?:${directInsultWords}|${severeDirectProfanityWords})\\b`, "i"),
     new RegExp(`\\b(?:${severeDirectProfanityWords})\\b`, "i"),
+    new RegExp(`\\b(?:${standaloneProfanityWords})\\b`, "i"),
     /\b(?:nobody likes you|everyone hates you|shame on you|shut up)\b/i,
   ];
 
   if (directAbusePatterns.some((pattern) => pattern.test(normalized))) {
-    return "Private messages cannot include direct profanity, name-calling, shaming, or personal insults. Please rewrite it respectfully.";
+    return "Private messages cannot include profanity, direct name-calling, shaming, or personal insults. Please rewrite it respectfully.";
   }
 
   return null;
