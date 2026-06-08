@@ -154,6 +154,11 @@ const mobileSignalShortcuts = [
     href: "/onboarding",
   },
   {
+    title: "Appearance",
+    description: "Switch between Light, Dark, and System.",
+    href: "/settings",
+  },
+  {
     title: "My Activity",
     description: "Review your recent Loombus activity.",
     href: "/my-activity",
@@ -413,39 +418,32 @@ export default function Home() {
 
           <div className="mb-5 grid grid-cols-2 gap-4">
             <Link
-              href="/discussions"
+              href="/labs"
               className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
             >
               <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
-                Read
+                Build
               </p>
               <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
-                Discussions
+                Labs
               </h2>
               <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
-                Browse focused conversations.
+                Vote on features and future tools.
               </p>
             </Link>
 
             <Link
-              href="/notifications"
+              href="/stickies"
               className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
             >
               <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
-                Return
+                Workspace
               </p>
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
-                  Alerts
-                </h2>
-                {unreadNotificationCount > 0 && (
-                  <span className="loombus-mobile-home-pill rounded-full border px-2 py-0.5 text-[0.65rem]">
-                    {unreadNotificationCount}
-                  </span>
-                )}
-              </div>
+              <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
+                Stickies
+              </h2>
               <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
-                See replies, follows, and mentions.
+                Pin notes, topics, people, and ideas.
               </p>
             </Link>
 
