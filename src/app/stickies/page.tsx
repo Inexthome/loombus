@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { type DragEvent, type FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 type StickyItem = {
@@ -25,6 +25,7 @@ export default function StickiesPage() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteTitle, setEditingNoteTitle] = useState("");
   const [editingNoteBody, setEditingNoteBody] = useState("");
+  const [draggedStickyId, setDraggedStickyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
@@ -338,6 +339,80 @@ export default function StickiesPage() {
     );
     cancelEditingNote();
     setMessage("Note updated.");
+  }
+
+  async function persistStickyOrder(nextItems: StickyItem[], fallbackItems: StickyItem[]) {
+    setItems(nextItems);
+    setWorking(true);
+    setMessage("");
+
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      setItems(fallbackItems);
+      setWorking(false);
+      setIsLoggedIn(false);
+      return;
+    }
+
+    const response = await fetch("/api/stickies", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        orderedIds: nextItems.map((item) => item.id),
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setWorking(false);
+
+    if (!response.ok) {
+      setItems(fallbackItems);
+      setMessage(result.error ?? "Unable to reorder stickies.");
+      return;
+    }
+
+    setMessage("Stickies reordered.");
+  }
+
+  function handleStickyDragStart(stickyId: string) {
+    if (working) {
+      return;
+    }
+
+    setDraggedStickyId(stickyId);
+  }
+
+  function handleStickyDragOver(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+  }
+
+  async function handleStickyDrop(targetStickyId: string) {
+    if (!draggedStickyId || draggedStickyId === targetStickyId || working) {
+      setDraggedStickyId(null);
+      return;
+    }
+
+    const fromIndex = items.findIndex((item) => item.id === draggedStickyId);
+    const toIndex = items.findIndex((item) => item.id === targetStickyId);
+
+    if (fromIndex === -1 || toIndex === -1) {
+      setDraggedStickyId(null);
+      return;
+    }
+
+    const nextItems = [...items];
+    const [movedItem] = nextItems.splice(fromIndex, 1);
+    nextItems.splice(toIndex, 0, movedItem);
+
+    const fallbackItems = items;
+    setDraggedStickyId(null);
+
+    await persistStickyOrder(nextItems, fallbackItems);
   }
 
   async function moveSticky(stickyId: string, direction: "up" | "down") {
@@ -660,7 +735,11 @@ export default function StickiesPage() {
                 {items.map((item, index) => (
                   <article
                     key={item.id}
-                    className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20"
+                    onDragOver={handleStickyDragOver}
+                    onDrop={() => handleStickyDrop(item.id)}
+                    className={`rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20 transition ${
+                      draggedStickyId === item.id ? "opacity-60 ring-1 ring-zinc-600" : ""
+                    }`}
                   >
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-zinc-500">
@@ -674,6 +753,16 @@ export default function StickiesPage() {
                       </p>
 
                       <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                        <span
+                          draggable={!working}
+                          onDragStart={() => handleStickyDragStart(item.id)}
+                          onDragEnd={() => setDraggedStickyId(null)}
+                          className="cursor-grab rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white active:cursor-grabbing"
+                          title="Drag to reorder"
+                        >
+                          Drag
+                        </span>
+
                         <button
                           type="button"
                           onClick={() => moveSticky(item.id, "up")}
