@@ -1253,12 +1253,10 @@ export default function CreatePage() {
     }
   }
 
-  function getCreateSignalChipClass(isActive: boolean) {
-    return `shrink-0 rounded-full border px-3 py-2 text-left text-[0.72rem] font-medium transition ${
-      isActive
-        ? "border-zinc-400 bg-white text-black shadow-lg shadow-black/10"
-        : "border-white/10 bg-black/20 text-zinc-500 hover:border-zinc-500 hover:text-white"
-    }`;
+  function getCreateSignalTabClass(isActive: boolean) {
+    return `relative flex-1 px-2 pb-3 pt-1 text-center text-sm font-semibold tracking-tight transition ${
+      isActive ? "text-white after:bg-current" : "text-zinc-500 hover:text-zinc-200 after:bg-transparent"
+    } after:absolute after:bottom-0 after:left-1/2 after:h-1 after:w-16 after:-translate-x-1/2 after:rounded-full after:transition`;
   }
 
   function toggleCreateMetadataTool(
@@ -1578,60 +1576,51 @@ export default function CreatePage() {
             className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
           >
             <div
-              className={`fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+4.65rem)] z-40 px-4 transition-transform duration-300 md:hidden ${
+              className={`fixed left-0 right-0 top-[calc(env(safe-area-inset-top)+4.65rem)] z-40 transition-transform duration-300 md:hidden ${
                 createSignalBarHidden ? "-translate-y-[calc(100%+5.75rem)]" : "translate-y-0"
               }`}
               aria-label="Create signal controls"
             >
               <div
-                className="mx-auto max-w-xl overflow-x-auto rounded-full border border-white/10 p-1 shadow-2xl shadow-black/25 backdrop-blur-xl"
+                className="border-y border-white/10 px-4 pb-0 pt-3 shadow-xl shadow-black/10 backdrop-blur-xl"
                 style={{
                   backgroundColor:
-                    "color-mix(in srgb, var(--loombus-surface) 84%, transparent)",
+                    "color-mix(in srgb, var(--loombus-page-bg) 88%, transparent)",
                 }}
               >
-                <div className="flex min-w-max gap-1">
+                <div className="mx-auto flex max-w-xl items-end justify-between gap-1">
                   <button
                     type="button"
                     onClick={() => toggleCreateMetadataTool("topic")}
-                    className={getCreateSignalChipClass(activeCreateMetadataTool === "topic" || Boolean(topic))}
+                    className={getCreateSignalTabClass(activeCreateMetadataTool === "topic" || Boolean(topic))}
                     aria-expanded={activeCreateMetadataTool === "topic"}
                   >
-                    <span className="block text-[0.58rem] uppercase tracking-[0.16em] opacity-60">
-                      Topic
-                    </span>
-                    <span className="block max-w-[8.75rem] truncate">
-                      {topic || "Choose topic"}
-                    </span>
+                    Topic
                   </button>
 
                   <button
                     type="button"
                     onClick={() => toggleCreateMetadataTool("reality")}
-                    className={getCreateSignalChipClass(activeCreateMetadataTool === "reality" || Boolean(realityLens))}
+                    className={getCreateSignalTabClass(activeCreateMetadataTool === "reality" || Boolean(realityLens))}
                     aria-expanded={activeCreateMetadataTool === "reality"}
                   >
-                    <span className="block text-[0.58rem] uppercase tracking-[0.16em] opacity-60">
-                      Reality Lens
-                    </span>
-                    <span className="block max-w-[8.75rem] truncate">
-                      {realityLens || "Select lens"}
-                    </span>
+                    Reality Lens
                   </button>
 
                   <button
                     type="button"
                     onClick={() => toggleCreateMetadataTool("purpose")}
-                    className={getCreateSignalChipClass(activeCreateMetadataTool === "purpose" || Boolean(purposeLane))}
+                    className={getCreateSignalTabClass(activeCreateMetadataTool === "purpose" || Boolean(purposeLane))}
                     aria-expanded={activeCreateMetadataTool === "purpose"}
                   >
-                    <span className="block text-[0.58rem] uppercase tracking-[0.16em] opacity-60">
-                      Purpose Lane
-                    </span>
-                    <span className="block max-w-[8.75rem] truncate">
-                      {purposeLane || "Select lane"}
-                    </span>
+                    Purpose Lane
                   </button>
+                </div>
+
+                <div className="mx-auto flex max-w-xl justify-between gap-1 px-2 pb-2 text-[0.65rem] text-zinc-600">
+                  <span className="max-w-[30%] truncate">{topic || "Choose topic"}</span>
+                  <span className="max-w-[32%] truncate text-center">{realityLens || "Select lens"}</span>
+                  <span className="max-w-[32%] truncate text-right">{purposeLane || "Select lane"}</span>
                 </div>
               </div>
             </div>
@@ -1725,7 +1714,7 @@ export default function CreatePage() {
                       onClick={() => setDiscussionType(mode.value)}
                       className={`rounded-2xl border px-4 py-3 text-left transition ${
                         discussionType === mode.value
-                          ? "border-zinc-400 bg-white text-black"
+                          ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
                           : "border-zinc-800 bg-black text-zinc-400 hover:border-zinc-600 hover:text-white"
                       }`}
                     >
@@ -1885,19 +1874,19 @@ export default function CreatePage() {
                 />
 
                 <div
-                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+10.5rem)] z-50 max-h-[20rem] w-[min(calc(100vw-4rem),22rem)] -translate-x-1/2 overflow-y-auto rounded-[1.5rem] border border-white/15 p-3 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12rem)] sm:w-[24rem]"
+                  className="pointer-events-auto fixed left-1/2 top-[calc(env(safe-area-inset-top)+11.25rem)] z-50 max-h-[min(62vh,28rem)] w-[min(calc(100vw-2rem),25rem)] -translate-x-1/2 overflow-y-auto rounded-[2rem] border border-white/15 p-3 shadow-2xl shadow-black/35 backdrop-blur-2xl sm:top-[calc(env(safe-area-inset-top)+12rem)] sm:w-[26rem]"
                   style={{
                     backgroundColor:
-                      "color-mix(in srgb, var(--loombus-surface) 72%, transparent)",
+                      "color-mix(in srgb, var(--loombus-surface) 88%, transparent)",
                   }}
                 >
-                  <div className="mb-3 flex items-start justify-between gap-3 border-b border-white/10 pb-3">
+                  <div className="mb-3 flex items-start justify-between gap-3 rounded-[1.4rem] border border-white/10 px-3 py-3">
                     <div>
                       <p className="mb-1 text-[10px] uppercase tracking-[0.22em] text-zinc-600">
-                        Select
+                        Create Signal
                       </p>
 
-                      <h2 className="text-sm font-semibold tracking-tight text-zinc-200">
+                      <h2 className="text-base font-semibold tracking-tight text-zinc-100">
                         {activeCreateMetadataTool === "topic"
                           ? "Choose a topic"
                           : activeCreateMetadataTool === "other"
@@ -1911,7 +1900,7 @@ export default function CreatePage() {
                     <button
                       type="button"
                       onClick={() => setActiveCreateMetadataTool("none")}
-                      className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-white/25 hover:text-white"
+                      className="rounded-full border border-white/15 bg-black/20 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-white/25 hover:bg-black/30 hover:text-white"
                     >
                       Close
                     </button>
@@ -1946,8 +1935,8 @@ export default function CreatePage() {
                           onClick={selectOtherTopicValue}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             topic === "Other"
-                              ? "border-zinc-400 bg-white text-black"
-                              : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
+                              ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
+                              : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
                           }`}
                         >
                           <span>Other</span>
@@ -1961,8 +1950,8 @@ export default function CreatePage() {
                             onClick={() => selectTopicValue(topicOption)}
                             className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               topicManuallySelected && topic === topicOption
-                                ? "border-zinc-400 bg-white text-black"
-                                : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
+                                ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
+                                : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
                             }`}
                           >
                             <span>{topicOption}</span>
@@ -2015,8 +2004,8 @@ export default function CreatePage() {
                           onClick={() => selectRealityLensValue("")}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             !realityLens
-                              ? "border-zinc-400 bg-white text-black"
-                              : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
+                              ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
+                              : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
                           }`}
                         >
                           <span>None</span>
@@ -2030,8 +2019,8 @@ export default function CreatePage() {
                             onClick={() => selectRealityLensValue(lens)}
                             className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               realityLens === lens
-                                ? "border-zinc-400 bg-white text-black"
-                                : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
+                                ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
+                                : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
                             }`}
                           >
                             <span>{lens}</span>
@@ -2054,8 +2043,8 @@ export default function CreatePage() {
                           onClick={() => selectPurposeLaneValue("")}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             !purposeLane
-                              ? "border-zinc-400 bg-white text-black"
-                              : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
+                              ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
+                              : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
                           }`}
                         >
                           <span>None</span>
@@ -2069,8 +2058,8 @@ export default function CreatePage() {
                             onClick={() => selectPurposeLaneValue(lane)}
                             className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               purposeLane === lane
-                                ? "border-zinc-400 bg-white text-black"
-                                : "border-zinc-800 bg-black/40 text-zinc-300 hover:border-zinc-600 hover:text-white"
+                                ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
+                                : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
                             }`}
                           >
                             <span>{lane}</span>
