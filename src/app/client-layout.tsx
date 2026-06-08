@@ -33,6 +33,18 @@ type NavProfile = {
   is_admin: boolean | null;
 };
 
+type FloatingConversation = {
+  id: string;
+  otherUserId: string | null;
+  otherUsername: string | null;
+  otherFullName: string | null;
+  otherAvatarUrl: string | null;
+  hasUnread: boolean;
+  mutedAt: string | null;
+  lastMessagePreview: string | null;
+  lastMessageAt: string | null;
+};
+
 const RIGHT_RAIL_WIDTH_STORAGE_KEY = "loombus:right-rail-width";
 
 type DiscussionFeedMode = "all" | "following" | "signal";
@@ -56,6 +68,10 @@ export default function ClientLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [floatingMessagesOpen, setFloatingMessagesOpen] = useState(false);
+  const [floatingMessageSearch, setFloatingMessageSearch] = useState("");
+  const [floatingConversations, setFloatingConversations] = useState<FloatingConversation[]>([]);
+  const [floatingMessagesLoading, setFloatingMessagesLoading] = useState(false);
+  const [floatingMessagesMessage, setFloatingMessagesMessage] = useState("");
   const [bottomNavHidden, setBottomNavHidden] = useState(false);
   const [topNavHidden, setTopNavHidden] = useState(false);
   const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
@@ -565,6 +581,98 @@ export default function ClientLayout({
       window.removeEventListener("mousedown", handleOutsideClick);
     };
   }, []);
+
+  function getFloatingConversationName(conversation: FloatingConversation) {
+    return (
+      conversation.otherFullName?.trim() ||
+      conversation.otherUsername?.trim() ||
+      "Loombus member"
+    );
+  }
+
+  function getFloatingConversationInitial(conversation: FloatingConversation) {
+    return getFloatingConversationName(conversation).charAt(0).toUpperCase();
+  }
+
+  async function loadFloatingConversations() {
+    if (floatingMessagesLoading) {
+      return;
+    }
+
+    setFloatingMessagesLoading(true);
+    setFloatingMessagesMessage("");
+
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token ?? "";
+
+    if (!accessToken) {
+      setFloatingMessagesLoading(false);
+      setFloatingMessagesMessage("Log in to view messages.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/messages/conversations", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setFloatingMessagesMessage(payload.error ?? "Unable to load messages.");
+        setFloatingMessagesLoading(false);
+        return;
+      }
+
+      setFloatingConversations((payload.conversations ?? []) as FloatingConversation[]);
+    } catch {
+      setFloatingMessagesMessage("Unable to load messages.");
+    }
+
+    setFloatingMessagesLoading(false);
+  }
+
+  useEffect(() => {
+    if (!user || !floatingMessagesOpen) {
+      return;
+    }
+
+    loadFloatingConversations();
+  }, [user, floatingMessagesOpen]);
+
+  useEffect(() => {
+    function handleMessagesChanged() {
+      if (user && floatingMessagesOpen) {
+        loadFloatingConversations();
+      }
+    }
+
+    window.addEventListener("loombus:messages-changed", handleMessagesChanged);
+
+    return () => {
+      window.removeEventListener("loombus:messages-changed", handleMessagesChanged);
+    };
+  }, [user, floatingMessagesOpen]);
+
+  const filteredFloatingConversations = floatingConversations.filter((conversation) => {
+    const query = floatingMessageSearch.trim().toLowerCase();
+
+    if (!query) {
+      return true;
+    }
+
+    return (
+      getFloatingConversationName(conversation).toLowerCase().includes(query) ||
+      (conversation.otherUsername ?? "").toLowerCase().includes(query) ||
+      (conversation.lastMessagePreview ?? "").toLowerCase().includes(query)
+    );
+  });
+
+  const floatingUnreadCount = floatingConversations.filter(
+    (conversation) => conversation.hasUnread
+  ).length;
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -1128,7 +1236,14 @@ export default function ClientLayout({
             aria-expanded={floatingMessagesOpen}
             className="fixed bottom-6 right-6 z-50 hidden h-14 w-14 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-2xl shadow-black/20 transition hover:opacity-90 md:flex"
           >
-            <MessageCircle aria-hidden="true" className="h-6 w-6" strokeWidth={2.05} />
+            <span className="relative">
+              <MessageCircle aria-hidden="true" className="h-6 w-6" strokeWidth={2.05} />
+              {floatingUnreadCount > 0 && (
+                <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red-500 px-1 text-center text-[9px] font-semibold leading-4 text-white">
+                  {floatingUnreadCount > 9 ? "9+" : floatingUnreadCount}
+                </span>
+              )}
+            </span>
           </button>
 
           {floatingMessagesOpen && (
@@ -1162,32 +1277,125 @@ export default function ClientLayout({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-[var(--loombus-text-muted)]">
-                  <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-                  <span className="text-sm">
-                    Search messages
-                  </span>
-                </div>
+                <label className="flex items-center gap-3 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-[var(--loombus-text-muted)]">
+                  <Search aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.05} />
+                  <input
+                    value={floatingMessageSearch}
+                    onChange={(event) => setFloatingMessageSearch(event.target.value)}
+                    placeholder="Search messages"
+                    className="min-w-0 flex-1 bg-transparent text-sm text-[var(--loombus-text)] outline-none placeholder:text-[var(--loombus-text-muted)]"
+                  />
+                </label>
               </div>
 
-              <div className="flex min-h-[24rem] flex-col items-center justify-center px-6 py-10 text-center">
-                <MessageCircle aria-hidden="true" className="mb-6 h-20 w-20 text-[var(--loombus-text)]" strokeWidth={1.6} />
+              <div className="max-h-[28rem] min-h-[24rem] overflow-y-auto">
+                {floatingMessagesLoading ? (
+                  <div className="flex min-h-[24rem] items-center justify-center px-6 py-10 text-center">
+                    <p className="text-sm text-[var(--loombus-text-muted)]">
+                      Loading messages...
+                    </p>
+                  </div>
+                ) : floatingMessagesMessage ? (
+                  <div className="flex min-h-[24rem] flex-col items-center justify-center px-6 py-10 text-center">
+                    <MessageCircle aria-hidden="true" className="mb-6 h-20 w-20 text-[var(--loombus-text-muted)]" strokeWidth={1.6} />
+                    <h3 className="text-2xl font-semibold tracking-tight">
+                      Messages unavailable
+                    </h3>
+                    <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
+                      {floatingMessagesMessage}
+                    </p>
+                  </div>
+                ) : floatingConversations.length === 0 ? (
+                  <div className="flex min-h-[24rem] flex-col items-center justify-center px-6 py-10 text-center">
+                    <MessageCircle aria-hidden="true" className="mb-6 h-20 w-20 text-[var(--loombus-text)]" strokeWidth={1.6} />
 
-                <h3 className="text-2xl font-semibold tracking-tight">
-                  Empty inbox
-                </h3>
+                    <h3 className="text-2xl font-semibold tracking-tight">
+                      Empty inbox
+                    </h3>
 
-                <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
-                  Message someone or open your full inbox.
-                </p>
+                    <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
+                      Message someone or open your full inbox.
+                    </p>
 
-                <Link
-                  href="/messages"
-                  onClick={() => setFloatingMessagesOpen(false)}
-                  className="mt-6 rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90"
-                >
-                  Open Messages
-                </Link>
+                    <Link
+                      href="/messages"
+                      onClick={() => setFloatingMessagesOpen(false)}
+                      className="mt-6 rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90"
+                    >
+                      Open Messages
+                    </Link>
+                  </div>
+                ) : filteredFloatingConversations.length === 0 ? (
+                  <div className="flex min-h-[24rem] flex-col items-center justify-center px-6 py-10 text-center">
+                    <h3 className="text-xl font-semibold tracking-tight">
+                      No matches
+                    </h3>
+                    <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
+                      Try another name, username, or message keyword.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[var(--loombus-border)]">
+                    {filteredFloatingConversations.slice(0, 8).map((conversation) => (
+                      <Link
+                        key={conversation.id}
+                        href={`/messages?conversation=${conversation.id}`}
+                        onClick={() => setFloatingMessagesOpen(false)}
+                        className="flex items-start gap-3 px-5 py-4 text-left transition hover:bg-[var(--loombus-surface-muted)]"
+                      >
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-sm font-semibold text-[var(--loombus-text)]">
+                          {conversation.otherAvatarUrl ? (
+                            <img
+                              src={conversation.otherAvatarUrl}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            getFloatingConversationInitial(conversation)
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-sm font-semibold text-[var(--loombus-text)]">
+                              {getFloatingConversationName(conversation)}
+                            </p>
+
+                            {conversation.hasUnread && (
+                              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" aria-label="Unread" />
+                            )}
+
+                            {conversation.mutedAt && (
+                              <span className="rounded-full border border-[var(--loombus-border)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[var(--loombus-text-muted)]">
+                                Muted
+                              </span>
+                            )}
+                          </div>
+
+                          <p className="mt-1 truncate text-xs text-[var(--loombus-text-muted)]">
+                            {conversation.lastMessagePreview ?? "Conversation ready."}
+                          </p>
+
+                          {conversation.lastMessageAt && (
+                            <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-[var(--loombus-text-subtle)]">
+                              {new Date(conversation.lastMessageAt).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+
+                    <div className="p-4">
+                      <Link
+                        href="/messages"
+                        onClick={() => setFloatingMessagesOpen(false)}
+                        className="inline-flex w-full justify-center rounded-full border border-[var(--loombus-border)] px-5 py-3 text-sm font-medium text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)]"
+                      >
+                        Open full inbox
+                      </Link>
+                    </div>
+                  </div>
+                )}
               </div>
             </aside>
           )}
