@@ -79,6 +79,60 @@ type FloatingPeopleSearchResult = {
   bio: string | null;
 };
 
+function areFloatingConversationsEqual(
+  current: FloatingConversation[],
+  next: FloatingConversation[]
+) {
+  if (current.length !== next.length) {
+    return false;
+  }
+
+  return current.every((conversation, index) => {
+    const nextConversation = next[index];
+
+    return (
+      conversation.id === nextConversation.id &&
+      conversation.hasUnread === nextConversation.hasUnread &&
+      conversation.mutedAt === nextConversation.mutedAt &&
+      conversation.lastMessagePreview === nextConversation.lastMessagePreview &&
+      conversation.lastMessageAt === nextConversation.lastMessageAt &&
+      conversation.otherFullName === nextConversation.otherFullName &&
+      conversation.otherUsername === nextConversation.otherUsername &&
+      conversation.otherAvatarUrl === nextConversation.otherAvatarUrl
+    );
+  });
+}
+
+function areFloatingThreadMessagesEqual(
+  current: FloatingThreadMessage[],
+  next: FloatingThreadMessage[]
+) {
+  if (current.length !== next.length) {
+    return false;
+  }
+
+  return current.every((message, index) => {
+    const nextMessage = next[index];
+    const attachments = message.attachments ?? [];
+    const nextAttachments = nextMessage.attachments ?? [];
+
+    if (
+      message.id !== nextMessage.id ||
+      message.body !== nextMessage.body ||
+      message.createdAt !== nextMessage.createdAt ||
+      message.senderId !== nextMessage.senderId ||
+      attachments.length !== nextAttachments.length
+    ) {
+      return false;
+    }
+
+    return attachments.every(
+      (attachment, attachmentIndex) =>
+        attachment.id === nextAttachments[attachmentIndex]?.id
+    );
+  });
+}
+
 const RIGHT_RAIL_WIDTH_STORAGE_KEY = "loombus:right-rail-width";
 
 const FLOATING_ATTACHMENT_BUCKET = "message-attachments";
@@ -698,20 +752,29 @@ export default function ClientLayout({
     }
   }
 
-  async function loadFloatingConversations() {
-    if (floatingMessagesLoading) {
+  async function loadFloatingConversations(options: { silent?: boolean } = {}) {
+    const silent = options.silent === true;
+
+    if (floatingMessagesLoading && !silent) {
       return;
     }
 
-    setFloatingMessagesLoading(true);
-    setFloatingMessagesMessage("");
+    if (!silent) {
+      setFloatingMessagesLoading(true);
+      setFloatingMessagesMessage("");
+    }
 
     const { data } = await supabase.auth.getSession();
     const accessToken = data.session?.access_token ?? "";
 
     if (!accessToken) {
-      setFloatingMessagesLoading(false);
-      setFloatingMessagesMessage("Log in to view messages.");
+      setMessageUnreadCount(0);
+
+      if (!silent) {
+        setFloatingMessagesLoading(false);
+        setFloatingMessagesMessage("Log in to view messages.");
+      }
+
       return;
     }
 
@@ -725,18 +788,32 @@ export default function ClientLayout({
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setFloatingMessagesMessage(payload.error ?? "Unable to load messages.");
-        setFloatingMessagesLoading(false);
+        if (!silent) {
+          setFloatingMessagesMessage(payload.error ?? "Unable to load messages.");
+          setFloatingMessagesLoading(false);
+        }
+
         return;
       }
 
-      setFloatingConversations((payload.conversations ?? []) as FloatingConversation[]);
+      const nextConversations = (payload.conversations ?? []) as FloatingConversation[];
+
+      setFloatingConversations((current) =>
+        areFloatingConversationsEqual(current, nextConversations)
+          ? current
+          : nextConversations
+      );
     } catch {
-      setFloatingMessagesMessage("Unable to load messages.");
+      if (!silent) {
+        setFloatingMessagesMessage("Unable to load messages.");
+      }
     }
 
-    setFloatingMessagesLoading(false);
+    if (!silent) {
+      setFloatingMessagesLoading(false);
+    }
   }
+
 
   useEffect(() => {
     if (!user) {
@@ -773,10 +850,10 @@ export default function ClientLayout({
       loadMessageUnreadCount();
 
       if (floatingMessagesOpen) {
-        loadFloatingConversations();
+        loadFloatingConversations({ silent: true });
 
         if (selectedFloatingConversationId) {
-          loadFloatingThread(selectedFloatingConversationId);
+          loadFloatingThread(selectedFloatingConversationId, { silent: true });
         }
       }
     }
@@ -795,10 +872,10 @@ export default function ClientLayout({
 
     const refreshInterval = window.setInterval(() => {
       loadMessageUnreadCount();
-      loadFloatingConversations();
+      loadFloatingConversations({ silent: true });
 
       if (selectedFloatingConversationId) {
-        loadFloatingThread(selectedFloatingConversationId);
+        loadFloatingThread(selectedFloatingConversationId, { silent: true });
       }
     }, 15000);
 
@@ -824,8 +901,8 @@ export default function ClientLayout({
           filter: `conversation_id=eq.${selectedFloatingConversationId}`,
         },
         () => {
-          loadFloatingThread(selectedFloatingConversationId);
-          loadFloatingConversations();
+          loadFloatingThread(selectedFloatingConversationId, { silent: true });
+          loadFloatingConversations({ silent: true });
         }
       )
       .subscribe();
@@ -1076,16 +1153,26 @@ export default function ClientLayout({
     setFloatingMessagesMessage("");
   }
 
-  async function loadFloatingThread(conversationId: string) {
-    setFloatingThreadLoading(true);
-    setFloatingMessagesMessage("");
+  async function loadFloatingThread(
+    conversationId: string,
+    options: { silent?: boolean } = {}
+  ) {
+    const silent = options.silent === true;
+
+    if (!silent) {
+      setFloatingThreadLoading(true);
+      setFloatingMessagesMessage("");
+    }
 
     const { data } = await supabase.auth.getSession();
     const accessToken = data.session?.access_token ?? "";
 
     if (!accessToken) {
-      setFloatingThreadLoading(false);
-      setFloatingMessagesMessage("Log in to view messages.");
+      if (!silent) {
+        setFloatingThreadLoading(false);
+        setFloatingMessagesMessage("Log in to view messages.");
+      }
+
       return;
     }
 
@@ -1102,13 +1189,22 @@ export default function ClientLayout({
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setFloatingThreadMessages([]);
-        setFloatingMessagesMessage(payload.error ?? "Unable to load conversation.");
-        setFloatingThreadLoading(false);
+        if (!silent) {
+          setFloatingThreadMessages([]);
+          setFloatingMessagesMessage(payload.error ?? "Unable to load conversation.");
+          setFloatingThreadLoading(false);
+        }
+
         return;
       }
 
-      setFloatingThreadMessages((payload.messages ?? []) as FloatingThreadMessage[]);
+      const nextMessages = (payload.messages ?? []) as FloatingThreadMessage[];
+
+      setFloatingThreadMessages((current) =>
+        areFloatingThreadMessagesEqual(current, nextMessages)
+          ? current
+          : nextMessages
+      );
 
       await fetch("/api/messages/mark-read", {
         method: "POST",
@@ -1130,14 +1226,22 @@ export default function ClientLayout({
       );
 
       await loadMessageUnreadCount();
-      window.dispatchEvent(new Event("loombus:messages-changed"));
+
+      if (!silent) {
+        window.dispatchEvent(new Event("loombus:messages-changed"));
+      }
     } catch {
-      setFloatingThreadMessages([]);
-      setFloatingMessagesMessage("Unable to load conversation.");
+      if (!silent) {
+        setFloatingThreadMessages([]);
+        setFloatingMessagesMessage("Unable to load conversation.");
+      }
     }
 
-    setFloatingThreadLoading(false);
+    if (!silent) {
+      setFloatingThreadLoading(false);
+    }
   }
+
 
   async function openFloatingConversation(conversationId: string) {
     closeFloatingNewMessage();
@@ -1517,8 +1621,8 @@ export default function ClientLayout({
       setFloatingComposerText("");
       clearFloatingAttachments();
 
-      await loadFloatingThread(selectedFloatingConversationId);
-      await loadFloatingConversations();
+      await loadFloatingThread(selectedFloatingConversationId, { silent: true });
+      await loadFloatingConversations({ silent: true });
       await loadMessageUnreadCount();
       window.dispatchEvent(new Event("loombus:messages-changed"));
     } catch {
