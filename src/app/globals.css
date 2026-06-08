@@ -1034,3 +1034,40 @@ html[data-loombus-theme="light"] .loombus-alert-card .bg-zinc-950\/80 {
     color: #71717a !important;
   }
 }
+
+/* Create signal selector Light/System polish.
+   Keep the active selector panel distinct, but make unselected menu pills read as
+   clean white cards in Light/System only. Dark mode keeps its existing contrast. */
+html[data-loombus-theme="light"] [data-create-signal-list] button {
+  background-color: var(--loombus-surface) !important;
+  border-color: var(--loombus-border) !important;
+  color: var(--loombus-text) !important;
+}
+
+html[data-loombus-theme="light"] [data-create-signal-list] button span {
+  color: inherit !important;
+}
+
+html[data-loombus-theme="light"] [data-create-signal-list] button[class*="bg-white"] {
+  background-color: var(--loombus-primary-bg) !important;
+  border-color: var(--loombus-primary-bg) !important;
+  color: var(--loombus-primary-text) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-create-signal-list] button {
+    background-color: var(--loombus-surface) !important;
+    border-color: var(--loombus-border) !important;
+    color: var(--loombus-text) !important;
+  }
+
+  html[data-loombus-theme="system"] [data-create-signal-list] button span {
+    color: inherit !important;
+  }
+
+  html[data-loombus-theme="system"] [data-create-signal-list] button[class*="bg-white"] {
+    background-color: var(--loombus-primary-bg) !important;
+    border-color: var(--loombus-primary-bg) !important;
+    color: var(--loombus-primary-text) !important;
+  }
+}
