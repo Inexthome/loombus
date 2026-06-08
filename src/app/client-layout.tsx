@@ -97,7 +97,6 @@ export default function ClientLayout({
   const [floatingComposerText, setFloatingComposerText] = useState("");
   const [floatingSending, setFloatingSending] = useState(false);
   const [floatingNewMessageOpen, setFloatingNewMessageOpen] = useState(false);
-  const [floatingPeopleSearchQuery, setFloatingPeopleSearchQuery] = useState("");
   const [floatingPeopleSearchResults, setFloatingPeopleSearchResults] = useState<FloatingPeopleSearchResult[]>([]);
   const [floatingPeopleSearchLoading, setFloatingPeopleSearchLoading] = useState(false);
   const [floatingStartingConversationId, setFloatingStartingConversationId] = useState<string | null>(null);
@@ -690,7 +689,7 @@ export default function ClientLayout({
       return;
     }
 
-    const query = floatingPeopleSearchQuery.trim();
+    const query = floatingMessageSearch.trim();
 
     if (query.length < 2) {
       setFloatingPeopleSearchResults([]);
@@ -746,19 +745,20 @@ export default function ClientLayout({
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [user, floatingMessagesOpen, floatingNewMessageOpen, floatingPeopleSearchQuery]);
+  }, [user, floatingMessagesOpen, floatingNewMessageOpen, floatingMessageSearch]);
 
   function openFloatingNewMessage() {
     setSelectedFloatingConversationId(null);
     setFloatingThreadMessages([]);
     setFloatingComposerText("");
     setFloatingMessagesMessage("");
+    setFloatingMessageSearch("");
     setFloatingNewMessageOpen(true);
   }
 
   function closeFloatingNewMessage() {
     setFloatingNewMessageOpen(false);
-    setFloatingPeopleSearchQuery("");
+    setFloatingMessageSearch("");
     setFloatingPeopleSearchResults([]);
     setFloatingPeopleSearchLoading(false);
     setFloatingStartingConversationId(null);
@@ -1619,7 +1619,7 @@ export default function ClientLayout({
                   <input
                     value={floatingMessageSearch}
                     onChange={(event) => setFloatingMessageSearch(event.target.value)}
-                    placeholder="Search messages"
+                    placeholder={floatingNewMessageOpen ? "Search people" : "Search messages"}
                     className="min-w-0 flex-1 bg-transparent text-sm text-[var(--loombus-text)] outline-none placeholder:text-[var(--loombus-text-muted)]"
                   />
                 </label>
@@ -1762,7 +1762,7 @@ export default function ClientLayout({
                           </h3>
 
                           <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">
-                            Search mutual followers to start a private conversation.
+                            Use the search box above to find mutual followers.
                           </p>
                         </div>
 
@@ -1775,19 +1775,10 @@ export default function ClientLayout({
                         </button>
                       </div>
 
-                      <label className="flex items-center gap-3 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-[var(--loombus-text-muted)]">
-                        <Search aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.05} />
-                        <input
-                          value={floatingPeopleSearchQuery}
-                          onChange={(event) => setFloatingPeopleSearchQuery(event.target.value)}
-                          placeholder="Search people..."
-                          className="min-w-0 flex-1 bg-transparent text-sm text-[var(--loombus-text)] outline-none placeholder:text-[var(--loombus-text-muted)]"
-                        />
-                      </label>
                     </div>
 
                     <div className="p-5">
-                      {floatingPeopleSearchQuery.trim().length < 2 ? (
+                      {floatingMessageSearch.trim().length < 2 ? (
                         <p className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-sm text-[var(--loombus-text-muted)]">
                           Type at least 2 characters to search people you can message.
                         </p>
