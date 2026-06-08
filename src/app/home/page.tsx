@@ -324,6 +324,137 @@ export default function Home() {
     window.location.href = `/signup?provider=${provider}`;
   }
 
+  if (authState === "checking") {
+    return (
+      <main className="min-h-screen bg-black px-4 py-16 text-white sm:px-6">
+        <div className="mx-auto max-w-5xl rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
+          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
+            Loombus
+          </p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight">
+            Loading home...
+          </h1>
+          <p className="mt-4 text-zinc-500">
+            Checking your session and preparing your workspace.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (authState === "logged_in") {
+    const greetingName = getGreetingName(profile, email);
+
+    return (
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 lg:py-12">
+        <div className="mx-auto max-w-6xl">
+          <section className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-8 lg:p-10">
+            <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
+              Loombus Home
+            </p>
+
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+              {greetingName ? `Welcome back, ${greetingName}.` : "Welcome back."}
+            </h1>
+
+            <p className="mt-4 max-w-2xl leading-relaxed text-zinc-400">
+              Return to your discussions, messages, saved items, and account tools from one place.
+            </p>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
+              <Link
+                href="/messages"
+                className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-600"
+              >
+                <p className="text-sm text-zinc-500">Messages</p>
+                <p className="mt-2 text-3xl font-semibold">{unreadMessageCount}</p>
+                <p className="mt-1 text-sm text-zinc-500">unread</p>
+              </Link>
+
+              <Link
+                href="/notifications"
+                className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-600"
+              >
+                <p className="text-sm text-zinc-500">Notifications</p>
+                <p className="mt-2 text-3xl font-semibold">{unreadNotificationCount}</p>
+                <p className="mt-1 text-sm text-zinc-500">unread</p>
+              </Link>
+
+              <Link
+                href="/saved"
+                className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-600"
+              >
+                <p className="text-sm text-zinc-500">Saved</p>
+                <p className="mt-2 text-3xl font-semibold">{savedCount}</p>
+                <p className="mt-1 text-sm text-zinc-500">items</p>
+              </Link>
+            </div>
+          </section>
+
+          <div className="mt-8 grid gap-6">
+            {memberSections.map((section) => (
+              <section
+                key={section.heading}
+                className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 sm:p-8"
+              >
+                <div className="mb-5">
+                  <h2 className="text-2xl font-semibold tracking-tight">
+                    {section.heading}
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                    {section.description}
+                  </p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  {section.cards.map((card) => (
+                    <Link
+                      key={card.href}
+                      href={card.href}
+                      className={`rounded-2xl border p-5 transition ${
+                        card.primary
+                          ? "border-white bg-white text-black hover:bg-zinc-200"
+                          : "border-zinc-800 bg-black text-white hover:border-zinc-600"
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold">{card.title}</h3>
+                      <p className={`mt-2 text-sm leading-relaxed ${
+                        card.primary ? "text-zinc-700" : "text-zinc-500"
+                      }`}>
+                        {card.description}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+
+          <section className="mt-8 rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 sm:p-8 md:hidden">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              Quick shortcuts
+            </h2>
+
+            <div className="mt-5 grid gap-3">
+              {mobileSignalShortcuts.map((shortcut) => (
+                <Link
+                  key={shortcut.href}
+                  href={shortcut.href}
+                  className="rounded-2xl border border-zinc-800 bg-black p-4 transition hover:border-zinc-600"
+                >
+                  <p className="font-semibold">{shortcut.title}</p>
+                  <p className="mt-1 text-sm text-zinc-500">{shortcut.description}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  // loombus-authenticated-home-render
+
   return (
     <main className="min-h-screen bg-black px-4 py-6 text-white sm:px-6 sm:py-12 lg:py-16">
       <section className="mx-auto flex min-h-[72vh] max-w-xl flex-col items-center justify-center text-center">
