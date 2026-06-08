@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 
+const STICKIES_AI_MODEL =
+  process.env.OPENAI_STICKIES_MODEL ||
+  process.env.OPENAI_SUMMARY_MODEL ||
+  "gpt-4o-mini";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
 type StickyItem = {
   id: string;
   user_id: string;
@@ -81,6 +87,90 @@ function getCleanUsername(value: unknown) {
     .slice(0, 40);
 }
 
+function clampText(value: unknown, maxLength: number) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim().replace(/\s+/g, " ").slice(0, maxLength);
+}
+
+function parseAiStickyCard(content: string) {
+  const fallback = {
+    title: "AI workspace card",
+    summary: clampText(content, 320) || "Review this workspace prompt.",
+    nextAction: "Decide what to do next.",
+  };
+
+  const match = content.match(/\{[\s\S]*\}/);
+
+  if (!match) {
+    return fallback;
+  }
+
+  try {
+    const parsed = JSON.parse(match[0]) as {
+      title?: unknown;
+      summary?: unknown;
+      nextAction?: unknown;
+    };
+
+    return {
+      title: clampText(parsed.title, 90) || fallback.title,
+      summary: clampText(parsed.summary, 320) || fallback.summary,
+      nextAction: clampText(parsed.nextAction, 160) || fallback.nextAction,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+async function generateAiStickyCard(prompt: string) {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is missing.");
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: STICKIES_AI_MODEL,
+      temperature: 0.3,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Create one concise Loombus Stickies workspace card. Return JSON only with keys: title, summary, nextAction. Keep it practical, specific, and non-hype.",
+        },
+        {
+          role: "user",
+          content: `User workspace prompt: ${prompt}`,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || "Unable to generate AI sticky.");
+  }
+
+  const data = (await response.json()) as {
+    choices?: Array<{
+      message?: {
+        content?: string;
+      };
+    }>;
+  };
+
+  const content = data.choices?.[0]?.message?.content ?? "";
+
+  return parseAiStickyCard(content);
+}
+
 function getDiscussionIdFromInput(value: unknown) {
   if (typeof value !== "string") {
     return "";
@@ -121,7 +211,7 @@ async function getUserAndAccess(request: NextRequest) {
       .maybeSingle(),
     supabase
       .from("user_ai_entitlements")
-      .select("tier, ai_assisted_enabled")
+      .select("tier, ai_assisted_enabled, monthly_summary_limit")
       .eq("user_id", userData.user.id)
       .maybeSingle(),
   ]);
@@ -130,7 +220,15 @@ async function getUserAndAccess(request: NextRequest) {
   const hasPremiumAccess =
     isAdmin ||
     (entitlementData?.ai_assisted_enabled === true &&
-      ["premium", "admin"].includes(entitlementData.tier ?? ""));
+      ["premium", "premium_plus", "admin"].includes(entitlementData.tier ?? ""));
+
+  const hasPremiumPlusAccess =
+    isAdmin ||
+    entitlementData?.tier === "admin" ||
+    (entitlementData?.ai_assisted_enabled === true &&
+      (entitlementData.tier === "premium_plus" ||
+        (entitlementData.tier === "premium" &&
+          (entitlementData.monthly_summary_limit ?? 0) > 50)));
 
   if (!hasPremiumAccess) {
     return {
@@ -143,6 +241,7 @@ async function getUserAndAccess(request: NextRequest) {
   return {
     supabase,
     user: userData.user,
+    hasPremiumPlusAccess,
   };
 }
 
@@ -178,6 +277,67 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}));
   const itemType = typeof body.itemType === "string" ? body.itemType.trim() : "discussion";
+
+  if (itemType === "ai_summary") {
+    if (!context.hasPremiumPlusAccess) {
+      return jsonError("AI-generated Stickies require Premium Plus access.", 403, {
+        code: "premium_plus_required",
+        upgradeRequired: true,
+      });
+    }
+
+    const prompt = clampText(body.prompt, 800);
+
+    if (!prompt) {
+      return jsonError("Enter a goal, question, or idea for the AI sticky.");
+    }
+
+    let generated;
+
+    try {
+      generated = await generateAiStickyCard(prompt);
+    } catch (error) {
+      return jsonError(
+        error instanceof Error ? error.message : "Unable to generate AI sticky.",
+        500
+      );
+    }
+
+    const { count } = await context.supabase
+      .from("sticky_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.user.id);
+
+    const subtitle = [
+      generated.summary,
+      generated.nextAction ? `Next: ${generated.nextAction}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    const { data: sticky, error: insertError } = await context.supabase
+      .from("sticky_items")
+      .insert({
+        user_id: context.user.id,
+        item_type: "ai_summary",
+        source_key: `ai:${crypto.randomUUID()}`,
+        title: generated.title,
+        subtitle,
+        href: "/stickies",
+        position: count ?? 0,
+        updated_at: new Date().toISOString(),
+      })
+      .select("id, user_id, item_type, source_key, title, subtitle, href, position, created_at, updated_at")
+      .single();
+
+    if (insertError) {
+      return jsonError(insertError.message, 500);
+    }
+
+    return NextResponse.json({
+      sticky,
+    });
+  }
 
   if (itemType === "note") {
     const title = typeof body.title === "string" ? body.title.trim().slice(0, 240) : "";

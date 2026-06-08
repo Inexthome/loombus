@@ -15,11 +15,23 @@ type StickyItem = {
   created_at: string;
 };
 
+function getStickyTypeLabel(type: string) {
+  if (type === "note") return "Note";
+  if (type === "person") return "Person";
+  if (type === "topic") return "Topic";
+  if (type === "saved") return "Saved";
+  if (type === "ai_summary") return "AI";
+  if (type === "discussion") return "Discussion";
+
+  return type;
+}
+
 export default function StickiesPage() {
   const [items, setItems] = useState<StickyItem[]>([]);
   const [discussionInput, setDiscussionInput] = useState("");
   const [topicInput, setTopicInput] = useState("");
   const [personInput, setPersonInput] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -221,6 +233,55 @@ export default function StickiesPage() {
 
     setPersonInput("");
     setMessage("Person added to Stickies.");
+
+    await loadStickies();
+  }
+
+  async function addAiSticky(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (working) {
+      return;
+    }
+
+    setWorking(true);
+    setMessage("");
+
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      setWorking(false);
+      setIsLoggedIn(false);
+      return;
+    }
+
+    const response = await fetch("/api/stickies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        itemType: "ai_summary",
+        prompt: aiPrompt,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setWorking(false);
+
+    if (!response.ok) {
+      if (response.status === 403 && result.upgradeRequired) {
+        setUpgradeRequired(true);
+      }
+
+      setMessage(result.error ?? "Unable to generate AI card.");
+      return;
+    }
+
+    setAiPrompt("");
+    setMessage("AI card added to Stickies.");
 
     await loadStickies();
   }
@@ -676,6 +737,43 @@ export default function StickiesPage() {
             </div>
 
             <form
+              onSubmit={addAiSticky}
+              className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
+            >
+              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <label className="text-sm font-medium text-zinc-300">
+                  Generate AI workspace card
+                </label>
+
+                <span className="w-fit rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-500">
+                  Premium Plus AI
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <textarea
+                  value={aiPrompt}
+                  onChange={(event) => setAiPrompt(event.target.value)}
+                  placeholder="Describe a goal, question, or idea you want turned into a workspace card..."
+                  rows={4}
+                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                />
+
+                <button
+                  type="submit"
+                  disabled={working || !aiPrompt.trim()}
+                  className="rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {working ? "Generating..." : "Generate AI Card"}
+                </button>
+              </div>
+
+              <p className="mt-3 text-xs leading-relaxed text-zinc-600">
+                Generates a private title, summary, and next action for your Stickies board.
+              </p>
+            </form>
+
+            <form
               onSubmit={addNoteSticky}
               className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:p-5"
             >
@@ -743,13 +841,7 @@ export default function StickiesPage() {
                   >
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <p className="rounded-full border border-zinc-800 bg-black px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-zinc-500">
-                        {item.item_type === "note"
-                          ? "Note"
-                          : item.item_type === "person"
-                            ? "Person"
-                            : item.item_type === "topic"
-                              ? "Topic"
-                              : item.item_type}
+                        {getStickyTypeLabel(item.item_type)}
                       </p>
 
                       <div className="flex shrink-0 flex-wrap justify-end gap-2">
@@ -803,7 +895,7 @@ export default function StickiesPage() {
                       </div>
                     </div>
 
-                    {item.item_type === "note" ? (
+                    {item.item_type === "note" || item.item_type === "ai_summary" ? (
                       editingNoteId === item.id ? (
                         <div className="space-y-3">
                           <input
