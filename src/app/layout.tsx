@@ -10,6 +10,8 @@ const siteDescription = "A high-signal discussion platform for thoughtful conver
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
   themeColor: "#000000",
 };
