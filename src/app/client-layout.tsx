@@ -45,6 +45,17 @@ type FloatingConversation = {
   lastMessageAt: string | null;
 };
 
+type FloatingThreadMessage = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  createdAt: string;
+  editedAt: string | null;
+  deletedBySender: boolean;
+  readByRecipientAt: string | null;
+};
+
 const RIGHT_RAIL_WIDTH_STORAGE_KEY = "loombus:right-rail-width";
 
 type DiscussionFeedMode = "all" | "following" | "signal";
@@ -72,6 +83,11 @@ export default function ClientLayout({
   const [floatingConversations, setFloatingConversations] = useState<FloatingConversation[]>([]);
   const [floatingMessagesLoading, setFloatingMessagesLoading] = useState(false);
   const [floatingMessagesMessage, setFloatingMessagesMessage] = useState("");
+  const [selectedFloatingConversationId, setSelectedFloatingConversationId] = useState<string | null>(null);
+  const [floatingThreadMessages, setFloatingThreadMessages] = useState<FloatingThreadMessage[]>([]);
+  const [floatingThreadLoading, setFloatingThreadLoading] = useState(false);
+  const [floatingComposerText, setFloatingComposerText] = useState("");
+  const [floatingSending, setFloatingSending] = useState(false);
   const [bottomNavHidden, setBottomNavHidden] = useState(false);
   const [topNavHidden, setTopNavHidden] = useState(false);
   const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
@@ -673,6 +689,140 @@ export default function ClientLayout({
   const floatingUnreadCount = floatingConversations.filter(
     (conversation) => conversation.hasUnread
   ).length;
+
+  const selectedFloatingConversation = selectedFloatingConversationId
+    ? floatingConversations.find((conversation) => conversation.id === selectedFloatingConversationId) ?? null
+    : null;
+
+  function closeFloatingThread() {
+    setSelectedFloatingConversationId(null);
+    setFloatingThreadMessages([]);
+    setFloatingComposerText("");
+    setFloatingMessagesMessage("");
+  }
+
+  async function loadFloatingThread(conversationId: string) {
+    setFloatingThreadLoading(true);
+    setFloatingMessagesMessage("");
+
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token ?? "";
+
+    if (!accessToken) {
+      setFloatingThreadLoading(false);
+      setFloatingMessagesMessage("Log in to view messages.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/messages/thread?id=${encodeURIComponent(conversationId)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setFloatingThreadMessages([]);
+        setFloatingMessagesMessage(payload.error ?? "Unable to load conversation.");
+        setFloatingThreadLoading(false);
+        return;
+      }
+
+      setFloatingThreadMessages((payload.messages ?? []) as FloatingThreadMessage[]);
+
+      await fetch("/api/messages/mark-read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          conversationId,
+        }),
+      });
+
+      setFloatingConversations((current) =>
+        current.map((conversation) =>
+          conversation.id === conversationId
+            ? { ...conversation, hasUnread: false }
+            : conversation
+        )
+      );
+
+      window.dispatchEvent(new Event("loombus:messages-changed"));
+    } catch {
+      setFloatingThreadMessages([]);
+      setFloatingMessagesMessage("Unable to load conversation.");
+    }
+
+    setFloatingThreadLoading(false);
+  }
+
+  async function openFloatingConversation(conversationId: string) {
+    setSelectedFloatingConversationId(conversationId);
+    setFloatingComposerText("");
+    await loadFloatingThread(conversationId);
+  }
+
+  async function sendFloatingMessage() {
+    if (!selectedFloatingConversationId || floatingSending) {
+      return;
+    }
+
+    const body = floatingComposerText.trim();
+
+    if (!body) {
+      return;
+    }
+
+    setFloatingSending(true);
+    setFloatingMessagesMessage("");
+
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token ?? "";
+
+    if (!accessToken) {
+      setFloatingSending(false);
+      setFloatingMessagesMessage("Log in to send messages.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/messages/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          conversationId: selectedFloatingConversationId,
+          body,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setFloatingMessagesMessage(payload.error ?? "Unable to send message.");
+        setFloatingSending(false);
+        return;
+      }
+
+      setFloatingComposerText("");
+      await loadFloatingThread(selectedFloatingConversationId);
+      await loadFloatingConversations();
+      window.dispatchEvent(new Event("loombus:messages-changed"));
+    } catch {
+      setFloatingMessagesMessage("Unable to send message.");
+    }
+
+    setFloatingSending(false);
+  }
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -1288,8 +1438,134 @@ export default function ClientLayout({
                 </label>
               </div>
 
-              <div className="max-h-[28rem] min-h-[24rem] overflow-y-auto">
-                {floatingMessagesLoading ? (
+              <div className="max-h-[32rem] min-h-[24rem] overflow-y-auto">
+                {selectedFloatingConversation ? (
+                  <div className="flex min-h-[28rem] flex-col">
+                    <div className="flex items-center gap-3 border-b border-[var(--loombus-border)] px-5 py-4">
+                      <button
+                        type="button"
+                        onClick={closeFloatingThread}
+                        className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                      >
+                        Back
+                      </button>
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-sm font-semibold text-[var(--loombus-text)]">
+                        {selectedFloatingConversation.otherAvatarUrl ? (
+                          <img
+                            src={selectedFloatingConversation.otherAvatarUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          getFloatingConversationInitial(selectedFloatingConversation)
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-[var(--loombus-text)]">
+                          {getFloatingConversationName(selectedFloatingConversation)}
+                        </p>
+
+                        <p className="mt-0.5 truncate text-xs text-[var(--loombus-text-muted)]">
+                          {selectedFloatingConversation.otherUsername
+                            ? `@${selectedFloatingConversation.otherUsername}`
+                            : "Conversation"}
+                        </p>
+                      </div>
+
+                      <Link
+                        href={`/messages?conversation=${selectedFloatingConversation.id}`}
+                        onClick={() => setFloatingMessagesOpen(false)}
+                        className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                      >
+                        Full
+                      </Link>
+                    </div>
+
+                    {floatingMessagesMessage && (
+                      <p className="border-b border-[var(--loombus-border)] px-5 py-3 text-sm text-[var(--loombus-text-muted)]">
+                        {floatingMessagesMessage}
+                      </p>
+                    )}
+
+                    <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+                      {floatingThreadLoading ? (
+                        <p className="text-sm text-[var(--loombus-text-muted)]">
+                          Loading conversation...
+                        </p>
+                      ) : floatingThreadMessages.length === 0 ? (
+                        <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4">
+                          <p className="text-sm text-[var(--loombus-text-muted)]">
+                            No messages yet. Send the first message when you're ready.
+                          </p>
+                        </div>
+                      ) : (
+                        floatingThreadMessages.map((threadMessage) => {
+                          const mine = threadMessage.senderId === user?.id;
+
+                          return (
+                            <div
+                              key={threadMessage.id}
+                              className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                            >
+                              <div
+                                className={`max-w-[84%] rounded-[1.35rem] px-4 py-3 text-sm leading-relaxed shadow-lg shadow-black/10 ${
+                                  mine
+                                    ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)]"
+                                    : "border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text)]"
+                                }`}
+                              >
+                                {threadMessage.body && threadMessage.body !== "[Attachment]" && (
+                                  <p className="whitespace-pre-wrap break-words">
+                                    {threadMessage.body}
+                                  </p>
+                                )}
+
+                                <p
+                                  className={`mt-2 text-[10px] ${
+                                    mine
+                                      ? "opacity-70"
+                                      : "text-[var(--loombus-text-muted)]"
+                                  }`}
+                                >
+                                  {new Date(threadMessage.createdAt).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <div className="border-t border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
+                      <div className="flex items-end gap-2 rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2">
+                        <textarea
+                          value={floatingComposerText}
+                          onChange={(event) => setFloatingComposerText(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" && !event.shiftKey) {
+                              event.preventDefault();
+                              sendFloatingMessage();
+                            }
+                          }}
+                          placeholder="Write a message..."
+                          rows={1}
+                          className="max-h-28 min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-sm text-[var(--loombus-text)] outline-none placeholder:text-[var(--loombus-text-muted)]"
+                        />
+
+                        <button
+                          type="button"
+                          disabled={floatingSending || !floatingComposerText.trim()}
+                          onClick={sendFloatingMessage}
+                          className="mb-1 rounded-full bg-[var(--loombus-primary-bg)] px-4 py-2 text-xs font-semibold text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {floatingSending ? "..." : "Send"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : floatingMessagesLoading ? (
                   <div className="flex min-h-[24rem] items-center justify-center px-6 py-10 text-center">
                     <p className="text-sm text-[var(--loombus-text-muted)]">
                       Loading messages...
@@ -1337,11 +1613,11 @@ export default function ClientLayout({
                 ) : (
                   <div className="divide-y divide-[var(--loombus-border)]">
                     {filteredFloatingConversations.slice(0, 8).map((conversation) => (
-                      <Link
+                      <button
                         key={conversation.id}
-                        href={`/messages?conversation=${conversation.id}`}
-                        onClick={() => setFloatingMessagesOpen(false)}
-                        className="flex items-start gap-3 px-5 py-4 text-left transition hover:bg-[var(--loombus-surface-muted)]"
+                        type="button"
+                        onClick={() => openFloatingConversation(conversation.id)}
+                        className="flex w-full items-start gap-3 px-5 py-4 text-left transition hover:bg-[var(--loombus-surface-muted)]"
                       >
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-sm font-semibold text-[var(--loombus-text)]">
                           {conversation.otherAvatarUrl ? (
@@ -1382,7 +1658,7 @@ export default function ClientLayout({
                             </p>
                           )}
                         </div>
-                      </Link>
+                      </button>
                     ))}
 
                     <div className="p-4">
