@@ -1644,7 +1644,7 @@ export default function ClientLayout({
       {user && (
         <aside className="loombus-desktop-rail fixed inset-y-0 left-0 z-40 hidden w-24 border-r border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 px-3 py-4 backdrop-blur-xl md:flex md:flex-col md:items-center">
           <Link
-            href="/"
+            href="/home"
             aria-label="Loombus home"
             title="Loombus"
             className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] transition hover:border-[var(--loombus-text-subtle)]"
@@ -1751,7 +1751,7 @@ export default function ClientLayout({
           <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-5">
             <div className="flex items-center justify-between gap-4">
               <Link
-                href="/"
+                href="/home"
                 className="flex items-center gap-3 text-xl font-semibold tracking-tight"
                 aria-label="Loombus home"
               >

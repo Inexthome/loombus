@@ -1,5 +1,13 @@
 "use client";
 
+function getSafeNext(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/home";
+  }
+
+  return value;
+}
+
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -47,7 +55,8 @@ export default function LoginPage() {
     }
 
     setMessage("Login successful.");
-    window.location.replace("/discussions");
+    const params = new URLSearchParams(window.location.search);
+    window.location.replace(getSafeNext(params.get("next")));
   }
 
   async function handleOAuthLogin(provider: "google" | "apple") {

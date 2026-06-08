@@ -163,13 +163,36 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
   const [nativeIosApp, setNativeIosApp] = useState(false);
+  const [currentPath, setCurrentPath] = useState("");
 
   useEffect(() => {
     setNativeIosApp(isIosNativeApp());
+    setCurrentPath(window.location.pathname);
   }, []);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setEmail(session.user.email ?? null);
+        setAuthState("logged_in");
+      } else if (window.location.pathname === "/home") {
+        window.location.replace("/login?next=/home");
+      } else {
+        setEmail(null);
+        setProfile(null);
+        setAuthState("logged_out");
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []); // loombus:home-auth-listener
 
   useEffect(() => {
     let isMounted = true;
@@ -191,6 +214,12 @@ export default function Home() {
         if (sessionError || !currentUser) {
           setEmail(null);
           setProfile(null);
+
+          if (window.location.pathname === "/home") {
+            window.location.replace("/login?next=/home");
+            return;
+          }
+
           setAuthState("logged_out");
           return;
         }
