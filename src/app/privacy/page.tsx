@@ -38,6 +38,7 @@ export default function PrivacyPage() {
             <ul className="mt-4 list-disc space-y-2 pl-6">
               <li>account information, such as email address, login method, user ID, and authentication status;</li>
               <li>profile information, such as username, display name, avatar, bio, profile settings, and creator/supporter profile details;</li>
+              <li>age-safety information, such as date of birth, age band, Teen Safety Mode status, and guardian-required status;</li>
               <li>content you create or interact with, such as discussions, replies, reports, saves, folders, private notes, reading history, follows, blocks, notifications, Labs requests, topic alerts, and discussion attachments;</li>
               <li>Premium or billing-related information, such as subscription tier, entitlement status, usage limits, checkout events, and payment processor status;</li>
               <li>AI-assisted feature information, such as prompts, discussion text, replies, titles, topics, Reality Lenses, tags, generated summaries, key takeaways, rewrites, quality checks, Conversation Maps, Related Ideas, usage events, output ratings, and cached AI outputs;</li>
@@ -89,7 +90,7 @@ export default function PrivacyPage() {
               <li>process reports, moderation actions, safety reviews, and admin workflows;</li>
               <li>provide Premium features, subscription status, AI usage limits, and plan access;</li>
               <li>generate, cache, and display AI-assisted outputs when requested or available;</li>
-              <li>detect, prevent, and respond to spam, fraud, abuse, misuse, security threats, and policy violations;</li>
+              <li>detect, prevent, and respond to spam, fraud, abuse, misuse, security threats, age-safety issues, teen-safety risks, and policy violations;</li>
               <li>respond to support, accessibility, safety, billing, or account questions;</li>
               <li>measure reliability, diagnose errors, improve performance, and maintain platform infrastructure;</li>
               <li>comply with legal obligations, enforce Loombus terms, and protect Loombus, users, service providers, and the public.</li>
@@ -286,7 +287,7 @@ export default function PrivacyPage() {
 
         <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
-              12. Children and Minors
+              12. Children, Minors, and Teen Safety Mode
             </h2>
 
             <p>
@@ -300,8 +301,26 @@ export default function PrivacyPage() {
             </p>
 
             <p className="mt-4">
+              Loombus may collect date of birth to determine whether an account
+              is under 13, a teen account, an adult account, or unknown-age until
+              age safety is completed. Loombus may use this information to apply
+              Teen Safety Mode, block under-13 access, limit private-message
+              access, route unknown-age users to an age-safety gate, and support
+              moderation review.
+            </p>
+
+            <p className="mt-4">
+              Teen Safety Mode may apply additional safety protections to users
+              ages 13–17, including stricter private-message checks, teen-related
+              safety metadata, and higher-priority review signals for certain
+              blocked or warned events. Loombus does not display exact date of
+              birth publicly.
+            </p>
+
+            <p className="mt-4">
               Parents or guardians who believe a child under 13 provided
-              information to Loombus may contact support for review.
+              information to Loombus, or who have safety concerns involving a
+              teen account, may contact support for review.
             </p>
         </Panel>
 

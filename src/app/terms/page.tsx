@@ -49,17 +49,24 @@ export default function TermsPage() {
 
         <Panel>
             <h2 className="mb-4 text-2xl font-semibold text-white">
-              2. Eligibility and Accounts
+              2. Eligibility, Age Safety, and Accounts
             </h2>
 
             <p>
               You may use Loombus only if you can legally agree to these Terms
               and are not prohibited from using the service under applicable law.
               Loombus is not available to children under 13. By creating an
-              account or using Loombus, you represent that you are at least 13
-              years old. Users under the age of majority in their jurisdiction
-              may use Loombus only with appropriate parental or guardian
-              permission.
+              account, completing the age-safety gate, or using Loombus, you
+              represent that your age information is accurate and that you are at
+              least 13 years old.
+            </p>
+
+            <p className="mt-4">
+              Users under the age of majority in their jurisdiction may use
+              Loombus only with appropriate parental or guardian permission.
+              Members ages 13–17 may be subject to Teen Safety Mode, which may
+              include additional private-message protections, age-safety checks,
+              and moderation review signals.
             </p>
 
             <p className="mt-4">
@@ -67,7 +74,7 @@ export default function TermsPage() {
               that an account was created with false age information, Loombus may
               restrict, suspend, delete, or refuse service to that account and may
               preserve records as needed for safety, legal compliance, fraud
-              prevention, or platform integrity.
+              prevention, child-safety review, or platform integrity.
             </p>
 
             <p className="mt-4">
@@ -202,7 +209,7 @@ export default function TermsPage() {
             </p>
 
             <ul className="mt-4 list-disc space-y-2 pl-6">
-              <li>harassment, threats, abuse, stalking, or intimidation;</li>
+              <li>harassment, threats, abuse, stalking, intimidation, grooming, unsafe contact with minors, or exploitation;</li>
               <li>hate-driven conduct or targeted attacks against protected groups;</li>
               <li>impersonation, deception, fraud, scams, or misleading identity use;</li>
               <li>spam, platform manipulation, fake engagement, or automated abuse;</li>

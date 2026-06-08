@@ -119,21 +119,32 @@ export default function SafetyPage() {
 
         <Panel>
           <h2 className="mb-4 text-2xl font-semibold text-white">
-            6. Minors and Age Safety
+            6. Minors, Teen Safety Mode, and Age Safety
           </h2>
 
           <p>
-            Loombus is not available to children under 13. Members should not
-            encourage children under 13 to create accounts, collect information
-            from children, or use Loombus to contact minors in unsafe,
-            exploitative, deceptive, or inappropriate ways.
+            Loombus is not available to children under 13. Members must provide
+            accurate age information when creating an account or completing the
+            age-safety gate. Accounts identified as under 13 may be blocked,
+            restricted, removed, or preserved only as needed for safety, legal,
+            or platform-integrity reasons.
           </p>
 
           <p className="mt-4">
-            Content or behavior involving child exploitation, grooming,
-            sexualized-minor content, coercion, or unsafe contact with minors may
-            lead to immediate enforcement and may be reported or preserved where
-            legally appropriate.
+            Members ages 13–17 may receive additional Teen Safety Mode
+            protections. These protections may include stricter private-message
+            safety checks, age-safety review signals, private-message contact
+            limits, and higher-priority moderation review for certain teen-related
+            safety events.
+          </p>
+
+          <p className="mt-4">
+            Adults and teens must not use Loombus to contact minors in unsafe,
+            exploitative, deceptive, coercive, sexual, harassing, or inappropriate
+            ways. Content or behavior involving child exploitation, grooming,
+            sexualized-minor content, coercion, unsafe contact with minors,
+            threats, or targeted abuse may lead to immediate enforcement and may
+            be reported, preserved, or disclosed where legally appropriate.
           </p>
         </Panel>
 
