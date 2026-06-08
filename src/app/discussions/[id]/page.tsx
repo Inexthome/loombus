@@ -2502,6 +2502,71 @@ export default function DiscussionPage() {
           </div>
         </div>
 
+        <section className="mb-5 rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-[color:var(--loombus-text)] sm:mb-8 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--loombus-muted-text)]">
+                State of the Discussion
+              </p>
+
+              <h2 className="text-lg font-semibold tracking-tight">
+                Understand this thread faster.
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[color:var(--loombus-muted-text)]">
+                Generate an overview, key takeaways, disagreement map, conversation structure, or related ideas without losing the original discussion.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowAiToolsPanel(true);
+                setOpenPremiumAiTool((current) => current || "summary");
+
+                window.setTimeout(() => {
+                  document.getElementById("intelligence-layer")?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }, 0);
+              }}
+              className="rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-muted-surface)] px-4 py-2 text-sm font-medium text-[color:var(--loombus-text)] transition hover:border-zinc-500"
+            >
+              Open State
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-5">
+            {[
+              ["summary", "Overview"],
+              ["keyTakeaways", "Key Takeaways"],
+              ["disagreementMap", "Disagreement"],
+              ["conversationMap", "Structure"],
+              ["relatedIdeas", "Related Ideas"],
+            ].map(([toolKey, label]) => (
+              <button
+                key={toolKey}
+                type="button"
+                onClick={() => {
+                  setShowAiToolsPanel(true);
+                  setOpenPremiumAiTool(toolKey);
+
+                  window.setTimeout(() => {
+                    document.getElementById("intelligence-layer")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }, 0);
+                }}
+                className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-muted-surface)] px-3 py-2 text-left text-xs text-[color:var(--loombus-muted-text)] transition hover:border-zinc-500 hover:text-[color:var(--loombus-text)]"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </section>
+
         <div className="mb-5 space-y-5 sm:mb-10">
           <StructuredDiscussionCard discussion={discussion} />
 
