@@ -13,6 +13,10 @@ import { DEFAULT_REPORT_REASON, REPORT_REASONS, type ReportReason } from "@/lib/
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { SafetyWarningModal, getSafetyWarningFromResult, type SafetyWarningState } from "@/components/safety-warning-modal";
 
+type DiscussionMode = "open_discussion" | "debate" | "research_question" | "problem_solving";
+
+type DiscussionMetadata = Record<string, string>;
+
 type Discussion = {
   id: string;
   user_id: string;
@@ -20,6 +24,8 @@ type Discussion = {
   topic: string;
   reality_lens: string | null;
   purpose_lane: string | null;
+  discussion_type?: DiscussionMode | null;
+  discussion_metadata?: DiscussionMetadata | null;
   body: string;
   created_at: string;
   updated_at?: string | null;
@@ -348,6 +354,90 @@ function renderDiscussionBody(content: string) {
     />
   );
 }
+
+function getDiscussionModeLabel(mode?: DiscussionMode | null) {
+  if (mode === "debate") {
+    return "Debate";
+  }
+
+  if (mode === "research_question") {
+    return "Research Question";
+  }
+
+  if (mode === "problem_solving") {
+    return "Problem Solving";
+  }
+
+  return "Open Discussion";
+}
+
+function getStructuredDiscussionSections(discussion: Discussion) {
+  const metadata = discussion.discussion_metadata ?? {};
+
+  if (discussion.discussion_type === "debate") {
+    return [
+      ["Claim", metadata.claim],
+      ["Supporting Argument", metadata.supportingArgument],
+      ["Evidence", metadata.evidence],
+      ["Question for Opposing View", metadata.opposingQuestion],
+    ];
+  }
+
+  if (discussion.discussion_type === "research_question") {
+    return [
+      ["Research Question", metadata.researchQuestion],
+      ["Background", metadata.background],
+      ["Sources", metadata.sources],
+      ["Open Questions", metadata.openQuestions],
+    ];
+  }
+
+  if (discussion.discussion_type === "problem_solving") {
+    return [
+      ["Problem", metadata.problem],
+      ["What Has Been Tried", metadata.tried],
+      ["Constraints", metadata.constraints],
+      ["Desired Outcome", metadata.desiredOutcome],
+    ];
+  }
+
+  return [];
+}
+
+function StructuredDiscussionCard({ discussion }: { discussion: Discussion }) {
+  const sections = getStructuredDiscussionSections(discussion).filter(([, value]) =>
+    String(value ?? "").trim()
+  );
+
+  return (
+    <section className="rounded-3xl border border-zinc-900 bg-zinc-950/70 p-5">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs font-semibold text-zinc-300">
+          {getDiscussionModeLabel(discussion.discussion_type)}
+        </span>
+        <span className="text-xs text-zinc-600">
+          Structured discussion mode
+        </span>
+      </div>
+
+      {sections.length > 0 && (
+        <div className="grid gap-3">
+          {sections.map(([label, value]) => (
+            <div key={label} className="rounded-2xl border border-zinc-900 bg-black/30 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                {label}
+              </p>
+              <div className="mt-2 text-sm leading-6 text-zinc-300">
+                <MentionText text={String(value)} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 
 function formatAttachmentFileSize(bytes: number) {
   if (bytes >= 1024 * 1024) {
@@ -2251,8 +2341,12 @@ export default function DiscussionPage() {
           </div>
         </div>
 
-        <div className="mb-5 text-base leading-7 text-zinc-300 sm:mb-10 sm:text-xl sm:leading-relaxed">
-          {renderDiscussionBody(discussion.body)}
+        <div className="mb-5 space-y-5 sm:mb-10">
+          <StructuredDiscussionCard discussion={discussion} />
+
+          <div className="text-base leading-7 text-zinc-300 sm:text-xl sm:leading-relaxed">
+            {renderDiscussionBody(discussion.body)}
+          </div>
         </div>
 
         {discussionAttachments.length > 0 && (

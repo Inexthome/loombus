@@ -190,6 +190,31 @@ export async function POST(request: NextRequest) {
     const requestedTopic = String(body.topic ?? "").trim();
     const reality_lens = normalizeRealityLens(body.realityLens ?? body.reality_lens);
     const purpose_lane = normalizePurposeLane(body.purposeLane ?? body.purpose_lane);
+    const requestedDiscussionType = String(body.discussionType ?? body.discussion_type ?? "open_discussion").trim();
+    const allowedDiscussionTypes = new Set([
+      "open_discussion",
+      "debate",
+      "research_question",
+      "problem_solving",
+    ]);
+
+    if (!allowedDiscussionTypes.has(requestedDiscussionType)) {
+      return NextResponse.json(
+        { error: "Choose a valid discussion type." },
+        { status: 400 }
+      );
+    }
+
+    const rawDiscussionMetadata =
+      body.discussionMetadata && typeof body.discussionMetadata === "object" && !Array.isArray(body.discussionMetadata)
+        ? body.discussionMetadata
+        : {};
+
+    const discussion_metadata = Object.fromEntries(
+      Object.entries(rawDiscussionMetadata)
+        .map(([key, value]) => [key, String(value ?? "").trim()])
+        .filter(([, value]) => value.length > 0)
+    );
 
     if (!DISCUSSION_TOPICS.includes(requestedTopic as DiscussionTopic)) {
       return NextResponse.json(
@@ -344,6 +369,8 @@ export async function POST(request: NextRequest) {
         topic,
         reality_lens,
         purpose_lane,
+        discussion_type: requestedDiscussionType,
+        discussion_metadata,
         body: content,
       })
       .select()
@@ -384,6 +411,7 @@ export async function POST(request: NextRequest) {
         topic,
         reality_lens,
         purpose_lane,
+        discussion_type: requestedDiscussionType,
         title,
         tags: discussionTags,
       },

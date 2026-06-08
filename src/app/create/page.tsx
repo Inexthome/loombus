@@ -36,6 +36,10 @@ type DiscussionDraft = {
   updated_at: string;
 };
 
+type DiscussionMode = "open_discussion" | "debate" | "research_question" | "problem_solving";
+
+type DiscussionMetadata = Record<string, string>;
+
 type EditableDiscussion = {
   id: string;
   user_id: string;
@@ -43,12 +47,41 @@ type EditableDiscussion = {
   topic: string;
   reality_lens: string | null;
   purpose_lane: string | null;
+  discussion_type?: DiscussionMode | null;
+  discussion_metadata?: DiscussionMetadata | null;
   body: string;
   created_at: string;
   updated_at: string | null;
   edited_at: string | null;
   edit_count: number | null;
 };
+
+const DISCUSSION_MODES: Array<{
+  value: DiscussionMode;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "open_discussion",
+    label: "Open Discussion",
+    description: "A simple question, topic, or idea for thoughtful replies.",
+  },
+  {
+    value: "debate",
+    label: "Debate",
+    description: "Frame a claim, evidence, and a question for opposing views.",
+  },
+  {
+    value: "research_question",
+    label: "Research Question",
+    description: "Explore a question with context, sources, and unresolved points.",
+  },
+  {
+    value: "problem_solving",
+    label: "Problem Solving",
+    description: "Explain a problem, what you tried, constraints, and the desired outcome.",
+  },
+];
 
 const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
 const LONG_DISCUSSION_MAX_LENGTH = 12000;
@@ -314,6 +347,19 @@ export default function CreatePage() {
   const [topicManuallySelected, setTopicManuallySelected] = useState(false);
   const [realityLens, setRealityLens] = useState<string>("");
   const [purposeLane, setPurposeLane] = useState<string>("");
+  const [discussionType, setDiscussionType] = useState<DiscussionMode>("open_discussion");
+  const [modeClaim, setModeClaim] = useState("");
+  const [modeSupportingArgument, setModeSupportingArgument] = useState("");
+  const [modeEvidence, setModeEvidence] = useState("");
+  const [modeOpposingQuestion, setModeOpposingQuestion] = useState("");
+  const [modeResearchQuestion, setModeResearchQuestion] = useState("");
+  const [modeBackground, setModeBackground] = useState("");
+  const [modeSources, setModeSources] = useState("");
+  const [modeOpenQuestions, setModeOpenQuestions] = useState("");
+  const [modeProblem, setModeProblem] = useState("");
+  const [modeTried, setModeTried] = useState("");
+  const [modeConstraints, setModeConstraints] = useState("");
+  const [modeDesiredOutcome, setModeDesiredOutcome] = useState("");
   const [body, setBody] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
@@ -340,7 +386,7 @@ export default function CreatePage() {
   const [showAttachmentsPanel, setShowAttachmentsPanel] = useState(false);
   const [showWritingTools, setShowWritingTools] = useState(false);
   const [activeCreateMetadataTool, setActiveCreateMetadataTool] =
-    useState<"none" | "topic" | "other" | "reality" | "purpose" | "tags">("none");
+    useState<"none" | "topic" | "mode" | "other" | "reality" | "purpose" | "tags">("none");
   const [activeCreateTool, setActiveCreateTool] =
     useState<"none" | "attachments" | "quality" | "rewrite">("none");
   const bodyEditorRef = useRef<HTMLDivElement | null>(null);
@@ -407,7 +453,7 @@ export default function CreatePage() {
       if (requestedEditId) {
         const { data: discussionData, error: discussionError } = await supabase
           .from("discussions")
-          .select("id, user_id, title, topic, reality_lens, purpose_lane, body, created_at, updated_at, edited_at, edit_count")
+          .select("id, user_id, title, topic, reality_lens, purpose_lane, discussion_type, discussion_metadata, body, created_at, updated_at, edited_at, edit_count")
           .eq("id", requestedEditId)
           .is("deleted_at", null)
           .maybeSingle();
@@ -435,6 +481,22 @@ export default function CreatePage() {
             setTopicManuallySelected(Boolean(loadedTopic));
             setRealityLens(normalizeRealityLens(discussion.reality_lens) ?? "");
             setPurposeLane(normalizePurposeLane(discussion.purpose_lane) ?? "");
+            setDiscussionType(discussion.discussion_type ?? "open_discussion");
+
+            const metadata = discussion.discussion_metadata ?? {};
+            setModeClaim(metadata.claim ?? "");
+            setModeSupportingArgument(metadata.supportingArgument ?? "");
+            setModeEvidence(metadata.evidence ?? "");
+            setModeOpposingQuestion(metadata.opposingQuestion ?? "");
+            setModeResearchQuestion(metadata.researchQuestion ?? "");
+            setModeBackground(metadata.background ?? "");
+            setModeSources(metadata.sources ?? "");
+            setModeOpenQuestions(metadata.openQuestions ?? "");
+            setModeProblem(metadata.problem ?? "");
+            setModeTried(metadata.tried ?? "");
+            setModeConstraints(metadata.constraints ?? "");
+            setModeDesiredOutcome(metadata.desiredOutcome ?? "");
+
             setBody(discussion.body ?? "");
 
             const { data: tagRows, error: tagError } = await supabase
@@ -805,6 +867,38 @@ export default function CreatePage() {
     return true;
   }
 
+
+  function getDiscussionMetadata() {
+    if (discussionType === "debate") {
+      return {
+        claim: modeClaim.trim(),
+        supportingArgument: modeSupportingArgument.trim(),
+        evidence: modeEvidence.trim(),
+        opposingQuestion: modeOpposingQuestion.trim(),
+      };
+    }
+
+    if (discussionType === "research_question") {
+      return {
+        researchQuestion: modeResearchQuestion.trim(),
+        background: modeBackground.trim(),
+        sources: modeSources.trim(),
+        openQuestions: modeOpenQuestions.trim(),
+      };
+    }
+
+    if (discussionType === "problem_solving") {
+      return {
+        problem: modeProblem.trim(),
+        tried: modeTried.trim(),
+        constraints: modeConstraints.trim(),
+        desiredOutcome: modeDesiredOutcome.trim(),
+      };
+    }
+
+    return {};
+  }
+
   async function handleCreate(
     event?: FormEvent<HTMLFormElement> | KeyboardEvent<HTMLFormElement>
   ) {
@@ -874,6 +968,8 @@ export default function CreatePage() {
           topic,
           realityLens,
           purposeLane,
+          discussionType,
+          discussionMetadata: getDiscussionMetadata(),
           body,
           tags: tagsInput,
         }
@@ -882,6 +978,8 @@ export default function CreatePage() {
           topic,
           realityLens,
           purposeLane,
+          discussionType,
+          discussionMetadata: getDiscussionMetadata(),
           body,
           tags: tagsInput,
         };
@@ -1327,6 +1425,146 @@ export default function CreatePage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black/40 p-4">
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <label className="block text-sm text-zinc-400">
+                      Discussion Type
+                    </label>
+                    <p className="mt-1 text-xs text-zinc-600">
+                      Open Discussion is the default. Choose a structure when the conversation needs more focus.
+                    </p>
+                  </div>
+
+                  <span className="text-xs text-zinc-600">
+                    {DISCUSSION_MODES.find((mode) => mode.value === discussionType)?.label}
+                  </span>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {DISCUSSION_MODES.map((mode) => (
+                    <button
+                      key={mode.value}
+                      type="button"
+                      onClick={() => setDiscussionType(mode.value)}
+                      className={`rounded-2xl border px-4 py-3 text-left transition ${
+                        discussionType === mode.value
+                          ? "border-zinc-400 bg-white text-black"
+                          : "border-zinc-800 bg-black text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      }`}
+                    >
+                      <span className="block text-sm font-medium">
+                        {mode.label}
+                      </span>
+                      <span className={`mt-1 block text-xs leading-relaxed ${
+                        discussionType === mode.value ? "text-zinc-700" : "text-zinc-600"
+                      }`}>
+                        {mode.description}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {discussionType === "debate" && (
+                  <div className="mt-4 grid gap-3">
+                    <input
+                      type="text"
+                      value={modeClaim}
+                      onChange={(event) => setModeClaim(event.target.value)}
+                      placeholder="Claim"
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                    <textarea
+                      value={modeSupportingArgument}
+                      onChange={(event) => setModeSupportingArgument(event.target.value)}
+                      placeholder="Supporting argument"
+                      rows={3}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                    <textarea
+                      value={modeEvidence}
+                      onChange={(event) => setModeEvidence(event.target.value)}
+                      placeholder="Evidence or source context optional"
+                      rows={3}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                    <input
+                      type="text"
+                      value={modeOpposingQuestion}
+                      onChange={(event) => setModeOpposingQuestion(event.target.value)}
+                      placeholder="Question for opposing views"
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                  </div>
+                )}
+
+                {discussionType === "research_question" && (
+                  <div className="mt-4 grid gap-3">
+                    <input
+                      type="text"
+                      value={modeResearchQuestion}
+                      onChange={(event) => setModeResearchQuestion(event.target.value)}
+                      placeholder="Research question"
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                    <textarea
+                      value={modeBackground}
+                      onChange={(event) => setModeBackground(event.target.value)}
+                      placeholder="Background context"
+                      rows={3}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                    <textarea
+                      value={modeSources}
+                      onChange={(event) => setModeSources(event.target.value)}
+                      placeholder="Sources optional"
+                      rows={3}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                    <textarea
+                      value={modeOpenQuestions}
+                      onChange={(event) => setModeOpenQuestions(event.target.value)}
+                      placeholder="Unresolved or open questions"
+                      rows={3}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                  </div>
+                )}
+
+                {discussionType === "problem_solving" && (
+                  <div className="mt-4 grid gap-3">
+                    <input
+                      type="text"
+                      value={modeProblem}
+                      onChange={(event) => setModeProblem(event.target.value)}
+                      placeholder="Problem"
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                    <textarea
+                      value={modeTried}
+                      onChange={(event) => setModeTried(event.target.value)}
+                      placeholder="What have you tried?"
+                      rows={3}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                    <textarea
+                      value={modeConstraints}
+                      onChange={(event) => setModeConstraints(event.target.value)}
+                      placeholder="Constraints"
+                      rows={3}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                    <input
+                      type="text"
+                      value={modeDesiredOutcome}
+                      onChange={(event) => setModeDesiredOutcome(event.target.value)}
+                      placeholder="Desired outcome"
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
