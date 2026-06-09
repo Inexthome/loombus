@@ -1117,7 +1117,7 @@ export default function DiscussionPage() {
         },
         body: JSON.stringify({
           discussionId: id,
-          body: replyBody,
+          body: normalizePublicText(replyBody),
           referencedReplyId: referencedReply?.id ?? undefined,
         }),
       });
@@ -1722,7 +1722,7 @@ export default function DiscussionPage() {
         },
         body: JSON.stringify({
           replyId,
-          body: editingReplyBody,
+          body: normalizePublicText(editingReplyBody),
         }),
       });
 
@@ -3676,7 +3676,7 @@ export default function DiscussionPage() {
                 )}
 
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
-                  <MentionText text={pinnedReply.body} />
+                  <MentionText text={normalizePublicText(pinnedReply.body)} />
                 </p>
 
                 {getReplyEditLabel(pinnedReply) && (

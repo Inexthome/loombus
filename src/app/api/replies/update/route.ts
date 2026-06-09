@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         : "";
     const content =
       body && typeof body === "object" && !Array.isArray(body)
-        ? String((body as Record<string, unknown>).body ?? "").trim()
+        ? normalizePublicText(String((body as Record<string, unknown>).body ?? "")).trim()
         : "";
 
     if (!replyId) {
