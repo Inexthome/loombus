@@ -158,9 +158,9 @@ const settingsSections = [
         href: "/about",
       },
       {
-        title: "Loombus Setup Guide",
+        title: "Loombus Guide",
         description: "Review profile setup, topic lanes, Reality Lenses, people discovery, saved learning, and first-discussion guidance.",
-        href: "/onboarding",
+        href: "/settings/guide",
       },
       {
         title: "Premium",
