@@ -498,7 +498,7 @@ export default function ReadingHistoryPage() {
                     </h2>
 
                     <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-5 sm:text-base">
-                      {item.discussion.body}
+                      {normalizePublicText(item.discussion.body)}
                     </p>
                   </Link>
 

@@ -822,7 +822,7 @@ export default function MyActivityPage() {
                   </div>
 
                   <p className="text-sm leading-relaxed text-zinc-400">
-                    {notification.message}
+                    {normalizePublicText(notification.message)}
                   </p>
                 </button>
               ))}
