@@ -396,6 +396,104 @@ export default function MyActivityPage() {
           </div>
         </div>
 
+        <div className="mb-10 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-5 md:block">
+          <p className="mb-4 text-sm uppercase tracking-[0.25em] text-zinc-500">
+            Activity shortcuts
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Link
+              href="/my-discussions"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              My Discussions →
+            </Link>
+
+            <Link
+              href="/my-replies"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              My Replies →
+            </Link>
+
+            <Link
+              href="/following"
+              className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-700"
+            >
+              <p className="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-600">
+                Social Feed
+              </p>
+
+              <h3 className="text-xl font-medium">
+                Following Feed →
+              </h3>
+
+              <p className="mt-3 text-sm text-zinc-500">
+                See discussions from the people you follow.
+              </p>
+            </Link>
+
+            {currentProfile?.username && (
+              <>
+                <Link
+                  href={`/u/${currentProfile.username}/followers`}
+                  className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-700"
+                >
+                  <p className="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-600">
+                    Social
+                  </p>
+
+                  <h3 className="text-xl font-medium">
+                    Followers →
+                  </h3>
+
+                  <p className="mt-3 text-sm text-zinc-500">
+                    See who follows your public Loombus profile.
+                  </p>
+                </Link>
+
+                <Link
+                  href={`/u/${currentProfile.username}/following`}
+                  className="rounded-2xl border border-zinc-800 bg-black p-5 transition hover:border-zinc-700"
+                >
+                  <p className="mb-2 text-sm uppercase tracking-[0.2em] text-zinc-600">
+                    Social
+                  </p>
+
+                  <h3 className="text-xl font-medium">
+                    Following List →
+                  </h3>
+
+                  <p className="mt-3 text-sm text-zinc-500">
+                    See the profiles you follow.
+                  </p>
+                </Link>
+              </>
+            )}
+
+            <Link
+              href="/saved"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              Saved →
+            </Link>
+
+            <Link
+              href="/notifications"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              Notifications →
+            </Link>
+
+            <Link
+              href="/reading-history"
+              className="rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-700 hover:text-white"
+            >
+              Reading History →
+            </Link>
+          </div>
+        </div>
+
         <div className="mb-5 grid grid-cols-2 gap-3 sm:mb-10 sm:gap-4 lg:grid-cols-4">
           <Link
             href="/my-discussions"
@@ -451,6 +549,38 @@ export default function MyActivityPage() {
               save a thread, or follow contributors. Start with one intentional action.
             </p>
 
+            <div className="mb-6 hidden gap-4 md:grid md:grid-cols-3">
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Start with signal
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Create one focused discussion that gives people something specific to respond to.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Join before posting
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Reply to an existing discussion with context, examples, or a useful counterpoint.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                <p className="mb-2 text-sm font-medium text-zinc-300">
+                  Save what matters
+                </p>
+
+                <p className="text-sm leading-relaxed text-zinc-600">
+                  Save discussions worth revisiting so Loombus becomes a useful thinking trail.
+                </p>
+              </div>
+            </div>
+
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/create"
@@ -473,6 +603,12 @@ export default function MyActivityPage() {
                 Find people
               </Link>
 
+              <Link
+                href="/onboarding"
+                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Open setup guide
+              </Link>
             </div>
           </section>
         )}
@@ -519,6 +655,12 @@ export default function MyActivityPage() {
                       Create your first discussion →
                     </Link>
 
+                    <Link
+                      href="/onboarding"
+                      className="text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
+                    >
+                      Open setup guide →
+                    </Link>
                   </div>
                 </div>
               )}
