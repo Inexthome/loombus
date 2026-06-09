@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LogOut,
   FlaskConical,
+  HelpCircle,
   Menu,
   MessageCircle,
   MessageSquareReply,
@@ -244,6 +245,63 @@ export default function ClientLayout({
 
     return pathname === href || pathname.startsWith(`${href}/`);
   }
+
+  function getCurrentGuideHref() {
+    if (pathname === "/home" || pathname === "/") {
+      return "/settings/guide#home";
+    }
+
+    if (pathname === "/create") {
+      return "/settings/guide#create";
+    }
+
+    if (pathname === "/discussions") {
+      return "/settings/guide#discussions";
+    }
+
+    if (pathname.startsWith("/discussions/")) {
+      return "/settings/guide#replies";
+    }
+
+    if (pathname === "/saved") {
+      return "/settings/guide#saved";
+    }
+
+    if (pathname === "/stickies") {
+      return "/settings/guide#stickies";
+    }
+
+    if (pathname === "/messages") {
+      return "/settings/guide#messages";
+    }
+
+    if (pathname === "/people" || pathname === "/following" || pathname.startsWith("/u/")) {
+      return "/settings/guide#people";
+    }
+
+    if (pathname === "/notifications") {
+      return "/settings/guide#alerts";
+    }
+
+    if (pathname === "/settings" || pathname === "/settings/guide") {
+      return "/settings/guide#appearance";
+    }
+
+    if (pathname === "/premium" || pathname === "/ai-usage") {
+      return "/settings/guide#premium";
+    }
+
+    if (pathname === "/profile" || pathname === "/dashboard" || pathname === "/my-activity" || pathname === "/my-discussions" || pathname === "/my-replies" || pathname === "/reading-history") {
+      return "/settings/guide#getting-started";
+    }
+
+    if (pathname === "/safety" || pathname === "/guidelines" || pathname === "/blocked-users") {
+      return "/settings/guide#safety";
+    }
+
+    return "/settings/guide#getting-started";
+  }
+
 
   function navLinkClass(href: string) {
     return isActivePath(href)
@@ -2329,6 +2387,15 @@ export default function ClientLayout({
       {user && !mobileMenuOpen && (
         <>
           <div className="loombus-floating-utility-stack fixed right-4 z-50 flex flex-col gap-2">
+            <Link
+              href={getCurrentGuideHref()}
+              aria-label="Open help for this page"
+              title="Help"
+              className="loombus-floating-utility-button loombus-floating-help-button"
+            >
+              <HelpCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.1} />
+            </Link>
+
             <div className="relative">
               <button
                 type="button"

@@ -2078,3 +2078,20 @@ html[data-loombus-theme="light"] .loombus-floating-appearance-panel {
       inset 0 1px 0 rgba(255, 255, 255, 0.88);
   }
 }
+
+/* Floating page Help button v1.
+   Adds a page-aware Help entry to the global floating utility stack. */
+html[data-loombus-theme] .loombus-floating-help-button {
+  border-color: color-mix(in srgb, var(--loombus-primary-bg) 46%, var(--loombus-border) 54%);
+  background:
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--loombus-primary-bg) 16%, transparent), transparent 8rem),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--loombus-surface) 86%, white 7%),
+      var(--loombus-surface)
+    );
+}
+
+html[data-loombus-theme] .loombus-floating-help-button:hover {
+  border-color: color-mix(in srgb, var(--loombus-primary-bg) 66%, var(--loombus-text) 10%);
+}
