@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import { SafetyWarningModal, getSafetyWarningFromResult, type SafetyWarningState } from "@/components/safety-warning-modal";
 
 import Link from "next/link";
@@ -2118,7 +2119,7 @@ export default function CreatePage() {
                           {discussion.topic}
                         </p>
                         <p className="mt-1 text-sm font-medium text-[color:var(--loombus-text)]">
-                          {discussion.title}
+                          {normalizePublicText(discussion.title)}
                         </p>
                       </Link>
                     ))}

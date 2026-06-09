@@ -639,7 +639,7 @@ export default function UserProfilePage() {
                   </div>
 
                   <h3 className="mb-2 line-clamp-2 text-lg font-semibold leading-snug transition group-hover:text-white sm:text-xl">
-                    {discussion.title}
+                    {normalizePublicText(discussion.title)}
                   </h3>
 
                   <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:text-base">

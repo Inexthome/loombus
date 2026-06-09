@@ -1426,7 +1426,7 @@ export default function SavedPage() {
                   </div>
 
                   <h2 className="mb-2 text-lg font-semibold leading-snug tracking-tight transition group-hover:text-white sm:text-2xl">
-                    {discussion.title}
+                    {normalizePublicText(discussion.title)}
                   </h2>
 
                   <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:text-base">

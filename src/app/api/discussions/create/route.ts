@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const title = String(body.title ?? "").trim();
+    const title = normalizePublicText(body.title).trim();
     const requestedTopic = String(body.topic ?? "").trim();
     const reality_lens = normalizeRealityLens(body.realityLens ?? body.reality_lens);
     const purpose_lane = normalizePurposeLane(body.purposeLane ?? body.purpose_lane);

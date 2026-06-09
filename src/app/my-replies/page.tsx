@@ -339,7 +339,7 @@ export default function MyRepliesPage() {
                   </p>
 
                   <h2 className="text-lg font-medium sm:text-2xl">
-                    {discussion?.title ?? "Discussion unavailable"}
+                    {discussion?.title ? normalizePublicText(discussion.title) : "Discussion unavailable"}
                   </h2>
                 </div>
 

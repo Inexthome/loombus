@@ -631,7 +631,7 @@ export default function MyActivityPage() {
                   className="block rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700"
                 >
                   <p className="mb-2 text-sm text-zinc-500">{discussion.topic}</p>
-                  <h3 className="mb-2 text-lg font-medium">{discussion.title}</h3>
+                  <h3 className="mb-2 text-lg font-medium">{normalizePublicText(discussion.title)}</h3>
                   <p className="line-clamp-2 text-sm leading-relaxed text-zinc-500">
                     {normalizePublicText(discussion.body)}
                   </p>
@@ -687,7 +687,7 @@ export default function MyActivityPage() {
                     className="block rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700"
                   >
                     <p className="mb-2 text-sm text-zinc-500">
-                      {discussion?.title ?? "Discussion unavailable"}
+                      {discussion?.title ? normalizePublicText(discussion.title) : "Discussion unavailable"}
                     </p>
 
                     <p className="line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-400">
@@ -740,7 +740,7 @@ export default function MyActivityPage() {
                       className="block transition hover:opacity-90"
                     >
                       <p className="mb-2 text-sm text-zinc-500">{discussion.topic}</p>
-                      <h3 className="mb-4 text-lg font-medium">{discussion.title}</h3>
+                      <h3 className="mb-4 text-lg font-medium">{normalizePublicText(discussion.title)}</h3>
                     </Link>
 
                     <div className="flex flex-wrap items-center justify-between gap-3">

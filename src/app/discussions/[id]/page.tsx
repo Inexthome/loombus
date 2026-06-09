@@ -2463,7 +2463,7 @@ export default function DiscussionPage() {
         </div>
 
         <h1 className="mb-2 text-2xl font-semibold tracking-tight sm:mb-4 sm:text-4xl md:text-6xl">
-          {discussion.title}
+          {normalizePublicText(discussion.title)}
         </h1>
 
         <div className="mb-4 flex flex-col gap-2 text-sm text-zinc-600 sm:mb-6 sm:gap-3">
@@ -2572,7 +2572,7 @@ export default function DiscussionPage() {
           <StructuredDiscussionCard discussion={discussion} />
 
           <div className="text-base leading-7 text-zinc-300 sm:text-xl sm:leading-relaxed">
-            {renderDiscussionBody(discussion.body)}
+            {renderDiscussionBody(normalizePublicText(discussion.body))}
           </div>
         </div>
 

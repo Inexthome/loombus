@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -533,7 +534,7 @@ export default function SearchPage() {
                       </div>
 
                       <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug text-zinc-100 transition group-hover:text-white">
-                        {discussion.title}
+                        {normalizePublicText(discussion.title)}
                       </h3>
 
                       <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-500">

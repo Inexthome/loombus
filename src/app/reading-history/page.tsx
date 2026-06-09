@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -493,7 +494,7 @@ export default function ReadingHistoryPage() {
                     </p>
 
                     <h2 className="mb-2 text-lg font-medium sm:mb-3 sm:text-2xl">
-                      {item.discussion.title}
+                      {normalizePublicText(item.discussion.title)}
                     </h2>
 
                     <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-5 sm:text-base">

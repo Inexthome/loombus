@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import { ProgressiveGuide } from "@/components/progressive-guide";
 
 import Link from "next/link";
@@ -1152,12 +1153,12 @@ export default function DiscussionsPage() {
                   </div>
 
                   <h2 className="mb-2 text-lg font-semibold leading-snug tracking-tight transition group-hover:text-white sm:mb-3 sm:text-2xl">
-                    {discussion.title}
+                    {normalizePublicText(discussion.title)}
                   </h2>
 
                   <div
                     className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-4 sm:line-clamp-3 sm:text-base [&_em]:italic [&_strong]:font-semibold [&_strong]:text-zinc-200"
-                    dangerouslySetInnerHTML={{ __html: discussionBodyToSafeHtml(discussion.body) }}
+                    dangerouslySetInnerHTML={{ __html: discussionBodyToSafeHtml(normalizePublicText(discussion.body)) }}
                   />
 
                   {discussionTags[discussion.id]?.length > 0 && (
