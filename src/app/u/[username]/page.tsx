@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -642,7 +643,7 @@ export default function UserProfilePage() {
                   </h3>
 
                   <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:text-base">
-                    {discussion.body}
+                    {normalizePublicText(discussion.body)}
                   </p>
 
                   <p className="border-t border-zinc-900 pt-3 text-xs text-zinc-500">

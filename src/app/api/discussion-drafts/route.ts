@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { normalizeRealityLens } from "@/lib/reality-lenses";
 import { normalizePurposeLane } from "@/lib/purpose-lanes";
+import { normalizePublicText } from "@/lib/public-text";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
   const topic = DISCUSSION_TOPICS.includes(rawTopic as typeof DISCUSSION_TOPICS[number])
     ? rawTopic
     : DEFAULT_DISCUSSION_TOPIC;
-  const draftBody = cleanText(source.body, 12000);
+  const draftBody = normalizePublicText(String(source.body ?? "")).slice(0, 12000);
 
   if (!title && !draftBody) {
     return jsonError("Add a title or body before saving a draft.", 400);

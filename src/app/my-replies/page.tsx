@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -343,7 +344,7 @@ export default function MyRepliesPage() {
                 </div>
 
                 <p className="mb-4 line-clamp-4 whitespace-pre-wrap text-sm leading-relaxed text-zinc-400 sm:mb-5 sm:text-base">
-                  {reply.body}
+                  {normalizePublicText(reply.body)}
                 </p>
 
                 <div className="flex flex-col gap-2 text-xs text-zinc-500 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 sm:text-sm">

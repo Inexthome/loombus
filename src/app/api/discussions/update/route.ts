@@ -7,6 +7,7 @@ import { normalizeDiscussionTags } from "@/lib/discussion-tags";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
+import { normalizePublicText } from "@/lib/public-text";
 
 const FREE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const PREMIUM_EDIT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
     const requestedTopic = String(body.topic ?? "").trim();
     const reality_lens = normalizeRealityLens(body.realityLens ?? body.reality_lens);
     const purpose_lane = normalizePurposeLane(body.purposeLane ?? body.purpose_lane);
-    const content = String(body.body ?? "").trim();
+    const content = normalizePublicText(body.body).trim();
     const hasTagPayload = Object.prototype.hasOwnProperty.call(body, "tags");
     const tagResult = normalizeDiscussionTags(hasTagPayload ? body.tags : []);
 

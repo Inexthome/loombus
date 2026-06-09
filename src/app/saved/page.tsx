@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -1429,7 +1430,7 @@ export default function SavedPage() {
                   </h2>
 
                   <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:text-base">
-                    {discussion.body}
+                    {normalizePublicText(discussion.body)}
                   </p>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-zinc-900 pt-4 text-xs text-zinc-500 sm:text-sm">

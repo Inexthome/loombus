@@ -5,6 +5,7 @@ import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotification, createNotifications } from "@/lib/notifications";
 import { validatePublicProfileName } from "@/lib/profile-name-quality";
+import { normalizePublicText } from "@/lib/public-text";
 
 const REPLY_COOLDOWN_MS = 10000;
 const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const discussionId = String(body.discussionId ?? "").trim();
-    const content = String(body.body ?? "").trim();
+    const content = normalizePublicText(body.body).trim();
     const referencedReplyId = String(
       body.referencedReplyId ?? body.referenced_reply_id ?? ""
     ).trim();

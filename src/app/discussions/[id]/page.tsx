@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import Link from "next/link";
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -3855,7 +3856,7 @@ export default function DiscussionPage() {
                   ) : (
                     <>
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
-                        <MentionText text={reply.body} />
+                        <MentionText text={normalizePublicText(reply.body)} />
                       </p>
 
                       <ReplyReactionChips reply={reply} />

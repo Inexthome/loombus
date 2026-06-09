@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
+import { normalizePublicText } from "@/lib/public-text";
 
 const FREE_REPLY_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const PREMIUM_REPLY_EDIT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;

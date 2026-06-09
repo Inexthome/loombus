@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -824,7 +825,7 @@ export default function FollowingPage() {
                   </h2>
 
                   <p className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-4 sm:line-clamp-3 sm:text-base">
-                    {discussion.body}
+                    {normalizePublicText(discussion.body)}
                   </p>
 
                   {discussionTags[discussion.id]?.length > 0 && (

@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicText } from "@/lib/public-text";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -632,7 +633,7 @@ export default function MyActivityPage() {
                   <p className="mb-2 text-sm text-zinc-500">{discussion.topic}</p>
                   <h3 className="mb-2 text-lg font-medium">{discussion.title}</h3>
                   <p className="line-clamp-2 text-sm leading-relaxed text-zinc-500">
-                    {discussion.body}
+                    {normalizePublicText(discussion.body)}
                   </p>
                 </Link>
               ))}
@@ -690,7 +691,7 @@ export default function MyActivityPage() {
                     </p>
 
                     <p className="line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-400">
-                      {reply.body}
+                      {normalizePublicText(reply.body)}
                     </p>
                   </Link>
                 );

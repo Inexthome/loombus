@@ -1176,7 +1176,7 @@ export default function CreatePage() {
           purposeLane,
           discussionType,
           discussionMetadata: getDiscussionMetadata(),
-          body,
+          body: bodyPlainText,
           tags: tagsInput,
         }
       : {
@@ -1186,7 +1186,7 @@ export default function CreatePage() {
           purposeLane,
           discussionType,
           discussionMetadata: getDiscussionMetadata(),
-          body,
+          body: bodyPlainText,
           tags: tagsInput,
         };
 
