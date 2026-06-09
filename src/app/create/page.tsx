@@ -1,6 +1,5 @@
 "use client";
 
-import { ProgressiveGuide } from "@/components/progressive-guide";
 import { SafetyWarningModal, getSafetyWarningFromResult, type SafetyWarningState } from "@/components/safety-warning-modal";
 
 import Link from "next/link";
@@ -1520,66 +1519,6 @@ export default function CreatePage() {
           </div>
         )}
 
-        {authChecked && isLoggedIn && !isEditMode && (
-          <div className="hidden md:block xl:hidden">
-            <ProgressiveGuide
-          storageKey="loombus-guide-create-first-discussion-v1"
-          eyebrow="Guide"
-          title="First discussion guide"
-          description="Reopen this when you want help shaping a high-signal post."
-          collapsedClassName="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5"
-        >
-        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6">
-            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-              First discussion guide
-            </p>
-
-            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
-              Start with signal.
-            </h2>
-
-            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
-              A strong Loombus discussion usually gives people something specific
-              to respond to: a question, a claim, a useful observation, or a
-              problem worth thinking through.
-            </p>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  1. Make the title clear
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Let readers know the exact idea or question before they open it.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  2. Add context
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Explain what prompted the thought and why it matters.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  3. Invite useful replies
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Ask for examples, counterpoints, experience, or a better framing.
-                </p>
-              </div>
-            </div>
-          </section>
-            </ProgressiveGuide>
-          </div>
-        )}
-
         {authChecked && isLoggedIn && isEditMode && (
           <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-5">
             <p className="mb-2 text-sm font-medium text-zinc-300">
@@ -2949,121 +2888,6 @@ export default function CreatePage() {
         )}
       <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
         <div className="space-y-4">
-          {authChecked && isLoggedIn && !isEditMode && (
-            <ProgressiveGuide
-              storageKey="loombus-guide-create-first-discussion-v1"
-              eyebrow="Guide"
-              title="First discussion guide"
-              description="Reopen this when you want help shaping a high-signal post."
-              collapsedClassName="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20"
-            >
-              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                  First discussion guide
-                </p>
-
-                <h2 className="mb-3 text-xl font-semibold tracking-tight">
-                  Start with signal.
-                </h2>
-
-                <div className="space-y-3 text-sm leading-relaxed text-zinc-500">
-                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
-                    Make the title clear before readers open it.
-                  </p>
-
-                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
-                    Add context: what prompted the thought and why it matters.
-                  </p>
-
-                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
-                    Invite useful replies: examples, counterpoints, experience, or better framing.
-                  </p>
-                </div>
-              </section>
-            </ProgressiveGuide>
-          )}
-
-          {authChecked && isLoggedIn && (
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <div className="mb-5">
-                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                  Create signal guide
-                </p>
-
-                <h2 className="text-xl font-semibold tracking-tight">
-                  Shape the post.
-                </h2>
-
-                <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                  Use the Create shell rail to classify the discussion before publishing.
-                </p>
-              </div>
-
-              <div className="mb-4 grid gap-2">
-                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  <p className="mb-1 text-sm font-medium text-zinc-300">
-                    Topic
-                  </p>
-                  <p className="text-xs leading-relaxed text-zinc-600">
-                    Public category for discovery. Choose Other when a signal fits better.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  <p className="mb-1 text-sm font-medium text-zinc-300">
-                    Reality Lens
-                  </p>
-                  <p className="text-xs leading-relaxed text-zinc-600">
-                    Adds the human-life context behind the discussion.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  <p className="mb-1 text-sm font-medium text-zinc-300">
-                    Purpose Lane
-                  </p>
-                  <p className="text-xs leading-relaxed text-zinc-600">
-                    Shows the direction: learning, contribution, mastery, or community.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  <p className="mb-1 text-sm font-medium text-zinc-300">
-                    Quality Check
-                  </p>
-                  <p className="text-xs leading-relaxed text-zinc-600">
-                    Reviews the post before publishing.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  <p className="mb-1 text-sm font-medium text-zinc-300">
-                    Rewrite
-                  </p>
-                  <p className="text-xs leading-relaxed text-zinc-600">
-                    Helps make the body clearer.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                {!isEditMode && (
-                  <div className="rounded-2xl border border-zinc-800 bg-black px-4 py-3">
-                    <p className="mb-1 text-sm font-medium text-zinc-300">
-                      Optional attachments
-                    </p>
-                    <p className="text-xs leading-relaxed text-zinc-600">
-                      Add up to 3 images or PDFs. Max 10 MB each.
-                      {attachmentFiles.length > 0 ? ` ${attachmentFiles.length} selected.` : ""}
-                    </p>
-                  </div>
-                )}
-
-
-              </div>
-            </section>
-          )}
-
           {false && authChecked && isLoggedIn && showOptionalDetails && (
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
               <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
