@@ -1310,7 +1310,7 @@ export default function SavedPage() {
         )}
 
         {!loading && saved.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
+          <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:mb-8 sm:rounded-3xl sm:p-8">
             <h2 className="mb-3 text-xl font-medium sm:text-2xl">
               Nothing saved yet.
             </h2>
@@ -1799,7 +1799,7 @@ export default function SavedPage() {
         {canUseCollections && (
           <form
             onSubmit={createCollection}
-            className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6"
+            className="loombus-saved-folder-shell mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6"
           >
             <h2 className="mb-2 text-xl font-medium sm:text-2xl">
               Create saved folder

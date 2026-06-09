@@ -2095,3 +2095,37 @@ html[data-loombus-theme] .loombus-floating-help-button {
 html[data-loombus-theme] .loombus-floating-help-button:hover {
   border-color: color-mix(in srgb, var(--loombus-primary-bg) 66%, var(--loombus-text) 10%);
 }
+
+/* Saved folder premium shell v1.
+   Brings the Create saved folder card into the same premium glass/depth system. */
+html[data-loombus-theme] .loombus-saved-folder-shell {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--loombus-border) 78%, var(--loombus-primary-bg) 22%);
+  background:
+    radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--loombus-primary-bg) 18%, transparent), transparent 12rem),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--loombus-surface) 88%, white 5%),
+      color-mix(in srgb, var(--loombus-surface) 94%, black 6%)
+    );
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html[data-loombus-theme] .loombus-saved-folder-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 38%),
+    radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--loombus-primary-bg) 12%, transparent), transparent 10rem);
+  opacity: 0.7;
+}
+
+html[data-loombus-theme] .loombus-saved-folder-shell > * {
+  position: relative;
+  z-index: 1;
+}
