@@ -2975,60 +2975,43 @@ export default function CreatePage() {
 
           {authChecked && isLoggedIn && !isEditMode && (
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              {/* Right rail attachments visible. */}
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                    Optional attachments
-                  </p>
+              {/* Right rail My Activity card. */}
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
+                Your account
+              </p>
 
-                  <p className="text-sm leading-relaxed text-zinc-500">
-                    Add up to 3 images or PDFs. Max 10 MB each.
-                  </p>
-                </div>
+              <h2 className="text-lg font-semibold tracking-tight text-white">
+                My Activity
+              </h2>
 
-                {attachmentFiles.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearAttachments}
-                    disabled={publishing}
-                    className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                Review your discussions, replies, saves, and recent Loombus activity from one place.
+              </p>
+
+              <div className="mt-5 grid gap-2">
+                <Link
+                  href="/my-activity"
+                  className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Open My Activity
+                </Link>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/my-discussions"
+                    className="rounded-2xl border border-zinc-800 bg-black/70 px-3 py-3 text-center text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
                   >
-                    Clear
-                  </button>
-                )}
-              </div>
+                    Discussions
+                  </Link>
 
-              <input
-                type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
-                onChange={handleAttachmentSelection}
-                disabled={publishing}
-                className="block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400 file:mb-3 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-black disabled:cursor-not-allowed disabled:text-zinc-700"
-              />
-
-              {attachmentFiles.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {attachmentFiles.map((file) => (
-                    <div
-                      key={`${file.name}-${file.size}-${file.lastModified}`}
-                      className="rounded-xl border border-zinc-900 bg-black p-3 text-sm text-zinc-400"
-                    >
-                      <p className="truncate">{file.name}</p>
-                      <p className="mt-1 text-xs text-zinc-600">
-                        {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
-                      </p>
-                    </div>
-                  ))}
+                  <Link
+                    href="/my-replies"
+                    className="rounded-2xl border border-zinc-800 bg-black/70 px-3 py-3 text-center text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Replies
+                  </Link>
                 </div>
-              )}
-
-              {attachmentMessage && (
-                <p className="mt-3 text-sm text-zinc-500">
-                  {attachmentMessage}
-                </p>
-              )}
+              </div>
             </section>
           )}
 
