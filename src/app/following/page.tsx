@@ -422,54 +422,6 @@ export default function FollowingPage() {
           </p>
         </div>
 
-        <section className="mb-6 hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-6 md:block">
-          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-            Following feed guide
-          </p>
-
-          <h2 className="mb-4 text-2xl font-medium">
-            Shape your feed around useful contributors.
-          </h2>
-
-          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            Your following feed is built from people you choose to follow. Keep it
-            focused by following contributors who consistently add context,
-            thoughtful questions, useful examples, or better framing.
-          </p>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Follow selectively
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Start with a small group of contributors whose thinking you want to revisit.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Use activity as a signal
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Sort and filter the feed to find active, replied-to, or higher-signal discussions.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Adjust over time
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Unfollow when a feed stops being useful. The goal is clarity, not volume.
-              </p>
-            </div>
-          </div>
-        </section>
-
         <div className="mb-5 md:hidden">
           <button
             type="button"
@@ -771,42 +723,8 @@ export default function FollowingPage() {
             </h2>
 
             <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
-              Your following feed fills when you follow contributors who publish
-              discussions. Start with people whose profile, topics, or reply style
-              gives you useful signal.
+              Discussions from people you follow will appear here.
             </p>
-
-            <div className="mb-5 hidden gap-3 md:grid md:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Find contributors
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Browse people and follow members whose work or questions are worth revisiting.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Follow for signal
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Choose people who add context, examples, useful replies, or thoughtful discussions.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Shape over time
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Adjust who you follow as your interests and the quality of your feed change.
-                </p>
-              </div>
-            </div>
 
             <div className="flex flex-wrap gap-2 sm:gap-3">
               <Link
