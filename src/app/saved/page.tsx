@@ -1152,56 +1152,6 @@ export default function SavedPage() {
           </section>
         )}
 
-        <section className="mb-6 hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-6 md:block">
-          <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-            Saved discussions guide
-          </p>
-
-          <h2 className="mb-4 text-2xl font-medium">
-            Save what is worth returning to.
-          </h2>
-
-          <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            Saved discussions should become your personal reading shelf. Use it
-            for threads you want to revisit, compare, cite, or organize into
-            future ideas.
-          </p>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Save for a reason
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Save discussions with useful framing, strong replies, research value, or ideas you may build on later.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Revisit your thinking
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                Return to saved threads when you want to reply better, compare viewpoints, or continue learning.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-              <p className="mb-2 text-sm font-medium text-zinc-300">
-                Organize when needed
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-600">
-                {isAdmin
-                  ? "Saved-library tools are available for this account."
-                  : "Premium folders and Premium Plus notes help when your saved list becomes a working library."}
-              </p>
-            </div>
-          </div>
-        </section>
-
         {!loading && !canUseCollections && (
           <div className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:rounded-3xl sm:p-6">
             <h2 className="mb-2 text-xl font-medium sm:text-2xl">
@@ -1366,42 +1316,8 @@ export default function SavedPage() {
             </h2>
 
             <p className="mb-6 max-w-3xl text-zinc-400">
-              Save discussions that are worth revisiting, comparing, citing, or
-              building on later. Your saved list becomes more useful when it is
-              intentional.
+              Saved discussions you keep will appear here.
             </p>
-
-            <div className="mb-5 hidden gap-3 md:grid md:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Start with signal
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Save threads with strong framing, useful replies, or ideas worth returning to.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Build a library
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Treat saved discussions as a working shelf for research, planning, and future replies.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Revisit often
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Return to saved threads when you want to compare viewpoints or continue thinking.
-                </p>
-              </div>
-            </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <Link
@@ -1426,10 +1342,10 @@ export default function SavedPage() {
               </Link>
 
               <Link
-                href="/onboarding"
+                href="/settings/guide#saved"
                 className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
-                Open setup guide
+                Open Saved guide
               </Link>
             </div>
           </div>
@@ -2077,32 +1993,6 @@ export default function SavedPage() {
                 </div>
               </section>
 
-              <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-                <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                  Save standard
-                </p>
-
-                <div className="space-y-3 text-sm leading-relaxed text-zinc-500">
-                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
-                    Save threads with framing you may need again.
-                  </p>
-
-                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
-                    Revisit before saving too many more.
-                  </p>
-
-                  <p className="rounded-2xl border border-zinc-900 bg-black p-3">
-                    Use notes when a saved thread connects to future work.
-                  </p>
-                </div>
-
-                <Link
-                  href="/search"
-                  className="mt-4 inline-flex w-full justify-center rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-                >
-                  Search Loombus
-                </Link>
-              </section>
             </div>
           </aside>
         </div>
