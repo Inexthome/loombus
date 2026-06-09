@@ -140,6 +140,7 @@ function areFloatingThreadMessagesEqual(
 }
 
 const RIGHT_RAIL_WIDTH_STORAGE_KEY = "loombus:right-rail-width";
+const APPEARANCE_STORAGE_KEY = "loombus:appearance";
 
 const FLOATING_ATTACHMENT_BUCKET = "message-attachments";
 const FLOATING_MAX_ATTACHMENT_FILES = 3;
@@ -166,6 +167,7 @@ function getFloatingSafeAttachmentFileName(fileName: string) {
 
 
 type DiscussionFeedMode = "all" | "following" | "signal";
+type AppearanceMode = "system" | "dark" | "light";
 const DEFAULT_RIGHT_RAIL_WIDTH = 320;
 const MIN_RIGHT_RAIL_WIDTH = 280;
 const MAX_RIGHT_RAIL_WIDTH = 480;
@@ -186,6 +188,8 @@ export default function ClientLayout({
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("system");
+  const [appearancePickerOpen, setAppearancePickerOpen] = useState(false);
   const [floatingMessagesOpen, setFloatingMessagesOpen] = useState(false);
   const [floatingMessageSearch, setFloatingMessageSearch] = useState("");
   const [floatingConversations, setFloatingConversations] = useState<FloatingConversation[]>([]);
@@ -574,6 +578,71 @@ export default function ClientLayout({
     setMoreMenuOpen(false);
   }
 
+  function getStoredAppearanceMode(): AppearanceMode {
+    if (typeof window === "undefined") {
+      return "system";
+    }
+
+    const stored = window.localStorage.getItem(APPEARANCE_STORAGE_KEY);
+
+    if (stored === "dark" || stored === "light" || stored === "system") {
+      return stored;
+    }
+
+    return "system";
+  }
+
+  function applyAppearanceMode(mode: AppearanceMode) {
+    setAppearanceMode(mode);
+    setAppearancePickerOpen(false);
+
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.loombusTheme = mode;
+    }
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(APPEARANCE_STORAGE_KEY, mode);
+      window.dispatchEvent(
+        new CustomEvent("loombus:appearance-changed", {
+          detail: { mode },
+        })
+      );
+    }
+  }
+
+
+  useEffect(() => {
+    const storedAppearance = getStoredAppearanceMode();
+    setAppearanceMode(storedAppearance);
+
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.loombusTheme = storedAppearance;
+    }
+
+    function handleAppearanceStorage(event: StorageEvent) {
+      if (event.key !== APPEARANCE_STORAGE_KEY) {
+        return;
+      }
+
+      const nextMode =
+        event.newValue === "dark" || event.newValue === "light" || event.newValue === "system"
+          ? event.newValue
+          : "system";
+
+      setAppearanceMode(nextMode);
+
+      if (typeof document !== "undefined") {
+        document.documentElement.dataset.loombusTheme = nextMode;
+      }
+    }
+
+    window.addEventListener("storage", handleAppearanceStorage);
+
+    return () => {
+      window.removeEventListener("storage", handleAppearanceStorage);
+    };
+  }, []);
+
   useEffect(() => {
     const storedWidth = Number(window.localStorage.getItem(RIGHT_RAIL_WIDTH_STORAGE_KEY));
 
@@ -647,6 +716,7 @@ export default function ClientLayout({
   useEffect(() => {
     setMobileMenuOpen(false);
     setMoreMenuOpen(false);
+    setAppearancePickerOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -2258,15 +2328,50 @@ export default function ClientLayout({
 
       {user && !mobileMenuOpen && (
         <>
-          <div className="loombus-floating-utility-stack fixed right-4 z-50 flex flex-col gap-2 md:hidden">
-            <Link
-              href="/settings"
-              aria-label="Open appearance settings"
-              title="Appearance"
-              className="loombus-floating-utility-button"
-            >
-              <Palette aria-hidden="true" className="h-5 w-5" strokeWidth={2.1} />
-            </Link>
+          <div className="loombus-floating-utility-stack fixed right-4 z-50 flex flex-col gap-2">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setAppearancePickerOpen((current) => !current)}
+                aria-label="Choose appearance"
+                aria-expanded={appearancePickerOpen}
+                title="Appearance"
+                className={`loombus-floating-utility-button ${
+                  appearancePickerOpen ? "loombus-floating-utility-button-active" : ""
+                }`}
+              >
+                <Palette aria-hidden="true" className="h-5 w-5" strokeWidth={2.1} />
+              </button>
+
+              {appearancePickerOpen && (
+                <div className="loombus-floating-appearance-panel absolute bottom-0 right-[3.65rem] w-44 rounded-3xl border p-2 shadow-2xl backdrop-blur-xl">
+                  <p className="px-3 pb-2 pt-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
+                    Appearance
+                  </p>
+
+                  {([
+                    ["light", "Light"],
+                    ["system", "System"],
+                    ["dark", "Dark"],
+                  ] as const).map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => applyAppearanceMode(mode)}
+                      className={`loombus-floating-appearance-option ${
+                        appearanceMode === mode ? "loombus-floating-appearance-option-active" : ""
+                      }`}
+                      aria-pressed={appearanceMode === mode}
+                    >
+                      <span>{label}</span>
+                      {appearanceMode === mode && (
+                        <span aria-hidden="true">✓</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <Link
               href="/stickies"

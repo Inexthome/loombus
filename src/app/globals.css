@@ -1997,3 +1997,84 @@ html[data-loombus-theme="light"] .loombus-floating-utility-button {
     transform: none !important;
   }
 }
+
+/* Floating appearance picker v1.
+   Lets members change Light/System/Dark without leaving the current page.
+   The floating stack now appears on mobile and desktop. */
+html[data-loombus-theme] .loombus-floating-utility-stack {
+  bottom: calc(env(safe-area-inset-bottom) + 9.85rem);
+}
+
+@media (min-width: 768px) {
+  html[data-loombus-theme] .loombus-floating-utility-stack {
+    bottom: 6rem;
+    right: 1.5rem !important;
+  }
+}
+
+html[data-loombus-theme] .loombus-floating-utility-button-active {
+  border-color: color-mix(in srgb, var(--loombus-primary-bg) 54%, var(--loombus-border) 46%) !important;
+  background:
+    radial-gradient(circle at 20% 0%, color-mix(in srgb, var(--loombus-primary-bg) 16%, transparent), transparent 8rem),
+    color-mix(in srgb, var(--loombus-surface-strong) 88%, var(--loombus-primary-bg) 8%) !important;
+  color: var(--loombus-text);
+}
+
+html[data-loombus-theme] .loombus-floating-appearance-panel {
+  border-color: color-mix(in srgb, var(--loombus-border) 70%, var(--loombus-text) 14%);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--loombus-surface) 90%, white 6%),
+      var(--loombus-surface)
+    );
+  color: var(--loombus-text);
+  box-shadow:
+    0 24px 68px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 color-mix(in srgb, white 14%, transparent);
+}
+
+html[data-loombus-theme] .loombus-floating-appearance-option {
+  display: flex;
+  width: 100%;
+  min-height: 2.65rem;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 1rem;
+  padding: 0.65rem 0.85rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.88rem;
+  font-weight: 650;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+html[data-loombus-theme] .loombus-floating-appearance-option:hover,
+html[data-loombus-theme] .loombus-floating-appearance-option:focus-visible {
+  background-color: color-mix(in srgb, var(--loombus-surface-muted) 72%, transparent);
+  color: var(--loombus-text);
+  transform: translateY(-1px);
+}
+
+html[data-loombus-theme] .loombus-floating-appearance-option-active {
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--loombus-primary-bg) 14%, transparent), transparent 8rem),
+    color-mix(in srgb, var(--loombus-surface-muted) 72%, var(--loombus-primary-bg) 8%);
+  color: var(--loombus-text);
+}
+
+html[data-loombus-theme="light"] .loombus-floating-appearance-panel {
+  box-shadow:
+    0 22px 58px rgba(15, 23, 42, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .loombus-floating-appearance-panel {
+    box-shadow:
+      0 22px 58px rgba(15, 23, 42, 0.13),
+      inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  }
+}
