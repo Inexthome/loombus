@@ -228,6 +228,7 @@ export default function Home() {
         }
 
         setEmail(currentUser.email ?? null);
+        setAuthState("logged_in");
 
         const accessToken = session?.access_token ?? "";
 
@@ -281,25 +282,26 @@ export default function Home() {
             );
         }
 
-        const { data: profileData, error: profileError } = await withTimeout(
-          supabase
-            .from("profiles")
-            .select("full_name, username")
-            .eq("id", currentUser.id)
-            .maybeSingle(),
-          "Home profile check"
-        );
+        try {
+          const { data: profileData, error: profileError } = await withTimeout(
+            supabase
+              .from("profiles")
+              .select("full_name, username")
+              .eq("id", currentUser.id)
+              .maybeSingle(),
+            "Home profile check"
+          );
 
-        if (profileError) {
+          if (profileError) {
+            console.error("Unable to load home profile greeting.", profileError);
+          }
+
+          if (isMounted) {
+            setProfile((profileData ?? null) as HomeProfile | null);
+          }
+        } catch (profileError) {
           console.error("Unable to load home profile greeting.", profileError);
         }
-
-        if (!isMounted) {
-          return;
-        }
-
-        setProfile((profileData ?? null) as HomeProfile | null);
-        setAuthState("logged_in");
       } catch (error) {
         console.error("Unable to check home authentication state.", error);
 

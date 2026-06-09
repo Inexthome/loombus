@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { type Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -26,9 +27,8 @@ async function waitForSession(maxAttempts = 20) {
   return null;
 }
 
-async function getPostAuthRedirect(next: string) {
-  const { data } = await supabase.auth.getSession();
-  const session = data.session;
+async function getPostAuthRedirect(next: string, sessionOverride: Session | null = null) {
+  const session = sessionOverride ?? (await supabase.auth.getSession()).data.session;
 
   if (!session) {
     return next;
@@ -103,14 +103,14 @@ export default function AuthCallbackPage() {
       const next = getSafeNext(params.get("next"));
 
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
           setErrorMessage(error.message);
           return;
         }
 
-        window.location.replace(await getPostAuthRedirect(next));
+        window.location.replace(await getPostAuthRedirect(next, exchangeData.session ?? null));
         return;
       }
 
@@ -122,7 +122,7 @@ export default function AuthCallbackPage() {
       const existingSession = await waitForSession(hashHasSession ? 30 : 12);
 
       if (existingSession) {
-        window.location.replace(await getPostAuthRedirect(next));
+        window.location.replace(await getPostAuthRedirect(next, existingSession));
         return;
       }
 
