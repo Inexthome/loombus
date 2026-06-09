@@ -1,7 +1,5 @@
 "use client";
 
-import { ProgressiveGuide } from "@/components/progressive-guide";
-
 import Link from "next/link";
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 import { WelcomeEmailTrigger } from "@/components/welcome-email-trigger";
@@ -635,9 +633,9 @@ export default function DashboardClientPage() {
       title: "Complete your profile",
       description: profileComplete
         ? "Your profile has the basics people need to recognize your contributions."
-        : `Use the new member setup guide to add your ${missingProfileFields.join(", ")} and understand what to do next.`,
-      href: profileComplete ? "/profile" : "/onboarding",
-      action: profileComplete ? "Review profile" : "Open setup guide",
+        : `Add your ${missingProfileFields.join(", ")} so people can recognize your contributions.`,
+      href: "/profile",
+      action: profileComplete ? "Review profile" : "Complete profile",
       complete: profileComplete,
     },
     {
@@ -722,7 +720,7 @@ export default function DashboardClientPage() {
       description: profileComplete
         ? "Your profile has the basic identity context people need when reading your contributions."
         : "Complete your profile so your contributions have clearer context behind them.",
-      href: profileComplete ? "/profile" : "/onboarding",
+      href: "/profile",
       action: profileComplete ? "Review profile" : "Finish setup",
     },
     {
@@ -759,8 +757,8 @@ export default function DashboardClientPage() {
       ? {
           title: "Finish your member foundation",
           description: "Complete your profile so your discussions, replies, and follows have a clearer identity behind them.",
-          href: "/onboarding",
-          action: "Open setup guide",
+          href: "/profile",
+          action: "Complete profile",
           priority: "foundation",
         }
       : null,
@@ -1107,73 +1105,6 @@ export default function DashboardClientPage() {
             </div>
           </Link>
         </MobileDashboardShell>
-
-        <ProgressiveGuide
-          storageKey="loombus-guide-dashboard-getting-started-v1"
-          eyebrow="Guide"
-          title="Getting started"
-          description="Review your setup steps when you need them."
-          collapsedClassName="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6"
-          autoCollapse={gettingStartedCompleteCount === gettingStartedSteps.length}
-        >
-        <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
-          <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:gap-4">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Getting started
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                Build your Loombus foundation.
-              </h2>
-            </div>
-
-            <span className="rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400">
-              {gettingStartedCompleteCount}/{gettingStartedSteps.length} complete
-            </span>
-          </div>
-
-          <p className="mb-4 max-w-3xl text-sm leading-relaxed text-zinc-500">
-            A strong first setup helps other members understand who you are,
-            what you contribute, and which discussions are worth returning to.
-          </p>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {gettingStartedSteps.map((step) => (
-              <Link
-                key={step.title}
-                href={step.href}
-                className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700 sm:p-5"
-              >
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <h3 className="text-base font-medium sm:text-lg">
-                    {step.title}
-                  </h3>
-
-                  <span
-                    className={`shrink-0 rounded-full border px-3 py-1 text-xs ${
-                      step.complete
-                        ? "border-emerald-900 text-emerald-400"
-                        : "border-zinc-800 text-zinc-500"
-                    }`}
-                  >
-                    {step.complete ? "Done" : "Next"}
-                  </span>
-                </div>
-
-                <p className="mb-4 text-sm leading-relaxed text-zinc-500">
-                  {step.description}
-                </p>
-
-                <span className="text-sm text-zinc-300">
-                  {step.action} →
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        </ProgressiveGuide>
 
         <MobileDashboardShell
           eyebrow="Next steps"
