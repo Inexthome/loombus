@@ -55,7 +55,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/home`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/discussions`,
         data: {
           full_name: fullName.trim(),
           date_of_birth: dateOfBirth,
@@ -97,7 +97,7 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/home`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/discussions`,
         },
       });
 

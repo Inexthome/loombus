@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase/client";
 
 function getSafeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/home";
+    return "/discussions";
   }
 
   return value;
