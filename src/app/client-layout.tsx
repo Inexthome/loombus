@@ -370,6 +370,10 @@ export default function ClientLayout({
   const [globalSearchDiscussions, setGlobalSearchDiscussions] = useState<GlobalSearchDiscussionResult[]>([]);
   const [globalSearchSaved, setGlobalSearchSaved] = useState<GlobalSearchSavedResult[]>([]);
   const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
+  const [globalSearchAiAnswer, setGlobalSearchAiAnswer] = useState("");
+  const [globalSearchAiMessage, setGlobalSearchAiMessage] = useState("");
+  const [globalSearchAiWorking, setGlobalSearchAiWorking] = useState(false);
+  const [globalSearchAiUpgradeRequired, setGlobalSearchAiUpgradeRequired] = useState(false);
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("system");
   const [appearancePickerOpen, setAppearancePickerOpen] = useState(false);
   const [floatingMessagesOpen, setFloatingMessagesOpen] = useState(false);
@@ -449,6 +453,9 @@ export default function ClientLayout({
       setGlobalSearchProfiles([]);
       setGlobalSearchDiscussions([]);
       setGlobalSearchSaved([]);
+      setGlobalSearchAiAnswer("");
+      setGlobalSearchAiMessage("");
+      setGlobalSearchAiUpgradeRequired(false);
       setGlobalSearchLoading(false);
       return;
     }
@@ -2275,6 +2282,114 @@ export default function ClientLayout({
     window.location.href = "/";
   }
 
+  function getGlobalSearchAiContext() {
+    const pageResults = globalPageResults.map((result) => ({
+      kind: "Page",
+      title: result.title,
+      description: result.description,
+      href: result.href,
+    }));
+
+    const profileResults = globalSearchProfiles.map((profile) => ({
+      kind: "Person",
+      title: profile.full_name || profile.username || "Loombus member",
+      description: [profile.username ? `@${profile.username}` : "", profile.bio ?? ""].filter(Boolean).join(" · "),
+      href: profile.username ? `/u/${profile.username}` : "/people",
+    }));
+
+    const discussionResults = globalSearchDiscussions.map((discussion) => ({
+      kind: "Discussion",
+      title: discussion.title,
+      description: [
+        discussion.topic,
+        discussion.purpose_lane ?? "",
+        discussion.reality_lens ?? "",
+        discussion.body ?? "",
+      ].filter(Boolean).join(" · "),
+      href: `/discussions/${discussion.id}`,
+    }));
+
+    const savedResults = globalSearchSaved.map((item) => {
+      const discussion = item.discussions;
+
+      return {
+        kind: "Saved",
+        title: discussion?.title ?? "Saved discussion",
+        description: [
+          discussion?.topic ?? "",
+          discussion?.purpose_lane ?? "",
+          item.private_note ? `Private note: ${item.private_note}` : "",
+        ].filter(Boolean).join(" · "),
+        href: discussion ? `/discussions/${discussion.id}` : "/saved",
+      };
+    });
+
+    return [
+      ...profileResults,
+      ...discussionResults,
+      ...savedResults,
+      ...pageResults,
+    ].slice(0, 12);
+  }
+
+  async function askGlobalSearchAi() {
+    const query = globalSearchQuery.trim();
+
+    if (query.length < 2 || globalSearchAiWorking) {
+      return;
+    }
+
+    setGlobalSearchAiWorking(true);
+    setGlobalSearchAiAnswer("");
+    setGlobalSearchAiMessage("");
+    setGlobalSearchAiUpgradeRequired(false);
+
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+
+    if (!accessToken) {
+      setGlobalSearchAiMessage("Log in to use Ask Loombus AI.");
+      setGlobalSearchAiWorking(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/search/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          query,
+          context: getGlobalSearchAiContext(),
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (result.upgradeRequired) {
+          setGlobalSearchAiUpgradeRequired(true);
+          setGlobalSearchAiMessage(result.error ?? "Ask Loombus AI requires Premium access.");
+        } else {
+          setGlobalSearchAiMessage(result.error ?? "Unable to ask Loombus AI.");
+        }
+
+        return;
+      }
+
+      setGlobalSearchAiAnswer(result.answer ?? "");
+      setGlobalSearchAiMessage("");
+    } catch (error) {
+      setGlobalSearchAiMessage(
+        error instanceof Error ? error.message : "Unable to ask Loombus AI."
+      );
+    } finally {
+      setGlobalSearchAiWorking(false);
+    }
+  }
+
   function openGlobalSearch() {
     setMobileMenuOpen(false);
     setMoreMenuOpen(false);
@@ -2288,6 +2403,10 @@ export default function ClientLayout({
     setGlobalSearchProfiles([]);
     setGlobalSearchDiscussions([]);
     setGlobalSearchSaved([]);
+    setGlobalSearchAiAnswer("");
+    setGlobalSearchAiMessage("");
+    setGlobalSearchAiWorking(false);
+    setGlobalSearchAiUpgradeRequired(false);
     setGlobalSearchLoading(false);
   }
 
@@ -2700,13 +2819,40 @@ export default function ClientLayout({
                       Ask Loombus AI
                     </p>
                     <p className="mt-1 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                      AI search will live here next. It will help summarize pages, find signal, and turn questions into actions.
+                      Ask a Premium AI helper to turn your search into a short answer, useful context, and a next action.
                     </p>
+
+                    {globalSearchAiAnswer && (
+                      <div className="mt-3 whitespace-pre-wrap rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                        {globalSearchAiAnswer}
+                      </div>
+                    )}
+
+                    {globalSearchAiMessage && (
+                      <div className="mt-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                        <p>{globalSearchAiMessage}</p>
+
+                        {globalSearchAiUpgradeRequired && (
+                          <Link
+                            href="/premium"
+                            onClick={closeGlobalSearch}
+                            className="mt-3 inline-flex rounded-full bg-[var(--loombus-primary-bg)] px-4 py-2 text-xs font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90"
+                          >
+                            Upgrade to Premium
+                          </Link>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-subtle)]">
-                    Soon
-                  </span>
+                  <button
+                    type="button"
+                    onClick={askGlobalSearchAi}
+                    disabled={globalSearchQuery.trim().length < 2 || globalSearchAiWorking}
+                    className="shrink-0 rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-medium text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {globalSearchAiWorking ? "Asking..." : "Ask"}
+                  </button>
                 </div>
               </section>
 
