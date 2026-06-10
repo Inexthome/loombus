@@ -95,16 +95,11 @@ function withSettingsTimeout<T>(
 
 const settingsSections = [
   {
-    title: "Account",
+    title: "Account access",
     items: [
       {
         title: "Profile",
-        description: "Edit your public profile, username, full name, and bio.",
-        href: "/profile",
-      },
-      {
-        title: "Notification Settings",
-        description: "Choose which replies, follows, and mentions can notify you.",
+        description: "Edit your public profile, username, full name, bio, and notification preferences.",
         href: "/profile",
       },
       {
@@ -115,72 +110,17 @@ const settingsSections = [
     ],
   },
   {
-    title: "Activity",
+    title: "Help and reference",
     items: [
-      {
-        title: "My Activity",
-        description: "See your full activity overview in one place.",
-        href: "/my-activity",
-      },
-      {
-        title: "My Discussions",
-        description: "Review the discussions you started.",
-        href: "/my-discussions",
-      },
-      {
-        title: "My Replies",
-        description: "Review the replies you contributed.",
-        href: "/my-replies",
-      },
-      {
-        title: "Saved",
-        description: "Revisit discussions you saved for later.",
-        href: "/saved",
-      },
-      {
-        title: "Reading History",
-        description: "Revisit discussions you opened recently.",
-        href: "/reading-history",
-      },
-      {
-        title: "Notifications",
-        description: "Review unread and read notifications.",
-        href: "/notifications",
-      },
-    ],
-  },
-  {
-    title: "Platform",
-    items: [
-      {
-        title: "About Loombus",
-        description: "Read the platform purpose and positioning.",
-        href: "/about",
-      },
       {
         title: "Loombus Guide",
-        description: "Review profile setup, topic lanes, Reality Lenses, people discovery, saved learning, and first-discussion guidance.",
+        description: "Review how Loombus works, what each area does, and where to find platform help.",
         href: "/settings/guide",
-      },
-      {
-        title: "Premium",
-        description: "Review Loombus Premium AI subscription options and checkout access.",
-        href: "/premium",
       },
       {
         title: "AI Usage",
         description: "Review your monthly AI-assisted usage, cached outputs, and recent AI activity.",
         href: "/ai-usage",
-      },
-      {
-        title: "Guidelines",
-        description: "Review community standards and contribution expectations.",
-        href: "/guidelines",
-      },
-      {
-        title: "Safety",
-        description: "Review safety expectations, reporting, blocking, and enforcement.",
-        href: "/safety",
       },
       {
         title: "Privacy",
@@ -193,33 +133,13 @@ const settingsSections = [
         href: "/terms",
       },
       {
-        title: "Cookies",
-        description: "Review cookie and similar technology information.",
-        href: "/cookies",
-      },
-      {
-        title: "Refund Policy",
-        description: "Review paid feature cancellation, refund, and billing dispute rules.",
-        href: "/refunds",
-      },
-      {
-        title: "Copyright / DMCA",
-        description: "Review copyright, rights concerns, and DMCA notice information.",
-        href: "/dmca",
-      },
-      {
-        title: "Accessibility",
-        description: "Review accessibility support and feedback options.",
-        href: "/accessibility",
-      },
-      {
         title: "Contact",
         description: "Get help with support, safety concerns, accessibility, or account questions.",
         href: "/contact",
       },
     ],
   },
-];
+]
 
 export default function SettingsClientPage() {
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
@@ -575,8 +495,8 @@ export default function SettingsClientPage() {
           </h1>
 
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:mt-4 sm:text-base">
-            Manage your profile, activity, notifications, saved items,
-            and platform reference pages from one place.
+            Manage appearance, subscription access, account security,
+            profile access, and core platform reference pages.
           </p>
         </div>
 
