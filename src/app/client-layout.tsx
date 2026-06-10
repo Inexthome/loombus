@@ -86,6 +86,162 @@ type FloatingPeopleSearchResult = {
   bio: string | null;
 };
 
+type GlobalSearchResult = {
+  title: string;
+  description: string;
+  href: string;
+  category: string;
+  keywords: string[];
+};
+
+type GlobalSearchProfileResult = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+};
+
+type GlobalSearchDiscussionResult = {
+  id: string;
+  title: string;
+  topic: string;
+  body: string;
+  created_at: string;
+  user_id: string;
+};
+
+const GLOBAL_SEARCH_RESULTS: GlobalSearchResult[] = [
+  {
+    title: "Discussions",
+    description: "Open the main Loombus discussion feed.",
+    href: "/discussions",
+    category: "Core",
+    keywords: ["discussions", "feed", "threads", "signal", "conversation", "home feed"],
+  },
+  {
+    title: "Create discussion",
+    description: "Start a focused discussion with topic, lens, and purpose.",
+    href: "/create",
+    category: "Create",
+    keywords: ["create", "post", "discussion", "write", "composer", "publish", "draft"],
+  },
+  {
+    title: "People",
+    description: "Find contributors, profiles, followers, and people you follow.",
+    href: "/people",
+    category: "Network",
+    keywords: ["people", "members", "profiles", "contributors", "followers", "following"],
+  },
+  {
+    title: "Saved",
+    description: "Return to saved discussions, notes, folders, and bookmarks.",
+    href: "/saved",
+    category: "Library",
+    keywords: ["saved", "bookmarks", "folders", "notes", "private notes", "library"],
+  },
+  {
+    title: "Messages",
+    description: "Open private conversations with mutual followers.",
+    href: "/messages",
+    category: "Communication",
+    keywords: ["messages", "chat", "dm", "inbox", "private conversations"],
+  },
+  {
+    title: "Notifications",
+    description: "Review replies, follows, alerts, and platform activity.",
+    href: "/notifications",
+    category: "Activity",
+    keywords: ["notifications", "alerts", "replies", "follows", "activity"],
+  },
+  {
+    title: "My Activity",
+    description: "Review your discussions, replies, saves, and recent activity.",
+    href: "/my-activity",
+    category: "Activity",
+    keywords: ["my activity", "activity", "history", "recent activity"],
+  },
+  {
+    title: "My Discussions",
+    description: "Open the discussions you started or manage your drafts.",
+    href: "/my-discussions",
+    category: "Activity",
+    keywords: ["my discussions", "my posts", "my threads", "drafts", "published discussions"],
+  },
+  {
+    title: "My Replies",
+    description: "Open the replies you have written across Loombus discussions.",
+    href: "/my-replies",
+    category: "Activity",
+    keywords: ["my replies", "my comments", "responses", "replies i wrote"],
+  },
+  {
+    title: "Reading History",
+    description: "Return to discussions you recently viewed.",
+    href: "/reading-history",
+    category: "Library",
+    keywords: ["reading history", "recently viewed", "history", "read"],
+  },
+  {
+    title: "Stickies",
+    description: "Open pinned notes, topics, people, and saved ideas.",
+    href: "/stickies",
+    category: "Workspace",
+    keywords: ["stickies", "pins", "pinned", "notes", "workspace"],
+  },
+  {
+    title: "Loombus Labs",
+    description: "Request, vote on, and review experimental platform features.",
+    href: "/labs",
+    category: "Build",
+    keywords: ["labs", "features", "requests", "vote", "experimental"],
+  },
+  {
+    title: "Settings",
+    description: "Manage appearance, account access, legal links, and platform references.",
+    href: "/settings",
+    category: "Account",
+    keywords: ["settings", "appearance", "account", "privacy", "terms", "preferences"],
+  },
+  {
+    title: "Loombus Guide",
+    description: "Learn how Loombus works and how to move with signal.",
+    href: "/settings/guide",
+    category: "Help",
+    keywords: ["guide", "help", "how to use", "instructions", "signal"],
+  },
+  {
+    title: "AI Usage",
+    description: "Review AI usage, limits, and premium AI activity.",
+    href: "/ai-usage",
+    category: "AI",
+    keywords: ["ai", "ai usage", "limits", "premium ai", "usage"],
+  },
+  {
+    title: "Premium",
+    description: "Review subscription options and premium platform access.",
+    href: "/premium",
+    category: "Subscription",
+    keywords: ["premium", "subscription", "upgrade", "premium plus", "plans"],
+  },
+];
+
+function matchesGlobalSearchResult(result: GlobalSearchResult, query: string) {
+  if (!query) {
+    return true;
+  }
+
+  return [
+    result.title,
+    result.description,
+    result.category,
+    ...result.keywords,
+  ]
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
+}
+
 function areFloatingConversationsEqual(
   current: FloatingConversation[],
   next: FloatingConversation[]
@@ -189,6 +345,11 @@ export default function ClientLayout({
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState("");
+  const [globalSearchProfiles, setGlobalSearchProfiles] = useState<GlobalSearchProfileResult[]>([]);
+  const [globalSearchDiscussions, setGlobalSearchDiscussions] = useState<GlobalSearchDiscussionResult[]>([]);
+  const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("system");
   const [appearancePickerOpen, setAppearancePickerOpen] = useState(false);
   const [floatingMessagesOpen, setFloatingMessagesOpen] = useState(false);
@@ -237,6 +398,123 @@ export default function ClientLayout({
       "/notifications",
       "/create",
     ].includes(pathname) || pathname.startsWith("/discussions/");
+
+  useEffect(() => {
+    if (!globalSearchOpen) {
+      return;
+    }
+
+    function handleGlobalSearchKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setGlobalSearchOpen(false);
+        setGlobalSearchQuery("");
+      }
+    }
+
+    window.addEventListener("keydown", handleGlobalSearchKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleGlobalSearchKeyDown);
+    };
+  }, [globalSearchOpen]);
+
+  useEffect(() => {
+    if (!globalSearchOpen) {
+      return;
+    }
+
+    const cleanQuery = globalSearchQuery.trim().toLowerCase();
+
+    if (cleanQuery.length < 2) {
+      setGlobalSearchProfiles([]);
+      setGlobalSearchDiscussions([]);
+      setGlobalSearchLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadGlobalSearchResults() {
+      setGlobalSearchLoading(true);
+
+      try {
+        const searchPattern = `%${cleanQuery.replace(/[%_]/g, "")}%`;
+
+        const [
+          usernameProfiles,
+          nameProfiles,
+          titleDiscussions,
+          topicDiscussions,
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url, bio")
+            .ilike("username", searchPattern)
+            .limit(6),
+          supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url, bio")
+            .ilike("full_name", searchPattern)
+            .limit(6),
+          supabase
+            .from("discussions")
+            .select("id, title, topic, body, created_at, user_id")
+            .is("deleted_at", null)
+            .ilike("title", searchPattern)
+            .order("created_at", { ascending: false })
+            .limit(8),
+          supabase
+            .from("discussions")
+            .select("id, title, topic, body, created_at, user_id")
+            .is("deleted_at", null)
+            .ilike("topic", searchPattern)
+            .order("created_at", { ascending: false })
+            .limit(8),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const profileMap = new Map<string, GlobalSearchProfileResult>();
+        for (const profile of [
+          ...((usernameProfiles.data ?? []) as GlobalSearchProfileResult[]),
+          ...((nameProfiles.data ?? []) as GlobalSearchProfileResult[]),
+        ]) {
+          profileMap.set(profile.id, profile);
+        }
+
+        const discussionMap = new Map<string, GlobalSearchDiscussionResult>();
+        for (const discussion of [
+          ...((titleDiscussions.data ?? []) as GlobalSearchDiscussionResult[]),
+          ...((topicDiscussions.data ?? []) as GlobalSearchDiscussionResult[]),
+        ]) {
+          discussionMap.set(discussion.id, discussion);
+        }
+
+        setGlobalSearchProfiles([...profileMap.values()].slice(0, 6));
+        setGlobalSearchDiscussions([...discussionMap.values()].slice(0, 8));
+      } catch (error) {
+        console.error("Unable to load global search results.", error);
+
+        if (isMounted) {
+          setGlobalSearchProfiles([]);
+          setGlobalSearchDiscussions([]);
+        }
+      } finally {
+        if (isMounted) {
+          setGlobalSearchLoading(false);
+        }
+      }
+    }
+
+    const timeoutId = window.setTimeout(loadGlobalSearchResults, 220);
+
+    return () => {
+      isMounted = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [globalSearchOpen, globalSearchQuery]);
 
   function isActivePath(href: string) {
     if (href === "/") {
@@ -1818,6 +2096,32 @@ export default function ClientLayout({
     window.location.href = "/";
   }
 
+  function openGlobalSearch() {
+    setMobileMenuOpen(false);
+    setMoreMenuOpen(false);
+    setAppearancePickerOpen(false);
+    setGlobalSearchOpen(true);
+  }
+
+  function closeGlobalSearch() {
+    setGlobalSearchOpen(false);
+    setGlobalSearchQuery("");
+    setGlobalSearchProfiles([]);
+    setGlobalSearchDiscussions([]);
+    setGlobalSearchLoading(false);
+  }
+
+  const globalSearchCleanQuery = globalSearchQuery.trim().toLowerCase();
+  const globalPageResults = GLOBAL_SEARCH_RESULTS.filter((result) =>
+    matchesGlobalSearchResult(result, globalSearchCleanQuery)
+  ).slice(0, globalSearchCleanQuery ? 8 : 6);
+  const hasGlobalSearchResults =
+    globalSearchProfiles.length > 0 ||
+    globalSearchDiscussions.length > 0 ||
+    globalPageResults.length > 0;
+  const shouldOfferCreateFromSearch =
+    Boolean(globalSearchCleanQuery) && !globalSearchLoading && !hasGlobalSearchResults;
+
   return (
     <div className="min-h-screen bg-[var(--loombus-bg)] text-[var(--loombus-text)] antialiased">
       {/* Desktop Signal Rail: U2 app-shell foundation. Mobile keeps the existing floating top/bottom shell. */}
@@ -1852,10 +2156,10 @@ export default function ClientLayout({
               <DesktopRailTooltip label="Create" />
             </Link>
 
-            <Link href="/search" aria-label="Search" title="Search" aria-current={isActivePath("/search") ? "page" : undefined} data-active={isActivePath("/search") ? "true" : undefined} className={desktopRailLinkClass("/search")}>
+            <button type="button" onClick={openGlobalSearch} aria-label="Search Loombus" title="Search" className={desktopRailLinkClass("/search")}>
               <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Search" />
-            </Link>
+            </button>
 
             <Link href="/people" aria-label="People" title="People" aria-current={isActivePath("/people") ? "page" : undefined} data-active={isActivePath("/people") ? "true" : undefined} className={desktopRailLinkClass("/people")}>
               <Users aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
@@ -2096,14 +2400,15 @@ export default function ClientLayout({
             </Link>
 
             <div className="flex items-center gap-2">
-              <Link
-                href="/search"
+              <button
+                type="button"
+                onClick={openGlobalSearch}
                 aria-label="Search Loombus"
                 title="Search Loombus"
                 className="loombus-mobile-shell-button flex h-11 w-11 items-center justify-center rounded-full border transition"
               >
                 <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              </Link>
+              </button>
 
               <button
                 type="button"
@@ -2156,6 +2461,251 @@ export default function ClientLayout({
 
       {children}
       </div>
+
+      {user && globalSearchOpen && (
+        <div
+          className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[70] px-3 sm:px-6 md:left-24 md:right-auto md:top-5 md:w-[26rem] lg:w-[28rem]"
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label="Loombus search overlay"
+            className="pointer-events-auto flex w-full flex-col overflow-hidden rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/20"
+          >
+            <div className="border-b border-[var(--loombus-border)] p-4">
+              <div className="mb-3 flex items-start justify-between gap-4">
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--loombus-text-subtle)]">
+                    Loombus Search
+                  </p>
+
+                  <h2 className="text-lg font-semibold tracking-tight">
+                    Search Loombus.
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeGlobalSearch}
+                  className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-xs font-medium text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                >
+                  Close
+                </button>
+              </div>
+
+              <label htmlFor="loombus-global-command-search" className="block">
+                <span className="sr-only">Search Loombus</span>
+                <input
+                  id="loombus-global-command-search"
+                  type="search"
+                  value={globalSearchQuery}
+                  onChange={(event) => setGlobalSearchQuery(event.target.value)}
+                  placeholder="Search pages, discussions, people, saved items, topics, or ask Loombus AI..."
+                  autoFocus
+                  className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] px-5 py-3.5 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)] sm:text-lg"
+                />
+              </label>
+            </div>
+
+            <div className="max-h-[min(32rem,calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-7rem))] overflow-y-auto p-4">
+              <section className="mb-4 rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)]">
+                    <Sparkles aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">
+                      Ask Loombus AI
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                      AI search will live here next. It will help summarize pages, find signal, and turn questions into actions.
+                    </p>
+                  </div>
+
+                  <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-subtle)]">
+                    Soon
+                  </span>
+                </div>
+              </section>
+
+              <section>
+                <div className="mb-3 flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
+                      Results
+                    </p>
+                    <h3 className="mt-1 text-lg font-semibold">
+                      {globalSearchCleanQuery ? "Matching results" : "Start searching"}
+                    </h3>
+                  </div>
+
+                  <Link
+                    href="/search"
+                    onClick={closeGlobalSearch}
+                    className="text-sm text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]"
+                  >
+                    Advanced search →
+                  </Link>
+                </div>
+
+                <div className="grid gap-4">
+                  {globalSearchLoading && (
+                    <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-4 text-sm text-[var(--loombus-text-muted)]">
+                      Searching Loombus...
+                    </div>
+                  )}
+
+                  {globalSearchProfiles.length > 0 && (
+                    <div className="grid gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
+                        People
+                      </p>
+
+                      {globalSearchProfiles.map((profile) => (
+                        <Link
+                          key={profile.id}
+                          href={profile.username ? `/u/${profile.username}` : "/people"}
+                          onClick={closeGlobalSearch}
+                          className="group rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-4 transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)]"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold">
+                                {profile.full_name || profile.username || "Loombus member"}
+                              </p>
+                              <p className="mt-1 truncate text-sm text-[var(--loombus-text-muted)]">
+                                {profile.username ? `@${profile.username}` : "Profile"}
+                              </p>
+                              {profile.bio && (
+                                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                                  {profile.bio}
+                                </p>
+                              )}
+                            </div>
+
+                            <span className="shrink-0 rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-subtle)]">
+                              User
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {globalSearchDiscussions.length > 0 && (
+                    <div className="grid gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
+                        Discussions and topics
+                      </p>
+
+                      {globalSearchDiscussions.map((discussion) => (
+                        <Link
+                          key={discussion.id}
+                          href={`/discussions/${discussion.id}`}
+                          onClick={closeGlobalSearch}
+                          className="group rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-4 transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)]"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="line-clamp-2 font-semibold">
+                                {discussion.title}
+                              </p>
+                              <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                                {discussion.topic}
+                              </p>
+                              {discussion.body && (
+                                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                                  {discussion.body}
+                                </p>
+                              )}
+                            </div>
+
+                            <span className="shrink-0 rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-subtle)]">
+                              Discussion
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {globalPageResults.length > 0 && (
+                    <div className="grid gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
+                        Pages
+                      </p>
+
+                      {globalPageResults.map((result) => (
+                        <Link
+                          key={result.href}
+                          href={result.href}
+                          onClick={closeGlobalSearch}
+                          className="group rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-4 transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)]"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-semibold">
+                                {result.title}
+                              </p>
+                              <p className="mt-1 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                                {result.description}
+                              </p>
+                            </div>
+
+                            <span className="shrink-0 rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-subtle)]">
+                              {result.category}
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {shouldOfferCreateFromSearch && (
+                    <div className="grid gap-3">
+                      <Link
+                        href="/create"
+                        onClick={closeGlobalSearch}
+                        className="group rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-4 transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)]"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold">
+                              Create discussion from “{globalSearchQuery.trim()}”
+                            </p>
+                            <p className="mt-1 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                              Nothing matched yet. Turn this search into a focused Loombus discussion.
+                            </p>
+                          </div>
+
+                          <span className="shrink-0 rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-subtle)]">
+                            Create
+                          </span>
+                        </div>
+                      </Link>
+
+                      <Link
+                        href="/search"
+                        onClick={closeGlobalSearch}
+                        className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-4 text-sm text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                      >
+                        Search deeper in Advanced search →
+                      </Link>
+                    </div>
+                  )}
+
+                  {!globalSearchCleanQuery && (
+                    <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-4 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                      Type a username, discussion title, topic, saved item, or platform page.
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+          </section>
+        </div>
+      )}
 
       {user && hasDesktopRightRail && (
         <button
@@ -2257,10 +2807,10 @@ export default function ClientLayout({
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <Link href="/search" onClick={closeMobileMenu} className={mobileNavLinkClass("/search")}>
+                  <button type="button" onClick={openGlobalSearch} className={mobileNavLinkClass("/search")}>
                     <MobileMenuItemIcon name="search" />
                     <span>Search</span>
-                  </Link>
+                  </button>
 
                   <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
                     <MobileMenuItemIcon name="people" />
