@@ -58,9 +58,8 @@ export default function PeoplePage() {
   const [workingFollowId, setWorkingFollowId] = useState<string | null>(null);
   const [startingMessageProfileId, setStartingMessageProfileId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
   const [activePeopleTool, setActivePeopleTool] =
-    useState<"none" | "search" | "following" | "followers" | "suggested" | "mutual">("none");
+    useState<"none" | "following" | "followers" | "suggested" | "mutual">("none");
   const [loading, setLoading] = useState(true);
   const loadingRef = useRef(true);
 
@@ -399,13 +398,11 @@ export default function PeoplePage() {
   }, []);
 
   const filteredProfiles = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-
     const visibleProfiles = isAdmin
       ? profiles
       : profiles.filter((profile) => !blockedProfileIds.has(profile.id));
 
-    const scopedProfiles = visibleProfiles.filter((profile) => {
+    return visibleProfiles.filter((profile) => {
       if (activePeopleTool === "following") {
         return followingIds.has(profile.id);
       }
@@ -429,21 +426,8 @@ export default function PeoplePage() {
 
       return true;
     });
-
-    if (!query) {
-      return scopedProfiles;
-    }
-
-    return scopedProfiles.filter((profile) => {
-      return (
-        (profile.username ?? "").toLowerCase().includes(query) ||
-        (profile.full_name ?? "").toLowerCase().includes(query) ||
-        (profile.bio ?? "").toLowerCase().includes(query)
-      );
-    });
   }, [
     profiles,
-    searchQuery,
     blockedProfileIds,
     isAdmin,
     activePeopleTool,
@@ -570,32 +554,14 @@ export default function PeoplePage() {
     }
   }
 
-  const activePeopleSearch = searchQuery.trim();
-  const hasActivePeopleSearch = activePeopleSearch.length > 0;
-
-  function resetPeopleSearch() {
-    setSearchQuery("");
-  }
-
   function togglePeopleTool(
-    tool: "search" | "following" | "followers" | "suggested" | "mutual"
+    tool: "following" | "followers" | "suggested" | "mutual"
   ) {
     setActivePeopleTool((current) => current === tool ? "none" : tool);
-
-    if (tool === "search") {
-      window.setTimeout(() => {
-        document.getElementById("people-search")?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-        (document.getElementById("people-search") as HTMLInputElement | null)?.focus();
-      }, 0);
-    }
   }
 
   function showAllPeople() {
     setActivePeopleTool("none");
-    setSearchQuery("");
   }
 
   const peopleViewLabel =
@@ -677,6 +643,7 @@ export default function PeoplePage() {
           <div className="min-w-0">
         <section className="people-quick-controls mb-4 xl:hidden">
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="People tools rail">
+
             <button
               type="button"
               onClick={showAllPeople}
@@ -687,19 +654,6 @@ export default function PeoplePage() {
               }`}
             >
               All
-            </button>
-
-            <button
-              type="button"
-              onClick={() => togglePeopleTool("search")}
-              className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                activePeopleTool === "search" || hasActivePeopleSearch
-                  ? "bg-white text-black"
-                  : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-              }`}
-              aria-expanded={activePeopleTool === "search"}
-            >
-              Search
             </button>
 
             <button
@@ -755,48 +709,15 @@ export default function PeoplePage() {
             </button>
           </div>
 
-          {activePeopleTool === "search" && (
-            <label htmlFor="people-search" className="mt-3 block">
-              <span className="sr-only">
-                Search people
-              </span>
-
-              <input
-                id="people-search"
-                type="text"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search people..."
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3.5 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-              />
-            </label>
-          )}
-
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
               {peopleViewLabel}
             </span>
 
-            {hasActivePeopleSearch && (
-              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                Search: “{activePeopleSearch}”
-              </span>
-            )}
-
             {!loading && (
               <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
                 {filteredProfiles.length} of {profiles.length} {isAdmin ? "people" : "visible people"}
               </span>
-            )}
-
-            {hasActivePeopleSearch && (
-              <button
-                type="button"
-                onClick={resetPeopleSearch}
-                className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-              >
-                Clear
-              </button>
             )}
           </div>
         </section>
@@ -826,15 +747,6 @@ export default function PeoplePage() {
             </p>
 
             <div className="mt-5 flex flex-col gap-3 sm:mt-6 sm:flex-row sm:flex-wrap">
-              {hasActivePeopleSearch && (
-                <button
-                  type="button"
-                  onClick={resetPeopleSearch}
-                  className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
-                >
-                  Clear search
-                </button>
-              )}
 
               <Link
                 href="/discussions"
@@ -965,36 +877,11 @@ export default function PeoplePage() {
 
                     <p className="mt-3 text-sm leading-relaxed text-zinc-500">
                       {isAdmin
-                        ? "Search all visible member profiles here."
-                        : "Search people you follow, people who follow you, and network or public-interest suggestions here."}
+                        ? "Refine all visible member profiles by view."
+                        : "Refine people you follow, people who follow you, and network or public-interest suggestions."}
                     </p>
                   </div>
-
-                  {hasActivePeopleSearch && (
-                    <button
-                      type="button"
-                      onClick={resetPeopleSearch}
-                      className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-                    >
-                      Reset
-                    </button>
-                  )}
                 </div>
-
-                <label htmlFor="people-search-rail" className="block">
-                  <span className="mb-2 block text-sm font-medium text-zinc-300">
-                    Search people
-                  </span>
-
-                  <input
-                    id="people-search-rail"
-                    type="text"
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Search visible people by username, name, bio, interests, or projects..."
-                    className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-                  />
-                </label>
 
                 <div className="mt-4">
                   <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-700">
@@ -1065,15 +952,9 @@ export default function PeoplePage() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {hasActivePeopleSearch ? (
-                    <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
-                      {`Search: “${activePeopleSearch}”`}
-                    </span>
-                  ) : (
-                    <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
-                      {isAdmin ? "Platform view" : "Relationship view"}
-                    </span>
-                  )}
+                  <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
+                    {isAdmin ? "Platform view" : "Relationship view"}
+                  </span>
 
                   {!loading && (
                     <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
@@ -1160,11 +1041,7 @@ export default function PeoplePage() {
                       View
                     </p>
                     <p className="mt-1 text-sm text-zinc-300">
-                      {hasActivePeopleSearch
-                        ? `Search: “${activePeopleSearch}”`
-                        : isAdmin
-                          ? "Platform view"
-                          : "Relationship view"}
+                      {isAdmin ? "Platform view" : "Relationship view"}
                     </p>
                   </div>
 
@@ -1192,16 +1069,6 @@ export default function PeoplePage() {
                     </p>
                   </div>
                 </div>
-
-                {hasActivePeopleSearch && (
-                  <button
-                    type="button"
-                    onClick={resetPeopleSearch}
-                    className="mt-4 w-full rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-                  >
-                    Reset search
-                  </button>
-                )}
               </section>
 
               <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
