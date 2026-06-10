@@ -1832,7 +1832,7 @@ export default function CreatePage() {
                   className="min-h-14 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
                 />
 
-                <div className="mt-3 flex flex-col gap-2 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-3 flex flex-col gap-2 text-xs text-[var(--loombus-text-subtle)] sm:flex-row sm:items-center sm:justify-between">
                   <p>
                     {tagInputHelper}
                   </p>
@@ -2067,14 +2067,14 @@ export default function CreatePage() {
             )}
 
             {draftId && !isEditMode && (
-              <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
+              <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-sm text-[var(--loombus-text-muted)]">
                 Editing saved draft
                 {draftUpdatedAt ? ` · Updated ${new Date(draftUpdatedAt).toLocaleString()}` : ""}
               </div>
             )}
 
             {isEditMode && (
-              <div className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm text-zinc-500">
+              <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-sm text-[var(--loombus-text-muted)]">
                 Editing published discussion
                 {editingDiscussionMeta?.edit_count
                   ? ` · ${editingDiscussionMeta.edit_count} previous edits`
@@ -2083,7 +2083,7 @@ export default function CreatePage() {
             )}
 
             <div>
-              <label className="mb-2 block text-sm text-zinc-400">
+              <label className="mb-2 block text-sm text-[var(--loombus-text-muted)]">
                 Discussion Title
               </label>
 
@@ -2093,7 +2093,7 @@ export default function CreatePage() {
                 required
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="How AI changes trust online"
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500"
+                className="w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
               />
 
               {similarDiscussions.length > 0 && !isEditMode && (
@@ -2132,7 +2132,7 @@ export default function CreatePage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-zinc-400">
+              <label className="mb-2 block text-sm text-[var(--loombus-text-muted)]">
                 Discussion Body
               </label>
 
@@ -2364,7 +2364,7 @@ export default function CreatePage() {
                   {attachmentFiles.map((file) => (
                     <span
                       key={`${file.name}-${file.size}-${file.lastModified}`}
-                      className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs text-zinc-500"
+                      className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)]"
                     >
                       {file.name}
                     </span>
@@ -2373,14 +2373,14 @@ export default function CreatePage() {
               )}
 
               {attachmentMessage && (
-                <p className="mt-3 text-sm text-zinc-500">
+                <p className="mt-3 text-sm text-[var(--loombus-text-muted)]">
                   {attachmentMessage}
                 </p>
               )}
             </div>
 
             {/* AI Assist shell */}
-            <section className={`rounded-2xl border border-zinc-800 bg-black/40 p-3 sm:p-5 ${
+            <section className={`rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 sm:p-5 ${
               activeCreateTool === "quality" || activeCreateTool === "rewrite" ? "block" : "hidden"
             }`}>
               <div className="hidden">
