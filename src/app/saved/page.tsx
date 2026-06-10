@@ -198,9 +198,8 @@ export default function SavedPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [selectedCollectionId, setSelectedCollectionId] = useState("all");
-  const [savedSearchQuery, setSavedSearchQuery] = useState("");
   const [activeSavedTool, setActiveSavedTool] =
-    useState<"none" | "search" | "folders" | "notes">("none");
+    useState<"none" | "folders" | "notes">("none");
   const [activeSavedInsight, setActiveSavedInsight] =
     useState<"none" | "knowledge" | "purpose" | "learning" | "path">("none");
   const [showSavedNotesOnly, setShowSavedNotesOnly] = useState(false);
@@ -340,31 +339,12 @@ export default function SavedPage() {
           ? saved.filter((item) => !item.collection_id)
           : saved.filter((item) => item.collection_id === selectedCollectionId);
 
-    const noteFiltered = showSavedNotesOnly
+    return showSavedNotesOnly
       ? collectionFiltered.filter((item) =>
           (noteDrafts[item.id] ?? item.private_note ?? "").trim()
         )
       : collectionFiltered;
-
-    const query = savedSearchQuery.trim().toLowerCase();
-
-    if (!query) {
-      return noteFiltered;
-    }
-
-    return noteFiltered.filter((item) => {
-      const discussion = item.discussions;
-      const note = noteDrafts[item.id] ?? item.private_note ?? "";
-
-      return (
-        (discussion?.title ?? "").toLowerCase().includes(query) ||
-        (discussion?.topic ?? "").toLowerCase().includes(query) ||
-        (discussion?.purpose_lane ?? "").toLowerCase().includes(query) ||
-        (discussion?.body ?? "").toLowerCase().includes(query) ||
-        note.toLowerCase().includes(query)
-      );
-    });
-  }, [saved, selectedCollectionId, savedSearchQuery, noteDrafts, showSavedNotesOnly]);
+  }, [saved, selectedCollectionId, noteDrafts, showSavedNotesOnly]);
 
   const knowledgeSnapshot = useMemo(() => {
     const topicCounts: Record<string, number> = {};
@@ -428,10 +408,8 @@ export default function SavedPage() {
         description: primaryPurposeLane
           ? `Start with saved discussions in ${primaryPurposeLane}. Look for what you can learn, build, contribute, or revisit next.`
           : "Save discussions with Purpose Lanes so your reading path can show a clearer direction.",
-        actionLabel: primaryPurposeLane ? `Search ${primaryPurposeLane}` : "Browse Purpose Lanes",
-        actionHref: primaryPurposeLane
-          ? `/saved?search=${encodeURIComponent(primaryPurposeLane)}`
-          : "/discussions",
+        actionLabel: primaryPurposeLane ? "Review saved" : "Browse Purpose Lanes",
+        actionHref: primaryPurposeLane ? "/saved" : "/discussions",
       },
       {
         title: primaryTopic && primaryPurposeLane
@@ -440,10 +418,8 @@ export default function SavedPage() {
         description: primaryTopic && primaryPurposeLane
           ? `Your saved library links ${primaryTopic} with ${primaryPurposeLane}. Use that connection to decide what is worth reading more deeply.`
           : "A useful path forms when saved topics connect to a purpose direction like learning, contribution, mastery, or community.",
-        actionLabel: primaryTopic ? `Search ${primaryTopic}` : "Review saved",
-        actionHref: primaryTopic
-          ? `/saved?search=${encodeURIComponent(primaryTopic)}`
-          : "/saved",
+        actionLabel: primaryTopic ? "Review saved" : "Review saved",
+        actionHref: "/saved",
       },
       {
         title: secondaryPurposeLane
@@ -452,10 +428,8 @@ export default function SavedPage() {
         description: secondaryPurposeLane
           ? `${secondaryPurposeLane} is another direction in your saved library. Compare it with your strongest lane before adding more saves.`
           : "A second purpose lane can help you separate what you are learning from what you may want to contribute or build.",
-        actionLabel: secondaryPurposeLane ? `Search ${secondaryPurposeLane}` : "Find discussions",
-        actionHref: secondaryPurposeLane
-          ? `/saved?search=${encodeURIComponent(secondaryPurposeLane)}`
-          : "/discussions",
+        actionLabel: secondaryPurposeLane ? "Review saved" : "Find discussions",
+        actionHref: secondaryPurposeLane ? "/saved" : "/discussions",
       },
       {
         title: hasNotes
@@ -487,10 +461,8 @@ export default function SavedPage() {
       description: primaryTopic
         ? `Your saved library currently points most strongly toward ${primaryTopic}. Begin there before branching into other topics.`
         : "Pick one saved discussion that still feels useful and reread it before adding more saved items.",
-      actionLabel: primaryTopic ? `Search ${primaryTopic}` : "View saved",
-      actionHref: primaryTopic
-        ? `/saved?search=${encodeURIComponent(primaryTopic)}`
-        : "/saved",
+      actionLabel: primaryTopic ? "View saved" : "View saved",
+      actionHref: "/saved",
     });
 
     steps.push({
@@ -500,10 +472,8 @@ export default function SavedPage() {
       description: primaryLens
         ? `${primaryLens} appears in your saved library. Use it as the deeper human-reality theme behind what you are learning.`
         : "As more saved discussions include Reality Lenses, this path can show the human themes behind your reading.",
-      actionLabel: primaryLens ? `Search ${primaryLens}` : "Browse discussions",
-      actionHref: primaryLens
-        ? `/saved?search=${encodeURIComponent(primaryLens)}`
-        : "/discussions",
+      actionLabel: primaryLens ? "Review saved" : "Browse discussions",
+      actionHref: primaryLens ? "/saved" : "/discussions",
     });
 
     steps.push({
@@ -513,10 +483,8 @@ export default function SavedPage() {
       description: primaryPurposeLane
         ? `${primaryPurposeLane} is showing up in your saved library. Use it as the direction behind what you revisit next.`
         : "As more saved discussions include Purpose Lanes, this path can show what kind of direction your saved library is forming around.",
-      actionLabel: primaryPurposeLane ? `Search ${primaryPurposeLane}` : "Browse discussions",
-      actionHref: primaryPurposeLane
-        ? `/saved?search=${encodeURIComponent(primaryPurposeLane)}`
-        : "/discussions",
+      actionLabel: primaryPurposeLane ? "Review saved" : "Browse discussions",
+      actionHref: primaryPurposeLane ? "/saved" : "/discussions",
     });
 
     steps.push({
@@ -526,7 +494,7 @@ export default function SavedPage() {
       description: hasNotes
         ? "Your private notes are becoming the personal layer of your saved library. Review them to find what still matters."
         : "Private notes turn saved discussions from a list into a working knowledge shelf.",
-      actionLabel: hasNotes ? "Search notes" : "Review saved",
+      actionLabel: hasNotes ? "Review notes" : "Review saved",
       actionHref: "/saved",
     });
 
@@ -552,14 +520,9 @@ export default function SavedPage() {
 
     return steps.slice(0, 5);
   }, [knowledgeSnapshot]);
-
-  const activeSavedSearch = savedSearchQuery.trim();
-  const hasActiveSavedSearch = activeSavedSearch.length > 0;
-  const hasActiveSavedFilters =
-    hasActiveSavedSearch || selectedCollectionId !== "all" || showSavedNotesOnly;
+  const hasActiveSavedFilters = selectedCollectionId !== "all" || showSavedNotesOnly;
 
   function resetSavedFilters() {
-    setSavedSearchQuery("");
     setSelectedCollectionId("all");
     setShowSavedNotesOnly(false);
     setActiveSavedTool("none");
@@ -567,7 +530,6 @@ export default function SavedPage() {
 
   function showAllSaved() {
     setSelectedCollectionId("all");
-    setSavedSearchQuery("");
     setShowSavedNotesOnly(false);
     setActiveSavedTool("none");
   }
@@ -578,7 +540,7 @@ export default function SavedPage() {
     setActiveSavedTool("none");
   }
 
-  function toggleSavedTool(tool: "search" | "folders" | "notes") {
+  function toggleSavedTool(tool: "folders" | "notes") {
     setActiveSavedInsight("none");
 
     setActiveSavedTool((current) => {
@@ -586,21 +548,10 @@ export default function SavedPage() {
 
       if (tool === "notes") {
         setShowSavedNotesOnly(next === "notes");
-        setSavedSearchQuery("");
       }
 
       if (tool !== "notes" && next !== "notes") {
         setShowSavedNotesOnly(false);
-      }
-
-      if (tool === "search" && next === "search") {
-        window.setTimeout(() => {
-          document.getElementById("saved-search")?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-          (document.getElementById("saved-search") as HTMLInputElement | null)?.focus();
-        }, 0);
       }
 
       return next;
@@ -621,11 +572,9 @@ export default function SavedPage() {
   const activeMobileSavedView =
     showSavedNotesOnly
       ? "Saved with notes"
-      : hasActiveSavedSearch
-        ? `Search: “${activeSavedSearch}”`
-        : selectedCollectionId === "all"
-          ? "All saved"
-          : selectedCollectionLabel;
+      : selectedCollectionId === "all"
+        ? "All saved"
+        : selectedCollectionLabel;
 
   async function createCollection(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1062,31 +1011,18 @@ export default function SavedPage() {
         {!loading && (
           <section className="mb-4 xl:hidden">
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Saved tools rail">
+
               <button
                 type="button"
                 onClick={showAllSaved}
                 className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
                   selectedCollectionId === "all" &&
-                  activeSavedTool !== "search" &&
-                  !hasActiveSavedSearch &&
                   !showSavedNotesOnly
                     ? "bg-white text-black"
                     : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
                 }`}
               >
                 All
-              </button>
-
-              <button
-                type="button"
-                onClick={() => toggleSavedTool("search")}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  hasActiveSavedSearch
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-              >
-                Search
               </button>
 
               <button
@@ -1104,8 +1040,12 @@ export default function SavedPage() {
               <button
                 type="button"
                 onClick={() => toggleSavedTool("folders")}
-                disabled={!canUseCollections || collections.length === 0}
-                className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-4 py-2.5 text-base text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                  activeSavedTool === "folders"
+                    ? "bg-white text-black"
+                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                }`}
+                disabled={!canUseCollections}
               >
                 Folders
               </button>
@@ -1113,12 +1053,12 @@ export default function SavedPage() {
               <button
                 type="button"
                 onClick={() => toggleSavedTool("notes")}
-                disabled={!canUsePrivateNotes || savedItemsWithNotesCount === 0}
                 className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
                   showSavedNotesOnly
                     ? "bg-white text-black"
                     : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
                 }`}
+                disabled={!canUsePrivateNotes}
               >
                 Notes
               </button>
@@ -1183,73 +1123,6 @@ export default function SavedPage() {
             {message}
           </p>
         )}
-
-        <section className={`mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 sm:mb-8 sm:rounded-3xl sm:p-5 ${activeSavedTool === "search" ? "block" : "hidden"} md:block`}>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1">
-              <label htmlFor="saved-search" className="mb-2 block text-sm font-medium text-zinc-300">
-                Search saved discussions
-              </label>
-
-              <input
-                id="saved-search"
-                type="text"
-                value={savedSearchQuery}
-                onChange={(event) => setSavedSearchQuery(event.target.value)}
-                placeholder="Search saved titles, topics, bodies, or private notes..."
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600 sm:px-5 sm:py-4"
-              />
-            </div>
-
-            {hasActiveSavedFilters && (
-              <button
-                type="button"
-                onClick={resetSavedFilters}
-                className="w-fit rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-              >
-                Clear search and filters
-              </button>
-            )}
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {selectedCollectionId !== "all" && (
-              <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
-                Folder: {selectedCollectionLabel}
-              </span>
-            )}
-
-            {hasActiveSavedSearch && (
-              <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400">
-                Search: “{activeSavedSearch}”
-              </span>
-            )}
-
-            {!hasActiveSavedFilters && (
-              <p className="hidden text-sm text-zinc-600 sm:block">
-                Search scans saved discussion titles, topics, bodies, and private notes when available.
-              </p>
-            )}
-          </div>
-
-          {!loading && (
-            <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <p className="text-xs text-zinc-600 sm:text-sm">
-                Showing {filteredSaved.length} of {saved.length} saved discussions
-              </p>
-
-              {hasActiveSavedFilters && (
-                <button
-                  type="button"
-                  onClick={resetSavedFilters}
-                  className="w-fit text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
-                >
-                  Reset view
-                </button>
-              )}
-            </div>
-          )}
-        </section>
 
         <div className={`mb-6 gap-2 overflow-x-auto pb-2 sm:mb-8 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:pb-0 ${activeSavedTool === "folders" ? "flex" : "hidden"} md:flex`}>
           <button
@@ -1359,8 +1232,7 @@ export default function SavedPage() {
             </h2>
 
             <p className="mb-6 max-w-3xl text-zinc-400">
-              No saved discussions match the current folder or search. Try clearing the filters,
-              using a broader search term, or browsing more discussions to save.
+              No saved discussions match the current folder or notes filter. Try clearing the filters or browsing more discussions to save.
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -1369,7 +1241,7 @@ export default function SavedPage() {
                 onClick={resetSavedFilters}
                 className="inline-flex rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
               >
-                Clear search and filters
+                Clear filters
               </button>
 
               <button
@@ -1708,7 +1580,7 @@ export default function SavedPage() {
                 {knowledgeSnapshot.purposeSignals.map((signal) => (
                   <Link
                     key={signal.label}
-                    href={`/saved?search=${encodeURIComponent(signal.label)}`}
+                    href="/saved"
                     className="rounded-2xl border border-zinc-900 bg-black p-4 transition hover:border-zinc-700"
                   >
                     <div className="mb-3 flex items-start justify-between gap-3">
@@ -1940,10 +1812,10 @@ export default function SavedPage() {
 
                   <div className="rounded-2xl border border-zinc-900 bg-black p-3">
                     <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
-                      Search
+                      Notes filter
                     </p>
                     <p className="mt-1 text-sm text-zinc-300">
-                      {hasActiveSavedSearch ? `“${activeSavedSearch}”` : "None"}
+                      {showSavedNotesOnly ? "Saved with notes" : "Off"}
                     </p>
                   </div>
                 </div>
