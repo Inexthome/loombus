@@ -1538,16 +1538,20 @@ export default function CreatePage() {
           <form
             onSubmit={handleCreate}
             onKeyDown={handleFormKeyDown}
-            className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 sm:space-y-6 sm:p-8"
+            className="space-y-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-3.5 sm:space-y-6 sm:p-8"
           >
             <div
-              className={`loombus-mobile-topbar fixed left-0 right-0 top-0 z-30 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+4.32rem)] backdrop-blur-xl transition-transform duration-300 md:hidden ${
+              className={`loombus-mobile-topbar fixed left-0 right-0 top-0 z-30 border-b border-[var(--loombus-border)] px-4 pb-2.5 pt-[calc(env(safe-area-inset-top)+4.15rem)] shadow-sm shadow-black/10 backdrop-blur-xl transition-transform duration-300 md:hidden ${
                 createSignalBarHidden ? "-translate-y-full" : "translate-y-0"
               }`}
+              style={{
+                backgroundColor:
+                  "color-mix(in srgb, var(--loombus-page-bg) 88%, transparent 12%)",
+              }}
             >
               <nav
                 aria-label="Create signal controls"
-                className="mx-auto grid max-w-md grid-cols-3 border-t border-[var(--loombus-border)] pt-2"
+                className="mx-auto grid max-w-md grid-cols-3"
               >
                 <button
                   type="button"
@@ -1602,15 +1606,15 @@ export default function CreatePage() {
               </nav>
             </div>
 
-            <section className="space-y-5">
+            <section className="space-y-4 sm:space-y-5">
               <div>
-                <p className="mb-4 text-xs uppercase tracking-[0.18em] text-zinc-600">
+                <p className="mb-4 text-xs uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
                   Discussion details
                 </p>
 
                 <div className="hidden gap-4 md:grid md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
+                    <label className="mb-2 block text-sm text-[var(--loombus-text-muted)]">
                       Topic
                     </label>
 
@@ -1619,8 +1623,8 @@ export default function CreatePage() {
                       onClick={() => toggleCreateMetadataTool("topic")}
                       className={`flex min-h-14 w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-base transition ${
                         activeCreateMetadataTool === "topic" || topicManuallySelected
-                          ? "border-zinc-600 bg-black text-white"
-                          : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                          ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)]"
+                          : "border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                       }`}
                       aria-expanded={activeCreateMetadataTool === "topic"}
                     >
@@ -1630,7 +1634,7 @@ export default function CreatePage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
+                    <label className="mb-2 block text-sm text-[var(--loombus-text-muted)]">
                       Categorization
                     </label>
 
@@ -1640,8 +1644,8 @@ export default function CreatePage() {
                         onClick={() => toggleCreateMetadataTool("reality")}
                         className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left text-base transition ${
                           activeCreateMetadataTool === "reality" || Boolean(realityLens)
-                            ? "border-zinc-600 bg-black text-white"
-                            : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                            ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)]"
+                            : "border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                         }`}
                         aria-expanded={activeCreateMetadataTool === "reality"}
                       >
@@ -1654,8 +1658,8 @@ export default function CreatePage() {
                         onClick={() => toggleCreateMetadataTool("purpose")}
                         className={`flex min-h-14 items-center justify-between rounded-2xl border px-4 py-3 text-left text-base transition ${
                           activeCreateMetadataTool === "purpose" || Boolean(purposeLane)
-                            ? "border-zinc-600 bg-black text-white"
-                            : "border-zinc-800 bg-black text-zinc-500 hover:border-zinc-600 hover:text-white"
+                            ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)]"
+                            : "border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                         }`}
                         aria-expanded={activeCreateMetadataTool === "purpose"}
                       >
@@ -1667,7 +1671,7 @@ export default function CreatePage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-zinc-900 bg-black/40 p-4">
+              <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4">
                 <div className="rounded-[1.25rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)]/60 p-3">
                   <div className="mb-2">
                     <label className="block text-sm font-medium text-[var(--loombus-text)]">
