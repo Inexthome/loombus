@@ -71,6 +71,11 @@ export const AI_FEATURE_LIMIT_POLICIES: Record<string, AiFeatureLimitPolicy> = {
     bucket: "discovery",
     label: "Discovery assist",
   },
+  global_search_ai: {
+    featureKey: "global_search_ai",
+    bucket: "discovery",
+    label: "Global Search AI",
+  },
   reply_suggestions: {
     featureKey: "reply_suggestions",
     bucket: "discovery",
