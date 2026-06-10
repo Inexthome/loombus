@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { BillingPortalButton } from "@/components/billing-portal-button";
 import { PremiumPlanCheckoutButton } from "./premium-checkout-button";
+import { PremiumPlanActions } from "./premium-plan-actions";
 import { PremiumCheckoutStatusBanner } from "./premium-checkout-status-banner";
 
 type FeatureStatus = "available" | "planned";
@@ -120,20 +121,8 @@ export default function PremiumPage() {
               and saving high-signal discussions.
             </p>
 
-            <div className="mb-8 flex flex-wrap gap-3">
-              <Link
-                href="/signup"
-                className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-              >
-                Choose Free
-              </Link>
-
-              <Link
-                href="/login"
-                className="inline-flex rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-              >
-                Log in
-              </Link>
+            <div className="mb-8">
+              <PremiumPlanActions plan="free" />
             </div>
 
             <FeatureList features={freeFeatures} />
@@ -162,15 +151,7 @@ export default function PremiumPage() {
             </p>
 
             <div className="mb-8 space-y-3">
-              <div className="flex flex-wrap gap-3">
-                <PremiumPlanCheckoutButton planKey="premium_monthly">
-                  Start Premium monthly
-                </PremiumPlanCheckoutButton>
-
-                <PremiumPlanCheckoutButton planKey="premium_annual" variant="secondary">
-                  Start Premium annual
-                </PremiumPlanCheckoutButton>
-              </div>
+              <PremiumPlanActions plan="premium" />
 
               <div className="space-y-2 text-xs leading-relaxed text-zinc-600">
                 <p>
@@ -231,15 +212,7 @@ export default function PremiumPage() {
             </p>
 
             <div className="mb-8 space-y-3">
-              <div className="flex flex-wrap gap-3">
-                <PremiumPlanCheckoutButton planKey="premium_plus_monthly">
-                  Start Premium Plus monthly
-                </PremiumPlanCheckoutButton>
-
-                <PremiumPlanCheckoutButton planKey="premium_plus_annual" variant="secondary">
-                  Start Premium Plus annual
-                </PremiumPlanCheckoutButton>
-              </div>
+              <PremiumPlanActions plan="premium_plus" />
 
               <div className="space-y-2 text-xs leading-relaxed text-zinc-600">
                 <p>
