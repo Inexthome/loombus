@@ -64,114 +64,19 @@ async function waitForHomeSession(maxAttempts = 20) {
   return null;
 }
 
-const memberSections = [
-  {
-    heading: "Create and read",
-    description: "Start new discussions, browse the feed, or catch up on people you follow.",
-    cards: [
-      {
-        title: "Create",
-        description: "Start a structured, high-signal discussion.",
-        href: "/create",
-        primary: true,
-      },
-      {
-        title: "Discussions",
-        description: "Browse the full discussion feed.",
-        href: "/discussions",
-      },
-      {
-        title: "Following",
-        description: "See discussions from people you follow.",
-        href: "/following",
-      },
-    ],
-  },
-  {
-    heading: "Community",
-    description: "Find people, review notifications, and return to saved discussions.",
-    cards: [
-      {
-        title: "People",
-        description: "Find thoughtful contributors across Loombus.",
-        href: "/people",
-      },
-      {
-        title: "Notifications",
-        description: "Review replies, follows, and account activity.",
-        href: "/notifications",
-      },
-      {
-        title: "Messages",
-        description: "Open private conversations with mutual followers.",
-        href: "/messages",
-      },
-      {
-        title: "Saved",
-        description: "Return to discussions you saved.",
-        href: "/saved",
-      },
-    ],
-  },
-  {
-    heading: "Your account",
-    description: "Manage your activity, profile, settings, and subscription tools.",
-    cards: [
-      {
-        title: "Dashboard",
-        description: "View your profile status, subscription, and activity summary.",
-        href: "/dashboard",
-      },
-      {
-        title: "My Activity",
-        description: "View your discussions, replies, saves, and notifications.",
-        href: "/my-activity",
-      },
-      {
-        title: "Profile",
-        description: "Edit your public profile and member identity.",
-        href: "/profile",
-      },
-      {
-        title: "Settings",
-        description: "Manage your account, profile, and platform tools.",
-        href: "/settings",
-      },
-      {
-        title: "Premium",
-        description: "Review subscription features and AI-assisted tools.",
-        href: "/premium",
-      },
-    ],
-  },
-];
+type HomeSignalCard = {
+  title: string;
+  value: string;
+  description: string;
+  href: string;
+  action: string;
+  urgent?: boolean;
+};
 
-const mobileSignalShortcuts = [
-  {
-    title: "Setup Guide",
-    description: "Learn how to use Loombus.",
-    href: "/onboarding",
-  },
-  {
-    title: "Appearance",
-    description: "Switch between Light, Dark, and System.",
-    href: "/settings",
-  },
-  {
-    title: "My Activity",
-    description: "Review your recent Loombus activity.",
-    href: "/my-activity",
-  },
-  {
-    title: "My Discussions",
-    description: "Return to discussions you started.",
-    href: "/my-discussions",
-  },
-  {
-    title: "Reading History",
-    description: "Revisit what you opened.",
-    href: "/reading-history",
-  },
+const loombusUpdates = [
+  "Discussions are now the main post-login destination.",
+  "Create composer tools were simplified into a compact action row.",
+  "Settings was cleaned up so controls and reference links are easier to find.",
 ];
 
 export default function Home() {
@@ -368,229 +273,161 @@ export default function Home() {
 
   if (authState === "logged_in") {
     const greetingName = getGreetingName(profile, email);
+    const displayName = greetingName || "there";
+    const totalAttentionCount =
+      unreadMessageCount + unreadNotificationCount + savedCount;
+
+    const needsAttentionCards: HomeSignalCard[] = [
+      {
+        title: "Messages",
+        value: unreadMessageCount.toLocaleString(),
+        description:
+          unreadMessageCount > 0
+            ? "Private conversations are waiting for you."
+            : "No unread private messages right now.",
+        href: "/messages",
+        action: unreadMessageCount > 0 ? "Open messages" : "View messages",
+        urgent: unreadMessageCount > 0,
+      },
+      {
+        title: "Notifications",
+        value: unreadNotificationCount.toLocaleString(),
+        description:
+          unreadNotificationCount > 0
+            ? "Replies, follows, and platform activity need review."
+            : "No unread alerts right now.",
+        href: "/notifications",
+        action:
+          unreadNotificationCount > 0
+            ? "Review notifications"
+            : "View notifications",
+        urgent: unreadNotificationCount > 0,
+      },
+      {
+        title: "Saved",
+        value: savedCount.toLocaleString(),
+        description:
+          savedCount > 0
+            ? "Return to discussions you marked as worth keeping."
+            : "Save useful discussions to build your personal signal shelf.",
+        href: "/saved",
+        action: savedCount > 0 ? "Review saved" : "Browse discussions",
+        urgent: savedCount > 0,
+      },
+    ];
 
     return (
       <main className="loombus-home-canvas min-h-screen px-4 py-6 text-[var(--loombus-text)] sm:px-6 lg:py-12">
-        <div className="mx-auto max-w-md md:hidden">
-          <section className="loombus-mobile-home-card loombus-mobile-home-hero mb-5 rounded-[2rem] border p-5 shadow-2xl">
-            <p className="loombus-mobile-home-eyebrow mb-3 text-xs uppercase tracking-[0.24em]">
-              Signal Hub
+        <div className="mx-auto max-w-5xl">
+          <section className="loombus-home-shell loombus-home-hero-shell rounded-[2rem] border p-5 shadow-2xl sm:p-8 lg:p-10">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-[var(--loombus-text-muted)] sm:text-sm sm:tracking-[0.3em]">
+              Loombus Signal Brief
             </p>
 
-            <h1 className="loombus-mobile-home-title mb-3 text-3xl font-semibold tracking-tight">
-              {greetingName ? `Welcome back, ${greetingName}.` : "Welcome back."}
-            </h1>
+            <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">
+                  Welcome back, {displayName}.
+                </h1>
 
-            <p className="loombus-mobile-home-muted text-sm leading-relaxed">
-              Create, read, reply, and return to the highest-signal parts of Loombus.
-            </p>
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-[var(--loombus-text-muted)] sm:text-lg">
+                  Here is what needs attention across your Loombus activity.
+                </p>
+              </div>
 
-            {email && (
-              <p className="loombus-mobile-home-subtle mt-4 truncate text-xs">
-                {email}
-              </p>
-            )}
+              <div className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--loombus-text-muted)]">
+                  Today’s quote
+                </p>
+
+                <p className="mt-3 text-lg font-medium leading-relaxed">
+                  “Create more signal than noise.”
+                </p>
+
+                <p className="mt-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                  A useful contribution is one that makes the next person think more clearly.
+                </p>
+              </div>
+            </div>
           </section>
 
-          <Link
-            href="/create"
-            className="loombus-mobile-home-primary-card mb-5 block rounded-[1.75rem] border p-5 shadow-2xl active:scale-[0.99]"
-          >
-            <p className="loombus-mobile-home-primary-eyebrow mb-2 text-xs font-semibold uppercase tracking-[0.2em]">
-              Start Signal
-            </p>
-            <h2 className="loombus-mobile-home-primary-title text-2xl font-semibold tracking-tight">
-              Create a discussion
-            </h2>
-            <p className="loombus-mobile-home-primary-muted mt-2 text-sm leading-relaxed">
-              Turn a clear thought, question, or claim into a focused thread.
-            </p>
-          </Link>
+          <section className="mt-6 loombus-home-shell rounded-[2rem] border p-5 sm:p-7">
+            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--loombus-text-muted)]">
+                  Needs attention
+                </p>
 
-          <div className="mb-5 grid grid-cols-2 gap-4">
-            <Link
-              href="/labs"
-              className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
-            >
-              <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
-                Build
-              </p>
-              <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
-                Labs
-              </h2>
-              <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
-                Vote on features and future tools.
-              </p>
-            </Link>
-
-            <Link
-              href="/stickies"
-              className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
-            >
-              <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
-                Workspace
-              </p>
-              <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
-                Stickies
-              </h2>
-              <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
-                Pin notes, topics, people, and ideas.
-              </p>
-            </Link>
-
-            <Link
-              href="/following"
-              className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
-            >
-              <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
-                People
-              </p>
-              <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
-                Following
-              </h2>
-              <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
-                Follow selective signal.
-              </p>
-            </Link>
-
-            <Link
-              href="/saved"
-              className="loombus-mobile-home-card rounded-[1.5rem] border p-4 active:scale-[0.99]"
-            >
-              <p className="loombus-mobile-home-eyebrow mb-2 text-xs uppercase tracking-[0.18em]">
-                Memory
-              </p>
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="loombus-mobile-home-title text-xl font-semibold tracking-tight">
-                  Saved
+                <h2 className="text-2xl font-semibold tracking-tight">
+                  {totalAttentionCount > 0
+                    ? `${totalAttentionCount.toLocaleString()} item${totalAttentionCount === 1 ? "" : "s"} waiting on you.`
+                    : "Nothing urgent is waiting right now."}
                 </h2>
-                {savedCount > 0 && (
-                  <span className="loombus-mobile-home-pill rounded-full border px-2 py-0.5 text-[0.65rem]">
-                    {savedCount}
-                  </span>
-                )}
               </div>
-              <p className="loombus-mobile-home-muted mt-2 text-xs leading-relaxed">
-                Revisit what is worth keeping.
+
+              <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                Live activity summary
               </p>
-            </Link>
-          </div>
+            </div>
 
-          <section className="loombus-mobile-home-card rounded-3xl border p-5">
-            <p className="loombus-mobile-home-eyebrow mb-3 text-xs uppercase tracking-[0.24em]">
-              Mobile Shortcuts
-            </p>
-
-            <h2 className="loombus-mobile-home-title mb-3 text-2xl font-semibold tracking-tight">
-              Move faster.
-            </h2>
-
-            <div className="grid gap-3">
-              {mobileSignalShortcuts.map((shortcut) => (
+            <div className="grid gap-4 md:grid-cols-3">
+              {needsAttentionCards.map((card) => (
                 <Link
-                  key={shortcut.href}
-                  href={shortcut.href}
-                  className="loombus-mobile-home-row rounded-2xl border p-4 transition"
+                  key={card.title}
+                  href={card.href}
+                  className={`loombus-home-status-card rounded-[1.5rem] border p-5 transition active:scale-[0.99] ${
+                    card.urgent ? "loombus-home-primary-tile" : ""
+                  }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="loombus-mobile-home-row-title text-sm font-medium">
-                        {shortcut.title}
+                      <p className="text-sm font-medium text-[var(--loombus-text-muted)]">
+                        {card.title}
                       </p>
-                      <p className="loombus-mobile-home-subtle mt-1 text-xs leading-relaxed">
-                        {shortcut.description}
+                      <p className="mt-2 text-3xl font-semibold tracking-tight">
+                        {card.value}
                       </p>
                     </div>
-                    <span className="loombus-mobile-home-subtle">→</span>
+
+                    <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-muted)]">
+                      {card.urgent ? "New" : "Clear"}
+                    </span>
                   </div>
+
+                  <p className="mt-4 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                    {card.description}
+                  </p>
                 </Link>
               ))}
             </div>
           </section>
-        </div>
 
-        <div className="mx-auto hidden max-w-6xl md:block">
-          <section className="loombus-home-shell loombus-home-hero-shell rounded-[2rem] border p-6 sm:p-8 lg:p-10">
-            <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
-              Loombus Home
-            </p>
+          <section className="mt-6 loombus-home-shell rounded-[2rem] border p-5 sm:p-7">
+            <div className="mb-5">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--loombus-text-muted)]">
+                Loombus updates
+              </p>
 
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              {greetingName ? `Welcome back, ${greetingName}.` : "Welcome back."}
-            </h1>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                What changed recently.
+              </h2>
 
-            <p className="mt-4 max-w-2xl leading-relaxed text-zinc-400">
-              Return to your discussions, messages, saved items, and account tools from one place.
-            </p>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                Platform notes and product changes will live here as Loombus grows.
+              </p>
+            </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <Link
-                href="/messages"
-                className="loombus-home-status-card rounded-2xl border p-5 transition"
-              >
-                <p className="text-sm text-zinc-500">Messages</p>
-                <p className="mt-2 text-3xl font-semibold">{unreadMessageCount}</p>
-                <p className="mt-1 text-sm text-zinc-500">unread</p>
-              </Link>
-
-              <Link
-                href="/notifications"
-                className="loombus-home-status-card rounded-2xl border p-5 transition"
-              >
-                <p className="text-sm text-zinc-500">Notifications</p>
-                <p className="mt-2 text-3xl font-semibold">{unreadNotificationCount}</p>
-                <p className="mt-1 text-sm text-zinc-500">unread</p>
-              </Link>
-
-              <Link
-                href="/saved"
-                className="loombus-home-status-card rounded-2xl border p-5 transition"
-              >
-                <p className="text-sm text-zinc-500">Saved</p>
-                <p className="mt-2 text-3xl font-semibold">{savedCount}</p>
-                <p className="mt-1 text-sm text-zinc-500">items</p>
-              </Link>
+            <div className="grid gap-3">
+              {loombusUpdates.map((update) => (
+                <div
+                  key={update}
+                  className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 text-sm leading-relaxed text-[var(--loombus-text-muted)]"
+                >
+                  {update}
+                </div>
+              ))}
             </div>
           </section>
-
-          <div className="mt-8 grid gap-6">
-            {memberSections.map((section) => (
-              <section
-                key={section.heading}
-                className="loombus-home-shell rounded-[2rem] border p-6 sm:p-8"
-              >
-                <div className="mb-5">
-                  <h2 className="text-2xl font-semibold tracking-tight">
-                    {section.heading}
-                  </h2>
-                  <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-                    {section.description}
-                  </p>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  {section.cards.map((card) => (
-                    <Link
-                      key={card.href}
-                      href={card.href}
-                      className={`loombus-home-tile rounded-2xl border p-5 transition ${
-                        card.primary
-                          ? "loombus-home-primary-tile"
-                          : "loombus-home-secondary-tile"
-                      }`}
-                    >
-                      <h3 className="text-lg font-semibold">{card.title}</h3>
-                      <p className={`mt-2 text-sm leading-relaxed ${
-                        card.primary ? "text-zinc-700" : "text-zinc-500"
-                      }`}>
-                        {card.description}
-                      </p>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
         </div>
       </main>
     );
