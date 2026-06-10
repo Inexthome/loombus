@@ -2807,11 +2807,6 @@ export default function ClientLayout({
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={openGlobalSearch} className={mobileNavLinkClass("/search")}>
-                    <MobileMenuItemIcon name="search" />
-                    <span>Search</span>
-                  </button>
-
                   <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
                     <MobileMenuItemIcon name="people" />
                     <span>People</span>
