@@ -115,6 +115,21 @@ type GlobalSearchDiscussionResult = {
   contributorUsername?: string | null;
 };
 
+type GlobalSearchSavedResult = {
+  id: string;
+  created_at: string;
+  private_note: string | null;
+  discussions: {
+    id: string;
+    title: string;
+    topic: string;
+    body: string;
+    created_at: string;
+    reality_lens: string | null;
+    purpose_lane: string | null;
+  } | null;
+};
+
 const GLOBAL_SEARCH_RESULTS: GlobalSearchResult[] = [
   {
     title: "Discussions",
@@ -353,6 +368,7 @@ export default function ClientLayout({
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const [globalSearchProfiles, setGlobalSearchProfiles] = useState<GlobalSearchProfileResult[]>([]);
   const [globalSearchDiscussions, setGlobalSearchDiscussions] = useState<GlobalSearchDiscussionResult[]>([]);
+  const [globalSearchSaved, setGlobalSearchSaved] = useState<GlobalSearchSavedResult[]>([]);
   const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("system");
   const [appearancePickerOpen, setAppearancePickerOpen] = useState(false);
@@ -432,6 +448,7 @@ export default function ClientLayout({
     if (cleanQuery.length < 2) {
       setGlobalSearchProfiles([]);
       setGlobalSearchDiscussions([]);
+      setGlobalSearchSaved([]);
       setGlobalSearchLoading(false);
       return;
     }
@@ -598,14 +615,70 @@ export default function ClientLayout({
           };
         });
 
+        let savedResults: GlobalSearchSavedResult[] = [];
+
+        if (user?.id) {
+          const { data: savedData } = await supabase
+            .from("bookmarks")
+            .select(`
+              id,
+              created_at,
+              private_note,
+              discussions (
+                id,
+                title,
+                topic,
+                body,
+                created_at,
+                reality_lens,
+                purpose_lane
+              )
+            `)
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(60);
+
+          const normalizedSaved = ((savedData ?? []) as Array<{
+            id: string;
+            created_at: string;
+            private_note: string | null;
+            discussions:
+              | GlobalSearchSavedResult["discussions"]
+              | GlobalSearchSavedResult["discussions"][];
+          }>)
+            .map((item) => ({
+              ...item,
+              discussions: Array.isArray(item.discussions)
+                ? item.discussions[0] ?? null
+                : item.discussions,
+            })) as GlobalSearchSavedResult[];
+
+          savedResults = normalizedSaved
+            .filter((item) => {
+              const discussion = item.discussions;
+              const privateNote = item.private_note ?? "";
+
+              return (
+                (discussion?.title ?? "").toLowerCase().includes(cleanQuery) ||
+                (discussion?.topic ?? "").toLowerCase().includes(cleanQuery) ||
+                (discussion?.purpose_lane ?? "").toLowerCase().includes(cleanQuery) ||
+                (discussion?.body ?? "").toLowerCase().includes(cleanQuery) ||
+                privateNote.toLowerCase().includes(cleanQuery)
+              );
+            })
+            .slice(0, 6);
+        }
+
         setGlobalSearchProfiles([...profileMap.values()].slice(0, 6));
         setGlobalSearchDiscussions(hydratedDiscussions);
+        setGlobalSearchSaved(savedResults);
       } catch (error) {
         console.error("Unable to load global search results.", error);
 
         if (isMounted) {
           setGlobalSearchProfiles([]);
           setGlobalSearchDiscussions([]);
+          setGlobalSearchSaved([]);
         }
       } finally {
         if (isMounted) {
@@ -2214,6 +2287,7 @@ export default function ClientLayout({
     setGlobalSearchQuery("");
     setGlobalSearchProfiles([]);
     setGlobalSearchDiscussions([]);
+    setGlobalSearchSaved([]);
     setGlobalSearchLoading(false);
   }
 
@@ -2224,6 +2298,7 @@ export default function ClientLayout({
   const hasGlobalSearchResults =
     globalSearchProfiles.length > 0 ||
     globalSearchDiscussions.length > 0 ||
+    globalSearchSaved.length > 0 ||
     globalPageResults.length > 0;
   const shouldOfferCreateFromSearch =
     Boolean(globalSearchCleanQuery) && !globalSearchLoading && !hasGlobalSearchResults;
@@ -2740,6 +2815,48 @@ export default function ClientLayout({
                           </div>
                         </Link>
                       ))}
+                    </div>
+                  )}
+
+                  {globalSearchSaved.length > 0 && (
+                    <div className="grid gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
+                        Saved
+                      </p>
+
+                      {globalSearchSaved.map((item) => {
+                        const discussion = item.discussions;
+
+                        return (
+                          <Link
+                            key={item.id}
+                            href={discussion ? `/discussions/${discussion.id}` : "/saved"}
+                            onClick={closeGlobalSearch}
+                            className="group rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-4 transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)]"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="line-clamp-2 font-semibold">
+                                  {discussion?.title ?? "Saved discussion"}
+                                </p>
+                                <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                                  {discussion?.topic ?? "Saved"}
+                                  {discussion?.purpose_lane ? ` · ${discussion.purpose_lane}` : ""}
+                                </p>
+                                {item.private_note && (
+                                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                                    Private note: {item.private_note}
+                                  </p>
+                                )}
+                              </div>
+
+                              <span className="shrink-0 rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-subtle)]">
+                                Saved
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
 
