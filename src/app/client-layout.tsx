@@ -109,6 +109,10 @@ type GlobalSearchDiscussionResult = {
   body: string;
   created_at: string;
   user_id: string;
+  reality_lens?: string | null;
+  purpose_lane?: string | null;
+  contributorName?: string | null;
+  contributorUsername?: string | null;
 };
 
 const GLOBAL_SEARCH_RESULTS: GlobalSearchResult[] = [
@@ -438,13 +442,18 @@ export default function ClientLayout({
       setGlobalSearchLoading(true);
 
       try {
-        const searchPattern = `%${cleanQuery.replace(/[%_]/g, "")}%`;
+        const escapedQuery = cleanQuery.replace(/[%_]/g, "");
+        const searchPattern = `%${escapedQuery}%`;
 
         const [
           usernameProfiles,
           nameProfiles,
+          bioProfiles,
           titleDiscussions,
           topicDiscussions,
+          bodyDiscussions,
+          realityLensDiscussions,
+          purposeLaneDiscussions,
         ] = await Promise.all([
           supabase
             .from("profiles")
@@ -457,17 +466,43 @@ export default function ClientLayout({
             .ilike("full_name", searchPattern)
             .limit(6),
           supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url, bio")
+            .ilike("bio", searchPattern)
+            .limit(6),
+          supabase
             .from("discussions")
-            .select("id, title, topic, body, created_at, user_id")
+            .select("id, title, topic, body, created_at, user_id, reality_lens, purpose_lane")
             .is("deleted_at", null)
             .ilike("title", searchPattern)
             .order("created_at", { ascending: false })
             .limit(8),
           supabase
             .from("discussions")
-            .select("id, title, topic, body, created_at, user_id")
+            .select("id, title, topic, body, created_at, user_id, reality_lens, purpose_lane")
             .is("deleted_at", null)
             .ilike("topic", searchPattern)
+            .order("created_at", { ascending: false })
+            .limit(8),
+          supabase
+            .from("discussions")
+            .select("id, title, topic, body, created_at, user_id, reality_lens, purpose_lane")
+            .is("deleted_at", null)
+            .ilike("body", searchPattern)
+            .order("created_at", { ascending: false })
+            .limit(8),
+          supabase
+            .from("discussions")
+            .select("id, title, topic, body, created_at, user_id, reality_lens, purpose_lane")
+            .is("deleted_at", null)
+            .ilike("reality_lens", searchPattern)
+            .order("created_at", { ascending: false })
+            .limit(8),
+          supabase
+            .from("discussions")
+            .select("id, title, topic, body, created_at, user_id, reality_lens, purpose_lane")
+            .is("deleted_at", null)
+            .ilike("purpose_lane", searchPattern)
             .order("created_at", { ascending: false })
             .limit(8),
         ]);
@@ -480,20 +515,91 @@ export default function ClientLayout({
         for (const profile of [
           ...((usernameProfiles.data ?? []) as GlobalSearchProfileResult[]),
           ...((nameProfiles.data ?? []) as GlobalSearchProfileResult[]),
+          ...((bioProfiles.data ?? []) as GlobalSearchProfileResult[]),
         ]) {
           profileMap.set(profile.id, profile);
         }
 
-        const discussionMap = new Map<string, GlobalSearchDiscussionResult>();
-        for (const discussion of [
+        const baseDiscussionRows = [
           ...((titleDiscussions.data ?? []) as GlobalSearchDiscussionResult[]),
           ...((topicDiscussions.data ?? []) as GlobalSearchDiscussionResult[]),
+          ...((bodyDiscussions.data ?? []) as GlobalSearchDiscussionResult[]),
+          ...((realityLensDiscussions.data ?? []) as GlobalSearchDiscussionResult[]),
+          ...((purposeLaneDiscussions.data ?? []) as GlobalSearchDiscussionResult[]),
+        ];
+
+        const contributorProfileRows = [
+          ...((usernameProfiles.data ?? []) as GlobalSearchProfileResult[]),
+          ...((nameProfiles.data ?? []) as GlobalSearchProfileResult[]),
+        ];
+
+        const contributorProfileIds = [
+          ...new Set(
+            contributorProfileRows
+              .map((profile) => profile.id)
+              .filter((profileId): profileId is string => Boolean(profileId))
+          ),
+        ];
+
+        let contributorDiscussionRows: GlobalSearchDiscussionResult[] = [];
+
+        if (contributorProfileIds.length > 0) {
+          const { data: contributorDiscussions } = await supabase
+            .from("discussions")
+            .select("id, title, topic, body, created_at, user_id, reality_lens, purpose_lane")
+            .is("deleted_at", null)
+            .in("user_id", contributorProfileIds)
+            .order("created_at", { ascending: false })
+            .limit(8);
+
+          contributorDiscussionRows = (contributorDiscussions ?? []) as GlobalSearchDiscussionResult[];
+        }
+
+        const discussionMap = new Map<string, GlobalSearchDiscussionResult>();
+        for (const discussion of [
+          ...baseDiscussionRows,
+          ...contributorDiscussionRows,
         ]) {
           discussionMap.set(discussion.id, discussion);
         }
 
+        const discussionRows = [...discussionMap.values()].slice(0, 8);
+        const discussionAuthorIds = [
+          ...new Set(
+            discussionRows
+              .map((discussion) => discussion.user_id)
+              .filter((profileId): profileId is string => Boolean(profileId))
+          ),
+        ];
+
+        let discussionAuthors: Record<string, GlobalSearchProfileResult> = {};
+
+        if (discussionAuthorIds.length > 0) {
+          const { data: authorProfiles } = await supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url, bio")
+            .in("id", discussionAuthorIds);
+
+          discussionAuthors = Object.fromEntries(
+            ((authorProfiles ?? []) as GlobalSearchProfileResult[]).map((profile) => [
+              profile.id,
+              profile,
+            ])
+          );
+        }
+
+        const hydratedDiscussions = discussionRows.map((discussion) => {
+          const author = discussionAuthors[discussion.user_id];
+
+          return {
+            ...discussion,
+            contributorName: author?.full_name ?? null,
+            contributorUsername: author?.username ?? null,
+          };
+        });
+
         setGlobalSearchProfiles([...profileMap.values()].slice(0, 6));
-        setGlobalSearchDiscussions([...discussionMap.values()].slice(0, 8));
+        setGlobalSearchDiscussions(hydratedDiscussions);
       } catch (error) {
         console.error("Unable to load global search results.", error);
 
@@ -2613,7 +2719,14 @@ export default function ClientLayout({
                               </p>
                               <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
                                 {discussion.topic}
+                                {discussion.purpose_lane ? ` · ${discussion.purpose_lane}` : ""}
+                                {discussion.reality_lens ? ` · ${discussion.reality_lens}` : ""}
                               </p>
+                              {(discussion.contributorName || discussion.contributorUsername) && (
+                                <p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">
+                                  By {discussion.contributorName || `@${discussion.contributorUsername}`}
+                                </p>
+                              )}
                               {discussion.body && (
                                 <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                                   {discussion.body}
