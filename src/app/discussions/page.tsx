@@ -269,8 +269,7 @@ export default function DiscussionsPage() {
   const [showAllTopicFilters, setShowAllTopicFilters] = useState(false);
   const [showExploreFilters, setShowExploreFilters] = useState(false);
   const [activeDiscussionTool, setActiveDiscussionTool] =
-    useState<"none" | "search" | "guide" | "topics" | "purpose">("none");
-  const [searchQuery, setSearchQuery] = useState("");
+    useState<"none" | "guide" | "topics" | "purpose">("none");
   const [sortMode, setSortMode] = useState("Newest");
   const [feedMode, setFeedMode] = useState<FeedMode>("all");
   const [followingUserIds, setFollowingUserIds] = useState<string[]>([]);
@@ -564,8 +563,6 @@ export default function DiscussionsPage() {
   }
 
   const filteredDiscussions = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-
     const activeAdvancedFilter = canUseAdvancedFilters
       ? advancedFilter
       : "All activity";
@@ -573,8 +570,6 @@ export default function DiscussionsPage() {
     const followingUserIdSet = new Set(followingUserIds);
 
     const filtered = discussions.filter((discussion) => {
-      const profile = profiles[discussion.user_id];
-
       const matchesFeedMode =
         feedMode !== "following" || followingUserIdSet.has(discussion.user_id);
 
@@ -583,16 +578,6 @@ export default function DiscussionsPage() {
 
       const matchesPurposeLane =
         selectedPurposeLane === "All" || discussion.purpose_lane === selectedPurposeLane;
-
-      const matchesSearch =
-        !query ||
-        discussion.title.toLowerCase().includes(query) ||
-        discussion.body.toLowerCase().includes(query) ||
-        (discussion.reality_lens ?? "").toLowerCase().includes(query) ||
-        (discussion.purpose_lane ?? "").toLowerCase().includes(query) ||
-        discussion.topic.toLowerCase().includes(query) ||
-        (profile?.username ?? "").toLowerCase().includes(query) ||
-        (profile?.full_name ?? "").toLowerCase().includes(query);
 
       const matchesAdvanced = matchesAdvancedFilter(
         discussion,
@@ -603,7 +588,7 @@ export default function DiscussionsPage() {
         latestReplyDates
       );
 
-      return matchesFeedMode && matchesTopic && matchesPurposeLane && matchesSearch && matchesAdvanced;
+      return matchesFeedMode && matchesTopic && matchesPurposeLane && matchesAdvanced;
     });
 
     if (sortMode === "Most replied") {
@@ -644,10 +629,8 @@ export default function DiscussionsPage() {
     return filtered;
   }, [
     discussions,
-    profiles,
     selectedTopic,
     selectedPurposeLane,
-    searchQuery,
     sortMode,
     feedMode,
     followingUserIds,
@@ -660,7 +643,6 @@ export default function DiscussionsPage() {
   ]);
 
   const activeFilterLabels = [
-    searchQuery.trim() ? `Search: “${searchQuery.trim()}”` : "",
     selectedTopic !== "All" ? `Topic: ${selectedTopic}` : "",
     selectedPurposeLane !== "All" ? `Purpose: ${selectedPurposeLane}` : "",
     sortMode !== "Newest" ? `Sort: ${sortMode}` : "",
@@ -685,7 +667,6 @@ export default function DiscussionsPage() {
 
   function resetDiscussionFilters() {
     setFeedMode("all");
-    setSearchQuery("");
     setTopicFilter("All");
     setPurposeLaneFilter("All");
     setSortMode("Newest");
@@ -754,7 +735,6 @@ export default function DiscussionsPage() {
 
   function applyDiscussionFeedMode(nextFeedMode: FeedMode) {
     setFeedMode(nextFeedMode);
-    setSearchQuery("");
     setTopicFilter("All");
     setPurposeLaneFilter("All");
     setSortMode(nextFeedMode === "signal" ? "Signal" : "Newest");
@@ -819,17 +799,6 @@ export default function DiscussionsPage() {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(DISCUSSION_FILTER_DRAWER_STORAGE_KEY, "open");
     }
-  }
-
-  function openDiscussionSearch() {
-    setActiveDiscussionTool((current) => current === "search" ? "none" : "search");
-
-    window.setTimeout(() => {
-      const input = document.getElementById("discussion-search") as HTMLInputElement | null;
-
-      input?.focus();
-      input?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 0);
   }
 
   function openDiscussionGuide() {
@@ -909,25 +878,6 @@ export default function DiscussionsPage() {
             </button>
           </nav>
         </section>
-
-        {activeDiscussionTool === "search" && (
-          <section className="loombus-discussions-tool-panel mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
-            <label htmlFor="discussion-search" className="block">
-              <span className="sr-only">
-                Search discussions
-              </span>
-
-              <input
-                id="discussion-search"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search discussions..."
-                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3.5 text-base text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
-              />
-            </label>
-          </section>
-        )}
 
         {activeDiscussionTool === "guide" && (
           <section className="loombus-discussions-tool-panel mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
@@ -1063,8 +1013,8 @@ export default function DiscussionsPage() {
             </h2>
 
             <p className="max-w-2xl text-zinc-400">
-              No discussions match the current search, topic, purpose lane, sort, or advanced filter selection.
-              Try clearing the filters, using a broader search term, or starting a new discussion in this topic.
+              No discussions match the current topic, purpose lane, sort, or advanced filter selection.
+              Try clearing the filters or starting a new discussion in this topic.
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
@@ -1284,7 +1234,7 @@ export default function DiscussionsPage() {
                   </h2>
 
                   <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                    Search, filter, and sort here. The center panel stays focused on discussion results.
+                    Filter and sort here. The center panel stays focused on discussion results.
                   </p>
                 </div>
 
@@ -1298,21 +1248,6 @@ export default function DiscussionsPage() {
                   </button>
                 )}
               </div>
-
-              <label htmlFor="discussion-search-rail" className="block">
-                <span className="mb-2 block text-sm font-medium text-zinc-300">
-                  Search discussions
-                </span>
-
-                <input
-                  id="discussion-search-rail"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search titles, bodies, topics, or contributors..."
-                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
-                />
-              </label>
 
               <button
                 type="button"
