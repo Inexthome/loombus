@@ -1389,7 +1389,7 @@ export default function CreatePage() {
   }, [body]);
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16 loombus-shell-with-right-rail">
+    <main className="min-h-screen bg-[var(--loombus-bg)] px-4 pb-24 pt-4 text-[var(--loombus-text)] sm:px-6 sm:py-12 lg:py-16 loombus-shell-with-right-rail">
       <SafetyWarningModal
         warning={safetyWarning}
         onClose={() => setSafetyWarning(null)}
