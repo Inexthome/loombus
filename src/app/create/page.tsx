@@ -1923,8 +1923,8 @@ export default function CreatePage() {
                           onClick={selectOtherTopicValue}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             topic === "Other"
-                              ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
-                              : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
+                              ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-sm shadow-black/10"
+                              : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                           }`}
                         >
                           <span>Other</span>
@@ -1938,8 +1938,8 @@ export default function CreatePage() {
                             onClick={() => selectTopicValue(topicOption)}
                             className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               topicManuallySelected && topic === topicOption
-                                ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
-                                : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
+                                ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-sm shadow-black/10"
+                                : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                             }`}
                           >
                             <span>{topicOption}</span>
@@ -1992,8 +1992,8 @@ export default function CreatePage() {
                           onClick={() => selectRealityLensValue("")}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             !realityLens
-                              ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
-                              : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
+                              ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-sm shadow-black/10"
+                              : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                           }`}
                         >
                           <span>None</span>
@@ -2007,8 +2007,8 @@ export default function CreatePage() {
                             onClick={() => selectRealityLensValue(lens)}
                             className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               realityLens === lens
-                                ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
-                                : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
+                                ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-sm shadow-black/10"
+                                : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                             }`}
                           >
                             <span>{lens}</span>
@@ -2031,8 +2031,8 @@ export default function CreatePage() {
                           onClick={() => selectPurposeLaneValue("")}
                           className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                             !purposeLane
-                              ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
-                              : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
+                              ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-sm shadow-black/10"
+                              : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                           }`}
                         >
                           <span>None</span>
@@ -2046,8 +2046,8 @@ export default function CreatePage() {
                             onClick={() => selectPurposeLaneValue(lane)}
                             className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
                               purposeLane === lane
-                                ? "border-zinc-300 bg-white text-black shadow-sm shadow-black/10"
-                                : "border-white/10 bg-black/20 text-zinc-300 hover:border-white/25 hover:bg-black/30 hover:text-white"
+                                ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)] shadow-sm shadow-black/10"
+                                : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                             }`}
                           >
                             <span>{lane}</span>
