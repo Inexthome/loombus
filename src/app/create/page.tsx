@@ -2133,40 +2133,174 @@ export default function CreatePage() {
               </label>
 
               <div className="overflow-hidden rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] focus-within:border-[var(--loombus-text-subtle)]">
-                <div className="flex items-center gap-1 border-b border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => runBodyEditorCommand("bold")}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base font-bold text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
-                    aria-label="Bold selected text"
-                    title="Bold"
-                  >
-                    B
-                  </button>
+                <div
+                  className="flex items-center gap-2 overflow-x-auto border-b border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-3 py-2"
+                  aria-label="Discussion composer tools"
+                >
+                  <div className="flex shrink-0 items-center gap-1" aria-label="Text formatting">
+                    <button
+                      type="button"
+                      onClick={() => runBodyEditorCommand("bold")}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-base font-bold text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
+                      aria-label="Bold selected text"
+                      title="Bold"
+                    >
+                      B
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => runBodyEditorCommand("italic")}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-base italic text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
-                    aria-label="Italicize selected text"
-                    title="Italic"
-                  >
-                    I
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => runBodyEditorCommand("italic")}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-base italic text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
+                      aria-label="Italicize selected text"
+                      title="Italic"
+                    >
+                      I
+                    </button>
+                  </div>
 
-                  {!isEditMode && (
-                    <>
+                  <span className="h-7 w-px shrink-0 bg-[var(--loombus-border)]" aria-hidden="true" />
+
+                  <div className="flex shrink-0 items-center gap-1" aria-label="Composer actions">
+                    {!isEditMode && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={openBodyAttachmentPicker}
+                          disabled={publishing}
+                          className={`relative inline-flex h-10 w-10 items-center justify-center rounded-xl border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                            attachmentFiles.length > 0
+                              ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
+                              : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
+                          }`}
+                          aria-label="Attach files"
+                          title="Attach files"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            className="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.55-9.55a4 4 0 1 1 5.66 5.66l-9.9 9.9a2 2 0 1 1-2.83-2.83l8.84-8.84" />
+                          </svg>
+
+                          {attachmentFiles.length > 0 && (
+                            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--loombus-text)] px-1 text-[10px] font-semibold text-[var(--loombus-page-bg)]">
+                              {attachmentFiles.length}
+                            </span>
+                          )}
+                        </button>
+
+                        <input
+                          ref={bodyAttachmentInputRef}
+                          type="file"
+                          multiple
+                          accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                          onChange={handleAttachmentSelection}
+                          disabled={publishing}
+                          className="hidden"
+                        />
+                      </>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => toggleCreateMetadataTool("topic")}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+                        activeCreateMetadataTool !== "none" || Boolean(topic || realityLens || purposeLane)
+                          ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
+                          : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
+                      }`}
+                      aria-label="Discussion structure"
+                      title="Discussion structure"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.1"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M4 7h4" />
+                        <path d="M4 17h4" />
+                        <path d="M16 7h4" />
+                        <path d="M16 17h4" />
+                        <circle cx="11" cy="7" r="2" />
+                        <circle cx="13" cy="17" r="2" />
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleCreateTool("quality")}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+                        activeCreateTool === "quality"
+                          ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
+                          : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
+                      }`}
+                      aria-label="Quality check"
+                      title="Quality check"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.1"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => toggleCreateTool("rewrite")}
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+                        activeCreateTool === "rewrite"
+                          ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
+                          : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
+                      }`}
+                      aria-label="Rewrite for clarity"
+                      title="Rewrite for clarity"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.1"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 3 13.4 8.1 18.5 9.5 13.4 10.9 12 16 10.6 10.9 5.5 9.5 10.6 8.1 12 3Z" />
+                        <path d="M19 15 19.6 17.2 22 18 19.6 18.8 19 21 18.4 18.8 16 18 18.4 17.2 19 15Z" />
+                      </svg>
+                    </button>
+
+                    {canUseDrafts && !isEditMode && (
                       <button
                         type="button"
-                        onClick={openBodyAttachmentPicker}
-                        disabled={publishing}
-                        className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                          attachmentFiles.length > 0
+                        onClick={saveDraft}
+                        disabled={savingDraft || publishing}
+                        className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                          draftId
                             ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
                             : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                         }`}
-                        aria-label="Attach files"
-                        title="Attach files"
+                        aria-label={savingDraft ? "Saving draft" : "Save draft"}
+                        title={savingDraft ? "Saving draft" : "Save draft"}
                       >
                         <svg
                           aria-hidden="true"
@@ -2174,55 +2308,17 @@ export default function CreatePage() {
                           className="h-5 w-5"
                           fill="none"
                           stroke="currentColor"
-                          strokeWidth="2.2"
+                          strokeWidth="2.1"
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         >
-                          <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.55-9.55a4 4 0 1 1 5.66 5.66l-9.9 9.9a2 2 0 1 1-2.83-2.83l8.84-8.84" />
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                          <path d="M17 21v-8H7v8" />
+                          <path d="M7 3v5h8" />
                         </svg>
                       </button>
-
-                      <input
-                        ref={bodyAttachmentInputRef}
-                        type="file"
-                        multiple
-                        accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
-                        onChange={handleAttachmentSelection}
-                        disabled={publishing}
-                        className="hidden"
-                      />
-                    </>
-                  )}
-
-                  <span className="mx-2 h-6 w-px bg-[var(--loombus-border)]" aria-hidden="true" />
-
-                  <button
-                    type="button"
-                    onClick={() => toggleCreateTool("quality")}
-                    className={`inline-flex h-9 items-center justify-center rounded-full border px-4 text-xs font-semibold tracking-wide transition ${
-                      activeCreateTool === "quality"
-                        ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
-                        : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
-                    }`}
-                    aria-label="Run quality check"
-                    title="Quality Check"
-                  >
-                    QC
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => toggleCreateTool("rewrite")}
-                    className={`inline-flex h-9 items-center justify-center rounded-full border px-4 text-xs font-semibold tracking-wide transition ${
-                      activeCreateTool === "rewrite"
-                        ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
-                        : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
-                    }`}
-                    aria-label="Generate rewrite"
-                    title="Generate Rewrite"
-                  >
-                    ✨ Rewrite
-                  </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="relative">
