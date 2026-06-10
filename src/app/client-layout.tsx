@@ -2403,6 +2403,56 @@ export default function ClientLayout({
     }
   }
 
+  function getGlobalSearchAiQuickActions() {
+    const firstDiscussion = globalSearchDiscussions[0];
+    const firstSaved = globalSearchSaved[0];
+    const firstSavedDiscussion = firstSaved?.discussions;
+    const firstProfile = globalSearchProfiles[0];
+    const cleanQuery = globalSearchQuery.trim();
+
+    const actions: {
+      label: string;
+      href: string;
+      primary?: boolean;
+    }[] = [];
+
+    if (firstDiscussion) {
+      actions.push({
+        label: "Open discussion",
+        href: `/discussions/${firstDiscussion.id}`,
+        primary: true,
+      });
+    }
+
+    if (firstSaved) {
+      actions.push({
+        label: "Open saved item",
+        href: firstSavedDiscussion ? `/discussions/${firstSavedDiscussion.id}` : "/saved",
+      });
+    }
+
+    if (firstProfile) {
+      actions.push({
+        label: "Open profile",
+        href: firstProfile.username ? `/u/${firstProfile.username}` : "/people",
+      });
+    }
+
+    if (cleanQuery.length >= 2) {
+      actions.push({
+        label: "Create discussion",
+        href: `/create?prompt=${encodeURIComponent(cleanQuery)}`,
+      });
+    }
+
+    actions.push({
+      label: "Advanced search",
+      href: "/search",
+    });
+
+    return actions.slice(0, 5);
+  }
+
   function openGlobalSearch() {
     setMobileMenuOpen(false);
     setMoreMenuOpen(false);
@@ -2836,8 +2886,27 @@ export default function ClientLayout({
                     </p>
 
                     {globalSearchAiAnswer && (
-                      <div className="mt-3 whitespace-pre-wrap rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                        {globalSearchAiAnswer}
+                      <div className="mt-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-bg)] p-3">
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                          {globalSearchAiAnswer}
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {getGlobalSearchAiQuickActions().map((action) => (
+                            <Link
+                              key={`${action.label}-${action.href}`}
+                              href={action.href}
+                              onClick={closeGlobalSearch}
+                              className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                                action.primary
+                                  ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] hover:opacity-90"
+                                  : "border border-[var(--loombus-border)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                              }`}
+                            >
+                              {action.label}
+                            </Link>
+                          ))}
+                        </div>
                       </div>
                     )}
 
