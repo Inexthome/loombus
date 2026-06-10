@@ -2324,7 +2324,20 @@ export default function ClientLayout({
       };
     });
 
+    const contextSummary = {
+      kind: "Context summary",
+      title: "Available matching Loombus results",
+      description: [
+        `People: ${profileResults.length}`,
+        `Discussions: ${discussionResults.length}`,
+        `Saved: ${savedResults.length}`,
+        `Pages: ${pageResults.length}`,
+      ].join(" · "),
+      href: "",
+    };
+
     return [
+      contextSummary,
       ...profileResults,
       ...discussionResults,
       ...savedResults,
