@@ -123,6 +123,31 @@ const settingsSections = [
         href: "/ai-usage",
       },
       {
+        title: "Contact",
+        description: "Get help with support, safety concerns, accessibility, or account questions.",
+        href: "/contact",
+      },
+    ],
+  },
+  {
+    title: "Legal and platform reference",
+    items: [
+      {
+        title: "About Loombus",
+        description: "Read the platform purpose and positioning.",
+        href: "/about",
+      },
+      {
+        title: "Guidelines",
+        description: "Review community standards and contribution expectations.",
+        href: "/guidelines",
+      },
+      {
+        title: "Safety",
+        description: "Review safety expectations, reporting, blocking, and enforcement.",
+        href: "/safety",
+      },
+      {
         title: "Privacy",
         description: "Review how Loombus handles account, platform, AI, and usage information.",
         href: "/privacy",
@@ -133,13 +158,28 @@ const settingsSections = [
         href: "/terms",
       },
       {
-        title: "Contact",
-        description: "Get help with support, safety concerns, accessibility, or account questions.",
-        href: "/contact",
+        title: "Cookies",
+        description: "Review cookie and similar technology information.",
+        href: "/cookies",
+      },
+      {
+        title: "Refund Policy",
+        description: "Review paid feature cancellation, refund, and billing dispute rules.",
+        href: "/refunds",
+      },
+      {
+        title: "Copyright / DMCA",
+        description: "Review copyright, rights concerns, and DMCA notice information.",
+        href: "/dmca",
+      },
+      {
+        title: "Accessibility",
+        description: "Review accessibility support and feedback options.",
+        href: "/accessibility",
       },
     ],
   },
-]
+];
 
 export default function SettingsClientPage() {
   const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement | null>(null);
