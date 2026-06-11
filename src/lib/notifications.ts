@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { sendNativePushForNotification } from "@/lib/push-delivery";
 
 type ServiceRoleError = {
   message: string;
@@ -61,6 +62,12 @@ export async function createNotification(
     message: payload.message,
   });
 
+  if (!error) {
+    await sendNativePushForNotification(payload).catch((pushError) => {
+      console.error("Native push delivery failed after notification insert:", pushError);
+    });
+  }
+
   return { error };
 }
 
@@ -87,6 +94,12 @@ export async function createNotifications(
   }));
 
   const { error } = await (supabase.from("notifications") as any).insert(rows);
+
+  if (!error) {
+    await Promise.allSettled(
+      payloads.map((payload) => sendNativePushForNotification(payload))
+    );
+  }
 
   return { error };
 }

@@ -37,3 +37,22 @@ Native push notification support is built in layers:
 - Server-side delivery is still a later layer and should reuse existing Loombus notification creation events.
 
 Native push still requires Apple/Xcode Push Notifications capability and valid APNs credentials before production delivery will work.
+
+## Server-side push delivery
+
+Initial APNs delivery is intentionally narrow. Native pushes are only sent for:
+- New private messages
+- Message replies
+- Replies to your discussions
+- New followers
+
+Loombus does not push every in-app notification type by default. Topic alerts, followed-discussion alerts, followed-reply alerts, mentions, admin notices, and digests should be evaluated separately before native push delivery is enabled for them.
+
+Required server environment variables:
+- `APNS_TEAM_ID`
+- `APNS_KEY_ID`
+- `APNS_PRIVATE_KEY` or `APNS_PRIVATE_KEY_BASE64`
+- `APNS_BUNDLE_ID`, default `com.loombus.mobile`
+- `APNS_ENVIRONMENT`, `development` or `production`
+
+Do not commit APNs private keys to the repository.
