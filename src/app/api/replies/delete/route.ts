@@ -15,17 +15,31 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.replace("Bearer ", "");
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+      return NextResponse.json(
+        { error: "Server configuration error." },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
         },
-      }
-    );
+      },
+    });
+
+    const adminSupabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
     const {
       data: { user },
@@ -81,19 +95,28 @@ export async function POST(request: NextRequest) {
 
     const deletedAt = new Date().toISOString();
 
-    const { error: deleteError } = await supabase
+    const { data: deletedReply, error: deleteError } = await adminSupabase
       .from("replies")
       .update({
         deleted_at: deletedAt,
         deleted_by: user.id,
       })
       .eq("id", replyId)
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .select("id, deleted_at, deleted_by")
+      .maybeSingle();
 
     if (deleteError) {
       return NextResponse.json(
         { error: deleteError.message },
         { status: 500 }
+      );
+    }
+
+    if (!deletedReply) {
+      return NextResponse.json(
+        { error: "Reply could not be deleted. It may already be deleted." },
+        { status: 409 }
       );
     }
 
