@@ -332,7 +332,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const conversations = conversationRows
+  const rawConversations = conversationRows
     .map((conversation) => {
       if (!conversation) return null;
 
@@ -384,6 +384,53 @@ export async function GET(request: NextRequest) {
       const bTime = new Date(b.lastMessageAt ?? b.updatedAt ?? b.createdAt).getTime();
       return bTime - aTime;
     });
+
+  const conversationsByCounterpart = new Map<string, any>();
+
+  for (const conversation of rawConversations) {
+    if (!conversation) continue;
+
+    const counterpartKey =
+      conversation.otherUserId ??
+      conversation.otherUsername ??
+      conversation.otherFullName ??
+      conversation.id;
+
+    const existing = conversationsByCounterpart.get(counterpartKey);
+
+    if (!existing) {
+      conversationsByCounterpart.set(counterpartKey, conversation);
+      continue;
+    }
+
+    const conversationTime = new Date(
+      conversation.lastMessageAt ?? conversation.updatedAt ?? conversation.createdAt
+    ).getTime();
+    const existingTime = new Date(
+      existing.lastMessageAt ?? existing.updatedAt ?? existing.createdAt
+    ).getTime();
+
+    const mergedUnread = Boolean(existing.hasUnread || conversation.hasUnread);
+
+    if (conversationTime > existingTime) {
+      conversationsByCounterpart.set(counterpartKey, {
+        ...conversation,
+        hasUnread: mergedUnread,
+      });
+    } else if (mergedUnread !== existing.hasUnread) {
+      conversationsByCounterpart.set(counterpartKey, {
+        ...existing,
+        hasUnread: mergedUnread,
+      });
+    }
+  }
+
+  const conversations = [...conversationsByCounterpart.values()].sort((a, b) => {
+    const aTime = new Date(a.lastMessageAt ?? a.updatedAt ?? a.createdAt).getTime();
+    const bTime = new Date(b.lastMessageAt ?? b.updatedAt ?? b.createdAt).getTime();
+
+    return bTime - aTime;
+  });
 
   return NextResponse.json({ conversations });
 }
