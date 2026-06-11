@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
+import { NativePushRegistration } from "@/components/native-push-registration";
 
 const siteUrl = "https://loombus.com";
 const siteTitle = "Loombus";
@@ -86,6 +87,7 @@ export default function RootLayout({
           }}
         />
         <ClientLayout>{children}</ClientLayout>
+              <NativePushRegistration />
       </body>
     </html>
   );

@@ -26,3 +26,14 @@ Not currently enabled:
 - Native push notifications
 
 Do not add sensitive permissions until Loombus has a feature that clearly needs them.
+
+## Native push notifications
+
+Native push notification support is built in layers:
+- Capacitor push plugin registration runs only inside the iOS native app.
+- The app requests notification permission only after a signed-in session exists.
+- Registered APNs tokens are sent to `/api/push/device-tokens`.
+- Push tokens are stored in `public.user_push_device_tokens`.
+- Server-side delivery is still a later layer and should reuse existing Loombus notification creation events.
+
+Native push still requires Apple/Xcode Push Notifications capability and valid APNs credentials before production delivery will work.
