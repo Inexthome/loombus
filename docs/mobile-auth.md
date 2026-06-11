@@ -23,7 +23,6 @@ Not currently enabled:
 - Microphone
 - Siri/App Intents
 - Live Activities
-- Native push notifications
 
 Do not add sensitive permissions until Loombus has a feature that clearly needs them.
 
@@ -77,3 +76,13 @@ Native push delivery is controlled by `public.notification_preferences`:
 - `push_admin_reports_enabled`
 
 The delivery helper checks these preferences before sending APNs notifications. Admin report push alerts are only useful for admin accounts and should stay hidden from non-admin users in the UI.
+
+## APNs environment rule
+
+Loombus supports both APNs environments through `APNS_ENVIRONMENT`.
+
+Use:
+- `development` for Xcode-installed development builds with `aps-environment=development`
+- `production` for TestFlight and App Store builds signed with production APNs entitlement/provisioning
+
+If the app token comes from one APNs environment and Vercel sends through the other, delivery can fail with APNs token/environment errors.
