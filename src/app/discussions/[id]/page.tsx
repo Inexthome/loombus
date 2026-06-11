@@ -3995,21 +3995,47 @@ export default function DiscussionPage() {
             </div>
 
             {currentUserId && rightRailReportOpen && !reportedDiscussion && (
-              <label className="mt-4 block text-xs text-[var(--loombus-text-muted)]">
-                <span className="mb-2 block">Report reason</span>
+              <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-medium text-[var(--loombus-text-muted)]">
+                    Report reason
+                  </p>
 
-                <select
-                  value={reportReason}
-                  onChange={(event) => setReportReason(event.target.value as ReportReason)}
-                  className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-sm text-[var(--loombus-text)] outline-none transition focus:border-[var(--loombus-text-subtle)]"
-                >
-                  {REPORT_REASONS.map((reason) => (
-                    <option key={reason} value={reason}>
-                      {reason}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <button
+                    type="button"
+                    onClick={() => setRightRailReportOpen(false)}
+                    className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <div className="mt-3 grid gap-2">
+                  {REPORT_REASONS.map((reason) => {
+                    const selected = reportReason === reason;
+
+                    return (
+                      <button
+                        key={reason}
+                        type="button"
+                        onClick={() => setReportReason(reason)}
+                        className={`rounded-xl border px-3 py-2 text-left text-xs leading-snug transition ${
+                          selected
+                            ? "border-red-800 bg-red-950/20 text-red-300"
+                            : "border-[var(--loombus-border)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                        }`}
+                      >
+                        <span className="flex items-start gap-2">
+                          <span className="mt-0.5 w-4 shrink-0 text-center">
+                            {selected ? "✓" : ""}
+                          </span>
+                          <span>{reason}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
 
             {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
