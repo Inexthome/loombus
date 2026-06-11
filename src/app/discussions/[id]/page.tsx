@@ -3710,10 +3710,10 @@ export default function DiscussionPage() {
               return (
                 <div
                   key={reply.id}
-                  className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:rounded-[1.5rem] sm:p-7"
+                  className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-2xl shadow-black/10 sm:rounded-[1.5rem] sm:p-7"
                 >
                   <div className="mb-4 flex items-start justify-between gap-3">
-                    <p className="min-w-0 text-sm text-zinc-500">
+                    <p className="min-w-0 text-sm text-[var(--loombus-text-muted)]">
                       <span className="inline-flex min-w-0 items-center gap-3">
                         <ProfileAvatar
                           profile={replyProfiles[reply.user_id]}
@@ -3727,7 +3727,7 @@ export default function DiscussionPage() {
                       <button
                         type="button"
                         onClick={() => toggleReplyActionMenu(reply.id)}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-800 bg-black text-xl leading-none text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-xl leading-none text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                         aria-expanded={openReplyActionMenuId === reply.id}
                         aria-label="Open reply actions"
                       >
@@ -3735,7 +3735,7 @@ export default function DiscussionPage() {
                       </button>
 
                       {openReplyActionMenuId === reply.id && (
-                        <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-zinc-800 bg-black p-2 shadow-2xl shadow-black/40">
+                        <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-2 shadow-2xl shadow-black/20">
                           {canRespondToPoint && !isEditingReply && (
                             <button
                               type="button"
@@ -3744,7 +3744,7 @@ export default function DiscussionPage() {
                                 startRespondToPoint(reply);
                               }}
                               disabled={Boolean(editingReplyId)}
-                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Respond to point
                             </button>
@@ -3758,7 +3758,7 @@ export default function DiscussionPage() {
                                 handleReportReply(reply.id);
                               }}
                               disabled={reportingReplyId === reply.id || hasReportedReply}
-                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {hasReportedReply
                                 ? "Reported"
@@ -3779,7 +3779,7 @@ export default function DiscussionPage() {
                                 );
                               }}
                               disabled={Boolean(pinWorkingReplyId)}
-                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-amber-300 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-700"
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-amber-300 transition hover:bg-[var(--loombus-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {pinWorkingReplyId === reply.id
                                 ? "Updating..."
@@ -3794,7 +3794,7 @@ export default function DiscussionPage() {
                               type="button"
                               onClick={() => startReplyEdit(reply)}
                               disabled={Boolean(editingReplyId) || updatingReplyId === reply.id}
-                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-zinc-300 transition hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:text-zinc-700"
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               Edit
                             </button>
@@ -3808,7 +3808,7 @@ export default function DiscussionPage() {
                                 handleDeleteReply(reply.id);
                               }}
                               disabled={deletingReplyId === reply.id || isEditingReply}
-                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-red-300 transition hover:bg-zinc-900 disabled:cursor-not-allowed disabled:text-zinc-700"
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm text-red-300 transition hover:bg-[var(--loombus-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {deletingReplyId === reply.id ? "Deleting..." : "Delete"}
                             </button>
@@ -3825,11 +3825,11 @@ export default function DiscussionPage() {
                         onChange={(event) => setEditingReplyBody(event.target.value)}
                         rows={5}
                         maxLength={5000}
-                        className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base leading-relaxed text-zinc-300 outline-none transition placeholder:text-zinc-700 focus:border-zinc-600"
+                        className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base leading-relaxed text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
                       />
 
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="text-xs text-zinc-600">
+                        <p className="text-xs text-[var(--loombus-text-subtle)]">
                           {editingReplyBody.length}/5000 characters
                         </p>
 
@@ -3856,14 +3856,14 @@ export default function DiscussionPage() {
                     </div>
                   ) : (
                     <>
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300 sm:text-base">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--loombus-text)] sm:text-base">
                         <MentionText text={normalizePublicText(reply.body)} />
                       </p>
 
                       <ReplyReactionChips reply={reply} />
 
                       {replyEditLabel && (
-                        <p className="mt-4 text-xs text-zinc-600">
+                        <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">
                           {replyEditLabel}
                         </p>
                       )}
