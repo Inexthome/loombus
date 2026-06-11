@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { createAdminNotifications } from "@/lib/notifications";
 
 type ProfileAccess = {
   account_status: string | null;
@@ -59,6 +60,37 @@ function getSupabaseServiceRole() {
 function isValidUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_PATTERN.test(value);
 }
+
+function getMessageReportLabel(reportType: "private_message" | "private_conversation") {
+  return reportType === "private_message"
+    ? "private message"
+    : "private conversation";
+}
+
+async function notifyAdminsOfMessageReport({
+  reporterId,
+  reportType,
+  targetId,
+  reason,
+}: {
+  reporterId: string;
+  reportType: "private_message" | "private_conversation";
+  targetId: string;
+  reason: string;
+}) {
+  const { error } = await createAdminNotifications({
+    actor_id: reporterId,
+    type: "admin_report",
+    target_type: "admin_reports",
+    target_id: targetId,
+    message: `New ${getMessageReportLabel(reportType)} report submitted: ${reason}.`,
+  });
+
+  if (error) {
+    console.error("Admin message report notification failed:", error.message);
+  }
+}
+
 
 async function getCurrentUser(supabase: any) {
   const {
@@ -189,6 +221,13 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", message.id);
 
+    await notifyAdminsOfMessageReport({
+      reporterId: user.id,
+      reportType: "private_message",
+      targetId: message.id,
+      reason: normalizedReason,
+    });
+
     return NextResponse.json({
       success: true,
       reportType: "message",
@@ -225,6 +264,13 @@ export async function POST(request: NextRequest) {
   if (reportError) {
     return jsonError(reportError.message, 500);
   }
+
+  await notifyAdminsOfMessageReport({
+    reporterId: user.id,
+    reportType: "private_conversation",
+    targetId: conversationId,
+    reason: normalizedReason,
+  });
 
   return NextResponse.json({
     success: true,

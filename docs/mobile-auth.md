@@ -56,3 +56,14 @@ Required server environment variables:
 - `APNS_ENVIRONMENT`, `development` or `production`
 
 Do not commit APNs private keys to the repository.
+
+## Admin report push alerts
+
+Admin report push alerts are intentionally limited to moderation-critical events:
+- Discussion reports
+- Reply reports
+- Profile reports
+- Private message reports
+- Private conversation reports
+
+These alerts use the `admin_report` notification type and route admins to `/admin/reports`.

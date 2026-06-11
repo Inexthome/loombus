@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DEFAULT_REPORT_REASON, REPORT_REASONS } from "@/lib/report-reasons";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { createAdminNotifications } from "@/lib/notifications";
 
 type ReportTargetType = "discussion" | "reply" | "profile";
 
@@ -57,6 +58,42 @@ function getCleanReason(value: unknown) {
   }
 
   return clean;
+}
+
+function getReportTargetLabel(targetType: ReportTargetType) {
+  if (targetType === "discussion") {
+    return "discussion";
+  }
+
+  if (targetType === "reply") {
+    return "reply";
+  }
+
+  return "profile";
+}
+
+async function notifyAdminsOfReport({
+  reporterId,
+  targetType,
+  targetId,
+  reason,
+}: {
+  reporterId: string;
+  targetType: ReportTargetType;
+  targetId: string;
+  reason: string;
+}) {
+  const { error } = await createAdminNotifications({
+    actor_id: reporterId,
+    type: "admin_report",
+    target_type: "admin_reports",
+    target_id: targetId,
+    message: `New ${getReportTargetLabel(targetType)} report submitted: ${reason}.`,
+  });
+
+  if (error) {
+    console.error("Admin report notification failed:", error.message);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -141,6 +178,13 @@ export async function POST(request: NextRequest) {
       return jsonError(error.message || "Unable to submit report.", 400);
     }
 
+    await notifyAdminsOfReport({
+      reporterId: user.id,
+      targetType: "discussion",
+      targetId: discussionId,
+      reason,
+    });
+
     return NextResponse.json({ ok: true });
   }
 
@@ -182,6 +226,13 @@ export async function POST(request: NextRequest) {
       return jsonError(error.message || "Unable to report reply.", 400);
     }
 
+    await notifyAdminsOfReport({
+      reporterId: user.id,
+      targetType: "reply",
+      targetId: replyId,
+      reason,
+    });
+
     return NextResponse.json({ ok: true });
   }
 
@@ -219,6 +270,13 @@ export async function POST(request: NextRequest) {
 
     return jsonError(error.message || "Unable to report profile.", 400);
   }
+
+  await notifyAdminsOfReport({
+    reporterId: user.id,
+    targetType: "profile",
+    targetId: profileId,
+    reason,
+  });
 
   return NextResponse.json({ ok: true });
 }

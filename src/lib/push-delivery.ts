@@ -28,6 +28,7 @@ const PUSH_ALLOWED_NOTIFICATION_TYPES = new Set([
   "message_reply",
   "reply",
   "follow",
+  "admin_report",
 ]);
 
 let pushServiceClient: ReturnType<typeof createClient> | null = null;
@@ -137,6 +138,10 @@ function createApnsJwt(config: ApnsConfig) {
 }
 
 function getNotificationUrl(payload: NotificationPayload) {
+  if (payload.type === "admin_report") {
+    return "/admin/reports";
+  }
+
   if (payload.target_type === "discussion" && payload.target_id) {
     return `/discussions/${payload.target_id}`;
   }
@@ -161,6 +166,8 @@ function getPushTitle(payload: NotificationPayload) {
       return "New Loombus reply";
     case "follow":
       return "New Loombus follower";
+    case "admin_report":
+      return "New Loombus report";
     default:
       return "Loombus notification";
   }

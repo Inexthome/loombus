@@ -103,3 +103,40 @@ export async function createNotifications(
 
   return { error };
 }
+
+export async function createAdminNotifications(
+  payload: Omit<NotificationPayload, "user_id">
+): Promise<{ error: ServiceRoleError | null; notifiedAdminCount: number }> {
+  const supabase = getNotificationServiceClient();
+
+  if (!supabase) {
+    return { error: missingServiceRoleError(), notifiedAdminCount: 0 };
+  }
+
+  const { data: admins, error: adminError } = await (supabase
+    .from("profiles") as any)
+    .select("id")
+    .eq("is_admin", true);
+
+  if (adminError) {
+    return { error: adminError, notifiedAdminCount: 0 };
+  }
+
+  const adminPayloads = ((admins ?? []) as { id: string }[])
+    .filter((admin) => Boolean(admin.id))
+    .map((admin) => ({
+      user_id: admin.id,
+      actor_id: payload.actor_id ?? null,
+      type: payload.type,
+      target_type: payload.target_type,
+      target_id: payload.target_id ?? null,
+      message: payload.message,
+    }));
+
+  const { error } = await createNotifications(adminPayloads);
+
+  return {
+    error,
+    notifiedAdminCount: error ? 0 : adminPayloads.length,
+  };
+}
