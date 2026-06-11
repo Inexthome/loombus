@@ -3886,10 +3886,14 @@ export default function DiscussionPage() {
         </div>
       </div>
 
-      <aside className="discussion-detail-right-rail loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
+      <aside className="discussion-detail-right-rail loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-[var(--loombus-border)] px-4 py-6 text-[var(--loombus-text)] backdrop-blur-xl lg:block"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--loombus-page-bg) 94%, transparent 6%)",
+        }}>
         <div className="space-y-4">
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-            <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+          <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+            <p className="mb-2 text-xs uppercase tracking-[0.25em] text-[var(--loombus-text-subtle)]">
               Thread panel
             </p>
 
@@ -3897,7 +3901,7 @@ export default function DiscussionPage() {
               Discussion tools.
             </h2>
 
-            <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+            <p className="mt-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
               Jump to replies, open the State of the Discussion, save this discussion, or continue reading related threads.
             </p>
 
@@ -3911,9 +3915,9 @@ export default function DiscussionPage() {
                     )
                   }
                   disabled={statusWorking}
-                  className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700 ${
+                  className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:border-[var(--loombus-border)] disabled:text-[var(--loombus-text-subtle)] ${
                     discussionStatus === "resolved"
-                      ? "border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white"
+                      ? "border-[var(--loombus-border)] text-[var(--loombus-text)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                       : "border-emerald-800 text-emerald-300 hover:border-emerald-600 hover:text-emerald-200"
                   }`}
                 >
@@ -3930,7 +3934,7 @@ export default function DiscussionPage() {
                   type="button"
                   onClick={handleRemoveBookmark}
                   disabled={savingBookmark}
-                  className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-left text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-sm text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:border-[var(--loombus-border)] disabled:text-[var(--loombus-text-subtle)]"
                 >
                   {savingBookmark ? "Removing..." : "Unsave Discussion"}
                 </button>
@@ -3939,7 +3943,7 @@ export default function DiscussionPage() {
                   type="button"
                   onClick={openSaveFolderPanel}
                   disabled={savingBookmark}
-                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                  className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-sm text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:border-[var(--loombus-border)] disabled:text-[var(--loombus-text-subtle)]"
                 >
                   {savingBookmark ? "Saving..." : "Save Discussion"}
                 </button>
@@ -3950,10 +3954,10 @@ export default function DiscussionPage() {
                   type="button"
                   onClick={handleAddToStickies}
                   disabled={addingSticky || isStickied}
-                  className={`w-full rounded-2xl border bg-black px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  className={`w-full rounded-2xl border bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
                     isStickied
-                      ? "border-zinc-800 text-zinc-500"
-                      : "border-zinc-800 text-zinc-300 hover:border-zinc-600 hover:text-white"
+                      ? "border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"
+                      : "border-[var(--loombus-border)] text-[var(--loombus-text)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                   }`}
                 >
                   {addingSticky ? "Adding..." : isStickied ? "Added to Stickies" : "Add to Stickies"}
@@ -3961,7 +3965,7 @@ export default function DiscussionPage() {
               ) : currentUserId ? (
                 <Link
                   href="/premium"
-                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                  className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-sm text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                 >
                   Unlock Stickies
                 </Link>
@@ -3971,20 +3975,20 @@ export default function DiscussionPage() {
                 type="button"
                 onClick={handleReport}
                 disabled={reportedDiscussion}
-                className="w-full rounded-2xl border border-red-950 bg-black px-4 py-3 text-left text-sm text-red-400 transition hover:border-red-800 hover:text-red-300 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                className="w-full rounded-2xl border border-red-950 bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-sm text-red-400 transition hover:border-red-800 hover:text-red-300 disabled:cursor-not-allowed disabled:border-[var(--loombus-border)] disabled:text-[var(--loombus-text-subtle)]"
               >
                 {reportedDiscussion ? "Reported" : "Report Discussion"}
               </button>
             </div>
 
             {currentUserId && (
-              <label className="mt-4 block text-xs text-zinc-500">
+              <label className="mt-4 block text-xs text-[var(--loombus-text-muted)]">
                 <span className="mb-2 block">Report reason</span>
 
                 <select
                   value={reportReason}
                   onChange={(event) => setReportReason(event.target.value as ReportReason)}
-                  className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+                  className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-sm text-[var(--loombus-text)] outline-none transition focus:border-[var(--loombus-text-subtle)]"
                 >
                   {REPORT_REASONS.map((reason) => (
                     <option key={reason} value={reason}>
@@ -3996,28 +4000,28 @@ export default function DiscussionPage() {
             )}
 
             {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
-              <p className="mt-4 text-sm leading-relaxed text-zinc-500">
+              <p className="mt-4 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                 {pinMessage || statusMessage || bookmarkMessage || reportMessage}
               </p>
             )}
           </section>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-            <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+          <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+            <p className="mb-2 text-xs uppercase tracking-[0.25em] text-[var(--loombus-text-subtle)]">
               Reader shortcuts
             </p>
 
             <div className="grid gap-2">
               <a
                 href="#reply-form"
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-sm text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
               >
                 Reply
               </a>
 
               <a
                 href="#replies"
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-sm text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
               >
                 Replies
               </a>
@@ -4035,17 +4039,17 @@ export default function DiscussionPage() {
                     });
                   }, 0);
                 }}
-                className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-sm text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
               >
                 State of the Discussion
               </button>
             </div>
           </section>
 
-          <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+          <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
-                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-[var(--loombus-text-subtle)]">
                   State of the Discussion
                 </p>
 
@@ -4057,11 +4061,11 @@ export default function DiscussionPage() {
             </div>
 
             {currentUserId ? (
-              <p className="text-sm leading-relaxed text-zinc-500">
+              <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                 Current plan: {subscriptionDisplay.label}. Included AI usage: {aiUsageLabel}.
               </p>
             ) : (
-              <p className="text-sm leading-relaxed text-zinc-500">
+              <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                 Log in to generate a State of the Discussion for this thread.
               </p>
             )}
@@ -4089,7 +4093,7 @@ export default function DiscussionPage() {
                       });
                     }, 0);
                   }}
-                  className="rounded-2xl border border-zinc-900 bg-black px-4 py-3 text-left text-zinc-400 transition hover:border-zinc-700 hover:text-white"
+                  className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                 >
                   {label}
                 </button>
@@ -4098,9 +4102,9 @@ export default function DiscussionPage() {
           </section>
 
           {relatedDiscussions.length > 0 && (
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+            <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
               <div className="mb-4">
-                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
+                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-[var(--loombus-text-subtle)]">
                   Related discussions
                 </p>
 
@@ -4110,7 +4114,7 @@ export default function DiscussionPage() {
 
                 <Link
                   href={`/discussions?topic=${encodeURIComponent(discussion.topic)}`}
-                  className="mt-3 inline-flex rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                  className="mt-3 inline-flex rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                 >
                   View topic
                 </Link>
@@ -4121,17 +4125,17 @@ export default function DiscussionPage() {
                   <Link
                     key={item.id}
                     href={`/discussions/${item.id}`}
-                    className="block rounded-2xl border border-zinc-900 bg-black p-3 transition hover:border-zinc-700"
+                    className="block rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 transition hover:border-[var(--loombus-border)]"
                   >
                     <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
                       {item.topic}
                     </p>
 
-                    <h3 className="mt-2 text-sm font-medium leading-snug text-zinc-300">
+                    <h3 className="mt-2 text-sm font-medium leading-snug text-[var(--loombus-text)]">
                       {item.title}
                     </h3>
 
-                    <p className="mt-2 text-xs text-zinc-600">
+                    <p className="mt-2 text-xs text-[var(--loombus-text-subtle)]">
                       {new Date(item.created_at).toLocaleDateString()}
                     </p>
                   </Link>
