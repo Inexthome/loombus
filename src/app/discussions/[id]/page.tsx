@@ -2504,7 +2504,7 @@ export default function DiscussionPage() {
           </div>
         </div>
 
-        <section className="mb-5 rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-[color:var(--loombus-text)] sm:mb-8 sm:p-5">
+        <section className="mb-5 rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-[color:var(--loombus-text)] sm:mb-8 sm:p-5 lg:hidden">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.25em] text-[color:var(--loombus-muted-text)]">
@@ -2831,7 +2831,7 @@ export default function DiscussionPage() {
           )}
         </div>
 
-        <div className="discussion-detail-desktop-center-actions mb-5 hidden flex-col items-stretch gap-2 rounded-2xl border border-zinc-900 bg-black/30 p-3 sm:mb-10 md:flex md:flex-row md:flex-wrap md:items-center md:gap-4 md:border-0 md:bg-transparent md:p-0 xl:hidden">
+        <div className="discussion-detail-desktop-center-actions mb-5 hidden flex-col items-stretch gap-2 rounded-2xl border border-zinc-900 bg-black/30 p-3 sm:mb-10 md:flex md:flex-row md:flex-wrap md:items-center md:gap-4 md:border-0 md:bg-transparent md:p-0 lg:hidden">
           {canManageDiscussionStatus && (
             <button
               type="button"
@@ -3343,7 +3343,7 @@ export default function DiscussionPage() {
         )}
 
         {relatedDiscussions.length > 0 && activeDetailTool === "related" && (
-          <div id="related-discussions" className="discussion-detail-center-related mb-6 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7 xl:hidden">
+          <div id="related-discussions" className="discussion-detail-center-related mb-6 scroll-mt-24 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-12 sm:rounded-3xl sm:p-7 lg:hidden">
             <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.24em] text-zinc-500">
