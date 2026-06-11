@@ -4086,37 +4086,34 @@ export default function DiscussionPage() {
           </section>
 
           <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-[var(--loombus-text-subtle)]">
-                  State of the Discussion
-                </p>
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
+                State of the Discussion
+              </p>
 
-                <h2 className="text-lg font-semibold tracking-tight">
-                  Understand this thread.
-                </h2>
-              </div>
-
+              <h2 className="text-lg font-semibold tracking-tight">
+                Understand this thread.
+              </h2>
             </div>
 
             {currentUserId ? (
-              <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                Current plan: {subscriptionDisplay.label}. Included AI usage: {aiUsageLabel}.
+              <p className="mt-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                Plan: {subscriptionDisplay.label} · AI usage: {aiUsageLabel}
               </p>
             ) : (
-              <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                Log in to generate a State of the Discussion for this thread.
+              <p className="mt-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                Log in to generate thread intelligence.
               </p>
             )}
 
-            <div className="mt-4 grid gap-2 text-sm">
+            <div className="mt-4 grid grid-cols-2 gap-2">
               {[
                 ["summary", "Overview"],
-                ["keyTakeaways", "Key Takeaways"],
-                ["whatChanged", "What Changed"],
-                ["disagreementMap", "Disagreement Map"],
-                ["conversationMap", "Conversation Structure"],
-                ["relatedIdeas", "Related Ideas"],
+                ["keyTakeaways", "Takeaways"],
+                ["whatChanged", "Changed"],
+                ["disagreementMap", "Disagreement"],
+                ["conversationMap", "Structure"],
+                ["relatedIdeas", "Ideas"],
               ].map(([toolKey, label]) => (
                 <button
                   key={toolKey}
@@ -4132,7 +4129,7 @@ export default function DiscussionPage() {
                       });
                     }, 0);
                   }}
-                  className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                  className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-center text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                 >
                   {label}
                 </button>
