@@ -93,6 +93,10 @@ const DISCUSSION_MODES: Array<{
 
 const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
 const LONG_DISCUSSION_MAX_LENGTH = 12000;
+const CREATE_METADATA_INPUT_CLASS =
+  "w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]";
+const CREATE_TAG_INPUT_CLASS =
+  "min-h-14 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]";
 const ATTACHMENT_BUCKET = "discussion-attachments";
 const MAX_ATTACHMENT_FILES = 3;
 const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
@@ -1724,28 +1728,28 @@ export default function CreatePage() {
                       value={modeClaim}
                       onChange={(event) => setModeClaim(event.target.value)}
                       placeholder="Claim"
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                     <textarea
                       value={modeSupportingArgument}
                       onChange={(event) => setModeSupportingArgument(event.target.value)}
                       placeholder="Supporting argument"
                       rows={3}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                     <textarea
                       value={modeEvidence}
                       onChange={(event) => setModeEvidence(event.target.value)}
                       placeholder="Evidence or source context optional"
                       rows={3}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                     <input
                       type="text"
                       value={modeOpposingQuestion}
                       onChange={(event) => setModeOpposingQuestion(event.target.value)}
                       placeholder="Question for opposing views"
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                   </div>
                 )}
@@ -1757,28 +1761,28 @@ export default function CreatePage() {
                       value={modeResearchQuestion}
                       onChange={(event) => setModeResearchQuestion(event.target.value)}
                       placeholder="Research question"
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                     <textarea
                       value={modeBackground}
                       onChange={(event) => setModeBackground(event.target.value)}
                       placeholder="Background context"
                       rows={3}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                     <textarea
                       value={modeSources}
                       onChange={(event) => setModeSources(event.target.value)}
                       placeholder="Sources optional"
                       rows={3}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                     <textarea
                       value={modeOpenQuestions}
                       onChange={(event) => setModeOpenQuestions(event.target.value)}
                       placeholder="Unresolved or open questions"
                       rows={3}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                   </div>
                 )}
@@ -1790,35 +1794,35 @@ export default function CreatePage() {
                       value={modeProblem}
                       onChange={(event) => setModeProblem(event.target.value)}
                       placeholder="Problem"
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                     <textarea
                       value={modeTried}
                       onChange={(event) => setModeTried(event.target.value)}
                       placeholder="What have you tried?"
                       rows={3}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                     <textarea
                       value={modeConstraints}
                       onChange={(event) => setModeConstraints(event.target.value)}
                       placeholder="Constraints"
                       rows={3}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                     <input
                       type="text"
                       value={modeDesiredOutcome}
                       onChange={(event) => setModeDesiredOutcome(event.target.value)}
                       placeholder="Desired outcome"
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500"
+                      className={CREATE_METADATA_INPUT_CLASS}
                     />
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-zinc-400">
+                <label className="mb-2 block text-sm text-[var(--loombus-text-muted)]">
                   Optional Tags
                 </label>
 
@@ -1829,7 +1833,7 @@ export default function CreatePage() {
                   onFocus={() => setActiveCreateMetadataTool("tags")}
                   onBlur={closeTagsPanel}
                   placeholder="Optional Tags"
-                  className="min-h-14 w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500"
+                  className={CREATE_TAG_INPUT_CLASS}
                 />
 
                 <div className="mt-3 flex flex-col gap-2 text-xs text-[var(--loombus-text-subtle)] sm:flex-row sm:items-center sm:justify-between">
