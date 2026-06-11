@@ -3538,29 +3538,29 @@ export default function DiscussionPage() {
             id="reply-form"
             onSubmit={handleReply}
             onKeyDown={handleReplyFormKeyDown}
-            className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/30 sm:mb-10 sm:rounded-[1.5rem] sm:p-7"
+            className="mb-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-2xl shadow-black/10 sm:mb-10 sm:rounded-[1.5rem] sm:p-7"
           >
-            <label className="mb-3 block text-sm text-zinc-400">
+            <label className="mb-3 block text-sm text-[var(--loombus-text-muted)]">
               Add a thoughtful reply
             </label>
 
             {referencedReply && (
-              <div className="mb-4 rounded-2xl border border-zinc-800 bg-black p-4">
+              <div className="mb-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
                     Responding to a point
                   </p>
 
                   <button
                     type="button"
                     onClick={clearReferencedReply}
-                    className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                    className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                   >
                     Clear
                   </button>
                 </div>
 
-                <p className="text-sm leading-relaxed text-zinc-400">
+                <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                   “{getReplyReferencePreview(referencedReply)}”
                 </p>
               </div>
@@ -3573,7 +3573,7 @@ export default function DiscussionPage() {
               onChange={(e) => setReplyBody(e.target.value)}
               disabled={postingReply}
               placeholder="Contribute with clarity, context, and signal... Use @username to mention someone."
-              className="mb-4 w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-base text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:bg-zinc-950 disabled:text-zinc-600 disabled:placeholder:text-zinc-700"
+              className="mb-4 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)] disabled:cursor-not-allowed disabled:opacity-60"
             />
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -3585,12 +3585,12 @@ export default function DiscussionPage() {
                 {postingReply ? "Posting..." : "Post Reply"}
               </button>
 
-              <p className="hidden text-sm text-zinc-600 sm:block">
+              <p className="hidden text-sm text-[var(--loombus-text-subtle)] sm:block">
                 Press Cmd+Enter or Ctrl+Enter to reply.
               </p>
             </div>
 
-            {message && <p className="mt-4 text-sm text-zinc-400">{message}</p>}
+            {message && <p className="mt-4 text-sm text-[var(--loombus-text-muted)]">{message}</p>}
           </form>
 
           {pinnedReply && (
