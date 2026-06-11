@@ -793,9 +793,9 @@ export default function MessagesPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-6">
-        <div className="rounded-2xl border border-zinc-900 bg-black p-6">
-          <p className="text-sm text-zinc-500">
+      <div className="mx-auto max-w-7xl px-4 py-6 text-[var(--loombus-text)]">
+        <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6">
+          <p className="text-sm text-[var(--loombus-text-muted)]">
             Loading conversations...
           </p>
         </div>
@@ -804,13 +804,13 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6">
+    <div className="mx-auto max-w-7xl px-4 py-6 text-[var(--loombus-text)]">
       <div className="mb-6">
-        <h1 className="text-3xl font-semibold text-white">
+        <h1 className="text-3xl font-semibold text-[var(--loombus-text)]">
           Messages
         </h1>
 
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
           Private conversations between mutual followers.
         </p>
       </div>
@@ -822,7 +822,7 @@ export default function MessagesPage() {
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <div className={`rounded-2xl border border-zinc-900 bg-black ${mobileThreadOpen ? "hidden lg:block" : "block"}`}>
+        <div className={`rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] ${mobileThreadOpen ? "hidden lg:block" : "block"}`}>
           <div className="border-b border-zinc-900 px-4 py-3">
             <h2 className="text-sm font-medium text-zinc-300">
               Search messages
@@ -974,7 +974,7 @@ export default function MessagesPage() {
           )}
         </div>
 
-        <div className={`rounded-2xl border border-zinc-900 bg-black ${mobileThreadOpen ? "block" : "hidden lg:block"}`}>
+        <div className={`rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] ${mobileThreadOpen ? "block" : "hidden lg:block"}`}>
           <div className="border-b border-zinc-900 px-4 py-3">
             {selectedConversation ? (
               <div className="flex items-center justify-between gap-3">
