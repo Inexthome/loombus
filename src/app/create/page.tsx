@@ -2986,7 +2986,11 @@ export default function CreatePage() {
             {message && <p className="text-sm text-zinc-400">{message}</p>}
           </form>
         )}
-      <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
+      <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-[var(--loombus-border)] px-4 py-6 backdrop-blur-xl lg:block"
+        style={{
+          backgroundColor:
+            "color-mix(in srgb, var(--loombus-page-bg) 94%, transparent 6%)",
+        }}>
         <div className="space-y-4">
           {false && authChecked && isLoggedIn && showOptionalDetails && (
             <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
@@ -3074,24 +3078,24 @@ export default function CreatePage() {
           )}
 
           {authChecked && isLoggedIn && !isEditMode && (
-            <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
+            <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
               {/* Right rail My Activity card. */}
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-zinc-500">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--loombus-text-subtle)]">
                 Your account
               </p>
 
-              <h2 className="text-lg font-semibold tracking-tight text-white">
+              <h2 className="text-lg font-semibold tracking-tight text-[var(--loombus-text)]">
                 My Activity
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-zinc-400">
+              <p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">
                 Review your discussions, replies, saves, and recent Loombus activity from one place.
               </p>
 
               <div className="mt-5 grid gap-2">
                 <Link
                   href="/my-activity"
-                  className="rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-600 hover:text-white"
+                  className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-sm font-medium text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)]"
                 >
                   Open My Activity
                 </Link>
@@ -3099,14 +3103,14 @@ export default function CreatePage() {
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     href="/my-discussions"
-                    className="rounded-2xl border border-zinc-800 bg-black/70 px-3 py-3 text-center text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                    className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-3 text-center text-xs font-medium text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                   >
                     Discussions
                   </Link>
 
                   <Link
                     href="/my-replies"
-                    className="rounded-2xl border border-zinc-800 bg-black/70 px-3 py-3 text-center text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                    className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-3 text-center text-xs font-medium text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                   >
                     Replies
                   </Link>
