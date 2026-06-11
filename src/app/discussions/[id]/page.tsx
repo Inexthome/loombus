@@ -604,6 +604,7 @@ export default function DiscussionPage() {
   const [showSaveFolderPanel, setShowSaveFolderPanel] = useState(false);
   const [reportMessage, setReportMessage] = useState("");
   const [reportReason, setReportReason] = useState(DEFAULT_REPORT_REASON);
+  const [rightRailReportOpen, setRightRailReportOpen] = useState(false);
   const [showMobileThreadActions, setShowMobileThreadActions] = useState(false);
   const [showAiToolsPanel, setShowAiToolsPanel] = useState(false);
   const [showReplyHelpersPanel, setShowReplyHelpersPanel] = useState(false);
@@ -2271,6 +2272,7 @@ export default function DiscussionPage() {
     }
 
     setReportedDiscussion(true);
+    setRightRailReportOpen(false);
     setReportMessage("Discussion reported.");
   }
 
@@ -3973,15 +3975,26 @@ export default function DiscussionPage() {
 
               <button
                 type="button"
-                onClick={handleReport}
+                onClick={() => {
+                  if (!rightRailReportOpen && !reportedDiscussion) {
+                    setRightRailReportOpen(true);
+                    return;
+                  }
+
+                  handleReport();
+                }}
                 disabled={reportedDiscussion}
                 className="w-full rounded-2xl border border-red-950 bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-sm text-red-400 transition hover:border-red-800 hover:text-red-300 disabled:cursor-not-allowed disabled:border-[var(--loombus-border)] disabled:text-[var(--loombus-text-subtle)]"
               >
-                {reportedDiscussion ? "Reported" : "Report Discussion"}
+                {reportedDiscussion
+                  ? "Reported"
+                  : rightRailReportOpen
+                    ? "Submit Report"
+                    : "Report Discussion"}
               </button>
             </div>
 
-            {currentUserId && (
+            {currentUserId && rightRailReportOpen && !reportedDiscussion && (
               <label className="mt-4 block text-xs text-[var(--loombus-text-muted)]">
                 <span className="mb-2 block">Report reason</span>
 
