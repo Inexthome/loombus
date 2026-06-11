@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
-import { isIosNativeApp } from "@/lib/native-app";
+import { getNativePlatform } from "@/lib/native-app";
 
 let pushRegistrationStarted = false;
 let pushListenersRegistered = false;
@@ -9,7 +9,19 @@ async function getAccessToken() {
   return data.session?.access_token ?? "";
 }
 
-async function registerPushToken(token: string) {
+function getNativePushTokenType(platform: string) {
+  if (platform === "android") {
+    return "fcm";
+  }
+
+  if (platform === "ios") {
+    return "apns";
+  }
+
+  return "unknown";
+}
+
+async function registerPushToken(token: string, platform: string) {
   const accessToken = await getAccessToken();
 
   if (!accessToken) {
@@ -24,8 +36,8 @@ async function registerPushToken(token: string) {
     },
     body: JSON.stringify({
       token,
-      platform: "ios",
-      tokenType: "apns",
+      platform,
+      tokenType: getNativePushTokenType(platform),
     }),
   });
 
@@ -36,7 +48,13 @@ async function registerPushToken(token: string) {
 }
 
 export async function registerNativePushNotifications() {
-  if (typeof window === "undefined" || !isIosNativeApp()) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const platform = getNativePlatform();
+
+  if (platform !== "ios" && platform !== "android") {
     return;
   }
 
@@ -54,7 +72,7 @@ export async function registerNativePushNotifications() {
 
       await PushNotifications.addListener("registration", (token) => {
         if (token.value) {
-          void registerPushToken(token.value);
+          void registerPushToken(token.value, platform);
         }
       });
 

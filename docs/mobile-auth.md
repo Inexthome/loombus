@@ -86,3 +86,19 @@ Use:
 - `production` for TestFlight and App Store builds signed with production APNs entitlement/provisioning
 
 If the app token comes from one APNs environment and Vercel sends through the other, delivery can fail with APNs token/environment errors.
+
+## Android push notifications
+
+Android push notifications use Firebase Cloud Messaging.
+
+Current Android identity:
+- Android package/applicationId: `com.loombus.app`
+- Capacitor web app id remains `com.loombus.mobile` for the shared app config
+
+Android push requirements:
+- Firebase Android app registered with package name `com.loombus.app`
+- `android/app/google-services.json` from Firebase
+- Android notification permission `POST_NOTIFICATIONS`
+- Device tokens stored as `platform=android` and `token_type=fcm`
+
+Do not use the iOS bundle id `com.loombus.mobile` when creating the Firebase Android app unless the Android applicationId is intentionally changed.

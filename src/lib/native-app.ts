@@ -1,18 +1,45 @@
-export function isIosNativeApp() {
+type CapacitorRuntime = {
+  getPlatform?: () => string;
+  isNativePlatform?: () => boolean;
+};
+
+function getCapacitorRuntime() {
   if (typeof window === "undefined") {
-    return false;
+    return null;
   }
 
-  const capacitor = (
+  return (
     window as Window & {
-      Capacitor?: {
-        getPlatform?: () => string;
-        isNativePlatform?: () => boolean;
-      };
+      Capacitor?: CapacitorRuntime;
     }
-  ).Capacitor;
+  ).Capacitor ?? null;
+}
 
-  return Boolean(
-    capacitor?.isNativePlatform?.() && capacitor?.getPlatform?.() === "ios"
-  );
+export function getNativePlatform() {
+  const capacitor = getCapacitorRuntime();
+
+  if (!capacitor?.isNativePlatform?.()) {
+    return "web";
+  }
+
+  const platform = capacitor.getPlatform?.();
+
+  if (platform === "ios" || platform === "android") {
+    return platform;
+  }
+
+  return "unknown";
+}
+
+export function isNativeApp() {
+  const platform = getNativePlatform();
+  return platform === "ios" || platform === "android";
+}
+
+export function isIosNativeApp() {
+  return getNativePlatform() === "ios";
+}
+
+export function isAndroidNativeApp() {
+  return getNativePlatform() === "android";
 }
