@@ -8,6 +8,13 @@ type PushTokenRow = {
   token: string;
 };
 
+type PushPreferenceRow = {
+  push_messages_enabled: boolean | null;
+  push_replies_enabled: boolean | null;
+  push_follows_enabled: boolean | null;
+  push_admin_reports_enabled: boolean | null;
+};
+
 type ApnsConfig = {
   teamId: string;
   keyId: string;
@@ -189,6 +196,61 @@ function shouldSendNativePush(payload: NotificationPayload) {
   return true;
 }
 
+function getPreferenceColumnForNotificationType(type: string) {
+  if (type === "new_message" || type === "message_reply") {
+    return "push_messages_enabled";
+  }
+
+  if (type === "reply") {
+    return "push_replies_enabled";
+  }
+
+  if (type === "follow") {
+    return "push_follows_enabled";
+  }
+
+  if (type === "admin_report") {
+    return "push_admin_reports_enabled";
+  }
+
+  return null;
+}
+
+async function isNativePushEnabledForPayload(payload: NotificationPayload) {
+  const preferenceColumn = getPreferenceColumnForNotificationType(payload.type);
+
+  if (!preferenceColumn) {
+    return false;
+  }
+
+  const supabase = getPushServiceClient();
+
+  if (!supabase) {
+    return false;
+  }
+
+  const { data, error } = await supabase
+    .from("notification_preferences")
+    .select(
+      "push_messages_enabled, push_replies_enabled, push_follows_enabled, push_admin_reports_enabled"
+    )
+    .eq("user_id", payload.user_id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Unable to load Loombus push preferences:", error.message);
+    return true;
+  }
+
+  if (!data) {
+    return true;
+  }
+
+  const preferences = data as PushPreferenceRow;
+
+  return preferences[preferenceColumn as keyof PushPreferenceRow] !== false;
+}
+
 async function sendApnsNotification(args: {
   config: ApnsConfig;
   token: string;
@@ -327,6 +389,12 @@ export async function sendNativePushForNotification(payload: NotificationPayload
   const config = getApnsConfig();
 
   if (!config) {
+    return;
+  }
+
+  const pushEnabled = await isNativePushEnabledForPayload(payload);
+
+  if (!pushEnabled) {
     return;
   }
 

@@ -67,3 +67,13 @@ Admin report push alerts are intentionally limited to moderation-critical events
 - Private conversation reports
 
 These alerts use the `admin_report` notification type and route admins to `/admin/reports`.
+
+## Native push preference controls
+
+Native push delivery is controlled by `public.notification_preferences`:
+- `push_messages_enabled`
+- `push_replies_enabled`
+- `push_follows_enabled`
+- `push_admin_reports_enabled`
+
+The delivery helper checks these preferences before sending APNs notifications. Admin report push alerts are only useful for admin accounts and should stay hidden from non-admin users in the UI.

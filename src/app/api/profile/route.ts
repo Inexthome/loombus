@@ -165,6 +165,16 @@ export async function POST(request: NextRequest) {
     typeof source.emailDigestEnabled === "boolean" ? source.emailDigestEnabled : false;
   const emailDigestFrequency =
     source.emailDigestFrequency === "daily" ? "daily" : "weekly";
+  const pushMessagesEnabled =
+    typeof source.pushMessagesEnabled === "boolean" ? source.pushMessagesEnabled : true;
+  const pushRepliesEnabled =
+    typeof source.pushRepliesEnabled === "boolean" ? source.pushRepliesEnabled : true;
+  const pushFollowsEnabled =
+    typeof source.pushFollowsEnabled === "boolean" ? source.pushFollowsEnabled : true;
+  const pushAdminReportsEnabled =
+    typeof source.pushAdminReportsEnabled === "boolean"
+      ? source.pushAdminReportsEnabled
+      : true;
 
   if (!/^[a-z0-9_]{2,30}$/.test(username)) {
     return jsonError(
@@ -250,6 +260,10 @@ export async function POST(request: NextRequest) {
       followed_replies_enabled: followedRepliesEnabled,
       email_digest_enabled: canUseEmailDigest ? emailDigestEnabled : false,
       email_digest_frequency: emailDigestFrequency,
+      push_messages_enabled: pushMessagesEnabled,
+      push_replies_enabled: pushRepliesEnabled,
+      push_follows_enabled: pushFollowsEnabled,
+      push_admin_reports_enabled: isAdmin ? pushAdminReportsEnabled : false,
       updated_at: new Date().toISOString(),
     });
 
