@@ -81,6 +81,10 @@ type ProfileSnapshot = {
   followedRepliesEnabled: boolean;
   emailDigestEnabled: boolean;
   emailDigestFrequency: string;
+  pushMessagesEnabled: boolean;
+  pushRepliesEnabled: boolean;
+  pushFollowsEnabled: boolean;
+  pushAdminReportsEnabled: boolean;
 };
 
 function profileSnapshotToString(snapshot: ProfileSnapshot) {
@@ -117,6 +121,10 @@ export default function ProfilePage() {
   const [followedRepliesEnabled, setFollowedRepliesEnabled] = useState(false);
   const [emailDigestEnabled, setEmailDigestEnabled] = useState(false);
   const [emailDigestFrequency, setEmailDigestFrequency] = useState("weekly");
+  const [pushMessagesEnabled, setPushMessagesEnabled] = useState(true);
+  const [pushRepliesEnabled, setPushRepliesEnabled] = useState(true);
+  const [pushFollowsEnabled, setPushFollowsEnabled] = useState(true);
+  const [pushAdminReportsEnabled, setPushAdminReportsEnabled] = useState(true);
   const canUseEmailDigest = hasPremiumDigestAccess(aiEntitlement, isAdmin);
   const canUseTopicAlerts = canUseEmailDigest;
   const identityVerificationDisplay = getIdentityVerificationDisplay(identityVerificationStatus);
@@ -170,7 +178,7 @@ export default function ProfilePage() {
 
       const { data: preferences } = await supabase
         .from("notification_preferences")
-        .select("replies_enabled, follows_enabled, mentions_enabled, followed_discussions_enabled, followed_replies_enabled, email_digest_enabled, email_digest_frequency")
+        .select("replies_enabled, follows_enabled, mentions_enabled, followed_discussions_enabled, followed_replies_enabled, email_digest_enabled, email_digest_frequency, push_messages_enabled, push_replies_enabled, push_follows_enabled, push_admin_reports_enabled")
         .eq("user_id", userData.user.id)
         .maybeSingle();
 
@@ -184,6 +192,10 @@ export default function ProfilePage() {
         setEmailDigestFrequency(
           preferences.email_digest_frequency === "daily" ? "daily" : "weekly"
         );
+        setPushMessagesEnabled(preferences.push_messages_enabled ?? true);
+        setPushRepliesEnabled(preferences.push_replies_enabled ?? true);
+        setPushFollowsEnabled(preferences.push_follows_enabled ?? true);
+        setPushAdminReportsEnabled(preferences.push_admin_reports_enabled ?? true);
       }
 
       setSavedProfileSnapshot(
@@ -204,6 +216,10 @@ export default function ProfilePage() {
           emailDigestEnabled: preferences?.email_digest_enabled ?? false,
           emailDigestFrequency:
             preferences?.email_digest_frequency === "daily" ? "daily" : "weekly",
+          pushMessagesEnabled: preferences?.push_messages_enabled ?? true,
+          pushRepliesEnabled: preferences?.push_replies_enabled ?? true,
+          pushFollowsEnabled: preferences?.push_follows_enabled ?? true,
+          pushAdminReportsEnabled: preferences?.push_admin_reports_enabled ?? true,
         })
       );
 
@@ -262,6 +278,10 @@ export default function ProfilePage() {
     followedRepliesEnabled,
     emailDigestEnabled,
     emailDigestFrequency,
+    pushMessagesEnabled,
+    pushRepliesEnabled,
+    pushFollowsEnabled,
+    pushAdminReportsEnabled,
   });
 
   const hasUnsavedProfileChanges =
@@ -291,6 +311,10 @@ export default function ProfilePage() {
     setFollowedRepliesEnabled(snapshot.followedRepliesEnabled);
     setEmailDigestEnabled(snapshot.emailDigestEnabled);
     setEmailDigestFrequency(snapshot.emailDigestFrequency);
+    setPushMessagesEnabled(snapshot.pushMessagesEnabled ?? true);
+    setPushRepliesEnabled(snapshot.pushRepliesEnabled ?? true);
+    setPushFollowsEnabled(snapshot.pushFollowsEnabled ?? true);
+    setPushAdminReportsEnabled(snapshot.pushAdminReportsEnabled ?? true);
     setMessage("Unsaved profile changes discarded.");
   }
 
@@ -544,6 +568,10 @@ export default function ProfilePage() {
           followedRepliesEnabled,
           emailDigestEnabled,
           emailDigestFrequency,
+          pushMessagesEnabled,
+          pushRepliesEnabled,
+          pushFollowsEnabled,
+          pushAdminReportsEnabled,
         }),
       });
 
@@ -582,6 +610,10 @@ export default function ProfilePage() {
           followedRepliesEnabled,
           emailDigestEnabled,
           emailDigestFrequency,
+          pushMessagesEnabled,
+          pushRepliesEnabled,
+          pushFollowsEnabled,
+          pushAdminReportsEnabled,
         })
       );
       setMessage("Profile and notification settings updated successfully.");
@@ -1006,6 +1038,93 @@ export default function ProfilePage() {
                   className="mt-1 h-5 w-5"
                 />
               </label>
+
+              <div className="rounded-2xl border border-zinc-900 bg-black p-3.5 sm:p-4">
+                <div className="mb-4">
+                  <span className="block text-sm font-medium text-zinc-200">
+                    Native push notifications
+                  </span>
+                  <span className="mt-1 block text-sm text-zinc-500">
+                    Choose which Loombus activity can reach your phone as a device notification.
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="flex items-start justify-between gap-4">
+                    <span>
+                      <span className="block text-sm font-medium text-zinc-300">
+                        Private messages
+                      </span>
+                      <span className="mt-1 block text-sm text-zinc-600">
+                        Send a phone notification when someone sends you a private message.
+                      </span>
+                    </span>
+
+                    <input
+                      type="checkbox"
+                      checked={pushMessagesEnabled}
+                      onChange={(e) => setPushMessagesEnabled(e.target.checked)}
+                      className="mt-1 h-5 w-5"
+                    />
+                  </label>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span>
+                      <span className="block text-sm font-medium text-zinc-300">
+                        Replies to my discussions
+                      </span>
+                      <span className="mt-1 block text-sm text-zinc-600">
+                        Send a phone notification when someone replies to your discussion.
+                      </span>
+                    </span>
+
+                    <input
+                      type="checkbox"
+                      checked={pushRepliesEnabled}
+                      onChange={(e) => setPushRepliesEnabled(e.target.checked)}
+                      className="mt-1 h-5 w-5"
+                    />
+                  </label>
+
+                  <label className="flex items-start justify-between gap-4">
+                    <span>
+                      <span className="block text-sm font-medium text-zinc-300">
+                        New followers
+                      </span>
+                      <span className="mt-1 block text-sm text-zinc-600">
+                        Send a phone notification when someone follows you.
+                      </span>
+                    </span>
+
+                    <input
+                      type="checkbox"
+                      checked={pushFollowsEnabled}
+                      onChange={(e) => setPushFollowsEnabled(e.target.checked)}
+                      className="mt-1 h-5 w-5"
+                    />
+                  </label>
+
+                  {isAdmin && (
+                    <label className="flex items-start justify-between gap-4 rounded-2xl border border-amber-900/50 bg-amber-950/10 p-3">
+                      <span>
+                        <span className="block text-sm font-medium text-amber-200">
+                          Admin report alerts
+                        </span>
+                        <span className="mt-1 block text-sm text-amber-200/60">
+                          Send a phone notification when a new report needs admin review.
+                        </span>
+                      </span>
+
+                      <input
+                        type="checkbox"
+                        checked={pushAdminReportsEnabled}
+                        onChange={(e) => setPushAdminReportsEnabled(e.target.checked)}
+                        className="mt-1 h-5 w-5"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
 
               <div className="rounded-2xl border border-zinc-900 bg-black p-3.5 sm:p-4">
                 <label className="mb-4 flex items-start justify-between gap-4">
