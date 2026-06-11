@@ -347,9 +347,35 @@ type AppearanceMode = "system" | "dark" | "light";
 const DEFAULT_RIGHT_RAIL_WIDTH = 320;
 const MIN_RIGHT_RAIL_WIDTH = 280;
 const MAX_RIGHT_RAIL_WIDTH = 480;
+const DESKTOP_LEFT_RAIL_WIDTH = 96;
+const MIN_READABLE_CENTER_WIDTH = 760;
+const DESKTOP_CONTENT_GUTTER = 64;
+
+function canFitDesktopRightRail(width: number) {
+  return (
+    width >=
+    DESKTOP_LEFT_RAIL_WIDTH +
+      MIN_READABLE_CENTER_WIDTH +
+      MIN_RIGHT_RAIL_WIDTH +
+      DESKTOP_CONTENT_GUTTER
+  );
+}
+
+function getViewportAwareMaxRightRailWidth() {
+  if (typeof window === "undefined") {
+    return MAX_RIGHT_RAIL_WIDTH;
+  }
+
+  const availableWidth =
+    window.innerWidth - DESKTOP_LEFT_RAIL_WIDTH - MIN_READABLE_CENTER_WIDTH - DESKTOP_CONTENT_GUTTER;
+
+  return Math.max(MIN_RIGHT_RAIL_WIDTH, Math.min(MAX_RIGHT_RAIL_WIDTH, availableWidth));
+}
 
 function clampRightRailWidth(width: number) {
-  return Math.min(MAX_RIGHT_RAIL_WIDTH, Math.max(MIN_RIGHT_RAIL_WIDTH, width));
+  const viewportAwareMax = getViewportAwareMaxRightRailWidth();
+
+  return Math.min(viewportAwareMax, Math.max(MIN_RIGHT_RAIL_WIDTH, width));
 }
 
 export default function ClientLayout({
@@ -402,6 +428,7 @@ export default function ClientLayout({
   const [topNavHidden, setTopNavHidden] = useState(false);
   const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
   const [rightRailResizing, setRightRailResizing] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(0);
   const currentUserIdRef = useRef<string | null>(null);
   const moreMenuRef = useRef<HTMLDivElement | null>(null);
   const loadingNotificationCountRef = useRef(false);
@@ -413,7 +440,7 @@ export default function ClientLayout({
   const isDiscussionsIndex = pathname === "/discussions";
   const [mobileDiscussionFeed, setMobileDiscussionFeed] =
     useState<DiscussionFeedMode>("all");
-  const hasDesktopRightRail =
+  const isRightRailRoute =
     [
       "/discussions",
       "/search",
@@ -422,6 +449,11 @@ export default function ClientLayout({
       "/notifications",
       "/create",
     ].includes(pathname) || pathname.startsWith("/discussions/");
+
+  const canShowDesktopRightRail =
+    viewportWidth === 0 ? true : canFitDesktopRightRail(viewportWidth);
+
+  const hasDesktopRightRail = isRightRailRoute && canShowDesktopRightRail;
 
   useEffect(() => {
     if (!globalSearchOpen) {
@@ -1166,11 +1198,26 @@ export default function ClientLayout({
   }, []);
 
   useEffect(() => {
-    const storedWidth = Number(window.localStorage.getItem(RIGHT_RAIL_WIDTH_STORAGE_KEY));
+    function restoreSafeRightRailWidth() {
+      setViewportWidth(window.innerWidth);
 
-    if (Number.isFinite(storedWidth) && storedWidth > 0) {
-      setRightRailWidth(clampRightRailWidth(storedWidth));
+      const storedWidth = Number(window.localStorage.getItem(RIGHT_RAIL_WIDTH_STORAGE_KEY));
+
+      if (Number.isFinite(storedWidth) && storedWidth > 0) {
+        setRightRailWidth(clampRightRailWidth(storedWidth));
+        return;
+      }
+
+      setRightRailWidth(clampRightRailWidth(DEFAULT_RIGHT_RAIL_WIDTH));
     }
+
+    restoreSafeRightRailWidth();
+
+    window.addEventListener("resize", restoreSafeRightRailWidth);
+
+    return () => {
+      window.removeEventListener("resize", restoreSafeRightRailWidth);
+    };
   }, []);
 
   useEffect(() => {
