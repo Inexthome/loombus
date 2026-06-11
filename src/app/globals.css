@@ -751,33 +751,6 @@ html[data-loombus-theme="light"] .loombus-mobile-visitor-existing {
   --loombus-right-rail-width: 320px;
 }
 
-/* Adaptive side rails for phone/tablet landscape.
-   This keeps the desktop shell available without crushing the center column. */
-@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
-  :root {
-    --loombus-landscape-left-rail-width: clamp(4.5rem, 8vw, 5.25rem);
-    --loombus-landscape-right-rail-width: clamp(11rem, 22vw, 13.5rem);
-  }
-
-  .loombus-desktop-rail {
-    width: var(--loombus-landscape-left-rail-width) !important;
-    padding-left: 0.5rem !important;
-    padding-right: 0.5rem !important;
-  }
-
-  body:has(.loombus-right-rail) main,
-  .loombus-shell-with-right-rail {
-    padding-right: var(--loombus-landscape-right-rail-width) !important;
-  }
-
-  .loombus-right-rail {
-    display: block !important;
-    width: var(--loombus-landscape-right-rail-width) !important;
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
-  }
-}
-
 @media (min-width: 1024px) {
   :root {
     --loombus-tablet-right-rail-width: 280px;
