@@ -3994,6 +3994,46 @@ export default function DiscussionPage() {
               </button>
             </div>
 
+            <div className="mt-4 border-t border-[var(--loombus-border)] pt-4">
+              <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
+                Reader shortcuts
+              </p>
+
+              <div className="grid grid-cols-3 gap-2">
+                <a
+                  href="#reply-form"
+                  className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-center text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                >
+                  Reply
+                </a>
+
+                <a
+                  href="#replies"
+                  className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-center text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                >
+                  Replies
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAiToolsPanel(true);
+                    setOpenPremiumAiTool((current) => current || "summary");
+
+                    window.setTimeout(() => {
+                      document.getElementById("intelligence-layer")?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }, 0);
+                  }}
+                  className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-center text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                >
+                  State
+                </button>
+              </div>
+            </div>
+
             {currentUserId && rightRailReportOpen && !reportedDiscussion && (
               <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3">
                 <div className="flex items-center justify-between gap-3">
@@ -4043,46 +4083,6 @@ export default function DiscussionPage() {
                 {pinMessage || statusMessage || bookmarkMessage || reportMessage}
               </p>
             )}
-          </section>
-
-          <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
-            <p className="mb-2 text-xs uppercase tracking-[0.25em] text-[var(--loombus-text-subtle)]">
-              Reader shortcuts
-            </p>
-
-            <div className="grid gap-2">
-              <a
-                href="#reply-form"
-                className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-sm text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
-              >
-                Reply
-              </a>
-
-              <a
-                href="#replies"
-                className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-sm text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
-              >
-                Replies
-              </a>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAiToolsPanel(true);
-                  setOpenPremiumAiTool((current) => current || "summary");
-
-                  window.setTimeout(() => {
-                    document.getElementById("intelligence-layer")?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    });
-                  }, 0);
-                }}
-                className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-left text-sm text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
-              >
-                State of the Discussion
-              </button>
-            </div>
           </section>
 
           <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
