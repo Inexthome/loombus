@@ -1,9 +1,11 @@
+import { Capacitor } from "@capacitor/core";
+
 type CapacitorRuntime = {
   getPlatform?: () => string;
   isNativePlatform?: () => boolean;
 };
 
-function getCapacitorRuntime() {
+function getWindowCapacitorRuntime() {
   if (typeof window === "undefined") {
     return null;
   }
@@ -16,7 +18,21 @@ function getCapacitorRuntime() {
 }
 
 export function getNativePlatform() {
-  const capacitor = getCapacitorRuntime();
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const platform = Capacitor.getPlatform();
+
+      if (platform === "ios" || platform === "android") {
+        return platform;
+      }
+
+      return "unknown";
+    }
+  } catch {
+    // Fall back to the injected runtime below.
+  }
+
+  const capacitor = getWindowCapacitorRuntime();
 
   if (!capacitor?.isNativePlatform?.()) {
     return "web";
