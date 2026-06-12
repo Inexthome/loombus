@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import {
   BIOMETRIC_UNLOCK_SETTING_EVENT,
-  consumeNativeBiometricVerifiedForCurrentSession,
+  clearRecentNativeBiometricVerification,
+  hasRecentNativeBiometricVerification,
   isBiometricUnlockEnabled,
   setBiometricUnlockEnabled,
   verifyNativeBiometric,
@@ -47,7 +48,7 @@ export function NativeBiometricAppLock() {
       return;
     }
 
-    if (consumeNativeBiometricVerifiedForCurrentSession()) {
+    if (hasRecentNativeBiometricVerification()) {
       setLockState("unlocked");
       return;
     }
@@ -62,7 +63,7 @@ export function NativeBiometricAppLock() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session && isNativeApp() && isBiometricUnlockEnabled()) {
-        if (consumeNativeBiometricVerifiedForCurrentSession()) {
+        if (hasRecentNativeBiometricVerification()) {
           setLockState("unlocked");
           return;
         }
@@ -85,6 +86,7 @@ export function NativeBiometricAppLock() {
   }, [checkLockRequirement, unlock]);
 
   async function signOut() {
+    clearRecentNativeBiometricVerification();
     await supabase.auth.signOut();
     window.location.href = "/login";
   }

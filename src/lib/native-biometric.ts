@@ -9,7 +9,8 @@ export const BIOMETRIC_UNLOCK_SETTING_EVENT =
 const BIOMETRIC_LOGIN_SERVER = "loombus.com";
 const BIOMETRIC_LOGIN_EMAIL_KEY = "loombus:native-biometric-login-email";
 const BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY =
-  "loombus:native-biometric-verified-session-bypass";
+  "loombus:native-biometric-verified-session-bypass-at";
+const BIOMETRIC_VERIFIED_SESSION_BYPASS_MS = 2 * 60 * 1000;
 
 type NativeBiometricModule = typeof import("@capgo/capacitor-native-biometric");
 
@@ -50,23 +51,41 @@ export function markNativeBiometricVerifiedForCurrentSession() {
     return;
   }
 
-  window.sessionStorage.setItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY, "true");
+  window.sessionStorage.setItem(
+    BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY,
+    String(Date.now())
+  );
 }
 
-export function consumeNativeBiometricVerifiedForCurrentSession() {
+export function hasRecentNativeBiometricVerification() {
   if (typeof window === "undefined") {
     return false;
   }
 
-  const verified =
-    window.sessionStorage.getItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY) ===
-    "true";
+  const verifiedAt = Number(
+    window.sessionStorage.getItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY)
+  );
 
-  if (verified) {
+  if (!Number.isFinite(verifiedAt) || verifiedAt <= 0) {
+    return false;
+  }
+
+  const isRecent =
+    Date.now() - verifiedAt <= BIOMETRIC_VERIFIED_SESSION_BYPASS_MS;
+
+  if (!isRecent) {
     window.sessionStorage.removeItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY);
   }
 
-  return verified;
+  return isRecent;
+}
+
+export function clearRecentNativeBiometricVerification() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.removeItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY);
 }
 
 export function getRememberedBiometricLoginEmail() {
