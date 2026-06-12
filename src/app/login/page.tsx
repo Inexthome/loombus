@@ -9,35 +9,90 @@ function getSafeNext(value: string | null) {
 }
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { isNativeApp } from "@/lib/native-app";
+import {
+  isBiometricUnlockEnabled,
+  verifyNativeBiometric,
+} from "@/lib/native-biometric";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [biometricSessionReady, setBiometricSessionReady] = useState(false);
+  const [checkingBiometricSession, setCheckingBiometricSession] = useState(true);
+  const [biometricUnlocking, setBiometricUnlocking] = useState(false);
+  const biometricPromptInFlight = useRef(false);
+
+  const getNextPath = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    return getSafeNext(params.get("next"));
+  }, []);
+
+  const redirectWithOptionalBiometric = useCallback(
+    async (reason = "Unlock Loombus to continue.") => {
+      const next = getNextPath();
+
+      if (!isNativeApp() || !isBiometricUnlockEnabled()) {
+        window.location.replace(next);
+        return;
+      }
+
+      setBiometricSessionReady(true);
+
+      if (biometricPromptInFlight.current) {
+        return;
+      }
+
+      biometricPromptInFlight.current = true;
+      setBiometricUnlocking(true);
+      setMessage("");
+
+      const result = await verifyNativeBiometric(reason);
+
+      biometricPromptInFlight.current = false;
+      setBiometricUnlocking(false);
+
+      if (result.ok) {
+        window.location.replace(next);
+        return;
+      }
+
+      setMessage("Face ID unlock was canceled. Try again or sign in manually.");
+    },
+    [getNextPath]
+  );
 
   useEffect(() => {
     let mounted = true;
 
     async function redirectIfAlreadyLoggedIn() {
-      const params = new URLSearchParams(window.location.search);
-      const next = getSafeNext(params.get("next"));
+      setCheckingBiometricSession(true);
+
       const { data } = await supabase.auth.getSession();
 
-      if (mounted && data.session) {
-        window.location.replace(next);
+      if (!mounted) {
+        return;
+      }
+
+      if (data.session) {
+        await redirectWithOptionalBiometric("Unlock Loombus to continue.");
+      }
+
+      if (mounted) {
+        setCheckingBiometricSession(false);
       }
     }
 
-    redirectIfAlreadyLoggedIn();
+    void redirectIfAlreadyLoggedIn();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        const params = new URLSearchParams(window.location.search);
-        window.location.replace(getSafeNext(params.get("next")));
+        void redirectWithOptionalBiometric("Unlock Loombus after signing in.");
       }
     });
 
@@ -45,7 +100,7 @@ export default function LoginPage() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [redirectWithOptionalBiometric]);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
   async function handleLogin(event?: FormEvent<HTMLFormElement>) {
@@ -78,8 +133,13 @@ export default function LoginPage() {
     }
 
     setMessage("Login successful.");
-    const params = new URLSearchParams(window.location.search);
-    window.location.replace(getSafeNext(params.get("next")));
+    await redirectWithOptionalBiometric("Unlock Loombus after signing in.");
+  }
+
+  async function handleUseAnotherAccount() {
+    setMessage("");
+    setBiometricSessionReady(false);
+    await supabase.auth.signOut();
   }
 
   async function handleOAuthLogin(provider: "google" | "apple") {
@@ -128,6 +188,46 @@ export default function LoginPage() {
         <p className="mb-10 leading-relaxed text-zinc-400">
           Return to your high-signal discussion environment.
         </p>
+
+        {biometricSessionReady ? (
+          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
+              Saved session
+            </p>
+
+            <h2 className="mb-3 text-xl font-medium">
+              Unlock Loombus with Face ID.
+            </h2>
+
+            <p className="mb-5 text-sm leading-relaxed text-zinc-500">
+              A saved Loombus session exists on this device. Use Face ID, Touch ID,
+              fingerprint, or your device passcode to continue.
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                void redirectWithOptionalBiometric("Unlock Loombus to continue.")
+              }
+              disabled={biometricUnlocking}
+              className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {biometricUnlocking ? "Unlocking..." : "Unlock with Face ID"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void handleUseAnotherAccount()}
+              className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+            >
+              Use another account
+            </button>
+          </div>
+        ) : checkingBiometricSession ? (
+          <p className="mb-6 text-sm text-zinc-600">
+            Checking this device for a saved Loombus session...
+          </p>
+        ) : null}
 
         <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
           <button
