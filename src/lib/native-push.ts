@@ -18,13 +18,7 @@ async function getPushNotificationsModule() {
 
 async function getAccessToken() {
   const { data } = await supabase.auth.getSession();
-  const accessToken = data.session?.access_token ?? "";
-
-  console.info(
-    `Loombus native push diagnostics: access token present=${Boolean(accessToken)}`
-  );
-
-  return accessToken;
+  return data.session?.access_token ?? "";
 }
 
 function getNativePushTokenType(platform: string) {
@@ -41,22 +35,12 @@ function getNativePushTokenType(platform: string) {
 
 async function registerPushToken(token: string, platform: string) {
   const tokenType = getNativePushTokenType(platform);
-
-  console.info(
-    `Loombus native push diagnostics: token received platform=${platform} tokenType=${tokenType} tokenLength=${token.length}`
-  );
-
   const accessToken = await getAccessToken();
 
   if (!accessToken) {
     pendingPushToken = { token, platform };
-    console.warn(
-      "Loombus native push diagnostics: no access token, queued token registration"
-    );
     return;
   }
-
-  console.info("Loombus native push diagnostics: posting token to device-token route");
 
   const response = await fetch("/api/push/device-tokens", {
     method: "POST",
@@ -70,10 +54,6 @@ async function registerPushToken(token: string, platform: string) {
       tokenType,
     }),
   });
-
-  console.info(
-    `Loombus native push diagnostics: device-token route response ok=${response.ok} status=${response.status}`
-  );
 
   if (response.ok) {
     if (pendingPushToken?.token === token) {
@@ -92,8 +72,6 @@ async function flushPendingPushToken() {
     return;
   }
 
-  console.info("Loombus native push diagnostics: flushing queued token registration");
-
   await registerPushToken(pendingPushToken.token, pendingPushToken.platform);
 }
 
@@ -104,17 +82,11 @@ export async function initializeNativePushListeners() {
 
   const platform = getNativePlatform();
 
-  console.info(
-    `Loombus native push diagnostics: listener initialization requested platform=${platform}`
-  );
-
   if (platform !== "ios" && platform !== "android") {
-    console.info("Loombus native push diagnostics: not a native push platform");
     return;
   }
 
   if (pushListenersRegistered) {
-    console.info("Loombus native push diagnostics: listeners already registered");
     return;
   }
 
@@ -123,15 +95,7 @@ export async function initializeNativePushListeners() {
   try {
     const { PushNotifications } = await getPushNotificationsModule();
 
-    console.info("Loombus native push diagnostics: PushNotifications plugin imported");
-
     await PushNotifications.addListener("registration", (token) => {
-      console.info(
-        `Loombus native push diagnostics: registration listener fired hasToken=${Boolean(
-          token.value
-        )} tokenLength=${token.value?.length ?? 0}`
-      );
-
       if (token.value) {
         void registerPushToken(token.value, platform);
       }
@@ -168,12 +132,7 @@ export async function registerNativePushNotifications() {
 
   const platform = getNativePlatform();
 
-  console.info(
-    `Loombus native push diagnostics: registration requested platform=${platform}`
-  );
-
   if (platform !== "ios" && platform !== "android") {
-    console.info("Loombus native push diagnostics: not a native push platform");
     return;
   }
 
@@ -181,7 +140,6 @@ export async function registerNativePushNotifications() {
   await flushPendingPushToken();
 
   if (pushRegistrationStarted) {
-    console.info("Loombus native push diagnostics: registration already started");
     return;
   }
 
@@ -191,24 +149,15 @@ export async function registerNativePushNotifications() {
     const { PushNotifications } = await getPushNotificationsModule();
 
     const permissionStatus = await PushNotifications.checkPermissions();
-
-    console.info(
-      `Loombus native push diagnostics: permission status receive=${permissionStatus.receive}`
-    );
-
     const receive =
       permissionStatus.receive === "granted"
         ? "granted"
         : (await PushNotifications.requestPermissions()).receive;
 
-    console.info(`Loombus native push diagnostics: permission result=${receive}`);
-
     if (receive !== "granted") {
-      console.warn("Loombus native push diagnostics: permission not granted");
       return;
     }
 
-    console.info("Loombus native push diagnostics: calling PushNotifications.register()");
     await PushNotifications.register();
     await flushPendingPushToken();
   } catch (error) {

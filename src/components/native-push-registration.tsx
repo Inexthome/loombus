@@ -16,12 +16,6 @@ export function NativePushRegistration() {
     async function registerIfSignedIn() {
       const { data } = await supabase.auth.getSession();
 
-      console.info(
-        `Loombus native push diagnostics: component session check mounted=${mounted} signedIn=${Boolean(
-          data.session
-        )}`
-      );
-
       if (!mounted || !data.session) {
         return;
       }
@@ -33,13 +27,7 @@ export function NativePushRegistration() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.info(
-        `Loombus native push diagnostics: auth state changed event=${event} signedIn=${Boolean(
-          session
-        )}`
-      );
-
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         void registerNativePushNotifications();
       }
