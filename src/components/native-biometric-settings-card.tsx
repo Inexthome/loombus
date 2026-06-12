@@ -1,67 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { isNativeApp } from "@/lib/native-app";
 import {
-  BIOMETRIC_UNLOCK_SETTING_EVENT,
+  deleteNativeBiometricLoginCredentials,
   getNativeBiometricAvailability,
-  isBiometricUnlockEnabled,
-  setBiometricUnlockEnabled,
-  verifyNativeBiometric,
+  getRememberedBiometricLoginEmail,
+  isNativeBiometricLoginSaved,
 } from "@/lib/native-biometric";
+import { isNativeApp } from "@/lib/native-app";
 
 type Availability = Awaited<ReturnType<typeof getNativeBiometricAvailability>>;
 
 export function NativeBiometricSettingsCard() {
-  const pathname = usePathname();
   const [isNative, setIsNative] = useState(false);
-  const [enabled, setEnabled] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [rememberedEmail, setRememberedEmail] = useState("");
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    if (pathname !== "/settings") {
-      return;
-    }
-
-    let active = true;
-
-    async function load() {
-      setChecking(true);
-
-      const native = isNativeApp();
-      const available = await getNativeBiometricAvailability();
-
-      if (!active) {
-        return;
-      }
-
-      setIsNative(native);
-      setAvailability(available);
-      setEnabled(isBiometricUnlockEnabled());
-      setChecking(false);
-    }
-
-    void load();
-
-    function refresh() {
-      setEnabled(isBiometricUnlockEnabled());
-    }
-
-    window.addEventListener(BIOMETRIC_UNLOCK_SETTING_EVENT, refresh);
-
-    return () => {
-      active = false;
-      window.removeEventListener(BIOMETRIC_UNLOCK_SETTING_EVENT, refresh);
-    };
-  }, [pathname]);
-
-  if (pathname !== "/settings") {
-    return null;
-  }
 
   async function refreshStatus() {
     setChecking(true);
@@ -69,37 +25,24 @@ export function NativeBiometricSettingsCard() {
 
     const native = isNativeApp();
     const available = await getNativeBiometricAvailability();
+    const credentialsSaved = native ? await isNativeBiometricLoginSaved() : false;
 
     setIsNative(native);
     setAvailability(available);
-    setEnabled(isBiometricUnlockEnabled());
+    setSaved(credentialsSaved);
+    setRememberedEmail(credentialsSaved ? getRememberedBiometricLoginEmail() : "");
     setChecking(false);
   }
 
-  async function enableUnlock() {
-    setBusy(true);
-    setMessage("");
+  useEffect(() => {
+    void refreshStatus();
+  }, []);
 
-    const result = await verifyNativeBiometric(
-      "Enable Loombus device unlock on this device."
-    );
-
-    if (!result.ok) {
-      setMessage(result.error ?? "Unable to enable device unlock.");
-      setBusy(false);
-      return;
-    }
-
-    setBiometricUnlockEnabled(true);
-    setEnabled(true);
-    setMessage("Device unlock is enabled for Loombus on this device.");
-    setBusy(false);
-  }
-
-  function disableUnlock() {
-    setBiometricUnlockEnabled(false);
-    setEnabled(false);
-    setMessage("Device unlock is disabled for Loombus on this device.");
+  async function forgetSavedLogin() {
+    await deleteNativeBiometricLoginCredentials();
+    setSaved(false);
+    setRememberedEmail("");
+    setMessage("Saved biometric sign-in removed from this device.");
   }
 
   return (
@@ -110,65 +53,68 @@ export function NativeBiometricSettingsCard() {
             Native app security
           </p>
           <h2 className="mt-1 text-base font-semibold">
-            Face ID / biometric unlock
+            Face ID / biometric sign-in
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-zinc-500">
-            Lock Loombus behind Face ID, fingerprint, or your device passcode on
-            this device.
+            Save an email login on this device and use Face ID, Touch ID,
+            fingerprint, or passcode to sign in.
           </p>
+
           {checking ? (
             <p className="mt-2 text-xs text-zinc-500">
-              Checking this device for native biometric support...
+              Checking this device for biometric sign-in support...
             </p>
           ) : null}
+
           {!checking && !isNative ? (
             <p className="mt-2 text-xs text-zinc-500">
-              Open Loombus from the installed iOS or Android app, not Safari, Chrome, or an older App Store build.
+              Biometric sign-in only works in the installed iOS or Android app.
             </p>
           ) : null}
+
           {!checking && isNative && availability?.isAvailable === false ? (
             <p className="mt-2 text-xs text-zinc-500">
-              Set up a device passcode, Face ID, Touch ID, or fingerprint before enabling this.
+              Set up a device passcode, Face ID, Touch ID, or fingerprint before
+              enabling biometric sign-in.
             </p>
           ) : null}
-          {message ? (
+
+          {saved ? (
             <p className="mt-2 text-xs text-zinc-400">
-              {message}
+              Saved for {rememberedEmail || "this device"}.
             </p>
+          ) : isNative && availability?.isAvailable ? (
+            <p className="mt-2 text-xs text-zinc-500">
+              Sign in with email/password once and Loombus will ask whether to
+              remember that login with Face ID or device biometrics.
+            </p>
+          ) : null}
+
+          {message ? (
+            <p className="mt-2 text-xs text-zinc-400">{message}</p>
           ) : null}
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">
-          {enabled ? (
+          {saved ? (
             <button
               type="button"
-              onClick={disableUnlock}
-              className="rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              onClick={() => void forgetSavedLogin()}
+              disabled={checking}
+              className="rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Disable
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void enableUnlock()}
-              disabled={
-                checking || !isNative || busy || availability?.isAvailable === false
-              }
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {checking ? "Checking..." : busy ? "Checking..." : "Enable"}
-            </button>
-          )}
-          {!enabled ? (
-            <button
-              type="button"
-              onClick={() => void refreshStatus()}
-              disabled={checking || busy}
-              className="rounded-full border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Refresh status
+              Forget
             </button>
           ) : null}
+
+          <button
+            type="button"
+            onClick={() => void refreshStatus()}
+            disabled={checking}
+            className="rounded-full border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Refresh status
+          </button>
         </div>
       </div>
     </section>

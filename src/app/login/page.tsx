@@ -1,13 +1,5 @@
 "use client";
 
-function getSafeNext(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/discussions";
-  }
-
-  return value;
-}
-
 import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -17,24 +9,34 @@ import {
   getNativeBiometricLoginCredentials,
   getRememberedBiometricLoginEmail,
   isNativeBiometricLoginSaved,
-  markNativeBiometricVerifiedForCurrentSession,
-  isBiometricUnlockEnabled,
   saveNativeBiometricLoginCredentials,
-  verifyNativeBiometric,
 } from "@/lib/native-biometric";
+
+function getSafeNext(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/discussions";
+  }
+
+  return value;
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [message, setMessage] = useState("");
-  const [biometricSessionReady, setBiometricSessionReady] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(
+    null
+  );
+
   const [biometricLoginReady, setBiometricLoginReady] = useState(false);
   const [rememberedBiometricEmail, setRememberedBiometricEmail] = useState("");
+  const [checkingBiometricLogin, setCheckingBiometricLogin] = useState(true);
+  const [biometricSigningIn, setBiometricSigningIn] = useState(false);
   const [showManualLogin, setShowManualLogin] = useState(false);
-  const [checkingBiometricSession, setCheckingBiometricSession] = useState(true);
-  const [biometricUnlocking, setBiometricUnlocking] = useState(false);
-  const biometricPromptInFlight = useRef(false);
-  const autoBiometricLoginStarted = useRef(false);
+
+  const autoBiometricStarted = useRef(false);
 
   const getNextPath = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
@@ -45,114 +47,107 @@ export default function LoginPage() {
     if (!isNativeApp()) {
       setBiometricLoginReady(false);
       setRememberedBiometricEmail("");
+      setCheckingBiometricLogin(false);
       return;
     }
 
+    setCheckingBiometricLogin(true);
     const saved = await isNativeBiometricLoginSaved();
+
     setBiometricLoginReady(saved);
     setRememberedBiometricEmail(saved ? getRememberedBiometricLoginEmail() : "");
-    if (saved) {
-      setShowManualLogin(false);
-    }
+    setCheckingBiometricLogin(false);
   }, []);
 
-  const redirectWithOptionalBiometric = useCallback(
-    async (reason = "Unlock Loombus to continue.") => {
-      const next = getNextPath();
+  const signInWithSavedBiometricLogin = useCallback(async () => {
+    if (loading || biometricSigningIn) {
+      return;
+    }
 
-      if (!isNativeApp() || !isBiometricUnlockEnabled()) {
-        window.location.replace(next);
-        return;
-      }
+    setMessage("");
+    setBiometricSigningIn(true);
+    setLoading(true);
 
-      setBiometricSessionReady(true);
+    const credentials = await getNativeBiometricLoginCredentials();
 
-      if (biometricPromptInFlight.current) {
-        return;
-      }
+    if (!credentials.ok || !credentials.username || !credentials.password) {
+      setMessage(
+        credentials.error ??
+          "Saved biometric sign-in is incomplete. Sign in manually and save it again."
+      );
+      setBiometricSigningIn(false);
+      setLoading(false);
+      setShowManualLogin(false);
+      return;
+    }
 
-      biometricPromptInFlight.current = true;
-      setBiometricUnlocking(true);
-      setMessage("");
+    const { error } = await supabase.auth.signInWithPassword({
+      email: credentials.username,
+      password: credentials.password,
+    });
 
-      const result = await verifyNativeBiometric(reason);
+    if (error) {
+      setMessage(`Saved biometric sign-in failed: ${error.message}`);
+      setBiometricSigningIn(false);
+      setLoading(false);
+      setShowManualLogin(true);
+      return;
+    }
 
-      biometricPromptInFlight.current = false;
-      setBiometricUnlocking(false);
-
-      if (result.ok) {
-        markNativeBiometricVerifiedForCurrentSession();
-        window.location.replace(next);
-        return;
-      }
-
-      setMessage("Face ID unlock was canceled. Try again or sign in manually.");
-    },
-    [getNextPath]
-  );
+    window.location.replace(getNextPath());
+  }, [biometricSigningIn, getNextPath, loading]);
 
   useEffect(() => {
     let mounted = true;
 
-    async function redirectIfAlreadyLoggedIn() {
-      setCheckingBiometricSession(true);
-
+    async function loadLoginState() {
       const { data } = await supabase.auth.getSession();
-
-      await refreshBiometricLoginState();
 
       if (!mounted) {
         return;
       }
 
       if (data.session) {
-        await redirectWithOptionalBiometric("Unlock Loombus to continue.");
+        window.location.replace(getNextPath());
+        return;
       }
 
-      if (mounted) {
-        setCheckingBiometricSession(false);
-      }
+      await refreshBiometricLoginState();
     }
 
-    void redirectIfAlreadyLoggedIn();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        void redirectWithOptionalBiometric("Unlock Loombus after signing in.");
-      }
-    });
+    void loadLoginState();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
     };
-  }, [redirectWithOptionalBiometric, refreshBiometricLoginState]);
-  const showManualLoginOptions = !biometricLoginReady || showManualLogin || biometricSessionReady;
-
-  const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
+  }, [getNextPath, refreshBiometricLoginState]);
 
   useEffect(() => {
     if (
       !biometricLoginReady ||
-      biometricSessionReady ||
-      showManualLogin ||
-      checkingBiometricSession ||
+      checkingBiometricLogin ||
+      biometricSigningIn ||
       loading ||
-      biometricUnlocking
+      showManualLogin
     ) {
       return;
     }
 
-    if (autoBiometricLoginStarted.current) {
+    if (autoBiometricStarted.current) {
       return;
     }
 
-    autoBiometricLoginStarted.current = true;
-    void handleBiometricCredentialLogin();
-  });
+    autoBiometricStarted.current = true;
+    void signInWithSavedBiometricLogin();
+  }, [
+    biometricLoginReady,
+    biometricSigningIn,
+    checkingBiometricLogin,
+    loading,
+    showManualLogin,
+    signInWithSavedBiometricLogin,
+  ]);
+
   async function handleLogin(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
 
@@ -162,8 +157,6 @@ export default function LoginPage() {
 
     setLoading(true);
     setMessage("");
-
-    markNativeBiometricVerifiedForCurrentSession();
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -179,103 +172,39 @@ export default function LoginPage() {
     const { data: sessionData } = await supabase.auth.getSession();
 
     if (!sessionData.session) {
-      setMessage("Login succeeded, but the browser session was not ready. Please try again.");
-      setLoading(false);
-      return;
-    }
-
-    markNativeBiometricVerifiedForCurrentSession();
-
-    let savedLoginAlready = false;
-    if (isNativeApp()) {
-      savedLoginAlready = await isNativeBiometricLoginSaved();
-    }
-
-    if (isNativeApp() && !savedLoginAlready) {
-      const shouldRemember = window.confirm(
-        "Remember this login with Face ID on this device?"
+      setMessage(
+        "Login succeeded, but the browser session was not ready. Please try again."
       );
+      setLoading(false);
+      return;
+    }
 
-      if (shouldRemember) {
-        const saved = await saveNativeBiometricLoginCredentials(email, password);
+    if (isNativeApp()) {
+      const savedLoginAlready = await isNativeBiometricLoginSaved();
 
-        if (!saved.ok) {
-          setMessage(
-            `Login successful, but Face ID login could not be saved: ${
-              saved.error ?? "Unknown error"
-            }`
+      if (!savedLoginAlready) {
+        const shouldRemember = window.confirm(
+          "Remember this login with Face ID on this device?"
+        );
+
+        if (shouldRemember) {
+          const saved = await saveNativeBiometricLoginCredentials(
+            email,
+            password
           );
-        } else {
-          setBiometricLoginReady(true);
-          setRememberedBiometricEmail(email);
-          setShowManualLogin(false);
-          setMessage("Login successful. Face ID login saved on this device.");
+
+          if (!saved.ok) {
+            setMessage(
+              `Login successful, but biometric sign-in could not be saved: ${
+                saved.error ?? "Unknown error"
+              }`
+            );
+          }
         }
-      } else {
-        setMessage("Login successful.");
       }
-    } else {
-      setMessage("Login successful.");
     }
 
     window.location.replace(getNextPath());
-  }
-
-  async function handleBiometricCredentialLogin() {
-    if (loading || biometricUnlocking) {
-      return;
-    }
-
-    setBiometricUnlocking(true);
-    setLoading(true);
-    setMessage("");
-
-    const credentials = await getNativeBiometricLoginCredentials();
-
-    if (!credentials.ok) {
-      setMessage(credentials.error ?? "Unable to unlock saved Face ID login.");
-      setBiometricUnlocking(false);
-      setLoading(false);
-      return;
-    }
-
-    if (!credentials.username || !credentials.password) {
-      setMessage("Saved Face ID login is incomplete. Sign in manually and save it again.");
-      setBiometricUnlocking(false);
-      setLoading(false);
-      return;
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: credentials.username,
-      password: credentials.password,
-    });
-
-    if (error) {
-      setMessage(`Saved Face ID login failed: ${error.message}`);
-      setBiometricUnlocking(false);
-      setLoading(false);
-      return;
-    }
-
-    setMessage("Face ID sign-in successful.");
-    setBiometricUnlocking(false);
-    window.location.replace(getNextPath());
-  }
-
-  async function handleForgetBiometricLogin() {
-    setMessage("");
-    await deleteNativeBiometricLoginCredentials();
-    setBiometricLoginReady(false);
-    setRememberedBiometricEmail("");
-    setShowManualLogin(true);
-  }
-
-  async function handleUseAnotherAccount() {
-    setMessage("");
-    setBiometricSessionReady(false);
-    setShowManualLogin(true);
-    await supabase.auth.signOut();
   }
 
   async function handleOAuthLogin(provider: "google" | "apple") {
@@ -295,21 +224,41 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setMessage(`${provider === "apple" ? "Apple" : "Google"} login error: ${error.message}`);
+        setMessage(
+          `${provider === "apple" ? "Apple" : "Google"} login error: ${
+            error.message
+          }`
+        );
         setOauthLoading(null);
       }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to start OAuth login.";
-      setMessage(`${provider === "apple" ? "Apple" : "Google"} login error: ${message}`);
+      setMessage(
+        `${provider === "apple" ? "Apple" : "Google"} login error: ${message}`
+      );
       setOauthLoading(null);
     }
   }
 
+  async function handleForgetBiometricLogin() {
+    setMessage("");
+    await deleteNativeBiometricLoginCredentials();
+    setBiometricLoginReady(false);
+    setRememberedBiometricEmail("");
+    setShowManualLogin(true);
+  }
+
+  const shouldShowManualLogin =
+    !biometricLoginReady || showManualLogin || !isNativeApp();
+
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
       <div className="mx-auto max-w-xl">
-        <Link href="/" className="mb-12 inline-block text-sm text-zinc-500 hover:text-white">
+        <Link
+          href="/"
+          className="mb-12 inline-block text-sm text-zinc-500 hover:text-white"
+        >
           ← Back to home
         </Link>
 
@@ -325,50 +274,16 @@ export default function LoginPage() {
           Return to your high-signal discussion environment.
         </p>
 
-        {biometricSessionReady ? (
-          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-              Saved session
-            </p>
-
-            <h2 className="mb-3 text-xl font-medium">
-              Unlock Loombus with Face ID.
-            </h2>
-
-            <p className="mb-5 text-sm leading-relaxed text-zinc-500">
-              A saved Loombus session exists on this device. Use Face ID, Touch ID,
-              fingerprint, or your device passcode to continue.
-            </p>
-
-            <button
-              type="button"
-              onClick={() =>
-                void redirectWithOptionalBiometric("Unlock Loombus to continue.")
-              }
-              disabled={biometricUnlocking}
-              className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {biometricUnlocking ? "Unlocking..." : "Unlock with Face ID"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => void handleUseAnotherAccount()}
-              className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-            >
-              Use another account
-            </button>
-          </div>
-        ) : checkingBiometricSession ? (
+        {checkingBiometricLogin ? (
           <p className="mb-6 text-sm text-zinc-600">
-            Checking this device for a saved Loombus session...
+            Checking this device for saved biometric sign-in...
           </p>
         ) : null}
 
-        {!biometricSessionReady && biometricLoginReady ? (
+        {biometricLoginReady ? (
           <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
             <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-              Saved Face ID login
+              Saved biometric sign-in
             </p>
 
             <h2 className="mb-3 text-xl font-medium">
@@ -385,147 +300,178 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={() => void handleBiometricCredentialLogin()}
-              disabled={loading || biometricUnlocking}
+              onClick={() => void signInWithSavedBiometricLogin()}
+              disabled={loading || biometricSigningIn}
               className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {biometricUnlocking ? "Signing in..." : "Sign in with Face ID"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => void handleForgetBiometricLogin()}
-              disabled={loading || biometricUnlocking}
-              className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Forget saved Face ID login
+              {biometricSigningIn ? "Signing in..." : "Sign in with Face ID"}
             </button>
 
             <button
               type="button"
               onClick={() => {
-                autoBiometricLoginStarted.current = true;
+                autoBiometricStarted.current = true;
                 setShowManualLogin(true);
               }}
-              disabled={loading || biometricUnlocking}
-              className="mt-3 w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={loading || biometricSigningIn}
+              className="mb-3 w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               Use password instead
             </button>
-          </div>
-        ) : null}
 
-        {showManualLoginOptions ? (
-        <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-          <button
-            type="button"
-            onClick={() => handleOAuthLogin("apple")}
-            disabled={loading || Boolean(oauthLoading)}
-            className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {oauthLoading === "apple" ? "Opening Apple..." : "Continue with Apple"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleOAuthLogin("google")}
-            disabled={loading || Boolean(oauthLoading)}
-            className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {oauthLoading === "google" ? "Opening Google..." : "Continue with Google"}
-          </button>
-
-          <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
-            <span className="h-px flex-1 bg-zinc-900" />
-            Or log in with email
-            <span className="h-px flex-1 bg-zinc-900" />
-          </div>
-        </div>
-        ) : null}
-
-        {showManualLoginOptions ? (
-        <form
-          onSubmit={handleLogin}
-          className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
-        >
-          <div>
-            <label className="mb-2 block text-sm text-zinc-400">Email</label>
-            <input
-                type="email"
-              value={email}
-              autoComplete="email"
-              required
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-zinc-400">Password</label>
-            <input
-              type="password"
-              value={password}
-              autoComplete="current-password"
-              required
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-            />
-          </div>
-
-          {isNativeApp() ? (
-            <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-relaxed text-zinc-500">
-              After a successful login, Loombus can ask whether you want to save this login with Face ID on this device.
-            </p>
-          ) : null}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
-          >
-            {loading ? "Logging in..." : "Log In"}
-          </button>
-
-          {message && <p className="text-sm text-zinc-400">{message}</p>}
-
-          <p className="text-xs leading-relaxed text-zinc-500">
-            By logging in or continuing with Apple, Google, or email, you agree to the{" "}
-            <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
-              Terms
-            </Link>
-            ,{" "}
-            <Link href="/privacy" className="text-zinc-400 underline-offset-4 hover:underline">
-              Privacy Policy
-            </Link>
-            ,{" "}
-            <Link href="/cookies" className="text-zinc-400 underline-offset-4 hover:underline">
-              Cookie Use
-            </Link>
-            ,{" "}
-            <Link href="/guidelines" className="text-zinc-400 underline-offset-4 hover:underline">
-              Community Guidelines
-            </Link>
-            ,{" "}
-            <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">
-              Safety
-            </Link>
-            , and{" "}
-            <Link href="/contact" className="text-zinc-400 underline-offset-4 hover:underline">
-              Contact
-            </Link>
-            .
-          </p>
-
-          <p className="pt-1 text-center text-sm text-zinc-500">
-            Don’t have an account?{" "}
-            <Link
-              href="/signup"
-              className="text-zinc-300 underline decoration-zinc-700 underline-offset-4 transition hover:text-white hover:decoration-white"
+            <button
+              type="button"
+              onClick={() => void handleForgetBiometricLogin()}
+              disabled={loading || biometricSigningIn}
+              className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Create one
-            </Link>
-          </p>
-        </form>
+              Forget saved biometric sign-in
+            </button>
+
+            {message ? <p className="mt-4 text-sm text-zinc-400">{message}</p> : null}
+          </div>
+        ) : null}
+
+        {shouldShowManualLogin ? (
+          <>
+            <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin("apple")}
+                disabled={loading || Boolean(oauthLoading)}
+                className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {oauthLoading === "apple"
+                  ? "Opening Apple..."
+                  : "Continue with Apple"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin("google")}
+                disabled={loading || Boolean(oauthLoading)}
+                className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {oauthLoading === "google"
+                  ? "Opening Google..."
+                  : "Continue with Google"}
+              </button>
+
+              <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
+                <span className="h-px flex-1 bg-zinc-900" />
+                Or log in with email
+                <span className="h-px flex-1 bg-zinc-900" />
+              </div>
+            </div>
+
+            <form
+              onSubmit={handleLogin}
+              className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
+            >
+              <div>
+                <label className="mb-2 block text-sm text-zinc-400">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  autoComplete="email"
+                  required
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm text-zinc-400">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  autoComplete="current-password"
+                  required
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                />
+              </div>
+
+              {isNativeApp() ? (
+                <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-relaxed text-zinc-500">
+                  After a successful email login, Loombus can ask whether you
+                  want to save this login with Face ID or device biometrics on
+                  this device.
+                </p>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
+              >
+                {loading ? "Logging in..." : "Log In"}
+              </button>
+
+              {message && <p className="text-sm text-zinc-400">{message}</p>}
+
+              <p className="text-xs leading-relaxed text-zinc-500">
+                By logging in or continuing with Apple, Google, or email, you
+                agree to the{" "}
+                <Link
+                  href="/terms"
+                  className="text-zinc-400 underline-offset-4 hover:underline"
+                >
+                  Terms
+                </Link>
+                ,{" "}
+                <Link
+                  href="/privacy"
+                  className="text-zinc-400 underline-offset-4 hover:underline"
+                >
+                  Privacy Policy
+                </Link>
+                ,{" "}
+                <Link
+                  href="/cookies"
+                  className="text-zinc-400 underline-offset-4 hover:underline"
+                >
+                  Cookie Use
+                </Link>
+                ,{" "}
+                <Link
+                  href="/guidelines"
+                  className="text-zinc-400 underline-offset-4 hover:underline"
+                >
+                  Community Guidelines
+                </Link>
+                ,{" "}
+                <Link
+                  href="/safety"
+                  className="text-zinc-400 underline-offset-4 hover:underline"
+                >
+                  Safety
+                </Link>
+                , and{" "}
+                <Link
+                  href="/contact"
+                  className="text-zinc-400 underline-offset-4 hover:underline"
+                >
+                  Contact
+                </Link>
+                .
+              </p>
+
+              <p className="text-center text-sm text-zinc-500">
+                Don’t have an account?{" "}
+                <Link
+                  href="/signup"
+                  className="text-zinc-300 underline underline-offset-4 hover:text-white"
+                >
+                  Create one
+                </Link>
+              </p>
+            </form>
+          </>
         ) : null}
       </div>
     </main>

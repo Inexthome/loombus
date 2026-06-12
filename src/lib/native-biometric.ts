@@ -8,9 +8,6 @@ export const BIOMETRIC_UNLOCK_SETTING_EVENT =
 
 const BIOMETRIC_LOGIN_SERVER = "loombus.com";
 const BIOMETRIC_LOGIN_EMAIL_KEY = "loombus:native-biometric-login-email";
-const BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY =
-  "loombus:native-biometric-verified-session-bypass-at";
-const BIOMETRIC_VERIFIED_SESSION_BYPASS_MS = 2 * 60 * 1000;
 
 type NativeBiometricModule = typeof import("@capgo/capacitor-native-biometric");
 
@@ -44,48 +41,6 @@ export function setBiometricUnlockEnabled(enabled: boolean) {
   }
 
   window.dispatchEvent(new Event(BIOMETRIC_UNLOCK_SETTING_EVENT));
-}
-
-export function markNativeBiometricVerifiedForCurrentSession() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.sessionStorage.setItem(
-    BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY,
-    String(Date.now())
-  );
-}
-
-export function hasRecentNativeBiometricVerification() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  const verifiedAt = Number(
-    window.sessionStorage.getItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY)
-  );
-
-  if (!Number.isFinite(verifiedAt) || verifiedAt <= 0) {
-    return false;
-  }
-
-  const isRecent =
-    Date.now() - verifiedAt <= BIOMETRIC_VERIFIED_SESSION_BYPASS_MS;
-
-  if (!isRecent) {
-    window.sessionStorage.removeItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY);
-  }
-
-  return isRecent;
-}
-
-export function clearRecentNativeBiometricVerification() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.sessionStorage.removeItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY);
 }
 
 export function getRememberedBiometricLoginEmail() {
@@ -135,7 +90,7 @@ export async function saveNativeBiometricLoginCredentials(
       return {
         ok: false,
         error:
-          "Set up Face ID, Touch ID, fingerprint, or a device passcode before saving Face ID login.",
+          "Set up Face ID, Touch ID, fingerprint, or a device passcode before saving biometric sign-in.",
       };
     }
 
@@ -148,6 +103,7 @@ export async function saveNativeBiometricLoginCredentials(
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(BIOMETRIC_LOGIN_EMAIL_KEY, username);
+      window.localStorage.removeItem(BIOMETRIC_UNLOCK_ENABLED_KEY);
     }
 
     return { ok: true };
@@ -157,7 +113,7 @@ export async function saveNativeBiometricLoginCredentials(
       error:
         error instanceof Error
           ? error.message
-          : "Unable to save Face ID login on this device.",
+          : "Unable to save biometric sign-in on this device.",
     };
   }
 }
@@ -174,9 +130,9 @@ export async function getNativeBiometricLoginCredentials() {
     const { NativeBiometric } = await getNativeBiometricModule();
     const credentials = await NativeBiometric.getSecureCredentials({
       server: BIOMETRIC_LOGIN_SERVER,
-      reason: "Sign in to Loombus with Face ID.",
+      reason: "Sign in to Loombus.",
       title: "Sign in to Loombus",
-      subtitle: "Use Face ID or your device passcode.",
+      subtitle: "Use Face ID, fingerprint, or device passcode.",
       description: "Loombus will use your saved login for this device.",
       negativeButtonText: "Cancel",
     });
@@ -192,12 +148,18 @@ export async function getNativeBiometricLoginCredentials() {
       error:
         error instanceof Error
           ? error.message
-          : "Unable to unlock saved Face ID login.",
+          : "Unable to unlock saved biometric sign-in.",
     };
   }
 }
 
 export async function deleteNativeBiometricLoginCredentials() {
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem(BIOMETRIC_LOGIN_EMAIL_KEY);
+    window.localStorage.removeItem(BIOMETRIC_UNLOCK_ENABLED_KEY);
+    window.dispatchEvent(new Event(BIOMETRIC_UNLOCK_SETTING_EVENT));
+  }
+
   if (!isNativeApp()) {
     return;
   }
@@ -208,11 +170,7 @@ export async function deleteNativeBiometricLoginCredentials() {
       server: BIOMETRIC_LOGIN_SERVER,
     });
   } catch {
-    // Ignore cleanup failures. Local display state is still cleared below.
-  }
-
-  if (typeof window !== "undefined") {
-    window.localStorage.removeItem(BIOMETRIC_LOGIN_EMAIL_KEY);
+    // Ignore cleanup failures. Local display state is still cleared above.
   }
 }
 
