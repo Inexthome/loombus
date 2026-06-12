@@ -8,6 +8,8 @@ export const BIOMETRIC_UNLOCK_SETTING_EVENT =
 
 const BIOMETRIC_LOGIN_SERVER = "loombus.com";
 const BIOMETRIC_LOGIN_EMAIL_KEY = "loombus:native-biometric-login-email";
+const BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY =
+  "loombus:native-biometric-verified-session-bypass";
 
 type NativeBiometricModule = typeof import("@capgo/capacitor-native-biometric");
 
@@ -41,6 +43,30 @@ export function setBiometricUnlockEnabled(enabled: boolean) {
   }
 
   window.dispatchEvent(new Event(BIOMETRIC_UNLOCK_SETTING_EVENT));
+}
+
+export function markNativeBiometricVerifiedForCurrentSession() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY, "true");
+}
+
+export function consumeNativeBiometricVerifiedForCurrentSession() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const verified =
+    window.sessionStorage.getItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY) ===
+    "true";
+
+  if (verified) {
+    window.sessionStorage.removeItem(BIOMETRIC_VERIFIED_SESSION_BYPASS_KEY);
+  }
+
+  return verified;
 }
 
 export function getRememberedBiometricLoginEmail() {
