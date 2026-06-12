@@ -5,7 +5,6 @@ import {
   deleteNativeBiometricLoginCredentials,
   getNativeBiometricAvailability,
   getRememberedBiometricLoginEmail,
-  isNativeBiometricLoginSaved,
 } from "@/lib/native-biometric";
 import { isNativeApp } from "@/lib/native-app";
 
@@ -25,12 +24,13 @@ export function NativeBiometricSettingsCard() {
 
     const native = isNativeApp();
     const available = await getNativeBiometricAvailability();
-    const credentialsSaved = native ? await isNativeBiometricLoginSaved() : false;
+    const rememberedEmail = native ? getRememberedBiometricLoginEmail() : "";
+    const credentialsSaved = Boolean(rememberedEmail);
 
     setIsNative(native);
     setAvailability(available);
     setSaved(credentialsSaved);
-    setRememberedEmail(credentialsSaved ? getRememberedBiometricLoginEmail() : "");
+    setRememberedEmail(rememberedEmail);
     setChecking(false);
   }
 
