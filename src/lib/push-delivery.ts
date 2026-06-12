@@ -30,6 +30,31 @@ type ApnsSendResult = {
   reason?: string;
 };
 
+type FcmConfig = {
+  projectId: string;
+  clientEmail: string;
+  privateKey: string;
+  tokenUri: string;
+};
+
+type FcmServiceAccount = {
+  project_id?: string;
+  client_email?: string;
+  private_key?: string;
+  token_uri?: string;
+};
+
+type FcmAccessToken = {
+  token: string;
+  expiresAtMs: number;
+};
+
+type FcmSendResult = {
+  ok: boolean;
+  status: number;
+  reason?: string;
+};
+
 const PUSH_ALLOWED_NOTIFICATION_TYPES = new Set([
   "new_message",
   "message_reply",
@@ -40,6 +65,7 @@ const PUSH_ALLOWED_NOTIFICATION_TYPES = new Set([
 
 let pushServiceClient: ReturnType<typeof createClient> | null = null;
 let cachedApnsJwt: { token: string; createdAtSeconds: number } | null = null;
+let cachedFcmAccessToken: FcmAccessToken | null = null;
 
 function getPushServiceClient() {
   if (pushServiceClient) {
@@ -98,6 +124,147 @@ function getApnsConfig(): ApnsConfig | null {
         ? "api.push.apple.com"
         : "api.sandbox.push.apple.com",
   };
+}
+
+function parseFirebaseServiceAccountJson(value: string | undefined) {
+  if (!value?.trim()) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value) as FcmServiceAccount;
+  } catch {
+    return null;
+  }
+}
+
+function getFirebaseServiceAccountFromEnv() {
+  const base64Json = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64?.trim();
+
+  if (base64Json) {
+    const decodedJson = Buffer.from(base64Json, "base64").toString("utf8");
+    const parsed = parseFirebaseServiceAccountJson(decodedJson);
+
+    if (parsed) {
+      return parsed;
+    }
+  }
+
+  return parseFirebaseServiceAccountJson(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+}
+
+function getFcmPrivateKey(serviceAccount: FcmServiceAccount | null) {
+  const base64Key = process.env.FIREBASE_PRIVATE_KEY_BASE64?.trim();
+
+  if (base64Key) {
+    return Buffer.from(base64Key, "base64").toString("utf8");
+  }
+
+  return (
+    process.env.FIREBASE_PRIVATE_KEY ??
+    serviceAccount?.private_key ??
+    ""
+  )
+    .replace(/\\n/g, "\n")
+    .trim();
+}
+
+function getFcmConfig(): FcmConfig | null {
+  const serviceAccount = getFirebaseServiceAccountFromEnv();
+
+  const projectId =
+    process.env.FIREBASE_PROJECT_ID?.trim() ??
+    serviceAccount?.project_id?.trim() ??
+    "";
+
+  const clientEmail =
+    process.env.FIREBASE_CLIENT_EMAIL?.trim() ??
+    serviceAccount?.client_email?.trim() ??
+    "";
+
+  const privateKey = getFcmPrivateKey(serviceAccount);
+  const tokenUri =
+    process.env.FIREBASE_TOKEN_URI?.trim() ??
+    serviceAccount?.token_uri?.trim() ??
+    "https://oauth2.googleapis.com/token";
+
+  if (!projectId || !clientEmail || !privateKey || !tokenUri) {
+    return null;
+  }
+
+  return {
+    projectId,
+    clientEmail,
+    privateKey,
+    tokenUri,
+  };
+}
+
+async function getFcmAccessToken(config: FcmConfig) {
+  const nowMs = Date.now();
+
+  if (cachedFcmAccessToken && cachedFcmAccessToken.expiresAtMs - nowMs > 60_000) {
+    return cachedFcmAccessToken.token;
+  }
+
+  const nowSeconds = Math.floor(nowMs / 1000);
+  const header = {
+    alg: "RS256",
+    typ: "JWT",
+  };
+  const claims = {
+    iss: config.clientEmail,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    aud: config.tokenUri,
+    iat: nowSeconds,
+    exp: nowSeconds + 3600,
+  };
+
+  const signingInput = `${base64UrlJson(header)}.${base64UrlJson(claims)}`;
+  const signer = createSign("RSA-SHA256");
+  signer.update(signingInput);
+  signer.end();
+
+  const signature = signer.sign(config.privateKey).toString("base64url");
+  const assertion = `${signingInput}.${signature}`;
+
+  const response = await fetch(config.tokenUri, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }).toString(),
+  });
+
+  const payload = (await response.json().catch(() => null)) as
+    | {
+        access_token?: string;
+        expires_in?: number;
+        error?: string;
+        error_description?: string;
+      }
+    | null;
+
+  if (!response.ok || !payload?.access_token) {
+    const reason =
+      payload?.error_description ??
+      payload?.error ??
+      `OAuth token request failed with status ${response.status}.`;
+
+    throw new Error(reason);
+  }
+
+  const expiresInMs = Math.max(60, payload.expires_in ?? 3600) * 1000;
+
+  cachedFcmAccessToken = {
+    token: payload.access_token,
+    expiresAtMs: nowMs + expiresInMs,
+  };
+
+  return cachedFcmAccessToken.token;
 }
 
 function base64UrlJson(value: unknown) {
@@ -361,6 +528,113 @@ async function sendApnsNotification(args: {
   });
 }
 
+
+async function sendFcmNotification(args: {
+  config: FcmConfig;
+  token: string;
+  title: string;
+  body: string;
+  url: string;
+  payload: NotificationPayload;
+}): Promise<FcmSendResult> {
+  try {
+    const accessToken = await getFcmAccessToken(args.config);
+    const endpoint = `https://fcm.googleapis.com/v1/projects/${encodeURIComponent(
+      args.config.projectId
+    )}/messages:send`;
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: {
+          token: args.token,
+          notification: {
+            title: args.title,
+            body: args.body,
+          },
+          data: {
+            url: args.url,
+            type: args.payload.type,
+            targetType: args.payload.target_type,
+            targetId: args.payload.target_id ?? "",
+          },
+          android: {
+            priority: "HIGH",
+            notification: {
+              sound: "default",
+            },
+          },
+        },
+      }),
+    });
+
+    const responseText = await response.text();
+    let reason: string | undefined;
+
+    if (!response.ok) {
+      try {
+        const parsed = JSON.parse(responseText) as {
+          error?: {
+            message?: string;
+            status?: string;
+          };
+        };
+
+        reason =
+          parsed.error?.status ??
+          parsed.error?.message ??
+          responseText ??
+          `FCM request failed with status ${response.status}.`;
+      } catch {
+        reason = responseText || `FCM request failed with status ${response.status}.`;
+      }
+    }
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      reason,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      reason: error instanceof Error ? error.message : "Unknown FCM delivery error.",
+    };
+  }
+}
+
+async function loadEnabledPushTokens(args: {
+  supabase: ReturnType<typeof createClient>;
+  userId: string;
+  platform: "ios" | "android";
+  tokenType: "apns" | "fcm";
+}) {
+  const { data, error } = await (args.supabase
+    .from("user_push_device_tokens") as any)
+    .select("id, token")
+    .eq("user_id", args.userId)
+    .eq("enabled", true)
+    .eq("platform", args.platform)
+    .eq("token_type", args.tokenType);
+
+  if (error) {
+    console.error("Unable to load Loombus push tokens:", {
+      platform: args.platform,
+      tokenType: args.tokenType,
+      error: error.message,
+    });
+
+    return [];
+  }
+
+  return (data ?? []) as PushTokenRow[];
+}
+
 async function disablePushToken(tokenId: string, reason: string) {
   const supabase = getPushServiceClient();
 
@@ -386,9 +660,10 @@ export async function sendNativePushForNotification(payload: NotificationPayload
     return;
   }
 
-  const config = getApnsConfig();
+  const apnsConfig = getApnsConfig();
+  const fcmConfig = getFcmConfig();
 
-  if (!config) {
+  if (!apnsConfig && !fcmConfig) {
     return;
   }
 
@@ -404,53 +679,87 @@ export async function sendNativePushForNotification(payload: NotificationPayload
     return;
   }
 
-  const { data: tokens, error } = await supabase
-    .from("user_push_device_tokens")
-    .select("id, token")
-    .eq("user_id", payload.user_id)
-    .eq("enabled", true)
-    .eq("platform", "ios")
-    .eq("token_type", "apns");
-
-  if (error) {
-    console.error("Unable to load Loombus push tokens:", error.message);
-    return;
-  }
-
-  const tokenRows = (tokens ?? []) as PushTokenRow[];
-
-  if (tokenRows.length === 0) {
-    return;
-  }
-
   const title = getPushTitle(payload);
   const body = cleanPushBody(payload.message) || "You have a new Loombus notification.";
   const url = getNotificationUrl(payload);
+  const deliveryTasks: Promise<void>[] = [];
 
-  await Promise.allSettled(
-    tokenRows.map(async (tokenRow) => {
-      const result = await sendApnsNotification({
-        config,
-        token: tokenRow.token,
-        title,
-        body,
-        url,
-      });
+  if (apnsConfig) {
+    const apnsTokens = await loadEnabledPushTokens({
+      supabase,
+      userId: payload.user_id,
+      platform: "ios",
+      tokenType: "apns",
+    });
 
-      if (!result.ok) {
-        console.error("Loombus APNs delivery failed:", {
-          status: result.status,
-          reason: result.reason,
+    deliveryTasks.push(
+      ...apnsTokens.map(async (tokenRow) => {
+        const result = await sendApnsNotification({
+          config: apnsConfig,
+          token: tokenRow.token,
+          title,
+          body,
+          url,
         });
 
-        if (
-          result.reason === "BadDeviceToken" ||
-          result.reason === "DeviceTokenNotForTopic" ||
-          result.reason === "Unregistered"
-        ) {
-          await disablePushToken(tokenRow.id, result.reason);
+        if (!result.ok) {
+          console.error("Loombus APNs delivery failed:", {
+            status: result.status,
+            reason: result.reason,
+          });
+
+          if (
+            result.reason === "BadDeviceToken" ||
+            result.reason === "DeviceTokenNotForTopic" ||
+            result.reason === "Unregistered"
+          ) {
+            await disablePushToken(tokenRow.id, result.reason);
+          }
         }
-      }
-    })
-  );
+      })
+    );
+  }
+
+  if (fcmConfig) {
+    const fcmTokens = await loadEnabledPushTokens({
+      supabase,
+      userId: payload.user_id,
+      platform: "android",
+      tokenType: "fcm",
+    });
+
+    deliveryTasks.push(
+      ...fcmTokens.map(async (tokenRow) => {
+        const result = await sendFcmNotification({
+          config: fcmConfig,
+          token: tokenRow.token,
+          title,
+          body,
+          url,
+          payload,
+        });
+
+        if (!result.ok) {
+          console.error("Loombus FCM delivery failed:", {
+            status: result.status,
+            reason: result.reason,
+          });
+
+          if (
+            result.reason === "UNREGISTERED" ||
+            result.reason === "NOT_FOUND" ||
+            result.status === 404
+          ) {
+            await disablePushToken(tokenRow.id, result.reason ?? "FCM token not found");
+          }
+        }
+      })
+    );
+  }
+
+  if (deliveryTasks.length === 0) {
+    return;
+  }
+
+  await Promise.allSettled(deliveryTasks);
 }

@@ -99,6 +99,15 @@ function getConfigStatus() {
     apnsPrivateKey: present(process.env.APNS_PRIVATE_KEY) || present(process.env.APNS_PRIVATE_KEY_BASE64),
     apnsBundleId: present(process.env.APNS_BUNDLE_ID),
     apnsEnvironment: present(process.env.APNS_ENVIRONMENT),
+
+    firebaseServiceAccount:
+      present(process.env.FIREBASE_SERVICE_ACCOUNT_JSON) ||
+      present(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64),
+    firebaseProjectId: present(process.env.FIREBASE_PROJECT_ID),
+    firebaseClientEmail: present(process.env.FIREBASE_CLIENT_EMAIL),
+    firebasePrivateKey:
+      present(process.env.FIREBASE_PRIVATE_KEY) ||
+      present(process.env.FIREBASE_PRIVATE_KEY_BASE64),
   };
 }
 

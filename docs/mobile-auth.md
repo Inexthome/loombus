@@ -102,3 +102,25 @@ Android push requirements:
 - Device tokens stored as `platform=android` and `token_type=fcm`
 
 Do not use the iOS bundle id `com.loombus.mobile` when creating the Firebase Android app unless the Android applicationId is intentionally changed.
+
+
+### Android server-side FCM delivery
+
+Android native push delivery uses Firebase Cloud Messaging HTTP v1 from the Loombus server. The Android app registers device tokens as `platform=android` and `token_type=fcm`; server delivery requires Firebase service-account credentials in Vercel.
+
+Preferred Vercel environment variable:
+
+- `FIREBASE_SERVICE_ACCOUNT_BASE64`
+
+Alternative Vercel environment variable:
+
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
+
+Granular fallback variables are also supported:
+
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY` or `FIREBASE_PRIVATE_KEY_BASE64`
+- `FIREBASE_TOKEN_URI`, optional, defaults to `https://oauth2.googleapis.com/token`
+
+Do not commit Firebase service account JSON or private keys. Keep `android/app/google-services.json` local and ignored.
