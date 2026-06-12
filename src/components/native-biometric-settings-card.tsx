@@ -99,14 +99,14 @@ export function NativeBiometricSettingsCard() {
             Lock Loombus behind Face ID, fingerprint, or your device passcode on
             this device.
           </p>
-          <p className="mt-2 text-xs text-zinc-600">
-            Native app: {isNative ? "Yes" : "No"} · Available:{" "}
-            {availability?.isAvailable ? "Yes" : "No"} · Device secure:{" "}
-            {availability?.deviceIsSecure ? "Yes" : "No"}
-          </p>
           {!isNative ? (
             <p className="mt-2 text-xs text-zinc-500">
               Biometric unlock only works in the installed iOS or Android app.
+            </p>
+          ) : null}
+          {isNative && availability?.isAvailable === false ? (
+            <p className="mt-2 text-xs text-zinc-500">
+              Set up a device passcode, Face ID, Touch ID, or fingerprint before enabling this.
             </p>
           ) : null}
           {message ? (
