@@ -59,8 +59,7 @@ export default function PrivacyPage() {
               Loombus supports email login and Google authentication. Email
               sign-in, email confirmation, password-based authentication, and
               Google sign-in are used as Loombus account authentication layers.
-              Loombus does not currently require legal-name, state-ID, biometric,
-              or ID.me-style identity verification for ordinary member access.
+              Loombus does not collect biometric templates. Optional device unlock uses your phone’s local biometric or passcode system. Loombus does not currently require legal-name, state-ID, or ID.me-style identity verification for ordinary member access.
               When you sign in through Google, Loombus may receive authentication
               information from Google, such as your email address, account
               identifier, and basic profile information permitted by the sign-in

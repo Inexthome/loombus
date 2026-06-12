@@ -124,3 +124,15 @@ Granular fallback variables are also supported:
 - `FIREBASE_TOKEN_URI`, optional, defaults to `https://oauth2.googleapis.com/token`
 
 Do not commit Firebase service account JSON or private keys. Keep `android/app/google-services.json` local and ignored.
+
+## Native biometric app unlock
+
+Loombus supports optional local device unlock in the native mobile app.
+
+Rules:
+- Biometric unlock is not the primary account credential.
+- Supabase login/session remains the real account authentication layer.
+- The biometric setting is local to the device and defaults off.
+- Loombus does not receive or store biometric templates.
+- Users can disable app unlock locally or sign out if unlock fails.
+- Web browser sessions do not use the native biometric gate.

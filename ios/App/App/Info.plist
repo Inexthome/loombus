@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Loombus uses camera access only when you choose to take a photo for a profile image, discussion attachment, or message attachment.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Loombus uses Face ID only when you enable device unlock for the app.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Loombus uses photo access so you can upload profile images and attach images to discussions or messages.</string>
 	<key>UILaunchStoryboardName</key>
