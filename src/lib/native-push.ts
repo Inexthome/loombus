@@ -8,13 +8,12 @@ let pushListenersRegistered = false;
 let pushPluginModulePromise: Promise<PushNotificationsModule> | null = null;
 let pendingPushToken: { token: string; platform: string } | null = null;
 
-async function getPushNotificationsPlugin() {
+async function getPushNotificationsModule() {
   if (!pushPluginModulePromise) {
     pushPluginModulePromise = import("@capacitor/push-notifications");
   }
 
-  const { PushNotifications } = await pushPluginModulePromise;
-  return PushNotifications;
+  return pushPluginModulePromise;
 }
 
 async function getAccessToken() {
@@ -122,7 +121,7 @@ export async function initializeNativePushListeners() {
   pushListenersRegistered = true;
 
   try {
-    const PushNotifications = await getPushNotificationsPlugin();
+    const { PushNotifications } = await getPushNotificationsModule();
 
     console.info("Loombus native push diagnostics: PushNotifications plugin imported");
 
@@ -189,7 +188,7 @@ export async function registerNativePushNotifications() {
   pushRegistrationStarted = true;
 
   try {
-    const PushNotifications = await getPushNotificationsPlugin();
+    const { PushNotifications } = await getPushNotificationsModule();
 
     const permissionStatus = await PushNotifications.checkPermissions();
 
