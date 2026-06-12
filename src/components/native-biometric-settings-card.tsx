@@ -20,6 +20,7 @@ export function NativeBiometricSettingsCard() {
   const [availability, setAvailability] = useState<Availability | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     if (pathname !== "/settings") {
@@ -29,6 +30,8 @@ export function NativeBiometricSettingsCard() {
     let active = true;
 
     async function load() {
+      setChecking(true);
+
       const native = isNativeApp();
       const available = await getNativeBiometricAvailability();
 
@@ -39,6 +42,7 @@ export function NativeBiometricSettingsCard() {
       setIsNative(native);
       setAvailability(available);
       setEnabled(isBiometricUnlockEnabled());
+      setChecking(false);
     }
 
     void load();
@@ -57,6 +61,19 @@ export function NativeBiometricSettingsCard() {
 
   if (pathname !== "/settings") {
     return null;
+  }
+
+  async function refreshStatus() {
+    setChecking(true);
+    setMessage("");
+
+    const native = isNativeApp();
+    const available = await getNativeBiometricAvailability();
+
+    setIsNative(native);
+    setAvailability(available);
+    setEnabled(isBiometricUnlockEnabled());
+    setChecking(false);
   }
 
   async function enableUnlock() {
@@ -99,12 +116,17 @@ export function NativeBiometricSettingsCard() {
             Lock Loombus behind Face ID, fingerprint, or your device passcode on
             this device.
           </p>
-          {!isNative ? (
+          {checking ? (
             <p className="mt-2 text-xs text-zinc-500">
-              Biometric unlock only works in the installed iOS or Android app.
+              Checking this device for native biometric support...
             </p>
           ) : null}
-          {isNative && availability?.isAvailable === false ? (
+          {!checking && !isNative ? (
+            <p className="mt-2 text-xs text-zinc-500">
+              Open Loombus from the installed iOS or Android app, not Safari, Chrome, or an older App Store build.
+            </p>
+          ) : null}
+          {!checking && isNative && availability?.isAvailable === false ? (
             <p className="mt-2 text-xs text-zinc-500">
               Set up a device passcode, Face ID, Touch ID, or fingerprint before enabling this.
             </p>
@@ -116,24 +138,38 @@ export function NativeBiometricSettingsCard() {
           ) : null}
         </div>
 
-        {enabled ? (
-          <button
-            type="button"
-            onClick={disableUnlock}
-            className="shrink-0 rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-          >
-            Disable
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => void enableUnlock()}
-            disabled={!isNative || busy || availability?.isAvailable === false}
-            className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {busy ? "Checking..." : "Enable"}
-          </button>
-        )}
+        <div className="flex shrink-0 flex-col gap-2">
+          {enabled ? (
+            <button
+              type="button"
+              onClick={disableUnlock}
+              className="rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Disable
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void enableUnlock()}
+              disabled={
+                checking || !isNative || busy || availability?.isAvailable === false
+              }
+              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {checking ? "Checking..." : busy ? "Checking..." : "Enable"}
+            </button>
+          )}
+          {!enabled ? (
+            <button
+              type="button"
+              onClick={() => void refreshStatus()}
+              disabled={checking || busy}
+              className="rounded-full border border-zinc-800 px-4 py-2 text-xs font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Refresh status
+            </button>
+          ) : null}
+        </div>
       </div>
     </section>
   );
