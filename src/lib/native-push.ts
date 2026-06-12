@@ -6,7 +6,11 @@ let pushListenersRegistered = false;
 
 async function getAccessToken() {
   const { data } = await supabase.auth.getSession();
-  return data.session?.access_token ?? "";
+  const accessToken = data.session?.access_token ?? "";
+
+  console.info("Loombus native push diagnostics: access token present", Boolean(accessToken));
+
+  return accessToken;
 }
 
 function getNativePushTokenType(platform: string) {
@@ -22,11 +26,20 @@ function getNativePushTokenType(platform: string) {
 }
 
 async function registerPushToken(token: string, platform: string) {
+  console.info("Loombus native push diagnostics: token received", {
+    platform,
+    tokenType: getNativePushTokenType(platform),
+    tokenLength: token.length,
+  });
+
   const accessToken = await getAccessToken();
 
   if (!accessToken) {
+    console.warn("Loombus native push diagnostics: no access token, skipping token registration");
     return;
   }
+
+  console.info("Loombus native push diagnostics: posting token to device-token route");
 
   const response = await fetch("/api/push/device-tokens", {
     method: "POST",
@@ -39,6 +52,11 @@ async function registerPushToken(token: string, platform: string) {
       platform,
       tokenType: getNativePushTokenType(platform),
     }),
+  });
+
+  console.info("Loombus native push diagnostics: device-token route response", {
+    ok: response.ok,
+    status: response.status,
   });
 
   if (!response.ok) {
@@ -54,11 +72,17 @@ export async function registerNativePushNotifications() {
 
   const platform = getNativePlatform();
 
+  console.info("Loombus native push diagnostics: registration requested", {
+    platform,
+  });
+
   if (platform !== "ios" && platform !== "android") {
+    console.info("Loombus native push diagnostics: not a native push platform");
     return;
   }
 
   if (pushRegistrationStarted) {
+    console.info("Loombus native push diagnostics: registration already started");
     return;
   }
 
@@ -67,10 +91,17 @@ export async function registerNativePushNotifications() {
   try {
     const { PushNotifications } = await import("@capacitor/push-notifications");
 
+    console.info("Loombus native push diagnostics: PushNotifications plugin imported");
+
     if (!pushListenersRegistered) {
       pushListenersRegistered = true;
 
       await PushNotifications.addListener("registration", (token) => {
+        console.info("Loombus native push diagnostics: registration listener fired", {
+          hasToken: Boolean(token.value),
+          tokenLength: token.value?.length ?? 0,
+        });
+
         if (token.value) {
           void registerPushToken(token.value, platform);
         }
@@ -98,15 +129,22 @@ export async function registerNativePushNotifications() {
     }
 
     const permissionStatus = await PushNotifications.checkPermissions();
+
+    console.info("Loombus native push diagnostics: permission status", permissionStatus);
+
     const receive =
       permissionStatus.receive === "granted"
         ? "granted"
         : (await PushNotifications.requestPermissions()).receive;
 
+    console.info("Loombus native push diagnostics: permission result", receive);
+
     if (receive !== "granted") {
+      console.warn("Loombus native push diagnostics: permission not granted");
       return;
     }
 
+    console.info("Loombus native push diagnostics: calling PushNotifications.register()");
     await PushNotifications.register();
   } catch (error) {
     console.error("Unable to initialize Loombus native push notifications.", error);
