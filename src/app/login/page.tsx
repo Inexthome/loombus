@@ -13,7 +13,12 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from "react"
 import { supabase } from "@/lib/supabase/client";
 import { isNativeApp } from "@/lib/native-app";
 import {
+  deleteNativeBiometricLoginCredentials,
+  getNativeBiometricLoginCredentials,
+  getRememberedBiometricLoginEmail,
   isBiometricUnlockEnabled,
+  isNativeBiometricLoginSaved,
+  saveNativeBiometricLoginCredentials,
   verifyNativeBiometric,
 } from "@/lib/native-biometric";
 
@@ -22,6 +27,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [biometricSessionReady, setBiometricSessionReady] = useState(false);
+  const [biometricLoginReady, setBiometricLoginReady] = useState(false);
+  const [rememberedBiometricEmail, setRememberedBiometricEmail] = useState("");
+  const [rememberBiometricLogin, setRememberBiometricLogin] = useState(false);
   const [checkingBiometricSession, setCheckingBiometricSession] = useState(true);
   const [biometricUnlocking, setBiometricUnlocking] = useState(false);
   const biometricPromptInFlight = useRef(false);
@@ -29,6 +37,18 @@ export default function LoginPage() {
   const getNextPath = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
     return getSafeNext(params.get("next"));
+  }, []);
+
+  const refreshBiometricLoginState = useCallback(async () => {
+    if (!isNativeApp()) {
+      setBiometricLoginReady(false);
+      setRememberedBiometricEmail("");
+      return;
+    }
+
+    const saved = await isNativeBiometricLoginSaved();
+    setBiometricLoginReady(saved);
+    setRememberedBiometricEmail(saved ? getRememberedBiometricLoginEmail() : "");
   }, []);
 
   const redirectWithOptionalBiometric = useCallback(
@@ -73,6 +93,8 @@ export default function LoginPage() {
 
       const { data } = await supabase.auth.getSession();
 
+      await refreshBiometricLoginState();
+
       if (!mounted) {
         return;
       }
@@ -100,7 +122,7 @@ export default function LoginPage() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [redirectWithOptionalBiometric]);
+  }, [redirectWithOptionalBiometric, refreshBiometricLoginState]);
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
   async function handleLogin(event?: FormEvent<HTMLFormElement>) {
@@ -132,8 +154,74 @@ export default function LoginPage() {
       return;
     }
 
-    setMessage("Login successful.");
+    if (rememberBiometricLogin && isNativeApp()) {
+      const saved = await saveNativeBiometricLoginCredentials(email, password);
+
+      if (!saved.ok) {
+        setMessage(
+          `Login successful, but Face ID login could not be saved: ${
+            saved.error ?? "Unknown error"
+          }`
+        );
+      } else {
+        setBiometricLoginReady(true);
+        setRememberedBiometricEmail(email);
+        setMessage("Login successful. Face ID login saved on this device.");
+      }
+    } else {
+      setMessage("Login successful.");
+    }
+
     await redirectWithOptionalBiometric("Unlock Loombus after signing in.");
+  }
+
+  async function handleBiometricCredentialLogin() {
+    if (loading || biometricUnlocking) {
+      return;
+    }
+
+    setBiometricUnlocking(true);
+    setLoading(true);
+    setMessage("");
+
+    const credentials = await getNativeBiometricLoginCredentials();
+
+    if (!credentials.ok) {
+      setMessage(credentials.error ?? "Unable to unlock saved Face ID login.");
+      setBiometricUnlocking(false);
+      setLoading(false);
+      return;
+    }
+
+    if (!credentials.username || !credentials.password) {
+      setMessage("Saved Face ID login is incomplete. Sign in manually and save it again.");
+      setBiometricUnlocking(false);
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: credentials.username,
+      password: credentials.password,
+    });
+
+    if (error) {
+      setMessage(`Saved Face ID login failed: ${error.message}`);
+      setBiometricUnlocking(false);
+      setLoading(false);
+      return;
+    }
+
+    setMessage("Face ID sign-in successful.");
+    setBiometricUnlocking(false);
+    await redirectWithOptionalBiometric("Unlock Loombus after signing in.");
+  }
+
+  async function handleForgetBiometricLogin() {
+    setMessage("");
+    await deleteNativeBiometricLoginCredentials();
+    setBiometricLoginReady(false);
+    setRememberedBiometricEmail("");
   }
 
   async function handleUseAnotherAccount() {
@@ -229,6 +317,44 @@ export default function LoginPage() {
           </p>
         ) : null}
 
+        {!biometricSessionReady && biometricLoginReady ? (
+          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
+              Saved Face ID login
+            </p>
+
+            <h2 className="mb-3 text-xl font-medium">
+              Sign in with Face ID.
+            </h2>
+
+            <p className="mb-5 text-sm leading-relaxed text-zinc-500">
+              Use the saved login for{" "}
+              <span className="text-zinc-300">
+                {rememberedBiometricEmail || "this device"}
+              </span>
+              .
+            </p>
+
+            <button
+              type="button"
+              onClick={() => void handleBiometricCredentialLogin()}
+              disabled={loading || biometricUnlocking}
+              className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {biometricUnlocking ? "Signing in..." : "Sign in with Face ID"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void handleForgetBiometricLogin()}
+              disabled={loading || biometricUnlocking}
+              className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Forget saved Face ID login
+            </button>
+          </div>
+        ) : null}
+
         <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
           <button
             type="button"
@@ -282,6 +408,27 @@ export default function LoginPage() {
               className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
             />
           </div>
+
+          {isNativeApp() ? (
+            <label className="flex items-start gap-3 rounded-2xl border border-zinc-900 bg-black p-4 text-sm text-zinc-400">
+              <input
+                type="checkbox"
+                checked={rememberBiometricLogin}
+                onChange={(e) => setRememberBiometricLogin(e.target.checked)}
+                className="mt-1"
+              />
+              <span>
+                <span className="block font-medium text-zinc-300">
+                  Remember this login with Face ID on this device
+                </span>
+                <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
+                  Loombus will save this email/password in the device secure store
+                  and require Face ID, Touch ID, fingerprint, or passcode before
+                  using it.
+                </span>
+              </span>
+            </label>
+          ) : null}
 
           <button
             type="submit"
