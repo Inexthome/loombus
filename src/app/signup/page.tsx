@@ -132,8 +132,37 @@ export default function SignupPage() {
           Join a calmer, higher-signal environment for thoughtful discussion.
         </p>
 
+        <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
+          <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
+            Returning to Loombus?
+          </p>
+
+          <h2 className="mb-3 text-xl font-medium">
+            Sign in to your account.
+          </h2>
+
+          <p className="mb-5 text-sm leading-relaxed text-zinc-500">
+            Already have a Loombus account? Continue here.
+          </p>
+
+          <Link
+            href="/login"
+            className="block w-full rounded-full bg-white px-6 py-3 text-center text-sm font-medium text-black transition hover:bg-zinc-200"
+          >
+            Sign in
+          </Link>
+        </div>
+
         {!signupComplete && (
           <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 loombus-mobile-visitor-auth-card">
+            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
+              New to Loombus?
+            </p>
+
+            <h2 className="mb-5 text-xl font-medium">
+              Create a new account.
+            </h2>
+
             {nativeIosApp ? (
               <div>
                 <a
