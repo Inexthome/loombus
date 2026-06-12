@@ -55,7 +55,7 @@ export function NativeBiometricSettingsCard() {
     };
   }, [pathname]);
 
-  if (pathname !== "/settings" || !isNative) {
+  if (pathname !== "/settings") {
     return null;
   }
 
@@ -99,10 +99,14 @@ export function NativeBiometricSettingsCard() {
             Lock Loombus behind Face ID, fingerprint, or your device passcode on
             this device.
           </p>
-          {availability ? (
-            <p className="mt-2 text-xs text-zinc-600">
-              Available: {availability.isAvailable ? "Yes" : "No"} · Device
-              secure: {availability.deviceIsSecure ? "Yes" : "No"}
+          <p className="mt-2 text-xs text-zinc-600">
+            Native app: {isNative ? "Yes" : "No"} · Available:{" "}
+            {availability?.isAvailable ? "Yes" : "No"} · Device secure:{" "}
+            {availability?.deviceIsSecure ? "Yes" : "No"}
+          </p>
+          {!isNative ? (
+            <p className="mt-2 text-xs text-zinc-500">
+              Biometric unlock only works in the installed iOS or Android app.
             </p>
           ) : null}
           {message ? (
@@ -124,7 +128,7 @@ export function NativeBiometricSettingsCard() {
           <button
             type="button"
             onClick={() => void enableUnlock()}
-            disabled={busy || availability?.isAvailable === false}
+            disabled={!isNative || busy || availability?.isAvailable === false}
             className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Checking..." : "Enable"}
