@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Firebase Android config, keep local
 android/app/google-services.json
+
+# Android Studio local project files
+android/.idea/
