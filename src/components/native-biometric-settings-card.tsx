@@ -86,27 +86,27 @@ export function NativeBiometricSettingsCard() {
   }
 
   return (
-    <section className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-50 mx-auto max-w-md rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 text-[var(--loombus-text)] shadow-2xl shadow-black/20 backdrop-blur-xl md:left-auto md:right-6 md:mx-0">
+    <section className="mb-6 rounded-2xl border border-zinc-900 bg-black p-4 text-white sm:p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
             Native app security
           </p>
           <h2 className="mt-1 text-base font-semibold">
             Face ID / biometric unlock
           </h2>
-          <p className="mt-1 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+          <p className="mt-1 text-sm leading-relaxed text-zinc-500">
             Lock Loombus behind Face ID, fingerprint, or your device passcode on
             this device.
           </p>
           {availability ? (
-            <p className="mt-2 text-xs text-[var(--loombus-text-subtle)]">
+            <p className="mt-2 text-xs text-zinc-600">
               Available: {availability.isAvailable ? "Yes" : "No"} · Device
               secure: {availability.deviceIsSecure ? "Yes" : "No"}
             </p>
           ) : null}
           {message ? (
-            <p className="mt-2 text-xs text-[var(--loombus-text-muted)]">
+            <p className="mt-2 text-xs text-zinc-400">
               {message}
             </p>
           ) : null}
@@ -116,7 +116,7 @@ export function NativeBiometricSettingsCard() {
           <button
             type="button"
             onClick={disableUnlock}
-            className="shrink-0 rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-medium text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+            className="shrink-0 rounded-full border border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white"
           >
             Disable
           </button>
@@ -125,7 +125,7 @@ export function NativeBiometricSettingsCard() {
             type="button"
             onClick={() => void enableUnlock()}
             disabled={busy || availability?.isAvailable === false}
-            className="shrink-0 rounded-full bg-[var(--loombus-primary-bg)] px-4 py-2 text-sm font-semibold text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Checking..." : "Enable"}
           </button>
