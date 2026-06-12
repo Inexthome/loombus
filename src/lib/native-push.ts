@@ -1,21 +1,20 @@
 import { supabase } from "@/lib/supabase/client";
 import { getNativePlatform } from "@/lib/native-app";
 
-type PushNotificationsPlugin = typeof import("@capacitor/push-notifications")["PushNotifications"];
+type PushNotificationsModule = typeof import("@capacitor/push-notifications");
 
 let pushRegistrationStarted = false;
 let pushListenersRegistered = false;
-let pushPluginPromise: Promise<PushNotificationsPlugin> | null = null;
+let pushPluginModulePromise: Promise<PushNotificationsModule> | null = null;
 let pendingPushToken: { token: string; platform: string } | null = null;
 
 async function getPushNotificationsPlugin() {
-  if (!pushPluginPromise) {
-    pushPluginPromise = import("@capacitor/push-notifications").then(
-      ({ PushNotifications }) => PushNotifications
-    );
+  if (!pushPluginModulePromise) {
+    pushPluginModulePromise = import("@capacitor/push-notifications");
   }
 
-  return pushPluginPromise;
+  const { PushNotifications } = await pushPluginModulePromise;
+  return PushNotifications;
 }
 
 async function getAccessToken() {
