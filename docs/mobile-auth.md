@@ -125,14 +125,13 @@ Granular fallback variables are also supported:
 
 Do not commit Firebase service account JSON or private keys. Keep `android/app/google-services.json` local and ignored.
 
-## Native biometric app unlock
+## Native biometric sign-in
 
-Loombus supports optional local device unlock in the native mobile app.
+Loombus supports optional saved biometric sign-in in the native mobile app.
 
 Rules:
-- Biometric unlock is not the primary account credential.
 - Supabase login/session remains the real account authentication layer.
-- The biometric setting is local to the device and defaults off.
+- Face ID, Touch ID, fingerprint, or device passcode is used only to unlock a saved device login.
 - Loombus does not receive or store biometric templates.
-- Users can disable app unlock locally or sign out if unlock fails.
-- Web browser sessions do not use the native biometric gate.
+- Users can manage Face ID/biometric access from their device settings.
+- Web browser sessions do not use native biometric sign-in.

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { NativeBiometricSettingsCard } from "@/components/native-biometric-settings-card";
 import { type FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -646,7 +645,6 @@ export default function SettingsClientPage() {
             Account security
           </p>
 
-          <NativeBiometricSettingsCard />
 
           <h2 className="mb-3 text-lg font-medium sm:mb-4 sm:text-2xl">
             Password security.
