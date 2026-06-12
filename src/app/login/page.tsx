@@ -34,6 +34,7 @@ export default function LoginPage() {
   const [checkingBiometricSession, setCheckingBiometricSession] = useState(true);
   const [biometricUnlocking, setBiometricUnlocking] = useState(false);
   const biometricPromptInFlight = useRef(false);
+  const autoBiometricLoginStarted = useRef(false);
 
   const getNextPath = useCallback(() => {
     const params = new URLSearchParams(window.location.search);
@@ -132,6 +133,26 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
+
+  useEffect(() => {
+    if (
+      !biometricLoginReady ||
+      biometricSessionReady ||
+      showManualLogin ||
+      checkingBiometricSession ||
+      loading ||
+      biometricUnlocking
+    ) {
+      return;
+    }
+
+    if (autoBiometricLoginStarted.current) {
+      return;
+    }
+
+    autoBiometricLoginStarted.current = true;
+    void handleBiometricCredentialLogin();
+  });
   async function handleLogin(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
 
@@ -382,7 +403,10 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={() => setShowManualLogin(true)}
+              onClick={() => {
+                autoBiometricLoginStarted.current = true;
+                setShowManualLogin(true);
+              }}
               disabled={loading || biometricUnlocking}
               className="mt-3 w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
