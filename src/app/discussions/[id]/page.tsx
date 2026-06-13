@@ -1682,6 +1682,43 @@ export default function DiscussionPage() {
     }
   }
 
+  function handlePremiumAiToolSelect(toolKey: string) {
+    setOpenPremiumAiTool(toolKey);
+
+    if (!currentUserId || !canUseAiSummary) {
+      return;
+    }
+
+    if (toolKey === "summary" && !discussionSummary && !generatingSummary) {
+      void handleGenerateSummary();
+      return;
+    }
+
+    if (toolKey === "keyTakeaways" && !keyTakeaways && !generatingTakeaways) {
+      void handleGenerateKeyTakeaways();
+      return;
+    }
+
+    if (toolKey === "whatChanged" && !whatChanged && !generatingWhatChanged) {
+      void handleGenerateWhatChanged();
+      return;
+    }
+
+    if (toolKey === "disagreementMap" && !disagreementMap && !generatingDisagreement) {
+      void handleGenerateDisagreementMap();
+      return;
+    }
+
+    if (toolKey === "conversationMap" && !conversationMap && !generatingConversationMap) {
+      void handleGenerateConversationMap();
+      return;
+    }
+
+    if (toolKey === "relatedIdeas" && !relatedIdeas && !generatingRelatedIdeas) {
+      void handleGenerateRelatedIdeas();
+    }
+  }
+
   function startReplyEdit(reply: Reply) {
     setMessage("");
     closeReplyActionMenu();
@@ -3126,7 +3163,7 @@ export default function DiscussionPage() {
                     <button
                       key={toolKey}
                       type="button"
-                      onClick={() => setOpenPremiumAiTool(toolKey)}
+                      onClick={() => handlePremiumAiToolSelect(toolKey)}
                       className={`rounded-2xl border px-3 py-2 text-left transition ${
                         openPremiumAiTool === toolKey
                           ? "border-zinc-500 bg-black text-white"
