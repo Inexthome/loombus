@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 
 type OAuthProvider = "google" | "apple";
 type HomeAuthState = "checking" | "logged_out" | "logged_in";
@@ -274,19 +275,10 @@ export default function Home() {
 
   if (authState === "checking") {
     return (
-      <main className="min-h-screen bg-black px-4 py-16 text-white sm:px-6">
-        <div className="mx-auto max-w-5xl rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-500">
-            Loombus
-          </p>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight">
-            Loading home...
-          </h1>
-          <p className="mt-4 text-zinc-500">
-            Checking your session and preparing your workspace.
-          </p>
-        </div>
-      </main>
+      <LoombusLoadingScreen
+        title="Loading home..."
+        message="Checking your session and preparing your workspace."
+      />
     );
   }
 
