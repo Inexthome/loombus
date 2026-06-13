@@ -506,6 +506,7 @@ export default function CreatePage() {
   const [modeConstraints, setModeConstraints] = useState("");
   const [modeDesiredOutcome, setModeDesiredOutcome] = useState("");
   const [body, setBody] = useState("");
+  const [pastedBodyCharacterCount, setPastedBodyCharacterCount] = useState(0);
   const [tagsInput, setTagsInput] = useState("");
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
   const [attachmentMessage, setAttachmentMessage] = useState("");
@@ -1361,6 +1362,7 @@ export default function CreatePage() {
     }
 
     document.execCommand("insertText", false, pastedText);
+    setPastedBodyCharacterCount((current) => current + pastedText.length);
     syncBodyFromEditor();
   }
 

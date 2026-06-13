@@ -10,6 +10,10 @@ import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotifications } from "@/lib/notifications";
 import { validatePublicProfileName } from "@/lib/profile-name-quality";
 import { normalizePublicText } from "@/lib/public-text";
+import {
+  checkAndRecordPasteUsage,
+  normalizePastedCharacterCount,
+} from "@/lib/copy-paste-limits";
 
 const CREATE_COOLDOWN_MS = 30000;
 const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
@@ -227,6 +231,9 @@ export async function POST(request: NextRequest) {
     const topic = requestedTopic as DiscussionTopic;
 
     const content = normalizePublicText(body.body).trim();
+    const pastedCharacterCount = normalizePastedCharacterCount(
+      body.pastedCharacterCount
+    );
     const tagResult = normalizeDiscussionTags(body.tags);
 
     if (tagResult.error) {
@@ -317,6 +324,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Please enter discussion content." },
         { status: 400 }
+      );
+    }
+
+    const pasteLimitResult = await checkAndRecordPasteUsage({
+      supabase,
+      userId: user.id,
+      entitlement: (entitlement ?? null) as AiEntitlement | null,
+      isAdmin,
+      featureKey: "discussion_body_paste",
+      pastedCharacterCount,
+    });
+
+    if (!pasteLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: pasteLimitResult.error,
+          code: pasteLimitResult.code,
+          limit: pasteLimitResult.limit,
+          used: pasteLimitResult.used,
+          remaining: pasteLimitResult.remaining,
+        },
+        { status: 429 }
       );
     }
 

@@ -6,6 +6,10 @@ import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotification, createNotifications } from "@/lib/notifications";
 import { validatePublicProfileName } from "@/lib/profile-name-quality";
 import { normalizePublicText } from "@/lib/public-text";
+import {
+  checkAndRecordPasteUsage,
+  normalizePastedCharacterCount,
+} from "@/lib/copy-paste-limits";
 
 const REPLY_COOLDOWN_MS = 10000;
 const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
@@ -13,6 +17,12 @@ const MENTION_PATTERN = /(^|[^a-zA-Z0-9_])@([a-zA-Z0-9_]{2,30})/g;
 type BlockRow = {
   blocker_id: string;
   blocked_id: string;
+};
+
+type AiEntitlement = {
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
 };
 
 type ProfileAccess = {
@@ -111,11 +121,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin, account_status, enforcement_reason, suspended_until, full_name, username")
-      .eq("id", user.id)
-      .maybeSingle();
+    const [{ data: profile }, { data: entitlement }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("is_admin, account_status, enforcement_reason, suspended_until, full_name, username")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("user_ai_entitlements")
+        .select("tier, ai_assisted_enabled, monthly_summary_limit")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
 
     const profileAccess = (profile ?? null) as ProfileAccess | null;
     const enforcement = getAccountEnforcementResult(profileAccess);
@@ -150,6 +167,9 @@ export async function POST(request: NextRequest) {
 
     const discussionId = String(body.discussionId ?? "").trim();
     const content = normalizePublicText(body.body).trim();
+    const pastedCharacterCount = normalizePastedCharacterCount(
+      body.pastedCharacterCount
+    );
     const referencedReplyId = String(
       body.referencedReplyId ?? body.referenced_reply_id ?? ""
     ).trim();
@@ -165,6 +185,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Please enter a reply." },
         { status: 400 }
+      );
+    }
+
+    const pasteLimitResult = await checkAndRecordPasteUsage({
+      supabase,
+      userId: user.id,
+      entitlement: (entitlement ?? null) as AiEntitlement | null,
+      isAdmin: Boolean(profileAccess?.is_admin),
+      featureKey: "reply_body_paste",
+      pastedCharacterCount,
+    });
+
+    if (!pasteLimitResult.allowed) {
+      return NextResponse.json(
+        {
+          error: pasteLimitResult.error,
+          code: pasteLimitResult.code,
+          limit: pasteLimitResult.limit,
+          used: pasteLimitResult.used,
+          remaining: pasteLimitResult.remaining,
+        },
+        { status: 429 }
       );
     }
 

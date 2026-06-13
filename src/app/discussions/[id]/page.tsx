@@ -566,6 +566,7 @@ export default function DiscussionPage() {
   const [discussionAttachments, setDiscussionAttachments] = useState<DiscussionAttachment[]>([]);
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [replyBody, setReplyBody] = useState("");
+  const [pastedReplyCharacterCount, setPastedReplyCharacterCount] = useState(0);
   const [replySuggestions, setReplySuggestions] = useState("");
   const [replySuggestionsMessage, setReplySuggestionsMessage] = useState("");
   const [generatingReplySuggestions, setGeneratingReplySuggestions] = useState(false);
@@ -1119,6 +1120,7 @@ export default function DiscussionPage() {
           discussionId: id,
           body: normalizePublicText(replyBody),
           referencedReplyId: referencedReply?.id ?? undefined,
+          pastedCharacterCount: pastedReplyCharacterCount,
         }),
       });
 
@@ -1157,6 +1159,7 @@ export default function DiscussionPage() {
       }
 
       setReplyBody("");
+      setPastedReplyCharacterCount(0);
       setReferencedReply(null);
       setMessage("Reply posted.");
     } finally {
