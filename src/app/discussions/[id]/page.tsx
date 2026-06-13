@@ -4152,7 +4152,7 @@ export default function DiscussionPage() {
                   type="button"
                   onClick={() => {
                     setShowAiToolsPanel(true);
-                    setOpenPremiumAiTool(toolKey);
+                    handlePremiumAiToolSelect(toolKey);
 
                     window.setTimeout(() => {
                       document.getElementById("intelligence-layer")?.scrollIntoView({
