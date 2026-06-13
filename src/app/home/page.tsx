@@ -79,6 +79,25 @@ const loombusUpdates = [
   "Settings was cleaned up so controls and reference links are easier to find.",
 ];
 
+function GoogleAuthLogo() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
+      <path fill="#4285F4" d="M21.6 12.23c0-.74-.07-1.45-.19-2.13H12v4.03h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.3 2.98-7.43Z" />
+      <path fill="#34A853" d="M12 22c2.7 0 4.97-.89 6.62-2.34l-3.23-2.51c-.9.6-2.04.95-3.39.95-2.61 0-4.82-1.76-5.61-4.13H3.05v2.59A9.99 9.99 0 0 0 12 22Z" />
+      <path fill="#FBBC05" d="M6.39 13.97A6.01 6.01 0 0 1 6.07 12c0-.68.12-1.34.32-1.97V7.44H3.05A9.99 9.99 0 0 0 2 12c0 1.61.38 3.13 1.05 4.56l3.34-2.59Z" />
+      <path fill="#EA4335" d="M12 5.9c1.47 0 2.79.51 3.83 1.5l2.86-2.86C16.96 2.93 14.69 2 12 2a9.99 9.99 0 0 0-8.95 5.44l3.34 2.59C7.18 7.66 9.39 5.9 12 5.9Z" />
+    </svg>
+  );
+}
+
+function AppleAuthLogo() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+      <path d="M16.7 13.05c-.02-2.21 1.8-3.27 1.88-3.32-1.03-1.51-2.64-1.72-3.21-1.74-1.37-.14-2.67.8-3.36.8-.7 0-1.78-.78-2.92-.76-1.5.02-2.88.87-3.65 2.21-1.56 2.7-.4 6.7 1.12 8.89.74 1.07 1.63 2.28 2.79 2.23 1.12-.04 1.54-.72 2.9-.72 1.35 0 1.73.72 2.91.7 1.2-.02 1.96-1.09 2.7-2.16.85-1.24 1.2-2.45 1.22-2.51-.03-.01-2.34-.9-2.38-3.62ZM14.47 6.55c.62-.75 1.04-1.8.93-2.84-.9.04-1.98.6-2.62 1.35-.58.67-1.08 1.74-.94 2.77 1 .08 2.02-.51 2.63-1.28Z" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const [authState, setAuthState] = useState<HomeAuthState>("checking");
   const [email, setEmail] = useState<string | null>(null);
@@ -465,7 +484,10 @@ export default function Home() {
               disabled={Boolean(workingProvider)}
               className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}
+              <span className="inline-flex items-center justify-center gap-2">
+                <AppleAuthLogo />
+                {workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}
+              </span>
             </button>
 
             <button
@@ -474,7 +496,10 @@ export default function Home() {
               disabled={Boolean(workingProvider)}
               className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}
+              <span className="inline-flex items-center justify-center gap-2">
+                <GoogleAuthLogo />
+                {workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}
+              </span>
             </button>
 
             <div className="flex items-center gap-3 py-2 text-xs uppercase tracking-[0.2em] text-zinc-700">
