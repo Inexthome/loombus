@@ -3767,6 +3767,12 @@ export default function DiscussionPage() {
                 Boolean(currentUserId) && reply.user_id !== currentUserId;
 
               const canReportReply = canRespondToPoint;
+              const referencedSourceReply = reply.referenced_reply_id
+                ? replies.find((sourceReply) => sourceReply.id === reply.referenced_reply_id) ?? null
+                : null;
+              const referencedSourceProfile = referencedSourceReply
+                ? replyProfiles[referencedSourceReply.user_id]
+                : null;
 
               return (
                 <div
@@ -3917,6 +3923,23 @@ export default function DiscussionPage() {
                     </div>
                   ) : (
                     <>
+                      {reply.quoted_excerpt && (
+                        <div className="mb-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4">
+                          <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
+                            Replying to{" "}
+                            {referencedSourceProfile ? (
+                              <ProfileName profile={referencedSourceProfile} />
+                            ) : (
+                              "a point"
+                            )}
+                          </p>
+
+                          <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                            “{getReplyReferencePreview(reply)}”
+                          </p>
+                        </div>
+                      )}
+
                       <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--loombus-text)] sm:text-base">
                         <MentionText text={normalizePublicText(reply.body)} />
                       </p>
