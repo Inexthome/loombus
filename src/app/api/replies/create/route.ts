@@ -297,6 +297,8 @@ export async function POST(request: NextRequest) {
         discussion_id: discussionId,
         user_id: user.id,
         body: content,
+        referenced_reply_id: referencedReply?.id ?? null,
+        quoted_excerpt: referencedReply ? getQuotedExcerpt(referencedReply.body) : null,
       })
       .select()
       .single();
