@@ -1719,38 +1719,6 @@ export default function DiscussionPage() {
     }
   }
 
-  function toggleDesktopStatePanel() {
-    if (showAiToolsPanel && activeDetailTool === "ai") {
-      setShowAiToolsPanel(false);
-      setActiveDetailTool("none");
-      return;
-    }
-
-    setActiveDetailTool("ai");
-    setShowAiToolsPanel(true);
-    setOpenPremiumAiTool((current) => current || "summary");
-
-    window.setTimeout(() => {
-      document.getElementById("intelligence-layer")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 0);
-  }
-
-  function openDesktopStateTool(toolKey: string) {
-    setActiveDetailTool("ai");
-    setShowAiToolsPanel(true);
-    handlePremiumAiToolSelect(toolKey);
-
-    window.setTimeout(() => {
-      document.getElementById("intelligence-layer")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 0);
-  }
-
   function startReplyEdit(reply: Reply) {
     setMessage("");
     closeReplyActionMenu();
@@ -4090,7 +4058,7 @@ export default function DiscussionPage() {
 
                 <button
                   type="button"
-                  onClick={toggleDesktopStatePanel}
+                  onClick={() => handlePremiumAiToolSelect(openPremiumAiTool || "summary")}
                   className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-center text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                 >
                   State
@@ -4098,7 +4066,189 @@ export default function DiscussionPage() {
               </div>
             </div>
 
-            </section>
+            {currentUserId && rightRailReportOpen && !reportedDiscussion && (
+              <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-medium text-[var(--loombus-text-muted)]">
+                    Report reason
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() => setRightRailReportOpen(false)}
+                    className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                <div className="mt-3 grid gap-2">
+                  {REPORT_REASONS.map((reason) => {
+                    const selected = reportReason === reason;
+
+                    return (
+                      <button
+                        key={reason}
+                        type="button"
+                        onClick={() => setReportReason(reason)}
+                        className={`rounded-xl border px-3 py-2 text-left text-xs leading-snug transition ${
+                          selected
+                            ? "border-red-800 bg-red-950/20 text-red-300"
+                            : "border-[var(--loombus-border)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                        }`}
+                      >
+                        <span className="flex items-start gap-2">
+                          <span className="mt-0.5 w-4 shrink-0 text-center">
+                            {selected ? "✓" : ""}
+                          </span>
+                          <span>{reason}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {(pinMessage || statusMessage || bookmarkMessage || reportMessage) && (
+              <p className="mt-4 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                {pinMessage || statusMessage || bookmarkMessage || reportMessage}
+              </p>
+            )}
+          </section>
+
+          <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
+                State of the Discussion
+              </p>
+
+              <h2 className="text-lg font-semibold tracking-tight">
+                Understand this thread.
+              </h2>
+            </div>
+
+            {currentUserId ? (
+              <p className="mt-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                Plan: {subscriptionDisplay.label} · AI usage: {aiUsageLabel}
+              </p>
+            ) : (
+              <p className="mt-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                Log in to generate thread intelligence.
+              </p>
+            )}
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {[
+                ["summary", "Overview"],
+                ["keyTakeaways", "Takeaways"],
+                ["whatChanged", "Changed"],
+                ["disagreementMap", "Disagreement"],
+                ["conversationMap", "Structure"],
+                ["relatedIdeas", "Ideas"],
+              ].map(([toolKey, label]) => (
+                <button
+                  key={toolKey}
+                  type="button"
+                  onClick={() => {
+                    setShowAiToolsPanel(true);
+                    handlePremiumAiToolSelect(toolKey);
+                  }}
+                  className={`rounded-full border px-3 py-2 text-center text-xs transition ${
+                    (openPremiumAiTool || "summary") === toolKey
+                      ? "border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text)]"
+                      : "border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3">
+              {!currentUserId ? (
+                <p className="text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                  Log in to generate thread intelligence.
+                </p>
+              ) : !canUseAiSummary ? (
+                <p className="text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                  Upgrade to Premium or Premium Plus to use State of the Discussion tools.
+                </p>
+              ) : (openPremiumAiTool || "summary") === "summary" ? (
+                discussionSummary ? (
+                  <div className="whitespace-pre-wrap text-xs leading-relaxed text-[var(--loombus-text)]">
+                    {discussionSummary.summary}
+                  </div>
+                ) : (
+                  <p className="text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                    {generatingSummary
+                      ? "Generating overview..."
+                      : summaryMessage || "Click Overview to generate a thread overview."}
+                  </p>
+                )
+              ) : openPremiumAiTool === "keyTakeaways" ? (
+                keyTakeaways ? (
+                  <div className="whitespace-pre-wrap text-xs leading-relaxed text-[var(--loombus-text)]">
+                    {keyTakeaways}
+                  </div>
+                ) : (
+                  <p className="text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                    {generatingTakeaways
+                      ? "Generating takeaways..."
+                      : takeawaysMessage || "Click Takeaways to generate key takeaways."}
+                  </p>
+                )
+              ) : openPremiumAiTool === "whatChanged" ? (
+                whatChanged ? (
+                  <div className="whitespace-pre-wrap text-xs leading-relaxed text-[var(--loombus-text)]">
+                    {whatChanged}
+                  </div>
+                ) : (
+                  <p className="text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                    {generatingWhatChanged
+                      ? "Generating what changed..."
+                      : whatChangedMessage || "Click Changed to generate what changed in this thread."}
+                  </p>
+                )
+              ) : openPremiumAiTool === "disagreementMap" ? (
+                disagreementMap ? (
+                  <div className="whitespace-pre-wrap text-xs leading-relaxed text-[var(--loombus-text)]">
+                    {disagreementMap}
+                  </div>
+                ) : (
+                  <p className="text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                    {generatingDisagreement
+                      ? "Generating disagreement map..."
+                      : disagreementMessage || "Click Disagreement to generate a disagreement map."}
+                  </p>
+                )
+              ) : openPremiumAiTool === "conversationMap" ? (
+                conversationMap ? (
+                  <div className="whitespace-pre-wrap text-xs leading-relaxed text-[var(--loombus-text)]">
+                    {conversationMap}
+                  </div>
+                ) : (
+                  <p className="text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                    {generatingConversationMap
+                      ? "Generating structure..."
+                      : conversationMapMessage || "Click Structure to generate a conversation map."}
+                  </p>
+                )
+              ) : openPremiumAiTool === "relatedIdeas" ? (
+                relatedIdeas ? (
+                  <div className="whitespace-pre-wrap text-xs leading-relaxed text-[var(--loombus-text)]">
+                    {relatedIdeas}
+                  </div>
+                ) : (
+                  <p className="text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                    {generatingRelatedIdeas
+                      ? "Generating related ideas..."
+                      : relatedIdeasMessage || "Click Ideas to generate related discussion ideas."}
+                  </p>
+                )
+              ) : null}
+            </div>
+          </section>
 
           {relatedDiscussions.length > 0 && (
             <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
