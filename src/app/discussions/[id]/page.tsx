@@ -4098,7 +4098,6 @@ export default function DiscussionPage() {
               </div>
             </div>
 
-            {currentUserId && rightRailReportOpen && !reportedDiscussion && (
             </section>
 
           {relatedDiscussions.length > 0 && (
