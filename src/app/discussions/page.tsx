@@ -400,7 +400,8 @@ export default function DiscussionsPage() {
           const { data: replyData } = await supabase
             .from("replies")
             .select("discussion_id, user_id, created_at")
-            .in("discussion_id", discussionIds);
+            .in("discussion_id", discussionIds)
+            .is("deleted_at", null);
 
           const counts: Record<string, number> = {};
           const latestReplies: Record<string, string> = {};
