@@ -4040,33 +4040,25 @@ export default function DiscussionPage() {
               </p>
 
               <div className="grid grid-cols-3 gap-2">
-                <a
-                  href="#reply-form"
+                <button
+                  type="button"
+                  onClick={openDetailReplyForm}
                   className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-center text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                 >
                   Reply
-                </a>
-
-                <a
-                  href="#replies"
-                  className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-center text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
-                >
-                  Replies
-                </a>
+                </button>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAiToolsPanel(true);
-                    setOpenPremiumAiTool((current) => current || "summary");
+                  onClick={openDetailReplies}
+                  className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-center text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                >
+                  Replies
+                </button>
 
-                    window.setTimeout(() => {
-                      document.getElementById("intelligence-layer")?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start",
-                      });
-                    }, 0);
-                  }}
+                <button
+                  type="button"
+                  onClick={() => handlePremiumAiToolSelect(openPremiumAiTool || "summary")}
                   className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-center text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
                 >
                   State
