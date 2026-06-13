@@ -2576,11 +2576,6 @@ export default function ClientLayout({
               <DesktopRailTooltip label="People" />
             </Link>
 
-            <Link href="/stickies" aria-label="Stickies" title="Stickies" aria-current={isActivePath("/stickies") ? "page" : undefined} data-active={isActivePath("/stickies") ? "true" : undefined} className={desktopRailLinkClass("/stickies")}>
-              <StickyNote aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Stickies" />
-            </Link>
-
             <Link href="/saved" aria-label="Saved" title="Saved" aria-current={isActivePath("/saved") ? "page" : undefined} data-active={isActivePath("/saved") ? "true" : undefined} className={desktopRailLinkClass("/saved")}>
               <Bookmark aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
               <DesktopRailTooltip label="Saved" />
