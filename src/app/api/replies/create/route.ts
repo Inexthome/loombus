@@ -4,7 +4,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotification, createNotifications } from "@/lib/notifications";
-import { validatePublicProfileName } from "@/lib/profile-name-quality";
+import { validatePublicProfileCompletion } from "@/lib/profile-completion";
 import { normalizePublicText } from "@/lib/public-text";
 import {
   checkAndRecordPasteUsage,
@@ -32,6 +32,7 @@ type ProfileAccess = {
   suspended_until: string | null;
   full_name: string | null;
   username: string | null;
+  bio: string | null;
 };
 
 type ReferencedReply = {
@@ -64,10 +65,7 @@ function extractMentionUsernames(content: string) {
   ].slice(0, 10);
 }
 
-async function getBlockedRelationshipUserIds(
-  supabase: any,
-  userId: string
-) {
+async function getBlockedRelationshipUserIds(supabase: any, userId: string) {
   const { data: blockRows } = await supabase
     .from("user_blocks")
     .select("blocker_id, blocked_id")
@@ -89,10 +87,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
 
     if (!authHeader) {
-      return NextResponse.json(
-        { error: "Unauthorized." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -115,16 +110,13 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: "Invalid session." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid session." }, { status: 401 });
     }
 
     const [{ data: profile }, { data: entitlement }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("is_admin, account_status, enforcement_reason, suspended_until, full_name, username")
+        .select("is_admin, account_status, enforcement_reason, suspended_until, full_name, username, bio")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -139,21 +131,20 @@ export async function POST(request: NextRequest) {
 
     if (!enforcement.allowed) {
       return NextResponse.json(
-        {
-          error: enforcement.errorMessage,
-          code: enforcement.code,
-        },
+        { error: enforcement.errorMessage, code: enforcement.code },
         { status: 403 }
       );
     }
 
-    const profileNameGate = validatePublicProfileName(profileAccess?.full_name ?? null);
-    if (!profileAccess?.is_admin && !profileNameGate.ok) {
+    const profileGate = validatePublicProfileCompletion({
+      fullName: profileAccess?.full_name ?? null,
+      username: profileAccess?.username ?? null,
+      bio: profileAccess?.bio ?? null,
+    });
+
+    if (!profileAccess?.is_admin && !profileGate.ok) {
       return NextResponse.json(
-        {
-          error: profileNameGate.message,
-          code: profileNameGate.code,
-        },
+        { error: profileGate.message, code: profileGate.code },
         { status: 403 }
       );
     }
@@ -167,25 +158,17 @@ export async function POST(request: NextRequest) {
 
     const discussionId = String(body.discussionId ?? "").trim();
     const content = normalizePublicText(body.body).trim();
-    const pastedCharacterCount = normalizePastedCharacterCount(
-      body.pastedCharacterCount
-    );
+    const pastedCharacterCount = normalizePastedCharacterCount(body.pastedCharacterCount);
     const referencedReplyId = String(
       body.referencedReplyId ?? body.referenced_reply_id ?? ""
     ).trim();
 
     if (!discussionId) {
-      return NextResponse.json(
-        { error: "Missing discussion." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing discussion." }, { status: 400 });
     }
 
     if (!content) {
-      return NextResponse.json(
-        { error: "Please enter a reply." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Please enter a reply." }, { status: 400 });
     }
 
     const pasteLimitResult = await checkAndRecordPasteUsage({
@@ -243,10 +226,7 @@ export async function POST(request: NextRequest) {
       referencedReply = (referencedReplyData ?? null) as ReferencedReply | null;
 
       if (referencedReplyError || !referencedReply || referencedReply.deleted_at) {
-        return NextResponse.json(
-          { error: "Referenced reply not found." },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: "Referenced reply not found." }, { status: 404 });
       }
 
       if (referencedReply.discussion_id !== discussionId) {
@@ -271,9 +251,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const cooldownSince = new Date(
-      Date.now() - REPLY_COOLDOWN_MS
-    ).toISOString();
+    const cooldownSince = new Date(Date.now() - REPLY_COOLDOWN_MS).toISOString();
 
     const { data: recentReply } = await supabase
       .from("replies")
@@ -304,10 +282,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     await logAuditEvent({
@@ -373,22 +348,10 @@ export async function POST(request: NextRequest) {
           (mentionedProfiles ?? [])
             .map((profile) => profile.id)
             .filter((profileId) => {
-              if (!profileId) {
-                return false;
-              }
-
-              if (profileId === user.id) {
-                return false;
-              }
-
-              if (profileId === discussion.user_id) {
-                return false;
-              }
-
-              if (blockedRelationshipUserIds.has(profileId)) {
-                return false;
-              }
-
+              if (!profileId) return false;
+              if (profileId === user.id) return false;
+              if (profileId === discussion.user_id) return false;
+              if (blockedRelationshipUserIds.has(profileId)) return false;
               return true;
             })
         ),
@@ -443,18 +406,9 @@ export async function POST(request: NextRequest) {
           (followerRows ?? [])
             .map((follow) => follow.follower_id)
             .filter((followerId): followerId is string => {
-              if (!followerId || followerId === user.id) {
-                return false;
-              }
-
-              if (alreadyNotifiedUserIds.has(followerId)) {
-                return false;
-              }
-
-              if (blockedRelationshipUserIds.has(followerId)) {
-                return false;
-              }
-
+              if (!followerId || followerId === user.id) return false;
+              if (alreadyNotifiedUserIds.has(followerId)) return false;
+              if (blockedRelationshipUserIds.has(followerId)) return false;
               return true;
             })
         ),
