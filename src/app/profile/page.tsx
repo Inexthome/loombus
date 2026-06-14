@@ -6,6 +6,7 @@ import { type ChangeEvent, type FormEvent, type KeyboardEvent, useEffect, useSta
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { getIdentityVerificationDisplay, normalizeIdentityVerificationStatus, type IdentityVerificationStatus } from "@/lib/identity-verification";
+import { validatePublicProfileCompletion } from "@/lib/profile-completion";
 
 type AiEntitlement = {
   tier: string | null;
@@ -229,22 +230,28 @@ export default function ProfilePage() {
     loadProfile();
   }, []);
 
+  const cleanUsernamePreview = username.replace(/^@+/, "").trim().toLowerCase();
+  const profileCompletionGate = validatePublicProfileCompletion({
+    fullName,
+    username: cleanUsernamePreview,
+    bio,
+  });
+
   const profileCompletionItems = [
     {
-      label: "Username",
-      complete: Boolean(username.trim()),
+      label: "Public name",
+      complete: Boolean(fullName.trim()) && fullName.trim().replace(/[^\p{L}]/gu, "").length >= 4,
     },
     {
-      label: "Full name",
-      complete: Boolean(fullName.trim()),
+      label: "Public username",
+      complete:
+        /^[a-z0-9_]{3,30}$/.test(cleanUsernamePreview) &&
+        !/^\d+$/.test(cleanUsernamePreview) &&
+        !/^user_[a-f0-9]{16,}$/.test(cleanUsernamePreview),
     },
     {
       label: "Bio",
-      complete: Boolean(bio.trim()),
-    },
-    {
-      label: "Profile image",
-      complete: Boolean(avatarUrl.trim()),
+      complete: bio.trim().length >= 20,
     },
   ];
 
@@ -503,9 +510,15 @@ export default function ProfilePage() {
       .trim()
       .toLowerCase();
 
-    if (!/^[a-z0-9_]{2,30}$/.test(cleanUsername)) {
+    const profileGate = validatePublicProfileCompletion({
+      fullName,
+      username: cleanUsername,
+      bio,
+    });
+
+    if (!profileGate.ok) {
       setSaving(false);
-      setMessage("Username must be 2-30 characters and can only use letters, numbers, and underscores.");
+      setMessage(profileGate.message);
       return false;
     }
 
