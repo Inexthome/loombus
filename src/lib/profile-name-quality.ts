@@ -5,7 +5,9 @@ export type ProfileNameQualityCode =
   | "profile_name_not_human"
   | "profile_name_reserved"
   | "profile_name_handle_style"
-  | "profile_name_repeated";
+  | "profile_name_repeated"
+  | "profile_name_initials_only"
+  | "profile_name_placeholder";
 
 export type ProfileNameQualityResult =
   | {
@@ -45,10 +47,26 @@ const RESERVED_PHRASES = [
   "team loombus",
 ];
 
+const PLACEHOLDER_NAMES = new Set([
+  "abc",
+  "asdf",
+  "demo",
+  "mar",
+  "name",
+  "new user",
+  "none",
+  "sample",
+  "testuser",
+]);
+
 function normalizePublicName(value: string | null | undefined) {
   return String(value ?? "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function getNameLetters(value: string) {
+  return [...value.matchAll(/[\p{L}]/gu)].map((match) => match[0]);
 }
 
 export function validatePublicProfileName(
@@ -56,22 +74,23 @@ export function validatePublicProfileName(
 ): ProfileNameQualityResult {
   const normalizedName = normalizePublicName(value);
   const lowerName = normalizedName.toLowerCase();
+  const letters = getNameLetters(normalizedName);
 
   if (!normalizedName) {
     return {
       ok: false,
       code: "profile_name_required",
       message:
-        "Add a recognizable public name before posting. This does not have to be your full legal name.",
+        "Add a recognizable public name before participating. This does not have to be your full legal name.",
       normalizedName,
     };
   }
 
-  if (normalizedName.length < 2) {
+  if (normalizedName.length < 4 || letters.length < 4) {
     return {
       ok: false,
       code: "profile_name_too_short",
-      message: "Use a recognizable public name with at least 2 characters.",
+      message: "Use a recognizable public name with at least 4 letters.",
       normalizedName,
     };
   }
@@ -90,6 +109,15 @@ export function validatePublicProfileName(
       ok: false,
       code: "profile_name_reserved",
       message: "Choose a public name that does not impersonate Loombus or platform staff.",
+      normalizedName,
+    };
+  }
+
+  if (PLACEHOLDER_NAMES.has(lowerName)) {
+    return {
+      ok: false,
+      code: "profile_name_placeholder",
+      message: "Use a real public name or recognizable contributor name, not placeholder text.",
       normalizedName,
     };
   }
@@ -126,6 +154,15 @@ export function validatePublicProfileName(
       ok: false,
       code: "profile_name_not_human",
       message: "Use a recognizable public name, not only symbols, numbers, or emoji.",
+      normalizedName,
+    };
+  }
+
+  if (/^([\p{L}]\.?\s*){1,3}$/u.test(normalizedName)) {
+    return {
+      ok: false,
+      code: "profile_name_initials_only",
+      message: "Use a recognizable public name, not only initials.",
       normalizedName,
     };
   }
