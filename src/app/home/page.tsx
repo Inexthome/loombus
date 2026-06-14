@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { DateOfBirthSelect } from "@/components/date-of-birth-select";
 import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
+import { validatePublicProfileCompletion } from "@/lib/profile-completion";
 import { supabase } from "@/lib/supabase/client";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 
@@ -13,6 +14,7 @@ type HomeAuthState = "checking" | "logged_out" | "logged_in";
 type HomeProfile = {
   full_name: string | null;
   username: string | null;
+  bio?: string | null;
   date_of_birth?: string | null;
 };
 
@@ -178,7 +180,7 @@ export default function Home() {
           const { data: profileData, error: profileError } = await withTimeout(
             supabase
               .from("profiles")
-              .select("full_name, username, date_of_birth")
+              .select("full_name, username, bio, date_of_birth")
               .eq("id", currentUser.id)
               .maybeSingle(),
             "Home profile check"
@@ -263,6 +265,7 @@ export default function Home() {
       setProfile((current) => ({
         full_name: current?.full_name ?? null,
         username: current?.username ?? null,
+        bio: current?.bio ?? null,
         date_of_birth: result.dateOfBirth ?? ageDateOfBirth,
       }));
       setAgeVerificationMessage("Age verification saved.");
@@ -312,6 +315,12 @@ export default function Home() {
     const displayName = greetingName || "there";
     const totalAttentionCount = unreadMessageCount + unreadNotificationCount + savedCount;
     const needsAgeVerification = !profile?.date_of_birth;
+    const publicProfileGate = validatePublicProfileCompletion({
+      fullName: profile?.full_name ?? null,
+      username: profile?.username ?? null,
+      bio: profile?.bio ?? null,
+    });
+    const needsPublicProfileCompletion = !publicProfileGate.ok;
 
     const needsAttentionCards: HomeSignalCard[] = [
       {
@@ -380,6 +389,30 @@ export default function Home() {
               </div>
             </div>
           </section>
+
+          {needsPublicProfileCompletion && (
+            <section className="mt-4 loombus-home-shell rounded-[1.75rem] border border-amber-500/30 p-4 sm:mt-6 sm:rounded-[2rem] sm:p-7">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-muted)] sm:text-xs">
+                    Public identity required
+                  </p>
+                  <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                    Complete your public profile before joining discussions.
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                    {publicProfileGate.message} You can browse Loombus, but posting and replying require a complete public identity.
+                  </p>
+                </div>
+                <Link
+                  href="/profile"
+                  className="inline-flex w-full items-center justify-center rounded-full bg-[var(--loombus-text)] px-5 py-3 text-sm font-semibold text-[var(--loombus-background)] transition sm:w-auto"
+                >
+                  Complete profile
+                </Link>
+              </div>
+            </section>
+          )}
 
           {needsAgeVerification && (
             <section className="mt-4 loombus-home-shell rounded-[1.75rem] border p-4 sm:mt-6 sm:rounded-[2rem] sm:p-7">
