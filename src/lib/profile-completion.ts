@@ -154,6 +154,17 @@ export function validatePublicProfileCompletion({
     };
   }
 
+  if (/^user_[a-f0-9]{16,}$/.test(normalizedUsername)) {
+    return {
+      ok: false,
+      code: "username_reserved",
+      message: "Choose a public username instead of the temporary system username.",
+      normalizedName,
+      normalizedUsername,
+      normalizedBio,
+    };
+  }
+
   const lowerBio = normalizedBio.toLowerCase();
 
   if (!normalizedBio) {
