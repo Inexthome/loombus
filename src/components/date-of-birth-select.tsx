@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 const MONTH_OPTIONS = [
   { value: "01", label: "January" },
   { value: "02", label: "February" },
@@ -69,30 +71,40 @@ export function DateOfBirthSelect({
   className = "grid gap-3 sm:grid-cols-3",
   selectClassName = "w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-60",
 }: DateOfBirthSelectProps) {
-  const { year, month, day } = getDateParts(value);
+  const [parts, setParts] = useState(() => getDateParts(value));
   const yearOptions = getYearOptions();
-  const daysInMonth = getDaysInMonth(year, month);
+  const daysInMonth = getDaysInMonth(parts.year, parts.month);
   const dayOptions = Array.from({ length: daysInMonth }, (_, index) =>
     padDay(String(index + 1))
   );
 
+  useEffect(() => {
+    if (value) {
+      setParts(getDateParts(value));
+    }
+  }, [value]);
+
   function updateDate(next: Partial<{ year: string; month: string; day: string }>) {
-    const nextYear = next.year ?? year;
-    const nextMonth = next.month ?? month;
-    let nextDay = next.day ?? day;
+    setParts((currentParts) => {
+      const nextParts = {
+        ...currentParts,
+        ...next,
+      };
 
-    const nextDaysInMonth = getDaysInMonth(nextYear, nextMonth);
+      const nextDaysInMonth = getDaysInMonth(nextParts.year, nextParts.month);
 
-    if (nextDay && Number(nextDay) > nextDaysInMonth) {
-      nextDay = padDay(String(nextDaysInMonth));
-    }
+      if (nextParts.day && Number(nextParts.day) > nextDaysInMonth) {
+        nextParts.day = padDay(String(nextDaysInMonth));
+      }
 
-    if (!nextYear || !nextMonth || !nextDay) {
-      onChange("");
-      return;
-    }
+      if (nextParts.year && nextParts.month && nextParts.day) {
+        onChange(`${nextParts.year}-${nextParts.month}-${nextParts.day}`);
+      } else if (value) {
+        onChange("");
+      }
 
-    onChange(`${nextYear}-${nextMonth}-${nextDay}`);
+      return nextParts;
+    });
   }
 
   return (
@@ -103,7 +115,7 @@ export function DateOfBirthSelect({
         </span>
         <select
           id={`${idPrefix}-month`}
-          value={month}
+          value={parts.month}
           disabled={disabled}
           required
           onChange={(event) => updateDate({ month: event.target.value })}
@@ -124,7 +136,7 @@ export function DateOfBirthSelect({
         </span>
         <select
           id={`${idPrefix}-day`}
-          value={day}
+          value={parts.day}
           disabled={disabled}
           required
           onChange={(event) => updateDate({ day: event.target.value })}
@@ -145,7 +157,7 @@ export function DateOfBirthSelect({
         </span>
         <select
           id={`${idPrefix}-year`}
-          value={year}
+          value={parts.year}
           disabled={disabled}
           required
           onChange={(event) => updateDate({ year: event.target.value })}
