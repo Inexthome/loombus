@@ -13,11 +13,13 @@ import {
   normalizeIdentityVerificationStatus,
   type IdentityVerificationStatus,
 } from "@/lib/identity-verification";
+import { validatePublicProfileCompletion } from "@/lib/profile-completion";
 
 type ProfileRow = {
   id: string;
   username: string | null;
   full_name: string | null;
+  bio: string | null;
   avatar_url: string | null;
   is_admin: boolean | null;
   account_status: string | null;
@@ -140,6 +142,7 @@ export default function AdminUsersPage() {
   const [planFilter, setPlanFilter] = useState("all");
   const [identityFilter, setIdentityFilter] = useState("all");
   const [ageFilter, setAgeFilter] = useState("all");
+  const [publicProfileFilter, setPublicProfileFilter] = useState("all");
   const [identityReasonByUserId, setIdentityReasonByUserId] = useState<Record<string, string>>({});
   const [workingIdentityUserId, setWorkingIdentityUserId] = useState<string | null>(null);
 
@@ -175,7 +178,7 @@ export default function AdminUsersPage() {
 
       const { data: profileRows, error: profileError } = await supabase
         .from("profiles")
-        .select("id, username, full_name, avatar_url, is_admin, account_status, identity_verification_status, identity_verification_provider, identity_verified_at, legal_name_verified, identity_restriction_reason, date_of_birth, age_band, teen_safety_mode, guardian_required")
+        .select("id, username, full_name, bio, avatar_url, is_admin, account_status, identity_verification_status, identity_verification_provider, identity_verified_at, legal_name_verified, identity_restriction_reason, date_of_birth, age_band, teen_safety_mode, guardian_required")
         .order("username", { ascending: true });
 
       if (profileError) {
@@ -246,6 +249,13 @@ export default function AdminUsersPage() {
         const ageBand = normalizeAgeBand(profile.age_band);
         const teenSafetyMode = Boolean(profile.teen_safety_mode);
         const guardianRequired = Boolean(profile.guardian_required);
+        const publicProfileGate = validatePublicProfileCompletion({
+          fullName: profile.full_name,
+          username: profile.username,
+          bio: profile.bio,
+        });
+        const publicProfileComplete = publicProfileGate.ok;
+        const publicProfileIssue = publicProfileGate.ok ? "" : publicProfileGate.message;
 
         return {
           profile,
@@ -258,6 +268,9 @@ export default function AdminUsersPage() {
           ageBand,
           teenSafetyMode,
           guardianRequired,
+          publicProfileGate,
+          publicProfileComplete,
+          publicProfileIssue,
         };
       })
       .filter((row) => {
@@ -290,6 +303,14 @@ export default function AdminUsersPage() {
           return false;
         }
 
+        if (publicProfileFilter === "complete" && !row.publicProfileComplete) {
+          return false;
+        }
+
+        if (publicProfileFilter === "incomplete" && row.publicProfileComplete) {
+          return false;
+        }
+
         if (!query) {
           return true;
         }
@@ -298,6 +319,9 @@ export default function AdminUsersPage() {
           row.profile.id,
           row.profile.username,
           row.profile.full_name,
+          row.profile.bio,
+          row.publicProfileComplete ? "profile complete public profile complete" : "profile incomplete public profile incomplete",
+          row.publicProfileIssue,
           row.accountStatus,
           row.identityStatus,
           row.profile.identity_verification_provider,
@@ -318,7 +342,7 @@ export default function AdminUsersPage() {
 
         return searchable.includes(query);
       });
-  }, [profiles, entitlements, searchQuery, statusFilter, planFilter, identityFilter, ageFilter]);
+  }, [profiles, entitlements, searchQuery, statusFilter, planFilter, identityFilter, ageFilter, publicProfileFilter]);
 
   const counts = useMemo(() => {
     const allRows = profiles.map((profile) => {
@@ -333,6 +357,11 @@ export default function AdminUsersPage() {
         ageBand: normalizeAgeBand(profile.age_band),
         teenSafetyMode: Boolean(profile.teen_safety_mode),
         guardianRequired: Boolean(profile.guardian_required),
+        publicProfileGate: validatePublicProfileCompletion({
+          fullName: profile.full_name,
+          username: profile.username,
+          bio: profile.bio,
+        }),
         hasStripeCustomer: Boolean(entitlement?.stripe_customer_id),
       };
     });
@@ -349,6 +378,8 @@ export default function AdminUsersPage() {
       teenSafety: allRows.filter((row) => row.teenSafetyMode).length,
       ageUnknown: allRows.filter((row) => row.ageBand === "unknown").length,
       under13: allRows.filter((row) => row.ageBand === "under_13" || row.guardianRequired).length,
+      publicProfileComplete: allRows.filter((row) => row.publicProfileGate.ok).length,
+      publicProfileIncomplete: allRows.filter((row) => !row.publicProfileGate.ok).length,
     };
   }, [profiles, entitlements]);
 
@@ -483,7 +514,7 @@ export default function AdminUsersPage() {
           </p>
         )}
 
-        <section className="mb-8 grid gap-4 md:grid-cols-4 lg:grid-cols-11">
+        <section className="mb-8 grid gap-4 md:grid-cols-4 lg:grid-cols-12">
           <Metric label="Users" value={counts.total} />
           <Metric label="Admins" value={counts.admins} />
           <Metric label="Premium" value={counts.premium} />
@@ -495,10 +526,12 @@ export default function AdminUsersPage() {
           <Metric label="Teen Safety" value={counts.teenSafety} />
           <Metric label="Age unknown" value={counts.ageUnknown} />
           <Metric label="Under 13" value={counts.under13} />
+          <Metric label="Profile complete" value={counts.publicProfileComplete} />
+          <Metric label="Profile incomplete" value={counts.publicProfileIncomplete} />
         </section>
 
         <section className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
-          <div className="grid gap-4 xl:grid-cols-[1fr_200px_200px_200px_200px]">
+          <div className="grid gap-4 xl:grid-cols-[1fr_190px_190px_190px_190px_190px]">
             <label>
               <span className="mb-2 block text-sm text-zinc-400">Search users</span>
               <input
@@ -574,6 +607,19 @@ export default function AdminUsersPage() {
                 <option value="guardian_required">Guardian required</option>
               </select>
             </label>
+
+            <label>
+              <span className="mb-2 block text-sm text-zinc-400">Public profile</span>
+              <select
+                value={publicProfileFilter}
+                onChange={(event) => setPublicProfileFilter(event.target.value)}
+                className="w-full rounded-2xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-300 outline-none transition focus:border-zinc-600"
+              >
+                <option value="all">All profiles</option>
+                <option value="complete">Complete</option>
+                <option value="incomplete">Incomplete</option>
+              </select>
+            </label>
           </div>
 
           <p className="mt-4 text-sm text-zinc-600">
@@ -590,7 +636,7 @@ export default function AdminUsersPage() {
               </p>
             </div>
           ) : (
-            rows.map(({ profile, entitlement, planDisplay, accountStatus, identityStatus, identityDisplay, ageBand, teenSafetyMode, guardianRequired }) => (
+            rows.map(({ profile, entitlement, planDisplay, accountStatus, identityStatus, identityDisplay, ageBand, teenSafetyMode, guardianRequired, publicProfileComplete, publicProfileIssue }) => (
               <article
                 key={profile.id}
                 className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6"
@@ -631,6 +677,16 @@ export default function AdminUsersPage() {
                       Age: {formatAgeBandLabel(ageBand)}
                     </span>
 
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs ${
+                        publicProfileComplete
+                          ? "border-emerald-900 text-emerald-300"
+                          : "border-amber-900 text-amber-300"
+                      }`}
+                    >
+                      {publicProfileComplete ? "Profile complete" : "Profile incomplete"}
+                    </span>
+
                     {teenSafetyMode && (
                       <span className="rounded-full border border-amber-900 px-3 py-1 text-xs text-amber-300">
                         Teen Safety
@@ -651,6 +707,23 @@ export default function AdminUsersPage() {
                   </div>
                 </div>
 
+                {!publicProfileComplete && (
+                  <div className="mt-5 rounded-2xl border border-amber-900/70 bg-amber-950/20 p-4">
+                    <h3 className="text-sm font-semibold text-amber-300">
+                      Public profile needs completion
+                    </h3>
+                    <p className="mt-2 text-sm leading-relaxed text-amber-200/80">
+                      {publicProfileIssue}
+                    </p>
+                    <Link
+                      href={`/admin/users?member=${encodeURIComponent(profile.id)}`}
+                      className="mt-3 inline-flex text-xs font-semibold uppercase tracking-[0.18em] text-amber-200 underline-offset-4 hover:underline"
+                    >
+                      Keep this member in view
+                    </Link>
+                  </div>
+                )}
+
                 <div className="mt-6 grid gap-4 text-sm md:grid-cols-2 lg:grid-cols-4">
                   <Info label="AI enabled" value={entitlement?.ai_assisted_enabled ? "Yes" : "No"} />
                   <Info label="Summary limit" value={`${entitlement?.monthly_summary_limit ?? 0}/month`} />
@@ -665,6 +738,9 @@ export default function AdminUsersPage() {
                   <Info label="Teen safety mode" value={teenSafetyMode ? "Enabled" : "No"} />
                   <Info label="DOB on file" value={profile.date_of_birth ? "Yes" : "No"} />
                   <Info label="Guardian required" value={guardianRequired ? "Yes" : "No"} />
+                  <Info label="Public profile" value={publicProfileComplete ? "Complete" : "Incomplete"} />
+                  <Info label="Profile issue" value={publicProfileComplete ? "—" : publicProfileIssue} />
+                  <Info label="Bio" value={profile.bio?.trim() || "—"} />
                   <Info label="Stripe status" value={entitlement?.stripe_subscription_status ?? "—"} />
                   <Info label="Stripe customer" value={maskId(entitlement?.stripe_customer_id)} />
                   <Info label="Stripe subscription" value={maskId(entitlement?.stripe_subscription_id)} />
