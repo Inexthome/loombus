@@ -93,6 +93,7 @@ export default function Home() {
   const [ageDateOfBirth, setAgeDateOfBirth] = useState("");
   const [ageVerificationMessage, setAgeVerificationMessage] = useState("");
   const [savingAgeVerification, setSavingAgeVerification] = useState(false);
+  const [hasAgeVerification, setHasAgeVerification] = useState(false);
 
   useEffect(() => {
     const {
@@ -104,6 +105,8 @@ export default function Home() {
       } else {
         setEmail(null);
         setProfile(null);
+        setAgeDateOfBirth("");
+        setHasAgeVerification(false);
         setAuthState("logged_out");
       }
     });
@@ -135,6 +138,13 @@ export default function Home() {
 
         setEmail(currentUser.email ?? null);
         setAuthState("logged_in");
+
+        const metadataDateOfBirth =
+          typeof currentUser.user_metadata?.date_of_birth === "string"
+            ? currentUser.user_metadata.date_of_birth
+            : typeof currentUser.user_metadata?.dateOfBirth === "string"
+              ? currentUser.user_metadata.dateOfBirth
+              : "";
 
         const accessToken = session?.access_token ?? "";
 
@@ -192,8 +202,28 @@ export default function Home() {
 
           if (isMounted) {
             const nextProfile = (profileData ?? null) as HomeProfile | null;
+            const resolvedDateOfBirth = nextProfile?.date_of_birth ?? metadataDateOfBirth;
+
             setProfile(nextProfile);
-            setAgeDateOfBirth(nextProfile?.date_of_birth ?? "");
+            setAgeDateOfBirth(resolvedDateOfBirth ?? "");
+            setHasAgeVerification(Boolean(resolvedDateOfBirth));
+          }
+
+          if (!profileData?.date_of_birth && metadataDateOfBirth && accessToken) {
+            const metadataAgeBand = getAgeBandFromDateOfBirth(metadataDateOfBirth);
+
+            if (metadataAgeBand && metadataAgeBand !== "under_13") {
+              fetch("/api/profile/age", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({ dateOfBirth: metadataDateOfBirth }),
+              }).catch(() => {
+                // The prompt stays hidden from valid auth metadata even if backfill fails.
+              });
+            }
           }
         } catch (profileError) {
           console.error("Unable to load home profile greeting.", profileError);
@@ -268,6 +298,7 @@ export default function Home() {
         bio: current?.bio ?? null,
         date_of_birth: result.dateOfBirth ?? ageDateOfBirth,
       }));
+      setHasAgeVerification(true);
       setAgeVerificationMessage("Age verification saved.");
     } finally {
       setSavingAgeVerification(false);
@@ -314,7 +345,7 @@ export default function Home() {
     const greetingName = getGreetingName(profile, email);
     const displayName = greetingName || "there";
     const totalAttentionCount = unreadMessageCount + unreadNotificationCount + savedCount;
-    const needsAgeVerification = !profile?.date_of_birth;
+    const needsAgeVerification = !hasAgeVerification;
     const publicProfileGate = validatePublicProfileCompletion({
       fullName: profile?.full_name ?? null,
       username: profile?.username ?? null,
@@ -406,7 +437,7 @@ export default function Home() {
                 </div>
                 <Link
                   href="/profile"
-                  className="inline-flex w-full items-center justify-center rounded-full bg-[var(--loombus-text)] px-5 py-3 text-sm font-semibold text-[var(--loombus-background)] transition sm:w-auto"
+                  className="inline-flex w-full items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-semibold text-[var(--loombus-primary-text)] transition hover:opacity-90 sm:w-auto"
                 >
                   Complete profile
                 </Link>
@@ -441,7 +472,7 @@ export default function Home() {
                 type="button"
                 onClick={handleAgeVerification}
                 disabled={savingAgeVerification}
-                className="mt-4 w-full rounded-full bg-[var(--loombus-text)] px-5 py-3 text-sm font-semibold text-[var(--loombus-background)] transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                className="mt-4 w-full rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-semibold text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
                 {savingAgeVerification ? "Saving..." : "Confirm age"}
               </button>
