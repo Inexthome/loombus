@@ -45,3 +45,5 @@ android/app/google-services.json
 
 # Android Studio local project files
 android/.idea/
+# Local backup folders should stay outside the Next.js build
+loombus_*_backup_*/
