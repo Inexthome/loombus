@@ -8,7 +8,7 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotifications } from "@/lib/notifications";
-import { validatePublicProfileName } from "@/lib/profile-name-quality";
+import { validatePublicProfileCompletion } from "@/lib/profile-completion";
 import { normalizePublicText } from "@/lib/public-text";
 import {
   checkAndRecordPasteUsage,
@@ -26,6 +26,7 @@ type ProfileAccess = {
   suspended_until: string | null;
   full_name: string | null;
   username: string | null;
+  bio: string | null;
 };
 
 type AiEntitlement = {
@@ -39,10 +40,7 @@ type BlockRow = {
   blocked_id: string;
 };
 
-async function getBlockedRelationshipUserIds(
-  supabase: any,
-  userId: string
-) {
+async function getBlockedRelationshipUserIds(supabase: any, userId: string) {
   const { data: blockRows } = await supabase
     .from("user_blocks")
     .select("blocker_id, blocked_id")
@@ -59,10 +57,7 @@ async function getBlockedRelationshipUserIds(
   return blockedRelationshipUserIds;
 }
 
-function hasLongPostAccess(
-  entitlement: AiEntitlement | null,
-  isAdmin: boolean
-) {
+function hasLongPostAccess(entitlement: AiEntitlement | null, isAdmin: boolean) {
   if (isAdmin) {
     return true;
   }
@@ -73,8 +68,6 @@ function hasLongPostAccess(
     (entitlement.monthly_summary_limit ?? 0) > 50
   );
 }
-
-
 
 async function createTopicAlertNotifications({
   supabase,
@@ -157,10 +150,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("authorization");
 
     if (!authHeader) {
-      return NextResponse.json(
-        { error: "Unauthorized." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -183,10 +173,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
-      return NextResponse.json(
-        { error: "Invalid session." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid session." }, { status: 401 });
     }
 
     const body = await request.json();
@@ -231,32 +218,23 @@ export async function POST(request: NextRequest) {
     const topic = requestedTopic as DiscussionTopic;
 
     const content = normalizePublicText(body.body).trim();
-    const pastedCharacterCount = normalizePastedCharacterCount(
-      body.pastedCharacterCount
-    );
+    const pastedCharacterCount = normalizePastedCharacterCount(body.pastedCharacterCount);
     const tagResult = normalizeDiscussionTags(body.tags);
 
     if (tagResult.error) {
-      return NextResponse.json(
-        { error: tagResult.error },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: tagResult.error }, { status: 400 });
     }
 
     const discussionTags = tagResult.tags;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const tagSupabase =
       discussionTags.length > 0 && serviceKey
-        ? createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            serviceKey,
-            {
-              auth: {
-                autoRefreshToken: false,
-                persistSession: false,
-              },
-            }
-          )
+        ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey, {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false,
+            },
+          })
         : null;
 
     if (discussionTags.length > 0 && !tagSupabase) {
@@ -269,7 +247,7 @@ export async function POST(request: NextRequest) {
     const [{ data: profile }, { data: entitlement }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("is_admin, account_status, enforcement_reason, suspended_until, full_name, username")
+        .select("is_admin, account_status, enforcement_reason, suspended_until, full_name, username, bio")
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -284,23 +262,21 @@ export async function POST(request: NextRequest) {
 
     if (!enforcement.allowed) {
       return NextResponse.json(
-        {
-          error: enforcement.errorMessage,
-          code: enforcement.code,
-        },
+        { error: enforcement.errorMessage, code: enforcement.code },
         { status: 403 }
       );
     }
 
     const isAdmin = Boolean(profileAccess?.is_admin);
+    const profileGate = validatePublicProfileCompletion({
+      fullName: profileAccess?.full_name ?? null,
+      username: profileAccess?.username ?? null,
+      bio: profileAccess?.bio ?? null,
+    });
 
-    const profileNameGate = validatePublicProfileName(profileAccess?.full_name ?? null);
-    if (!profileAccess?.is_admin && !profileNameGate.ok) {
+    if (!isAdmin && !profileGate.ok) {
       return NextResponse.json(
-        {
-          error: profileNameGate.message,
-          code: profileNameGate.code,
-        },
+        { error: profileGate.message, code: profileGate.code },
         { status: 403 }
       );
     }
@@ -371,9 +347,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cooldownSince = new Date(
-      Date.now() - CREATE_COOLDOWN_MS
-    ).toISOString();
+    const cooldownSince = new Date(Date.now() - CREATE_COOLDOWN_MS).toISOString();
 
     const { data: recentPost } = await supabase
       .from("discussions")
@@ -407,10 +381,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     if (discussionTags.length > 0 && tagSupabase) {
@@ -447,10 +418,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
-      supabase,
-      user.id
-    );
+    const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(supabase, user.id);
 
     const { data: followerRows } = await supabase
       .from("follows")
@@ -462,10 +430,7 @@ export async function POST(request: NextRequest) {
         (followerRows ?? [])
           .map((follow) => follow.follower_id)
           .filter((followerId): followerId is string => {
-            if (!followerId || followerId === user.id) {
-              return false;
-            }
-
+            if (!followerId || followerId === user.id) return false;
             return !blockedRelationshipUserIds.has(followerId);
           })
       ),
@@ -496,9 +461,7 @@ export async function POST(request: NextRequest) {
         }));
 
       if (followerNotifications.length > 0) {
-        const { error: followerNotificationError } = await createNotifications(
-          followerNotifications
-        );
+        const { error: followerNotificationError } = await createNotifications(followerNotifications);
 
         if (followerNotificationError) {
           console.error(
@@ -508,6 +471,14 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+
+    await createTopicAlertNotifications({
+      supabase,
+      discussionId: discussion.id,
+      discussionTitle: title,
+      discussionTopic: topic,
+      authorId: user.id,
+    });
 
     return NextResponse.json({ discussion });
   } catch {

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { validatePublicProfileName } from "@/lib/profile-name-quality";
+import { validatePublicProfileCompletion } from "@/lib/profile-completion";
 
 type ProfileRow = {
   id: string;
@@ -34,8 +34,8 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+function jsonError(message: string, status: number, code?: string) {
+  return NextResponse.json({ error: message, code }, { status });
 }
 
 function cleanOptionalText(value: unknown, maxLength: number) {
@@ -63,10 +63,7 @@ function isValidOptionalUrl(value: string) {
   return /^https?:\/\//i.test(value);
 }
 
-function hasCreatorToolsAccess(
-  entitlement: EntitlementRow | null,
-  isAdmin: boolean
-) {
+function hasCreatorToolsAccess(entitlement: EntitlementRow | null, isAdmin: boolean) {
   if (isAdmin) {
     return true;
   }
@@ -78,18 +75,12 @@ function hasCreatorToolsAccess(
   );
 }
 
-function hasPremiumDigestAccess(
-  entitlement: EntitlementRow | null,
-  isAdmin: boolean
-) {
+function hasPremiumDigestAccess(entitlement: EntitlementRow | null, isAdmin: boolean) {
   if (isAdmin) {
     return true;
   }
 
-  return (
-    entitlement?.ai_assisted_enabled === true &&
-    entitlement.tier === "premium"
-  );
+  return entitlement?.ai_assisted_enabled === true && entitlement.tier === "premium";
 }
 
 export async function POST(request: NextRequest) {
@@ -117,71 +108,39 @@ export async function POST(request: NextRequest) {
   }
 
   const source = body as Record<string, unknown>;
+  const completionGate = validatePublicProfileCompletion({
+    fullName: cleanOptionalText(source.fullName, 80),
+    username: cleanOptionalText(source.username, 30),
+    bio: typeof source.bio === "string" ? source.bio : "",
+  });
 
-  const fullName = cleanOptionalText(source.fullName, 80);
-
-  const profileNameGate = validatePublicProfileName(fullName);
-  if (!profileNameGate.ok) {
-    return NextResponse.json(
-    {
-      error: profileNameGate.message,
-      code: profileNameGate.code,
-    },
-    { status: 400 }
-  );
+  if (!completionGate.ok) {
+    return jsonError(completionGate.message, 400, completionGate.code);
   }
-  const username = cleanOptionalText(source.username, 30)
-    .replace(/^@+/, "")
-    .toLowerCase();
-  const bio = typeof source.bio === "string" ? source.bio.trim().slice(0, 1000) : "";
+
+  const fullName = completionGate.normalizedName;
+  const username = completionGate.normalizedUsername;
+  const bio = completionGate.normalizedBio;
   const perspectiveMarker =
-    typeof source.perspectiveMarker === "string" &&
-    PERSPECTIVE_MARKERS.has(source.perspectiveMarker)
+    typeof source.perspectiveMarker === "string" && PERSPECTIVE_MARKERS.has(source.perspectiveMarker)
       ? source.perspectiveMarker
       : null;
-  const avatarUrl =
-    typeof source.avatarUrl === "string" && source.avatarUrl.trim()
-      ? source.avatarUrl.trim()
-      : null;
+  const avatarUrl = typeof source.avatarUrl === "string" && source.avatarUrl.trim() ? source.avatarUrl.trim() : null;
   const creatorWebsiteUrl = cleanOptionalText(source.creatorWebsiteUrl, 240);
   const creatorSupportUrl = cleanOptionalText(source.creatorSupportUrl, 240);
   const creatorSupportLabel = cleanOptionalText(source.creatorSupportLabel, 40);
 
-  const repliesEnabled =
-    typeof source.repliesEnabled === "boolean" ? source.repliesEnabled : true;
-  const followsEnabled =
-    typeof source.followsEnabled === "boolean" ? source.followsEnabled : true;
-  const mentionsEnabled =
-    typeof source.mentionsEnabled === "boolean" ? source.mentionsEnabled : true;
-  const followedDiscussionsEnabled =
-    typeof source.followedDiscussionsEnabled === "boolean"
-      ? source.followedDiscussionsEnabled
-      : true;
-  const followedRepliesEnabled =
-    typeof source.followedRepliesEnabled === "boolean"
-      ? source.followedRepliesEnabled
-      : false;
-  const emailDigestEnabled =
-    typeof source.emailDigestEnabled === "boolean" ? source.emailDigestEnabled : false;
-  const emailDigestFrequency =
-    source.emailDigestFrequency === "daily" ? "daily" : "weekly";
-  const pushMessagesEnabled =
-    typeof source.pushMessagesEnabled === "boolean" ? source.pushMessagesEnabled : true;
-  const pushRepliesEnabled =
-    typeof source.pushRepliesEnabled === "boolean" ? source.pushRepliesEnabled : true;
-  const pushFollowsEnabled =
-    typeof source.pushFollowsEnabled === "boolean" ? source.pushFollowsEnabled : true;
-  const pushAdminReportsEnabled =
-    typeof source.pushAdminReportsEnabled === "boolean"
-      ? source.pushAdminReportsEnabled
-      : true;
-
-  if (!/^[a-z0-9_]{2,30}$/.test(username)) {
-    return jsonError(
-      "Username must be 2-30 characters and can only use letters, numbers, and underscores.",
-      400
-    );
-  }
+  const repliesEnabled = typeof source.repliesEnabled === "boolean" ? source.repliesEnabled : true;
+  const followsEnabled = typeof source.followsEnabled === "boolean" ? source.followsEnabled : true;
+  const mentionsEnabled = typeof source.mentionsEnabled === "boolean" ? source.mentionsEnabled : true;
+  const followedDiscussionsEnabled = typeof source.followedDiscussionsEnabled === "boolean" ? source.followedDiscussionsEnabled : true;
+  const followedRepliesEnabled = typeof source.followedRepliesEnabled === "boolean" ? source.followedRepliesEnabled : false;
+  const emailDigestEnabled = typeof source.emailDigestEnabled === "boolean" ? source.emailDigestEnabled : false;
+  const emailDigestFrequency = source.emailDigestFrequency === "daily" ? "daily" : "weekly";
+  const pushMessagesEnabled = typeof source.pushMessagesEnabled === "boolean" ? source.pushMessagesEnabled : true;
+  const pushRepliesEnabled = typeof source.pushRepliesEnabled === "boolean" ? source.pushRepliesEnabled : true;
+  const pushFollowsEnabled = typeof source.pushFollowsEnabled === "boolean" ? source.pushFollowsEnabled : true;
+  const pushAdminReportsEnabled = typeof source.pushAdminReportsEnabled === "boolean" ? source.pushAdminReportsEnabled : true;
 
   if (!isValidOptionalUrl(creatorWebsiteUrl)) {
     return jsonError("Creator website URL must start with http:// or https://.", 400);
@@ -215,18 +174,11 @@ export async function POST(request: NextRequest) {
     .maybeSingle<EntitlementRow>();
 
   const isAdmin = Boolean(profile?.is_admin);
-  const hasCreatorFields =
-    Boolean(creatorWebsiteUrl) ||
-    Boolean(creatorSupportUrl) ||
-    Boolean(creatorSupportLabel);
-
+  const hasCreatorFields = Boolean(creatorWebsiteUrl) || Boolean(creatorSupportUrl) || Boolean(creatorSupportLabel);
   const canUseEmailDigest = hasPremiumDigestAccess(entitlement ?? null, isAdmin);
 
   if (hasCreatorFields && !hasCreatorToolsAccess(entitlement ?? null, isAdmin)) {
-    return jsonError(
-      "Creator/supporter profile tools require Premium Plus access. Clear those fields to save your basic profile.",
-      403
-    );
+    return jsonError("Creator/supporter profile tools require Premium Plus access. Clear those fields to save your basic profile.", 403);
   }
 
   const { error: profileError } = await supabase.from("profiles").upsert({
@@ -249,29 +201,24 @@ export async function POST(request: NextRequest) {
     return jsonError(profileError.message || "Unable to save profile.", 400);
   }
 
-  const { error: preferencesError } = await supabase
-    .from("notification_preferences")
-    .upsert({
-      user_id: user.id,
-      replies_enabled: repliesEnabled,
-      follows_enabled: followsEnabled,
-      mentions_enabled: mentionsEnabled,
-      followed_discussions_enabled: followedDiscussionsEnabled,
-      followed_replies_enabled: followedRepliesEnabled,
-      email_digest_enabled: canUseEmailDigest ? emailDigestEnabled : false,
-      email_digest_frequency: emailDigestFrequency,
-      push_messages_enabled: pushMessagesEnabled,
-      push_replies_enabled: pushRepliesEnabled,
-      push_follows_enabled: pushFollowsEnabled,
-      push_admin_reports_enabled: isAdmin ? pushAdminReportsEnabled : false,
-      updated_at: new Date().toISOString(),
-    });
+  const { error: preferencesError } = await supabase.from("notification_preferences").upsert({
+    user_id: user.id,
+    replies_enabled: repliesEnabled,
+    follows_enabled: followsEnabled,
+    mentions_enabled: mentionsEnabled,
+    followed_discussions_enabled: followedDiscussionsEnabled,
+    followed_replies_enabled: followedRepliesEnabled,
+    email_digest_enabled: canUseEmailDigest ? emailDigestEnabled : false,
+    email_digest_frequency: emailDigestFrequency,
+    push_messages_enabled: pushMessagesEnabled,
+    push_replies_enabled: pushRepliesEnabled,
+    push_follows_enabled: pushFollowsEnabled,
+    push_admin_reports_enabled: isAdmin ? pushAdminReportsEnabled : false,
+    updated_at: new Date().toISOString(),
+  });
 
   if (preferencesError) {
-    return jsonError(
-      preferencesError.message || "Profile saved, but notification settings failed.",
-      400
-    );
+    return jsonError(preferencesError.message || "Profile saved, but notification settings failed.", 400);
   }
 
   return NextResponse.json({
