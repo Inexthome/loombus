@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { DateOfBirthSelect } from "@/components/date-of-birth-select";
+import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
 import { supabase } from "@/lib/supabase/client";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 
@@ -11,7 +13,23 @@ type HomeAuthState = "checking" | "logged_out" | "logged_in";
 type HomeProfile = {
   full_name: string | null;
   username: string | null;
+  date_of_birth?: string | null;
 };
+
+type HomeSignalCard = {
+  title: string;
+  value: string;
+  description: string;
+  href: string;
+  action: string;
+  urgent?: boolean;
+};
+
+const loombusUpdates = [
+  "Discussions are now the main post-login destination.",
+  "Create composer tools were simplified into a compact action row.",
+  "Settings was cleaned up so controls and reference links are easier to find.",
+];
 
 function getGreetingName(profile: HomeProfile | null, email: string | null) {
   const profileName = profile?.full_name?.trim() || profile?.username?.trim();
@@ -31,11 +49,7 @@ function getGreetingName(profile: HomeProfile | null, email: string | null) {
   return "";
 }
 
-function withTimeout<T>(
-  promise: PromiseLike<T>,
-  label: string,
-  ms = 5000
-): Promise<T> {
+function withTimeout<T>(promise: PromiseLike<T>, label: string, ms = 5000): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   const timeout = new Promise<never>((_, reject) => {
@@ -65,40 +79,6 @@ async function waitForHomeSession(maxAttempts = 20) {
   return null;
 }
 
-type HomeSignalCard = {
-  title: string;
-  value: string;
-  description: string;
-  href: string;
-  action: string;
-  urgent?: boolean;
-};
-
-const loombusUpdates = [
-  "Discussions are now the main post-login destination.",
-  "Create composer tools were simplified into a compact action row.",
-  "Settings was cleaned up so controls and reference links are easier to find.",
-];
-
-function GoogleAuthLogo() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
-      <path fill="#4285F4" d="M21.6 12.23c0-.74-.07-1.45-.19-2.13H12v4.03h5.38a4.6 4.6 0 0 1-1.99 3.02v2.51h3.23c1.89-1.74 2.98-4.3 2.98-7.43Z" />
-      <path fill="#34A853" d="M12 22c2.7 0 4.97-.89 6.62-2.34l-3.23-2.51c-.9.6-2.04.95-3.39.95-2.61 0-4.82-1.76-5.61-4.13H3.05v2.59A9.99 9.99 0 0 0 12 22Z" />
-      <path fill="#FBBC05" d="M6.39 13.97A6.01 6.01 0 0 1 6.07 12c0-.68.12-1.34.32-1.97V7.44H3.05A9.99 9.99 0 0 0 2 12c0 1.61.38 3.13 1.05 4.56l3.34-2.59Z" />
-      <path fill="#EA4335" d="M12 5.9c1.47 0 2.79.51 3.83 1.5l2.86-2.86C16.96 2.93 14.69 2 12 2a9.99 9.99 0 0 0-8.95 5.44l3.34 2.59C7.18 7.66 9.39 5.9 12 5.9Z" />
-    </svg>
-  );
-}
-
-function AppleAuthLogo() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
-      <path d="M16.7 13.05c-.02-2.21 1.8-3.27 1.88-3.32-1.03-1.51-2.64-1.72-3.21-1.74-1.37-.14-2.67.8-3.36.8-.7 0-1.78-.78-2.92-.76-1.5.02-2.88.87-3.65 2.21-1.56 2.7-.4 6.7 1.12 8.89.74 1.07 1.63 2.28 2.79 2.23 1.12-.04 1.54-.72 2.9-.72 1.35 0 1.73.72 2.91.7 1.2-.02 1.96-1.09 2.7-2.16.85-1.24 1.2-2.45 1.22-2.51-.03-.01-2.34-.9-2.38-3.62ZM14.47 6.55c.62-.75 1.04-1.8.93-2.84-.9.04-1.98.6-2.62 1.35-.58.67-1.08 1.74-.94 2.77 1 .08 2.02-.51 2.63-1.28Z" />
-    </svg>
-  );
-}
-
 export default function Home() {
   const [authState, setAuthState] = useState<HomeAuthState>("checking");
   const [email, setEmail] = useState<string | null>(null);
@@ -108,6 +88,9 @@ export default function Home() {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
+  const [ageDateOfBirth, setAgeDateOfBirth] = useState("");
+  const [ageVerificationMessage, setAgeVerificationMessage] = useState("");
+  const [savingAgeVerification, setSavingAgeVerification] = useState(false);
 
   useEffect(() => {
     const {
@@ -133,11 +116,7 @@ export default function Home() {
 
     async function checkAuthState() {
       try {
-        const session = await withTimeout(
-          waitForHomeSession(),
-          "Home session check",
-          7000
-        );
+        const session = await withTimeout(waitForHomeSession(), "Home session check", 7000);
 
         if (!isMounted) {
           return;
@@ -159,19 +138,15 @@ export default function Home() {
 
         if (accessToken) {
           fetch("/api/messages/unread-count", {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${accessToken}` },
           })
-            .then((response) => response.ok ? response.json() : null)
+            .then((response) => (response.ok ? response.json() : null))
             .then((payload) => {
               if (payload && typeof payload.unreadCount === "number") {
                 setUnreadMessageCount(payload.unreadCount);
               }
             })
-            .catch(() => {
-              setUnreadMessageCount(0);
-            });
+            .catch(() => setUnreadMessageCount(0));
 
           supabase
             .from("notifications")
@@ -179,14 +154,10 @@ export default function Home() {
             .is("read_at", null)
             .then(
               ({ count }) => {
-                if (isMounted) {
-                  setUnreadNotificationCount(count ?? 0);
-                }
+                if (isMounted) setUnreadNotificationCount(count ?? 0);
               },
               () => {
-                if (isMounted) {
-                  setUnreadNotificationCount(0);
-                }
+                if (isMounted) setUnreadNotificationCount(0);
               }
             );
 
@@ -195,14 +166,10 @@ export default function Home() {
             .select("id", { count: "exact", head: true })
             .then(
               ({ count }) => {
-                if (isMounted) {
-                  setSavedCount(count ?? 0);
-                }
+                if (isMounted) setSavedCount(count ?? 0);
               },
               () => {
-                if (isMounted) {
-                  setSavedCount(0);
-                }
+                if (isMounted) setSavedCount(0);
               }
             );
         }
@@ -211,7 +178,7 @@ export default function Home() {
           const { data: profileData, error: profileError } = await withTimeout(
             supabase
               .from("profiles")
-              .select("full_name, username")
+              .select("full_name, username, date_of_birth")
               .eq("id", currentUser.id)
               .maybeSingle(),
             "Home profile check"
@@ -222,7 +189,9 @@ export default function Home() {
           }
 
           if (isMounted) {
-            setProfile((profileData ?? null) as HomeProfile | null);
+            const nextProfile = (profileData ?? null) as HomeProfile | null;
+            setProfile(nextProfile);
+            setAgeDateOfBirth(nextProfile?.date_of_birth ?? "");
           }
         } catch (profileError) {
           console.error("Unable to load home profile greeting.", profileError);
@@ -245,6 +214,63 @@ export default function Home() {
     };
   }, []);
 
+  async function handleAgeVerification() {
+    if (savingAgeVerification) {
+      return;
+    }
+
+    setAgeVerificationMessage("");
+
+    const ageBand = getAgeBandFromDateOfBirth(ageDateOfBirth);
+
+    if (!ageBand) {
+      setAgeVerificationMessage("Enter a valid date of birth.");
+      return;
+    }
+
+    if (ageBand === "under_13") {
+      setAgeVerificationMessage("Loombus is not available to members under 13.");
+      return;
+    }
+
+    setSavingAgeVerification(true);
+
+    try {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/profile/age", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ dateOfBirth: ageDateOfBirth }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setAgeVerificationMessage(result.error ?? "Unable to save age verification.");
+        return;
+      }
+
+      setProfile((current) => ({
+        full_name: current?.full_name ?? null,
+        username: current?.username ?? null,
+        date_of_birth: result.dateOfBirth ?? ageDateOfBirth,
+      }));
+      setAgeVerificationMessage("Age verification saved.");
+    } finally {
+      setSavingAgeVerification(false);
+    }
+  }
+
   async function signUpWithProvider(provider: OAuthProvider) {
     if (workingProvider) {
       return;
@@ -266,9 +292,8 @@ export default function Home() {
         setWorkingProvider(null);
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Unable to start OAuth signup.";
-      setMessage(`${provider === "apple" ? "Apple" : "Google"} signup error: ${message}`);
+      const publicMessage = error instanceof Error ? error.message : "Unable to start OAuth signup.";
+      setMessage(`${provider === "apple" ? "Apple" : "Google"} signup error: ${publicMessage}`);
       setWorkingProvider(null);
     }
   }
@@ -285,8 +310,8 @@ export default function Home() {
   if (authState === "logged_in") {
     const greetingName = getGreetingName(profile, email);
     const displayName = greetingName || "there";
-    const totalAttentionCount =
-      unreadMessageCount + unreadNotificationCount + savedCount;
+    const totalAttentionCount = unreadMessageCount + unreadNotificationCount + savedCount;
+    const needsAgeVerification = !profile?.date_of_birth;
 
     const needsAttentionCards: HomeSignalCard[] = [
       {
@@ -308,10 +333,7 @@ export default function Home() {
             ? "Replies, follows, and platform activity need review."
             : "No unread alerts right now.",
         href: "/notifications",
-        action:
-          unreadNotificationCount > 0
-            ? "Review notifications"
-            : "View notifications",
+        action: unreadNotificationCount > 0 ? "Review notifications" : "View notifications",
         urgent: unreadNotificationCount > 0,
       },
       {
@@ -328,65 +350,100 @@ export default function Home() {
     ];
 
     return (
-      <main className="loombus-home-canvas min-h-screen px-4 py-6 text-[var(--loombus-text)] sm:px-6 lg:py-12">
+      <main className="loombus-home-canvas min-h-screen px-3 py-4 pb-28 text-[var(--loombus-text)] sm:px-6 lg:py-12">
         <div className="mx-auto max-w-5xl">
-          <section className="loombus-home-shell loombus-home-hero-shell rounded-[2rem] border p-5 shadow-2xl sm:p-8 lg:p-10">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.26em] text-[var(--loombus-text-muted)] sm:text-sm sm:tracking-[0.3em]">
+          <section className="loombus-home-shell loombus-home-hero-shell rounded-[1.75rem] border p-4 shadow-2xl sm:rounded-[2rem] sm:p-8 lg:p-10">
+            <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.22em] text-[var(--loombus-text-muted)] sm:mb-3 sm:text-sm sm:tracking-[0.3em]">
               Loombus Signal Brief
             </p>
 
-            <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
+            <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr] lg:items-stretch">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">
                   Welcome back, {displayName}.
                 </h1>
-
-                <p className="mt-4 max-w-2xl text-base leading-relaxed text-[var(--loombus-text-muted)] sm:text-lg">
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--loombus-text-muted)] sm:mt-4 sm:text-lg">
                   Here is what needs attention across your Loombus activity.
                 </p>
               </div>
 
-              <div className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--loombus-text-muted)]">
+              <div className="rounded-[1.35rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-3 sm:rounded-[1.5rem] sm:p-4">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-[var(--loombus-text-muted)] sm:text-xs">
                   Today’s quote
                 </p>
-
-                <p className="mt-3 text-lg font-medium leading-relaxed">
+                <p className="mt-2 text-base font-medium leading-relaxed sm:mt-3 sm:text-lg">
                   “Create more signal than noise.”
                 </p>
-
-                <p className="mt-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                  A useful contribution is one that makes the next person think more clearly.
+                <p className="mt-2 text-xs leading-relaxed text-[var(--loombus-text-muted)] sm:mt-3 sm:text-sm">
+                  A useful contribution makes the next person think more clearly.
                 </p>
               </div>
             </div>
           </section>
 
-          <section className="mt-6 loombus-home-shell rounded-[2rem] border p-5 sm:p-7">
-            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          {needsAgeVerification && (
+            <section className="mt-4 loombus-home-shell rounded-[1.75rem] border p-4 sm:mt-6 sm:rounded-[2rem] sm:p-7">
+              <div className="mb-4">
+                <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-muted)] sm:text-xs">
+                  Age verification
+                </p>
+                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  Confirm your age to continue safely.
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                  Choose your month, day, and year. This helps Loombus apply the right safety protections.
+                </p>
+              </div>
+
+              <DateOfBirthSelect
+                value={ageDateOfBirth}
+                onChange={setAgeDateOfBirth}
+                idPrefix="home-age-verification"
+                disabled={savingAgeVerification}
+                className="grid gap-3 sm:grid-cols-3"
+                selectClassName="w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-[var(--loombus-text)] outline-none focus:border-[var(--loombus-text-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              />
+
+              <button
+                type="button"
+                onClick={handleAgeVerification}
+                disabled={savingAgeVerification}
+                className="mt-4 w-full rounded-full bg-[var(--loombus-text)] px-5 py-3 text-sm font-semibold text-[var(--loombus-background)] transition disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                {savingAgeVerification ? "Saving..." : "Confirm age"}
+              </button>
+
+              {ageVerificationMessage && (
+                <p className="mt-3 text-sm text-[var(--loombus-text-muted)]">
+                  {ageVerificationMessage}
+                </p>
+              )}
+            </section>
+          )}
+
+          <section className="mt-4 loombus-home-shell rounded-[1.75rem] border p-4 sm:mt-6 sm:rounded-[2rem] sm:p-7">
+            <div className="mb-4 flex flex-col gap-2 sm:mb-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--loombus-text-muted)]">
+                <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-muted)] sm:text-xs sm:tracking-[0.24em]">
                   Needs attention
                 </p>
-
-                <h2 className="text-2xl font-semibold tracking-tight">
+                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
                   {totalAttentionCount > 0
                     ? `${totalAttentionCount.toLocaleString()} item${totalAttentionCount === 1 ? "" : "s"} waiting on you.`
                     : "Nothing urgent is waiting right now."}
                 </h2>
               </div>
-
               <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                 Live activity summary
               </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-3">
               {needsAttentionCards.map((card) => (
                 <Link
                   key={card.title}
                   href={card.href}
-                  className={`loombus-home-status-card rounded-[1.5rem] border p-5 transition active:scale-[0.99] ${
+                  className={`loombus-home-status-card rounded-[1.35rem] border p-4 transition active:scale-[0.99] sm:rounded-[1.5rem] sm:p-5 ${
                     card.urgent ? "loombus-home-primary-tile" : ""
                   }`}
                 >
@@ -395,17 +452,15 @@ export default function Home() {
                       <p className="text-sm font-medium text-[var(--loombus-text-muted)]">
                         {card.title}
                       </p>
-                      <p className="mt-2 text-3xl font-semibold tracking-tight">
+                      <p className="mt-1 text-2xl font-semibold tracking-tight sm:mt-2 sm:text-3xl">
                         {card.value}
                       </p>
                     </div>
-
                     <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-muted)]">
                       {card.urgent ? "New" : "Clear"}
                     </span>
                   </div>
-
-                  <p className="mt-4 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--loombus-text-muted)] sm:mt-4">
                     {card.description}
                   </p>
                 </Link>
@@ -413,16 +468,14 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="mt-6 loombus-home-shell rounded-[2rem] border p-5 sm:p-7">
-            <div className="mb-5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--loombus-text-muted)]">
+          <section className="mt-4 loombus-home-shell rounded-[1.75rem] border p-4 sm:mt-6 sm:rounded-[2rem] sm:p-7">
+            <div className="mb-4 sm:mb-5">
+              <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-muted)] sm:text-xs sm:tracking-[0.24em]">
                 Loombus updates
               </p>
-
-              <h2 className="text-2xl font-semibold tracking-tight">
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
                 What changed recently.
               </h2>
-
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--loombus-text-muted)]">
                 Platform notes and product changes will live here as Loombus grows.
               </p>
@@ -432,7 +485,7 @@ export default function Home() {
               {loombusUpdates.map((update) => (
                 <div
                   key={update}
-                  className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 text-sm leading-relaxed text-[var(--loombus-text-muted)]"
+                  className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-3 text-sm leading-relaxed text-[var(--loombus-text-muted)] sm:p-4"
                 >
                   {update}
                 </div>
@@ -454,82 +507,51 @@ export default function Home() {
           alt=""
           className="mb-6 h-14 w-14 object-contain"
         />
-
         <p className="mb-3 text-xs uppercase tracking-[0.24em] text-zinc-500 sm:text-sm sm:tracking-[0.35em]">
           Loombus
         </p>
-
         <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl md:text-6xl">
           Signal over noise.
         </h1>
-
         <p className="mb-10 max-w-lg text-lg leading-relaxed text-zinc-400">
-          A high-signal discussion platform for thoughtful conversations,
-          sharper ideas, and cleaner community dialogue.
+          A high-signal discussion platform for thoughtful conversations, sharper ideas, and cleaner community dialogue.
         </p>
 
         <div className="w-full rounded-3xl border border-zinc-900 bg-zinc-950/60 p-5 shadow-2xl shadow-black/30 space-y-3 loombus-mobile-visitor-auth-card">
-          <>
-            <button
-              type="button"
-              onClick={() => signUpWithProvider("apple")}
-              disabled={Boolean(workingProvider)}
-              className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                <AppleAuthLogo />
-                {workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => signUpWithProvider("google")}
-              disabled={Boolean(workingProvider)}
-              className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <span className="inline-flex items-center justify-center gap-2">
-                <GoogleAuthLogo />
-                {workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}
-              </span>
-            </button>
-
-            <div className="flex items-center gap-3 py-2 text-xs uppercase tracking-[0.2em] text-zinc-700">
-              <span className="h-px flex-1 bg-zinc-900" />
-              Or
-              <span className="h-px flex-1 bg-zinc-900" />
-            </div>
-
-            <Link
-              href="/signup"
-              className="block w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white loombus-mobile-visitor-create"
-            >
-              Create Account
-            </Link>
-          </>
-
+          <button
+            type="button"
+            onClick={() => signUpWithProvider("apple")}
+            disabled={Boolean(workingProvider)}
+            className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}
+          </button>
+          <button
+            type="button"
+            onClick={() => signUpWithProvider("google")}
+            disabled={Boolean(workingProvider)}
+            className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}
+          </button>
+          <div className="flex items-center gap-3 py-2 text-xs uppercase tracking-[0.2em] text-zinc-700">
+            <span className="h-px flex-1 bg-zinc-900" />
+            Or
+            <span className="h-px flex-1 bg-zinc-900" />
+          </div>
+          <Link
+            href="/signup"
+            className="block w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white loombus-mobile-visitor-create"
+          >
+            Create Account
+          </Link>
           <p className="pt-3 text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
             By creating an account or continuing with Apple, Google, or email, you confirm that you are at least 13 years old and agree to the{" "}
-            <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">
-              Terms
-            </Link>
-            ,{" "}
-            <Link href="/privacy" className="text-zinc-400 underline-offset-4 hover:underline">
-              Privacy Policy
-            </Link>
-            ,{" "}
-            <Link href="/cookies" className="text-zinc-400 underline-offset-4 hover:underline">
-              Cookie Use
-            </Link>
-            ,{" "}
-            <Link href="/guidelines" className="text-zinc-400 underline-offset-4 hover:underline">
-              Community Guidelines
-            </Link>
-            , and{" "}
-            <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">
-              Safety
-            </Link>
-            .
+            <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">Terms</Link>,{" "}
+            <Link href="/privacy" className="text-zinc-400 underline-offset-4 hover:underline">Privacy Policy</Link>,{" "}
+            <Link href="/cookies" className="text-zinc-400 underline-offset-4 hover:underline">Cookie Use</Link>,{" "}
+            <Link href="/guidelines" className="text-zinc-400 underline-offset-4 hover:underline">Community Guidelines</Link>, and{" "}
+            <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">Safety</Link>.
           </p>
         </div>
 
@@ -549,32 +571,15 @@ export default function Home() {
 
       <footer className="mx-auto mt-12 flex max-w-5xl flex-col items-center justify-between gap-4 border-t border-zinc-900 pt-8 text-sm text-zinc-600 md:flex-row">
         <p>© {new Date().getFullYear()} Loombus. All rights reserved.</p>
-
         <nav className="flex flex-wrap justify-center gap-4">
-          <Link href="/about" className="transition hover:text-zinc-300">
-            About
-          </Link>
-          <Link href="/guidelines" className="transition hover:text-zinc-300">
-            Guidelines
-          </Link>
-          <Link href="/safety" className="transition hover:text-zinc-300">
-            Safety
-          </Link>
-          <Link href="/terms" className="transition hover:text-zinc-300">
-            Terms
-          </Link>
-          <Link href="/privacy" className="transition hover:text-zinc-300">
-            Privacy
-          </Link>
-          <Link href="/cookies" className="transition hover:text-zinc-300">
-            Cookies
-          </Link>
-          <Link href="/accessibility" className="transition hover:text-zinc-300">
-            Accessibility
-          </Link>
-          <Link href="/contact" className="transition hover:text-zinc-300">
-            Contact
-          </Link>
+          <Link href="/about" className="transition hover:text-zinc-300">About</Link>
+          <Link href="/guidelines" className="transition hover:text-zinc-300">Guidelines</Link>
+          <Link href="/safety" className="transition hover:text-zinc-300">Safety</Link>
+          <Link href="/terms" className="transition hover:text-zinc-300">Terms</Link>
+          <Link href="/privacy" className="transition hover:text-zinc-300">Privacy</Link>
+          <Link href="/cookies" className="transition hover:text-zinc-300">Cookies</Link>
+          <Link href="/accessibility" className="transition hover:text-zinc-300">Accessibility</Link>
+          <Link href="/contact" className="transition hover:text-zinc-300">Contact</Link>
         </nav>
       </footer>
     </main>
