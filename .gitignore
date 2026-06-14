@@ -47,3 +47,15 @@ android/app/google-services.json
 android/.idea/
 # Local backup folders should stay outside the Next.js build
 loombus_*_backup_*/
+
+# Local secrets, signing keys, and app-store artifacts
+*.p8
+*.p8.txt
+*.jks
+loombus-private-keys/
+loombus-release-keys/
+loombus-store-screenshots/
+
+# Local audit, legal, backup, and polish folders
+loombus_final_*/
+loombus_legal_review_*/
