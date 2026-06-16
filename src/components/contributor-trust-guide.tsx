@@ -17,7 +17,7 @@ const TRUST_CUES = [
   },
   {
     label: "Account context",
-    description: "Badges can show plan or admin context, but they are not quality scores.",
+    description: "Badges can show membership context, but they are not quality scores.",
   },
   {
     label: "Follow for signal",
