@@ -1,10 +1,14 @@
 import UIKit
 import Capacitor
+import SafariServices
+import WebKit
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKScriptMessageHandler, SFSafariViewControllerDelegate {
 
     var window: UIWindow?
+    private var loombusOAuthHandlerConfigured = false
+    private var safariViewController: SFSafariViewController?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         DispatchQueue.main.async {
@@ -47,6 +51,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate {
         scrollView.maximumZoomScale = 5.0
         scrollView.bouncesZoom = true
         scrollView.delegate = self
+
+        if !loombusOAuthHandlerConfigured {
+            webView.configuration.userContentController.add(self, name: "loombusOAuth")
+            loombusOAuthHandlerConfigured = true
+        }
     }
 
     private func findBridgeViewController(from controller: UIViewController?) -> CAPBridgeViewController? {
@@ -67,6 +76,39 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate {
         return nil
     }
 
+    private func topMostViewController(from controller: UIViewController?) -> UIViewController? {
+        if let navigationController = controller as? UINavigationController {
+            return topMostViewController(from: navigationController.visibleViewController)
+        }
+
+        if let tabBarController = controller as? UITabBarController {
+            return topMostViewController(from: tabBarController.selectedViewController)
+        }
+
+        if let presentedController = controller?.presentedViewController {
+            return topMostViewController(from: presentedController)
+        }
+
+        return controller
+    }
+
+    private func presentLoombusOAuthSession(url: URL) {
+        DispatchQueue.main.async {
+            self.safariViewController?.dismiss(animated: false)
+
+            let safariController = SFSafariViewController(url: url)
+            safariController.delegate = self
+            safariController.dismissButtonStyle = .cancel
+            self.safariViewController = safariController
+
+            guard let presentingController = self.topMostViewController(from: self.window?.rootViewController) else {
+                return
+            }
+
+            presentingController.present(safariController, animated: true)
+        }
+    }
+
     private func handleLoombusAuthCallback(_ url: URL) -> Bool {
         guard url.scheme == "loombus",
               url.host == "auth",
@@ -85,6 +127,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate {
         }
 
         DispatchQueue.main.async {
+            self.safariViewController?.dismiss(animated: true)
+            self.safariViewController = nil
+
             guard let bridgeController = self.findBridgeViewController(from: self.window?.rootViewController),
                   let webView = bridgeController.webView else {
                 return
@@ -94,6 +139,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate {
         }
 
         return true
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "loombusOAuth",
+              let urlString = message.body as? String,
+              let url = URL(string: urlString) else {
+            return
+        }
+
+        presentLoombusOAuthSession(url: url)
+    }
+
+    func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
+        if safariViewController === controller {
+            safariViewController = nil
+        }
     }
 
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
