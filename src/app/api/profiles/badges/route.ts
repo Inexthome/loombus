@@ -12,7 +12,7 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type BadgeResponse = {
-  key: "premium" | "premium_plus" | "admin";
+  key: "premium" | "premium_plus";
   label: string;
 };
 
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     for (const entitlement of data ?? []) {
       const displayKey = getSubscriptionDisplayKey(entitlement as AiEntitlementLike);
 
-      if (displayKey === "free") {
+      if (displayKey === "free" || displayKey === "admin") {
         continue;
       }
 
