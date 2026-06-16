@@ -189,13 +189,13 @@ export default function UserProfilePage() {
       return;
     }
 
-    const shareUrl = `${window.location.origin}/u/${profile.username}`;
+    const shareUrl = `https://loombus.com/u/${encodeURIComponent(profile.username)}`;
 
     try {
       await navigator.clipboard.writeText(shareUrl);
       setShareMessage("Profile link copied.");
     } catch {
-      setShareMessage(shareUrl);
+      setShareMessage("Unable to copy profile link.");
     }
   }
 

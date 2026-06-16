@@ -246,13 +246,13 @@ export default function ProfilePage() {
       return;
     }
 
-    const shareUrl = `${window.location.origin}${publicProfilePath}`;
+    const shareUrl = `https://loombus.com${publicProfilePath}`;
 
     try {
       await navigator.clipboard.writeText(shareUrl);
       setMessage("Public profile link copied.");
     } catch {
-      setMessage(shareUrl);
+      setMessage("Unable to copy link. Your public profile path is shown above.");
     }
   }
 
