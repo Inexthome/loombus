@@ -70,9 +70,19 @@ export default function UserProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [profileBadge, setProfileBadge] = useState<ProfileBadge | null>(null);
   const [shareMessage, setShareMessage] = useState("");
+  const [requiresMemberAuth, setRequiresMemberAuth] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
+      const { data: userData } = await supabase.auth.getUser();
+      const viewerId = userData.user?.id ?? null;
+
+      if (!viewerId) {
+        setRequiresMemberAuth(true);
+        setLoading(false);
+        return;
+      }
+
       const { data: profileData } = await supabase
         .from("profiles")
         .select("id, full_name, username, bio, perspective_marker, avatar_url, creator_website_url, creator_support_url, creator_support_label")
@@ -103,9 +113,6 @@ export default function UserProfilePage() {
 
         setProfileBadge(badgeResult.badges?.[profileData.id] ?? null);
       }
-
-      const { data: userData } = await supabase.auth.getUser();
-      const viewerId = userData.user?.id ?? null;
 
       setCurrentUserId(viewerId);
 
@@ -403,6 +410,44 @@ export default function UserProfilePage() {
       <main className="min-h-screen bg-black px-6 py-16 text-white">
         <div className="mx-auto max-w-6xl text-zinc-400">
           Loading profile...
+        </div>
+      </main>
+    );
+  }
+
+  if (requiresMemberAuth) {
+    return (
+      <main className="min-h-screen bg-black px-6 py-16 text-white">
+        <div className="mx-auto max-w-3xl rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/20">
+          <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
+            Loombus member profile
+          </p>
+
+          <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
+            Join Loombus to view this member profile.
+          </h1>
+
+          <p className="mt-5 max-w-2xl text-sm leading-relaxed text-zinc-400 sm:text-base">
+            Member profile links are available inside Loombus. Create an account
+            or log in to view this profile, follow contributors, and join the
+            discussion.
+          </p>
+
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/signup"
+              className="inline-flex justify-center rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+            >
+              Become a member
+            </Link>
+
+            <Link
+              href={`/login?redirect=/u/${encodeURIComponent(username)}`}
+              className="inline-flex justify-center rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white"
+            >
+              Log in
+            </Link>
+          </div>
         </div>
       </main>
     );
