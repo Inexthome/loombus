@@ -171,7 +171,7 @@ export function CreateEditHydrator() {
     [attachments]
   );
 
-  if (!editId || dismissed || visibleAttachments.length === 0) {
+  if (!editId || dismissed) {
     return null;
   }
 
@@ -180,48 +180,67 @@ export function CreateEditHydrator() {
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <p className="mb-1 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
-            Existing attachments
+            Editing controls
           </p>
           <h2 className="text-base font-semibold tracking-tight">
-            These files are still attached.
+            Editing a published discussion.
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-            Existing files remain on the published discussion while you edit the text.
+            Save changes when ready, or cancel to return without submitting this edit.
           </p>
         </div>
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          aria-label="Dismiss existing attachments panel"
+          aria-label="Dismiss editing controls panel"
           className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
         >
           Close
         </button>
       </div>
 
-      <div className="space-y-2">
-        {visibleAttachments.map((attachment) => (
-          <a
-            key={attachment.id}
-            href={attachment.public_url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 text-sm transition hover:border-[var(--loombus-text-subtle)]"
-          >
-            <span className="min-w-0">
-              <span className="block truncate font-medium text-[var(--loombus-text)]">
-                {attachment.file_name}
-              </span>
-              <span className="mt-1 block text-xs text-[var(--loombus-text-muted)]">
-                {attachment.attachment_kind === "pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(attachment.file_size_bytes)}
-              </span>
-            </span>
-            <span className="shrink-0 text-xs text-[var(--loombus-text-subtle)]">
-              Open
-            </span>
-          </a>
-        ))}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <a
+          href={`/discussions/${editId}`}
+          className="inline-flex justify-center rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-medium text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+        >
+          Cancel editing
+        </a>
+        <span className="text-xs leading-relaxed text-[var(--loombus-text-subtle)]">
+          This does not save changes.
+        </span>
       </div>
+
+      {visibleAttachments.length > 0 && (
+        <div className="mt-4 border-t border-[var(--loombus-border)] pt-3">
+          <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
+            Existing attachments
+          </p>
+          <div className="space-y-2">
+            {visibleAttachments.map((attachment) => (
+              <a
+                key={attachment.id}
+                href={attachment.public_url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 text-sm transition hover:border-[var(--loombus-text-subtle)]"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-medium text-[var(--loombus-text)]">
+                    {attachment.file_name}
+                  </span>
+                  <span className="mt-1 block text-xs text-[var(--loombus-text-muted)]">
+                    {attachment.attachment_kind === "pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(attachment.file_size_bytes)}
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs text-[var(--loombus-text-subtle)]">
+                  Open
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
