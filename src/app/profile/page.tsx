@@ -237,8 +237,11 @@ export default function ProfilePage() {
     bio,
   });
 
+  const safeUsernameForPath =
+    /^[a-z0-9_]{3,30}$/.test(cleanUsernamePreview) ? cleanUsernamePreview : "";
+
   const publicProfilePath =
-    profileCompletionGate.ok && cleanUsernamePreview ? `/u/${cleanUsernamePreview}` : "";
+    profileCompletionGate.ok && safeUsernameForPath ? `/u/${safeUsernameForPath}` : "";
 
   async function copyPublicProfileLink() {
     if (!publicProfilePath) {
