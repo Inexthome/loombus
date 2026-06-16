@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -8,22 +7,22 @@ const STORAGE_KEY = "loombus:discovery-signal-guide-dismissed";
 
 const DISCOVERY_PATHS = [
   {
-    label: "Learn something",
+    label: "Show Learning discussions",
     description: "Find threads built for understanding, context, and clear explanation.",
     href: "/discussions?purpose=Learning",
   },
   {
-    label: "Build mastery",
+    label: "Show Mastery discussions",
     description: "Look for discussions tied to skill, practice, and deeper competence.",
     href: "/discussions?purpose=Mastery",
   },
   {
-    label: "Contribute perspective",
+    label: "Show Contribution discussions",
     description: "Add lived context, experience, or useful framing to active threads.",
     href: "/discussions?purpose=Contribution",
   },
   {
-    label: "Solve local problems",
+    label: "Show Local problem-solving",
     description: "Explore community and real-world issues that benefit from practical detail.",
     href: "/discussions?purpose=Local%20problem-solving",
   },
@@ -72,7 +71,7 @@ export function DiscoverySignalGuide() {
 
       <div className="grid gap-2 sm:grid-cols-2">
         {DISCOVERY_PATHS.map((path) => (
-          <Link
+          <a
             key={path.label}
             href={path.href}
             className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-strong)]"
@@ -83,23 +82,23 @@ export function DiscoverySignalGuide() {
             <p className="mt-1 text-xs leading-relaxed text-[var(--loombus-text-muted)]">
               {path.description}
             </p>
-          </Link>
+          </a>
         ))}
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[var(--loombus-border)] pt-3">
-        <Link
-          href="/discussions?sort=Signal"
+        <a
+          href="/discussions"
           className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
         >
-          Try Signal sort
-        </Link>
-        <Link
+          Show all discussions
+        </a>
+        <a
           href="/create"
           className="rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
         >
           Start a discussion
-        </Link>
+        </a>
       </div>
     </aside>
   );
