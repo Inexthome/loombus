@@ -27,6 +27,14 @@ type HomeSignalCard = {
   urgent?: boolean;
 };
 
+type HomeActivationStep = {
+  title: string;
+  description: string;
+  href: string;
+  action: string;
+  done: boolean;
+};
+
 const loombusUpdates = [
   "Discussions are now the main post-login destination.",
   "Create composer tools were simplified into a compact action row.",
@@ -90,6 +98,10 @@ export default function Home() {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
+  const [authoredDiscussionCount, setAuthoredDiscussionCount] = useState(0);
+  const [replyCount, setReplyCount] = useState(0);
+  const [stickyCount, setStickyCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [ageDateOfBirth, setAgeDateOfBirth] = useState("");
   const [ageVerificationMessage, setAgeVerificationMessage] = useState("");
   const [savingAgeVerification, setSavingAgeVerification] = useState(false);
@@ -107,6 +119,11 @@ export default function Home() {
         setProfile(null);
         setAgeDateOfBirth("");
         setHasAgeVerification(false);
+        setSavedCount(0);
+        setAuthoredDiscussionCount(0);
+        setReplyCount(0);
+        setStickyCount(0);
+        setFollowingCount(0);
         setAuthState("logged_out");
       }
     });
@@ -182,6 +199,61 @@ export default function Home() {
               },
               () => {
                 if (isMounted) setSavedCount(0);
+              }
+            );
+
+          supabase
+            .from("discussions")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", currentUser.id)
+            .is("deleted_at", null)
+            .then(
+              ({ count }) => {
+                if (isMounted) setAuthoredDiscussionCount(count ?? 0);
+              },
+              () => {
+                if (isMounted) setAuthoredDiscussionCount(0);
+              }
+            );
+
+          supabase
+            .from("replies")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", currentUser.id)
+            .is("deleted_at", null)
+            .then(
+              ({ count }) => {
+                if (isMounted) setReplyCount(count ?? 0);
+              },
+              () => {
+                if (isMounted) setReplyCount(0);
+              }
+            );
+
+          supabase
+            .from("sticky_items")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", currentUser.id)
+            .eq("item_type", "discussion")
+            .then(
+              ({ count }) => {
+                if (isMounted) setStickyCount(count ?? 0);
+              },
+              () => {
+                if (isMounted) setStickyCount(0);
+              }
+            );
+
+          supabase
+            .from("follows")
+            .select("id", { count: "exact", head: true })
+            .eq("follower_id", currentUser.id)
+            .then(
+              ({ count }) => {
+                if (isMounted) setFollowingCount(count ?? 0);
+              },
+              () => {
+                if (isMounted) setFollowingCount(0);
               }
             );
         }
@@ -352,6 +424,48 @@ export default function Home() {
       bio: profile?.bio ?? null,
     });
     const needsPublicProfileCompletion = !publicProfileGate.ok;
+    const hasKeptUsefulDiscussion = savedCount > 0 || stickyCount > 0;
+    const activationSteps: HomeActivationStep[] = [
+      {
+        title: "Complete your public profile",
+        description: "Let people know who is contributing before you join the conversation.",
+        href: "/profile",
+        action: needsPublicProfileCompletion ? "Complete profile" : "View profile",
+        done: !needsPublicProfileCompletion,
+      },
+      {
+        title: "Create your first discussion",
+        description: "Ask something with a topic, real-world context, and a clear purpose.",
+        href: "/create",
+        action: authoredDiscussionCount > 0 ? "Create another" : "Start discussion",
+        done: authoredDiscussionCount > 0,
+      },
+      {
+        title: "Reply with signal",
+        description: "Add context, experience, evidence, or a useful question to someone else's thread.",
+        href: "/discussions",
+        action: replyCount > 0 ? "Find another thread" : "Find a discussion",
+        done: replyCount > 0,
+      },
+      {
+        title: "Keep one useful discussion",
+        description: "Save or Sticky a discussion so Loombus becomes a place you return to, not just scroll through.",
+        href: hasKeptUsefulDiscussion ? "/saved" : "/discussions",
+        action: hasKeptUsefulDiscussion ? "Review kept ideas" : "Browse discussions",
+        done: hasKeptUsefulDiscussion,
+      },
+      {
+        title: "Follow one thoughtful contributor",
+        description: "Build your signal circle around people whose replies and discussions are worth seeing again.",
+        href: "/people",
+        action: followingCount > 0 ? "Find more people" : "Find contributors",
+        done: followingCount > 0,
+      },
+    ];
+    const completedActivationSteps = activationSteps.filter((step) => step.done).length;
+    const activationPercent = Math.round(
+      (completedActivationSteps / activationSteps.length) * 100
+    );
 
     const needsAttentionCards: HomeSignalCard[] = [
       {
@@ -418,6 +532,69 @@ export default function Home() {
                   A useful contribution makes the next person think more clearly.
                 </p>
               </div>
+            </div>
+          </section>
+
+          <section className="mt-4 loombus-home-shell rounded-[1.75rem] border p-4 sm:mt-6 sm:rounded-[2rem] sm:p-7">
+            <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--loombus-text-muted)] sm:text-xs sm:tracking-[0.24em]">
+                  Getting started
+                </p>
+                <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                  Build your first signal loop.
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                  Complete these steps so Loombus becomes useful quickly: show up clearly, contribute, keep useful ideas, and follow good signal.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm text-[var(--loombus-text-muted)]">
+                <span className="font-semibold text-[var(--loombus-text)]">
+                  {completedActivationSteps}/{activationSteps.length}
+                </span>{" "}
+                complete
+              </div>
+            </div>
+
+            <div className="mb-4 h-2 overflow-hidden rounded-full bg-[var(--loombus-surface)]">
+              <div
+                className="h-full rounded-full bg-[var(--loombus-primary-bg)] transition-all"
+                style={{ width: `${activationPercent}%` }}
+              />
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-5">
+              {activationSteps.map((step, index) => (
+                <Link
+                  key={step.title}
+                  href={step.href}
+                  className="rounded-[1.35rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 transition hover:border-[var(--loombus-text-subtle)] active:scale-[0.99]"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-muted)]">
+                      Step {index + 1}
+                    </span>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                        step.done
+                          ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)]"
+                          : "border border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"
+                      }`}
+                    >
+                      {step.done ? "Done" : "Next"}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-semibold leading-snug text-[var(--loombus-text)]">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-xs leading-relaxed text-[var(--loombus-text-muted)]">
+                    {step.description}
+                  </p>
+                  <p className="mt-4 text-xs font-medium text-[var(--loombus-text)]">
+                    {step.action} →
+                  </p>
+                </Link>
+              ))}
             </div>
           </section>
 
