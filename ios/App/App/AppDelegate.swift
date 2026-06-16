@@ -15,17 +15,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate {
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
-        // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-        // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
+        // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions or when the app begins the transition to the background.
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-        // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+        // Use this method to release shared resources, save user data, invalidate timers, and store enough app state information to restore the app if it is terminated later.
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
-        // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+        // Called as part of the transition from the background to the active state.
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
@@ -35,7 +33,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate {
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
-        // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+        // Called when the app is about to terminate.
     }
 
     private func enableWebViewZoom() {
@@ -69,20 +67,53 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate {
         return nil
     }
 
+    private func handleLoombusAuthCallback(_ url: URL) -> Bool {
+        guard url.scheme == "loombus",
+              url.host == "auth",
+              url.path == "/callback" else {
+            return false
+        }
+
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = "loombus.com"
+        components.path = "/auth/callback"
+        components.percentEncodedQuery = URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedQuery
+
+        guard let callbackUrl = components.url else {
+            return false
+        }
+
+        DispatchQueue.main.async {
+            guard let bridgeController = self.findBridgeViewController(from: self.window?.rootViewController),
+                  let webView = bridgeController.webView else {
+                return
+            }
+
+            webView.load(URLRequest(url: callbackUrl))
+        }
+
+        return true
+    }
+
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         return scrollView.subviews.first
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        if handleLoombusAuthCallback(url) {
+            return true
+        }
+
         // Called when the app was launched with a url. Feel free to add additional processing here,
-        // but if you want the App API to support tracking app url opens, make sure to keep this call
+        // but if you want the App API to support tracking app url opens, make sure to keep this call.
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
     }
 
     func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
         // Called when the app was launched with an activity, including Universal Links.
         // Feel free to add additional processing here, but if you want the App API to support
-        // tracking app url opens, make sure to keep this call
+        // tracking app url opens, make sure to keep this call.
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
