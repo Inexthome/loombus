@@ -69,6 +69,7 @@ export default function UserProfilePage() {
   const [followerCount, setFollowerCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
   const [profileBadge, setProfileBadge] = useState<ProfileBadge | null>(null);
+  const [shareMessage, setShareMessage] = useState("");
 
   useEffect(() => {
     async function loadProfile() {
@@ -181,6 +182,22 @@ export default function UserProfilePage() {
 
     loadProfile();
   }, [username]);
+
+  async function copyProfileLink() {
+    if (!profile?.username) {
+      setShareMessage("Profile link is not available.");
+      return;
+    }
+
+    const shareUrl = `https://loombus.com/u/${encodeURIComponent(profile.username)}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareMessage("Profile link copied.");
+    } catch {
+      setShareMessage("Unable to copy profile link.");
+    }
+  }
 
   async function toggleFollow() {
     setFollowMessage("");
@@ -460,6 +477,14 @@ export default function UserProfilePage() {
             </div>
 
             <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={copyProfileLink}
+                className="inline-flex w-full justify-center rounded-full border border-zinc-700 px-6 py-3 text-sm text-zinc-200 transition hover:border-zinc-500 hover:text-white sm:w-fit"
+              >
+                Share profile
+              </button>
+
               {!currentUserId && (
                 <Link
                   href="/login"
@@ -493,6 +518,12 @@ export default function UserProfilePage() {
               )}
             </div>
           </div>
+
+          {shareMessage && (
+            <p className="mt-4 text-sm text-zinc-500">
+              {shareMessage}
+            </p>
+          )}
 
           {profile.perspective_marker && (
             <p className="mt-5 w-fit rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400">
