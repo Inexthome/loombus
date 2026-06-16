@@ -82,12 +82,35 @@ export default function RootLayout({
                 } catch {
                   document.documentElement.dataset.loombusTheme = "system";
                 }
+
+                try {
+                  const capacitor = window.Capacitor;
+                  const platform = capacitor?.getPlatform?.();
+
+                  if (capacitor?.isNativePlatform?.() && platform === "ios") {
+                    document.documentElement.dataset.loombusNativePlatform = "ios";
+                  } else {
+                    document.documentElement.removeAttribute("data-loombus-native-platform");
+                  }
+                } catch {
+                  document.documentElement.removeAttribute("data-loombus-native-platform");
+                }
               })();
             `,
           }}
         />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              html[data-loombus-native-platform="ios"] .loombus-mobile-visitor-auth-card > button,
+              html[data-loombus-native-platform="ios"] .loombus-mobile-visitor-auth-card > button + button + div {
+                display: none !important;
+              }
+            `,
+          }}
+        />
         <ClientLayout>{children}</ClientLayout>
-              <NativePushRegistration />
+        <NativePushRegistration />
       </body>
     </html>
   );
