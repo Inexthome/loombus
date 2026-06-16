@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { type DragEvent, type FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 
 type StickyItem = {
   id: string;
@@ -16,180 +15,9 @@ type StickyItem = {
   created_at: string;
 };
 
-function getStickyTypeLabel(type: string) {
-  if (type === "note") return "Note";
-  if (type === "person") return "Person";
-  if (type === "topic") return "Topic";
-  if (type === "saved") return "Saved";
-  if (type === "ai_summary") return "AI";
-  if (type === "discussion") return "Discussion";
-
-  return type;
-}
-
-function looksLikeAiRequest(value: string) {
-  const lower = value.toLowerCase();
-
-  return [
-    "help me",
-    "create a",
-    "make a",
-    "generate",
-    "summarize",
-    "organize",
-    "brainstorm",
-    "plan",
-    "turn this into",
-    "what should i",
-    "how should i",
-    "give me",
-    "ideas for",
-    "next steps",
-    "workspace card",
-  ].some((phrase) => lower.includes(phrase));
-}
-
-function getSmartAddPayload(input: string) {
-  const clean = input.trim();
-
-  if (!clean) {
-    return null;
-  }
-
-  const lower = clean.toLowerCase();
-  const uuidMatch = clean.match(
-    /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i
-  );
-
-  if (uuidMatch || lower.includes("/discussions/")) {
-    return {
-      body: {
-        discussionUrl: clean,
-      },
-      label: "Discussion",
-      buttonLabel: "Add Discussion",
-    };
-  }
-
-  if (lower.startsWith("ai:")) {
-    return {
-      body: {
-        itemType: "ai_summary",
-        prompt: clean.slice(3).trim(),
-      },
-      label: "AI workspace card",
-      buttonLabel: "Generate AI Card",
-    };
-  }
-
-  if (lower.startsWith("note:")) {
-    const note = clean.slice(5).trim();
-    const firstLine = note.split("\n")[0]?.trim() ?? "";
-
-    return {
-      body: {
-        itemType: "note",
-        title: firstLine.slice(0, 80) || "Untitled note",
-        note,
-      },
-      label: "Note",
-      buttonLabel: "Add Note",
-    };
-  }
-
-  if (lower.startsWith("topic:")) {
-    return {
-      body: {
-        itemType: "topic",
-        topic: clean.slice(6).trim(),
-      },
-      label: "Topic",
-      buttonLabel: "Add Topic",
-    };
-  }
-
-  if (lower.startsWith("person:")) {
-    return {
-      body: {
-        itemType: "person",
-        username: clean.slice(7).trim(),
-      },
-      label: "Person",
-      buttonLabel: "Add Person",
-    };
-  }
-
-  if (clean.startsWith("@")) {
-    return {
-      body: {
-        itemType: "person",
-        username: clean,
-      },
-      label: "Person",
-      buttonLabel: "Add Person",
-    };
-  }
-
-  const matchedTopic = DISCUSSION_TOPICS.find(
-    (topic) => topic.toLowerCase() === lower
-  );
-
-  if (matchedTopic) {
-    return {
-      body: {
-        itemType: "topic",
-        topic: matchedTopic,
-      },
-      label: "Topic",
-      buttonLabel: "Add Topic",
-    };
-  }
-
-  if (looksLikeAiRequest(clean)) {
-    return {
-      body: {
-        itemType: "ai_summary",
-        prompt: clean,
-      },
-      label: "AI workspace card",
-      buttonLabel: "Generate AI Card",
-    };
-  }
-
-  if (/^[a-z0-9_-]{3,40}$/i.test(clean)) {
-    return {
-      body: {
-        itemType: "person",
-        username: clean,
-      },
-      label: "Person",
-      buttonLabel: "Add Person",
-    };
-  }
-
-  return {
-    body: {
-      itemType: "note",
-      title: clean.slice(0, 80),
-      note: clean,
-    },
-    label: "Note",
-    buttonLabel: "Add Note",
-  };
-}
-
 export default function StickiesPage() {
   const [items, setItems] = useState<StickyItem[]>([]);
-  const [smartAddInput, setSmartAddInput] = useState("");
   const [discussionInput, setDiscussionInput] = useState("");
-  const [topicInput, setTopicInput] = useState("");
-  const [personInput, setPersonInput] = useState("");
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [noteTitle, setNoteTitle] = useState("");
-  const [noteBody, setNoteBody] = useState("");
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editingNoteTitle, setEditingNoteTitle] = useState("");
-  const [editingNoteBody, setEditingNoteBody] = useState("");
   const [draggedStickyId, setDraggedStickyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -211,6 +39,8 @@ export default function StickiesPage() {
 
     if (!accessToken) {
       setIsLoggedIn(false);
+      setUpgradeRequired(false);
+      setItems([]);
       setLoading(false);
       return;
     }
@@ -230,6 +60,7 @@ export default function StickiesPage() {
         setUpgradeRequired(true);
       }
 
+      setItems([]);
       setMessage(result.error ?? "Unable to load Stickies.");
       setLoading(false);
       return;
@@ -244,59 +75,6 @@ export default function StickiesPage() {
     loadStickies();
   }, []);
 
-  async function addSmartSticky(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (working) {
-      return;
-    }
-
-    const payload = getSmartAddPayload(smartAddInput);
-
-    if (!payload) {
-      setMessage("Add a discussion link, @username, topic, note:, or ai: prompt.");
-      return;
-    }
-
-    setWorking(true);
-    setMessage("");
-
-    const accessToken = await getAccessToken();
-
-    if (!accessToken) {
-      setWorking(false);
-      setIsLoggedIn(false);
-      return;
-    }
-
-    const response = await fetch("/api/stickies", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify(payload.body),
-    });
-
-    const result = await response.json().catch(() => ({}));
-
-    setWorking(false);
-
-    if (!response.ok) {
-      if (response.status === 403 && result.upgradeRequired) {
-        setUpgradeRequired(true);
-      }
-
-      setMessage(result.error ?? "Unable to add to Stickies.");
-      return;
-    }
-
-    setSmartAddInput("");
-    setMessage(`${payload.label} added to Stickies.`);
-
-    await loadStickies();
-  }
-
   async function addDiscussionSticky(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -304,6 +82,13 @@ export default function StickiesPage() {
       return;
     }
 
+    const cleanInput = discussionInput.trim();
+
+    if (!cleanInput) {
+      setMessage("Paste a discussion link or discussion ID.");
+      return;
+    }
+
     setWorking(true);
     setMessage("");
 
@@ -322,7 +107,7 @@ export default function StickiesPage() {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        discussionUrl: discussionInput,
+        discussionUrl: cleanInput,
       }),
     });
 
@@ -335,277 +120,14 @@ export default function StickiesPage() {
         setUpgradeRequired(true);
       }
 
-      setMessage(result.error ?? "Unable to add sticky.");
+      setMessage(result.error ?? "Unable to add discussion to Stickies.");
       return;
     }
 
     setDiscussionInput("");
-    setMessage("Added to Stickies.");
+    setMessage("Discussion added to Stickies.");
 
     await loadStickies();
-  }
-
-  async function addTopicSticky(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (working) {
-      return;
-    }
-
-    setWorking(true);
-    setMessage("");
-
-    const accessToken = await getAccessToken();
-
-    if (!accessToken) {
-      setWorking(false);
-      setIsLoggedIn(false);
-      return;
-    }
-
-    const response = await fetch("/api/stickies", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        itemType: "topic",
-        topic: topicInput,
-      }),
-    });
-
-    const result = await response.json().catch(() => ({}));
-
-    setWorking(false);
-
-    if (!response.ok) {
-      if (response.status === 403 && result.upgradeRequired) {
-        setUpgradeRequired(true);
-      }
-
-      setMessage(result.error ?? "Unable to add topic.");
-      return;
-    }
-
-    setTopicInput("");
-    setMessage("Topic added to Stickies.");
-
-    await loadStickies();
-  }
-
-  async function addPersonSticky(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (working) {
-      return;
-    }
-
-    setWorking(true);
-    setMessage("");
-
-    const accessToken = await getAccessToken();
-
-    if (!accessToken) {
-      setWorking(false);
-      setIsLoggedIn(false);
-      return;
-    }
-
-    const response = await fetch("/api/stickies", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        itemType: "person",
-        username: personInput,
-      }),
-    });
-
-    const result = await response.json().catch(() => ({}));
-
-    setWorking(false);
-
-    if (!response.ok) {
-      if (response.status === 403 && result.upgradeRequired) {
-        setUpgradeRequired(true);
-      }
-
-      setMessage(result.error ?? "Unable to add person.");
-      return;
-    }
-
-    setPersonInput("");
-    setMessage("Person added to Stickies.");
-
-    await loadStickies();
-  }
-
-  async function addAiSticky(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (working) {
-      return;
-    }
-
-    setWorking(true);
-    setMessage("");
-
-    const accessToken = await getAccessToken();
-
-    if (!accessToken) {
-      setWorking(false);
-      setIsLoggedIn(false);
-      return;
-    }
-
-    const response = await fetch("/api/stickies", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        itemType: "ai_summary",
-        prompt: aiPrompt,
-      }),
-    });
-
-    const result = await response.json().catch(() => ({}));
-
-    setWorking(false);
-
-    if (!response.ok) {
-      if (response.status === 403 && result.upgradeRequired) {
-        setUpgradeRequired(true);
-      }
-
-      setMessage(result.error ?? "Unable to generate AI card.");
-      return;
-    }
-
-    setAiPrompt("");
-    setMessage("AI card added to Stickies.");
-
-    await loadStickies();
-  }
-
-  async function addNoteSticky(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (working) {
-      return;
-    }
-
-    setWorking(true);
-    setMessage("");
-
-    const accessToken = await getAccessToken();
-
-    if (!accessToken) {
-      setWorking(false);
-      setIsLoggedIn(false);
-      return;
-    }
-
-    const response = await fetch("/api/stickies", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        itemType: "note",
-        title: noteTitle,
-        note: noteBody,
-      }),
-    });
-
-    const result = await response.json().catch(() => ({}));
-
-    setWorking(false);
-
-    if (!response.ok) {
-      if (response.status === 403 && result.upgradeRequired) {
-        setUpgradeRequired(true);
-      }
-
-      setMessage(result.error ?? "Unable to add note.");
-      return;
-    }
-
-    setNoteTitle("");
-    setNoteBody("");
-    setMessage("Note added to Stickies.");
-
-    await loadStickies();
-  }
-
-  function startEditingNote(item: StickyItem) {
-    if (item.item_type !== "note") {
-      return;
-    }
-
-    setEditingNoteId(item.id);
-    setEditingNoteTitle(item.title);
-    setEditingNoteBody(item.subtitle ?? "");
-    setMessage("");
-  }
-
-  function cancelEditingNote() {
-    setEditingNoteId(null);
-    setEditingNoteTitle("");
-    setEditingNoteBody("");
-  }
-
-  async function updateNoteSticky(stickyId: string) {
-    if (working) {
-      return;
-    }
-
-    setWorking(true);
-    setMessage("");
-
-    const accessToken = await getAccessToken();
-
-    if (!accessToken) {
-      setWorking(false);
-      setIsLoggedIn(false);
-      return;
-    }
-
-    const response = await fetch("/api/stickies", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        action: "update_note",
-        stickyId,
-        title: editingNoteTitle,
-        note: editingNoteBody,
-      }),
-    });
-
-    const result = await response.json().catch(() => ({}));
-
-    setWorking(false);
-
-    if (!response.ok) {
-      setMessage(result.error ?? "Unable to update note.");
-      return;
-    }
-
-    const updatedSticky = result.sticky as StickyItem;
-
-    setItems((current) =>
-      current.map((item) => (item.id === stickyId ? updatedSticky : item))
-    );
-    cancelEditingNote();
-    setMessage("Note updated.");
   }
 
   async function persistStickyOrder(nextItems: StickyItem[], fallbackItems: StickyItem[]) {
@@ -703,40 +225,7 @@ export default function StickiesPage() {
     const [movedItem] = nextItems.splice(currentIndex, 1);
     nextItems.splice(nextIndex, 0, movedItem);
 
-    setItems(nextItems);
-    setWorking(true);
-    setMessage("");
-
-    const accessToken = await getAccessToken();
-
-    if (!accessToken) {
-      setWorking(false);
-      setIsLoggedIn(false);
-      return;
-    }
-
-    const response = await fetch("/api/stickies", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        orderedIds: nextItems.map((item) => item.id),
-      }),
-    });
-
-    const result = await response.json().catch(() => ({}));
-
-    setWorking(false);
-
-    if (!response.ok) {
-      setItems(items);
-      setMessage(result.error ?? "Unable to reorder stickies.");
-      return;
-    }
-
-    setMessage("Stickies reordered.");
+    await persistStickyOrder(nextItems, items);
   }
 
   async function removeSticky(stickyId: string) {
@@ -780,7 +269,7 @@ export default function StickiesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--loombus-bg)] px-4 pb-24 pt-4 text-[var(--loombus-text)] sm:px-6 sm:py-10 lg:py-12 loombus-shell-with-right-rail">
+    <main className="min-h-screen bg-[var(--loombus-bg)] px-4 pb-24 pt-4 text-[var(--loombus-text)] sm:px-6 sm:py-10 lg:py-12">
       <div className="mx-auto max-w-[46rem]">
         <Link
           href="/discussions"
@@ -799,9 +288,15 @@ export default function StickiesPage() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--loombus-text-muted)] sm:text-base">
-            Stickies are your personal workspace for pinning Loombus cards you want visible right now. Saved is your library. Stickies are your board.
+            Stickies are your personal board for discussion cards you want visible right now. Saved is your library. Stickies are your working surface.
           </p>
         </section>
+
+        {loading && (
+          <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+            Loading Stickies...
+          </p>
+        )}
 
         {!loading && !isLoggedIn && (
           <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
@@ -833,7 +328,7 @@ export default function StickiesPage() {
             </h2>
 
             <p className="mt-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-              Free users can keep using Saved. Premium users can build a visible workspace board from Loombus cards.
+              Free users can keep using Saved. Premium users can pin active discussion cards to a focused workspace board.
             </p>
 
             <Link
@@ -848,57 +343,33 @@ export default function StickiesPage() {
         {!loading && isLoggedIn && !upgradeRequired && (
           <>
             <form
-              onSubmit={addSmartSticky}
+              onSubmit={addDiscussionSticky}
               className="mb-5 rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-2xl shadow-black/10 sm:p-5"
             >
-              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <label className="text-sm font-medium text-[var(--loombus-text)]">
-                  Smart Add
-                </label>
-
-                <span className="w-fit rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1 text-xs text-[var(--loombus-text-muted)]">
-                  One field
-                </span>
-              </div>
+              <label className="mb-3 block text-sm font-medium text-[var(--loombus-text)]">
+                Add discussion card
+              </label>
 
               <div className="flex flex-col gap-3">
-                <textarea
-                  value={smartAddInput}
-                  onChange={(event) => setSmartAddInput(event.target.value)}
-                  placeholder="Paste a discussion link, type @username, enter a topic, write note:..., or ask ai:..."
-                  rows={3}
-                  className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
+                <input
+                  type="text"
+                  value={discussionInput}
+                  onChange={(event) => setDiscussionInput(event.target.value)}
+                  placeholder="Paste a discussion link or discussion ID"
+                  className="min-h-12 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
                 />
 
                 <button
                   type="submit"
-                  disabled={working || !smartAddInput.trim()}
+                  disabled={working || !discussionInput.trim()}
                   className="w-full rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
                 >
                   {working ? "Adding..." : "Add to Stickies"}
                 </button>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
-                  discussion link
-                </span>
-                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
-                  @username
-                </span>
-                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
-                  topic name
-                </span>
-                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
-                  note: your note
-                </span>
-                <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-[var(--loombus-text-muted)]">
-                  ai: your prompt
-                </span>
-              </div>
-
               <p className="mt-3 text-xs leading-relaxed text-[var(--loombus-text-subtle)]">
-                Saved discussions can still be added directly from the Saved page.
+                Stickies v1 supports discussion cards only. Notes, topics, people, and AI cards are reserved for a later version.
               </p>
             </form>
 
@@ -931,7 +402,7 @@ export default function StickiesPage() {
                   >
                     <div className="mb-3 flex items-start justify-between gap-3">
                       <p className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--loombus-text-muted)]">
-                        {getStickyTypeLabel(item.item_type)}
+                        Discussion
                       </p>
 
                       <div className="flex shrink-0 flex-wrap justify-end gap-2">
@@ -963,17 +434,6 @@ export default function StickiesPage() {
                           Down
                         </button>
 
-                        {item.item_type === "note" && (
-                          <button
-                            type="button"
-                            onClick={() => startEditingNote(item)}
-                            disabled={working || editingNoteId === item.id}
-                            className="rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            Edit
-                          </button>
-                        )}
-
                         <button
                           type="button"
                           onClick={() => removeSticky(item.id)}
@@ -985,82 +445,26 @@ export default function StickiesPage() {
                       </div>
                     </div>
 
-                    {item.item_type === "note" || item.item_type === "ai_summary" ? (
-                      editingNoteId === item.id ? (
-                        <div className="space-y-3">
-                          <input
-                            type="text"
-                            value={editingNoteTitle}
-                            onChange={(event) => setEditingNoteTitle(event.target.value)}
-                            placeholder="Note title"
-                            className="min-h-12 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
-                          />
+                    <Link href={item.href} className="block rounded-2xl transition hover:opacity-90">
+                      <h2 className="text-xl font-semibold leading-snug tracking-tight">
+                        {item.title}
+                      </h2>
 
-                          <textarea
-                            value={editingNoteBody}
-                            onChange={(event) => setEditingNoteBody(event.target.value)}
-                            placeholder="Write a short note for your workspace..."
-                            rows={4}
-                            className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
-                          />
+                      {item.subtitle && (
+                        <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                          {item.subtitle}
+                        </p>
+                      )}
 
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => updateNoteSticky(item.id)}
-                              disabled={working || (!editingNoteTitle.trim() && !editingNoteBody.trim())}
-                              className="rounded-full bg-[var(--loombus-primary-bg)] px-4 py-2 text-xs font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {working ? "Saving..." : "Save Note"}
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={cancelEditingNote}
-                              disabled={working}
-                              className="rounded-full border border-[var(--loombus-border)] px-4 py-2 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:opacity-50"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <h2 className="text-xl font-semibold tracking-tight text-[var(--loombus-text)]">
-                            {item.title}
-                          </h2>
-
-                          {item.subtitle && (
-                            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                              {item.subtitle}
-                            </p>
-                          )}
-                        </div>
-                      )
-                    ) : (
-                      <Link href={item.href} className="block">
-                        <h2 className="text-xl font-semibold tracking-tight text-[var(--loombus-text)] transition hover:text-[var(--loombus-text-muted)]">
-                          {item.title}
-                        </h2>
-
-                        {item.subtitle && (
-                          <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                            {item.subtitle}
-                          </p>
-                        )}
-                      </Link>
-                    )}
+                      <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">
+                        Open discussion →
+                      </p>
+                    </Link>
                   </article>
                 ))}
               </section>
             )}
           </>
-        )}
-
-        {loading && (
-          <p className="text-sm text-[var(--loombus-text-muted)]">
-            Loading Stickies...
-          </p>
         )}
       </div>
     </main>
