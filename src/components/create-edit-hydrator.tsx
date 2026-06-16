@@ -1,0 +1,227 @@
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
+
+type ExistingAttachment = {
+  id: string;
+  public_url: string;
+  file_name: string;
+  mime_type: string;
+  file_size_bytes: number;
+  attachment_kind: "image" | "pdf";
+  sort_order: number;
+};
+
+function escapeLimitedHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function hasLimitedFormattingHtml(value: string) {
+  return /<\/?(strong|b|em|i|br|p|div)\b/i.test(value);
+}
+
+function sanitizeLimitedDiscussionHtml(value: string) {
+  const pattern = /<\/?(strong|b|em|i|br|p|div)\b[^>]*>/gi;
+  let safe = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(value)) !== null) {
+    safe += escapeLimitedHtml(value.slice(lastIndex, match.index));
+
+    const rawTag = match[0].toLowerCase();
+    const tagName = match[1].toLowerCase();
+    const normalizedTag =
+      tagName === "b" ? "strong" : tagName === "i" ? "em" : tagName;
+
+    if (normalizedTag === "br") {
+      safe += "<br>";
+    } else if (rawTag.startsWith("</")) {
+      safe += `</${normalizedTag}>`;
+    } else {
+      safe += `<${normalizedTag}>`;
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  safe += escapeLimitedHtml(value.slice(lastIndex));
+
+  return safe
+    .replace(/<div><br><\/div>/gi, "<br>")
+    .replace(/<p><br><\/p>/gi, "<br>");
+}
+
+function bodyValueToEditorHtml(value: string) {
+  if (!value) {
+    return "";
+  }
+
+  if (hasLimitedFormattingHtml(value)) {
+    return sanitizeLimitedDiscussionHtml(value);
+  }
+
+  return escapeLimitedHtml(value).replace(/\n/g, "<br>");
+}
+
+function formatAttachmentFileSize(bytes: number) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+export function CreateEditHydrator() {
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("edit");
+  const hydratedRef = useRef(false);
+  const [body, setBody] = useState("");
+  const [attachments, setAttachments] = useState<ExistingAttachment[]>([]);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEditData() {
+      hydratedRef.current = false;
+      setBody("");
+      setAttachments([]);
+
+      if (!editId) {
+        return;
+      }
+
+      const [{ data: discussionData }, { data: attachmentData }] = await Promise.all([
+        supabase
+          .from("discussions")
+          .select("body")
+          .eq("id", editId)
+          .is("deleted_at", null)
+          .maybeSingle(),
+        supabase
+          .from("discussion_attachments")
+          .select("id, public_url, file_name, mime_type, file_size_bytes, attachment_kind, sort_order")
+          .eq("discussion_id", editId)
+          .order("sort_order", { ascending: true }),
+      ]);
+
+      if (cancelled) {
+        return;
+      }
+
+      setBody(typeof discussionData?.body === "string" ? discussionData.body : "");
+      setAttachments((attachmentData ?? []) as ExistingAttachment[]);
+    }
+
+    void loadEditData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editId]);
+
+  useEffect(() => {
+    if (!editId || !body || hydratedRef.current) {
+      return;
+    }
+
+    let attempts = 0;
+    let timeoutId = 0;
+
+    function hydrateEditor() {
+      attempts += 1;
+      const editor = document.querySelector<HTMLDivElement>(
+        '[role="textbox"][aria-label="Discussion body"]'
+      );
+
+      if (editor) {
+        const currentText = editor.textContent?.trim() ?? "";
+
+        if (!currentText) {
+          editor.innerHTML = bodyValueToEditorHtml(body);
+          editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+        }
+
+        hydratedRef.current = true;
+        return;
+      }
+
+      if (attempts < 30) {
+        timeoutId = window.setTimeout(hydrateEditor, 100);
+      }
+    }
+
+    hydrateEditor();
+
+    return () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [body, editId]);
+
+  const visibleAttachments = useMemo(
+    () => attachments.filter((attachment) => attachment.public_url),
+    [attachments]
+  );
+
+  if (!editId || dismissed || visibleAttachments.length === 0) {
+    return null;
+  }
+
+  return (
+    <aside className="fixed inset-x-3 bottom-24 z-30 mx-auto max-w-lg rounded-[1.35rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 p-4 text-[var(--loombus-text)] shadow-2xl shadow-black/20 backdrop-blur-xl md:bottom-6 md:left-6 md:right-auto md:mx-0 md:w-[28rem]">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="mb-1 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
+            Existing attachments
+          </p>
+          <h2 className="text-base font-semibold tracking-tight">
+            These files are still attached.
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+            Existing files remain on the published discussion while you edit the text.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss existing attachments panel"
+          className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+        >
+          Close
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {visibleAttachments.map((attachment) => (
+          <a
+            key={attachment.id}
+            href={attachment.public_url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 text-sm transition hover:border-[var(--loombus-text-subtle)]"
+          >
+            <span className="min-w-0">
+              <span className="block truncate font-medium text-[var(--loombus-text)]">
+                {attachment.file_name}
+              </span>
+              <span className="mt-1 block text-xs text-[var(--loombus-text-muted)]">
+                {attachment.attachment_kind === "pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(attachment.file_size_bytes)}
+              </span>
+            </span>
+            <span className="shrink-0 text-xs text-[var(--loombus-text-subtle)]">
+              Open
+            </span>
+          </a>
+        ))}
+      </div>
+    </aside>
+  );
+}
