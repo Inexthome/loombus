@@ -237,6 +237,25 @@ export default function ProfilePage() {
     bio,
   });
 
+  const publicProfilePath =
+    profileCompletionGate.ok && cleanUsernamePreview ? `/u/${cleanUsernamePreview}` : "";
+
+  async function copyPublicProfileLink() {
+    if (!publicProfilePath) {
+      setMessage("Complete your public profile before sharing your member link.");
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}${publicProfilePath}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setMessage("Public profile link copied.");
+    } catch {
+      setMessage(shareUrl);
+    }
+  }
+
   const profileCompletionItems = [
     {
       label: "Public name",
@@ -691,6 +710,57 @@ export default function ProfilePage() {
         <p className="mb-5 text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
           Manage your public Loombus profile and notification preferences.
         </p>
+
+        <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-6 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-600">
+                Public member link
+              </p>
+
+              <h2 className="text-xl font-medium text-white">
+                Share your Loombus profile
+              </h2>
+
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-500">
+                Your public member link is available after your public name,
+                username, and bio are complete. It can be shared with people who
+                want to view your public Loombus profile and discussions.
+              </p>
+
+              {publicProfilePath ? (
+                <p className="mt-3 break-all rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-400">
+                  {publicProfilePath}
+                </p>
+              ) : (
+                <p className="mt-3 rounded-xl border border-zinc-900 bg-black px-4 py-3 text-sm text-zinc-500">
+                  Complete your public profile to activate your share link.
+                </p>
+              )}
+            </div>
+
+            <div className="flex shrink-0 flex-col gap-3 sm:w-44">
+              {publicProfilePath ? (
+                <Link
+                  href={publicProfilePath}
+                  target="_blank"
+                  className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+                >
+                  View profile
+                </Link>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={copyPublicProfileLink}
+                disabled={!publicProfilePath}
+                className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+              >
+                Copy link
+              </button>
+            </div>
+          </div>
+        </section>
 
         <TopicAlertsControl canUseTopicAlerts={canUseTopicAlerts} />
 
