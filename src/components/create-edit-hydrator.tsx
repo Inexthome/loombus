@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase/client";
 
 type ExistingAttachment = {
@@ -77,6 +78,92 @@ function formatAttachmentFileSize(bytes: number) {
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
+function EditControlsCard({
+  editId,
+  visibleAttachments,
+  onDismiss,
+  variant,
+}: {
+  editId: string;
+  visibleAttachments: ExistingAttachment[];
+  onDismiss: () => void;
+  variant: "mobile" | "rail";
+}) {
+  const cardClassName =
+    variant === "rail"
+      ? "rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 text-[var(--loombus-text)] shadow-2xl shadow-black/10"
+      : "fixed inset-x-3 bottom-24 z-30 mx-auto max-w-lg rounded-[1.35rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 p-4 text-[var(--loombus-text)] shadow-2xl shadow-black/20 backdrop-blur-xl lg:hidden";
+
+  return (
+    <aside className={cardClassName}>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="mb-1 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
+            Editing controls
+          </p>
+          <h2 className="text-base font-semibold tracking-tight">
+            Editing a published discussion.
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+            Save changes when ready, or cancel to return without submitting this edit.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss editing controls panel"
+          className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+        >
+          Close
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:flex-col lg:items-stretch xl:flex-row xl:items-center">
+        <a
+          href={`/discussions/${editId}`}
+          className="inline-flex justify-center rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-medium text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+        >
+          Cancel editing
+        </a>
+        <span className="text-xs leading-relaxed text-[var(--loombus-text-subtle)]">
+          This does not save changes.
+        </span>
+      </div>
+
+      {visibleAttachments.length > 0 && (
+        <div className="mt-4 border-t border-[var(--loombus-border)] pt-3">
+          <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
+            Existing attachments
+          </p>
+          <div className="space-y-2">
+            {visibleAttachments.map((attachment) => (
+              <a
+                key={attachment.id}
+                href={attachment.public_url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 text-sm transition hover:border-[var(--loombus-text-subtle)]"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-medium text-[var(--loombus-text)]">
+                    {attachment.file_name}
+                  </span>
+                  <span className="mt-1 block text-xs text-[var(--loombus-text-muted)]">
+                    {attachment.attachment_kind === "pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(attachment.file_size_bytes)}
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs text-[var(--loombus-text-subtle)]">
+                  Open
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </aside>
+  );
+}
+
 export function CreateEditHydrator() {
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
@@ -84,6 +171,39 @@ export function CreateEditHydrator() {
   const [body, setBody] = useState("");
   const [attachments, setAttachments] = useState<ExistingAttachment[]>([]);
   const [dismissed, setDismissed] = useState(false);
+  const [railTarget, setRailTarget] = useState<Element | null>(null);
+
+  useEffect(() => {
+    if (!editId) {
+      setRailTarget(null);
+      return;
+    }
+
+    let attempts = 0;
+    let timeoutId = 0;
+
+    function findRailTarget() {
+      attempts += 1;
+      const target = document.querySelector(".loombus-right-rail .space-y-4");
+
+      if (target) {
+        setRailTarget(target);
+        return;
+      }
+
+      if (attempts < 30) {
+        timeoutId = window.setTimeout(findRailTarget, 100);
+      }
+    }
+
+    findRailTarget();
+
+    return () => {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [editId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -175,72 +295,24 @@ export function CreateEditHydrator() {
     return null;
   }
 
+  const card = (
+    <EditControlsCard
+      editId={editId}
+      visibleAttachments={visibleAttachments}
+      onDismiss={() => setDismissed(true)}
+      variant="rail"
+    />
+  );
+
   return (
-    <aside className="fixed inset-x-3 bottom-24 z-30 mx-auto max-w-lg rounded-[1.35rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 p-4 text-[var(--loombus-text)] shadow-2xl shadow-black/20 backdrop-blur-xl md:bottom-6 md:left-6 md:right-auto md:mx-0 md:w-[28rem]">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <p className="mb-1 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
-            Editing controls
-          </p>
-          <h2 className="text-base font-semibold tracking-tight">
-            Editing a published discussion.
-          </h2>
-          <p className="mt-1 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-            Save changes when ready, or cancel to return without submitting this edit.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setDismissed(true)}
-          aria-label="Dismiss editing controls panel"
-          className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
-        >
-          Close
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <a
-          href={`/discussions/${editId}`}
-          className="inline-flex justify-center rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-medium text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
-        >
-          Cancel editing
-        </a>
-        <span className="text-xs leading-relaxed text-[var(--loombus-text-subtle)]">
-          This does not save changes.
-        </span>
-      </div>
-
-      {visibleAttachments.length > 0 && (
-        <div className="mt-4 border-t border-[var(--loombus-border)] pt-3">
-          <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
-            Existing attachments
-          </p>
-          <div className="space-y-2">
-            {visibleAttachments.map((attachment) => (
-              <a
-                key={attachment.id}
-                href={attachment.public_url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 text-sm transition hover:border-[var(--loombus-text-subtle)]"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate font-medium text-[var(--loombus-text)]">
-                    {attachment.file_name}
-                  </span>
-                  <span className="mt-1 block text-xs text-[var(--loombus-text-muted)]">
-                    {attachment.attachment_kind === "pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(attachment.file_size_bytes)}
-                  </span>
-                </span>
-                <span className="shrink-0 text-xs text-[var(--loombus-text-subtle)]">
-                  Open
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-    </aside>
+    <>
+      {railTarget ? createPortal(card, railTarget) : null}
+      <EditControlsCard
+        editId={editId}
+        visibleAttachments={visibleAttachments}
+        onDismiss={() => setDismissed(true)}
+        variant="mobile"
+      />
+    </>
   );
 }
