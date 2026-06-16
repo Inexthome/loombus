@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import { isNativeApp } from "@/lib/native-app";
+import { isIosNativeApp, isNativeApp } from "@/lib/native-app";
 import {
   deleteNativeBiometricLoginCredentials,
   getNativeBiometricLoginCredentials,
@@ -18,6 +18,16 @@ function getSafeNext(value: string | null) {
   }
 
   return value;
+}
+
+function getOAuthRedirectTo(nextPath: string) {
+  const safeNext = getSafeNext(nextPath);
+
+  if (isIosNativeApp()) {
+    return `loombus://auth/callback?next=${encodeURIComponent(safeNext)}`;
+  }
+
+  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
 }
 
 export default function LoginPage() {
@@ -213,13 +223,6 @@ export default function LoginPage() {
   }
 
   async function handleOAuthLogin(provider: "google" | "apple") {
-    if (nativeApp ?? isNativeApp()) {
-      setMessage(
-        "Use email and password to log in inside the Loombus iOS app. Apple and Google login remain available on the web."
-      );
-      return;
-    }
-
     if (loading || oauthLoading) {
       return;
     }
@@ -231,7 +234,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/discussions`,
+          redirectTo: getOAuthRedirectTo(getNextPath()),
         },
       });
 
@@ -263,7 +266,6 @@ export default function LoginPage() {
 
   const shouldShowManualLogin =
     !biometricLoginReady || showManualLogin || nativeApp !== true;
-  const shouldShowOAuthLogin = nativeApp === false;
 
   return (
     <main className="min-h-screen bg-black px-6 py-16 text-white">
@@ -347,54 +349,35 @@ export default function LoginPage() {
 
         {shouldShowManualLogin ? (
           <>
-            {shouldShowOAuthLogin ? (
-              <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-                <button
-                  type="button"
-                  onClick={() => handleOAuthLogin("apple")}
-                  disabled={loading || Boolean(oauthLoading)}
-                  className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {oauthLoading === "apple"
-                    ? "Opening Apple..."
-                    : "Continue with Apple"}
-                </button>
+            <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin("apple")}
+                disabled={loading || Boolean(oauthLoading)}
+                className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {oauthLoading === "apple"
+                  ? "Opening Apple..."
+                  : "Continue with Apple"}
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleOAuthLogin("google")}
-                  disabled={loading || Boolean(oauthLoading)}
-                  className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {oauthLoading === "google"
-                    ? "Opening Google..."
-                    : "Continue with Google"}
-                </button>
+              <button
+                type="button"
+                onClick={() => handleOAuthLogin("google")}
+                disabled={loading || Boolean(oauthLoading)}
+                className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {oauthLoading === "google"
+                  ? "Opening Google..."
+                  : "Continue with Google"}
+              </button>
 
-                <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
-                  <span className="h-px flex-1 bg-zinc-900" />
-                  Or log in with email
-                  <span className="h-px flex-1 bg-zinc-900" />
-                </div>
+              <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
+                <span className="h-px flex-1 bg-zinc-900" />
+                Or log in with email
+                <span className="h-px flex-1 bg-zinc-900" />
               </div>
-            ) : (
-              <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-                  In-app login
-                </p>
-                <h2 className="mb-3 text-xl font-medium">
-                  Log in with email.
-                </h2>
-                <p className="text-sm leading-relaxed text-zinc-500">
-                  Use email and password to log in inside the Loombus iOS app.
-                </p>
-                <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
-                  <span className="h-px flex-1 bg-zinc-900" />
-                  Log in below
-                  <span className="h-px flex-1 bg-zinc-900" />
-                </div>
-              </div>
-            )}
+            </div>
 
             <form
               onSubmit={handleLogin}
@@ -447,9 +430,8 @@ export default function LoginPage() {
               {message && <p className="text-sm text-zinc-400">{message}</p>}
 
               <p className="text-xs leading-relaxed text-zinc-500">
-                {nativeApp === true
-                  ? "By logging in with email, you agree to the"
-                  : "By logging in or continuing with Apple, Google, or email, you agree to the"}{" "}
+                By logging in or continuing with Apple, Google, or email, you
+                agree to the{" "}
                 <Link
                   href="/terms"
                   className="text-zinc-400 underline-offset-4 hover:underline"
