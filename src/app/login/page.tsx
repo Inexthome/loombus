@@ -23,11 +23,13 @@ function getSafeNext(value: string | null) {
 function getOAuthRedirectTo(nextPath: string) {
   const safeNext = getSafeNext(nextPath);
 
+  const encodedNext = encodeURIComponent(safeNext);
+
   if (isIosNativeApp()) {
-    return `loombus://auth/callback?next=${encodeURIComponent(safeNext)}`;
+    return `https://loombus.com/auth/callback?native_oauth=1&next=${encodedNext}`;
   }
 
-  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
+  return `${window.location.origin}/auth/callback?next=${encodedNext}`;
 }
 
 export default function LoginPage() {

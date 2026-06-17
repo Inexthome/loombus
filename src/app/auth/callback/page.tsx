@@ -5,6 +5,7 @@ import { type Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { isIosNativeApp } from "@/lib/native-app";
 
 function getSafeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -12,6 +13,24 @@ function getSafeNext(value: string | null) {
   }
 
   return value;
+}
+
+function shouldBounceNativeOAuthCallback(params: URLSearchParams) {
+  if (isIosNativeApp()) {
+    return false;
+  }
+
+  if (params.get("native_oauth") !== "1") {
+    return false;
+  }
+
+  return /iPad|iPhone|iPod/.test(window.navigator.userAgent);
+}
+
+function bounceNativeOAuthCallbackToApp() {
+  const targetUrl = `loombus://auth/callback${window.location.search}${window.location.hash}`;
+
+  window.location.replace(targetUrl);
 }
 
 async function waitForSession(maxAttempts = 20) {
@@ -99,6 +118,11 @@ export default function AuthCallbackPage() {
           ? window.location.hash.slice(1)
           : window.location.hash
       );
+
+      if (shouldBounceNativeOAuthCallback(params)) {
+        bounceNativeOAuthCallbackToApp();
+        return;
+      }
 
       const code = params.get("code");
       const next = getSafeNext(params.get("next"));
