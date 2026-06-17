@@ -96,6 +96,7 @@ export default function Home() {
   const [profile, setProfile] = useState<HomeProfile | null>(null);
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
+  const [mobileAuthSheet, setMobileAuthSheet] = useState<"join" | "return" | null>(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
@@ -760,35 +761,44 @@ export default function Home() {
         </p>
 
         <div className="w-full rounded-3xl border border-zinc-900 bg-zinc-950/60 p-5 shadow-2xl shadow-black/30 space-y-3 loombus-mobile-visitor-auth-card">
-          <button
-            type="button"
-            onClick={() => signUpWithProvider("apple")}
-            disabled={Boolean(workingProvider)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <AppleLogoMark className="h-5 w-5" />
-            <span>{workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => signUpWithProvider("google")}
-            disabled={Boolean(workingProvider)}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <GoogleLogoMark className="h-5 w-5" />
-            <span>{workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}</span>
-          </button>
-          <div className="flex items-center gap-3 py-2 text-xs uppercase tracking-[0.2em] text-zinc-700">
-            <span className="h-px flex-1 bg-zinc-900" />
-            Or
-            <span className="h-px flex-1 bg-zinc-900" />
+          <div className="rounded-2xl border border-zinc-900 bg-black/40 p-4 text-left">
+            <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+              New to Loombus
+            </p>
+            <h2 className="mb-2 text-xl font-semibold tracking-tight text-white">
+              Join the conversation.
+            </h2>
+            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
+              Join a calmer, higher-signal environment for thoughtful discussion.
+            </p>
+            <button
+              type="button"
+              onClick={() => setMobileAuthSheet("join")}
+              className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+            >
+              Join the conversation
+            </button>
           </div>
-          <Link
-            href="/signup"
-            className="block w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white loombus-mobile-visitor-create"
-          >
-            Create Account
-          </Link>
+
+          <div className="rounded-2xl border border-zinc-900 bg-black/40 p-4 text-left">
+            <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
+              Already a member
+            </p>
+            <h2 className="mb-2 text-xl font-semibold tracking-tight text-white">
+              Return to Loombus.
+            </h2>
+            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
+              Return to your high-signal discussion environment.
+            </p>
+            <button
+              type="button"
+              onClick={() => setMobileAuthSheet("return")}
+              className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+            >
+              Return to Loombus
+            </button>
+          </div>
+
           <p className="pt-3 text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
             By creating an account or continuing with Apple, Google, or email, you confirm that you are at least 13 years old and agree to the{" "}
             <Link href="/terms" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Terms</Link>,{" "}
@@ -798,6 +808,84 @@ export default function Home() {
             <Link href="/safety" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Safety</Link>.
           </p>
         </div>
+
+        {mobileAuthSheet ? (
+          <div className="fixed inset-0 z-50 flex items-end bg-black/70 px-4 pb-4">
+            <div className="w-full max-w-xl rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 text-left shadow-2xl shadow-black/50">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
+                    {mobileAuthSheet === "join" ? "Join Loombus" : "Return to Loombus"}
+                  </p>
+                  <h2 className="text-2xl font-semibold tracking-tight text-white">
+                    {mobileAuthSheet === "join" ? "Join the conversation." : "Welcome back."}
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                    {mobileAuthSheet === "join"
+                      ? "Join a calmer, higher-signal environment for thoughtful discussion."
+                      : "Return to your high-signal discussion environment."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileAuthSheet(null)}
+                  className="rounded-full border border-zinc-800 px-3 py-1 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
+                >
+                  Close
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => signUpWithProvider("google")}
+                disabled={Boolean(workingProvider)}
+                className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <GoogleLogoMark className="h-5 w-5" />
+                <span>
+                  {workingProvider === "google"
+                    ? "Opening Google..."
+                    : mobileAuthSheet === "join"
+                      ? "Sign up with Google"
+                      : "Continue with Google"}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => signUpWithProvider("apple")}
+                disabled={Boolean(workingProvider)}
+                className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <AppleLogoMark className="h-5 w-5" />
+                <span>
+                  {workingProvider === "apple"
+                    ? "Opening Apple..."
+                    : mobileAuthSheet === "join"
+                      ? "Sign up with Apple"
+                      : "Continue with Apple"}
+                </span>
+              </button>
+
+              {mobileAuthSheet === "join" ? (
+                <Link
+                  href="/signup"
+                  className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Sign up with email
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Sign in with email
+                </Link>
+              )}
+            </div>
+          </div>
+        ) : null}
 
         {message && (
           <p className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm leading-relaxed text-zinc-400">
