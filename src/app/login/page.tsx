@@ -32,6 +32,8 @@ function getOAuthRedirectTo(nextPath: string) {
   return `${window.location.origin}/auth/callback?next=${encodedNext}`;
 }
 
+type MobileAuthSheet = "join" | "return";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,6 +50,9 @@ export default function LoginPage() {
   const [biometricSigningIn, setBiometricSigningIn] = useState(false);
   const [showManualLogin, setShowManualLogin] = useState(false);
   const [nativeApp, setNativeApp] = useState<boolean | null>(null);
+  const [mobileAuthSheet, setMobileAuthSheet] =
+    useState<MobileAuthSheet | null>(null);
+  const [mobileEmailLoginVisible, setMobileEmailLoginVisible] = useState(false);
 
   const autoBiometricStarted = useRef(false);
 
@@ -351,6 +356,172 @@ export default function LoginPage() {
 
         {shouldShowManualLogin ? (
           <>
+            <div className="space-y-4 md:hidden">
+              <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
+                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
+                  New to Loombus
+                </p>
+                <h2 className="mb-3 text-2xl font-semibold tracking-tight">
+                  Join the conversation.
+                </h2>
+                <p className="mb-5 text-sm leading-relaxed text-zinc-500">
+                  Join a calmer, higher-signal environment for thoughtful discussion.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setMobileAuthSheet("join")}
+                  className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+                >
+                  Join the conversation
+                </button>
+              </div>
+
+              <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
+                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
+                  Already a member
+                </p>
+                <h2 className="mb-3 text-2xl font-semibold tracking-tight">
+                  Return to Loombus.
+                </h2>
+                <p className="mb-5 text-sm leading-relaxed text-zinc-500">
+                  Return to your high-signal discussion environment.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setMobileAuthSheet("return")}
+                  className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+                >
+                  Return to Loombus
+                </button>
+              </div>
+
+              {mobileEmailLoginVisible ? (
+                <form
+                  onSubmit={handleLogin}
+                  className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
+                >
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      autoComplete="email"
+                      required
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      autoComplete="current-password"
+                      required
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                  >
+                    {loading ? "Logging in..." : "Sign in with email"}
+                  </button>
+
+                  {message && <p className="text-sm text-zinc-400">{message}</p>}
+                </form>
+              ) : null}
+            </div>
+
+            {mobileAuthSheet ? (
+              <div className="fixed inset-0 z-50 flex items-end bg-black/70 px-4 pb-4 md:hidden">
+                <div className="w-full rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/50">
+                  <div className="mb-5 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
+                        {mobileAuthSheet === "join" ? "Join Loombus" : "Return to Loombus"}
+                      </p>
+                      <h2 className="text-2xl font-semibold tracking-tight">
+                        {mobileAuthSheet === "join"
+                          ? "Join the conversation."
+                          : "Welcome back."}
+                      </h2>
+                      <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+                        {mobileAuthSheet === "join"
+                          ? "Join a calmer, higher-signal environment for thoughtful discussion."
+                          : "Return to your high-signal discussion environment."}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setMobileAuthSheet(null)}
+                      className="rounded-full border border-zinc-800 px-3 py-1 text-sm text-zinc-500"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOAuthLogin("google")}
+                    disabled={loading || Boolean(oauthLoading)}
+                    className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {oauthLoading === "google"
+                      ? "Opening Google..."
+                      : mobileAuthSheet === "join"
+                        ? "Sign up with Google"
+                        : "Continue with Google"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOAuthLogin("apple")}
+                    disabled={loading || Boolean(oauthLoading)}
+                    className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {oauthLoading === "apple"
+                      ? "Opening Apple..."
+                      : mobileAuthSheet === "join"
+                        ? "Sign up with Apple"
+                        : "Continue with Apple"}
+                  </button>
+
+                  {mobileAuthSheet === "join" ? (
+                    <Link
+                      href="/signup"
+                      className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                    >
+                      Sign up with email
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileAuthSheet(null);
+                        setMobileEmailLoginVisible(true);
+                      }}
+                      className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                    >
+                      Sign in with email
+                    </button>
+                  )}
+
+                  {message ? <p className="mt-4 text-sm text-zinc-400">{message}</p> : null}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="hidden md:block">
             <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
               <button
                 type="button"
@@ -488,6 +659,7 @@ export default function LoginPage() {
                 </Link>
               </p>
             </form>
+            </div>
           </>
         ) : null}
       </div>
