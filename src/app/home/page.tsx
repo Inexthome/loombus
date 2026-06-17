@@ -7,6 +7,7 @@ import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
 import { validatePublicProfileCompletion } from "@/lib/profile-completion";
 import { supabase } from "@/lib/supabase/client";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { AppleLogoMark, GoogleLogoMark } from "@/components/auth-provider-icons";
 
 type OAuthProvider = "google" | "apple";
 type HomeAuthState = "checking" | "logged_out" | "logged_in";
@@ -763,17 +764,19 @@ export default function Home() {
             type="button"
             onClick={() => signUpWithProvider("apple")}
             disabled={Boolean(workingProvider)}
-            className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}
+            <AppleLogoMark className="h-5 w-5" />
+            <span>{workingProvider === "apple" ? "Opening Apple..." : "Sign up with Apple"}</span>
           </button>
           <button
             type="button"
             onClick={() => signUpWithProvider("google")}
             disabled={Boolean(workingProvider)}
-            className="w-full rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}
+            <GoogleLogoMark className="h-5 w-5" />
+            <span>{workingProvider === "google" ? "Opening Google..." : "Sign up with Google"}</span>
           </button>
           <div className="flex items-center gap-3 py-2 text-xs uppercase tracking-[0.2em] text-zinc-700">
             <span className="h-px flex-1 bg-zinc-900" />
@@ -788,11 +791,11 @@ export default function Home() {
           </Link>
           <p className="pt-3 text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
             By creating an account or continuing with Apple, Google, or email, you confirm that you are at least 13 years old and agree to the{" "}
-            <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">Terms</Link>,{" "}
-            <Link href="/privacy" className="text-zinc-400 underline-offset-4 hover:underline">Privacy Policy</Link>,{" "}
-            <Link href="/cookies" className="text-zinc-400 underline-offset-4 hover:underline">Cookie Use</Link>,{" "}
-            <Link href="/guidelines" className="text-zinc-400 underline-offset-4 hover:underline">Community Guidelines</Link>, and{" "}
-            <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">Safety</Link>.
+            <Link href="/terms" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Terms</Link>,{" "}
+            <Link href="/privacy" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Privacy Policy</Link>,{" "}
+            <Link href="/cookies" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Cookie Policy</Link>,{" "}
+            <Link href="/guidelines" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Community Guidelines</Link>, and{" "}
+            <Link href="/safety" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Safety</Link>.
           </p>
         </div>
 
@@ -802,9 +805,9 @@ export default function Home() {
           </p>
         )}
 
-        <p className="mt-7 text-sm text-zinc-500 loombus-mobile-visitor-existing">
+        <p className="mt-7 text-sm text-zinc-400 loombus-mobile-visitor-existing">
           Already have an account?{" "}
-          <Link href="/login" className="text-zinc-200 underline-offset-4 hover:underline loombus-mobile-visitor-signin">
+          <Link href="/login" className="font-semibold text-white underline decoration-white/60 underline-offset-4 transition hover:decoration-white loombus-mobile-visitor-signin">
             Sign in
           </Link>
         </p>
