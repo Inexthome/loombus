@@ -36,11 +36,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Loombus uses camera access only when you choose to take a photo for a profile image, discussion attachment, or message attachment.</string>
+	<string>Loombus uses camera access only when you choose to take a photo or video for a profile image, discussion attachment, message attachment, or Video Context.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Loombus uses microphone access only when you choose to record a video with audio for a discussion attachment, message attachment, or Video Context.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Loombus uses Face ID only when you enable device unlock for the app.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Loombus uses photo access so you can upload profile images and attach images to discussions or messages.</string>
+	<string>Loombus uses photo library access so you can upload profile images, attach images or videos to discussions, and add Video Context when you choose.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
