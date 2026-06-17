@@ -349,7 +349,6 @@ export async function POST(request: NextRequest) {
         file_size_bytes: Math.round(fileSizeBytes),
         attachment_kind: attachmentKind,
         video_duration_seconds: normalizedVideoDurationSeconds,
-        video_context_tier: attachmentKind === "video" ? videoContextLimits.tier : null,
         sort_order: sortOrder,
         ...(attachmentKind === "video" && normalizedVideoDurationSeconds
           ? { video_duration_seconds: normalizedVideoDurationSeconds }
