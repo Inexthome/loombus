@@ -20,9 +20,12 @@ const freeFeatures: PlanFeature[] = [
   { label: "Basic public profile", status: "available" },
   { label: "Save/bookmark discussions", status: "available" },
   { label: "Basic notifications", status: "available" },
+  { label: "Discussion attachments: images and PDFs", status: "available" },
+  { label: "Video Context: 5 videos/month, up to 60 seconds each", status: "available" },
 ];
 
 const premiumFeatures: PlanFeature[] = [
+  { label: "Everything in Free", status: "available" },
   { label: "AI discussion summaries", status: "available" },
   { label: "AI key takeaways", status: "available" },
   { label: "Thread Evolution / What Changed", status: "available" },
@@ -37,12 +40,14 @@ const premiumFeatures: PlanFeature[] = [
   { label: "Premium email digest", status: "available" },
   { label: "Premium topic alerts", status: "available" },
   { label: "Draft mode for discussions", status: "available" },
-  { label: "Extended edit window", status: "available" },
+  { label: "Extended edit window: 7 days after publishing", status: "available" },
+  { label: "Video Context: 25 videos/month, up to 120 seconds each", status: "available" },
 ];
 
 const premiumPlusFeatures: PlanFeature[] = [
+  { label: "Everything in Premium", status: "available" },
   {
-    label: "Higher included AI usage for summaries, takeaways, viewpoint maps, and thread evolution",
+    label: "Highest included AI usage for summaries, takeaways, viewpoint maps, thread evolution, Conversation Map, and Related Ideas",
     status: "available",
   },
   { label: "AI discussion quality check before posting", status: "available" },
@@ -50,7 +55,7 @@ const premiumPlusFeatures: PlanFeature[] = [
   { label: "Private notes on saved discussions", status: "available" },
   { label: "Export saved discussions and notes", status: "available" },
   { label: "Longer discussion posts", status: "available" },
-  { label: "Discussion attachments", status: "available" },
+  { label: "Video Context: 50 videos/month, up to 3 minutes each", status: "available" },
   { label: "Priority feature access / Loombus Labs", status: "available" },
   { label: "Premium Plus Labs voting", status: "available" },
   { label: "Optional creator/supporter profile tools", status: "available" },
@@ -94,14 +99,15 @@ export default function PremiumPage() {
           </h1>
 
           <p className="mt-5 text-lg leading-relaxed text-zinc-400">
-            Loombus gives every member core discussion access, with Premium
-            tiers for stronger AI assistance, better organization, and deeper
-            reading tools.
+            Loombus gives every member core discussion access, with paid tiers
+            for deeper AI assistance, better organization, longer Video Context,
+            and stronger creation tools.
           </p>
 
           <p className="mt-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 text-sm leading-relaxed text-zinc-500 shadow-2xl shadow-black/30">
-            Features marked <span className="text-zinc-300">Planned</span> are roadmap items
-            and will be built/wired before they are treated as active subscription benefits.
+            Video Context is designed to support written discussions, not replace
+            them with a video feed. Videos remain attached to discussions and
+            are limited by plan.
           </p>
         </div>
 
@@ -118,7 +124,7 @@ export default function PremiumPage() {
 
             <p className="mb-6 leading-relaxed text-zinc-400">
               Core Loombus access for reading, posting, replying, following,
-              and saving high-signal discussions.
+              saving, basic attachments, and limited Video Context.
             </p>
 
             <div className="mb-8">
@@ -146,8 +152,13 @@ export default function PremiumPage() {
               Early Access annual: $70/year
             </p>
 
-            <p className="mb-6 text-sm leading-relaxed text-zinc-500">
+            <p className="mb-3 text-sm leading-relaxed text-zinc-500">
               Standard: $9/month or $90/year. You save $2/month or $20/year during Early Access.
+            </p>
+
+            <p className="mb-6 text-sm leading-relaxed text-zinc-500">
+              Built for members who want AI discussion tools, better organization,
+              draft support, topic alerts, and longer Video Context.
             </p>
 
             <div className="mb-8 space-y-3">
@@ -208,7 +219,8 @@ export default function PremiumPage() {
             </p>
 
             <p className="mb-6 text-sm leading-relaxed text-zinc-500">
-              Built for heavier AI usage, Labs access, creator tools, exports, longer posts, and pre-posting AI support.
+              Built for heavier AI usage, Labs access, creator tools, exports,
+              longer posts, pre-posting AI support, and the longest Video Context limits.
             </p>
 
             <div className="mb-8 space-y-3">

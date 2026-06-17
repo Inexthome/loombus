@@ -11,7 +11,7 @@ export const SUBSCRIPTION_DISPLAY = {
     label: "Free",
     badge: "Free",
     description:
-      "Core Loombus access for reading, posting, replying, following, saving, and basic notifications.",
+      "Core Loombus access for reading, posting, replying, following, saving, basic attachments, and limited Video Context.",
     nextAction: "View Premium options",
     href: "/premium",
   },
@@ -19,7 +19,7 @@ export const SUBSCRIPTION_DISPLAY = {
     label: "Premium",
     badge: "Premium Member",
     description:
-      "AI summaries, key takeaways, stronger organization tools, and higher monthly AI usage.",
+      "AI discussion tools, saved folders, drafts, topic alerts, extended editing, and longer Video Context.",
     nextAction: "Manage Premium",
     href: "/premium",
   },
@@ -27,7 +27,7 @@ export const SUBSCRIPTION_DISPLAY = {
     label: "Premium Plus",
     badge: "Premium Plus Member",
     description:
-      "Higher AI usage for heavier readers, deeper discussion support, and advanced Premium tools.",
+      "Highest AI usage, pre-posting AI support, private notes, exports, Labs access, creator tools, and 3-minute Video Context.",
     nextAction: "Manage Premium Plus",
     href: "/premium",
   },
