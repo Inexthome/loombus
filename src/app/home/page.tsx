@@ -772,7 +772,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setMobileAuthSheet("return")}
-            className="w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white"
+            className="w-full rounded-full border border-zinc-500 bg-zinc-900/60 px-6 py-3 text-sm font-medium text-white transition hover:border-zinc-300 hover:bg-zinc-800"
           >
             Return to Loombus
           </button>
@@ -871,12 +871,6 @@ export default function Home() {
           </p>
         )}
 
-        <p className="mt-7 text-sm text-zinc-400 loombus-mobile-visitor-existing">
-          Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-white underline decoration-white/60 underline-offset-4 transition hover:decoration-white loombus-mobile-visitor-signin">
-            Sign in
-          </Link>
-        </p>
       </section>
 
       <footer className="mx-auto mt-12 flex max-w-5xl flex-col items-center justify-between gap-4 border-t border-zinc-900 pt-8 text-sm text-zinc-600 md:flex-row">
