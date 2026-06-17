@@ -97,6 +97,10 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
   const [mobileAuthSheet, setMobileAuthSheet] = useState<"join" | "return" | null>(null);
+  const [returnEmailMode, setReturnEmailMode] = useState(false);
+  const [returnEmail, setReturnEmail] = useState("");
+  const [returnPassword, setReturnPassword] = useState("");
+  const [returnEmailLoading, setReturnEmailLoading] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
@@ -377,6 +381,28 @@ export default function Home() {
     } finally {
       setSavingAgeVerification(false);
     }
+  }
+
+  async function signInWithEmailFromHome() {
+    if (returnEmailLoading) {
+      return;
+    }
+
+    setMessage("");
+    setReturnEmailLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: returnEmail,
+      password: returnPassword,
+    });
+
+    if (error) {
+      setMessage(`Email sign-in error: ${error.message}`);
+      setReturnEmailLoading(false);
+      return;
+    }
+
+    window.location.replace("/discussions");
   }
 
   async function signUpWithProvider(provider: OAuthProvider) {
@@ -771,7 +797,10 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={() => setMobileAuthSheet("return")}
+            onClick={() => {
+              setReturnEmailMode(false);
+              setMobileAuthSheet("return");
+            }}
             className="w-full rounded-full border border-zinc-500 bg-zinc-900/60 px-6 py-3 text-sm font-medium text-white transition hover:border-zinc-300 hover:bg-zinc-800"
           >
             Return to Loombus
@@ -788,7 +817,7 @@ export default function Home() {
         </div>
 
         {mobileAuthSheet ? (
-          <div className="fixed inset-0 z-50 flex items-end bg-black/70 px-4 pb-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
             <div className="w-full max-w-xl rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 text-left shadow-2xl shadow-black/50">
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
@@ -807,7 +836,10 @@ export default function Home() {
 
                 <button
                   type="button"
-                  onClick={() => setMobileAuthSheet(null)}
+                  onClick={() => {
+                    setMobileAuthSheet(null);
+                    setReturnEmailMode(false);
+                  }}
                   className="rounded-full border border-zinc-800 px-3 py-1 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
                 >
                   Close
@@ -853,13 +885,58 @@ export default function Home() {
                 >
                   Sign up with email
                 </Link>
+              ) : returnEmailMode ? (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void signInWithEmailFromHome();
+                  }}
+                  className="space-y-4 rounded-2xl border border-zinc-800 bg-black/40 p-4"
+                >
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={returnEmail}
+                      autoComplete="email"
+                      required
+                      onChange={(event) => setReturnEmail(event.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={returnPassword}
+                      autoComplete="current-password"
+                      required
+                      onChange={(event) => setReturnPassword(event.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={returnEmailLoading}
+                    className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {returnEmailLoading ? "Signing in..." : "Sign in with email"}
+                  </button>
+                </form>
               ) : (
-                <Link
-                  href="/login"
-                  className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                <button
+                  type="button"
+                  onClick={() => setReturnEmailMode(true)}
+                  className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
                 >
                   Sign in with email
-                </Link>
+                </button>
               )}
             </div>
           </div>
