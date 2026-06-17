@@ -127,11 +127,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
             return false
         }
 
+        let originalComponents =
+            URLComponents(url: url, resolvingAgainstBaseURL: false)
+
         var components = URLComponents()
         components.scheme = "https"
         components.host = "loombus.com"
         components.path = "/auth/callback"
-        components.percentEncodedQuery = URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedQuery
+        components.percentEncodedQuery = originalComponents?.percentEncodedQuery
+        components.percentEncodedFragment = originalComponents?.percentEncodedFragment
 
         guard let callbackUrl = components.url else {
             return false
