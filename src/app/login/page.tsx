@@ -26,7 +26,7 @@ function getOAuthRedirectTo(nextPath: string) {
   const encodedNext = encodeURIComponent(safeNext);
 
   if (isIosNativeApp()) {
-    return `https://loombus.com/auth/callback?native_oauth=1&next=${encodedNext}`;
+    return `loombus://auth/callback?next=${encodedNext}`;
   }
 
   return `${window.location.origin}/auth/callback?next=${encodedNext}`;
