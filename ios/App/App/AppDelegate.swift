@@ -2,13 +2,15 @@ import UIKit
 import Capacitor
 import SafariServices
 import WebKit
+import AuthenticationServices
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKScriptMessageHandler, SFSafariViewControllerDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKScriptMessageHandler, SFSafariViewControllerDelegate, ASWebAuthenticationPresentationContextProviding {
 
     var window: UIWindow?
     private var loombusOAuthHandlerConfigured = false
     private var safariViewController: SFSafariViewController?
+    private var webAuthenticationSession: ASWebAuthenticationSession?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         DispatchQueue.main.async {
@@ -95,17 +97,26 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
     private func presentLoombusOAuthSession(url: URL) {
         DispatchQueue.main.async {
             self.safariViewController?.dismiss(animated: false)
+            self.safariViewController = nil
+            self.webAuthenticationSession?.cancel()
 
-            let safariController = SFSafariViewController(url: url)
-            safariController.delegate = self
-            safariController.dismissButtonStyle = .cancel
-            self.safariViewController = safariController
+            let session = ASWebAuthenticationSession(
+                url: url,
+                callbackURLScheme: "loombus"
+            ) { callbackUrl, error in
+                self.webAuthenticationSession = nil
 
-            guard let presentingController = self.topMostViewController(from: self.window?.rootViewController) else {
-                return
+                guard error == nil, let callbackUrl = callbackUrl else {
+                    return
+                }
+
+                _ = self.handleLoombusAuthCallback(callbackUrl)
             }
 
-            presentingController.present(safariController, animated: true)
+            session.presentationContextProvider = self
+            session.prefersEphemeralWebBrowserSession = false
+            self.webAuthenticationSession = session
+            session.start()
         }
     }
 
@@ -155,6 +166,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
         if safariViewController === controller {
             safariViewController = nil
         }
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        return window ?? ASPresentationAnchor()
     }
 
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
