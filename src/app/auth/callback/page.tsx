@@ -109,9 +109,11 @@ async function getPostAuthRedirect(next: string, sessionOverride: Session | null
 
 export default function AuthCallbackPage() {
   const [errorMessage, setErrorMessage] = useState("");
+  const [debugUrl, setDebugUrl] = useState("");
 
   useEffect(() => {
     async function completeAuthCallback() {
+      setDebugUrl(window.location.href);
       const params = new URLSearchParams(window.location.search);
       const hashParams = new URLSearchParams(
         window.location.hash.startsWith("#")
@@ -174,6 +176,12 @@ export default function AuthCallbackPage() {
           <p className="mb-6 leading-relaxed text-zinc-400">
             {errorMessage}
           </p>
+
+          {debugUrl ? (
+            <p className="mb-6 break-all rounded-2xl border border-zinc-800 bg-black p-4 text-xs leading-relaxed text-zinc-500">
+              Debug URL: {debugUrl}
+            </p>
+          ) : null}
 
           <Link
             href="/login"
