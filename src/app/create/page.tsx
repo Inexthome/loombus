@@ -1143,9 +1143,9 @@ export default function CreatePage() {
   }: {
     discussionId: string;
     accessToken: string;
-  }) {
+  }): Promise<{ ok: true } | { ok: false; error: string }> {
     if (!currentUserId || attachmentFiles.length === 0) {
-      return true;
+      return { ok: true };
     }
 
     for (const [index, file] of attachmentFiles.entries()) {
@@ -1159,8 +1159,9 @@ export default function CreatePage() {
           : null;
 
       if (!attachmentKind) {
-        setAttachmentMessage("Attachment type is not allowed.");
-        return false;
+        const errorMessage = "Attachment type is not allowed.";
+        setAttachmentMessage(errorMessage);
+        return { ok: false, error: errorMessage };
       }
 
       const { error: uploadError } = await supabase.storage
@@ -1171,8 +1172,9 @@ export default function CreatePage() {
         });
 
       if (uploadError) {
-        setAttachmentMessage(`Discussion was saved, but ${file.name} could not upload.`);
-        return false;
+        const errorMessage = `Discussion was saved, but ${file.name} could not upload: ${uploadError.message}`;
+        setAttachmentMessage(errorMessage);
+        return { ok: false, error: errorMessage };
       }
 
       const { data: publicUrlData } = supabase.storage
@@ -1203,12 +1205,13 @@ export default function CreatePage() {
 
       if (!response.ok) {
         await supabase.storage.from(ATTACHMENT_BUCKET).remove([storagePath]);
-        setAttachmentMessage(result.error ?? `Discussion was saved, but ${file.name} could not be attached.`);
-        return false;
+        const errorMessage = result.error ?? `Discussion was saved, but ${file.name} could not be attached.`;
+        setAttachmentMessage(errorMessage);
+        return { ok: false, error: errorMessage };
       }
     }
 
-    return true;
+    return { ok: true };
   }
 
 
@@ -1369,14 +1372,18 @@ export default function CreatePage() {
     const discussionId = result.discussion?.id ?? editingDiscussionId;
 
     if (!isEditMode && discussionId && attachmentFiles.length > 0) {
-      const attachmentsUploaded = await uploadDiscussionAttachments({
+      const attachmentUploadResult = await uploadDiscussionAttachments({
         discussionId,
         accessToken: sessionData.session.access_token,
       });
 
-      if (!attachmentsUploaded) {
+      if (!attachmentUploadResult.ok) {
         setPublishing(false);
-        setMessage("Discussion was published, but one or more attachments could not be saved. You can open the discussion now or try again later.");
+        setMessage(
+          attachmentUploadResult.error
+            ? `Discussion was published, but the attachment could not be saved: ${attachmentUploadResult.error}`
+            : "Discussion was published, but one or more attachments could not be saved. You can open the discussion now or try again later."
+        );
         return;
       }
     }
