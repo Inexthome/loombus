@@ -76,7 +76,7 @@ function getNativeOAuthRedirectTo(redirectTo?: string) {
     }
   }
 
-  return `https://loombus.com/auth/callback?native_oauth=1&next=${encodeURIComponent(next)}`;
+  return `loombus://auth/callback?next=${encodeURIComponent(next)}`;
 }
 
 function openNativeOAuthSession(url: string) {
