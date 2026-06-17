@@ -2,17 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { logAuditEvent } from "@/lib/audit-log";
+import {
+  getAttachmentKindForMimeType,
+  getVideoContextLimitsForEntitlement,
+  MAX_DISCUSSION_ATTACHMENTS,
+  NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES,
+  NON_VIDEO_ATTACHMENT_MIME_TYPES,
+  VIDEO_CONTEXT_ALLOWED_MIME_TYPES,
+} from "@/lib/video-context-limits";
 
 const ATTACHMENT_BUCKET = "discussion-attachments";
-const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_ATTACHMENTS_PER_DISCUSSION = 3;
+const MAX_ATTACHMENT_SIZE_BYTES = NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES;
+const MAX_ATTACHMENTS_PER_DISCUSSION = MAX_DISCUSSION_ATTACHMENTS;
 
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "application/pdf",
+const ALLOWED_MIME_TYPES = new Set<string>([
+  ...NON_VIDEO_ATTACHMENT_MIME_TYPES,
+  ...VIDEO_CONTEXT_ALLOWED_MIME_TYPES,
 ]);
 
 type ProfileAccess = {
@@ -28,6 +33,12 @@ type DiscussionAccess = {
   deleted_at: string | null;
 };
 
+type AiEntitlement = {
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
+};
+
 type AttachmentRow = {
   id: string;
   discussion_id: string;
@@ -38,7 +49,8 @@ type AttachmentRow = {
   file_name: string;
   mime_type: string;
   file_size_bytes: number;
-  attachment_kind: "image" | "pdf";
+  attachment_kind: "image" | "pdf" | "video";
+  video_duration_seconds?: number | null;
   sort_order: number;
   created_at: string;
 };
@@ -48,15 +60,7 @@ function jsonError(message: string, status: number) {
 }
 
 function getAttachmentKind(mimeType: string) {
-  if (mimeType.startsWith("image/")) {
-    return "image";
-  }
-
-  if (mimeType === "application/pdf") {
-    return "pdf";
-  }
-
-  return null;
+  return getAttachmentKindForMimeType(mimeType);
 }
 
 function cleanFileName(value: unknown) {
@@ -171,6 +175,7 @@ export async function POST(request: NextRequest) {
     const fileName = cleanFileName(source.fileName);
     const mimeType = String(source.mimeType ?? "").trim().toLowerCase();
     const fileSizeBytes = Number(source.fileSizeBytes);
+    const videoDurationSeconds = Number(source.videoDurationSeconds);
     const requestedSortOrder = Number(source.sortOrder ?? 0);
     const sortOrder = Number.isInteger(requestedSortOrder)
       ? requestedSortOrder
@@ -197,35 +202,40 @@ export async function POST(request: NextRequest) {
       return jsonError("Attachment type is not allowed.", 400);
     }
 
-    if (
-      !Number.isFinite(fileSizeBytes) ||
-      fileSizeBytes <= 0 ||
-      fileSizeBytes > MAX_ATTACHMENT_SIZE_BYTES
-    ) {
-      return jsonError("Attachment size must be 10 MB or less.", 400);
+    if (!Number.isFinite(fileSizeBytes) || fileSizeBytes <= 0) {
+      return jsonError("Attachment size must be greater than 0 bytes.", 400);
     }
 
     if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 2) {
       return jsonError("Attachment sort order must be 0, 1, or 2.", 400);
     }
 
-    const [{ data: profile }, { data: discussion }, { count }] =
-      await Promise.all([
-        supabase
-          .from("profiles")
-          .select("is_admin, account_status, enforcement_reason, suspended_until")
-          .eq("id", user.id)
-          .maybeSingle(),
-        supabase
-          .from("discussions")
-          .select("id, user_id, deleted_at")
-          .eq("id", discussionId)
-          .maybeSingle(),
-        supabase
-          .from("discussion_attachments")
-          .select("*", { count: "exact", head: true })
-          .eq("discussion_id", discussionId),
-      ]);
+    const [
+      { data: profile },
+      { data: discussion },
+      { data: existingAttachments },
+      { data: entitlement },
+    ] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("is_admin, account_status, enforcement_reason, suspended_until")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("discussions")
+        .select("id, user_id, deleted_at")
+        .eq("id", discussionId)
+        .maybeSingle(),
+      supabase
+        .from("discussion_attachments")
+        .select("id, attachment_kind")
+        .eq("discussion_id", discussionId),
+      supabase
+        .from("user_ai_entitlements")
+        .select("tier, ai_assisted_enabled, monthly_summary_limit")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
 
     const profileAccess = (profile ?? null) as ProfileAccess | null;
     const enforcement = getAccountEnforcementResult(profileAccess);
@@ -253,8 +263,77 @@ export async function POST(request: NextRequest) {
       return jsonError("You do not have permission to attach files to this discussion.", 403);
     }
 
-    if ((count ?? 0) >= MAX_ATTACHMENTS_PER_DISCUSSION) {
+    const attachmentRows = (existingAttachments ?? []) as Array<{
+      id: string;
+      attachment_kind: string | null;
+    }>;
+
+    if (attachmentRows.length >= MAX_ATTACHMENTS_PER_DISCUSSION) {
       return jsonError("A discussion can have at most 3 attachments.", 400);
+    }
+
+    let normalizedVideoDurationSeconds: number | null = null;
+    const videoContextLimits = getVideoContextLimitsForEntitlement(
+      (entitlement ?? null) as AiEntitlement | null,
+      isAdmin
+    );
+
+    if (attachmentKind === "video") {
+      const existingVideoCount = attachmentRows.filter(
+        (attachment) => attachment.attachment_kind === "video"
+      ).length;
+
+      if (existingVideoCount >= 1) {
+        return jsonError("A discussion can have only one Video Context.", 400);
+      }
+
+      if (
+        !Number.isFinite(videoDurationSeconds) ||
+        videoDurationSeconds <= 0
+      ) {
+        return jsonError("Unable to read video duration. Please choose a different video.", 400);
+      }
+
+      normalizedVideoDurationSeconds = Math.ceil(videoDurationSeconds);
+
+      if (
+        normalizedVideoDurationSeconds >
+        videoContextLimits.maxDurationSeconds
+      ) {
+        return jsonError(
+          `${videoContextLimits.label} videos can be up to ${videoContextLimits.maxDurationSeconds} seconds.`,
+          400
+        );
+      }
+
+      if (fileSizeBytes > videoContextLimits.maxFileSizeBytes) {
+        return jsonError(
+          `${videoContextLimits.label} videos must be ${Math.round(videoContextLimits.maxFileSizeBytes / (1024 * 1024))} MB or less.`,
+          400
+        );
+      }
+
+      const now = new Date();
+      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+
+      const { count: monthlyVideoCount, error: usageCountError } = await supabase
+        .from("discussion_video_upload_events")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", monthStart.toISOString());
+
+      if (usageCountError) {
+        return jsonError("Video Context limit service is not configured.", 503);
+      }
+
+      if ((monthlyVideoCount ?? 0) >= videoContextLimits.monthlyUploadLimit) {
+        return jsonError(
+          `You have reached your ${videoContextLimits.label} Video Context limit of ${videoContextLimits.monthlyUploadLimit} videos this month.`,
+          403
+        );
+      }
+    } else if (fileSizeBytes > MAX_ATTACHMENT_SIZE_BYTES) {
+      return jsonError("Image and PDF attachments must be 10 MB or less.", 400);
     }
 
     const { data: attachment, error: insertError } = await supabase
@@ -269,13 +348,45 @@ export async function POST(request: NextRequest) {
         mime_type: mimeType,
         file_size_bytes: Math.round(fileSizeBytes),
         attachment_kind: attachmentKind,
+        video_duration_seconds: normalizedVideoDurationSeconds,
+        video_context_tier: attachmentKind === "video" ? videoContextLimits.tier : null,
         sort_order: sortOrder,
+        ...(attachmentKind === "video" && normalizedVideoDurationSeconds
+          ? { video_duration_seconds: normalizedVideoDurationSeconds }
+          : {}),
       })
-      .select("id, discussion_id, user_id, storage_bucket, storage_path, public_url, file_name, mime_type, file_size_bytes, attachment_kind, sort_order, created_at")
+      .select("id, discussion_id, user_id, storage_bucket, storage_path, public_url, file_name, mime_type, file_size_bytes, attachment_kind, video_duration_seconds, sort_order, created_at")
       .single();
 
     if (insertError) {
       return jsonError(insertError.message || "Unable to save attachment.", 400);
+    }
+
+    if (attachmentKind === "video" && normalizedVideoDurationSeconds) {
+      const { error: usageInsertError } = await supabase
+        .from("discussion_video_upload_events")
+        .insert({
+          user_id: user.id,
+          discussion_id: discussionId,
+          attachment_id: attachment.id,
+          tier: videoContextLimits.tier,
+          video_duration_seconds: normalizedVideoDurationSeconds,
+          max_duration_seconds: videoContextLimits.maxDurationSeconds,
+          file_size_bytes: Math.round(fileSizeBytes),
+        });
+
+      if (usageInsertError) {
+        await supabase
+          .from("discussion_attachments")
+          .delete()
+          .eq("id", attachment.id);
+
+        await supabase.storage
+          .from(ATTACHMENT_BUCKET)
+          .remove([storagePath]);
+
+        return jsonError("Unable to record Video Context usage.", 503);
+      }
     }
 
     await logAuditEvent({
@@ -336,7 +447,7 @@ export async function DELETE(request: NextRequest) {
         .maybeSingle(),
       supabase
         .from("discussion_attachments")
-        .select("id, discussion_id, user_id, storage_bucket, storage_path, public_url, file_name, mime_type, file_size_bytes, attachment_kind, sort_order, created_at")
+        .select("id, discussion_id, user_id, storage_bucket, storage_path, public_url, file_name, mime_type, file_size_bytes, attachment_kind, video_duration_seconds, sort_order, created_at")
         .eq("id", attachmentId)
         .maybeSingle(),
     ]);
