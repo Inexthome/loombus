@@ -761,43 +761,21 @@ export default function Home() {
         </p>
 
         <div className="w-full rounded-3xl border border-zinc-900 bg-zinc-950/60 p-5 shadow-2xl shadow-black/30 space-y-3 loombus-mobile-visitor-auth-card">
-          <div className="rounded-2xl border border-zinc-900 bg-black/40 p-4 text-left">
-            <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
-              New to Loombus
-            </p>
-            <h2 className="mb-2 text-xl font-semibold tracking-tight text-white">
-              Join the conversation.
-            </h2>
-            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
-              Join a calmer, higher-signal environment for thoughtful discussion.
-            </p>
-            <button
-              type="button"
-              onClick={() => setMobileAuthSheet("join")}
-              className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
-            >
-              Join the conversation
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setMobileAuthSheet("join")}
+            className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+          >
+            Join the conversation
+          </button>
 
-          <div className="rounded-2xl border border-zinc-900 bg-black/40 p-4 text-left">
-            <p className="mb-1 text-xs uppercase tracking-[0.2em] text-zinc-600">
-              Already a member
-            </p>
-            <h2 className="mb-2 text-xl font-semibold tracking-tight text-white">
-              Return to Loombus.
-            </h2>
-            <p className="mb-4 text-sm leading-relaxed text-zinc-500">
-              Return to your high-signal discussion environment.
-            </p>
-            <button
-              type="button"
-              onClick={() => setMobileAuthSheet("return")}
-              className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
-            >
-              Return to Loombus
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setMobileAuthSheet("return")}
+            className="w-full rounded-full border border-zinc-700 px-6 py-3 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white"
+          >
+            Return to Loombus
+          </button>
 
           <p className="pt-3 text-xs leading-relaxed text-zinc-500 loombus-mobile-visitor-legal">
             By creating an account or continuing with Apple, Google, or email, you confirm that you are at least 13 years old and agree to the{" "}
