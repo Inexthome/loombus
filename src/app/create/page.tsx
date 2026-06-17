@@ -9,6 +9,19 @@ import { supabase } from "@/lib/supabase/client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 import { REALITY_LENSES, normalizeRealityLens } from "@/lib/reality-lenses";
 import { PURPOSE_LANES, normalizePurposeLane } from "@/lib/purpose-lanes";
+import {
+  DISCUSSION_ATTACHMENT_ACCEPT,
+  MAX_DISCUSSION_ATTACHMENTS,
+  NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES,
+  NON_VIDEO_ATTACHMENT_MIME_TYPES,
+  VIDEO_CONTEXT_ALLOWED_MIME_TYPES,
+  formatVideoContextDuration,
+  formatVideoContextFileSizeLimit,
+  formatVideoContextLimitSummary,
+  getAttachmentKindForMimeType,
+  getVideoContextLimitsForEntitlement,
+  isVideoContextMimeType,
+} from "@/lib/video-context-limits";
 
 type Profile = {
   full_name: string | null;
@@ -98,8 +111,8 @@ const CREATE_METADATA_INPUT_CLASS =
 const CREATE_TAG_INPUT_CLASS =
   "min-h-14 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]";
 const ATTACHMENT_BUCKET = "discussion-attachments";
-const MAX_ATTACHMENT_FILES = 3;
-const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENT_FILES = MAX_DISCUSSION_ATTACHMENTS;
+const MAX_NON_VIDEO_ATTACHMENT_SIZE_BYTES = NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES;
 const SIMILAR_DISCUSSION_STOP_WORDS = new Set([
   "about",
   "after",
@@ -134,12 +147,9 @@ const SIMILAR_DISCUSSION_STOP_WORDS = new Set([
   "would",
 ]);
 
-const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "application/pdf",
+const ALLOWED_ATTACHMENT_MIME_TYPES = new Set<string>([
+  ...NON_VIDEO_ATTACHMENT_MIME_TYPES,
+  ...VIDEO_CONTEXT_ALLOWED_MIME_TYPES,
 ]);
 
 function getDiscussionMemoryTerms(value: string) {
@@ -338,19 +348,52 @@ function formatAttachmentFileSize(bytes: number) {
 }
 
 function getAttachmentKind(mimeType: string) {
-  if (mimeType.startsWith("image/")) {
-    return "image";
-  }
-
-  if (mimeType === "application/pdf") {
-    return "pdf";
-  }
-
-  return null;
+  return getAttachmentKindForMimeType(mimeType);
 }
 
 function getSafeAttachmentFileName(fileName: string) {
   return fileName.trim().replace(/[\\/]/g, "-").slice(0, 120);
+}
+
+function getAttachmentFileKey(file: File) {
+  return `${file.name}-${file.size}-${file.lastModified}`;
+}
+
+function readVideoDurationSeconds(file: File) {
+  return new Promise<number>((resolve, reject) => {
+    const video = document.createElement("video");
+    const objectUrl = URL.createObjectURL(file);
+
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const duration = video.duration;
+      URL.revokeObjectURL(objectUrl);
+
+      if (!Number.isFinite(duration) || duration <= 0) {
+        reject(new Error("Invalid video duration."));
+        return;
+      }
+
+      resolve(duration);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Unable to read video duration."));
+    };
+    video.src = objectUrl;
+  });
+}
+
+function getAttachmentDisplayKind(file: File) {
+  if (isVideoContextMimeType(file.type)) {
+    return "Video Context";
+  }
+
+  if (file.type === "application/pdf") {
+    return "PDF";
+  }
+
+  return "Image";
 }
 
 function getRecommendedDiscussionTopic(title: string, body: string) {
@@ -509,6 +552,7 @@ export default function CreatePage() {
   const [pastedBodyCharacterCount, setPastedBodyCharacterCount] = useState(0);
   const [tagsInput, setTagsInput] = useState("");
   const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
+  const [attachmentVideoDurations, setAttachmentVideoDurations] = useState<Record<string, number>>({});
   const [attachmentMessage, setAttachmentMessage] = useState("");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
@@ -552,6 +596,10 @@ export default function CreatePage() {
   const maxDiscussionLength = canUseLongPosts
     ? LONG_DISCUSSION_MAX_LENGTH
     : STANDARD_DISCUSSION_MAX_LENGTH;
+  const videoContextLimits = useMemo(
+    () => getVideoContextLimitsForEntitlement(entitlement, isAdmin),
+    [entitlement, isAdmin]
+  );
   const bodyPlainText = useMemo(() => getPlainTextFromLimitedHtml(body), [body]);
   const bodyCharacterCount = bodyPlainText.length;
   const isBodyOverLimit = bodyCharacterCount > maxDiscussionLength;
@@ -973,42 +1021,119 @@ export default function CreatePage() {
   }
 
   function handleAttachmentSelection(event: React.ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = Array.from(event.target.files ?? []);
+    const input = event.currentTarget;
+    const selectedFiles = Array.from(input.files ?? []);
 
+    void validateAttachmentSelection(selectedFiles, input);
+  }
+
+  async function validateAttachmentSelection(
+    selectedFiles: File[],
+    input: HTMLInputElement
+  ) {
     setAttachmentMessage("");
 
     if (selectedFiles.length === 0) {
       setAttachmentFiles([]);
+      setAttachmentVideoDurations({});
       return;
     }
 
     if (selectedFiles.length > MAX_ATTACHMENT_FILES) {
       setAttachmentFiles([]);
-      setAttachmentMessage("You can attach up to 3 files.");
-      event.target.value = "";
+      setAttachmentVideoDurations({});
+      setAttachmentMessage("You can attach up to 3 files, including one Video Context.");
+      input.value = "";
       return;
     }
 
-    const invalidFile = selectedFiles.find(
-      (file) =>
-        !ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type) ||
-        file.size <= 0 ||
-        file.size > MAX_ATTACHMENT_SIZE_BYTES
+    const videoFiles = selectedFiles.filter((file) =>
+      isVideoContextMimeType(file.type)
     );
 
-    if (invalidFile) {
+    if (videoFiles.length > 1) {
       setAttachmentFiles([]);
-      setAttachmentMessage("Attachments must be JPG, PNG, WebP, GIF, or PDF files up to 10 MB each.");
-      event.target.value = "";
+      setAttachmentVideoDurations({});
+      setAttachmentMessage("A discussion can include only one Video Context.");
+      input.value = "";
       return;
+    }
+
+    const invalidTypeFile = selectedFiles.find(
+      (file) => !ALLOWED_ATTACHMENT_MIME_TYPES.has(file.type)
+    );
+
+    if (invalidTypeFile) {
+      setAttachmentFiles([]);
+      setAttachmentVideoDurations({});
+      setAttachmentMessage("Attachments must be JPG, PNG, WebP, GIF, PDF, MP4, MOV, or WebM files.");
+      input.value = "";
+      return;
+    }
+
+    const invalidSizeFile = selectedFiles.find((file) => {
+      if (file.size <= 0) {
+        return true;
+      }
+
+      if (isVideoContextMimeType(file.type)) {
+        return file.size > videoContextLimits.maxFileSizeBytes;
+      }
+
+      return file.size > MAX_NON_VIDEO_ATTACHMENT_SIZE_BYTES;
+    });
+
+    if (invalidSizeFile) {
+      setAttachmentFiles([]);
+      setAttachmentVideoDurations({});
+      setAttachmentMessage(
+        isVideoContextMimeType(invalidSizeFile.type)
+          ? `Your ${videoContextLimits.label} Video Context file must be ${formatVideoContextFileSizeLimit(videoContextLimits)} or less.`
+          : "Images and PDFs must be 10 MB or less."
+      );
+      input.value = "";
+      return;
+    }
+
+    const nextVideoDurations: Record<string, number> = {};
+
+    for (const videoFile of videoFiles) {
+      try {
+        const duration = await readVideoDurationSeconds(videoFile);
+        const roundedDuration = Math.ceil(duration);
+
+        if (roundedDuration > videoContextLimits.maxDurationSeconds) {
+          setAttachmentFiles([]);
+          setAttachmentVideoDurations({});
+          setAttachmentMessage(
+            `${videoContextLimits.label} videos can be up to ${formatVideoContextDuration(videoContextLimits.maxDurationSeconds)}.`
+          );
+          input.value = "";
+          return;
+        }
+
+        nextVideoDurations[getAttachmentFileKey(videoFile)] = roundedDuration;
+      } catch {
+        setAttachmentFiles([]);
+        setAttachmentVideoDurations({});
+        setAttachmentMessage("Unable to read this video's duration. Please choose a different video.");
+        input.value = "";
+        return;
+      }
     }
 
     setAttachmentFiles(selectedFiles);
-    setAttachmentMessage(`${selectedFiles.length} attachment${selectedFiles.length === 1 ? "" : "s"} ready.`);
+    setAttachmentVideoDurations(nextVideoDurations);
+    setAttachmentMessage(
+      videoFiles.length > 0
+        ? `Video Context ready. ${formatVideoContextLimitSummary(videoContextLimits)}`
+        : `${selectedFiles.length} attachment${selectedFiles.length === 1 ? "" : "s"} ready.`
+    );
   }
 
   function clearAttachments() {
     setAttachmentFiles([]);
+    setAttachmentVideoDurations({});
     setAttachmentMessage("");
   }
 
@@ -1027,6 +1152,11 @@ export default function CreatePage() {
       const extension = getSafeAttachmentFileName(file.name).split(".").pop() || "file";
       const storagePath = `${currentUserId}/${discussionId}/${crypto.randomUUID()}.${extension}`;
       const attachmentKind = getAttachmentKind(file.type);
+      const videoDurationSeconds =
+        attachmentKind === "video"
+          ? attachmentVideoDurations[getAttachmentFileKey(file)] ??
+            Math.ceil(await readVideoDurationSeconds(file))
+          : null;
 
       if (!attachmentKind) {
         setAttachmentMessage("Attachment type is not allowed.");
@@ -1062,6 +1192,9 @@ export default function CreatePage() {
           fileName: file.name,
           mimeType: file.type,
           fileSizeBytes: file.size,
+          ...(videoDurationSeconds
+            ? { videoDurationSeconds }
+            : {}),
           sortOrder: index,
         }),
       });
@@ -2183,8 +2316,8 @@ export default function CreatePage() {
                               ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-sm"
                               : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
                           }`}
-                          aria-label="Attach files"
-                          title="Attach files"
+                          aria-label="Attach files or Video Context"
+                          title="Attach files or Video Context"
                         >
                           <svg
                             aria-hidden="true"
@@ -2210,7 +2343,7 @@ export default function CreatePage() {
                           ref={bodyAttachmentInputRef}
                           type="file"
                           multiple
-                          accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                          accept={DISCUSSION_ATTACHMENT_ACCEPT}
                           onChange={handleAttachmentSelection}
                           disabled={publishing}
                           className="hidden"
@@ -2691,7 +2824,7 @@ export default function CreatePage() {
               <section className="hidden">
                 <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <p className="text-sm leading-relaxed text-zinc-500">
-                    Optional. Attach files that support the discussion. Max 10 MB each.
+                    Optional. Attach files or one Video Context that supports the discussion.
                   </p>
 
                   {attachmentFiles.length > 0 && (
@@ -2709,7 +2842,7 @@ export default function CreatePage() {
                 <input
                   type="file"
                   multiple
-                  accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                  accept={DISCUSSION_ATTACHMENT_ACCEPT}
                   onChange={handleAttachmentSelection}
                   disabled={publishing}
                   className="block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-black disabled:cursor-not-allowed disabled:text-zinc-700"
@@ -2727,7 +2860,7 @@ export default function CreatePage() {
                         </span>
 
                         <span className="text-xs text-zinc-600">
-                          {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
+                          {getAttachmentDisplayKind(file)}{attachmentVideoDurations[getAttachmentFileKey(file)] ? ` · ${formatVideoContextDuration(attachmentVideoDurations[getAttachmentFileKey(file)])}` : ""} · {formatAttachmentFileSize(file.size)}
                         </span>
                       </div>
                     ))}
@@ -2751,7 +2884,7 @@ export default function CreatePage() {
                     </p>
 
                     <p className="text-sm text-zinc-400">
-                      Add up to 3 images or PDFs.
+                      Add up to 3 files, including one Video Context.
                       {attachmentFiles.length > 0 ? ` ${attachmentFiles.length} selected.` : ""}
                     </p>
                   </div>
@@ -2770,7 +2903,7 @@ export default function CreatePage() {
                   <div className="mt-5">
                     <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                       <p className="text-sm leading-relaxed text-zinc-500">
-                        Optional. Attach files that support the discussion. Max 10 MB each.
+                        Optional. Attach files or one Video Context that supports the discussion.
                       </p>
 
                       {attachmentFiles.length > 0 && (
@@ -2788,7 +2921,7 @@ export default function CreatePage() {
                     <input
                       type="file"
                       multiple
-                      accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
+                      accept={DISCUSSION_ATTACHMENT_ACCEPT}
                       onChange={handleAttachmentSelection}
                       disabled={publishing}
                       className="block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-medium file:text-black disabled:cursor-not-allowed disabled:text-zinc-700"
@@ -2806,7 +2939,7 @@ export default function CreatePage() {
                             </span>
 
                             <span className="text-xs text-zinc-600">
-                              {file.type === "application/pdf" ? "PDF" : "Image"} · {formatAttachmentFileSize(file.size)}
+                              {getAttachmentDisplayKind(file)}{attachmentVideoDurations[getAttachmentFileKey(file)] ? ` · ${formatVideoContextDuration(attachmentVideoDurations[getAttachmentFileKey(file)])}` : ""} · {formatAttachmentFileSize(file.size)}
                             </span>
                           </div>
                         ))}

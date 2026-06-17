@@ -13,6 +13,7 @@ import {
 import { DEFAULT_REPORT_REASON, REPORT_REASONS, type ReportReason } from "@/lib/report-reasons";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { SafetyWarningModal, getSafetyWarningFromResult, type SafetyWarningState } from "@/components/safety-warning-modal";
+import { formatVideoContextDuration } from "@/lib/video-context-limits";
 
 type DiscussionMode = "open_discussion" | "debate" | "research_question" | "problem_solving";
 
@@ -106,7 +107,8 @@ type DiscussionAttachment = {
   file_name: string;
   mime_type: string;
   file_size_bytes: number;
-  attachment_kind: "image" | "pdf";
+  attachment_kind: "image" | "pdf" | "video";
+  video_duration_seconds?: number | null;
   sort_order: number;
 };
 
@@ -685,7 +687,7 @@ export default function DiscussionPage() {
 
       const { data: attachmentData } = await supabase
         .from("discussion_attachments")
-        .select("id, public_url, file_name, mime_type, file_size_bytes, attachment_kind, sort_order")
+        .select("id, public_url, file_name, mime_type, file_size_bytes, attachment_kind, video_duration_seconds, sort_order")
         .eq("discussion_id", id)
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true });
@@ -2667,6 +2669,28 @@ export default function DiscussionPage() {
                         className="max-h-[520px] w-full object-contain"
                       />
                     </a>
+                  ) : attachment.attachment_kind === "video" ? (
+                    <div className="overflow-hidden rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)]">
+                      <video
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="aspect-video w-full bg-black"
+                        src={attachment.public_url}
+                      >
+                        <a href={attachment.public_url}>Open Video Context</a>
+                      </video>
+
+                      <div className="p-3 text-xs text-[var(--loombus-text-muted)]">
+                        <p className="truncate font-medium text-[var(--loombus-text)]">
+                          {attachment.file_name}
+                        </p>
+
+                        <p>
+                          Video Context{attachment.video_duration_seconds ? ` · ${formatVideoContextDuration(attachment.video_duration_seconds)}` : ""} · {formatAttachmentFileSize(attachment.file_size_bytes)}
+                        </p>
+                      </div>
+                    </div>
                   ) : (
                     <a
                       href={attachment.public_url}
