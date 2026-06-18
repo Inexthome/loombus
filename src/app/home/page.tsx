@@ -97,6 +97,18 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [workingProvider, setWorkingProvider] = useState<OAuthProvider | null>(null);
   const [mobileAuthSheet, setMobileAuthSheet] = useState<"join" | "return" | null>(null);
+  const [returnEmailMode, setReturnEmailMode] = useState(false);
+  const [returnEmail, setReturnEmail] = useState("");
+  const [returnPassword, setReturnPassword] = useState("");
+  const [returnEmailLoading, setReturnEmailLoading] = useState(false);
+  const [joinEmailMode, setJoinEmailMode] = useState(false);
+  const [joinFullName, setJoinFullName] = useState("");
+  const [joinEmail, setJoinEmail] = useState("");
+  const [joinDateOfBirth, setJoinDateOfBirth] = useState("");
+  const [joinPassword, setJoinPassword] = useState("");
+  const [joinConfirmPassword, setJoinConfirmPassword] = useState("");
+  const [joinEmailLoading, setJoinEmailLoading] = useState(false);
+  const [joinSignupComplete, setJoinSignupComplete] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
@@ -377,6 +389,84 @@ export default function Home() {
     } finally {
       setSavingAgeVerification(false);
     }
+  }
+
+  async function signUpWithEmailFromHome() {
+    if (joinEmailLoading) {
+      return;
+    }
+
+    setMessage("");
+    setJoinSignupComplete(false);
+
+    if (joinPassword !== joinConfirmPassword) {
+      setMessage("Passwords do not match.");
+      return;
+    }
+
+    const ageBand = getAgeBandFromDateOfBirth(joinDateOfBirth);
+
+    if (!ageBand) {
+      setMessage("Enter a valid date of birth.");
+      return;
+    }
+
+    if (ageBand === "under_13") {
+      setMessage("Loombus is not available to members under 13.");
+      return;
+    }
+
+    setJoinEmailLoading(true);
+
+    const { error } = await supabase.auth.signUp({
+      email: joinEmail,
+      password: joinPassword,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/discussions`,
+        data: {
+          full_name: joinFullName.trim(),
+          date_of_birth: joinDateOfBirth,
+        },
+      },
+    });
+
+    if (error) {
+      const publicMessage = error.message.toLowerCase().includes("sending confirmation email")
+        ? "Loombus could not send the confirmation email. Please try Google signup or contact support if this continues."
+        : error.message;
+
+      setMessage(`Email signup error: ${publicMessage}`);
+      setJoinEmailLoading(false);
+      return;
+    }
+
+    setJoinSignupComplete(true);
+    setJoinPassword("");
+    setJoinConfirmPassword("");
+    setMessage("Signup successful. Check your email to confirm your account.");
+    setJoinEmailLoading(false);
+  }
+
+  async function signInWithEmailFromHome() {
+    if (returnEmailLoading) {
+      return;
+    }
+
+    setMessage("");
+    setReturnEmailLoading(true);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: returnEmail,
+      password: returnPassword,
+    });
+
+    if (error) {
+      setMessage(`Email sign-in error: ${error.message}`);
+      setReturnEmailLoading(false);
+      return;
+    }
+
+    window.location.replace("/discussions");
   }
 
   async function signUpWithProvider(provider: OAuthProvider) {
@@ -763,7 +853,11 @@ export default function Home() {
         <div className="w-full rounded-3xl border border-zinc-900 bg-zinc-950/60 p-5 shadow-2xl shadow-black/30 space-y-3 loombus-mobile-visitor-auth-card">
           <button
             type="button"
-            onClick={() => setMobileAuthSheet("join")}
+            onClick={() => {
+              setJoinEmailMode(false);
+              setJoinSignupComplete(false);
+              setMobileAuthSheet("join");
+            }}
             className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
           >
             Join the conversation
@@ -771,7 +865,10 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={() => setMobileAuthSheet("return")}
+            onClick={() => {
+              setReturnEmailMode(false);
+              setMobileAuthSheet("return");
+            }}
             className="w-full rounded-full border border-zinc-500 bg-zinc-900/60 px-6 py-3 text-sm font-medium text-white transition hover:border-zinc-300 hover:bg-zinc-800"
           >
             Return to Loombus
@@ -788,7 +885,7 @@ export default function Home() {
         </div>
 
         {mobileAuthSheet ? (
-          <div className="fixed inset-0 z-50 flex items-end bg-black/70 px-4 pb-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
             <div className="w-full max-w-xl rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 text-left shadow-2xl shadow-black/50">
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
@@ -807,7 +904,12 @@ export default function Home() {
 
                 <button
                   type="button"
-                  onClick={() => setMobileAuthSheet(null)}
+                  onClick={() => {
+                    setMobileAuthSheet(null);
+                    setReturnEmailMode(false);
+                    setJoinEmailMode(false);
+                    setJoinSignupComplete(false);
+                  }}
                   className="rounded-full border border-zinc-800 px-3 py-1 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-zinc-300"
                 >
                   Close
@@ -847,19 +949,162 @@ export default function Home() {
               </button>
 
               {mobileAuthSheet === "join" ? (
-                <Link
-                  href="/signup"
-                  className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                joinEmailMode ? (
+                  joinSignupComplete ? (
+                    <div className="rounded-2xl border border-zinc-800 bg-black/40 p-4">
+                      <p className="text-sm font-medium text-zinc-200">
+                        Check your email to confirm your account.
+                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+                        After confirming, return to Loombus and sign in.
+                      </p>
+                    </div>
+                  ) : (
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void signUpWithEmailFromHome();
+                      }}
+                      className="space-y-4 rounded-2xl border border-zinc-800 bg-black/40 p-4"
+                    >
+                      <div>
+                        <label className="mb-2 block text-sm text-zinc-400">
+                          Full name
+                        </label>
+                        <input
+                          type="text"
+                          value={joinFullName}
+                          autoComplete="name"
+                          required
+                          onChange={(event) => setJoinFullName(event.target.value)}
+                          className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm text-zinc-400">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={joinEmail}
+                          autoComplete="email"
+                          required
+                          onChange={(event) => setJoinEmail(event.target.value)}
+                          className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm text-zinc-400">
+                          Date of birth
+                        </label>
+                        <DateOfBirthSelect
+                          value={joinDateOfBirth}
+                          onChange={setJoinDateOfBirth}
+                          idPrefix="home-signup-date-of-birth"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm text-zinc-400">
+                          Password
+                        </label>
+                        <input
+                          type="password"
+                          value={joinPassword}
+                          autoComplete="new-password"
+                          required
+                          onChange={(event) => setJoinPassword(event.target.value)}
+                          className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm text-zinc-400">
+                          Confirm password
+                        </label>
+                        <input
+                          type="password"
+                          value={joinConfirmPassword}
+                          autoComplete="new-password"
+                          required
+                          minLength={6}
+                          onChange={(event) => setJoinConfirmPassword(event.target.value)}
+                          className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={joinEmailLoading}
+                        className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {joinEmailLoading ? "Creating account..." : "Sign up with email"}
+                      </button>
+                    </form>
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setJoinEmailMode(true)}
+                    className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Sign up with email
+                  </button>
+                )
+              ) : returnEmailMode ? (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void signInWithEmailFromHome();
+                  }}
+                  className="space-y-4 rounded-2xl border border-zinc-800 bg-black/40 p-4"
                 >
-                  Sign up with email
-                </Link>
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={returnEmail}
+                      autoComplete="email"
+                      required
+                      onChange={(event) => setReturnEmail(event.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm text-zinc-400">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={returnPassword}
+                      autoComplete="current-password"
+                      required
+                      onChange={(event) => setReturnPassword(event.target.value)}
+                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={returnEmailLoading}
+                    className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {returnEmailLoading ? "Signing in..." : "Sign in with email"}
+                  </button>
+                </form>
               ) : (
-                <Link
-                  href="/login"
-                  className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                <button
+                  type="button"
+                  onClick={() => setReturnEmailMode(true)}
+                  className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
                 >
                   Sign in with email
-                </Link>
+                </button>
               )}
             </div>
           </div>
