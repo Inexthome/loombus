@@ -1081,7 +1081,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => setJoinEmailMode(true)}
-                    className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                    className="w-full rounded-full border border-zinc-500 bg-zinc-900/60 px-6 py-3 text-sm font-medium text-white transition hover:border-zinc-300 hover:bg-zinc-800"
                   >
                     Sign up with email
                   </button>
@@ -1143,7 +1143,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setReturnEmailMode(true)}
-                  className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                  className="w-full rounded-full border border-zinc-500 bg-zinc-900/60 px-6 py-3 text-sm font-medium text-white transition hover:border-zinc-300 hover:bg-zinc-800"
                 >
                   Sign in with email
                 </button>
