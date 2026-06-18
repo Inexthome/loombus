@@ -406,7 +406,7 @@ export default function Home() {
     setReturnPasswordResetLoading(true);
 
     const { error } = await supabase.auth.resetPasswordForEmail(returnEmail.trim(), {
-      redirectTo: `${window.location.origin}/auth/callback?next=/settings`,
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
     });
 
     if (error) {
