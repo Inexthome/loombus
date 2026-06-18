@@ -101,6 +101,7 @@ export default function Home() {
   const [returnEmail, setReturnEmail] = useState("");
   const [returnPassword, setReturnPassword] = useState("");
   const [returnEmailLoading, setReturnEmailLoading] = useState(false);
+  const [returnPasswordResetLoading, setReturnPasswordResetLoading] = useState(false);
   const [joinEmailMode, setJoinEmailMode] = useState(false);
   const [joinFullName, setJoinFullName] = useState("");
   const [joinEmail, setJoinEmail] = useState("");
@@ -389,6 +390,33 @@ export default function Home() {
     } finally {
       setSavingAgeVerification(false);
     }
+  }
+
+  async function sendPasswordResetFromHome() {
+    if (returnPasswordResetLoading) {
+      return;
+    }
+
+    if (!returnEmail.trim()) {
+      setMessage("Enter your email address first.");
+      return;
+    }
+
+    setMessage("");
+    setReturnPasswordResetLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(returnEmail.trim(), {
+      redirectTo: `${window.location.origin}/auth/callback?next=/settings`,
+    });
+
+    if (error) {
+      setMessage(`Password reset error: ${error.message}`);
+      setReturnPasswordResetLoading(false);
+      return;
+    }
+
+    setMessage("Password reset email sent. Check your inbox.");
+    setReturnPasswordResetLoading(false);
   }
 
   async function signUpWithEmailFromHome() {
@@ -916,37 +944,42 @@ export default function Home() {
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() => signUpWithProvider("google")}
-                disabled={Boolean(workingProvider)}
-                className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <GoogleLogoMark className="h-5 w-5" />
-                <span>
-                  {workingProvider === "google"
-                    ? "Opening Google..."
-                    : mobileAuthSheet === "join"
-                      ? "Sign up with Google"
-                      : "Continue with Google"}
-                </span>
-              </button>
+              {((mobileAuthSheet === "join" && !joinEmailMode) ||
+                (mobileAuthSheet === "return" && !returnEmailMode)) ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => signUpWithProvider("google")}
+                    disabled={Boolean(workingProvider)}
+                    className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <GoogleLogoMark className="h-5 w-5" />
+                    <span>
+                      {workingProvider === "google"
+                        ? "Opening Google..."
+                        : mobileAuthSheet === "join"
+                          ? "Sign up with Google"
+                          : "Continue with Google"}
+                    </span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => signUpWithProvider("apple")}
-                disabled={Boolean(workingProvider)}
-                className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <AppleLogoMark className="h-5 w-5" />
-                <span>
-                  {workingProvider === "apple"
-                    ? "Opening Apple..."
-                    : mobileAuthSheet === "join"
-                      ? "Sign up with Apple"
-                      : "Continue with Apple"}
-                </span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => signUpWithProvider("apple")}
+                    disabled={Boolean(workingProvider)}
+                    className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-full border border-zinc-700 bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <AppleLogoMark className="h-5 w-5" />
+                    <span>
+                      {workingProvider === "apple"
+                        ? "Opening Apple..."
+                        : mobileAuthSheet === "join"
+                          ? "Sign up with Apple"
+                          : "Continue with Apple"}
+                    </span>
+                  </button>
+                </>
+              ) : null}
 
               {mobileAuthSheet === "join" ? (
                 joinEmailMode ? (
@@ -1095,6 +1128,15 @@ export default function Home() {
                     className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {returnEmailLoading ? "Signing in..." : "Sign in with email"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => void sendPasswordResetFromHome()}
+                    disabled={returnPasswordResetLoading}
+                    className="w-full text-sm text-zinc-400 underline decoration-zinc-600 underline-offset-4 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {returnPasswordResetLoading ? "Sending reset email..." : "Forgot password?"}
                   </button>
                 </form>
               ) : (
