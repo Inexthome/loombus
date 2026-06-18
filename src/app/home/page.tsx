@@ -897,7 +897,7 @@ export default function Home() {
               setReturnEmailMode(false);
               setMobileAuthSheet("return");
             }}
-            className="w-full rounded-full border border-zinc-500 bg-zinc-900/60 px-6 py-3 text-sm font-medium text-white transition hover:border-zinc-300 hover:bg-zinc-800"
+            className="w-full rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-6 py-3 text-sm font-semibold text-[var(--loombus-text)] shadow-sm transition hover:border-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)]"
           >
             Return to Loombus
           </button>
@@ -1081,7 +1081,7 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => setJoinEmailMode(true)}
-                    className="w-full rounded-full border border-zinc-500 bg-zinc-900/60 px-6 py-3 text-sm font-medium text-white transition hover:border-zinc-300 hover:bg-zinc-800"
+                    className="w-full rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-6 py-3 text-sm font-semibold text-[var(--loombus-text)] shadow-sm transition hover:border-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)]"
                   >
                     Sign up with email
                   </button>
@@ -1143,7 +1143,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setReturnEmailMode(true)}
-                  className="w-full rounded-full border border-zinc-500 bg-zinc-900/60 px-6 py-3 text-sm font-medium text-white transition hover:border-zinc-300 hover:bg-zinc-800"
+                  className="w-full rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-6 py-3 text-sm font-semibold text-[var(--loombus-text)] shadow-sm transition hover:border-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)]"
                 >
                   Sign in with email
                 </button>
