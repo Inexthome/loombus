@@ -416,7 +416,7 @@ export default function Home() {
       return;
     }
 
-    setReturnAuthMessage("Password reset email sent. Check your inbox.");
+    setReturnAuthMessage("If an account exists for that email, a password reset link will be sent. Check your inbox and spam folder.");
     setReturnPasswordResetLoading(false);
   }
 
