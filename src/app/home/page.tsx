@@ -102,6 +102,7 @@ export default function Home() {
   const [returnPassword, setReturnPassword] = useState("");
   const [returnEmailLoading, setReturnEmailLoading] = useState(false);
   const [returnPasswordResetLoading, setReturnPasswordResetLoading] = useState(false);
+  const [returnAuthMessage, setReturnAuthMessage] = useState("");
   const [joinEmailMode, setJoinEmailMode] = useState(false);
   const [joinFullName, setJoinFullName] = useState("");
   const [joinEmail, setJoinEmail] = useState("");
@@ -398,11 +399,11 @@ export default function Home() {
     }
 
     if (!returnEmail.trim()) {
-      setMessage("Enter your email address first.");
+      setReturnAuthMessage("Enter your email address first.");
       return;
     }
 
-    setMessage("");
+    setReturnAuthMessage("");
     setReturnPasswordResetLoading(true);
 
     const { error } = await supabase.auth.resetPasswordForEmail(returnEmail.trim(), {
@@ -410,12 +411,12 @@ export default function Home() {
     });
 
     if (error) {
-      setMessage(`Password reset error: ${error.message}`);
+      setReturnAuthMessage(`Password reset error: ${error.message}`);
       setReturnPasswordResetLoading(false);
       return;
     }
 
-    setMessage("Password reset email sent. Check your inbox.");
+    setReturnAuthMessage("Password reset email sent. Check your inbox.");
     setReturnPasswordResetLoading(false);
   }
 
@@ -895,6 +896,7 @@ export default function Home() {
             type="button"
             onClick={() => {
               setReturnEmailMode(false);
+              setReturnAuthMessage("");
               setMobileAuthSheet("return");
             }}
             className="w-full rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-6 py-3 text-sm font-semibold text-[var(--loombus-text)] shadow-sm transition hover:border-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)]"
@@ -935,6 +937,7 @@ export default function Home() {
                   onClick={() => {
                     setMobileAuthSheet(null);
                     setReturnEmailMode(false);
+                    setReturnAuthMessage("");
                     setJoinEmailMode(false);
                     setJoinSignupComplete(false);
                   }}
@@ -1138,11 +1141,20 @@ export default function Home() {
                   >
                     {returnPasswordResetLoading ? "Sending reset email..." : "Forgot password?"}
                   </button>
+
+                  {returnAuthMessage ? (
+                    <p className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                      {returnAuthMessage}
+                    </p>
+                  ) : null}
                 </form>
               ) : (
                 <button
                   type="button"
-                  onClick={() => setReturnEmailMode(true)}
+                  onClick={() => {
+                    setReturnAuthMessage("");
+                    setReturnEmailMode(true);
+                  }}
                   className="w-full rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-6 py-3 text-sm font-semibold text-[var(--loombus-text)] shadow-sm transition hover:border-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)]"
                 >
                   Sign in with email
