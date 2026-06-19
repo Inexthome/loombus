@@ -3,29 +3,29 @@ import type { MetadataRoute } from "next";
 const siteUrl = "https://loombus.com";
 
 const publicRoutes = [
-  "",
-  "/about",
-  "/premium",
-  "/safety",
-  "/guidelines",
-  "/privacy",
-  "/terms",
-  "/cookies",
-  "/refunds",
-  "/dmca",
-  "/accessibility",
-  "/contact",
-  "/login",
-  "/signup",
+  { route: "", priority: 1, changeFrequency: "weekly" as const },
+  { route: "/about", priority: 0.9, changeFrequency: "monthly" as const },
+  { route: "/download", priority: 0.9, changeFrequency: "monthly" as const },
+  { route: "/login", priority: 0.85, changeFrequency: "monthly" as const },
+  { route: "/signup", priority: 0.85, changeFrequency: "monthly" as const },
+  { route: "/safety", priority: 0.7, changeFrequency: "monthly" as const },
+  { route: "/guidelines", priority: 0.7, changeFrequency: "monthly" as const },
+  { route: "/privacy", priority: 0.6, changeFrequency: "monthly" as const },
+  { route: "/terms", priority: 0.6, changeFrequency: "monthly" as const },
+  { route: "/cookies", priority: 0.5, changeFrequency: "monthly" as const },
+  { route: "/refunds", priority: 0.5, changeFrequency: "monthly" as const },
+  { route: "/dmca", priority: 0.5, changeFrequency: "monthly" as const },
+  { route: "/accessibility", priority: 0.5, changeFrequency: "monthly" as const },
+  { route: "/contact", priority: 0.5, changeFrequency: "monthly" as const },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
-  return publicRoutes.map((route) => ({
+  return publicRoutes.map(({ route, priority, changeFrequency }) => ({
     url: `${siteUrl}${route}`,
     lastModified,
-    changeFrequency: route === "" ? "weekly" : "monthly",
-    priority: route === "" ? 1 : route === "/about" ? 0.8 : 0.6,
+    changeFrequency,
+    priority,
   }));
 }
