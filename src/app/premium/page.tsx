@@ -1,9 +1,23 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { BillingPortalButton } from "@/components/billing-portal-button";
 import { PremiumPlanCheckoutButton } from "./premium-checkout-button";
 import { PremiumPlanActions } from "./premium-plan-actions";
 import { PremiumCheckoutStatusBanner } from "./premium-checkout-status-banner";
+
+export const metadata: Metadata = {
+  title: "Loombus Premium | Loombus",
+  description:
+    "Review Loombus subscription options and premium platform access.",
+  robots: {
+    index: false,
+    follow: true,
+  },
+  alternates: {
+    canonical: "https://loombus.com/premium",
+  },
+};
 
 type FeatureStatus = "available" | "planned";
 

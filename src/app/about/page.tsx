@@ -1,5 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, PageShell, Panel } from "@/components/ui";
+
+export const metadata: Metadata = {
+  title: "About Loombus | Loombus",
+  description:
+    "Learn about Loombus, a signal-first discussion platform built for thoughtful conversations, sharper ideas, and cleaner community dialogue.",
+  alternates: {
+    canonical: "https://loombus.com/about",
+  },
+};
 
 export default function AboutPage() {
   return (
