@@ -57,14 +57,14 @@ export default function RootPage() {
           <div className="mt-9 flex flex-wrap gap-3">
             <Link
               href="/signup"
-              className="rounded-full bg-[var(--loombus-text)] px-5 py-3 text-sm font-semibold text-[var(--loombus-bg)] transition hover:opacity-90"
+              className="loombus-public-primary-cta rounded-full px-5 py-3 text-sm font-semibold transition hover:opacity-90"
             >
               Create an account
             </Link>
 
             <Link
               href="/download"
-              className="rounded-full border border-[var(--loombus-border)] px-5 py-3 text-sm font-semibold text-[var(--loombus-text)] transition hover:bg-[var(--loombus-surface-muted)]"
+              className="loombus-public-secondary-cta rounded-full border px-5 py-3 text-sm font-semibold transition hover:bg-[var(--loombus-surface-muted)]"
             >
               Download Loombus
             </Link>
