@@ -2129,3 +2129,18 @@ html[data-loombus-theme] .loombus-saved-folder-shell > * {
   position: relative;
   z-index: 1;
 }
+
+/* Public SEO/download CTA fixes.
+   These scoped classes intentionally override the global themed anchor color
+   so primary buttons remain readable in dark, light, and system appearance. */
+.loombus-public-primary-cta,
+.loombus-store-primary-cta {
+  background-color: var(--loombus-text) !important;
+  color: var(--loombus-bg) !important;
+}
+
+.loombus-public-secondary-cta,
+.loombus-store-secondary-cta {
+  border-color: var(--loombus-border) !important;
+  color: var(--loombus-text) !important;
+}
