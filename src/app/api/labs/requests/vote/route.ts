@@ -42,6 +42,7 @@ type LabsProfileRow = {
 type LabsEntitlementRow = {
   tier: string | null;
   ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
 };
 
 async function getLabsAccess(supabase: any, userId: string) {
@@ -49,7 +50,7 @@ async function getLabsAccess(supabase: any, userId: string) {
     supabase.from("profiles").select("is_admin").eq("id", userId).maybeSingle(),
     supabase
       .from("user_ai_entitlements")
-      .select("tier, ai_assisted_enabled")
+      .select("tier, ai_assisted_enabled, monthly_summary_limit")
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
@@ -57,12 +58,15 @@ async function getLabsAccess(supabase: any, userId: string) {
   const profileRow = profile as LabsProfileRow | null;
   const entitlementRow = entitlement as LabsEntitlementRow | null;
 
+  const isPremiumPlus =
+    entitlementRow?.tier === "premium_plus" ||
+    (entitlementRow?.tier === "premium" &&
+      (entitlementRow.monthly_summary_limit ?? 0) > 50);
+
   return (
     Boolean(profileRow?.is_admin) ||
-    Boolean(
-      entitlementRow?.ai_assisted_enabled &&
-        (entitlementRow.tier === "premium_plus" || entitlementRow.tier === "admin")
-    )
+    entitlementRow?.tier === "admin" ||
+    Boolean(entitlementRow?.ai_assisted_enabled && isPremiumPlus)
   );
 }
 

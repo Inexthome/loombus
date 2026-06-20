@@ -391,7 +391,7 @@ export default function AdminLabsPage() {
           </h1>
 
           <p className="max-w-3xl leading-relaxed text-zinc-400">
-            Review Premium Plus feature requests, update statuses, and leave
+            Review member feature requests, update statuses, and leave
             admin notes for members.
           </p>
         </div>

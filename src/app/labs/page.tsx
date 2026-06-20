@@ -47,16 +47,17 @@ const STATUS_CLASSES: Record<LabsFeatureRequestStatus, string> = {
   declined: "border-red-900 bg-red-950/20 text-red-300",
 };
 
-function hasLabsAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+function hasLabsVotingAccess(entitlement: AiEntitlement, isAdmin: boolean) {
   if (isAdmin || entitlement?.tier === "admin") {
     return true;
   }
 
-  return (
-    entitlement?.ai_assisted_enabled === true &&
-    entitlement.tier === "premium" &&
-    (entitlement.monthly_summary_limit ?? 0) > 50
-  );
+  const isPremiumPlus =
+    entitlement?.tier === "premium_plus" ||
+    (entitlement?.tier === "premium" &&
+      (entitlement.monthly_summary_limit ?? 0) > 50);
+
+  return entitlement?.ai_assisted_enabled === true && isPremiumPlus;
 }
 
 export default function LabsPage() {
@@ -71,7 +72,8 @@ export default function LabsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const canUseLabs = hasLabsAccess(entitlement, isAdmin);
+  const canUseLabs = Boolean(currentUserId);
+  const canVoteLabs = hasLabsVotingAccess(entitlement, isAdmin);
 
   useEffect(() => {
     async function loadLabs() {
@@ -102,10 +104,7 @@ export default function LabsPage() {
       const resolvedIsAdmin =
         Boolean(profileData?.is_admin) || entitlementData?.tier === "admin";
       const resolvedEntitlement = (entitlementData ?? null) as AiEntitlement;
-      const resolvedCanUseLabs = hasLabsAccess(
-        resolvedEntitlement,
-        resolvedIsAdmin
-      );
+      const resolvedCanUseLabs = true;
 
       setIsAdmin(resolvedIsAdmin);
       setEntitlement(resolvedEntitlement);
@@ -183,7 +182,7 @@ export default function LabsPage() {
     }
 
     if (!canUseLabs) {
-      setMessage("Labs voting requires Premium Plus access.");
+      setMessage("Labs voting is a Premium Plus feature.");
       return;
     }
 
@@ -237,7 +236,7 @@ export default function LabsPage() {
     }
 
     if (!canUseLabs) {
-      setMessage("Loombus Labs requires Premium Plus access.");
+      setMessage("Loombus Labs is available to all signed-in members.");
       return;
     }
 
@@ -344,7 +343,7 @@ export default function LabsPage() {
             </h1>
 
             <p className="mb-6 leading-relaxed text-zinc-400">
-              Loombus Labs is the early-access area for Premium Plus members.
+              Loombus Labs is available to signed-in Loombus members.
             </p>
 
             <div className="flex flex-wrap gap-3">
@@ -356,10 +355,10 @@ export default function LabsPage() {
               </Link>
 
               <Link
-                href="/premium"
+                href="/signup"
                 className="rounded-full border border-zinc-700 px-6 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
-                View Premium
+                Create an account
               </Link>
             </div>
           </div>
@@ -384,11 +383,11 @@ export default function LabsPage() {
           </p>
 
           <h1 className="mb-5 text-5xl font-semibold tracking-tight md:text-6xl">
-            Priority feature access.
+            Help shape Loombus.
           </h1>
 
           <p className="max-w-3xl leading-relaxed text-zinc-400">
-            Labs is where Premium Plus members get early access to upcoming Loombus capabilities, submit feature requests, vote on requests, and track request status as ideas move through review.
+            Labs is where Loombus members submit feature requests, track request status, and help shape what gets built next. Premium Plus members can vote on requests and receive stronger early-access influence.
           </p>
 
           {isAdmin && (
@@ -404,19 +403,18 @@ export default function LabsPage() {
         {!canUseLabs && (
           <section className="mb-10 rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
             <h2 className="mb-3 text-3xl font-medium">
-              Loombus Labs requires Premium Plus.
+              Loombus Labs is available to members.
             </h2>
 
             <p className="mb-6 max-w-3xl leading-relaxed text-zinc-500">
-              Free and Premium members can keep using the core platform. Labs is
-              reserved for Premium Plus members so early feedback stays focused and manageable.
+              Sign in to submit feature ideas and follow what is being reviewed. Premium Plus members can also vote on requests.
             </p>
 
             <Link
               href="/premium"
               className="inline-flex rounded-full bg-white px-6 py-3 text-sm text-black transition hover:bg-zinc-200"
             >
-              View Premium Plus
+              Open Labs
             </Link>
           </section>
         )}
@@ -496,7 +494,7 @@ export default function LabsPage() {
 
                 <div className="space-y-4 text-sm leading-relaxed text-zinc-500">
                   <p>Early visibility into what Loombus is building next.</p>
-                  <p>Priority feature request submission and voting.</p>
+                  <p>Member feature requests with Premium Plus voting.</p>
                   <p>Status tracking as ideas move through review.</p>
                 </div>
               </section>
