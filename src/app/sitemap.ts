@@ -8,7 +8,6 @@ const publicRoutes = [
   { route: "/download", priority: 0.9, changeFrequency: "monthly" as const },
   { route: "/login", priority: 0.85, changeFrequency: "monthly" as const },
   { route: "/signup", priority: 0.85, changeFrequency: "monthly" as const },
-  { route: "/safety", priority: 0.7, changeFrequency: "monthly" as const },
   { route: "/guidelines", priority: 0.7, changeFrequency: "monthly" as const },
   { route: "/privacy", priority: 0.6, changeFrequency: "monthly" as const },
   { route: "/terms", priority: 0.6, changeFrequency: "monthly" as const },

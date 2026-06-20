@@ -1,7 +1,21 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, PageShell, Panel } from "@/components/ui";
 
 const supportEmail = "support@loombus.com";
+
+export const metadata: Metadata = {
+  title: "Safety on Loombus | Loombus",
+  description:
+    "Safety information for Loombus members, including reporting, blocking, harassment, threats, moderation, and emergency guidance.",
+  robots: {
+    index: false,
+    follow: true,
+  },
+  alternates: {
+    canonical: "https://loombus.com/safety",
+  },
+};
 
 export default function SafetyPage() {
   return (
