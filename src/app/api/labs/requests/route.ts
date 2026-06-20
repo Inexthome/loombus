@@ -84,22 +84,7 @@ export async function POST(request: NextRequest) {
     .eq("id", user.id)
     .maybeSingle<LabsProfileRow>();
 
-  const { data: entitlement } = await supabase
-    .from("user_ai_entitlements")
-    .select("tier, ai_assisted_enabled")
-    .eq("user_id", user.id)
-    .maybeSingle<LabsEntitlementRow>();
-
-  const canUseLabs =
-    Boolean(profile?.is_admin) ||
-    Boolean(
-      entitlement?.ai_assisted_enabled &&
-        (entitlement.tier === "premium_plus" || entitlement.tier === "admin")
-    );
-
-  if (!canUseLabs) {
-    return jsonError("Loombus Labs requires Premium Plus access.", 403);
-  }
+  // Labs submissions are available to all signed-in Loombus members.
 
   const cooldownCutoff = new Date(
     Date.now() - LABS_SUBMISSION_COOLDOWN_MS
