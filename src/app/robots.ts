@@ -11,7 +11,6 @@ export default function robots(): MetadataRoute.Robots {
           "/",
           "/about",
           "/download",
-          "/safety",
           "/guidelines",
           "/privacy",
           "/terms",
