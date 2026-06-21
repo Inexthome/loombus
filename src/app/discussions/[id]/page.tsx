@@ -666,6 +666,13 @@ export default function DiscussionPage() {
         .eq("id", discussionData.user_id)
         .single();
 
+      // Show the core discussion as soon as the discussion and author are available.
+      // Replies, attachments, related discussions, saved state, reports, and AI state
+      // continue loading below without blocking the first visible render.
+      setDiscussion(discussionData);
+      setProfile(profileData ?? null);
+      setLoading(false);
+
       const { data: repliesData } = await supabase
         .from("replies")
         .select("*")
@@ -746,7 +753,7 @@ export default function DiscussionPage() {
         setMyReplyReactions({});
       }
 
-      await supabase.from("discussion_views").insert({
+      void supabase.from("discussion_views").insert({
         discussion_id: id,
         viewer_id: viewerData.user?.id ?? null,
       });
