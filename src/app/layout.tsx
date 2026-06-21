@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
+import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
 
 const siteUrl = "https://loombus.com";
@@ -87,6 +88,7 @@ export default function RootLayout({
           }}
         />
         <ClientLayout>{children}</ClientLayout>
+        <NativeBiometricSessionGate />
         <NativePushRegistration />
       </body>
     </html>

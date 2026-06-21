@@ -3,7 +3,7 @@ import { getNativePlatform } from "@/lib/native-app";
 
 type PushNotificationsModule = typeof import("@capacitor/push-notifications");
 
-let pushRegistrationStarted = false;
+let pushRegistrationInFlight = false;
 let pushListenersRegistered = false;
 let pushPluginModulePromise: Promise<PushNotificationsModule> | null = null;
 let pendingPushToken: { token: string; platform: string } | null = null;
@@ -122,6 +122,7 @@ export async function initializeNativePushListeners() {
     );
   } catch (error) {
     console.error("Unable to initialize Loombus native push listeners.", error);
+    pushListenersRegistered = false;
   }
 }
 
@@ -139,11 +140,11 @@ export async function registerNativePushNotifications() {
   await initializeNativePushListeners();
   await flushPendingPushToken();
 
-  if (pushRegistrationStarted) {
+  if (pushRegistrationInFlight) {
     return;
   }
 
-  pushRegistrationStarted = true;
+  pushRegistrationInFlight = true;
 
   try {
     const { PushNotifications } = await getPushNotificationsModule();
@@ -162,5 +163,7 @@ export async function registerNativePushNotifications() {
     await flushPendingPushToken();
   } catch (error) {
     console.error("Unable to initialize Loombus native push notifications.", error);
+  } finally {
+    pushRegistrationInFlight = false;
   }
 }

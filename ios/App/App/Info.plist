@@ -40,7 +40,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Loombus uses microphone access only when you choose to record a video with audio for a discussion attachment, message attachment, or Video Context.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Loombus uses Face ID only when you enable device unlock for the app.</string>
+	<string>Loombus uses Face ID to protect remembered sign-ins and confirm it is you before opening your saved session.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Loombus uses photo library access so you can upload profile images, attach images or videos to discussions, and add Video Context when you choose.</string>
 	<key>UILaunchStoryboardName</key>
