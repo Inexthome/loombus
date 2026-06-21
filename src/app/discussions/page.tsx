@@ -316,6 +316,8 @@ export default function DiscussionsPage() {
   }
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadDiscussions() {
       const { data, error } = await supabase
         .from("discussions")
@@ -326,6 +328,8 @@ export default function DiscussionsPage() {
       if (!error && data) {
         const { data: viewerData } = await supabase.auth.getUser();
         const hiddenProfileIds = new Set<string>();
+        let viewerHasStickiesAccess = false;
+        let accessToken = "";
 
         if (viewerData.user) {
           const [{ data: viewerProfile }, { data: entitlementData }] =
@@ -455,6 +459,27 @@ export default function DiscussionsPage() {
 
           setBookmarkCounts(bookmarks);
 
+          if (viewerHasStickiesAccess && accessToken) {
+            const response = await fetch("/api/stickies", {
+              headers: { Authorization: `Bearer ${accessToken}` },
+              cache: "no-store",
+            });
+            const result = await response.json().catch(() => ({}));
+
+            if (response.ok && isMounted) {
+              setStickiedDiscussionIds(
+                new Set(
+                  (result.stickies ?? [])
+                    .map((sticky: { source_key?: string }) => sticky.source_key)
+                    .filter(
+                      (sourceKey: unknown): sourceKey is string =>
+                        typeof sourceKey === "string"
+                    )
+                )
+              );
+            }
+          }
+
           const { data: tagData } = await supabase
             .from("discussion_tags")
             .select("discussion_id, tag")
@@ -476,7 +501,34 @@ export default function DiscussionsPage() {
       setLoading(false);
     }
 
-    loadDiscussions();
+    void loadDiscussions();
+
+    function refreshDiscussionMetrics() {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+
+      void loadDiscussions();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        refreshDiscussionMetrics();
+      }
+    }
+
+    window.addEventListener("focus", refreshDiscussionMetrics);
+    window.addEventListener("pageshow", refreshDiscussionMetrics);
+    window.addEventListener("loombus:discussion-metrics-changed", refreshDiscussionMetrics);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("focus", refreshDiscussionMetrics);
+      window.removeEventListener("pageshow", refreshDiscussionMetrics);
+      window.removeEventListener("loombus:discussion-metrics-changed", refreshDiscussionMetrics);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const activeTopics = useMemo(() => {
