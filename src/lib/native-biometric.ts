@@ -103,8 +103,9 @@ export async function saveNativeBiometricLoginCredentials(
 
     if (typeof window !== "undefined") {
       window.localStorage.setItem(BIOMETRIC_LOGIN_EMAIL_KEY, username);
-      window.localStorage.removeItem(BIOMETRIC_UNLOCK_ENABLED_KEY);
     }
+
+    setBiometricUnlockEnabled(true);
 
     return { ok: true };
   } catch (error) {
@@ -206,3 +207,46 @@ export async function getNativeBiometricAvailability() {
   }
 }
 
+export async function verifyNativeBiometric(reason = "Unlock Loombus") {
+  if (!isNativeApp()) {
+    return { ok: true, skipped: true };
+  }
+
+  try {
+    const { NativeBiometric } = await getNativeBiometricModule();
+
+    const availability = await NativeBiometric.isAvailable({
+      useFallback: true,
+    });
+
+    if (!availability.isAvailable) {
+      return {
+        ok: false,
+        skipped: false,
+        error: "Biometric or device unlock is not available on this device.",
+      };
+    }
+
+    await NativeBiometric.verifyIdentity({
+      reason,
+      title: "Unlock Loombus",
+      subtitle: "Confirm it is you to continue.",
+      description: "Loombus is locked on this device.",
+      negativeButtonText: "Cancel",
+      useFallback: true,
+      fallbackTitle: "Use Passcode",
+      maxAttempts: 3,
+    });
+
+    return { ok: true, skipped: false };
+  } catch (error) {
+    return {
+      ok: false,
+      skipped: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unable to verify your identity.",
+    };
+  }
+}
