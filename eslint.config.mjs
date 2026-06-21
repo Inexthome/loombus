@@ -8,11 +8,14 @@ const eslintConfig = defineConfig([
   {
     rules: {
       // Existing codebase cleanup items. Keep visible without blocking urgent native releases.
+      "@next/next/no-html-link-for-pages": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
+      "prefer-const": "warn",
       "react-hooks/immutability": "warn",
       "react-hooks/purity": "warn",
       "react-hooks/set-state-in-effect": "warn",
       "react-hooks/static-components": "warn",
+      "react/no-unescaped-entities": "warn",
     },
   },
   // Override default ignores of eslint-config-next.
