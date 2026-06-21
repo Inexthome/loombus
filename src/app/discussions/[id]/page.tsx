@@ -642,6 +642,51 @@ export default function DiscussionPage() {
   const [monthlyRelatedIdeasUsage, setMonthlyRelatedIdeasUsage] = useState(0);
   const [openPremiumAiTool, setOpenPremiumAiTool] = useState("");
 
+  function broadcastDiscussionMetricsChanged(
+    discussionId: string,
+    metrics: Record<string, unknown> = {}
+  ) {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.dispatchEvent(
+      new CustomEvent("loombus:discussion-metrics-changed", {
+        detail: {
+          discussionId,
+          metrics,
+        },
+      })
+    );
+  }
+
+  async function trackDiscussionView(discussionId: string) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      const response = await fetch("/api/discussions/view", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          discussionId,
+        }),
+        cache: "no-store",
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        broadcastDiscussionMetricsChanged(discussionId, result);
+      }
+    } catch {
+      // View tracking should never interrupt reading the discussion.
+    }
+  }
+
   useEffect(() => {
     async function loadDiscussion() {
       const { data: discussionData, error: discussionError } = await supabase
@@ -753,10 +798,7 @@ export default function DiscussionPage() {
         setMyReplyReactions({});
       }
 
-      void supabase.from("discussion_views").insert({
-        discussion_id: id,
-        viewer_id: viewerData.user?.id ?? null,
-      });
+      void trackDiscussionView(id);
 
       if (viewerData.user) {
         const { data: savedData } = await supabase
@@ -848,6 +890,29 @@ export default function DiscussionPage() {
             };
 
         setAiEntitlement(resolvedEntitlement);
+
+        const canLoadStickies = ["premium", "premium_plus", "admin"].includes(
+          getSubscriptionDisplayKey(resolvedEntitlement)
+        );
+
+        if (canLoadStickies) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const accessToken = sessionData.session?.access_token;
+
+          if (accessToken) {
+            const response = await fetch("/api/stickies", {
+              headers: { Authorization: `Bearer ${accessToken}` },
+              cache: "no-store",
+            });
+            const result = await response.json().catch(() => ({}));
+            setIsStickied(
+              response.ok &&
+                (result.stickies ?? []).some(
+                  (sticky: { source_key?: string }) => sticky.source_key === id
+                )
+            );
+          }
+        }
 
         if (!viewerIsAdmin && resolvedEntitlement.ai_assisted_enabled) {
           const now = new Date();
@@ -2074,6 +2139,7 @@ export default function DiscussionPage() {
       const nextBookmarkId = result.bookmark?.id ?? null;
 
       setIsSaved(true);
+      broadcastDiscussionMetricsChanged(id);
       setSavedBookmarkId(nextBookmarkId);
 
       if (nextBookmarkId && collectionId) {
@@ -2152,6 +2218,7 @@ export default function DiscussionPage() {
 
       setIsStickied(true);
       setStickiesMessage("Added to Stickies.");
+      broadcastDiscussionMetricsChanged(id);
     } finally {
       setAddingSticky(false);
     }
@@ -2198,6 +2265,7 @@ export default function DiscussionPage() {
       setShowSaveFolderPanel(false);
       setSelectedSaveCollectionId("unfiled");
       setBookmarkMessage("Saved discussion removed.");
+      broadcastDiscussionMetricsChanged(id);
     } finally {
       setSavingBookmark(false);
     }
