@@ -1,0 +1,18 @@
+{
+  "ios": {
+    "latestVersion": "1.0.3",
+    "minimumVersion": "1.0.2",
+    "updateUrl": "https://loombus.com/download",
+    "title": "Loombus update available",
+    "message": "Version 1.0.3 improves Face ID session locking, sign-in behavior, and native app reliability.",
+    "required": false
+  },
+  "android": {
+    "latestVersion": "1.0.3",
+    "minimumVersion": "1.0.2",
+    "updateUrl": "https://loombus.com/download",
+    "title": "Loombus update available",
+    "message": "Version 1.0.3 improves sign-in behavior and native app reliability.",
+    "required": false
+  }
+}
