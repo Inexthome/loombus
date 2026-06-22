@@ -28,6 +28,12 @@ import {
   Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { isNativeApp } from "@/lib/native-app";
+import {
+  BIOMETRIC_SESSION_LOCK_EVENT,
+  BIOMETRIC_UNLOCK_SETTING_EVENT,
+  isBiometricUnlockEnabled,
+} from "@/lib/native-biometric";
 import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
@@ -402,6 +408,8 @@ export default function ClientLayout({
   const [globalSearchAiUpgradeRequired, setGlobalSearchAiUpgradeRequired] = useState(false);
   const [appearanceMode, setAppearanceMode] = useState<AppearanceMode>("system");
   const [appearancePickerOpen, setAppearancePickerOpen] = useState(false);
+  const [nativeBiometricLockAvailable, setNativeBiometricLockAvailable] =
+    useState(false);
   const [floatingMessagesOpen, setFloatingMessagesOpen] = useState(false);
   const [floatingMessageSearch, setFloatingMessageSearch] = useState("");
   const [floatingConversations, setFloatingConversations] = useState<FloatingConversation[]>([]);
@@ -1089,6 +1097,30 @@ export default function ClientLayout({
         handleNotificationsChanged
       );
       subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    function refreshNativeBiometricLockAvailability() {
+      setNativeBiometricLockAvailable(
+        isNativeApp() && isBiometricUnlockEnabled()
+      );
+    }
+
+    refreshNativeBiometricLockAvailability();
+
+    window.addEventListener(
+      BIOMETRIC_UNLOCK_SETTING_EVENT,
+      refreshNativeBiometricLockAvailability
+    );
+    window.addEventListener("storage", refreshNativeBiometricLockAvailability);
+
+    return () => {
+      window.removeEventListener(
+        BIOMETRIC_UNLOCK_SETTING_EVENT,
+        refreshNativeBiometricLockAvailability
+      );
+      window.removeEventListener("storage", refreshNativeBiometricLockAvailability);
     };
   }, []);
 
@@ -2325,6 +2357,14 @@ export default function ClientLayout({
 
 
   async function handleLogout() {
+    if (nativeBiometricLockAvailable) {
+      setMobileMenuOpen(false);
+      setMoreMenuOpen(false);
+      setFloatingMessagesOpen(false);
+      window.dispatchEvent(new Event(BIOMETRIC_SESSION_LOCK_EVENT));
+      return;
+    }
+
     await supabase.auth.signOut();
     window.location.href = "/";
   }
@@ -2625,12 +2665,12 @@ export default function ClientLayout({
             <button
               type="button"
               onClick={handleLogout}
-              aria-label="Logout"
-              title="Logout"
+              aria-label={nativeBiometricLockAvailable ? "Lock Loombus" : "Logout"}
+              title={nativeBiometricLockAvailable ? "Lock Loombus" : "Logout"}
               className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent text-[var(--loombus-text-subtle)] transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-500"
             >
               <LogOut aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Logout" />
+              <DesktopRailTooltip label={nativeBiometricLockAvailable ? "Lock" : "Logout"} />
             </button>
           </div>
         </aside>
@@ -3422,7 +3462,7 @@ export default function ClientLayout({
                 className="loombus-mobile-menu-logout rounded-2xl border px-4 py-3 text-left text-base font-semibold transition"
               >
                 <LogOut aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.1} />
-                <span>Logout</span>
+                <span>{nativeBiometricLockAvailable ? "Lock Loombus" : "Logout"}</span>
               </button>
             </div>
           </div>

@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { isNativeApp } from "@/lib/native-app";
 import {
+  BIOMETRIC_SESSION_LOCK_EVENT,
   BIOMETRIC_UNLOCK_SETTING_EVENT,
+  deleteNativeBiometricLoginCredentials,
   getNativeBiometricAvailability,
   isBiometricUnlockEnabled,
   setBiometricUnlockEnabled,
@@ -165,8 +167,14 @@ export function NativeBiometricSessionGate() {
       void runBiometricGate(true);
     }
 
+    function handleSessionLockRequest() {
+      clearSessionVerified();
+      void runBiometricGate(true);
+    }
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener(BIOMETRIC_UNLOCK_SETTING_EVENT, handleSettingChange);
+    window.addEventListener(BIOMETRIC_SESSION_LOCK_EVENT, handleSessionLockRequest);
 
     return () => {
       subscription.unsubscribe();
@@ -174,6 +182,10 @@ export function NativeBiometricSessionGate() {
       window.removeEventListener(
         BIOMETRIC_UNLOCK_SETTING_EVENT,
         handleSettingChange
+      );
+      window.removeEventListener(
+        BIOMETRIC_SESSION_LOCK_EVENT,
+        handleSessionLockRequest
       );
     };
   }, [runBiometricGate]);
@@ -185,7 +197,7 @@ export function NativeBiometricSessionGate() {
 
   async function handleSignOut() {
     clearSessionVerified();
-    setBiometricUnlockEnabled(false);
+    await deleteNativeBiometricLoginCredentials();
     await supabase.auth.signOut();
     window.location.replace("/login");
   }
@@ -226,7 +238,7 @@ export function NativeBiometricSessionGate() {
               onClick={() => void handleSignOut()}
               className="w-full rounded-full border border-zinc-800 px-5 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white"
             >
-              Sign out instead
+              Sign out completely
             </button>
           </div>
         ) : null}
