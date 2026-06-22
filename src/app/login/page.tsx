@@ -7,9 +7,6 @@ import { isIosNativeApp, isNativeApp } from "@/lib/native-app";
 import {
   deleteNativeBiometricLoginCredentials,
   getNativeBiometricLoginCredentials,
-  getRememberedBiometricLoginEmail,
-  isNativeBiometricLoginSaved,
-  saveNativeBiometricLoginCredentials,
 } from "@/lib/native-biometric";
 
 function getSafeNext(value: string | null) {
@@ -46,7 +43,7 @@ export default function LoginPage() {
 
   const [biometricLoginReady, setBiometricLoginReady] = useState(false);
   const [rememberedBiometricEmail, setRememberedBiometricEmail] = useState("");
-  const [checkingBiometricLogin, setCheckingBiometricLogin] = useState(true);
+  const [checkingBiometricLogin, setCheckingBiometricLogin] = useState(false);
   const [biometricSigningIn, setBiometricSigningIn] = useState(false);
   const [showManualLogin, setShowManualLogin] = useState(false);
   const [nativeApp, setNativeApp] = useState<boolean | null>(null);
@@ -66,18 +63,8 @@ export default function LoginPage() {
   }, []);
 
   const refreshBiometricLoginState = useCallback(async () => {
-    if (!isNativeApp()) {
-      setBiometricLoginReady(false);
-      setRememberedBiometricEmail("");
-      setCheckingBiometricLogin(false);
-      return;
-    }
-
-    setCheckingBiometricLogin(true);
-    const saved = await isNativeBiometricLoginSaved();
-
-    setBiometricLoginReady(saved);
-    setRememberedBiometricEmail(saved ? getRememberedBiometricLoginEmail() : "");
+    setBiometricLoginReady(false);
+    setRememberedBiometricEmail("");
     setCheckingBiometricLogin(false);
   }, []);
 
@@ -199,31 +186,6 @@ export default function LoginPage() {
       );
       setLoading(false);
       return;
-    }
-
-    if (isNativeApp()) {
-      const savedLoginAlready = await isNativeBiometricLoginSaved();
-
-      if (!savedLoginAlready) {
-        const shouldRemember = window.confirm(
-          "Remember this login with Face ID on this device?"
-        );
-
-        if (shouldRemember) {
-          const saved = await saveNativeBiometricLoginCredentials(
-            email,
-            password
-          );
-
-          if (!saved.ok) {
-            setMessage(
-              `Login successful, but biometric sign-in could not be saved: ${
-                saved.error ?? "Unknown error"
-              }`
-            );
-          }
-        }
-      }
     }
 
     window.location.replace(getNextPath());
@@ -586,9 +548,9 @@ export default function LoginPage() {
 
               {nativeApp === true ? (
                 <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-relaxed text-zinc-500">
-                  After a successful email login, Loombus can ask whether you
-                  want to save this login with Face ID or device biometrics on
-                  this device.
+                  After a successful email login, your iPhone may offer to save
+                  this login in Passwords. Loombus uses Face ID to protect
+                  remembered sessions, not to store your password.
                 </p>
               ) : null}
 
