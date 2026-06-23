@@ -367,9 +367,15 @@ export default function LoginPage() {
                       Email
                     </label>
                     <input
+                      id="loombus-mobile-email"
+                      name="username"
                       type="email"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       value={email}
-                      autoComplete="email"
+                      autoComplete="username"
                       required
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
@@ -381,6 +387,8 @@ export default function LoginPage() {
                       Password
                     </label>
                     <input
+                      id="loombus-mobile-password"
+                      name="password"
                       type="password"
                       value={password}
                       autoComplete="current-password"
@@ -523,9 +531,15 @@ export default function LoginPage() {
                   Email
                 </label>
                 <input
+                  id="loombus-email"
+                  name="username"
                   type="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   value={email}
-                  autoComplete="email"
+                  autoComplete="username"
                   required
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
@@ -537,6 +551,8 @@ export default function LoginPage() {
                   Password
                 </label>
                 <input
+                  id="loombus-password"
+                  name="password"
                   type="password"
                   value={password}
                   autoComplete="current-password"
@@ -549,8 +565,8 @@ export default function LoginPage() {
               {nativeApp === true ? (
                 <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-relaxed text-zinc-500">
                   After a successful email login, your iPhone may offer to save
-                  this login in Passwords. Loombus uses Face ID to protect
-                  remembered sessions, not to store your password.
+                  this login in Passwords. Loombus uses Apple Passwords/iCloud Keychain for saved
+                  login autofill. Face ID belongs to Apple Passwords, not Loombus password storage.
                 </p>
               ) : null}
 
