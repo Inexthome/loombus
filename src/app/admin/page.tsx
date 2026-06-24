@@ -81,7 +81,7 @@ export default function AdminDashboardPage() {
       const { data: userData } = await supabase.auth.getUser();
 
       if (!userData.user) {
-        window.location.href = "/login";
+        window.location.replace("/login?next=/admin");
         return;
       }
 
@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
         .maybeSingle();
 
       if (!profile?.is_admin) {
-        setAuthChecked(true);
+        window.location.replace("/discussions?admin=denied");
         return;
       }
 
