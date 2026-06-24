@@ -6,9 +6,6 @@ export const BIOMETRIC_UNLOCK_ENABLED_KEY =
 export const BIOMETRIC_UNLOCK_SETTING_EVENT =
   "loombus:native-biometric-unlock-setting-changed";
 
-export const BIOMETRIC_SESSION_LOCK_EVENT =
-  "loombus:native-biometric-session-lock";
-
 const BIOMETRIC_LOGIN_SERVER = "loombus.com";
 const BIOMETRIC_LOGIN_EMAIL_KEY = "loombus:native-biometric-login-email";
 

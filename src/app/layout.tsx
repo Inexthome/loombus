@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
-import { NativeAppUpdatePrompt } from "@/components/native-app-update-prompt";
 
 const siteUrl = "https://loombus.com";
 const siteTitle = "Loombus";
@@ -91,7 +90,6 @@ export default function RootLayout({
         <ClientLayout>{children}</ClientLayout>
         <NativeBiometricSessionGate />
         <NativePushRegistration />
-        <NativeAppUpdatePrompt />
       </body>
     </html>
   );
