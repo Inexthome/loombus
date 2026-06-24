@@ -17,6 +17,10 @@ jobs:
   validate:
     name: build and lint
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
