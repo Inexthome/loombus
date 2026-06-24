@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     Date.now() - VIEW_DEDUPE_HOURS * 60 * 60 * 1000
   ).toISOString();
 
-  let shouldTrackView = true;
+  let shouldTrackView = Boolean(viewerId);
 
   if (viewerId) {
     const { data: recentView, error: recentViewError } = await supabase
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     shouldTrackView = !recentView;
   }
 
-  if (shouldTrackView) {
+  if (shouldTrackView && viewerId) {
     const { error: insertError } = await supabase.from("discussion_views").insert({
       discussion_id: discussionId,
       viewer_id: viewerId,
