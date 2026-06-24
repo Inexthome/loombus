@@ -1,3 +1,4 @@
+import "server-only";
 import { createSign } from "node:crypto";
 import { connect, constants } from "node:http2";
 import { createClient } from "@supabase/supabase-js";

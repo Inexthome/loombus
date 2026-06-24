@@ -1,3 +1,4 @@
+import "server-only";
 import { createHash } from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
