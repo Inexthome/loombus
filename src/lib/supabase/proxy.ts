@@ -20,6 +20,14 @@ function isAdminPath(pathname: string) {
   return pathname === "/admin" || pathname.startsWith("/admin/");
 }
 
+function getNextResponse(request: NextRequest) {
+  return NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+}
+
 function redirectToLogin(request: NextRequest) {
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = "/login";
@@ -40,9 +48,7 @@ function redirectAwayFromAdmin(request: NextRequest) {
 }
 
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({
-    request,
-  });
+  let response = getNextResponse(request);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -61,9 +67,7 @@ export async function updateSession(request: NextRequest) {
           request.cookies.set(name, value);
         });
 
-        response = NextResponse.next({
-          request,
-        });
+        response = getNextResponse(request);
 
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
@@ -75,14 +79,16 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (!isProtectedPath(pathname)) {
-    await supabase.auth.getClaims();
+    await supabase.auth.getUser();
     return response;
   }
 
-  const { data, error } = await supabase.auth.getClaims();
-  const userId = data?.claims?.sub;
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  if (error || !userId) {
+  if (error || !user) {
     return redirectToLogin(request);
   }
 
@@ -93,7 +99,7 @@ export async function updateSession(request: NextRequest) {
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin")
-    .eq("id", userId)
+    .eq("id", user.id)
     .maybeSingle();
 
   if (profileError || profile?.is_admin !== true) {
