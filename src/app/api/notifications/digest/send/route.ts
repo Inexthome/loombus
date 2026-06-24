@@ -208,12 +208,20 @@ async function sendEmailWithResend(args: {
   return { ok: true, error: null };
 }
 
+function getConfiguredCronSecret() {
+  return process.env.CRON_SECRET ?? process.env.DIGEST_CRON_SECRET ?? "";
+}
+
+function getProvidedCronSecret(request: NextRequest) {
+  const authorizationSecret =
+    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim() ?? "";
+
+  return authorizationSecret || request.headers.get("x-digest-cron-secret")?.trim() || "";
+}
+
 async function runDigest(request: NextRequest) {
-  const configuredSecret = process.env.DIGEST_CRON_SECRET;
-  const providedSecret =
-    request.headers.get("x-digest-cron-secret") ??
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ??
-    "";
+  const configuredSecret = getConfiguredCronSecret();
+  const providedSecret = getProvidedCronSecret(request);
 
   if (!configuredSecret || providedSecret !== configuredSecret) {
     return jsonError("Unauthorized.", 401);
@@ -385,7 +393,6 @@ async function runDigest(request: NextRequest) {
     results,
   });
 }
-
 
 export async function GET(request: NextRequest) {
   return runDigest(request);
