@@ -1,19 +1,5 @@
 import type { NextConfig } from "next";
 
-const cspReportOnly = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  "form-action 'self' https://checkout.stripe.com",
-  "img-src 'self' data: blob: https://*.supabase.co",
-  "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com",
-  "script-src 'self' https://js.stripe.com",
-  "style-src 'self' 'unsafe-inline'",
-  "upgrade-insecure-requests",
-].join("; ");
-
 const securityHeaders = [
   {
     key: "Strict-Transport-Security",
@@ -58,10 +44,6 @@ const securityHeaders = [
   {
     key: "Origin-Agent-Cluster",
     value: "?1",
-  },
-  {
-    key: "Content-Security-Policy-Report-Only",
-    value: cspReportOnly,
   },
 ];
 
