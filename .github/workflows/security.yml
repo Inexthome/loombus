@@ -14,6 +14,28 @@ permissions:
   contents: read
 
 jobs:
+  validate:
+    name: build and lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
   dependency-audit:
     name: npm dependency audit
     runs-on: ubuntu-latest
