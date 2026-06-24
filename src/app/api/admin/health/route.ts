@@ -92,7 +92,8 @@ function getConfigStatus() {
 
     resendApiKey: present(process.env.RESEND_API_KEY),
     digestFromEmail: present(process.env.DIGEST_FROM_EMAIL),
-    digestCronSecret: present(process.env.DIGEST_CRON_SECRET),
+    digestCronSecret:
+      present(process.env.CRON_SECRET) || present(process.env.DIGEST_CRON_SECRET),
 
     apnsTeamId: present(process.env.APNS_TEAM_ID),
     apnsKeyId: present(process.env.APNS_KEY_ID),
