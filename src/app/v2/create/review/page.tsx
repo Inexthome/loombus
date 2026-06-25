@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   ArrowLeft,
   CheckCircle2,
   ClipboardCopy,
   FileText,
   Loader2,
   Lock,
+  Send,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -87,6 +89,45 @@ function getTags(tags: string | null) {
     .filter(Boolean);
 }
 
+function getDraftReadiness(draft: V2CreateDraft | null, tags: string[]) {
+  const checks = [
+    {
+      label: "Title is clear",
+      done: (draft?.title?.trim().length ?? 0) >= 8,
+      helper: "Use a title long enough to frame the signal.",
+    },
+    {
+      label: "Topic is selected",
+      done: (draft?.topic?.trim().length ?? 0) >= 2,
+      helper: "Add a topic so the discussion can be classified.",
+    },
+    {
+      label: "Body has context",
+      done: (draft?.body?.trim().length ?? 0) >= 40,
+      helper: "Add enough context for useful replies.",
+    },
+    {
+      label: "Mode is selected",
+      done: Boolean(draft?.mode),
+      helper: "Choose how the discussion should be structured.",
+    },
+    {
+      label: "Tags reviewed",
+      done: tags.length <= 6,
+      helper: "Keep tags focused. Six or fewer is recommended.",
+    },
+  ];
+
+  const completed = checks.filter((check) => check.done).length;
+
+  return {
+    checks,
+    completed,
+    total: checks.length,
+    ready: completed === checks.length,
+  };
+}
+
 function FlagPill({ label, enabled }: { label: string; enabled: boolean }) {
   return (
     <span
@@ -163,11 +204,14 @@ export default function V2CreateReviewPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
+  const [reviewAcknowledged, setReviewAcknowledged] = useState(false);
 
   const tags = useMemo(() => getTags(draft?.tags ?? null), [draft?.tags]);
+  const readiness = useMemo(() => getDraftReadiness(draft, tags), [draft, tags]);
   const hasDraftContent = Boolean(
     draft?.title?.trim() || draft?.topic?.trim() || draft?.body?.trim() || tags.length > 0
   );
+  const publishPrepared = readiness.ready && reviewAcknowledged && hasDraftContent;
 
   async function copyReviewDraft() {
     if (!draft) return;
@@ -226,6 +270,7 @@ export default function V2CreateReviewPage() {
       }
 
       setDraft((draftRow as V2CreateDraft | null) ?? null);
+      setReviewAcknowledged(false);
     } catch {
       setPayload(getDefaultShellPayload());
       setMessage("Unable to load the V2 review preview. V1 Create remains available.");
@@ -294,7 +339,7 @@ export default function V2CreateReviewPage() {
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Review Preview</p>
               <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Review before publishing.</h1>
               <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-                This screen reviews your private V2 draft only. It does not publish to the live discussions table.
+                This screen prepares your private V2 draft for a future publish action. The publish control remains locked.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -348,10 +393,48 @@ export default function V2CreateReviewPage() {
           </article>
 
           <aside className="space-y-4">
+            <section className="rounded-[2rem] border border-blue-300/25 bg-blue-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
+              <div className="flex items-center gap-3">
+                <Send className="size-5 text-blue-200" />
+                <h2 className="font-bold text-blue-100">Publish preparation</h2>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-blue-50/80">
+                This panel checks whether the draft is structurally ready. The publish action is intentionally locked in this checkpoint.
+              </p>
+              <div className="mt-4 space-y-2">
+                {readiness.checks.map((check) => (
+                  <div key={check.label} className="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold text-slate-200">{check.label}</span>
+                      <span className={check.done ? "text-emerald-200" : "text-amber-200"}>{check.done ? "Ready" : "Needed"}</span>
+                    </div>
+                    {!check.done && <p className="mt-1 text-xs leading-5 text-slate-400">{check.helper}</p>}
+                  </div>
+                ))}
+              </div>
+              <label className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-sm text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={reviewAcknowledged}
+                  onChange={(event) => setReviewAcknowledged(event.target.checked)}
+                  className="mt-1 size-4 accent-blue-500"
+                />
+                <span>I reviewed this draft and understand V2 publishing is still locked.</span>
+              </label>
+              <button
+                type="button"
+                disabled
+                className="mt-4 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-700 px-4 py-3 text-sm font-bold text-slate-300 opacity-80"
+              >
+                <Lock className="size-4" />
+                {publishPrepared ? "Publish prepared — locked" : "Publish locked"}
+              </button>
+            </section>
+
             <section className="rounded-[2rem] border border-emerald-400/25 bg-emerald-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="size-5 text-emerald-200" />
-                <h2 className="font-bold text-emerald-100">Review only</h2>
+                <h2 className="font-bold text-emerald-100">Guardrails active</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-emerald-50/80">
                 This page does not publish, submit, or write to the live discussions table. It only reads your private V2 draft.
@@ -361,14 +444,14 @@ export default function V2CreateReviewPage() {
             <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="size-5 text-blue-200" />
-                <h2 className="font-bold text-white">Before publishing later</h2>
+                <h2 className="font-bold text-white">Readiness summary</h2>
               </div>
-              <div className="mt-4 space-y-2 text-sm text-slate-300">
-                <p>Title: {draft?.title?.trim() ? "Ready" : "Needed"}</p>
-                <p>Topic: {draft?.topic?.trim() ? "Ready" : "Needed"}</p>
-                <p>Body: {(draft?.body?.trim().length ?? 0) >= 40 ? "Ready" : "Needs more context"}</p>
-                <p>Mode: {getModeLabel(draft?.mode ?? null)}</p>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-blue-400" style={{ width: `${Math.round((readiness.completed / readiness.total) * 100)}%` }} />
               </div>
+              <p className="mt-3 text-sm text-slate-300">
+                {readiness.completed} of {readiness.total} checks ready.
+              </p>
             </section>
 
             <section className="rounded-[2rem] border border-[#d4af37]/25 bg-[#d4af37]/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
@@ -377,7 +460,17 @@ export default function V2CreateReviewPage() {
                 <h2 className="font-bold text-[#f7d56d]">Next step later</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-[#fff3c4]">
-                A future PR can add a guarded V2 publish action after this review step is fully validated.
+                A future checkpoint can connect this prepared state to a guarded publish API after review is fully validated.
+              </p>
+            </section>
+
+            <section className="rounded-[2rem] border border-amber-300/25 bg-amber-300/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="size-5 text-amber-200" />
+                <h2 className="font-bold text-amber-100">Not live publishing</h2>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-amber-50/80">
+                The visible publish button is disabled on purpose. No live discussion row is created by this PR.
               </p>
             </section>
 
