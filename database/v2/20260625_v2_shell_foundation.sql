@@ -113,21 +113,10 @@ alter table public.loombus_rooms enable row level security;
 alter table public.loombus_room_members enable row level security;
 alter table public.loombus_room_discussions enable row level security;
 
--- Feature flags may contain private rollout allowlists. They should be read by server routes
--- through the Supabase service role key. Admins may inspect them in trusted admin tools only.
+-- Keep V2 feature flags server-only for now.
+-- No public/client SELECT policy is added because allowed_user_ids should remain private.
 drop policy if exists "Feature flags are readable" on public.loombus_feature_flags;
 drop policy if exists "Admins can read feature flags" on public.loombus_feature_flags;
-create policy "Admins can read feature flags"
-  on public.loombus_feature_flags
-  for select
-  using (
-    exists (
-      select 1
-      from public.profiles profile
-      where profile.id = auth.uid()
-        and profile.is_admin = true
-    )
-  );
 
 -- Users can manage only their own shell preference row.
 drop policy if exists "Users can read own shell preferences" on public.loombus_shell_preferences;
