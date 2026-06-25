@@ -10,8 +10,10 @@ import {
   Lock,
   MessageCircle,
   PenLine,
+  Save,
   ShieldCheck,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -29,6 +31,17 @@ type ShellPayload = {
 };
 
 type DiscussionMode = "open_discussion" | "debate" | "research_question" | "problem_solving";
+
+type V2CreateDraft = {
+  id: string;
+  user_id: string;
+  title: string | null;
+  topic: string | null;
+  body: string | null;
+  tags: string | null;
+  mode: string | null;
+  updated_at: string | null;
+};
 
 const DEFAULT_FLAGS: FeatureFlags = {
   v2_shell: false,
@@ -70,6 +83,27 @@ function getDefaultShellPayload(): ShellPayload {
     authenticated: false,
     flags: DEFAULT_FLAGS,
   };
+}
+
+function isDiscussionMode(value: string | null | undefined): value is DiscussionMode {
+  return DISCUSSION_MODES.some((option) => option.key === value);
+}
+
+function formatDraftTime(value: string | null) {
+  if (!value) return "Not saved yet";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Saved recently";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function FlagPill({ label, enabled }: { label: string; enabled: boolean }) {
@@ -143,12 +177,17 @@ export default function V2CreatePage() {
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
   const [mode, setMode] = useState<DiscussionMode>("open_discussion");
   const [copyMessage, setCopyMessage] = useState("");
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [draftMessage, setDraftMessage] = useState("");
 
   const selectedMode = DISCUSSION_MODES.find((option) => option.key === mode) ?? DISCUSSION_MODES[0];
 
@@ -182,6 +221,124 @@ export default function V2CreatePage() {
     };
   }, [body, mode, title, topic]);
 
+  async function loadSavedDraft(nextUserId: string) {
+    setDraftLoading(true);
+    setDraftMessage("");
+
+    try {
+      const { data, error } = await supabase
+        .from("loombus_v2_create_drafts")
+        .select("id, user_id, title, topic, body, tags, mode, updated_at")
+        .eq("user_id", nextUserId)
+        .maybeSingle();
+
+      if (error) {
+        setDraftMessage("Draft persistence is not configured yet. Apply the V2 draft migration before testing save and restore.");
+        return;
+      }
+
+      const draft = data as V2CreateDraft | null;
+
+      if (!draft) {
+        setDraftId(null);
+        setDraftSavedAt(null);
+        return;
+      }
+
+      setDraftId(draft.id);
+      setDraftSavedAt(draft.updated_at);
+      setTitle(draft.title ?? "");
+      setTopic(draft.topic ?? "");
+      setBody(draft.body ?? "");
+      setTags(draft.tags ?? "");
+      setMode(isDiscussionMode(draft.mode) ? draft.mode : "open_discussion");
+      setDraftMessage("Private V2 draft restored.");
+    } catch {
+      setDraftMessage("Unable to load the private V2 draft. V1 Create remains available.");
+    } finally {
+      setDraftLoading(false);
+    }
+  }
+
+  async function saveDraft() {
+    if (!userId) {
+      setDraftMessage("Sign in is required before saving a V2 draft.");
+      return;
+    }
+
+    setDraftLoading(true);
+    setDraftMessage("");
+
+    try {
+      const { data, error } = await supabase
+        .from("loombus_v2_create_drafts")
+        .upsert(
+          {
+            user_id: userId,
+            title,
+            topic,
+            body,
+            tags,
+            mode,
+          },
+          { onConflict: "user_id" }
+        )
+        .select("id, updated_at")
+        .single();
+
+      if (error) {
+        setDraftMessage("Draft could not be saved. Confirm the V2 draft migration has been applied.");
+        return;
+      }
+
+      const savedDraft = data as { id: string; updated_at: string | null };
+      setDraftId(savedDraft.id);
+      setDraftSavedAt(savedDraft.updated_at);
+      setDraftMessage("Private V2 draft saved.");
+    } catch {
+      setDraftMessage("Draft could not be saved. Current V1 Create remains unchanged.");
+    } finally {
+      setDraftLoading(false);
+    }
+  }
+
+  async function clearDraft() {
+    if (!userId) {
+      setDraftMessage("Sign in is required before clearing a V2 draft.");
+      return;
+    }
+
+    setDraftLoading(true);
+    setDraftMessage("");
+
+    try {
+      if (draftId) {
+        const { error } = await supabase
+          .from("loombus_v2_create_drafts")
+          .delete()
+          .eq("user_id", userId);
+
+        if (error) {
+          setDraftMessage("Draft could not be cleared. Confirm the V2 draft migration has been applied.");
+          return;
+        }
+      }
+
+      setDraftId(null);
+      setDraftSavedAt(null);
+      setTitle("");
+      setTopic("");
+      setBody("");
+      setTags("");
+      setMode("open_discussion");
+      setDraftMessage("Private V2 draft cleared.");
+    } catch {
+      setDraftMessage("Draft could not be cleared. Current V1 Create remains unchanged.");
+    } finally {
+      setDraftLoading(false);
+    }
+  }
+
   async function copyPreviewDraft() {
     setCopyMessage("");
 
@@ -211,12 +368,24 @@ export default function V2CreatePage() {
     try {
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
+      const nextUserId = data.session?.user.id ?? null;
       const response = await fetch("/api/v2/shell", {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
 
       setPayload(nextPayload);
+      setUserId(nextUserId);
+
+      if (
+        nextUserId &&
+        accessToken &&
+        nextPayload.configured &&
+        nextPayload.flags.v2_shell &&
+        nextPayload.version === "v2"
+      ) {
+        await loadSavedDraft(nextUserId);
+      }
     } catch {
       setPayload(getDefaultShellPayload());
       setMessage("Unable to verify V2 create preview access. Current Loombus remains on V1.");
@@ -291,7 +460,7 @@ export default function V2CreatePage() {
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Preview</p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">Create a signal with structure.</h1>
             <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-              This is a gated V2 Create preview. It lets you test the structure and flow, but it does not submit posts yet. Use the V1 composer for live posting.
+              This gated V2 Create preview can now save one private draft for your signed-in account. It still does not submit or publish posts.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -304,10 +473,19 @@ export default function V2CreatePage() {
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-5">
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
-              <div className="flex items-center gap-3">
-                <PenLine className="size-5 text-blue-200" />
-                <h2 className="text-xl font-bold">Signal draft</h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <PenLine className="size-5 text-blue-200" />
+                  <h2 className="text-xl font-bold">Signal draft</h2>
+                </div>
+                <span className="text-xs text-slate-400">{draftLoading ? "Syncing draft..." : formatDraftTime(draftSavedAt)}</span>
               </div>
+
+              {draftMessage && (
+                <div className="mt-4 rounded-2xl border border-blue-300/20 bg-blue-400/10 px-4 py-3 text-sm text-blue-100">
+                  {draftMessage}
+                </div>
+              )}
 
               <div className="mt-5 grid gap-4">
                 <label className="block">
@@ -382,6 +560,35 @@ export default function V2CreatePage() {
           <aside className="space-y-4">
             <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <div className="flex items-center gap-3">
+                <Save className="size-5 text-blue-200" />
+                <h2 className="font-bold">Private draft</h2>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-slate-300">
+                Save one V2 draft to your signed-in account. This does not publish anything and does not affect V1 Create.
+              </p>
+              <div className="mt-4 flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={saveDraft}
+                  disabled={draftLoading}
+                  className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {draftLoading ? "Saving..." : "Save private draft"}
+                </button>
+                <button
+                  type="button"
+                  onClick={clearDraft}
+                  disabled={draftLoading}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Trash2 className="size-4" />
+                  Clear draft
+                </button>
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <div className="flex items-center gap-3">
                 <CheckCircle2 className="size-5 text-emerald-200" />
                 <h2 className="font-bold">Draft readiness</h2>
               </div>
@@ -409,7 +616,7 @@ export default function V2CreatePage() {
                 <h2 className="font-bold text-[#f7d56d]">Preview only</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-[#fff3c4]">
-                This screen does not write to Supabase. Live posting stays on V1 until V2 submission is reviewed and approved.
+                This screen can save a private draft, but it still does not write to the live discussions table.
               </p>
             </section>
 
