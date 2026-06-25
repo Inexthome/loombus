@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
+  Eye,
   FileText,
   Loader2,
   Lock,
@@ -55,6 +56,9 @@ const DRAFT_MIGRATION_REQUIRED_MESSAGE =
 
 const PRIMARY_ACTION_BUTTON_CLASS =
   "appearance-none rounded-2xl border border-blue-300/40 bg-blue-500 px-4 py-2 text-center text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:border-blue-300/20 disabled:bg-blue-500/50 disabled:text-white/70";
+
+const SECONDARY_ACTION_LINK_CLASS =
+  "inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-300/25 bg-blue-500/10 px-4 py-2 text-center text-sm font-bold text-blue-100 transition hover:border-blue-200/50 hover:bg-blue-500/20 hover:text-white";
 
 const DISCUSSION_MODES: Array<{
   key: DiscussionMode;
@@ -662,6 +666,10 @@ export default function V2CreatePage() {
                 >
                   {draftLoading ? "Saving..." : "Save now"}
                 </button>
+                <Link href="/v2/create/review" className={SECONDARY_ACTION_LINK_CLASS}>
+                  <Eye className="size-4" />
+                  Review draft
+                </Link>
                 <button
                   type="button"
                   onClick={clearDraft}
