@@ -3,99 +3,147 @@
 import Link from "next/link";
 import { Monitor, Moon, Sun } from "lucide-react";
 
-const themes = [
+type ThemeKey = "system" | "dark_gold" | "light_blue";
+
+const themes: Array<{
+  key: ThemeKey;
+  label: string;
+  description: string;
+  note: string;
+}> = [
   {
     key: "system",
     label: "System",
     description: "Follows the member’s device setting and automatically uses the matching Loombus theme.",
-    icon: Monitor,
-    shellClass: "from-slate-950 via-slate-900 to-blue-950",
-    outerTextClass: "text-white",
-    mutedTextClass: "text-slate-300",
-    panelClass: "border-white/10 bg-white/10 text-white",
-    iconWrapClass: "bg-blue-600 text-white",
-    badgeClass: "bg-slate-950/70 text-blue-200 ring-1 ring-white/10",
-    buttonClass: "bg-white text-slate-950",
     note: "Best default for most users.",
   },
   {
     key: "dark_gold",
     label: "Dark with Gold",
     description: "The Loombus identity theme: dark, premium, focused, and gold-accented.",
-    icon: Moon,
-    shellClass: "from-[#060606] via-[#11100b] to-[#2b2108]",
-    outerTextClass: "text-[#fff8df]",
-    mutedTextClass: "text-[#e5d7a5]",
-    panelClass: "border-[#d4af37]/25 bg-[#0d0c08] text-[#fff8df]",
-    iconWrapClass: "bg-[#d4af37] text-black",
-    badgeClass: "bg-[#d4af37] text-black",
-    buttonClass: "bg-[#d4af37] text-black",
     note: "Use this as the branded dark mode.",
   },
   {
     key: "light_blue",
     label: "Light with Blue",
     description: "The current clean Loombus feel: bright, simple, familiar, and blue-accented.",
-    icon: Sun,
-    shellClass: "from-white via-slate-50 to-blue-100",
-    outerTextClass: "text-slate-950",
-    mutedTextClass: "text-slate-600",
-    panelClass: "border-blue-100 bg-white text-slate-950",
-    iconWrapClass: "bg-blue-600 text-white",
-    badgeClass: "bg-blue-600 text-white",
-    buttonClass: "bg-blue-600 text-white",
     note: "Use this as the branded light mode.",
   },
-] as const;
+];
+
+function ThemeIcon({ themeKey }: { themeKey: ThemeKey }) {
+  if (themeKey === "dark_gold") {
+    return <Moon className="size-5" />;
+  }
+
+  if (themeKey === "light_blue") {
+    return <Sun className="size-5" />;
+  }
+
+  return <Monitor className="size-5" />;
+}
 
 function ThemeMockup({ theme }: { theme: (typeof themes)[number] }) {
-  const Icon = theme.icon;
+  const isSystem = theme.key === "system";
+  const isDarkGold = theme.key === "dark_gold";
+  const isLightBlue = theme.key === "light_blue";
+
+  const articleClass = isLightBlue
+    ? "overflow-hidden rounded-[2rem] bg-gradient-to-br from-white via-slate-50 to-blue-100 p-5 text-slate-950 shadow-2xl"
+    : isDarkGold
+      ? "overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#060606] via-[#11100b] to-[#2b2108] p-5 text-[#fff8df] shadow-2xl"
+      : "overflow-hidden rounded-[2rem] bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 p-5 text-white shadow-2xl";
+
+  const iconClass = isDarkGold
+    ? "grid size-11 place-items-center rounded-2xl bg-[#d4af37] text-black"
+    : "grid size-11 place-items-center rounded-2xl bg-blue-600 text-white";
+
+  const badgeClass = isLightBlue
+    ? "rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white"
+    : isDarkGold
+      ? "rounded-full bg-[#d4af37] px-3 py-1 text-xs font-bold text-black"
+      : "rounded-full bg-slate-950/70 px-3 py-1 text-xs font-bold text-blue-200 ring-1 ring-white/10";
+
+  const keyClass = isLightBlue
+    ? "text-sm text-slate-600"
+    : isDarkGold
+      ? "text-sm text-[#e5d7a5]"
+      : "text-sm text-slate-300";
+
+  const panelClass = isLightBlue
+    ? "rounded-3xl border border-blue-200 bg-white p-5 text-slate-950 shadow-sm"
+    : isDarkGold
+      ? "rounded-3xl border border-[#d4af37]/25 bg-[#0d0c08] p-5 text-[#fff8df]"
+      : "rounded-3xl border border-white/10 bg-white/10 p-5 text-white";
+
+  const dotClass = isLightBlue ? "bg-blue-900" : "bg-current";
+  const eyebrowClass = isLightBlue
+    ? "mb-2 text-xs font-bold uppercase tracking-[0.22em] text-blue-800/70"
+    : "mb-2 text-xs font-bold uppercase tracking-[0.22em] opacity-60";
+
+  const bodyClass = isLightBlue
+    ? "mt-2 text-sm leading-6 text-slate-600"
+    : "mt-2 text-sm leading-6 opacity-70";
+
+  const smallCardClass = isLightBlue
+    ? "rounded-2xl border border-blue-100 bg-blue-50 p-3 text-slate-950"
+    : "rounded-2xl border border-current/10 bg-current/5 p-3";
+
+  const readyClass = isLightBlue ? "mt-1 text-xs text-slate-500" : "mt-1 text-xs opacity-60";
+
+  const buttonClass = isLightBlue
+    ? "mt-5 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-bold text-white"
+    : isDarkGold
+      ? "mt-5 rounded-2xl bg-[#d4af37] px-4 py-2 text-sm font-bold text-black"
+      : "mt-5 rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950";
+
+  const descriptionClass = isLightBlue
+    ? "mt-5 text-sm leading-6 text-slate-600"
+    : isDarkGold
+      ? "mt-5 text-sm leading-6 text-[#e5d7a5]"
+      : "mt-5 text-sm leading-6 text-slate-300";
 
   return (
-    <article className={`overflow-hidden rounded-[2rem] bg-gradient-to-br p-5 shadow-2xl ${theme.shellClass} ${theme.outerTextClass}`}>
+    <article className={articleClass}>
       <div className="mb-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`grid size-11 place-items-center rounded-2xl ${theme.iconWrapClass}`}>
-            <Icon className="size-5" />
+          <div className={iconClass}>
+            <ThemeIcon themeKey={theme.key} />
           </div>
           <div>
             <h2 className="text-xl font-bold">{theme.label}</h2>
-            <p className={`text-sm ${theme.mutedTextClass}`}>{theme.key}</p>
+            <p className={keyClass}>{theme.key}</p>
           </div>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-bold ${theme.badgeClass}`}>
-          V2
-        </span>
+        <span className={badgeClass}>V2</span>
       </div>
 
-      <div className={`rounded-3xl border p-5 ${theme.panelClass}`}>
+      <div className={panelClass}>
         <div className="mb-5 flex items-center justify-between">
           <p className="font-semibold">Loombus</p>
           <div className="flex gap-2">
-            <span className="size-3 rounded-full bg-current opacity-30" />
-            <span className="size-3 rounded-full bg-current opacity-50" />
-            <span className="size-3 rounded-full bg-current opacity-70" />
+            <span className={`size-3 rounded-full ${dotClass} opacity-30`} />
+            <span className={`size-3 rounded-full ${dotClass} opacity-50`} />
+            <span className={`size-3 rounded-full ${dotClass} opacity-70`} />
           </div>
         </div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] opacity-60">Signal Brief</p>
+        <p className={eyebrowClass}>Signal Brief</p>
         <h3 className="text-2xl font-bold tracking-tight">Welcome back, Saint.</h3>
-        <p className="mt-2 text-sm leading-6 opacity-70">
+        <p className={bodyClass}>
           Here is what needs attention across your Loombus activity.
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {["New Replies", "Saved", "Rooms"].map((item) => (
-            <div key={item} className="rounded-2xl border border-current/10 bg-current/5 p-3">
+            <div key={item} className={smallCardClass}>
               <p className="text-sm font-semibold">{item}</p>
-              <p className="mt-1 text-xs opacity-60">Ready</p>
+              <p className={readyClass}>Ready</p>
             </div>
           ))}
         </div>
-        <button className={`mt-5 rounded-2xl px-4 py-2 text-sm font-bold ${theme.buttonClass}`}>
-          View Discussion
-        </button>
+        <button className={buttonClass}>View Discussion</button>
       </div>
 
-      <p className={`mt-5 text-sm leading-6 ${theme.mutedTextClass}`}>{theme.description}</p>
+      <p className={descriptionClass}>{theme.description}</p>
       <p className="mt-2 text-sm font-semibold">{theme.note}</p>
     </article>
   );
