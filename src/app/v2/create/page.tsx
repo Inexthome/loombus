@@ -49,6 +49,9 @@ const DEFAULT_FLAGS: FeatureFlags = {
   v2_rooms: false,
 };
 
+const PRIMARY_ACTION_BUTTON_CLASS =
+  "appearance-none rounded-2xl border border-blue-300/40 bg-blue-500 px-4 py-2 text-center text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:border-blue-300/20 disabled:bg-blue-500/50 disabled:text-white/70";
+
 const DISCUSSION_MODES: Array<{
   key: DiscussionMode;
   label: string;
@@ -543,7 +546,7 @@ export default function V2CreatePage() {
                     key={option.key}
                     type="button"
                     onClick={() => setMode(option.key)}
-                    className={`rounded-3xl border p-4 text-left transition ${
+                    className={`appearance-none rounded-3xl border p-4 text-left transition ${
                       mode === option.key
                         ? "border-blue-300/45 bg-blue-500/15 text-white"
                         : "border-white/10 bg-slate-950/45 text-slate-300 hover:border-blue-300/25 hover:bg-blue-500/10"
@@ -571,7 +574,7 @@ export default function V2CreatePage() {
                   type="button"
                   onClick={saveDraft}
                   disabled={draftLoading}
-                  className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  className={PRIMARY_ACTION_BUTTON_CLASS}
                 >
                   {draftLoading ? "Saving..." : "Save private draft"}
                 </button>
@@ -579,7 +582,7 @@ export default function V2CreatePage() {
                   type="button"
                   onClick={clearDraft}
                   disabled={draftLoading}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex appearance-none items-center justify-center gap-2 rounded-2xl border border-white/15 bg-transparent px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Trash2 className="size-4" />
                   Clear draft
@@ -632,7 +635,7 @@ export default function V2CreatePage() {
                 <button
                   type="button"
                   onClick={copyPreviewDraft}
-                  className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
+                  className={PRIMARY_ACTION_BUTTON_CLASS}
                 >
                   Copy draft
                 </button>
