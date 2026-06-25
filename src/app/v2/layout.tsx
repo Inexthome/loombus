@@ -3,6 +3,7 @@ import { V2ShellLinkRouter } from "./v2-shell-link-router";
 import { V2CreateReviewAction } from "./create/v2-create-review-action";
 import { V2CreateServerCheck } from "./create/v2-create-server-check";
 import { V2CreateFinalLockCheck } from "./create/v2-create-final-lock-check";
+import { V2CreateShadowRecordCheck } from "./create/v2-create-shadow-record-check";
 
 export default function V2Layout({ children }: { children: ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export default function V2Layout({ children }: { children: ReactNode }) {
       <V2CreateReviewAction />
       <V2CreateServerCheck />
       <V2CreateFinalLockCheck />
+      <V2CreateShadowRecordCheck />
     </>
   );
 }
