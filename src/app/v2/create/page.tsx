@@ -49,6 +49,8 @@ const DEFAULT_FLAGS: FeatureFlags = {
   v2_rooms: false,
 };
 
+const AUTOSAVE_DELAY_MS = 1400;
+
 const PRIMARY_ACTION_BUTTON_CLASS =
   "appearance-none rounded-2xl border border-blue-300/40 bg-blue-500 px-4 py-2 text-center text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:border-blue-300/20 disabled:bg-blue-500/50 disabled:text-white/70";
 
@@ -191,8 +193,20 @@ export default function V2CreatePage() {
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [draftLoading, setDraftLoading] = useState(false);
   const [draftMessage, setDraftMessage] = useState("");
+  const [autosaveStatus, setAutosaveStatus] = useState("Autosave idle");
+  const [draftHydrated, setDraftHydrated] = useState(false);
 
   const selectedMode = DISCUSSION_MODES.find((option) => option.key === mode) ?? DISCUSSION_MODES[0];
+
+  const draftFingerprint = useMemo(
+    () => JSON.stringify({ title, topic, body, tags, mode }),
+    [body, mode, tags, title, topic]
+  );
+
+  const hasDraftContent = useMemo(
+    () => Boolean(title.trim() || topic.trim() || body.trim() || tags.trim() || mode !== "open_discussion"),
+    [body, mode, tags, title, topic]
+  );
 
   const readiness = useMemo(() => {
     const checks = [
@@ -226,7 +240,9 @@ export default function V2CreatePage() {
 
   async function loadSavedDraft(nextUserId: string) {
     setDraftLoading(true);
+    setDraftHydrated(false);
     setDraftMessage("");
+    setAutosaveStatus("Loading draft...");
 
     try {
       const { data, error } = await supabase
@@ -236,6 +252,8 @@ export default function V2CreatePage() {
         .maybeSingle();
 
       if (error) {
+        setDraftHydrated(false);
+        setAutosaveStatus("Autosave unavailable");
         setDraftMessage("Draft persistence is not configured yet. Apply the V2 draft migration before testing save and restore.");
         return;
       }
@@ -245,6 +263,8 @@ export default function V2CreatePage() {
       if (!draft) {
         setDraftId(null);
         setDraftSavedAt(null);
+        setDraftHydrated(true);
+        setAutosaveStatus("Ready to autosave");
         return;
       }
 
@@ -255,22 +275,33 @@ export default function V2CreatePage() {
       setBody(draft.body ?? "");
       setTags(draft.tags ?? "");
       setMode(isDiscussionMode(draft.mode) ? draft.mode : "open_discussion");
+      setDraftHydrated(true);
+      setAutosaveStatus("Draft restored");
       setDraftMessage("Private V2 draft restored.");
     } catch {
+      setDraftHydrated(false);
+      setAutosaveStatus("Autosave unavailable");
       setDraftMessage("Unable to load the private V2 draft. V1 Create remains available.");
     } finally {
       setDraftLoading(false);
     }
   }
 
-  async function saveDraft() {
+  async function persistDraft({ manual = false }: { manual?: boolean } = {}) {
     if (!userId) {
-      setDraftMessage("Sign in is required before saving a V2 draft.");
-      return;
+      if (manual) {
+        setDraftMessage("Sign in is required before saving a V2 draft.");
+      }
+      return false;
     }
 
     setDraftLoading(true);
-    setDraftMessage("");
+
+    if (manual) {
+      setDraftMessage("");
+    } else {
+      setAutosaveStatus("Autosaving...");
+    }
 
     try {
       const { data, error } = await supabase
@@ -290,16 +321,31 @@ export default function V2CreatePage() {
         .single();
 
       if (error) {
-        setDraftMessage("Draft could not be saved. Confirm the V2 draft migration has been applied.");
-        return;
+        if (manual) {
+          setDraftMessage("Draft could not be saved. Confirm the V2 draft migration has been applied.");
+        } else {
+          setAutosaveStatus("Autosave failed");
+        }
+        return false;
       }
 
       const savedDraft = data as { id: string; updated_at: string | null };
       setDraftId(savedDraft.id);
       setDraftSavedAt(savedDraft.updated_at);
-      setDraftMessage("Private V2 draft saved.");
+      setAutosaveStatus("Autosaved");
+
+      if (manual) {
+        setDraftMessage("Private V2 draft saved.");
+      }
+
+      return true;
     } catch {
-      setDraftMessage("Draft could not be saved. Current V1 Create remains unchanged.");
+      if (manual) {
+        setDraftMessage("Draft could not be saved. Current V1 Create remains unchanged.");
+      } else {
+        setAutosaveStatus("Autosave failed");
+      }
+      return false;
     } finally {
       setDraftLoading(false);
     }
@@ -313,6 +359,7 @@ export default function V2CreatePage() {
 
     setDraftLoading(true);
     setDraftMessage("");
+    setAutosaveStatus("Clearing draft...");
 
     try {
       if (draftId) {
@@ -322,6 +369,7 @@ export default function V2CreatePage() {
           .eq("user_id", userId);
 
         if (error) {
+          setAutosaveStatus("Clear failed");
           setDraftMessage("Draft could not be cleared. Confirm the V2 draft migration has been applied.");
           return;
         }
@@ -334,8 +382,11 @@ export default function V2CreatePage() {
       setBody("");
       setTags("");
       setMode("open_discussion");
+      setDraftHydrated(true);
+      setAutosaveStatus("Draft cleared");
       setDraftMessage("Private V2 draft cleared.");
     } catch {
+      setAutosaveStatus("Clear failed");
       setDraftMessage("Draft could not be cleared. Current V1 Create remains unchanged.");
     } finally {
       setDraftLoading(false);
@@ -367,6 +418,7 @@ export default function V2CreatePage() {
   async function loadShell() {
     setLoading(true);
     setMessage("");
+    setDraftHydrated(false);
 
     try {
       const { data } = await supabase.auth.getSession();
@@ -391,6 +443,7 @@ export default function V2CreatePage() {
       }
     } catch {
       setPayload(getDefaultShellPayload());
+      setAutosaveStatus("Autosave unavailable");
       setMessage("Unable to verify V2 create preview access. Current Loombus remains on V1.");
     } finally {
       setLoading(false);
@@ -408,6 +461,29 @@ export default function V2CreatePage() {
       data.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const canAutosave =
+      userId &&
+      !loading &&
+      draftHydrated &&
+      payload?.configured &&
+      payload.flags.v2_shell &&
+      payload.version === "v2" &&
+      hasDraftContent;
+
+    if (!canAutosave) {
+      return;
+    }
+
+    setAutosaveStatus("Autosave pending...");
+
+    const timer = window.setTimeout(() => {
+      persistDraft({ manual: false });
+    }, AUTOSAVE_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [draftFingerprint, draftHydrated, hasDraftContent, loading, payload, userId]);
 
   if (loading) {
     return (
@@ -463,7 +539,7 @@ export default function V2CreatePage() {
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Preview</p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">Create a signal with structure.</h1>
             <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-              This gated V2 Create preview can now save one private draft for your signed-in account. It still does not submit or publish posts.
+              This gated V2 Create preview can autosave one private draft for your signed-in account. It still does not submit or publish posts.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -567,16 +643,19 @@ export default function V2CreatePage() {
                 <h2 className="font-bold">Private draft</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                Save one V2 draft to your signed-in account. This does not publish anything and does not affect V1 Create.
+                Autosave stores one V2 draft to your signed-in account. This does not publish anything and does not affect V1 Create.
+              </p>
+              <p className="mt-3 rounded-2xl border border-blue-300/20 bg-blue-400/10 px-3 py-2 text-xs font-semibold text-blue-100">
+                {autosaveStatus}
               </p>
               <div className="mt-4 flex flex-col gap-3">
                 <button
                   type="button"
-                  onClick={saveDraft}
+                  onClick={() => persistDraft({ manual: true })}
                   disabled={draftLoading}
                   className={PRIMARY_ACTION_BUTTON_CLASS}
                 >
-                  {draftLoading ? "Saving..." : "Save private draft"}
+                  {draftLoading ? "Saving..." : "Save now"}
                 </button>
                 <button
                   type="button"
@@ -619,7 +698,7 @@ export default function V2CreatePage() {
                 <h2 className="font-bold text-[#f7d56d]">Preview only</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-[#fff3c4]">
-                This screen can save a private draft, but it still does not write to the live discussions table.
+                This screen can autosave a private draft, but it still does not write to the live discussions table.
               </p>
             </section>
 
