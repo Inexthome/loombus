@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 
 type FeatureFlagKey = "v2_shell" | "v2_signal_brief" | "v2_rooms";
+type AppearanceTheme = "system" | "dark_gold" | "light_blue";
 
 type FeatureFlag = {
   key: string;
@@ -15,6 +16,7 @@ type FeatureFlag = {
 
 type ShellPreference = {
   layout_version: "v1" | "v2" | null;
+  appearance_theme: AppearanceTheme | null;
   home_sections: string[] | null;
   compact_mode: boolean | null;
   last_seen_v2_prompt_at: string | null;
@@ -149,7 +151,7 @@ export async function GET(request: NextRequest) {
     if (user) {
       const { data: preferenceRow, error: preferenceError } = await userSupabase
         .from("loombus_shell_preferences")
-        .select("layout_version, home_sections, compact_mode, last_seen_v2_prompt_at")
+        .select("layout_version, appearance_theme, home_sections, compact_mode, last_seen_v2_prompt_at")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -166,6 +168,11 @@ export async function GET(request: NextRequest) {
       authenticated: Boolean(user),
       flags: resolvedFlags,
       preferences,
+      appearanceOptions: [
+        { key: "system", label: "System", description: "Follows the device setting." },
+        { key: "dark_gold", label: "Dark with Gold", description: "Loombus dark identity theme." },
+        { key: "light_blue", label: "Light with Blue", description: "Current clean light theme." },
+      ],
     });
   } catch (error) {
     console.error("Unexpected V2 shell API failure:", error);
