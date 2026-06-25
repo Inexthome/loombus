@@ -25,6 +25,7 @@ on conflict (key) do nothing;
 create table if not exists public.loombus_shell_preferences (
   user_id uuid primary key references public.profiles(id) on delete cascade,
   layout_version text not null default 'v1' check (layout_version in ('v1', 'v2')),
+  appearance_theme text not null default 'system' check (appearance_theme in ('system', 'dark_gold', 'light_blue')),
   home_sections jsonb not null default '["needs_attention", "featured_signal", "recent_signals", "rooms"]'::jsonb,
   compact_mode boolean not null default false,
   last_seen_v2_prompt_at timestamptz,
@@ -188,7 +189,7 @@ create policy "Readable room discussion links"
   );
 
 comment on table public.loombus_feature_flags is 'Dark-launch flags for Loombus V2 backend and shell features. Rollout allowlists are private and must be resolved server-side.';
-comment on table public.loombus_shell_preferences is 'Per-user shell/layout preference storage for Loombus V2.';
+comment on table public.loombus_shell_preferences is 'Per-user shell/layout preference storage for Loombus V2, including System, Dark Gold, and Light Blue appearance modes.';
 comment on table public.loombus_rooms is 'V2 room directory for communities, labs, local spaces, and private groups.';
 comment on table public.loombus_room_members is 'Membership table for V2 rooms.';
 comment on table public.loombus_room_discussions is 'Join table linking existing discussions into V2 rooms.';
