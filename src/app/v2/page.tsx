@@ -10,6 +10,7 @@ import {
   Lock,
   MessageCircle,
   Plus,
+  Reply,
   Search,
   Settings,
   ShieldCheck,
@@ -47,10 +48,37 @@ type ShellPayload = {
   appearanceOptions?: AppearanceOption[];
 };
 
+type RecentDiscussion = {
+  id: string;
+  title: string;
+  topic: string | null;
+  created_at: string;
+};
+
+type V2HomeData = {
+  greetingName: string;
+  unreadMessages: number;
+  unreadNotifications: number;
+  savedCount: number;
+  authoredDiscussionCount: number;
+  replyCount: number;
+  recentDiscussions: RecentDiscussion[];
+};
+
 const DEFAULT_FLAGS: FeatureFlags = {
   v2_shell: false,
   v2_signal_brief: false,
   v2_rooms: false,
+};
+
+const DEFAULT_HOME_DATA: V2HomeData = {
+  greetingName: "there",
+  unreadMessages: 0,
+  unreadNotifications: 0,
+  savedCount: 0,
+  authoredDiscussionCount: 0,
+  replyCount: 0,
+  recentDiscussions: [],
 };
 
 const V2_NAV_ITEMS = [
@@ -63,24 +91,6 @@ const V2_NAV_ITEMS = [
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-const SIGNAL_CARDS = [
-  {
-    title: "Needs Attention",
-    value: "Ready",
-    description: "Replies, mentions, and updates will land here when wired to live data.",
-  },
-  {
-    title: "Recent Signals",
-    value: "V1 linked",
-    description: "The shell keeps existing discussions available while V2 is being built.",
-  },
-  {
-    title: "Rooms",
-    value: "Hidden",
-    description: "Rooms stay behind their own flag until the room experience is ready.",
-  },
-];
-
 function getDefaultShellPayload(): ShellPayload {
   return {
     version: "v1",
@@ -89,6 +99,57 @@ function getDefaultShellPayload(): ShellPayload {
     flags: DEFAULT_FLAGS,
     preferences: null,
   };
+}
+
+function formatCount(value: number) {
+  return Math.max(0, value).toLocaleString();
+}
+
+function getGreetingName({
+  fullName,
+  username,
+  email,
+}: {
+  fullName?: string | null;
+  username?: string | null;
+  email?: string | null;
+}) {
+  const profileName = fullName?.trim() || username?.trim();
+
+  if (profileName) {
+    return profileName.split(/\s+/)[0] ?? profileName;
+  }
+
+  const emailName = email?.split("@")[0]?.trim();
+
+  return emailName || "there";
+}
+
+function getRecentDiscussionAge(value: string) {
+  const createdAt = new Date(value).getTime();
+
+  if (!Number.isFinite(createdAt)) {
+    return "Recently";
+  }
+
+  const diffMs = Date.now() - createdAt;
+  const diffMinutes = Math.floor(diffMs / 60000);
+
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+  }).format(new Date(value));
 }
 
 function FlagPill({ label, enabled }: { label: string; enabled: boolean }) {
@@ -102,6 +163,42 @@ function FlagPill({ label, enabled }: { label: string; enabled: boolean }) {
     >
       {label}: {enabled ? "on" : "off"}
     </span>
+  );
+}
+
+function MetricCard({
+  title,
+  value,
+  description,
+  href,
+  action,
+  urgent = false,
+}: {
+  title: string;
+  value: string;
+  description: string;
+  href: string;
+  action: string;
+  urgent?: boolean;
+}) {
+  return (
+    <article
+      className={`rounded-3xl border p-4 ${
+        urgent
+          ? "border-blue-300/35 bg-blue-500/15"
+          : "border-white/10 bg-slate-950/45"
+      }`}
+    >
+      <p className="text-sm font-semibold text-slate-300">{title}</p>
+      <p className="mt-2 text-3xl font-bold">{value}</p>
+      <p className="mt-2 min-h-10 text-xs leading-5 text-slate-400">{description}</p>
+      <Link
+        href={href}
+        className="mt-4 inline-flex rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-blue-300/40 hover:text-white"
+      >
+        {action}
+      </Link>
+    </article>
   );
 }
 
@@ -159,11 +256,24 @@ function ShellGateCard({
   );
 }
 
-function V2Shell({ payload }: { payload: ShellPayload }) {
+function V2Shell({
+  payload,
+  homeData,
+  homeLoading,
+  homeMessage,
+}: {
+  payload: ShellPayload;
+  homeData: V2HomeData;
+  homeLoading: boolean;
+  homeMessage: string;
+}) {
   const appearanceLabel = useMemo(() => {
     const preference = payload.preferences?.appearance_theme ?? "system";
     return payload.appearanceOptions?.find((option) => option.key === preference)?.label ?? "System";
   }, [payload.appearanceOptions, payload.preferences?.appearance_theme]);
+
+  const attentionCount = homeData.unreadMessages + homeData.unreadNotifications;
+  const contributionCount = homeData.authoredDiscussionCount + homeData.replyCount;
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#07111f] text-white">
@@ -239,12 +349,12 @@ function V2Shell({ payload }: { payload: ShellPayload }) {
             <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.05] p-6 shadow-2xl shadow-black/30">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-blue-200">Welcome back, Saint.</p>
+                  <p className="text-sm font-semibold text-blue-200">Welcome back, {homeData.greetingName}.</p>
                   <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-5xl">
                     Here is what needs attention across Loombus.
                   </h2>
                   <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-                    This is the first real V2 shell route. It is gated by `v2_shell`, keeps V1 as the default, and is ready to be wired to live V2 sections one piece at a time.
+                    V2 Home is now reading live account activity while keeping Discussions, Create, and all public navigation on the current V1 experience.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-semibold text-emerald-200">
@@ -252,16 +362,89 @@ function V2Shell({ payload }: { payload: ShellPayload }) {
                 </div>
               </div>
 
+              {homeMessage && (
+                <div className="mt-5 rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+                  {homeMessage}
+                </div>
+              )}
+
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                {SIGNAL_CARDS.map((card) => (
-                  <article key={card.title} className="rounded-3xl border border-white/10 bg-slate-950/45 p-4">
-                    <p className="text-sm font-semibold text-slate-300">{card.title}</p>
-                    <p className="mt-2 text-2xl font-bold">{card.value}</p>
-                    <p className="mt-2 text-xs leading-5 text-slate-400">{card.description}</p>
-                  </article>
-                ))}
+                <MetricCard
+                  title="Needs Attention"
+                  value={homeLoading ? "..." : formatCount(attentionCount)}
+                  description={
+                    attentionCount > 0
+                      ? "Unread messages and notifications are waiting for review."
+                      : "No unread messages or notifications right now."
+                  }
+                  href={attentionCount > 0 ? "/notifications" : "/messages"}
+                  action={attentionCount > 0 ? "Review activity" : "View inbox"}
+                  urgent={attentionCount > 0}
+                />
+                <MetricCard
+                  title="Your Signal"
+                  value={homeLoading ? "..." : formatCount(contributionCount)}
+                  description="Discussions and replies you have contributed across Loombus."
+                  href="/my-activity"
+                  action="Open activity"
+                  urgent={contributionCount > 0}
+                />
+                <MetricCard
+                  title="Saved Ideas"
+                  value={homeLoading ? "..." : formatCount(homeData.savedCount)}
+                  description={
+                    homeData.savedCount > 0
+                      ? "Return to discussions you marked as worth keeping."
+                      : "Save useful discussions to build your personal signal shelf."
+                  }
+                  href="/saved"
+                  action={homeData.savedCount > 0 ? "Review saved" : "Browse discussions"}
+                  urgent={homeData.savedCount > 0}
+                />
               </div>
             </div>
+
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-200">Recent Signals</p>
+                  <h2 className="mt-2 text-2xl font-bold">Latest discussions</h2>
+                </div>
+                <Link href="/discussions" className="rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-blue-300/40 hover:text-white">
+                  Open V1 feed
+                </Link>
+              </div>
+
+              <div className="space-y-3">
+                {homeLoading && (
+                  <div className="rounded-3xl border border-white/10 bg-slate-950/45 p-4 text-sm text-slate-300">
+                    Loading recent discussions...
+                  </div>
+                )}
+
+                {!homeLoading && homeData.recentDiscussions.length === 0 && (
+                  <div className="rounded-3xl border border-white/10 bg-slate-950/45 p-4 text-sm text-slate-300">
+                    No recent discussions are available yet.
+                  </div>
+                )}
+
+                {!homeLoading && homeData.recentDiscussions.map((discussion) => (
+                  <Link
+                    key={discussion.id}
+                    href={`/discussions/${discussion.id}`}
+                    className="block rounded-3xl border border-white/10 bg-slate-950/45 p-4 transition hover:border-blue-300/35 hover:bg-blue-500/10"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">
+                        {discussion.topic || "Discussion"}
+                      </p>
+                      <span className="text-xs text-slate-500">{getRecentDiscussionAge(discussion.created_at)}</span>
+                    </div>
+                    <h3 className="mt-2 text-lg font-bold tracking-tight text-white">{discussion.title}</h3>
+                  </Link>
+                ))}
+              </div>
+            </section>
 
             <div className="grid gap-4 md:grid-cols-2">
               <Link href="/discussions" className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-5 transition hover:border-blue-300/30 hover:bg-blue-500/10">
@@ -294,6 +477,26 @@ function V2Shell({ payload }: { payload: ShellPayload }) {
               </p>
             </section>
 
+            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+              <div className="flex items-center gap-3">
+                <Reply className="size-5 text-blue-200" />
+                <h2 className="font-bold">Your activity</h2>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-3">
+                  <p className="text-2xl font-bold">{homeLoading ? "..." : formatCount(homeData.authoredDiscussionCount)}</p>
+                  <p className="mt-1 text-xs text-slate-400">Discussions</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-3">
+                  <p className="text-2xl font-bold">{homeLoading ? "..." : formatCount(homeData.replyCount)}</p>
+                  <p className="mt-1 text-xs text-slate-400">Replies</p>
+                </div>
+              </div>
+              <Link href="/my-activity" className="mt-4 inline-flex rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-blue-300/40 hover:text-white">
+                View activity
+              </Link>
+            </section>
+
             <section id="rooms" className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
               <div className="flex items-center gap-3">
                 <Users className="size-5 text-blue-200" />
@@ -312,7 +515,7 @@ function V2Shell({ payload }: { payload: ShellPayload }) {
                 <h2 className="font-bold text-[#f7d56d]">Next wiring</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-[#fff3c4]">
-                Next PRs can replace each placeholder with live V2 Home, Discussions, Create, Rooms, and Messages components without touching V1 defaults.
+                V2 Home now reads live account data. Next, we can wire V2-specific Discussions, Create, Rooms, and Messages without touching V1 defaults.
               </p>
             </section>
           </aside>
@@ -324,8 +527,112 @@ function V2Shell({ payload }: { payload: ShellPayload }) {
 
 export default function V2Page() {
   const [payload, setPayload] = useState<ShellPayload | null>(null);
+  const [homeData, setHomeData] = useState<V2HomeData>(DEFAULT_HOME_DATA);
+  const [homeLoading, setHomeLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [homeMessage, setHomeMessage] = useState("");
+
+  async function loadV2HomeData({
+    accessToken,
+    userId,
+    email,
+  }: {
+    accessToken: string;
+    userId: string;
+    email: string | null;
+  }) {
+    setHomeLoading(true);
+    setHomeMessage("");
+
+    try {
+      const [
+        profileResult,
+        unreadMessagesResult,
+        notificationsResult,
+        savedResult,
+        authoredResult,
+        repliesResult,
+        recentResult,
+      ] = await Promise.allSettled([
+        supabase
+          .from("profiles")
+          .select("full_name, username")
+          .eq("id", userId)
+          .maybeSingle(),
+        fetch("/api/messages/unread-count", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }).then((response) => (response.ok ? response.json() : { unreadCount: 0 })),
+        supabase
+          .from("notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .is("read_at", null),
+        supabase
+          .from("bookmarks")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId),
+        supabase
+          .from("discussions")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .is("deleted_at", null),
+        supabase
+          .from("replies")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .is("deleted_at", null),
+        supabase
+          .from("discussions")
+          .select("id, title, topic, created_at")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(5),
+      ]);
+
+      const profile =
+        profileResult.status === "fulfilled" && !profileResult.value.error
+          ? (profileResult.value.data as { full_name: string | null; username: string | null } | null)
+          : null;
+
+      const unreadMessages =
+        unreadMessagesResult.status === "fulfilled"
+          ? Number(unreadMessagesResult.value?.unreadCount ?? 0)
+          : 0;
+
+      const unreadNotifications =
+        notificationsResult.status === "fulfilled" ? notificationsResult.value.count ?? 0 : 0;
+      const savedCount = savedResult.status === "fulfilled" ? savedResult.value.count ?? 0 : 0;
+      const authoredDiscussionCount = authoredResult.status === "fulfilled" ? authoredResult.value.count ?? 0 : 0;
+      const replyCount = repliesResult.status === "fulfilled" ? repliesResult.value.count ?? 0 : 0;
+      const recentDiscussions =
+        recentResult.status === "fulfilled" && !recentResult.value.error
+          ? ((recentResult.value.data ?? []) as RecentDiscussion[])
+          : [];
+
+      setHomeData({
+        greetingName: getGreetingName({
+          fullName: profile?.full_name,
+          username: profile?.username,
+          email,
+        }),
+        unreadMessages,
+        unreadNotifications,
+        savedCount,
+        authoredDiscussionCount,
+        replyCount,
+        recentDiscussions,
+      });
+    } catch {
+      setHomeData((current) => ({
+        ...current,
+        greetingName: current.greetingName || "there",
+      }));
+      setHomeMessage("Some V2 Home activity could not load. V1 remains available.");
+    } finally {
+      setHomeLoading(false);
+    }
+  }
 
   async function loadShell() {
     setLoading(true);
@@ -340,6 +647,22 @@ export default function V2Page() {
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
 
       setPayload(nextPayload);
+
+      if (
+        accessToken &&
+        data.session?.user?.id &&
+        nextPayload.configured &&
+        nextPayload.flags.v2_shell &&
+        nextPayload.version === "v2"
+      ) {
+        await loadV2HomeData({
+          accessToken,
+          userId: data.session.user.id,
+          email: data.session.user.email ?? null,
+        });
+      } else {
+        setHomeData(DEFAULT_HOME_DATA);
+      }
     } catch {
       setPayload(getDefaultShellPayload());
       setMessage("Unable to verify V2 shell access. Current Loombus remains on V1.");
@@ -400,5 +723,12 @@ export default function V2Page() {
     );
   }
 
-  return <V2Shell payload={payload} />;
+  return (
+    <V2Shell
+      payload={payload}
+      homeData={homeData}
+      homeLoading={homeLoading}
+      homeMessage={homeMessage}
+    />
+  );
 }
