@@ -3,16 +3,36 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-function isV2DiscussionsRailLink(target: EventTarget | null) {
+const V2_SHELL_LINK_TARGETS: Record<string, string> = {
+  Discussions: "/v2/discussions",
+  Create: "/v2/create",
+};
+
+function getV2ShellPreviewTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
-    return false;
+    return null;
   }
 
   const anchor = target.closest<HTMLAnchorElement>(
-    'a[href="/discussions"][aria-label="Discussions"]'
+    'a[aria-label="Discussions"], a[aria-label="Create"]'
   );
 
-  return Boolean(anchor);
+  if (!anchor) {
+    return null;
+  }
+
+  const label = anchor.getAttribute("aria-label");
+  const href = anchor.getAttribute("href");
+
+  if (label === "Discussions" && href === "/discussions") {
+    return V2_SHELL_LINK_TARGETS.Discussions;
+  }
+
+  if (label === "Create" && href === "/create") {
+    return V2_SHELL_LINK_TARGETS.Create;
+  }
+
+  return null;
 }
 
 export function V2ShellLinkRouter() {
@@ -20,13 +40,15 @@ export function V2ShellLinkRouter() {
 
   useEffect(() => {
     function handleV2ShellLinkClick(event: MouseEvent) {
-      if (!isV2DiscussionsRailLink(event.target)) {
+      const previewTarget = getV2ShellPreviewTarget(event.target);
+
+      if (!previewTarget) {
         return;
       }
 
       event.preventDefault();
       event.stopPropagation();
-      router.push("/v2/discussions");
+      router.push(previewTarget);
     }
 
     document.addEventListener("click", handleV2ShellLinkClick, true);
