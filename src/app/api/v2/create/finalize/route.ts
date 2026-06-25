@@ -10,6 +10,7 @@ type FeatureFlag = {
 };
 
 const FINAL_ACTION_LOCKED = true;
+const V2_CREATE_RELEASE_GATE_KEY = "v2_create_publish_enabled";
 
 function getBearerToken(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -35,6 +36,16 @@ function isFlagEnabledForUser(flag: FeatureFlag | null | undefined, userId: stri
   if (!userId || rolloutPercentage <= 0) return false;
 
   return getDeterministicBucket(userId) < rolloutPercentage;
+}
+
+async function loadFlag(adminSupabase: ReturnType<typeof createClient>, key: string) {
+  const { data, error } = await adminSupabase
+    .from("loombus_feature_flags")
+    .select("enabled, rollout_percentage, allowed_user_ids")
+    .eq("key", key)
+    .maybeSingle();
+
+  return { data: (data as FeatureFlag | null) ?? null, error };
 }
 
 export async function POST(request: NextRequest) {
@@ -91,14 +102,24 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const { data: flag, error: flagError } = await adminSupabase
-      .from("loombus_feature_flags")
-      .select("enabled, rollout_percentage, allowed_user_ids")
-      .eq("key", "v2_shell")
-      .maybeSingle();
+    const shellGate = await loadFlag(adminSupabase, "v2_shell");
 
-    if (flagError || !isFlagEnabledForUser((flag as FeatureFlag | null) ?? null, user.id)) {
+    if (shellGate.error || !isFlagEnabledForUser(shellGate.data, user.id)) {
       return NextResponse.json({ ok: false, locked: true, reason: "V2 access is required." }, { status: 403 });
+    }
+
+    const releaseGate = await loadFlag(adminSupabase, V2_CREATE_RELEASE_GATE_KEY);
+
+    if (releaseGate.error || !isFlagEnabledForUser(releaseGate.data, user.id)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          locked: true,
+          status: "rollback_guard_active",
+          reason: "V2 Create final action is blocked by the release gate.",
+        },
+        { status: 423 }
+      );
     }
 
     return NextResponse.json(
