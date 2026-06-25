@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
+type FeatureFlagKey = "v2_shell" | "v2_signal_brief" | "v2_rooms";
+
 type FeatureFlag = {
   key: string;
   enabled: boolean | null;
@@ -18,7 +20,7 @@ type ShellPreference = {
   last_seen_v2_prompt_at: string | null;
 };
 
-const DEFAULT_FLAGS = ["v2_shell", "v2_signal_brief", "v2_rooms"] as const;
+const DEFAULT_FLAGS: FeatureFlagKey[] = ["v2_shell", "v2_signal_brief", "v2_rooms"];
 
 function getBearerToken(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -28,6 +30,14 @@ function getBearerToken(request: NextRequest) {
   }
 
   return authHeader.replace("Bearer ", "").trim() || null;
+}
+
+function getDefaultFlagResponse(): Record<FeatureFlagKey, boolean> {
+  return {
+    v2_shell: false,
+    v2_signal_brief: false,
+    v2_rooms: false,
+  };
 }
 
 function getDeterministicBucket(userId: string) {
@@ -88,7 +98,7 @@ export async function GET(request: NextRequest) {
     const { data: flags, error: flagError } = await supabase
       .from("loombus_feature_flags")
       .select("key, enabled, rollout_percentage, allowed_user_ids, metadata")
-      .in("key", [...DEFAULT_FLAGS]);
+      .in("key", DEFAULT_FLAGS);
 
     if (flagError) {
       console.error("V2 shell flag lookup failed:", flagError.message);
@@ -97,15 +107,17 @@ export async function GET(request: NextRequest) {
         version: "v1",
         configured: false,
         authenticated: Boolean(user),
-        flags: Object.fromEntries(DEFAULT_FLAGS.map((key) => [key, false])),
+        flags: getDefaultFlagResponse(),
         preferences: null,
       });
     }
 
     const flagMap = new Map((flags ?? []).map((flag) => [flag.key, flag as FeatureFlag]));
-    const resolvedFlags = Object.fromEntries(
-      DEFAULT_FLAGS.map((key) => [key, isFlagEnabledForUser(flagMap.get(key), user?.id ?? null)])
-    );
+    const resolvedFlags: Record<FeatureFlagKey, boolean> = {
+      v2_shell: isFlagEnabledForUser(flagMap.get("v2_shell"), user?.id ?? null),
+      v2_signal_brief: isFlagEnabledForUser(flagMap.get("v2_signal_brief"), user?.id ?? null),
+      v2_rooms: isFlagEnabledForUser(flagMap.get("v2_rooms"), user?.id ?? null),
+    };
 
     let preferences: ShellPreference | null = null;
 
@@ -138,7 +150,7 @@ export async function GET(request: NextRequest) {
         version: "v1",
         configured: false,
         authenticated: false,
-        flags: Object.fromEntries(DEFAULT_FLAGS.map((key) => [key, false])),
+        flags: getDefaultFlagResponse(),
         preferences: null,
       },
       { status: 200 }
