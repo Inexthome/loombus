@@ -13,16 +13,14 @@ function getV2ShellPreviewTarget(target: EventTarget | null) {
     return null;
   }
 
-  const anchor = target.closest<HTMLAnchorElement>(
-    'a[aria-label="Discussions"], a[aria-label="Create"]'
-  );
+  const anchor = target.closest<HTMLAnchorElement>("a");
 
   if (!anchor) {
     return null;
   }
 
   const label = anchor.getAttribute("aria-label");
-  const href = anchor.getAttribute("href");
+  const href = anchor.getAttribute("href") ?? "";
 
   if (label === "Discussions" && href === "/discussions") {
     return V2_SHELL_LINK_TARGETS.Discussions;
@@ -30,6 +28,10 @@ function getV2ShellPreviewTarget(target: EventTarget | null) {
 
   if (label === "Create" && href === "/create") {
     return V2_SHELL_LINK_TARGETS.Create;
+  }
+
+  if (href.indexOf("/discussions/") === 0) {
+    return "/v2" + href;
   }
 
   return null;
