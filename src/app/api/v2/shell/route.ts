@@ -75,7 +75,9 @@ function isFlagEnabledForUser(flag: FeatureFlag | undefined, userId: string | nu
 export async function GET(request: NextRequest) {
   try {
     const token = getBearerToken(request);
-    const supabase = createClient(
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    const userSupabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       token
@@ -92,10 +94,33 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
     } = token
-      ? await supabase.auth.getUser(token)
+      ? await userSupabase.auth.getUser(token)
       : { data: { user: null } };
 
-    const { data: flags, error: flagError } = await supabase
+    if (!serviceKey) {
+      console.error("V2 shell flag lookup failed: missing service role key.");
+
+      return NextResponse.json({
+        version: "v1",
+        configured: false,
+        authenticated: Boolean(user),
+        flags: getDefaultFlagResponse(),
+        preferences: null,
+      });
+    }
+
+    const adminSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceKey,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+    const { data: flags, error: flagError } = await adminSupabase
       .from("loombus_feature_flags")
       .select("key, enabled, rollout_percentage, allowed_user_ids, metadata")
       .in("key", DEFAULT_FLAGS);
@@ -122,7 +147,7 @@ export async function GET(request: NextRequest) {
     let preferences: ShellPreference | null = null;
 
     if (user) {
-      const { data: preferenceRow, error: preferenceError } = await supabase
+      const { data: preferenceRow, error: preferenceError } = await userSupabase
         .from("loombus_shell_preferences")
         .select("layout_version, home_sections, compact_mode, last_seen_v2_prompt_at")
         .eq("user_id", user.id)
