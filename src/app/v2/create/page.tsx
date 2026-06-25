@@ -49,6 +49,10 @@ const DEFAULT_FLAGS: FeatureFlags = {
   v2_rooms: false,
 };
 
+const AUTOSAVE_DELAY_MS = 1400;
+const DRAFT_MIGRATION_REQUIRED_MESSAGE =
+  "Draft storage is not configured yet. Apply PR #102 Supabase migration before testing save, restore, or autosave.";
+
 const PRIMARY_ACTION_BUTTON_CLASS =
   "appearance-none rounded-2xl border border-blue-300/40 bg-blue-500 px-4 py-2 text-center text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:border-blue-300/20 disabled:bg-blue-500/50 disabled:text-white/70";
 
@@ -135,15 +139,18 @@ function GateCard({
   payload?: ShellPayload | null;
 }) {
   return (
-    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
-      <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
+    <main
+      className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white"
+      style={{ colorScheme: "dark", backgroundColor: "#020617" }}
+    >
+      <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
         <div className="mb-6 flex items-center gap-3">
           <div className="grid size-12 place-items-center rounded-2xl bg-blue-500/15 text-blue-200 ring-1 ring-blue-300/20">
             {loading ? <Loader2 className="size-5 animate-spin" /> : <Lock className="size-5" />}
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2</p>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
           </div>
         </div>
 
@@ -191,8 +198,20 @@ export default function V2CreatePage() {
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [draftLoading, setDraftLoading] = useState(false);
   const [draftMessage, setDraftMessage] = useState("");
+  const [autosaveStatus, setAutosaveStatus] = useState("Autosave idle");
+  const [draftHydrated, setDraftHydrated] = useState(false);
 
   const selectedMode = DISCUSSION_MODES.find((option) => option.key === mode) ?? DISCUSSION_MODES[0];
+
+  const draftFingerprint = useMemo(
+    () => JSON.stringify({ title, topic, body, tags, mode }),
+    [body, mode, tags, title, topic]
+  );
+
+  const hasDraftContent = useMemo(
+    () => Boolean(title.trim() || topic.trim() || body.trim() || tags.trim() || mode !== "open_discussion"),
+    [body, mode, tags, title, topic]
+  );
 
   const readiness = useMemo(() => {
     const checks = [
@@ -226,7 +245,9 @@ export default function V2CreatePage() {
 
   async function loadSavedDraft(nextUserId: string) {
     setDraftLoading(true);
+    setDraftHydrated(false);
     setDraftMessage("");
+    setAutosaveStatus("Loading draft...");
 
     try {
       const { data, error } = await supabase
@@ -236,7 +257,9 @@ export default function V2CreatePage() {
         .maybeSingle();
 
       if (error) {
-        setDraftMessage("Draft persistence is not configured yet. Apply the V2 draft migration before testing save and restore.");
+        setDraftHydrated(false);
+        setAutosaveStatus("Migration required");
+        setDraftMessage(DRAFT_MIGRATION_REQUIRED_MESSAGE);
         return;
       }
 
@@ -245,6 +268,8 @@ export default function V2CreatePage() {
       if (!draft) {
         setDraftId(null);
         setDraftSavedAt(null);
+        setDraftHydrated(true);
+        setAutosaveStatus("Ready to autosave");
         return;
       }
 
@@ -255,22 +280,33 @@ export default function V2CreatePage() {
       setBody(draft.body ?? "");
       setTags(draft.tags ?? "");
       setMode(isDiscussionMode(draft.mode) ? draft.mode : "open_discussion");
+      setDraftHydrated(true);
+      setAutosaveStatus("Draft restored");
       setDraftMessage("Private V2 draft restored.");
     } catch {
+      setDraftHydrated(false);
+      setAutosaveStatus("Autosave unavailable");
       setDraftMessage("Unable to load the private V2 draft. V1 Create remains available.");
     } finally {
       setDraftLoading(false);
     }
   }
 
-  async function saveDraft() {
+  async function persistDraft({ manual = false }: { manual?: boolean } = {}) {
     if (!userId) {
-      setDraftMessage("Sign in is required before saving a V2 draft.");
-      return;
+      if (manual) {
+        setDraftMessage("Sign in is required before saving a V2 draft.");
+      }
+      return false;
     }
 
     setDraftLoading(true);
-    setDraftMessage("");
+
+    if (manual) {
+      setDraftMessage("");
+    } else {
+      setAutosaveStatus("Autosaving...");
+    }
 
     try {
       const { data, error } = await supabase
@@ -290,16 +326,28 @@ export default function V2CreatePage() {
         .single();
 
       if (error) {
-        setDraftMessage("Draft could not be saved. Confirm the V2 draft migration has been applied.");
-        return;
+        setAutosaveStatus("Migration required");
+        setDraftMessage(DRAFT_MIGRATION_REQUIRED_MESSAGE);
+        return false;
       }
 
       const savedDraft = data as { id: string; updated_at: string | null };
       setDraftId(savedDraft.id);
       setDraftSavedAt(savedDraft.updated_at);
-      setDraftMessage("Private V2 draft saved.");
+      setAutosaveStatus("Autosaved");
+
+      if (manual) {
+        setDraftMessage("Private V2 draft saved.");
+      }
+
+      return true;
     } catch {
-      setDraftMessage("Draft could not be saved. Current V1 Create remains unchanged.");
+      if (manual) {
+        setDraftMessage("Draft could not be saved. Current V1 Create remains unchanged.");
+      } else {
+        setAutosaveStatus("Autosave failed");
+      }
+      return false;
     } finally {
       setDraftLoading(false);
     }
@@ -313,6 +361,7 @@ export default function V2CreatePage() {
 
     setDraftLoading(true);
     setDraftMessage("");
+    setAutosaveStatus("Clearing draft...");
 
     try {
       if (draftId) {
@@ -322,7 +371,8 @@ export default function V2CreatePage() {
           .eq("user_id", userId);
 
         if (error) {
-          setDraftMessage("Draft could not be cleared. Confirm the V2 draft migration has been applied.");
+          setAutosaveStatus("Migration required");
+          setDraftMessage(DRAFT_MIGRATION_REQUIRED_MESSAGE);
           return;
         }
       }
@@ -334,8 +384,11 @@ export default function V2CreatePage() {
       setBody("");
       setTags("");
       setMode("open_discussion");
+      setDraftHydrated(true);
+      setAutosaveStatus("Draft cleared");
       setDraftMessage("Private V2 draft cleared.");
     } catch {
+      setAutosaveStatus("Clear failed");
       setDraftMessage("Draft could not be cleared. Current V1 Create remains unchanged.");
     } finally {
       setDraftLoading(false);
@@ -367,6 +420,7 @@ export default function V2CreatePage() {
   async function loadShell() {
     setLoading(true);
     setMessage("");
+    setDraftHydrated(false);
 
     try {
       const { data } = await supabase.auth.getSession();
@@ -391,6 +445,7 @@ export default function V2CreatePage() {
       }
     } catch {
       setPayload(getDefaultShellPayload());
+      setAutosaveStatus("Autosave unavailable");
       setMessage("Unable to verify V2 create preview access. Current Loombus remains on V1.");
     } finally {
       setLoading(false);
@@ -408,6 +463,29 @@ export default function V2CreatePage() {
       data.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    const canAutosave =
+      userId &&
+      !loading &&
+      draftHydrated &&
+      payload?.configured &&
+      payload.flags.v2_shell &&
+      payload.version === "v2" &&
+      hasDraftContent;
+
+    if (!canAutosave) {
+      return;
+    }
+
+    setAutosaveStatus("Autosave pending...");
+
+    const timer = window.setTimeout(() => {
+      persistDraft({ manual: false });
+    }, AUTOSAVE_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [draftFingerprint, draftHydrated, hasDraftContent, loading, payload, userId]);
 
   if (loading) {
     return (
@@ -450,20 +528,23 @@ export default function V2CreatePage() {
   }
 
   return (
-    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#07111f] text-white">
+    <main
+      className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#07111f] text-white"
+      style={{ colorScheme: "dark", backgroundColor: "#07111f" }}
+    >
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.26),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(212,175,55,0.18),_transparent_32%)]" />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-white/[0.05] p-5 shadow-2xl shadow-black/30 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 text-white sm:px-6 lg:px-8">
+        <header className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <Link href="/v2" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-200 transition hover:text-white">
               <ArrowLeft className="size-4" />
               Back to V2 Home
             </Link>
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Preview</p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight sm:text-5xl">Create a signal with structure.</h1>
+            <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Create a signal with structure.</h1>
             <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-              This gated V2 Create preview can now save one private draft for your signed-in account. It still does not submit or publish posts.
+              This gated V2 Create preview can autosave one private draft for your signed-in account. It still does not submit or publish posts.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -475,17 +556,17 @@ export default function V2CreatePage() {
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-5">
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <PenLine className="size-5 text-blue-200" />
-                  <h2 className="text-xl font-bold">Signal draft</h2>
+                  <h2 className="text-xl font-bold text-white">Signal draft</h2>
                 </div>
                 <span className="text-xs text-slate-400">{draftLoading ? "Syncing draft..." : formatDraftTime(draftSavedAt)}</span>
               </div>
 
               {draftMessage && (
-                <div className="mt-4 rounded-2xl border border-blue-300/20 bg-blue-400/10 px-4 py-3 text-sm text-blue-100">
+                <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm font-medium text-amber-100">
                   {draftMessage}
                 </div>
               )}
@@ -497,7 +578,7 @@ export default function V2CreatePage() {
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
                     placeholder="Ask a clear question or frame a useful discussion"
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
                   />
                 </label>
 
@@ -507,7 +588,7 @@ export default function V2CreatePage() {
                     value={topic}
                     onChange={(event) => setTopic(event.target.value)}
                     placeholder="Technology, community, business, health, education..."
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
                   />
                 </label>
 
@@ -518,7 +599,7 @@ export default function V2CreatePage() {
                     onChange={(event) => setBody(event.target.value)}
                     placeholder="Add context, what you are trying to understand, and what kind of replies would be useful."
                     rows={9}
-                    className="w-full resize-y rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
+                    className="w-full resize-y rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
                   />
                 </label>
 
@@ -528,16 +609,16 @@ export default function V2CreatePage() {
                     value={tags}
                     onChange={(event) => setTags(event.target.value)}
                     placeholder="clarity, ai, jacksonville, policy"
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
                   />
                 </label>
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <MessageCircle className="size-5 text-blue-200" />
-                <h2 className="text-xl font-bold">Discussion mode</h2>
+                <h2 className="text-xl font-bold text-white">Discussion mode</h2>
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -549,7 +630,7 @@ export default function V2CreatePage() {
                     className={`appearance-none rounded-3xl border p-4 text-left transition ${
                       mode === option.key
                         ? "border-blue-300/45 bg-blue-500/15 text-white"
-                        : "border-white/10 bg-slate-950/45 text-slate-300 hover:border-blue-300/25 hover:bg-blue-500/10"
+                        : "border-white/10 bg-slate-950/80 text-slate-300 hover:border-blue-300/25 hover:bg-blue-500/10"
                     }`}
                   >
                     <span className="text-sm font-bold">{option.label}</span>
@@ -561,22 +642,25 @@ export default function V2CreatePage() {
           </div>
 
           <aside className="space-y-4">
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <Save className="size-5 text-blue-200" />
-                <h2 className="font-bold">Private draft</h2>
+                <h2 className="font-bold text-white">Private draft</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-slate-300">
-                Save one V2 draft to your signed-in account. This does not publish anything and does not affect V1 Create.
+                Autosave stores one V2 draft to your signed-in account. This does not publish anything and does not affect V1 Create.
+              </p>
+              <p className="mt-3 rounded-2xl border border-blue-300/20 bg-blue-400/10 px-3 py-2 text-xs font-semibold text-blue-100">
+                {autosaveStatus}
               </p>
               <div className="mt-4 flex flex-col gap-3">
                 <button
                   type="button"
-                  onClick={saveDraft}
+                  onClick={() => persistDraft({ manual: true })}
                   disabled={draftLoading}
                   className={PRIMARY_ACTION_BUTTON_CLASS}
                 >
-                  {draftLoading ? "Saving..." : "Save private draft"}
+                  {draftLoading ? "Saving..." : "Save now"}
                 </button>
                 <button
                   type="button"
@@ -590,10 +674,10 @@ export default function V2CreatePage() {
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="size-5 text-emerald-200" />
-                <h2 className="font-bold">Draft readiness</h2>
+                <h2 className="font-bold text-white">Draft readiness</h2>
               </div>
 
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
@@ -605,7 +689,7 @@ export default function V2CreatePage() {
 
               <div className="mt-4 space-y-2">
                 {readiness.checks.map((check) => (
-                  <div key={check.label} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/45 px-3 py-2 text-sm">
+                  <div key={check.label} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm">
                     <span className="text-slate-300">{check.label}</span>
                     <span className={check.done ? "text-emerald-200" : "text-slate-500"}>{check.done ? "Ready" : "Needed"}</span>
                   </div>
@@ -613,17 +697,17 @@ export default function V2CreatePage() {
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-[#d4af37]/25 bg-[#d4af37]/10 p-5">
+            <section className="rounded-[2rem] border border-[#d4af37]/25 bg-[#d4af37]/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <Sparkles className="size-5 text-[#f7d56d]" />
                 <h2 className="font-bold text-[#f7d56d]">Preview only</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-[#fff3c4]">
-                This screen can save a private draft, but it still does not write to the live discussions table.
+                This screen can autosave a private draft, but it still does not write to the live discussions table.
               </p>
             </section>
 
-            <section className="rounded-[2rem] border border-emerald-400/25 bg-emerald-400/10 p-5">
+            <section className="rounded-[2rem] border border-emerald-400/25 bg-emerald-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="size-5 text-emerald-200" />
                 <h2 className="font-bold text-emerald-100">Safe handoff</h2>
@@ -649,10 +733,10 @@ export default function V2CreatePage() {
               {copyMessage && <p className="mt-3 text-xs leading-5 text-emerald-50/80">{copyMessage}</p>}
             </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-5">
+            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <FileText className="size-5 text-blue-200" />
-                <h2 className="font-bold">Selected mode</h2>
+                <h2 className="font-bold text-white">Selected mode</h2>
               </div>
               <p className="mt-3 text-sm font-semibold text-white">{selectedMode?.label}</p>
               <p className="mt-2 text-sm leading-6 text-slate-300">{selectedMode?.description}</p>
