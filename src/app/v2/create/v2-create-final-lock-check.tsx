@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { CheckCircle2, Loader2, Lock, ServerCog } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Loader2, Lock, ServerCog } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
@@ -81,6 +82,14 @@ export function V2CreateFinalLockCheck() {
         {loading ? <Loader2 className="size-4 animate-spin" /> : <ServerCog className="size-4" />}
         {loading ? "Checking..." : "Verify server lock"}
       </button>
+
+      <Link
+        href="/v2/create/readiness"
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-300/30 bg-blue-500/15 px-4 py-2 text-sm font-bold text-blue-50 transition hover:bg-blue-500/25"
+      >
+        <ClipboardCheck className="size-4" />
+        Open readiness checklist
+      </Link>
 
       {message && <p className="mt-3 text-xs leading-5 text-slate-300">{message}</p>}
 
