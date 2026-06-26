@@ -10,7 +10,7 @@ import {
   FileText,
   Loader2,
   Lock,
-  ServerCog,
+  Send,
   ShieldCheck,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
@@ -46,6 +46,19 @@ type ServerCheck = {
     tags: string[];
   } | null;
   draftUpdatedAt?: string | null;
+};
+
+type FinalizeResult = {
+  ok?: boolean;
+  locked?: boolean;
+  status?: string;
+  reason?: string;
+  discussion?: {
+    id?: string;
+  } | null;
+  code?: string;
+  category?: string;
+  provider?: string;
 };
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -117,10 +130,7 @@ function GateCard({
   payload?: ShellPayload | null;
 }) {
   return (
-    <main
-      className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white"
-      style={{ colorScheme: "dark", backgroundColor: "#020617" }}
-    >
+    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
       <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
         <div className="mb-6 flex items-center gap-3">
           <div className="grid size-12 place-items-center rounded-2xl bg-blue-500/15 text-blue-200 ring-1 ring-blue-300/20">
@@ -143,16 +153,10 @@ function GateCard({
         )}
 
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link
-            href="/v2/create/review"
-            className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
-          >
+          <Link href="/v2/create/review" className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200">
             Back to Review
           </Link>
-          <Link
-            href="/create"
-            className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
-          >
+          <Link href="/create" className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">
             Open V1 Create
           </Link>
         </div>
@@ -168,9 +172,11 @@ export default function V2CreateConfirmPage() {
   const [message, setMessage] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
 
   const ready = Boolean(serverCheck?.ok && serverCheck.preview);
   const preview = serverCheck?.preview ?? null;
+  const canFinalize = ready && acknowledged && !finalizing;
 
   const previewText = useMemo(() => {
     if (!preview) return "";
@@ -192,7 +198,7 @@ export default function V2CreateConfirmPage() {
 
     try {
       await navigator.clipboard.writeText(previewText);
-      setCopyMessage("Confirmation preview copied. Final V2 publishing remains locked.");
+      setCopyMessage("Confirmation preview copied. Review it before using the guarded final action.");
     } catch {
       setCopyMessage("Unable to copy from this browser. You can still manually copy the preview.");
     }
@@ -248,6 +254,46 @@ export default function V2CreateConfirmPage() {
     }
   }
 
+  async function finalizeV2Draft() {
+    if (!canFinalize) {
+      return;
+    }
+
+    setFinalizing(true);
+    setMessage("");
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        setMessage("Sign in again before publishing.");
+        return;
+      }
+
+      const finalizeResponse = await fetch("/api/v2/create/finalize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ finalizeAcknowledged: true }),
+      });
+      const finalizePayload = (await finalizeResponse.json().catch(() => null)) as FinalizeResult | null;
+
+      if (!finalizeResponse.ok || !finalizePayload?.ok || !finalizePayload.discussion?.id) {
+        setMessage(finalizePayload?.reason ?? "The guarded V2 publish could not complete.");
+        return;
+      }
+
+      window.location.href = `/discussions/${finalizePayload.discussion.id}`;
+    } catch {
+      setMessage("Unexpected V2 finalize failure. Nothing else changed.");
+    } finally {
+      setFinalizing(false);
+    }
+  }
+
   useEffect(() => {
     loadConfirmation();
 
@@ -264,7 +310,7 @@ export default function V2CreateConfirmPage() {
     return (
       <GateCard
         title="Checking V2 confirmation access"
-        message="Loombus is validating the private V2 draft before showing the confirmation preview."
+        message="Loombus is validating the private V2 draft before showing the guarded confirmation preview."
         loading
       />
     );
@@ -291,10 +337,7 @@ export default function V2CreateConfirmPage() {
   }
 
   return (
-    <main
-      className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#07111f] text-white"
-      style={{ colorScheme: "dark", backgroundColor: "#07111f" }}
-    >
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#07111f] text-white">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.26),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(212,175,55,0.18),_transparent_32%)]" />
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-6 text-white sm:px-6 lg:px-8">
@@ -306,9 +349,9 @@ export default function V2CreateConfirmPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Confirmation Preview</p>
-              <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Final check before unlock.</h1>
+              <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Final check before publish.</h1>
               <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-                This screen confirms the server-validated draft preview. The final V2 action is still locked and disabled.
+                This screen can publish one internal V2 draft only when the rollback guard allows it and you acknowledge the final action.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -365,11 +408,11 @@ export default function V2CreateConfirmPage() {
           <aside className="space-y-4">
             <section className="rounded-[2rem] border border-blue-300/25 bg-blue-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
-                <ServerCog className="size-5 text-blue-200" />
-                <h2 className="font-bold text-blue-100">Confirmation status</h2>
+                <Send className="size-5 text-blue-200" />
+                <h2 className="font-bold text-blue-100">Guarded final action</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-blue-50/80">
-                {serverCheck?.reason ?? "Server confirmation has not returned a result yet."}
+                Publishing is now routed through the V2 finalizer, but it still requires v2_shell access, the v2_create_publish_enabled rollback guard, server validation, and your acknowledgement.
               </p>
               <div className="mt-4 space-y-2">
                 {(serverCheck?.checks ?? []).map((check) => (
@@ -381,26 +424,6 @@ export default function V2CreateConfirmPage() {
                   </div>
                 ))}
               </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-emerald-400/25 bg-emerald-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="size-5 text-emerald-200" />
-                <h2 className="font-bold text-emerald-100">Guardrails active</h2>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-emerald-50/80">
-                This confirmation screen does not create a live discussion. It only displays the server-validated preview.
-              </p>
-            </section>
-
-            <section className="rounded-[2rem] border border-amber-300/25 bg-amber-300/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="size-5 text-amber-200" />
-                <h2 className="font-bold text-amber-100">Final action locked</h2>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-amber-50/80">
-                The final V2 action remains disabled until a future approved checkpoint connects it.
-              </p>
               <label className="mt-4 flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-sm text-slate-200">
                 <input
                   type="checkbox"
@@ -408,16 +431,37 @@ export default function V2CreateConfirmPage() {
                   onChange={(event) => setAcknowledged(event.target.checked)}
                   className="mt-1 size-4 accent-blue-500"
                 />
-                <span>I reviewed the confirmation preview and understand the final action is still locked.</span>
+                <span>I reviewed this V2 draft and understand this will publish a live discussion.</span>
               </label>
               <button
                 type="button"
-                disabled
-                className="mt-4 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-700 px-4 py-3 text-sm font-bold text-slate-300 opacity-80"
+                disabled={!canFinalize}
+                onClick={finalizeV2Draft}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-300/40 bg-blue-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-slate-700 disabled:text-slate-300 disabled:opacity-80"
               >
-                <Lock className="size-4" />
-                {ready && acknowledged ? "Confirmed — locked" : "Locked"}
+                {finalizing ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+                {finalizing ? "Publishing..." : "Publish V2 discussion"}
               </button>
+            </section>
+
+            <section className="rounded-[2rem] border border-emerald-400/25 bg-emerald-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="size-5 text-emerald-200" />
+                <h2 className="font-bold text-emerald-100">V1 compatibility path</h2>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-emerald-50/80">
+                The finalizer reuses the existing V1 create server path for safety checks, profile gates, tags, audit logging, and notifications.
+              </p>
+            </section>
+
+            <section className="rounded-[2rem] border border-amber-300/25 bg-amber-300/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="size-5 text-amber-200" />
+                <h2 className="font-bold text-amber-100">Still not public rollout</h2>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-amber-50/80">
+                This does not switch /create, /discussions, navigation, or rollout. Public users remain on V1.
+              </p>
             </section>
 
             <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
@@ -435,16 +479,10 @@ export default function V2CreateConfirmPage() {
                   <ClipboardCopy className="size-4" />
                   Copy confirmation preview
                 </button>
-                <Link
-                  href="/v2/create/review"
-                  className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
-                >
+                <Link href="/v2/create/review" className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">
                   Back to Review
                 </Link>
-                <Link
-                  href="/create"
-                  className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
-                >
+                <Link href="/create" className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">
                   Open V1 Create
                 </Link>
               </div>
