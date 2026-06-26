@@ -46,6 +46,20 @@ type ReplyRow = {
   quoted_excerpt?: string | null;
 };
 
+type TagRow = {
+  tag: string | null;
+};
+
+type AttachmentRow = {
+  id: string;
+  public_url: string;
+  file_name: string;
+  mime_type: string | null;
+  file_size_bytes: number | null;
+  attachment_kind: string | null;
+  sort_order?: number | null;
+};
+
 const DEFAULT_FLAGS: FeatureFlags = {
   v2_shell: false,
   v2_signal_brief: false,
@@ -62,6 +76,8 @@ const V2_NAV_ITEMS = [
   { label: "Messages", href: "/v2/messages", icon: Bell },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
+
+const AI_TOOL_CARDS = ["Summary", "Key Takeaways", "What Changed", "Conversation Map"];
 
 function getDefaultShellPayload(): ShellPayload {
   return {
@@ -83,6 +99,14 @@ function formatCount(value: number | null | undefined) {
   return Math.max(0, value ?? 0).toLocaleString();
 }
 
+function formatFileSize(value: number | null | undefined) {
+  const bytes = Math.max(0, value ?? 0);
+  if (!bytes) return "File";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function getName(profile: Profile | null | undefined) {
   return profile?.full_name?.trim() || profile?.username?.trim() || "Loombus member";
 }
@@ -101,6 +125,15 @@ function getDiscussionMode(discussion: Discussion | null) {
 function getRouteParamId(param: string | string[] | undefined) {
   const rawValue = Array.isArray(param) ? param[0] : param;
   return decodeURIComponent(rawValue ?? "").trim();
+}
+
+function getBodySignals(body: string | null | undefined) {
+  const sentences = (body ?? "")
+    .split(/[.!?]\s+/)
+    .map((sentence) => sentence.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  return sentences.slice(0, 3);
 }
 
 function V2TopNav() {
@@ -198,8 +231,11 @@ export default function V2DiscussionDetailPage() {
   const [authorProfile, setAuthorProfile] = useState<Profile | null>(null);
   const [replies, setReplies] = useState<ReplyRow[]>([]);
   const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
+  const [tags, setTags] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
   const [viewCount, setViewCount] = useState(0);
   const [savedCount, setSavedCount] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -210,6 +246,7 @@ export default function V2DiscussionDetailPage() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
+      const currentUserId = sessionData.session?.user.id ?? null;
 
       const shellResponse = await fetch("/api/v2/shell", {
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
@@ -251,17 +288,27 @@ export default function V2DiscussionDetailPage() {
       const nextDiscussion = discussionData as Discussion;
       setDiscussion(nextDiscussion);
 
-      const [profileResult, replyResult, viewResult, saveResult] = await Promise.all([
+      const savedStateQuery = currentUserId
+        ? supabase.from("bookmarks").select("id").eq("user_id", currentUserId).eq("discussion_id", discussionId).maybeSingle()
+        : Promise.resolve({ data: null });
+
+      const [profileResult, replyResult, tagResult, attachmentResult, viewResult, saveResult, savedStateResult] = await Promise.all([
         supabase.from("profiles").select("id, full_name, username, avatar_url").eq("id", nextDiscussion.user_id).maybeSingle(),
         supabase.from("replies").select("id, user_id, body, created_at, quoted_excerpt").eq("discussion_id", discussionId).is("deleted_at", null).order("created_at", { ascending: true }),
+        supabase.from("discussion_tags").select("tag").eq("discussion_id", discussionId).order("tag", { ascending: true }),
+        supabase.from("discussion_attachments").select("id, public_url, file_name, mime_type, file_size_bytes, attachment_kind, sort_order").eq("discussion_id", discussionId).order("sort_order", { ascending: true }).order("created_at", { ascending: true }),
         supabase.from("discussion_views").select("id", { count: "exact", head: true }).eq("discussion_id", discussionId),
         supabase.from("bookmarks").select("id", { count: "exact", head: true }).eq("discussion_id", discussionId),
+        savedStateQuery,
       ]);
 
       setAuthorProfile((profileResult.data as Profile | null) ?? null);
       setReplies((replyResult.data ?? []) as ReplyRow[]);
+      setTags(((tagResult.data ?? []) as TagRow[]).map((row) => row.tag).filter((tag): tag is string => Boolean(tag)));
+      setAttachments((attachmentResult.data ?? []) as AttachmentRow[]);
       setViewCount(viewResult.count ?? 0);
       setSavedCount(saveResult.count ?? 0);
+      setIsSaved(Boolean(savedStateResult.data));
 
       const replyUserIds = [...new Set(((replyResult.data ?? []) as ReplyRow[]).map((reply) => reply.user_id).filter(Boolean))];
       if (replyUserIds.length > 0) {
@@ -306,10 +353,12 @@ export default function V2DiscussionDetailPage() {
     return <GateCard title="V2 shell is not enabled" message="This account is not currently allowed through the v2_shell flag. Current users remain on the existing experience." payload={payload} />;
   }
 
+  const bodySignals = getBodySignals(discussion?.body);
+
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] text-slate-950">
       <V2TopNav />
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-28 pt-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:px-8">
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-28 pt-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:px-8">
         <div className="min-w-0 space-y-5">
           <Link href="/v2/discussions" className="inline-flex items-center gap-2 text-sm font-bold text-blue-700 transition hover:text-blue-900">
             <ArrowLeft className="size-4" />
@@ -341,7 +390,32 @@ export default function V2DiscussionDetailPage() {
                     <span>{formatDate(discussion.created_at)}</span>
                   </div>
                 </div>
-                <div className="whitespace-pre-wrap p-5 text-base leading-8 text-slate-800 sm:p-6">{discussion.body || "No discussion body available."}</div>
+                <div className="space-y-5 p-5 sm:p-6">
+                  <div className="whitespace-pre-wrap rounded-3xl border border-slate-200 bg-slate-50 p-5 text-base leading-8 text-slate-800">{discussion.body || "No discussion body available."}</div>
+
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {tags.map((tag) => (
+                        <span key={tag} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">#{tag}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {attachments.length > 0 && (
+                    <section className="rounded-3xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Supporting context</p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        {attachments.map((attachment) => (
+                          <a key={attachment.id} href={attachment.public_url} target="_blank" rel="noreferrer" className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50">
+                            <span className="block text-xs font-black uppercase tracking-[0.16em] text-blue-600">{attachment.attachment_kind || "Attachment"}</span>
+                            <span className="mt-1 block truncate">{attachment.file_name}</span>
+                            <span className="mt-1 block text-xs text-slate-400">{formatFileSize(attachment.file_size_bytes)}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
               </article>
 
               <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -393,6 +467,31 @@ export default function V2DiscussionDetailPage() {
               <div className="rounded-2xl bg-blue-50 p-3"><p className="text-2xl font-black text-blue-700">{formatCount(replies.length)}</p><p className="text-xs font-bold text-slate-500">Replies</p></div>
               <div className="rounded-2xl bg-blue-50 p-3"><p className="text-2xl font-black text-blue-700">{formatCount(viewCount)}</p><p className="text-xs font-bold text-slate-500">Views</p></div>
               <div className="rounded-2xl bg-blue-50 p-3"><p className="text-2xl font-black text-blue-700">{formatCount(savedCount)}</p><p className="text-xs font-bold text-slate-500">Saves</p></div>
+            </div>
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
+              {isSaved ? "Saved in your library" : "Not saved yet"}
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">State of the discussion</h2>
+            <div className="mt-4 space-y-3">
+              {(bodySignals.length > 0 ? bodySignals : ["This discussion is ready for focused replies."]).map((signal) => (
+                <div key={signal} className="rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+                  {signal}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">AI tools</h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              {AI_TOOL_CARDS.map((tool) => (
+                <Link key={tool} href={discussion ? `/discussions/${discussion.id}` : "/discussions"} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+                  {tool}
+                </Link>
+              ))}
             </div>
           </section>
 
