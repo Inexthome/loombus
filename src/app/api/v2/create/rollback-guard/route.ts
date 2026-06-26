@@ -35,7 +35,7 @@ function isFlagEnabledForUser(flag: FeatureFlag | null | undefined, userId: stri
   return getDeterministicBucket(userId) < rolloutPercentage;
 }
 
-async function getFeatureFlag(adminSupabase: ReturnType<typeof createClient>, key: string) {
+async function getFeatureFlag(adminSupabase: any, key: string) {
   const { data, error } = await adminSupabase
     .from("loombus_feature_flags")
     .select("enabled, rollout_percentage, allowed_user_ids")
