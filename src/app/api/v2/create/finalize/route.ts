@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
-import { POST as createDiscussionPost } from "@/app/api/discussions/create/route";
 
 export const dynamic = "force-dynamic";
 
@@ -108,7 +107,7 @@ export async function POST(request: NextRequest) {
           ok: false,
           locked: false,
           status: "acknowledgement_required",
-          reason: "Confirm the guarded V2 final action before publishing.",
+          reason: "Confirm the guarded V2 final action before continuing.",
         },
         { status: 400 }
       );
@@ -163,7 +162,7 @@ export async function POST(request: NextRequest) {
           ok: false,
           locked: true,
           status: "rollback_guard_active",
-          reason: "V2 Create publishing is disabled by the rollback guard.",
+          reason: "V2 Create final storage is disabled by the rollback guard.",
           flag: {
             key: "v2_create_publish_enabled",
             enabled: Boolean(publishFlag?.enabled),
@@ -196,7 +195,7 @@ export async function POST(request: NextRequest) {
           ok: false,
           locked: false,
           status: "needs_work",
-          reason: "Draft is not ready to publish.",
+          reason: "Draft is not ready for V2 final storage.",
           checks,
         },
         { status: 400 }
@@ -207,64 +206,49 @@ export async function POST(request: NextRequest) {
     const originalTopic = draft.topic?.trim() ?? "";
     const topic = normalizeTopic(originalTopic);
     const body = draft.body?.trim() ?? "";
-    const discussionType = normalizeMode(draft.mode);
+    const mode = normalizeMode(draft.mode);
     const discussionMetadata = {
       createdFrom: "v2_create",
+      source: "v2_internal_preview",
       ...(topic === "Other" && originalTopic && originalTopic !== "Other" ? { originalV2Topic: originalTopic } : {}),
     };
 
-    const createRequest = new NextRequest(new URL("/api/discussions/create", request.url), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
+    const { data: v2Discussion, error: insertError } = await adminSupabase
+      .from("loombus_v2_discussions")
+      .insert({
+        author_id: user.id,
+        source_draft_id: draft.id,
         title,
         topic,
-        realityLens: null,
-        purposeLane: null,
-        discussionType,
-        discussionMetadata,
+        original_topic: originalTopic || null,
         body,
-        tags: tags.join(", "),
-        pastedCharacterCount: 0,
-      }),
-    });
+        mode,
+        tags,
+        discussion_metadata: discussionMetadata,
+        status: "internal_preview",
+      })
+      .select("id, title, topic, original_topic, mode, status, created_at")
+      .single();
 
-    const createResponse = await createDiscussionPost(createRequest);
-    const createPayload = await createResponse.json().catch(() => null);
-
-    if (!createResponse.ok || !createPayload?.discussion?.id) {
+    if (insertError || !v2Discussion?.id) {
       return NextResponse.json(
         {
           ok: false,
           locked: false,
-          status: "create_failed",
-          reason: createPayload?.error ?? "The guarded V2 publish could not create a discussion.",
-          code: createPayload?.code,
-          category: createPayload?.category,
-          provider: createPayload?.provider,
-          createStatus: createResponse.status,
+          status: "v2_store_failed",
+          reason: insertError?.message ?? "The V2 preview discussion could not be stored.",
+          code: insertError?.code,
         },
-        { status: createResponse.status || 500 }
+        { status: 500 }
       );
     }
-
-    const { error: clearDraftError } = await userSupabase
-      .from("loombus_v2_create_drafts")
-      .delete()
-      .eq("user_id", user.id);
 
     return NextResponse.json({
       ok: true,
       locked: false,
-      status: "published",
-      reason: clearDraftError
-        ? "Discussion published. Private V2 draft could not be cleared automatically."
-        : "Discussion published through the guarded V2 finalizer.",
-      discussion: createPayload.discussion,
-      draftCleared: !clearDraftError,
+      status: "stored_internal_preview",
+      reason: "V2 preview discussion stored without adding an item to the live V1 feed.",
+      v2Discussion,
       mappedTopic: topic,
       originalTopic: originalTopic || null,
     });
