@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
+import { POST as createDiscussionPost } from "@/app/api/discussions/create/route";
 
 export const dynamic = "force-dynamic";
 
@@ -211,7 +212,7 @@ export async function POST(request: NextRequest) {
       ...(topic === "Other" && originalTopic && originalTopic !== "Other" ? { originalV2Topic: originalTopic } : {}),
     };
 
-    const createResponse = await fetch(new URL("/api/discussions/create", request.url), {
+    const createRequest = new NextRequest(new URL("/api/discussions/create", request.url), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -230,6 +231,7 @@ export async function POST(request: NextRequest) {
       }),
     });
 
+    const createResponse = await createDiscussionPost(createRequest);
     const createPayload = await createResponse.json().catch(() => null);
 
     if (!createResponse.ok || !createPayload?.discussion?.id) {
@@ -242,6 +244,7 @@ export async function POST(request: NextRequest) {
           code: createPayload?.code,
           category: createPayload?.category,
           provider: createPayload?.provider,
+          createStatus: createResponse.status,
         },
         { status: createResponse.status || 500 }
       );
