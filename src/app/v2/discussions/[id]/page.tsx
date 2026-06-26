@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Bell, Home, Loader2, Lock, MessageCircle, Plus, Reply, Search, Settings, Users } from "lucide-react";
+import { ArrowLeft, Bell, Home, Loader2, Lock, MessageCircle, Plus, Search, Settings, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type FeatureFlags = {
@@ -26,6 +26,7 @@ type Discussion = {
   body: string | null;
   created_at: string;
   discussion_type?: string | null;
+  mode?: string | null;
   purpose_lane?: string | null;
 };
 
@@ -88,6 +89,10 @@ function getModeLabel(value: string | null | undefined) {
   if (value === "research_question") return "Research Question";
   if (value === "problem_solving") return "Problem Solving";
   return "Open Discussion";
+}
+
+function getDiscussionMode(discussion: Discussion | null) {
+  return discussion?.discussion_type ?? discussion?.mode ?? null;
 }
 
 function V2TopNav() {
@@ -191,7 +196,7 @@ export default function V2DiscussionDetailPage() {
   const discussionId = useMemo(() => {
     if (typeof window === "undefined") return "";
     const segments = window.location.pathname.split("/").filter(Boolean);
-    return segments[segments.length - 1] ?? "";
+    return decodeURIComponent(segments[segments.length - 1] ?? "");
   }, []);
 
   async function loadDiscussionDetail() {
@@ -217,14 +222,20 @@ export default function V2DiscussionDetailPage() {
 
       const { data: discussionData, error: discussionError } = await supabase
         .from("discussions")
-        .select("id, user_id, title, topic, body, created_at, discussion_type, purpose_lane")
+        .select("*")
         .eq("id", discussionId)
         .is("deleted_at", null)
         .maybeSingle();
 
-      if (discussionError || !discussionData) {
+      if (discussionError) {
         setDiscussion(null);
-        setMessage("This discussion could not be loaded in V2.");
+        setMessage(`This discussion could not be loaded in V2: ${discussionError.message}`);
+        return;
+      }
+
+      if (!discussionData) {
+        setDiscussion(null);
+        setMessage("This discussion was not found. Use a real discussion id from the current /discussions route.");
         return;
       }
 
@@ -254,9 +265,9 @@ export default function V2DiscussionDetailPage() {
       } else {
         setReplyProfiles({});
       }
-    } catch {
+    } catch (error) {
       setPayload(getDefaultShellPayload());
-      setMessage("Unable to load this discussion in V2.");
+      setMessage(error instanceof Error ? `Unable to load this discussion in V2: ${error.message}` : "Unable to load this discussion in V2.");
     } finally {
       setLoading(false);
     }
@@ -306,7 +317,7 @@ export default function V2DiscussionDetailPage() {
                 <div className="bg-[#061942] px-5 py-5 text-white sm:px-6">
                   <div className="mb-4 flex flex-wrap gap-2">
                     <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-blue-100 ring-1 ring-white/15">{discussion.topic || "Discussion"}</span>
-                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-blue-100 ring-1 ring-white/15">{getModeLabel(discussion.discussion_type)}</span>
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-blue-100 ring-1 ring-white/15">{getModeLabel(getDiscussionMode(discussion))}</span>
                     {discussion.purpose_lane && <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-blue-100 ring-1 ring-white/15">{discussion.purpose_lane}</span>}
                   </div>
                   <h1 className="max-w-4xl text-3xl font-black tracking-tight sm:text-5xl">{discussion.title}</h1>
