@@ -22,6 +22,7 @@ type V2CreateDraft = {
 };
 
 const VALID_MODES = new Set(["open_discussion", "debate", "research_question", "problem_solving"]);
+const V2_CREATE_FINAL_WRITE_ENABLED = false;
 
 function getBearerToken(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, locked: true, reason: "V2 access is required." }, { status: 403 });
     }
 
-    if (publishFlagError || !isFlagEnabledForUser(publishFlag, user.id)) {
+    if (!V2_CREATE_FINAL_WRITE_ENABLED || publishFlagError || !isFlagEnabledForUser(publishFlag, user.id)) {
       return NextResponse.json(
         {
           ok: false,
