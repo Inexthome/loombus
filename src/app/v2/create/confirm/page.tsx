@@ -53,8 +53,9 @@ type FinalizeResult = {
   locked?: boolean;
   status?: string;
   reason?: string;
-  discussion?: {
+  v2Discussion?: {
     id?: string;
+    status?: string;
   } | null;
   code?: string;
   category?: string;
@@ -198,7 +199,7 @@ export default function V2CreateConfirmPage() {
 
     try {
       await navigator.clipboard.writeText(previewText);
-      setCopyMessage("Confirmation preview copied. Review it before using the guarded final action.");
+      setCopyMessage("Confirmation preview copied. Review it before using the guarded V2 final action.");
     } catch {
       setCopyMessage("Unable to copy from this browser. You can still manually copy the preview.");
     }
@@ -267,7 +268,7 @@ export default function V2CreateConfirmPage() {
       const accessToken = sessionData.session?.access_token;
 
       if (!accessToken) {
-        setMessage("Sign in again before publishing.");
+        setMessage("Sign in again before running the V2 final check.");
         return;
       }
 
@@ -281,12 +282,12 @@ export default function V2CreateConfirmPage() {
       });
       const finalizePayload = (await finalizeResponse.json().catch(() => null)) as FinalizeResult | null;
 
-      if (!finalizeResponse.ok || !finalizePayload?.ok || !finalizePayload.discussion?.id) {
-        setMessage(finalizePayload?.reason ?? "The guarded V2 publish could not complete.");
+      if (!finalizeResponse.ok || !finalizePayload?.ok || !finalizePayload.v2Discussion?.id) {
+        setMessage(finalizePayload?.reason ?? "The guarded V2 final check could not complete.");
         return;
       }
 
-      window.location.href = `/discussions/${finalizePayload.discussion.id}`;
+      setMessage(finalizePayload.reason ?? "V2 preview discussion stored without adding an item to the live V1 feed.");
     } catch {
       setMessage("Unexpected V2 finalize failure. Nothing else changed.");
     } finally {
@@ -349,9 +350,9 @@ export default function V2CreateConfirmPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Confirmation Preview</p>
-              <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Final check before publish.</h1>
+              <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Final V2 preview check.</h1>
               <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-                This screen can publish one internal V2 draft only when the rollback guard allows it and you acknowledge the final action.
+                This screen validates one internal V2 draft. The final action is pointed at V2-only preview storage and remains blocked until the rollback guard allows it.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -409,10 +410,10 @@ export default function V2CreateConfirmPage() {
             <section className="rounded-[2rem] border border-blue-300/25 bg-blue-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <Send className="size-5 text-blue-200" />
-                <h2 className="font-bold text-blue-100">Guarded final action</h2>
+                <h2 className="font-bold text-blue-100">Guarded V2-only final action</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-blue-50/80">
-                Publishing is now routed through the V2 finalizer, but it still requires v2_shell access, the v2_create_publish_enabled rollback guard, server validation, and your acknowledgement.
+                The finalizer is no longer allowed to create a V1 discussion. When opened later, it stores into the V2 preview table only.
               </p>
               <div className="mt-4 space-y-2">
                 {(serverCheck?.checks ?? []).map((check) => (
@@ -431,7 +432,7 @@ export default function V2CreateConfirmPage() {
                   onChange={(event) => setAcknowledged(event.target.checked)}
                   className="mt-1 size-4 accent-blue-500"
                 />
-                <span>I reviewed this V2 draft and understand this will publish a live discussion.</span>
+                <span>I reviewed this V2 draft and understand this final action is V2-only and must not add an item to the V1 feed.</span>
               </label>
               <button
                 type="button"
@@ -440,17 +441,17 @@ export default function V2CreateConfirmPage() {
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-300/40 bg-blue-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-slate-700 disabled:text-slate-300 disabled:opacity-80"
               >
                 {finalizing ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
-                {finalizing ? "Publishing..." : "Publish V2 discussion"}
+                {finalizing ? "Running check..." : "Run V2 final check"}
               </button>
             </section>
 
             <section className="rounded-[2rem] border border-emerald-400/25 bg-emerald-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="size-5 text-emerald-200" />
-                <h2 className="font-bold text-emerald-100">V1 compatibility path</h2>
+                <h2 className="font-bold text-emerald-100">V1 remains untouched</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-emerald-50/80">
-                The finalizer reuses the existing V1 create server path for safety checks, profile gates, tags, audit logging, and notifications.
+                The V2 final action is separated from the existing V1 discussion create path. Public discussion pages continue to use V1.
               </p>
             </section>
 
