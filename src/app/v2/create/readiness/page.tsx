@@ -48,8 +48,9 @@ type PrepareResult = {
   } | null;
 };
 
-type FinalGuardResult = {
+type RollbackGuardResult = {
   ok?: boolean;
+  blocked?: boolean;
   locked?: boolean;
   status?: string;
   reason?: string;
@@ -113,7 +114,7 @@ function FlagPill({ label, enabled }: { label: string; enabled: boolean }) {
 export default function V2CreateReadinessPage() {
   const [shell, setShell] = useState<ShellPayload | null>(null);
   const [prepareResult, setPrepareResult] = useState<PrepareResult | null>(null);
-  const [guardResult, setGuardResult] = useState<FinalGuardResult | null>(null);
+  const [guardResult, setGuardResult] = useState<RollbackGuardResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -142,22 +143,25 @@ export default function V2CreateReadinessPage() {
         return;
       }
 
-      const prepareResponse = await fetch("/api/v2/create/prepare", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      const nextPrepareResult = (await prepareResponse.json().catch(() => null)) as PrepareResult | null;
-      setPrepareResult(nextPrepareResult);
+      const [prepareResponse, guardResponse] = await Promise.all([
+        fetch("/api/v2/create/prepare", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }),
+        fetch("/api/v2/create/rollback-guard", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }),
+      ]);
 
-      const guardResponse = await fetch("/api/v2/create/finalize", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      const nextGuardResult = (await guardResponse.json().catch(() => null)) as FinalGuardResult | null;
+      const nextPrepareResult = (await prepareResponse.json().catch(() => null)) as PrepareResult | null;
+      const nextGuardResult = (await guardResponse.json().catch(() => null)) as RollbackGuardResult | null;
+
+      setPrepareResult(nextPrepareResult);
       setGuardResult(nextGuardResult);
     } catch {
       setShell(getDefaultShellPayload());
@@ -174,7 +178,7 @@ export default function V2CreateReadinessPage() {
   const checklist = useMemo<ReadinessItem[]>(() => {
     const checks = prepareResult?.checks ?? [];
     const allDraftChecksPassed = checks.length > 0 && checks.every((check) => check.passed);
-    const guardLocked = Boolean(guardResult?.locked);
+    const guardOpen = Boolean(guardResult?.ok && guardResult.blocked === false && guardResult.locked === false);
 
     return [
       {
@@ -201,15 +205,22 @@ export default function V2CreateReadinessPage() {
       {
         key: "preview",
         label: "Validated preview available",
-        detail: "The confirmation preview must show the server-validated draft before any future activation.",
+        detail: "The confirmation preview must show the server-validated draft before publishing.",
         ready: Boolean(prepareResult?.preview),
         required: true,
       },
       {
-        key: "guard",
-        label: "Server hard lock remains active",
-        detail: "The final server guard must be verified before a later PR changes it.",
-        ready: guardLocked,
+        key: "rollback-guard",
+        label: "Rollback guard open for this user",
+        detail: "v2_create_publish_enabled must allow this internal user before the Confirm page can publish.",
+        ready: guardOpen,
+        required: true,
+      },
+      {
+        key: "no-readiness-write",
+        label: "Readiness performs no publish write",
+        detail: "This page checks prepare and rollback guard only. It no longer calls the finalize endpoint.",
+        ready: true,
         required: true,
       },
       {
@@ -228,27 +239,27 @@ export default function V2CreateReadinessPage() {
       },
       {
         key: "moderation",
-        label: "Moderation handoff reviewed",
-        detail: "Future activation should confirm safety checks, reports, and admin review expectations.",
-        ready: false,
+        label: "Moderation handoff preserved through V1 create API",
+        detail: "The finalizer reuses the existing discussion create endpoint for safety review and account gates.",
+        ready: true,
         required: false,
       },
       {
         key: "notifications",
-        label: "Notification behavior reviewed",
-        detail: "Future activation should confirm no unexpected alerts fire from a V2-created item.",
-        ready: false,
+        label: "Notification behavior uses existing V1 path",
+        detail: "The finalizer reuses current follower/topic notification behavior instead of creating a separate path.",
+        ready: true,
         required: false,
       },
       {
-        key: "rollback",
-        label: "Rollback plan documented",
-        detail: "Future activation should include a direct way to return to V1-only behavior.",
+        key: "appearance",
+        label: "Appearance polish deferred",
+        detail: "Light/System/Dark polish can continue after V2 is functionally complete.",
         ready: false,
         required: false,
       },
     ];
-  }, [guardResult?.locked, prepareResult, shell]);
+  }, [guardResult, prepareResult, shell]);
 
   const requiredItems = checklist.filter((item) => item.required);
   const readyRequiredItems = requiredItems.filter((item) => item.ready);
@@ -256,10 +267,7 @@ export default function V2CreateReadinessPage() {
   const allRequiredReady = requiredItems.length > 0 && readyRequiredItems.length === requiredItems.length;
 
   return (
-    <main
-      className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#07111f] text-white"
-      style={{ colorScheme: "dark", backgroundColor: "#07111f" }}
-    >
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#07111f] text-white">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.26),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(212,175,55,0.18),_transparent_32%)]" />
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-6 text-white sm:px-6 lg:px-8">
@@ -271,9 +279,9 @@ export default function V2CreateReadinessPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Internal Checklist</p>
-              <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Final unlock readiness.</h1>
+              <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Guarded publish readiness.</h1>
               <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-                This is an internal checklist only. It confirms readiness signals while the final server guard remains locked.
+                This page verifies readiness and rollback guard status without calling the V2 finalizer or publishing anything.
               </p>
             </div>
             <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4 text-center">
@@ -299,7 +307,7 @@ export default function V2CreateReadinessPage() {
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-white">Readiness checklist</h2>
-                <p className="mt-1 text-sm text-slate-400">Required items must pass before a future change removes the hard lock.</p>
+                <p className="mt-1 text-sm text-slate-400">Required items must pass before using the Confirm page final action.</p>
               </div>
               <button
                 type="button"
@@ -331,15 +339,15 @@ export default function V2CreateReadinessPage() {
             <section className="rounded-[2rem] border border-emerald-400/25 bg-emerald-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="size-5 text-emerald-200" />
-                <h2 className="font-bold text-emerald-100">Guard status</h2>
+                <h2 className="font-bold text-emerald-100">Rollback guard</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-emerald-50/80">
-                {guardResult?.reason ?? "The final server guard has not been checked yet."}
+                {guardResult?.reason ?? "The rollback guard has not been checked yet."}
               </p>
-              {guardResult?.locked && (
+              {guardResult && (
                 <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-100">
                   <CheckCircle2 className="size-4" />
-                  Hard lock active
+                  {guardResult.blocked ? "Guard active" : "Guard open"}
                 </p>
               )}
             </section>
@@ -351,18 +359,18 @@ export default function V2CreateReadinessPage() {
               </div>
               <p className="mt-4 text-sm leading-6 text-blue-50/80">
                 {allRequiredReady
-                  ? "Required technical checks are ready, but optional operational items should be reviewed before any later activation."
-                  : "Do not change the hard lock until all required checklist items are ready."}
+                  ? "Required technical checks are ready. Use Confirm for one controlled internal publish test."
+                  : "Do not use Confirm publish until all required checklist items are ready."}
               </p>
             </section>
 
             <section className="rounded-[2rem] border border-amber-300/25 bg-amber-300/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <Lock className="size-5 text-amber-200" />
-                <h2 className="font-bold text-amber-100">Still locked</h2>
+                <h2 className="font-bold text-amber-100">No publish from readiness</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-amber-50/80">
-                This page does not unlock the V2 final action. It only shows readiness status.
+                This page never calls /api/v2/create/finalize. Only the Confirm page can call the guarded finalizer after acknowledgement.
               </p>
             </section>
 
@@ -372,22 +380,13 @@ export default function V2CreateReadinessPage() {
                 <h2 className="font-bold text-white">Links</h2>
               </div>
               <div className="mt-4 flex flex-col gap-3">
-                <Link
-                  href="/v2/create/confirm"
-                  className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
-                >
+                <Link href="/v2/create/confirm" className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">
                   Back to Confirmation
                 </Link>
-                <Link
-                  href="/v2/create/review"
-                  className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
-                >
+                <Link href="/v2/create/review" className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">
                   Back to Review
                 </Link>
-                <Link
-                  href="/create"
-                  className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
-                >
+                <Link href="/create" className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">
                   Open V1 Create
                 </Link>
               </div>

@@ -110,9 +110,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       blocked: false,
-      locked: true,
+      locked: false,
       status: "rollback_guard_open",
-      reason: "Rollback guard would allow this user, but final action remains separately locked.",
+      reason: "Rollback guard allows this internal user to use the guarded V2 finalizer.",
       flag: {
         key: "v2_create_publish_enabled",
         enabled: true,
