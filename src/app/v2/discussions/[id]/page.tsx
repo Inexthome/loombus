@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { ArrowLeft, Bell, Home, Loader2, Lock, MessageCircle, Plus, Search, Settings, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -51,6 +52,8 @@ const DEFAULT_FLAGS: FeatureFlags = {
   v2_rooms: false,
 };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const V2_NAV_ITEMS = [
   { label: "Home", href: "/v2", icon: Home },
   { label: "Discussions", href: "/v2/discussions", icon: MessageCircle, active: true },
@@ -93,6 +96,11 @@ function getModeLabel(value: string | null | undefined) {
 
 function getDiscussionMode(discussion: Discussion | null) {
   return discussion?.discussion_type ?? discussion?.mode ?? null;
+}
+
+function getRouteParamId(param: string | string[] | undefined) {
+  const rawValue = Array.isArray(param) ? param[0] : param;
+  return decodeURIComponent(rawValue ?? "").trim();
 }
 
 function V2TopNav() {
@@ -183,6 +191,8 @@ function GateCard({ title, message, loading = false, payload }: { title: string;
 }
 
 export default function V2DiscussionDetailPage() {
+  const params = useParams<{ id?: string | string[] }>();
+  const discussionId = getRouteParamId(params?.id);
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
   const [authorProfile, setAuthorProfile] = useState<Profile | null>(null);
@@ -192,12 +202,6 @@ export default function V2DiscussionDetailPage() {
   const [savedCount, setSavedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-
-  const discussionId = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    const segments = window.location.pathname.split("/").filter(Boolean);
-    return decodeURIComponent(segments[segments.length - 1] ?? "");
-  }, []);
 
   async function loadDiscussionDetail() {
     setLoading(true);
@@ -217,6 +221,11 @@ export default function V2DiscussionDetailPage() {
       if (!nextPayload.configured || !nextPayload.flags.v2_shell || nextPayload.version !== "v2") return;
       if (!discussionId) {
         setMessage("Discussion id is missing.");
+        return;
+      }
+      if (!UUID_PATTERN.test(discussionId)) {
+        setDiscussion(null);
+        setMessage(`Invalid V2 discussion route id: "${discussionId}". Open a real discussion card from /v2/discussions.`);
         return;
       }
 
@@ -283,7 +292,7 @@ export default function V2DiscussionDetailPage() {
     return () => {
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [discussionId]);
 
   if (loading) {
     return <GateCard title="Loading V2 discussion" message="Loombus is loading this discussion inside the V2 shell." loading />;
