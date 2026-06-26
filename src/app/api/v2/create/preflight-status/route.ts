@@ -30,7 +30,6 @@ type ShadowRecordRow = {
   created_at: string | null;
 };
 
-const FINAL_ACTION_LOCKED = true;
 const STANDARD_DISCUSSION_MAX_LENGTH = 5000;
 const VALID_MODES = new Set(["open_discussion", "debate", "research_question", "problem_solving"]);
 
@@ -143,7 +142,8 @@ export async function POST(request: NextRequest) {
     const body = normalizeText(shadowRecord?.body);
     const mode = normalizeText(shadowRecord?.mode || "open_discussion");
     const tagResult = normalizeDiscussionTags((shadowRecord?.tags ?? []).join(", "));
-    const rollbackGuardBlocks = !isFlagEnabledForUser(publishGate.flag, user.id);
+    const publishAllowed = !publishGate.error && isFlagEnabledForUser(publishGate.flag, user.id);
+    const topicMapsToV1 = DISCUSSION_TOPICS.includes(topic as DiscussionTopic) || topic.length >= 2;
 
     const checks = [
       makeCheck("authenticated", "Signed-in user confirmed", true, "The preflight request includes a valid session."),
@@ -151,13 +151,13 @@ export async function POST(request: NextRequest) {
       makeCheck("draft", "Latest V2 draft exists", Boolean(draft), "A V2 draft should exist before final preparation."),
       makeCheck("shadow_record", "Latest shadow record exists", Boolean(shadowRecord), "A non-public shadow record should exist before final preparation."),
       makeCheck("title", "Shadow title maps to V1 payload", title.length > 0, "A future live discussion needs a title."),
-      makeCheck("topic", "Shadow topic maps to V1 list", DISCUSSION_TOPICS.includes(topic as DiscussionTopic), "A future live discussion needs a configured topic."),
+      makeCheck("topic", "Shadow topic can map to V1", topicMapsToV1, "Configured topics publish directly; custom V2 topics map to Other with metadata."),
       makeCheck("body", "Shadow body maps to V1 content", body.length > 0, "A future live discussion needs body content."),
       makeCheck("body_limit", "Shadow body fits conservative V1 limit", body.length <= STANDARD_DISCUSSION_MAX_LENGTH, "Preflight uses 5,000 characters as a conservative baseline."),
       makeCheck("mode", "Shadow mode maps to V1 discussion type", VALID_MODES.has(mode), "Mode must be accepted by the current discussion type list."),
       makeCheck("tags", "Shadow tags pass V1 normalization", !tagResult.error, tagResult.error ?? "Tags are valid."),
-      makeCheck("rollback_guard", "Rollback guard blocks final action", rollbackGuardBlocks, "Missing or disabled v2_create_publish_enabled keeps future V2 publishing blocked."),
-      makeCheck("final_lock", "Final action remains hard locked", FINAL_ACTION_LOCKED, "The final action is still hard-locked on the server."),
+      makeCheck("rollback_guard", "Rollback guard open for this user", publishAllowed, "v2_create_publish_enabled must allow the internal tester."),
+      makeCheck("finalizer_ack", "Finalizer requires acknowledgement", true, "The finalizer only publishes when Confirm sends finalizeAcknowledged=true."),
       makeCheck("v1_routes", "V1 routes remain unchanged", true, "Preflight does not change /create, /discussions, or public navigation."),
       makeCheck("no_writes", "No writes performed", true, "Preflight does not create discussions, tags, notifications, or audit events."),
     ];
@@ -166,11 +166,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       ready,
-      locked: true,
-      status: ready ? "preflight_ready" : "preflight_needs_work",
+      locked: !publishAllowed,
+      status: ready ? "preflight_ready_for_guarded_publish" : "preflight_needs_work",
       reason: ready
-        ? "V2 Create preflight checks passed. Final action remains locked."
-        : "V2 Create preflight checks found items that need review before any future unlock.",
+        ? "V2 Create preflight checks passed for a guarded internal publish."
+        : "V2 Create preflight checks found items that need review before using Confirm publish.",
       checks,
       latestDraft: draft
         ? {
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
           }
         : null,
       rollbackGuard: {
-        blocked: rollbackGuardBlocks,
+        blocked: !publishAllowed,
         flagPresent: Boolean(publishGate.flag),
         flagEnabled: Boolean(publishGate.flag?.enabled),
         rolloutPercentage: publishGate.flag?.rollout_percentage ?? 0,
