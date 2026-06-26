@@ -5,7 +5,6 @@ import { V2CreateServerCheck } from "./create/v2-create-server-check";
 import { V2CreateFinalLockCheck } from "./create/v2-create-final-lock-check";
 import { V2CreateShadowRecordCheck } from "./create/v2-create-shadow-record-check";
 import { V2CreateDryRunCheck } from "./create/v2-create-dry-run-check";
-import { V2CreateRollbackGuardCheck } from "./create/v2-create-rollback-guard-check";
 
 export default function V2Layout({ children }: { children: ReactNode }) {
   return (
@@ -17,7 +16,6 @@ export default function V2Layout({ children }: { children: ReactNode }) {
       <V2CreateFinalLockCheck />
       <V2CreateShadowRecordCheck />
       <V2CreateDryRunCheck />
-      <V2CreateRollbackGuardCheck />
     </>
   );
 }
