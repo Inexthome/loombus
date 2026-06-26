@@ -246,7 +246,7 @@ function MobileBottomNav() {
 function DiscussionCard({ discussion }: { discussion: V2DiscussionCard }) {
   return (
     <Link
-      href={`/discussions/${discussion.id}`}
+      href={`/v2/discussions/${discussion.id}`}
       className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md sm:grid-cols-[132px_minmax(0,1fr)]"
     >
       <div className="hidden overflow-hidden rounded-2xl bg-gradient-to-br from-blue-950 via-blue-700 to-cyan-400 sm:block">
