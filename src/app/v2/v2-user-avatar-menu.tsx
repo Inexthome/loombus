@@ -49,6 +49,7 @@ const MENU_GROUPS: MenuGroup[] = [
       { label: "Premium", href: "/v2/premium" },
       { label: "Support", href: "/v2/support" },
       { label: "Privacy/Security", href: "/v2/privacy-security" },
+      { label: "Admin", href: "/v2/admin" },
     ],
   },
 ];
