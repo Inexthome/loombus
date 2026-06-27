@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -14,6 +15,8 @@ type MenuGroup = {
   title: string;
   items: Array<{ label: string; href: string }>;
 };
+
+const ENTRY_PATHS = new Set(["/v2/login", "/v2/signup", "/v2/reset-password"]);
 
 const MENU_GROUPS: MenuGroup[] = [
   {
@@ -64,10 +67,12 @@ function getDisplayName(profile: V2Profile | null, email: string | null) {
 }
 
 export function V2UserAvatarMenu() {
+  const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<V2Profile | null>(null);
+  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -76,8 +81,16 @@ export function V2UserAvatarMenu() {
       const { data } = await supabase.auth.getSession();
       const user = data.session?.user ?? null;
 
-      if (!mounted || !user) return;
+      if (!mounted) return;
 
+      if (!user) {
+        setHasSession(false);
+        setEmail(null);
+        setProfile(null);
+        return;
+      }
+
+      setHasSession(true);
       setEmail(user.email ?? null);
 
       const { data: profileData } = await supabase
@@ -113,6 +126,10 @@ export function V2UserAvatarMenu() {
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
+
+  if (ENTRY_PATHS.has(pathname) || !hasSession) {
+    return null;
+  }
 
   const displayName = getDisplayName(profile, email);
 
