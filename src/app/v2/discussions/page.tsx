@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   Bookmark,
-  Building2,
+  FileText,
   Home,
   Loader2,
   Lock,
@@ -13,7 +13,7 @@ import {
   Plus,
   Search,
   Settings,
-  Sparkles,
+  StickyNote,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -50,6 +50,15 @@ type Profile = {
   avatar_url: string | null;
 };
 
+type AttachmentRow = {
+  discussion_id: string;
+  public_url: string | null;
+  file_name: string | null;
+  mime_type: string | null;
+  attachment_kind: string | null;
+  sort_order?: number | null;
+};
+
 type V2DiscussionCard = Discussion & {
   authorName?: string | null;
   authorUsername?: string | null;
@@ -58,6 +67,10 @@ type V2DiscussionCard = Discussion & {
   viewCount?: number;
   savedCount?: number;
   tags?: string[];
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
+  attachmentMimeType?: string | null;
+  attachmentKind?: string | null;
 };
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -119,7 +132,7 @@ function getDiscussionPreview(body: string | null) {
     return "Open this discussion to review the full signal.";
   }
 
-  return cleanBody.length > 160 ? `${cleanBody.slice(0, 160)}...` : cleanBody;
+  return cleanBody.length > 190 ? `${cleanBody.slice(0, 190)}...` : cleanBody;
 }
 
 function formatCompactCount(value: number | undefined) {
@@ -137,6 +150,20 @@ function getModeLabel(value: string | null | undefined) {
   if (value === "research_question") return "Research Question";
   if (value === "problem_solving") return "Problem Solving";
   return "Discussion";
+}
+
+function isImageAttachment(value: string | null | undefined) {
+  return value?.startsWith("image/") ?? false;
+}
+
+function isVideoAttachment(value: string | null | undefined) {
+  return value?.startsWith("video/") ?? false;
+}
+
+function getAttachmentLabel(discussion: V2DiscussionCard) {
+  if (isVideoAttachment(discussion.attachmentMimeType)) return "Video context";
+  if (isImageAttachment(discussion.attachmentMimeType)) return "Image context";
+  return discussion.attachmentKind || "Supporting file";
 }
 
 function GateCard({
@@ -243,15 +270,46 @@ function MobileBottomNav() {
   );
 }
 
-function DiscussionCard({ discussion }: { discussion: V2DiscussionCard }) {
+function AttachmentPreview({ discussion }: { discussion: V2DiscussionCard }) {
+  if (!discussion.attachmentUrl) return null;
+
+  const label = getAttachmentLabel(discussion);
+
   return (
-    <Link
-      href={`/v2/discussions/${discussion.id}`}
-      className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md sm:grid-cols-[132px_minmax(0,1fr)]"
+    <Link href={`/v2/discussions/${discussion.id}`} className="block overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 transition hover:border-blue-200">
+      {isImageAttachment(discussion.attachmentMimeType) ? (
+        <img src={discussion.attachmentUrl} alt="" className="aspect-square w-full object-cover" />
+      ) : isVideoAttachment(discussion.attachmentMimeType) ? (
+        <div className="grid aspect-square place-items-center bg-gradient-to-br from-blue-950 via-blue-700 to-cyan-400 p-4 text-center text-white">
+          <div>
+            <FileText className="mx-auto size-8" />
+            <p className="mt-3 text-sm font-black">{label}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-blue-100">{discussion.attachmentName || "Attached video"}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid aspect-square place-items-center bg-slate-100 p-4 text-center text-slate-700">
+          <div>
+            <FileText className="mx-auto size-8 text-blue-600" />
+            <p className="mt-3 text-sm font-black">{label}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-slate-500">{discussion.attachmentName || "Attached file"}</p>
+          </div>
+        </div>
+      )}
+    </Link>
+  );
+}
+
+function DiscussionCard({ discussion }: { discussion: V2DiscussionCard }) {
+  const hasAttachment = Boolean(discussion.attachmentUrl);
+
+  return (
+    <article
+      className={`rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md ${
+        hasAttachment ? "grid gap-4 sm:grid-cols-[150px_minmax(0,1fr)]" : ""
+      }`}
     >
-      <div className="hidden overflow-hidden rounded-2xl bg-gradient-to-br from-blue-950 via-blue-700 to-cyan-400 sm:block">
-        <div className="grid aspect-square place-items-center text-4xl font-black text-white/90">{(discussion.topic || "L").slice(0, 1)}</div>
-      </div>
+      {hasAttachment && <AttachmentPreview discussion={discussion} />}
       <div className="min-w-0">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{discussion.topic || "Discussion"}</span>
@@ -260,8 +318,10 @@ function DiscussionCard({ discussion }: { discussion: V2DiscussionCard }) {
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{discussion.purpose_lane}</span>
           )}
         </div>
-        <h2 className="truncate text-xl font-bold tracking-tight text-slate-950">{discussion.title}</h2>
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{getDiscussionPreview(discussion.body)}</p>
+        <Link href={`/v2/discussions/${discussion.id}`} className="block rounded-2xl transition hover:text-blue-700">
+          <h2 className="line-clamp-2 text-xl font-bold tracking-tight text-slate-950">{discussion.title}</h2>
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{getDiscussionPreview(discussion.body)}</p>
+        </Link>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
           <span className="inline-flex items-center gap-2">
             {discussion.authorAvatarUrl ? (
@@ -279,8 +339,22 @@ function DiscussionCard({ discussion }: { discussion: V2DiscussionCard }) {
             <span>🔖 {formatCompactCount(discussion.savedCount)}</span>
           </span>
         </div>
+        <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+          <Link href={`/v2/discussions/${discussion.id}`} className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-black text-white transition hover:bg-blue-700">
+            <MessageCircle className="size-4" />
+            Open Signal
+          </Link>
+          <button
+            type="button"
+            title="Sticky action will be wired after V2 shell review."
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          >
+            <StickyNote className="size-4" />
+            Add to Sticky
+          </button>
+        </div>
       </div>
-    </Link>
+    </article>
   );
 }
 
@@ -359,6 +433,7 @@ export default function V2DiscussionsPage() {
       let replyCounts: Record<string, number> = {};
       let viewCounts: Record<string, number> = {};
       let savedCounts: Record<string, number> = {};
+      let attachmentMap: Record<string, AttachmentRow> = {};
 
       if (authorIds.length > 0) {
         const { data: profiles } = await supabase
@@ -370,10 +445,11 @@ export default function V2DiscussionsPage() {
       }
 
       if (discussionIds.length > 0) {
-        const [{ data: replies }, { data: views }, { data: bookmarks }] = await Promise.all([
+        const [{ data: replies }, { data: views }, { data: bookmarks }, { data: attachments }] = await Promise.all([
           supabase.from("replies").select("discussion_id").in("discussion_id", discussionIds).is("deleted_at", null),
           supabase.from("discussion_views").select("discussion_id").in("discussion_id", discussionIds),
           supabase.from("bookmarks").select("discussion_id").in("discussion_id", discussionIds),
+          supabase.from("discussion_attachments").select("discussion_id, public_url, file_name, mime_type, attachment_kind, sort_order").in("discussion_id", discussionIds).order("sort_order", { ascending: true }),
         ]);
 
         for (const reply of replies ?? []) {
@@ -387,6 +463,12 @@ export default function V2DiscussionsPage() {
         for (const bookmark of bookmarks ?? []) {
           savedCounts[bookmark.discussion_id] = (savedCounts[bookmark.discussion_id] ?? 0) + 1;
         }
+
+        for (const attachment of (attachments ?? []) as AttachmentRow[]) {
+          if (attachment.discussion_id && attachment.public_url && !attachmentMap[attachment.discussion_id]) {
+            attachmentMap[attachment.discussion_id] = attachment;
+          }
+        }
       }
 
       setDiscussions(
@@ -398,6 +480,10 @@ export default function V2DiscussionsPage() {
           replyCount: replyCounts[discussion.id] ?? 0,
           viewCount: viewCounts[discussion.id] ?? 0,
           savedCount: savedCounts[discussion.id] ?? 0,
+          attachmentUrl: attachmentMap[discussion.id]?.public_url ?? null,
+          attachmentName: attachmentMap[discussion.id]?.file_name ?? null,
+          attachmentMimeType: attachmentMap[discussion.id]?.mime_type ?? null,
+          attachmentKind: attachmentMap[discussion.id]?.attachment_kind ?? null,
         }))
       );
     } catch {
