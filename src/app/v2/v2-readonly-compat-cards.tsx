@@ -175,21 +175,23 @@ async function loadSavedCards(viewerId: string): Promise<CompatCard[]> {
   if (discussionError) throw discussionError;
 
   const discussionMap = new Map((discussionData ?? []).map((discussion) => [discussion.id, discussion as DiscussionRow]));
+  const cards: CompatCard[] = [];
 
-  return (bookmarkData ?? [])
-    .map((bookmark) => {
-      const bookmarkRow = bookmark as { discussion_id?: string; created_at?: string };
-      const discussion = bookmarkRow.discussion_id ? discussionMap.get(bookmarkRow.discussion_id) : null;
-      if (!discussion) return null;
-      return {
-        title: discussion.title,
-        description: truncate(stripHtml(discussion.body) || "Saved discussion."),
-        meta: `${discussion.topic || "Discussion"} · Saved ${formatRelativeTime(bookmarkRow.created_at)}`,
-        href: `/v2/discussions/${discussion.id}`,
-        icon: "saved" as const,
-      };
-    })
-    .filter((card): card is CompatCard => Boolean(card));
+  for (const bookmark of bookmarkData ?? []) {
+    const bookmarkRow = bookmark as { discussion_id?: string; created_at?: string };
+    const discussion = bookmarkRow.discussion_id ? discussionMap.get(bookmarkRow.discussion_id) : null;
+    if (!discussion) continue;
+
+    cards.push({
+      title: discussion.title,
+      description: truncate(stripHtml(discussion.body) || "Saved discussion."),
+      meta: `${discussion.topic || "Discussion"} · Saved ${formatRelativeTime(bookmarkRow.created_at)}`,
+      href: `/v2/discussions/${discussion.id}`,
+      icon: "saved" as const,
+    });
+  }
+
+  return cards;
 }
 
 async function loadStickyCards(): Promise<CompatCard[]> {
@@ -263,20 +265,22 @@ async function loadMyReplyCards(viewerId: string): Promise<CompatCard[]> {
   if (discussionError) throw discussionError;
 
   const discussionMap = new Map((discussionData ?? []).map((discussion) => [discussion.id, discussion as DiscussionRow]));
+  const cards: CompatCard[] = [];
 
-  return ((replyData ?? []) as ReplyRow[])
-    .map((reply) => {
-      const discussion = discussionMap.get(reply.discussion_id);
-      if (!discussion) return null;
-      return {
-        title: discussion.title,
-        description: truncate(stripHtml(reply.body) || "Your reply."),
-        meta: `${discussion.topic || "Discussion"} · Replied ${formatRelativeTime(reply.created_at)}`,
-        href: `/v2/discussions/${reply.discussion_id}`,
-        icon: "reply" as const,
-      };
-    })
-    .filter((card): card is CompatCard => Boolean(card));
+  for (const reply of (replyData ?? []) as ReplyRow[]) {
+    const discussion = discussionMap.get(reply.discussion_id);
+    if (!discussion) continue;
+
+    cards.push({
+      title: discussion.title,
+      description: truncate(stripHtml(reply.body) || "Your reply."),
+      meta: `${discussion.topic || "Discussion"} · Replied ${formatRelativeTime(reply.created_at)}`,
+      href: `/v2/discussions/${reply.discussion_id}`,
+      icon: "reply" as const,
+    });
+  }
+
+  return cards;
 }
 
 async function loadProfileCards(viewerId: string): Promise<CompatCard[]> {
