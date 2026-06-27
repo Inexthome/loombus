@@ -4,16 +4,17 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
+  Building2,
   CalendarDays,
+  ChevronDown,
+  FlaskConical,
   Home,
+  Leaf,
   Loader2,
   Lock,
   MessageCircle,
   Plus,
   Search,
-  Settings,
-  ShieldCheck,
-  TrendingUp,
   Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
@@ -33,12 +34,16 @@ type ShellPayload = {
 
 type RoomCard = {
   name: string;
-  type: "Research" | "Builder" | "Civic" | "Local" | "Private";
+  type: "Research" | "Builder" | "Civic" | "Local" | "Private" | "Condo";
   description: string;
   members: string;
-  signals: string;
+  activity: string;
   tag: string;
-  featured?: boolean;
+  accent: string;
+  updateAuthor: string;
+  updateText: string;
+  updateAge: string;
+  action: "View Room" | "Join";
 };
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -53,7 +58,6 @@ const V2_NAV_ITEMS = [
   { label: "Create", href: "/v2/create", icon: Plus, primary: true },
   { label: "Rooms", href: "/v2/rooms", icon: Users, active: true },
   { label: "Messages", href: "/v2/messages", icon: Bell },
-  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 const FILTERS = ["All Rooms", "Local", "Expert", "Private", "Following", "Trending"];
@@ -62,52 +66,93 @@ const ROOMS: RoomCard[] = [
   {
     name: "Loombus Research Lab",
     type: "Research",
-    description: "A space for structured questions, evidence, sources, and high-signal synthesis.",
-    members: "128",
-    signals: "42",
+    description: "Explore research, experiments, and insights about the future of communities.",
+    members: "1.2k",
+    activity: "Active now",
     tag: "Expert",
-    featured: true,
+    accent: "from-slate-950 to-blue-800",
+    updateAuthor: "Nadia Karim",
+    updateText: "Shared a new research brief",
+    updateAge: "2h ago",
+    action: "View Room",
   },
   {
     name: "Builders’ Room",
     type: "Builder",
-    description: "Product builders, founders, and makers testing ideas before they become noise.",
-    members: "84",
-    signals: "31",
+    description: "A space for builders and operators sharing ideas and solving challenges.",
+    members: "980",
+    activity: "12 new today",
     tag: "Trending",
+    accent: "from-blue-700 to-cyan-400",
+    updateAuthor: "Mason Alvarado",
+    updateText: "Started a discussion",
+    updateAge: "1h ago",
+    action: "Join",
   },
   {
     name: "Civic Futures Lab",
     type: "Civic",
-    description: "A calmer room for policy, governance, local systems, and civic problem solving.",
-    members: "63",
-    signals: "19",
+    description: "Designing better systems and policies for stronger communities.",
+    members: "870",
+    activity: "Active now",
     tag: "Expert",
+    accent: "from-emerald-600 to-green-400",
+    updateAuthor: "Elena Park",
+    updateText: "Shared policy ideas",
+    updateAge: "3h ago",
+    action: "View Room",
   },
   {
     name: "Condo Residents Network",
-    type: "Private",
-    description: "A private community shell for building-specific resident updates and coordination.",
-    members: "24",
-    signals: "8",
+    type: "Condo",
+    description: "Connect with condo residents and share updates that matter.",
+    members: "640",
+    activity: "6 new today",
     tag: "Private",
+    accent: "from-violet-700 to-indigo-500",
+    updateAuthor: "James Wu",
+    updateText: "Posted a building update",
+    updateAge: "4h ago",
+    action: "Join",
   },
   {
     name: "Local Voices Jacksonville",
     type: "Local",
-    description: "Local questions, neighborhood insight, and regional discussions without the endless scroll.",
-    members: "57",
-    signals: "16",
+    description: "A local space to discuss issues, events, and opportunities in Jax.",
+    members: "520",
+    activity: "Active now",
     tag: "Local",
+    accent: "from-orange-600 to-amber-400",
+    updateAuthor: "Tanya Fields",
+    updateText: "Shared a community event",
+    updateAge: "5h ago",
+    action: "View Room",
   },
   {
     name: "Private Neighbors Circle",
     type: "Private",
-    description: "A small trusted circle model for private coordination and focused updates.",
-    members: "12",
-    signals: "5",
+    description: "Invite-only space for neighbors to coordinate and stay informed.",
+    members: "156",
+    activity: "Active now",
     tag: "Private",
+    accent: "from-teal-700 to-cyan-500",
+    updateAuthor: "Michael Brown",
+    updateText: "Shared a neighborhood update",
+    updateAge: "6h ago",
+    action: "Join",
   },
+];
+
+const SUGGESTED_ROOMS = [
+  { name: "Climate Solutions Hub", members: "620 members", icon: Leaf },
+  { name: "Open Systems Lab", members: "410 members", icon: Building2 },
+  { name: "Youth Voices", members: "330 members", icon: Users },
+];
+
+const ROOM_EVENTS = [
+  { day: "22", month: "MAY", title: "Research Briefing: Identity in Web3", room: "Loombus Research Lab", time: "Thu, May 22 · 12:00 PM ET", count: "128" },
+  { day: "24", month: "MAY", title: "Builders’ Office Hours", room: "Builders’ Room", time: "Sat, May 24 · 2:00 PM ET", count: "86" },
+  { day: "27", month: "MAY", title: "Civic Tech Roundtable", room: "Civic Futures Lab", time: "Tue, May 27 · 6:00 PM ET", count: "94" },
 ];
 
 function getDefaultShellPayload(): ShellPayload {
@@ -117,6 +162,15 @@ function getDefaultShellPayload(): ShellPayload {
     authenticated: false,
     flags: DEFAULT_FLAGS,
   };
+}
+
+function getRoomIcon(room: RoomCard) {
+  if (room.type === "Research") return FlaskConical;
+  if (room.type === "Civic") return Leaf;
+  if (room.type === "Condo") return Building2;
+  if (room.type === "Local") return Home;
+  if (room.type === "Private") return Lock;
+  return Users;
 }
 
 function V2TopNav() {
@@ -136,7 +190,7 @@ function V2TopNav() {
                 href={item.href}
                 className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
                   item.active
-                    ? "bg-white/10 text-white ring-1 ring-white/20"
+                    ? "border-b border-white text-white"
                     : item.primary
                       ? "border border-white/40 text-white hover:bg-white/10"
                       : "text-blue-100 hover:bg-white/10 hover:text-white"
@@ -148,9 +202,15 @@ function V2TopNav() {
             );
           })}
         </nav>
-        <Link href="/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
-          <Search className="size-5" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
+            <Search className="size-5" />
+          </Link>
+          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
+            <Bell className="size-5" />
+            <span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">8</span>
+          </Link>
+        </div>
       </div>
     </header>
   );
@@ -208,23 +268,37 @@ function GateCard({ title, message, loading = false, payload }: { title: string;
 }
 
 function RoomCardView({ room }: { room: RoomCard }) {
+  const Icon = getRoomIcon(room);
   return (
-    <article className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
-      <div className="flex items-start justify-between gap-4">
-        <span className="grid size-14 place-items-center rounded-3xl bg-gradient-to-br from-blue-950 via-blue-700 to-cyan-400 text-xl font-black text-white">
-          {room.name.slice(0, 1)}
-        </span>
-        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{room.tag}</span>
+    <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+      <div className="grid gap-4 sm:grid-cols-[76px_minmax(0,1fr)]">
+        <div className={`grid size-16 place-items-center rounded-2xl bg-gradient-to-br ${room.accent} text-white shadow-lg`}>
+          <Icon className="size-8" />
+        </div>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <h2 className="text-lg font-black text-slate-950">{room.name}</h2>
+            {room.type === "Private" && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">Private</span>}
+          </div>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{room.description}</p>
+        </div>
       </div>
-      <h2 className="mt-5 text-xl font-black text-slate-950">{room.name}</h2>
-      <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">{room.description}</p>
-      <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs font-bold text-slate-500">
+      <div className="mt-5 flex flex-wrap items-center gap-4 text-xs font-bold text-slate-500">
         <span>{room.members} members</span>
-        <span>{room.signals} signals</span>
+        <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-emerald-500" /> {room.activity}</span>
       </div>
-      <button type="button" className="mt-5 w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-blue-700 transition hover:border-blue-200 hover:bg-blue-50">
-        Preview Room
-      </button>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+        <div className="flex items-center gap-3 text-xs text-slate-500">
+          <span className="grid size-8 place-items-center rounded-full bg-slate-100 font-black text-slate-600">{room.updateAuthor.slice(0, 1)}</span>
+          <div>
+            <p className="font-black text-slate-700">{room.updateAuthor}</p>
+            <p>{room.updateText} · {room.updateAge}</p>
+          </div>
+        </div>
+        <Link href="/v2/rooms" className={`rounded-2xl px-4 py-2 text-sm font-black transition ${room.action === "Join" ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-blue-50 text-blue-700 hover:bg-blue-100"}`}>
+          {room.action}
+        </Link>
+      </div>
     </article>
   );
 }
@@ -300,17 +374,10 @@ export default function V2RoomsPage() {
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] text-slate-950">
       <V2TopNav />
-      <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Rooms</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Browse focused spaces for structured conversations. This shell is read-only while room membership and room discussions stay guarded.
-            </p>
-          </div>
-          <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700">
-            {payload.flags.v2_rooms ? "Rooms flag on" : "Rooms preview shell"}
-          </div>
+      <section className="mx-auto max-w-7xl px-4 pb-20 pt-7 sm:px-6 lg:px-8">
+        <header className="mb-6">
+          <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Rooms</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Dedicated spaces for communities and focused groups.</p>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -321,7 +388,7 @@ export default function V2RoomsPage() {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search rooms, topics, and communities"
+                  placeholder="Search rooms and communities"
                   className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
                 />
               </div>
@@ -348,56 +415,79 @@ export default function V2RoomsPage() {
                 </div>
               )}
             </div>
+
+            <div className="mt-6 flex justify-center">
+              <button type="button" className="inline-flex items-center gap-2 rounded-2xl bg-blue-50 px-5 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-100">
+                Load more rooms
+                <ChevronDown className="size-4" />
+              </button>
+            </div>
           </div>
 
           <aside className="space-y-4">
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Your Rooms</h2>
+            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Your Rooms</h2>
+                <Link href="/v2/rooms" className="text-sm font-black text-blue-700">View all</Link>
+              </div>
               <div className="mt-4 space-y-3">
-                {ROOMS.slice(0, 3).map((room) => (
-                  <div key={room.name} className="rounded-2xl bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700">
-                    {room.name}
+                {ROOMS.slice(0, 5).map((room) => {
+                  const Icon = getRoomIcon(room);
+                  return (
+                    <Link key={room.name} href="/v2/rooms" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50">
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className={`grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${room.accent} text-white`}><Icon className="size-4" /></span>
+                        <span className="min-w-0"><span className="block truncate">{room.name}</span><span className="block text-xs font-semibold text-slate-400">{room.members} members · {room.activity}</span></span>
+                      </span>
+                      <span className="size-2 shrink-0 rounded-full bg-blue-600" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Suggested Rooms</h2>
+                <Link href="/v2/rooms" className="text-sm font-black text-blue-700">View all</Link>
+              </div>
+              <div className="mt-4 space-y-3">
+                {SUGGESTED_ROOMS.map((room) => {
+                  const Icon = room.icon;
+                  return (
+                    <div key={room.name} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2">
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon className="size-4" /></span>
+                        <span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{room.name}</span><span className="block text-xs font-semibold text-slate-400">{room.members}</span></span>
+                      </span>
+                      <button type="button" className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 transition hover:bg-blue-100">Join</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Upcoming Room Events</h2>
+                <Link href="/v2/rooms" className="text-sm font-black text-blue-700">View all</Link>
+              </div>
+              <div className="mt-4 space-y-4">
+                {ROOM_EVENTS.map((event) => (
+                  <div key={event.title} className="grid grid-cols-[52px_minmax(0,1fr)] gap-3 border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
+                    <div className="rounded-2xl bg-blue-50 px-2 py-2 text-center">
+                      <p className="text-[10px] font-black text-slate-500">{event.month}</p>
+                      <p className="text-xl font-black text-slate-950">{event.day}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-slate-950">{event.title}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">{event.room}</p>
+                      <p className="mt-1 text-xs text-slate-500">{event.time}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">{event.count} interested</p>
+                    </div>
                   </div>
                 ))}
               </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Suggested Rooms</h2>
-                <TrendingUp className="size-5 text-blue-600" />
-              </div>
-              <div className="mt-4 space-y-3 text-sm text-slate-600">
-                <p><span className="font-black text-slate-800">Builders’ Room</span> — active product discussion.</p>
-                <p><span className="font-black text-slate-800">Local Voices Jacksonville</span> — local signal without noise.</p>
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <CalendarDays className="size-5 text-blue-600" />
-                <h2 className="font-black text-slate-950">Upcoming Room Events</h2>
-              </div>
-              <div className="mt-4 space-y-3 text-sm text-slate-600">
-                <div className="rounded-2xl bg-blue-50 px-3 py-3">
-                  <p className="font-black text-blue-900">Research Lab Weekly Signal</p>
-                  <p className="mt-1 text-blue-700">Preview placeholder</p>
-                </div>
-                <div className="rounded-2xl bg-slate-50 px-3 py-3">
-                  <p className="font-black text-slate-800">Community Builders Check-in</p>
-                  <p className="mt-1 text-slate-500">Preview placeholder</p>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="size-5 text-amber-700" />
-                <h2 className="font-black text-amber-900">Safe rollout</h2>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-amber-800">
-                This page does not create rooms, join rooms, or write memberships yet. It only previews the V2 Rooms shell.
-              </p>
             </section>
           </aside>
         </section>
