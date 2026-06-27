@@ -33,6 +33,12 @@ type ShellPayload = {
   flags: FeatureFlags;
 };
 
+type FallbackCard = {
+  title: string;
+  description: string;
+  meta: string;
+};
+
 type SectionConfig = {
   slug: string;
   title: string;
@@ -40,7 +46,7 @@ type SectionConfig = {
   description: string;
   chips: string[];
   searchPlaceholder: string;
-  cards: Array<{ title: string; description: string; meta: string }>;
+  cards: FallbackCard[];
   sideTitle: string;
   sideItems: string[];
   footer: Array<{ title: string; description: string }>;
@@ -67,7 +73,7 @@ const SECTION_CONFIGS: Record<string, SectionConfig> = {
     title: "People",
     eyebrow: "Discover",
     description: "Find thoughtful contributors, mutual connections, and people shaping useful discussions.",
-    chips: ["All", "Following", "Followers", "Mutual", "Suggested", "Top Contributors"],
+    chips: ["All", "Following", "Followers", "Mutual", "Suggested"],
     searchPlaceholder: "Search people, bios, topics, and rooms",
     icon: UserRound,
     cards: [
@@ -75,11 +81,11 @@ const SECTION_CONFIGS: Record<string, SectionConfig> = {
       { title: "Mutual context", description: "Follow and relationship actions remain guarded for a later pass.", meta: "Read-only" },
     ],
     sideTitle: "People Compatibility",
-    sideItems: ["Live profiles", "Blocked-user filtering", "No follow mutations", "Profile details guarded"],
+    sideItems: ["Live profiles", "Blocked-user filtering", "No follow mutations", "Profile actions guarded"],
     footer: [
       { title: "Real Contributors", description: "V2 reads existing profile data without changing relationships." },
-      { title: "Safe Discovery", description: "Blocked profiles stay hidden using the existing V1 rules." },
-      { title: "Actions Later", description: "Follow, message, and profile edits stay guarded for later wiring." },
+      { title: "Safe Discovery", description: "Blocked profiles stay hidden using existing V1 rules." },
+      { title: "Actions Later", description: "Follow, message, and profile edits stay guarded." },
     ],
   },
   saved: {
@@ -87,7 +93,7 @@ const SECTION_CONFIGS: Record<string, SectionConfig> = {
     title: "Saved",
     eyebrow: "Library",
     description: "Your personal library for discussions, replies, files, and links.",
-    chips: ["All Saved", "Discussions", "Replies", "Folders", "Files", "Links", "Unfiled"],
+    chips: ["All Saved", "Discussions", "Replies", "Folders", "Files", "Links"],
     searchPlaceholder: "Search saved discussions, replies, files, and folders",
     icon: Bookmark,
     cards: [
@@ -107,7 +113,7 @@ const SECTION_CONFIGS: Record<string, SectionConfig> = {
     title: "Stickies",
     eyebrow: "Library",
     description: "Capture useful thoughts, reminders, and discussion notes.",
-    chips: ["All", "Private", "Discussion Notes", "Room Notes", "Follow-ups", "Pinned", "Archived"],
+    chips: ["All", "Private", "Discussion Notes", "Room Notes", "Follow-ups", "Pinned"],
     searchPlaceholder: "Search notes, tags, and attached sources",
     icon: StickyNote,
     cards: [
@@ -264,40 +270,50 @@ function MobileBottomNav() {
 }
 
 export function V2LiveReadOnlySectionPage({ sectionSlug }: { sectionSlug: string }) {
-  const section = SECTION_CONFIGS[sectionSlug];
+  const section = SECTION_CONFIGS[sectionSlug] ?? SECTION_CONFIGS.people;
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
-  const [activeChip, setActiveChip] = useState(section?.chips[0] ?? "All");
-
-  async function loadShell() {
-    setLoading(true);
-    setMessage("");
-
-    try {
-      const { data } = await supabase.auth.getSession();
-      const accessToken = data.session?.access_token;
-      const response = await fetch("/api/v2/shell", {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      });
-      const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
-      setPayload(nextPayload);
-    } catch {
-      setPayload(getDefaultShellPayload());
-      setMessage("Unable to verify V2 shell access. Current Loombus remains available.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [activeChip, setActiveChip] = useState(section.chips[0] ?? "All");
 
   useEffect(() => {
-    loadShell();
-    const { data } = supabase.auth.onAuthStateChange(() => loadShell());
-    return () => data.subscription.unsubscribe();
+    let mounted = true;
+
+    async function loadShell() {
+      if (mounted) {
+        setLoading(true);
+        setMessage("");
+      }
+
+      try {
+        const { data } = await supabase.auth.getSession();
+        const accessToken = data.session?.access_token;
+        const requestInit = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {};
+        const response = await fetch("/api/v2/shell", requestInit);
+        const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
+        if (mounted) setPayload(nextPayload);
+      } catch {
+        if (mounted) {
+          setPayload(getDefaultShellPayload());
+          setMessage("Unable to verify V2 shell access. Current Loombus remains available.");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    void loadShell();
+    const { data } = supabase.auth.onAuthStateChange(() => {
+      void loadShell();
+    });
+
+    return () => {
+      mounted = false;
+      data.subscription.unsubscribe();
+    };
   }, []);
 
-  if (!section) return <GateCard title="V2 page not found" message="This V2 shell route is not available yet." payload={payload} />;
   if (loading) return <GateCard title={`Loading ${section.title}`} message="Loombus is verifying access before loading this V2 shell page." loading />;
   if (message) return <GateCard title="V2 shell check failed safely" message={message} payload={payload} />;
   if (!payload?.authenticated) return <GateCard title="Sign in required" message="The V2 shell is internal-only right now. Sign in first so Loombus can verify access." payload={payload} />;
