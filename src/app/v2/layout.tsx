@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { V2ShellLinkRouter } from "./v2-shell-link-router";
 import { V2UserAvatarMenu } from "./v2-user-avatar-menu";
+import { V2AppearanceProvider } from "./v2-appearance";
 import { V2CreateReviewAction } from "./create/v2-create-review-action";
 import { V2CreateServerCheck } from "./create/v2-create-server-check";
 import { V2CreateFinalLockCheck } from "./create/v2-create-final-lock-check";
@@ -10,7 +11,7 @@ import { V2CreatePreflightStatusCheck } from "./create/v2-create-preflight-statu
 
 export default function V2Layout({ children }: { children: ReactNode }) {
   return (
-    <>
+    <V2AppearanceProvider>
       <style>{`
         header a[href="/v2"] img[src="/assets/brand/loombus-mark-transparent.png"],
         header a[href="/v2"] span.text-xl {
@@ -62,6 +63,6 @@ export default function V2Layout({ children }: { children: ReactNode }) {
       <V2CreateShadowRecordCheck />
       <V2CreateDryRunCheck />
       <V2CreatePreflightStatusCheck />
-    </>
+    </V2AppearanceProvider>
   );
 }
