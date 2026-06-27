@@ -98,6 +98,10 @@ function toV2Href(href: string | undefined) {
   return href;
 }
 
+function toCompatCards(cards: FallbackCard[]): CompatCard[] {
+  return cards.map((card) => ({ ...card }));
+}
+
 function matchesQuery(card: CompatCard, query: string) {
   const cleanQuery = query.trim().toLowerCase();
   if (!cleanQuery) return true;
@@ -124,7 +128,7 @@ async function getHiddenProfileIds(viewerId: string) {
   return hiddenIds;
 }
 
-async function loadPeopleCards(viewerId: string) {
+async function loadPeopleCards(viewerId: string): Promise<CompatCard[]> {
   const hiddenIds = await getHiddenProfileIds(viewerId);
   const { data, error } = await supabase
     .from("profiles")
@@ -146,7 +150,7 @@ async function loadPeopleCards(viewerId: string) {
     }));
 }
 
-async function loadSavedCards(viewerId: string) {
+async function loadSavedCards(viewerId: string): Promise<CompatCard[]> {
   const { data: bookmarkData, error } = await supabase
     .from("bookmarks")
     .select("id, discussion_id, created_at")
@@ -188,7 +192,7 @@ async function loadSavedCards(viewerId: string) {
     .filter((card): card is CompatCard => Boolean(card));
 }
 
-async function loadStickyCards() {
+async function loadStickyCards(): Promise<CompatCard[]> {
   const { data } = await supabase.auth.getSession();
   const accessToken = data.session?.access_token;
   if (!accessToken) return [];
@@ -210,7 +214,7 @@ async function loadStickyCards() {
   }));
 }
 
-async function loadMyDiscussionCards(viewerId: string) {
+async function loadMyDiscussionCards(viewerId: string): Promise<CompatCard[]> {
   const { data, error } = await supabase
     .from("discussions")
     .select("id, title, topic, body, created_at, discussion_status")
@@ -230,7 +234,7 @@ async function loadMyDiscussionCards(viewerId: string) {
   }));
 }
 
-async function loadMyReplyCards(viewerId: string) {
+async function loadMyReplyCards(viewerId: string): Promise<CompatCard[]> {
   const { data: replyData, error } = await supabase
     .from("replies")
     .select("id, discussion_id, body, created_at")
@@ -241,7 +245,13 @@ async function loadMyReplyCards(viewerId: string) {
 
   if (error) throw error;
 
-  const discussionIds = [...new Set(((replyData ?? []) as ReplyRow[]).map((reply) => reply.discussion_id).filter(Boolean))];
+  const discussionIds = [
+    ...new Set(
+      ((replyData ?? []) as ReplyRow[])
+        .map((reply) => reply.discussion_id)
+        .filter((id): id is string => Boolean(id))
+    ),
+  ];
   if (discussionIds.length === 0) return [];
 
   const { data: discussionData, error: discussionError } = await supabase
@@ -269,7 +279,7 @@ async function loadMyReplyCards(viewerId: string) {
     .filter((card): card is CompatCard => Boolean(card));
 }
 
-async function loadProfileCards(viewerId: string) {
+async function loadProfileCards(viewerId: string): Promise<CompatCard[]> {
   const [profileResult, discussionCountResult, replyCountResult, savedCountResult] = await Promise.all([
     supabase.from("profiles").select("id, full_name, username, avatar_url, bio").eq("id", viewerId).maybeSingle(),
     supabase.from("discussions").select("id", { count: "exact", head: true }).eq("user_id", viewerId).is("deleted_at", null),
@@ -347,10 +357,11 @@ export function V2ReadOnlyCompatCards({
 
   useEffect(() => {
     let mounted = true;
+    const fallbackCompatCards = toCompatCards(fallbackCards);
 
     async function loadCards() {
       if (!LIVE_SECTIONS.has(sectionSlug)) {
-        setCards(fallbackCards);
+        setCards(fallbackCompatCards);
         setUsedLiveData(false);
         return;
       }
@@ -362,7 +373,7 @@ export function V2ReadOnlyCompatCards({
         const viewerId = await getViewerId();
         if (!viewerId) {
           if (mounted) {
-            setCards(fallbackCards);
+            setCards(fallbackCompatCards);
             setUsedLiveData(false);
             setMessage("Sign in is required for live V2 data.");
           }
@@ -379,14 +390,14 @@ export function V2ReadOnlyCompatCards({
         if (sectionSlug === "profile") nextCards = await loadProfileCards(viewerId);
 
         if (mounted) {
-          setCards(nextCards.length > 0 ? nextCards : fallbackCards);
+          setCards(nextCards.length > 0 ? nextCards : fallbackCompatCards);
           setUsedLiveData(nextCards.length > 0);
           setMessage(nextCards.length > 0 ? "" : "No live V2 items found yet. Showing shell examples.");
         }
       } catch (error) {
         console.error(`Unable to load V2 ${sectionSlug} compatibility data.`, error);
         if (mounted) {
-          setCards(fallbackCards);
+          setCards(fallbackCompatCards);
           setUsedLiveData(false);
           setMessage("Live V1 data could not be loaded safely. Showing shell examples.");
         }
