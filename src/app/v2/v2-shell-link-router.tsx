@@ -6,6 +6,8 @@ import { useEffect } from "react";
 const V2_SHELL_LINK_TARGETS: Record<string, string> = {
   Discussions: "/v2/discussions",
   Create: "/v2/create",
+  Search: "/v2/search",
+  Notifications: "/v2/notifications",
 };
 
 function getV2ShellPreviewTarget(target: EventTarget | null) {
@@ -28,6 +30,14 @@ function getV2ShellPreviewTarget(target: EventTarget | null) {
 
   if (label === "Create" && href === "/create") {
     return V2_SHELL_LINK_TARGETS.Create;
+  }
+
+  if ((label === "Search" || href === "/search") && href === "/search") {
+    return V2_SHELL_LINK_TARGETS.Search;
+  }
+
+  if ((label === "Notifications" || href === "/notifications") && href === "/notifications") {
+    return V2_SHELL_LINK_TARGETS.Notifications;
   }
 
   if (href.indexOf("/discussions/") === 0) {
