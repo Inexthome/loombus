@@ -48,6 +48,9 @@ type RecentDiscussion = {
   title: string;
   topic: string | null;
   created_at: string;
+  replyCount: number;
+  viewCount: number;
+  savedCount: number;
 };
 
 type V2HomeData = {
@@ -102,6 +105,10 @@ function formatCount(value: number) {
 function getCompactCount(value: number) {
   if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
   return formatCount(value);
+}
+
+function getSignalScore(discussion: RecentDiscussion) {
+  return discussion.replyCount * 3 + discussion.savedCount * 5 + discussion.viewCount;
 }
 
 function getGreetingName({ fullName, username, email }: { fullName?: string | null; username?: string | null; email?: string | null }) {
@@ -223,7 +230,7 @@ function MobileBottomNav() {
 
 function AttentionCard({ title, count, description, href, children }: { title: string; count: number; description: string; href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="block rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+    <Link href={href} className="block rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_18px_44px_rgba(15,23,42,0.14)]">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <span className="grid size-11 place-items-center rounded-2xl bg-blue-50 text-blue-600">{children}</span>
@@ -240,7 +247,6 @@ function AttentionCard({ title, count, description, href, children }: { title: s
 
 function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: ShellPayload; homeData: V2HomeData; homeLoading: boolean; homeMessage: string }) {
   const attentionCount = homeData.unreadMessages + homeData.unreadNotifications;
-  const contributionCount = homeData.authoredDiscussionCount + homeData.replyCount;
   const featuredDiscussion = homeData.recentDiscussions[0] ?? null;
   const recentSignals = homeData.recentDiscussions.slice(1, 5);
   const topicCounts = useMemo(() => {
@@ -271,7 +277,7 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
 
         {homeMessage && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{homeMessage}</div>}
 
-        <section className="mb-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <section className="mb-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_16px_42px_rgba(15,23,42,0.12)] sm:p-6">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.18em] text-slate-500">Needs attention</p>
           <div className="grid gap-4 lg:grid-cols-3">
             <AttentionCard title="New Replies" count={homeData.replyCount} description={`${formatCount(homeData.replyCount)} replies connected to your activity`} href="/my-activity">
@@ -288,24 +294,24 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.13)] sm:p-6">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Featured signal</p>
               {homeLoading ? (
                 <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">Loading featured signal...</div>
               ) : featuredDiscussion ? (
-                <Link href={`/v2/discussions/${featuredDiscussion.id}`} className="mt-4 grid gap-5 rounded-3xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-200 hover:bg-blue-50/50 md:grid-cols-[220px_minmax(0,1fr)]">
-                  <div className="grid aspect-video place-items-center rounded-2xl bg-gradient-to-br from-blue-950 via-blue-700 to-cyan-400 text-5xl font-black text-white md:aspect-square">
-                    {(featuredDiscussion.topic || "L").slice(0, 1)}
+                <Link href={`/v2/discussions/${featuredDiscussion.id}`} className="mt-4 block rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_18px_40px_rgba(15,23,42,0.14)] ring-1 ring-white/80 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_24px_54px_rgba(15,23,42,0.18)] sm:p-6">
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{featuredDiscussion.topic || "Discussion"}</span>
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Discussion</span>
                   </div>
-                  <div className="min-w-0 self-center">
-                    <h2 className="text-2xl font-black tracking-tight text-slate-950">{featuredDiscussion.title}</h2>
-                    <span className="mt-3 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-700">{featuredDiscussion.topic || "Discussion"}</span>
-                    <p className="mt-4 text-sm leading-6 text-slate-600">A recent discussion with signal worth reviewing.</p>
-                    <div className="mt-5 flex flex-wrap items-center gap-5 text-xs font-bold text-slate-500">
-                      <span>💬 {getCompactCount(homeData.replyCount)}</span>
-                      <span>🔖 {getCompactCount(homeData.savedCount)}</span>
-                      <span>{getRecentDiscussionAge(featuredDiscussion.created_at)}</span>
-                    </div>
+                  <h2 className="text-3xl font-black tracking-tight text-slate-950">{featuredDiscussion.title}</h2>
+                  <p className="mt-3 text-base leading-7 text-slate-600">A recent discussion with signal worth reviewing.</p>
+                  <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 text-sm font-bold text-slate-500">
+                    <span>💬 {getCompactCount(featuredDiscussion.replyCount)}</span>
+                    <span>🔖 {getCompactCount(featuredDiscussion.savedCount)}</span>
+                    <span>👁 {getCompactCount(featuredDiscussion.viewCount)}</span>
+                    <span>{getRecentDiscussionAge(featuredDiscussion.created_at)}</span>
+                    <span className="ml-auto rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-black text-orange-800">Signal {getSignalScore(featuredDiscussion)}</span>
                   </div>
                 </Link>
               ) : (
@@ -313,7 +319,7 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
               )}
             </section>
 
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.13)] sm:p-6">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Recent signals</p>
                 <Link href="/v2/discussions" className="text-sm font-black text-blue-700 transition hover:text-blue-900">View all</Link>
@@ -328,7 +334,7 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
                         <h3 className="font-black text-slate-950">{discussion.title}</h3>
                         <p className="mt-1 text-sm text-slate-500">{discussion.topic || "Discussion"} · {getRecentDiscussionAge(discussion.created_at)}</p>
                       </div>
-                      <MessageCircle className="size-5 text-blue-600" />
+                      <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-black text-orange-800">Signal {getSignalScore(discussion)}</span>
                     </div>
                   </Link>
                 ))}
@@ -337,7 +343,7 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
           </div>
 
           <aside className="space-y-4">
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Trending topics</h2>
                 <TrendingUp className="size-5 text-blue-600" />
@@ -345,39 +351,27 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
               <div className="mt-4 space-y-3">
                 {(topicCounts.length > 0 ? topicCounts : [["Discussions", 0]]).map(([topic, count], index) => (
                   <Link key={topic} href="/v2/discussions" className="flex items-center justify-between gap-3 text-sm">
-                    <span className="flex items-center gap-2 font-bold text-slate-700">
-                      <span className="grid size-6 place-items-center rounded-full bg-blue-100 text-xs font-black text-blue-700">{index + 1}</span>
-                      {topic}
-                    </span>
+                    <span className="flex items-center gap-2 font-bold text-slate-700"><span className="grid size-6 place-items-center rounded-full bg-blue-100 text-xs font-black text-blue-700">{index + 1}</span>{topic}</span>
                     <span className="text-xs font-semibold text-slate-400">{count} signals</span>
                   </Link>
                 ))}
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
               <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Your Rooms</h2>
               <div className="mt-4 space-y-3 text-sm">
-                <Link href="/v2/rooms" className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-3 font-bold text-slate-700">
-                  <span className="flex items-center gap-3"><Users className="size-4 text-blue-600" /> Loombus Research Lab</span>
-                  <span className="text-blue-600">•</span>
-                </Link>
-                <Link href="/v2/rooms" className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-3 font-bold text-slate-700">
-                  <span className="flex items-center gap-3"><Users className="size-4 text-blue-600" /> Builders’ Room</span>
-                  <span className="text-blue-600">•</span>
-                </Link>
-                <Link href="/v2/rooms" className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-3 font-bold text-slate-700">
-                  <span className="flex items-center gap-3"><Users className="size-4 text-blue-600" /> Civic Futures Lab</span>
-                  <span className="text-blue-600">•</span>
-                </Link>
+                {["Loombus Research Lab", "Builders’ Room", "Civic Futures Lab"].map((room) => (
+                  <Link key={room} href="/v2/rooms" className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-3 font-bold text-slate-700">
+                    <span className="flex items-center gap-3"><Users className="size-4 text-blue-600" /> {room}</span>
+                    <span className="text-blue-600">•</span>
+                  </Link>
+                ))}
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="size-5 text-emerald-600" />
-                <h2 className="font-black text-slate-950">Rollout state</h2>
-              </div>
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
+              <div className="flex items-center gap-3"><ShieldCheck className="size-5 text-emerald-600" /><h2 className="font-black text-slate-950">Rollout state</h2></div>
               <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-2xl bg-blue-50 p-3"><p className="font-black text-blue-700">{payload.flags.v2_shell ? "On" : "Off"}</p><p className="text-xs font-bold text-slate-500">V2 shell</p></div>
                 <div className="rounded-2xl bg-blue-50 p-3"><p className="font-black text-blue-700">{payload.flags.v2_rooms ? "On" : "Off"}</p><p className="text-xs font-bold text-slate-500">Rooms</p></div>
@@ -386,10 +380,7 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
             </section>
 
             <section id="signal-brief" className="rounded-[2rem] border border-blue-200 bg-blue-50 p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <Sparkles className="size-5 text-blue-700" />
-                <h2 className="font-black text-blue-950">Signal Brief</h2>
-              </div>
+              <div className="flex items-center gap-3"><Sparkles className="size-5 text-blue-700" /><h2 className="font-black text-blue-950">Signal Brief</h2></div>
               <p className="mt-3 text-sm leading-6 text-blue-900">{attentionCount > 0 ? "You have activity to review before moving deeper into discussions." : "No urgent activity. Continue building signal at your pace."}</p>
             </section>
           </aside>
@@ -430,15 +421,30 @@ export default function V2Page() {
         supabase.from("discussions").select("id, title, topic, created_at").is("deleted_at", null).order("created_at", { ascending: false }).limit(5),
       ]);
 
-      const profile = profileResult.status === "fulfilled" && !profileResult.value.error
-        ? (profileResult.value.data as { full_name: string | null; username: string | null } | null)
-        : null;
+      const profile = profileResult.status === "fulfilled" && !profileResult.value.error ? (profileResult.value.data as { full_name: string | null; username: string | null } | null) : null;
       const unreadMessages = unreadMessagesResult.status === "fulfilled" ? Number(unreadMessagesResult.value?.unreadCount ?? 0) : 0;
       const unreadNotifications = notificationsResult.status === "fulfilled" ? notificationsResult.value.count ?? 0 : 0;
       const savedCount = savedResult.status === "fulfilled" ? savedResult.value.count ?? 0 : 0;
       const authoredDiscussionCount = authoredResult.status === "fulfilled" ? authoredResult.value.count ?? 0 : 0;
       const replyCount = repliesResult.status === "fulfilled" ? repliesResult.value.count ?? 0 : 0;
-      const recentDiscussions = recentResult.status === "fulfilled" && !recentResult.value.error ? ((recentResult.value.data ?? []) as RecentDiscussion[]) : [];
+      const recentRows = recentResult.status === "fulfilled" && !recentResult.value.error ? ((recentResult.value.data ?? []) as Array<Omit<RecentDiscussion, "replyCount" | "viewCount" | "savedCount">>) : [];
+      const recentIds = recentRows.map((discussion) => discussion.id);
+
+      let replyCounts: Record<string, number> = {};
+      let viewCounts: Record<string, number> = {};
+      let bookmarkCounts: Record<string, number> = {};
+
+      if (recentIds.length > 0) {
+        const [recentReplies, recentViews, recentBookmarks] = await Promise.all([
+          supabase.from("replies").select("discussion_id").in("discussion_id", recentIds).is("deleted_at", null),
+          supabase.from("discussion_views").select("discussion_id").in("discussion_id", recentIds),
+          supabase.from("bookmarks").select("discussion_id").in("discussion_id", recentIds),
+        ]);
+
+        for (const reply of recentReplies.data ?? []) replyCounts[reply.discussion_id] = (replyCounts[reply.discussion_id] ?? 0) + 1;
+        for (const view of recentViews.data ?? []) viewCounts[view.discussion_id] = (viewCounts[view.discussion_id] ?? 0) + 1;
+        for (const bookmark of recentBookmarks.data ?? []) bookmarkCounts[bookmark.discussion_id] = (bookmarkCounts[bookmark.discussion_id] ?? 0) + 1;
+      }
 
       setHomeData({
         greetingName: getGreetingName({ fullName: profile?.full_name, username: profile?.username, email }),
@@ -447,7 +453,12 @@ export default function V2Page() {
         savedCount,
         authoredDiscussionCount,
         replyCount,
-        recentDiscussions,
+        recentDiscussions: recentRows.map((discussion) => ({
+          ...discussion,
+          replyCount: replyCounts[discussion.id] ?? 0,
+          viewCount: viewCounts[discussion.id] ?? 0,
+          savedCount: bookmarkCounts[discussion.id] ?? 0,
+        })),
       });
     } catch {
       setHomeData((current) => ({ ...current, greetingName: current.greetingName || "there" }));
@@ -484,17 +495,13 @@ export default function V2Page() {
     const { data } = supabase.auth.onAuthStateChange(() => {
       loadShell();
     });
-    return () => {
-      data.subscription.unsubscribe();
-    };
+    return () => data.subscription.unsubscribe();
   }, []);
 
   if (loading) return <ShellGateCard title="Checking V2 access" message="Loombus is verifying whether this account can use the V2 shell." loading />;
   if (message) return <ShellGateCard title="V2 shell check failed safely" message={message} payload={payload} />;
   if (!payload?.authenticated) return <ShellGateCard title="Sign in required" message="The V2 shell is internal-only right now. Sign in first so Loombus can check your access." payload={payload} />;
-  if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") {
-    return <ShellGateCard title="V2 shell is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
-  }
+  if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <ShellGateCard title="V2 shell is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
 
   return <V2Shell payload={payload} homeData={homeData} homeLoading={homeLoading} homeMessage={homeMessage} />;
 }
