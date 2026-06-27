@@ -13,7 +13,6 @@ import {
   Plus,
   Search,
   Settings,
-  StickyNote,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -66,7 +65,7 @@ type V2DiscussionCard = Discussion & {
   replyCount?: number;
   viewCount?: number;
   savedCount?: number;
-  tags?: string[];
+  isStickied?: boolean;
   attachmentUrl?: string | null;
   attachmentName?: string | null;
   attachmentMimeType?: string | null;
@@ -101,14 +100,9 @@ function getDefaultShellPayload(): ShellPayload {
 
 function getDiscussionAge(value: string) {
   const createdAt = new Date(value).getTime();
+  if (!Number.isFinite(createdAt)) return "Recently";
 
-  if (!Number.isFinite(createdAt)) {
-    return "Recently";
-  }
-
-  const diffMs = Date.now() - createdAt;
-  const diffMinutes = Math.floor(diffMs / 60000);
-
+  const diffMinutes = Math.floor((Date.now() - createdAt) / 60000);
   if (diffMinutes < 1) return "Just now";
   if (diffMinutes < 60) return `${diffMinutes}m ago`;
 
@@ -127,22 +121,18 @@ function getAuthorLabel(discussion: V2DiscussionCard) {
 
 function getDiscussionPreview(body: string | null) {
   const cleanBody = (body ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-
-  if (!cleanBody) {
-    return "Open this discussion to review the full signal.";
-  }
-
+  if (!cleanBody) return "Open this discussion to review the full signal.";
   return cleanBody.length > 190 ? `${cleanBody.slice(0, 190)}...` : cleanBody;
 }
 
 function formatCompactCount(value: number | undefined) {
   const count = Math.max(0, value ?? 0);
-
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}k`;
-  }
-
+  if (count >= 1000) return `${(count / 1000).toFixed(count >= 10000 ? 0 : 1)}k`;
   return count.toLocaleString();
+}
+
+function getSignalScore(discussion: V2DiscussionCard) {
+  return (discussion.replyCount ?? 0) * 3 + (discussion.savedCount ?? 0) * 5 + (discussion.viewCount ?? 0);
 }
 
 function getModeLabel(value: string | null | undefined) {
@@ -166,17 +156,7 @@ function getAttachmentLabel(discussion: V2DiscussionCard) {
   return discussion.attachmentKind || "Supporting file";
 }
 
-function GateCard({
-  title,
-  message,
-  loading = false,
-  payload,
-}: {
-  title: string;
-  message: string;
-  loading?: boolean;
-  payload?: ShellPayload | null;
-}) {
+function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
   return (
     <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
       <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
@@ -272,27 +252,18 @@ function MobileBottomNav() {
 
 function AttachmentPreview({ discussion }: { discussion: V2DiscussionCard }) {
   if (!discussion.attachmentUrl) return null;
-
   const label = getAttachmentLabel(discussion);
 
   return (
     <Link href={`/v2/discussions/${discussion.id}`} className="block overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 transition hover:border-blue-200">
       {isImageAttachment(discussion.attachmentMimeType) ? (
         <img src={discussion.attachmentUrl} alt="" className="aspect-square w-full object-cover" />
-      ) : isVideoAttachment(discussion.attachmentMimeType) ? (
-        <div className="grid aspect-square place-items-center bg-gradient-to-br from-blue-950 via-blue-700 to-cyan-400 p-4 text-center text-white">
-          <div>
-            <FileText className="mx-auto size-8" />
-            <p className="mt-3 text-sm font-black">{label}</p>
-            <p className="mt-1 line-clamp-2 text-xs text-blue-100">{discussion.attachmentName || "Attached video"}</p>
-          </div>
-        </div>
       ) : (
         <div className="grid aspect-square place-items-center bg-slate-100 p-4 text-center text-slate-700">
           <div>
             <FileText className="mx-auto size-8 text-blue-600" />
             <p className="mt-3 text-sm font-black">{label}</p>
-            <p className="mt-1 line-clamp-2 text-xs text-slate-500">{discussion.attachmentName || "Attached file"}</p>
+            <p className="mt-1 line-clamp-2 text-xs text-slate-500">{discussion.attachmentName || "Attached context"}</p>
           </div>
         </div>
       )}
@@ -300,58 +271,80 @@ function AttachmentPreview({ discussion }: { discussion: V2DiscussionCard }) {
   );
 }
 
-function DiscussionCard({ discussion }: { discussion: V2DiscussionCard }) {
+function DiscussionCard({
+  discussion,
+  onAddSticky,
+  addingSticky,
+}: {
+  discussion: V2DiscussionCard;
+  onAddSticky: (discussionId: string) => void;
+  addingSticky: boolean;
+}) {
   const hasAttachment = Boolean(discussion.attachmentUrl);
+  const signalScore = getSignalScore(discussion);
 
   return (
     <article
-      className={`rounded-3xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md ${
+      className={`rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.16)] ring-1 ring-white/80 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_24px_54px_rgba(15,23,42,0.2)] sm:p-5 ${
         hasAttachment ? "grid gap-4 sm:grid-cols-[150px_minmax(0,1fr)]" : ""
       }`}
     >
       {hasAttachment && <AttachmentPreview discussion={discussion} />}
       <div className="min-w-0">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{discussion.topic || "Discussion"}</span>
-          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{getModeLabel(discussion.discussion_type)}</span>
-          {discussion.purpose_lane && (
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{discussion.purpose_lane}</span>
-          )}
-        </div>
         <Link href={`/v2/discussions/${discussion.id}`} className="block rounded-2xl transition hover:text-blue-700">
-          <h2 className="line-clamp-2 text-xl font-bold tracking-tight text-slate-950">{discussion.title}</h2>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{getDiscussionPreview(discussion.body)}</p>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{discussion.topic || "Discussion"}</span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{getModeLabel(discussion.discussion_type)}</span>
+            {discussion.purpose_lane && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{discussion.purpose_lane}</span>}
+          </div>
+          <h2 className="line-clamp-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{discussion.title}</h2>
+          <p className="mt-3 line-clamp-2 text-base leading-7 text-slate-600">{getDiscussionPreview(discussion.body)}</p>
         </Link>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-          <span className="inline-flex items-center gap-2">
+
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
+          <span className="inline-flex min-w-0 items-center gap-2">
             {discussion.authorAvatarUrl ? (
-              <img src={discussion.authorAvatarUrl} alt="" className="size-7 rounded-full object-cover" />
+              <img src={discussion.authorAvatarUrl} alt="" className="size-8 rounded-full object-cover" />
             ) : (
-              <span className="grid size-7 place-items-center rounded-full bg-slate-100 font-bold text-slate-600">{getAuthorLabel(discussion).slice(0, 1)}</span>
+              <span className="grid size-8 place-items-center rounded-full bg-slate-100 font-bold text-slate-600">{getAuthorLabel(discussion).slice(0, 1)}</span>
             )}
-            <span className="font-semibold text-slate-700">{getAuthorLabel(discussion)}</span>
+            <span className="truncate font-bold text-slate-700">{getAuthorLabel(discussion)}</span>
             <span>·</span>
             <span>{getDiscussionAge(discussion.created_at)}</span>
           </span>
-          <span className="flex items-center gap-4 font-semibold text-slate-500">
-            <span>💬 {formatCompactCount(discussion.replyCount)}</span>
-            <span>👁 {formatCompactCount(discussion.viewCount)}</span>
-            <span>🔖 {formatCompactCount(discussion.savedCount)}</span>
-          </span>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-          <Link href={`/v2/discussions/${discussion.id}`} className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-black text-white transition hover:bg-blue-700">
-            <MessageCircle className="size-4" />
-            Open Signal
-          </Link>
+
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 text-sm font-bold text-slate-500">
+          <span aria-label={`${discussion.replyCount ?? 0} replies`} title={`${discussion.replyCount ?? 0} replies`} className="inline-flex items-center gap-1">
+            <span aria-hidden="true">💬</span>
+            <span>{formatCompactCount(discussion.replyCount)}</span>
+          </span>
+          <span aria-label={`${discussion.savedCount ?? 0} saves`} title={`${discussion.savedCount ?? 0} saves`} className="inline-flex items-center gap-1">
+            <span aria-hidden="true">🔖</span>
+            <span>{formatCompactCount(discussion.savedCount)}</span>
+          </span>
+          <span aria-label={`${discussion.viewCount ?? 0} views`} title={`${discussion.viewCount ?? 0} views`} className="inline-flex items-center gap-1">
+            <span aria-hidden="true">👁</span>
+            <span>{formatCompactCount(discussion.viewCount)}</span>
+          </span>
           <button
             type="button"
-            title="Sticky action will be wired after V2 shell review."
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            onClick={() => onAddSticky(discussion.id)}
+            disabled={addingSticky || discussion.isStickied}
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition ${
+              discussion.isStickied
+                ? "border-blue-200 bg-blue-50 text-blue-700"
+                : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            } disabled:cursor-default disabled:opacity-80`}
+            aria-label={discussion.isStickied ? "Discussion added to Stickies" : "Add discussion to Stickies"}
+            title={discussion.isStickied ? "Added to Stickies" : "Add to Stickies"}
           >
-            <StickyNote className="size-4" />
-            Add to Sticky
+            <span aria-hidden="true">📌</span>
+            <span>{addingSticky ? "Adding" : discussion.isStickied ? "Added" : "Add"}</span>
           </button>
+          <span className="ml-auto rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-black text-orange-800" aria-label={`Signal score ${signalScore}`} title={`Signal score ${signalScore}`}>
+            Signal {signalScore}
+          </span>
         </div>
       </div>
     </article>
@@ -366,6 +359,7 @@ export default function V2DiscussionsPage() {
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
+  const [addingStickyId, setAddingStickyId] = useState<string | null>(null);
 
   const filteredDiscussions = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
@@ -383,7 +377,7 @@ export default function V2DiscussionsPage() {
         (activeFilter === "Problem Solving" && discussion.discussion_type === "problem_solving") ||
         activeFilter === "Trending" ||
         activeFilter === "Following" ||
-        activeFilter === "Saved";
+        (activeFilter === "Saved" && (discussion.savedCount ?? 0) > 0);
 
       return matchesQuery && matchesFilter;
     });
@@ -412,6 +406,8 @@ export default function V2DiscussionsPage() {
     setMessage("");
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData.session?.user.id ?? null;
       const { data: discussionRows, error } = await supabase
         .from("discussions")
         .select("id, title, topic, body, created_at, user_id, discussion_type, purpose_lane")
@@ -434,6 +430,7 @@ export default function V2DiscussionsPage() {
       let viewCounts: Record<string, number> = {};
       let savedCounts: Record<string, number> = {};
       let attachmentMap: Record<string, AttachmentRow> = {};
+      let stickiedDiscussionIds = new Set<string>();
 
       if (authorIds.length > 0) {
         const { data: profiles } = await supabase
@@ -452,21 +449,31 @@ export default function V2DiscussionsPage() {
           supabase.from("discussion_attachments").select("discussion_id, public_url, file_name, mime_type, attachment_kind, sort_order").in("discussion_id", discussionIds).order("sort_order", { ascending: true }),
         ]);
 
-        for (const reply of replies ?? []) {
-          replyCounts[reply.discussion_id] = (replyCounts[reply.discussion_id] ?? 0) + 1;
-        }
-
-        for (const view of views ?? []) {
-          viewCounts[view.discussion_id] = (viewCounts[view.discussion_id] ?? 0) + 1;
-        }
-
-        for (const bookmark of bookmarks ?? []) {
-          savedCounts[bookmark.discussion_id] = (savedCounts[bookmark.discussion_id] ?? 0) + 1;
-        }
-
+        for (const reply of replies ?? []) replyCounts[reply.discussion_id] = (replyCounts[reply.discussion_id] ?? 0) + 1;
+        for (const view of views ?? []) viewCounts[view.discussion_id] = (viewCounts[view.discussion_id] ?? 0) + 1;
+        for (const bookmark of bookmarks ?? []) savedCounts[bookmark.discussion_id] = (savedCounts[bookmark.discussion_id] ?? 0) + 1;
         for (const attachment of (attachments ?? []) as AttachmentRow[]) {
           if (attachment.discussion_id && attachment.public_url && !attachmentMap[attachment.discussion_id]) {
             attachmentMap[attachment.discussion_id] = attachment;
+          }
+        }
+      }
+
+      if (currentUserId) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        if (accessToken) {
+          const response = await fetch("/api/stickies", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            cache: "no-store",
+          });
+          const result = await response.json().catch(() => ({}));
+          if (response.ok) {
+            stickiedDiscussionIds = new Set(
+              (result.stickies ?? [])
+                .map((sticky: { source_key?: string }) => sticky.source_key)
+                .filter((sourceKey: unknown): sourceKey is string => typeof sourceKey === "string")
+            );
           }
         }
       }
@@ -480,6 +487,7 @@ export default function V2DiscussionsPage() {
           replyCount: replyCounts[discussion.id] ?? 0,
           viewCount: viewCounts[discussion.id] ?? 0,
           savedCount: savedCounts[discussion.id] ?? 0,
+          isStickied: stickiedDiscussionIds.has(discussion.id),
           attachmentUrl: attachmentMap[discussion.id]?.public_url ?? null,
           attachmentName: attachmentMap[discussion.id]?.file_name ?? null,
           attachmentMimeType: attachmentMap[discussion.id]?.mime_type ?? null,
@@ -491,6 +499,41 @@ export default function V2DiscussionsPage() {
       setDiscussions([]);
     } finally {
       setDiscussionLoading(false);
+    }
+  }
+
+  async function addDiscussionToStickies(discussionId: string) {
+    if (addingStickyId) return;
+    setAddingStickyId(discussionId);
+    setMessage("");
+
+    try {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/stickies", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ discussionId }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to add this discussion to Stickies.");
+        return;
+      }
+
+      setDiscussions((current) => current.map((discussion) => discussion.id === discussionId ? { ...discussion, isStickied: true } : discussion));
+      setMessage("Discussion added to Stickies.");
+    } finally {
+      setAddingStickyId(null);
     }
   }
 
@@ -521,24 +564,14 @@ export default function V2DiscussionsPage() {
 
   useEffect(() => {
     loadShell();
-
     const { data } = supabase.auth.onAuthStateChange(() => {
       loadShell();
     });
-
-    return () => {
-      data.subscription.unsubscribe();
-    };
+    return () => data.subscription.unsubscribe();
   }, []);
 
-  if (loading) {
-    return <GateCard title="Checking V2 access" message="Loombus is verifying access before loading the screenshot-style discussion shell." loading />;
-  }
-
-  if (!payload?.authenticated) {
-    return <GateCard title="Sign in required" message="The V2 shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
-  }
-
+  if (loading) return <GateCard title="Checking V2 access" message="Loombus is verifying access before loading the screenshot-style discussion shell." loading />;
+  if (!payload?.authenticated) return <GateCard title="Sign in required" message="The V2 shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") {
     return <GateCard title="V2 shell is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
   }
@@ -548,16 +581,11 @@ export default function V2DiscussionsPage() {
       <V2TopNav />
       <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-28 pt-6 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)_300px] lg:px-8">
         <aside className="hidden lg:block">
-          <div className="sticky top-24 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="sticky top-24 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Browse topics</p>
             <div className="mt-4 space-y-2">
               {["Technology", "Society", "Governance", "Science", "Local", "Business"].map((topic) => (
-                <button
-                  key={topic}
-                  type="button"
-                  onClick={() => setQuery(topic)}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left text-sm font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"
-                >
+                <button key={topic} type="button" onClick={() => setQuery(topic)} className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left text-sm font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700">
                   <span className="grid size-8 place-items-center rounded-xl bg-slate-100 text-slate-500">#</span>
                   {topic}
                 </button>
@@ -573,30 +601,18 @@ export default function V2DiscussionsPage() {
           </div>
 
           <div className="mb-4 flex gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
               <Search className="size-5 text-slate-400" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search discussions, topics, and contributors"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
-              />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search discussions, topics, and contributors" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
             </div>
-            <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm">
+            <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
               <Settings className="size-5" />
             </button>
           </div>
 
           <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
             {TOPIC_FILTERS.map((filter) => (
-              <button
-                key={filter}
-                type="button"
-                onClick={() => setActiveFilter(filter)}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
-                  activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"
-                }`}
-              >
+              <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>
                 {filter}
               </button>
             ))}
@@ -604,23 +620,17 @@ export default function V2DiscussionsPage() {
 
           {message && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{message}</div>}
 
-          <div className="space-y-4">
-            {discussionLoading && (
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">Loading V2 discussion shell...</div>
-            )}
-
-            {!discussionLoading && filteredDiscussions.length === 0 && (
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
-                No discussions match this V2 shell filter.
-              </div>
-            )}
-
-            {!discussionLoading && filteredDiscussions.map((discussion) => <DiscussionCard key={discussion.id} discussion={discussion} />)}
+          <div className="space-y-6">
+            {discussionLoading && <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">Loading V2 discussion shell...</div>}
+            {!discussionLoading && filteredDiscussions.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">No discussions match this V2 shell filter.</div>}
+            {!discussionLoading && filteredDiscussions.map((discussion) => (
+              <DiscussionCard key={discussion.id} discussion={discussion} onAddSticky={addDiscussionToStickies} addingSticky={addingStickyId === discussion.id} />
+            ))}
           </div>
         </section>
 
         <aside className="hidden space-y-4 lg:block">
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Trending topics</h2>
               <TrendingUp className="size-5 text-blue-600" />
@@ -628,17 +638,14 @@ export default function V2DiscussionsPage() {
             <div className="mt-4 space-y-3">
               {trendingTopics.map(([topic, count], index) => (
                 <button key={topic} type="button" onClick={() => setQuery(topic)} className="flex w-full items-center justify-between text-left text-sm">
-                  <span className="flex items-center gap-2 font-semibold text-slate-700">
-                    <span className="grid size-6 place-items-center rounded-full bg-blue-100 text-xs font-black text-blue-700">{index + 1}</span>
-                    {topic}
-                  </span>
+                  <span className="flex items-center gap-2 font-semibold text-slate-700"><span className="grid size-6 place-items-center rounded-full bg-blue-100 text-xs font-black text-blue-700">{index + 1}</span>{topic}</span>
                   <span className="text-xs text-slate-400">{count} signals</span>
                 </button>
               ))}
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
             <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Top contributors</h2>
             <div className="mt-4 space-y-3">
               {topContributors.map(([author, count]) => (
@@ -650,7 +657,7 @@ export default function V2DiscussionsPage() {
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
             <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Saved folders</h2>
             <div className="mt-4 space-y-3 text-sm text-slate-600">
               <div className="flex items-center gap-3"><Bookmark className="size-4 text-blue-600" /> High signal</div>
