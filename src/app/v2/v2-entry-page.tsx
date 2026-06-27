@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { AppleLogoMark, GoogleLogoMark } from "@/components/auth-provider-icons";
 import { DateOfBirthSelect } from "@/components/date-of-birth-select";
 import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
@@ -10,23 +10,16 @@ import { supabase } from "@/lib/supabase/client";
 
 type V2EntryMode = "login" | "signup" | "reset";
 
-function getSafeNext(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/v2";
-  }
+const V2_HOME_PATH = "/v2";
 
-  return value;
-}
-
-function getOAuthRedirectTo(nextPath: string) {
-  const safeNext = getSafeNext(nextPath);
-  const encodedNext = encodeURIComponent(safeNext);
+function getOAuthRedirectTo() {
+  const encodedHomePath = encodeURIComponent(V2_HOME_PATH);
 
   if (isIosNativeApp()) {
-    return `loombus://auth/callback?next=${encodedNext}`;
+    return `loombus://auth/callback?next=${encodedHomePath}`;
   }
 
-  return `${window.location.origin}/auth/callback?next=${encodedNext}`;
+  return `${window.location.origin}/auth/callback?next=${encodedHomePath}`;
 }
 
 function getModeCopy(mode: V2EntryMode) {
@@ -108,12 +101,6 @@ export function V2EntryPage({ mode }: { mode: V2EntryMode }) {
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
   const [hasRecoverySession, setHasRecoverySession] = useState(false);
 
-  const nextPath = useMemo(() => {
-    if (typeof window === "undefined") return "/v2";
-    const params = new URLSearchParams(window.location.search);
-    return getSafeNext(params.get("next"));
-  }, []);
-
   const checkRecoverySession = useCallback(async () => {
     if (mode !== "reset") return;
     const { data } = await supabase.auth.getSession();
@@ -125,7 +112,7 @@ export function V2EntryPage({ mode }: { mode: V2EntryMode }) {
       const { data } = await supabase.auth.getSession();
 
       if (mode !== "reset" && data.session) {
-        window.location.replace(nextPath);
+        window.location.replace(V2_HOME_PATH);
         return;
       }
 
@@ -136,7 +123,7 @@ export function V2EntryPage({ mode }: { mode: V2EntryMode }) {
 
     void redirectIfAlreadySignedIn();
     void checkRecoverySession();
-  }, [checkRecoverySession, mode, nextPath]);
+  }, [checkRecoverySession, mode]);
 
   async function handleOAuth(provider: "google" | "apple") {
     if (loading || oauthLoading) return;
@@ -153,7 +140,7 @@ export function V2EntryPage({ mode }: { mode: V2EntryMode }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: getOAuthRedirectTo(nextPath),
+          redirectTo: getOAuthRedirectTo(),
         },
       });
 
@@ -182,7 +169,7 @@ export function V2EntryPage({ mode }: { mode: V2EntryMode }) {
       return;
     }
 
-    window.location.replace(nextPath);
+    window.location.replace(V2_HOME_PATH);
   }
 
   async function handleSignup(event: FormEvent<HTMLFormElement>) {
@@ -215,7 +202,7 @@ export function V2EntryPage({ mode }: { mode: V2EntryMode }) {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(V2_HOME_PATH)}`,
         data: {
           full_name: fullName.trim(),
           date_of_birth: dateOfBirth,
@@ -360,7 +347,7 @@ export function V2EntryPage({ mode }: { mode: V2EntryMode }) {
             className="inline-flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-300 bg-white px-5 py-4 text-base font-black text-slate-950 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <AppleLogoMark className="size-5" />
-            <span>{oauthLoading === "apple" ? "Opening Apple..." : mode === "signup" ? "Continue with Apple" : "Continue with Apple"}</span>
+            <span>{oauthLoading === "apple" ? "Opening Apple..." : "Continue with Apple"}</span>
           </button>
           <button
             type="button"
