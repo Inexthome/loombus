@@ -3,18 +3,27 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft,
+  Bell,
   CheckCircle2,
   Eye,
   FileText,
+  Home,
   Loader2,
   Lock,
   MessageCircle,
-  PenLine,
+  MessageSquare,
+  Mic,
+  Paperclip,
+  Plus,
+  Puzzle,
   Save,
+  Scale,
+  Search,
+  Send,
+  Settings,
   ShieldCheck,
-  Sparkles,
   Trash2,
+  Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -52,38 +61,53 @@ const DEFAULT_FLAGS: FeatureFlags = {
 
 const AUTOSAVE_DELAY_MS = 1400;
 const DRAFT_MIGRATION_REQUIRED_MESSAGE =
-  "Draft storage is not configured yet. Apply PR #102 Supabase migration before testing save, restore, or autosave.";
+  "Draft storage is not configured yet. Apply the V2 draft migration before testing save, restore, or autosave.";
 
-const PRIMARY_ACTION_BUTTON_CLASS =
-  "appearance-none rounded-2xl border border-blue-300/40 bg-blue-500 px-4 py-2 text-center text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:border-blue-300/20 disabled:bg-blue-500/50 disabled:text-white/70";
+const V2_NAV_ITEMS = [
+  { label: "Home", href: "/v2", icon: Home },
+  { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
+  { label: "Create", href: "/v2/create", icon: Plus, active: true, primary: true },
+  { label: "Rooms", href: "/v2/rooms", icon: Users },
+  { label: "Messages", href: "/v2/messages", icon: Bell },
+  { label: "Settings", href: "/settings", icon: Settings },
+];
 
-const SECONDARY_ACTION_LINK_CLASS =
-  "inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-300/25 bg-blue-500/10 px-4 py-2 text-center text-sm font-bold text-blue-100 transition hover:border-blue-200/50 hover:bg-blue-500/20 hover:text-white";
+const TOPIC_OPTIONS = ["Technology", "Society", "Governance", "Science", "Local", "Business", "Community", "Education"];
 
 const DISCUSSION_MODES: Array<{
   key: DiscussionMode;
   label: string;
+  shortLabel: string;
   description: string;
+  Icon: typeof MessageSquare;
 }> = [
   {
     key: "open_discussion",
-    label: "Open discussion",
-    description: "Start a broad but focused discussion around a clear topic.",
+    label: "Open Discussion",
+    shortLabel: "Open-ended conversation",
+    description: "Start a focused conversation around a clear topic.",
+    Icon: MessageSquare,
   },
   {
     key: "debate",
     label: "Debate",
-    description: "Frame opposing positions so replies can compare reasoning directly.",
+    shortLabel: "Two sides, respectfully",
+    description: "Frame opposing positions so replies compare reasoning directly.",
+    Icon: Scale,
   },
   {
     key: "research_question",
-    label: "Research question",
-    description: "Ask for evidence, sources, patterns, and careful uncertainty.",
+    label: "Research Question",
+    shortLabel: "Seek insights and evidence",
+    description: "Ask for sources, patterns, and careful uncertainty.",
+    Icon: Search,
   },
   {
     key: "problem_solving",
-    label: "Problem solving",
+    label: "Problem Solving",
+    shortLabel: "Find solutions together",
     description: "Define a practical problem and invite solution-oriented replies.",
+    Icon: Puzzle,
   },
 ];
 
@@ -104,10 +128,7 @@ function formatDraftTime(value: string | null) {
   if (!value) return "Not saved yet";
 
   const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "Saved recently";
-  }
+  if (Number.isNaN(date.getTime())) return "Saved recently";
 
   return new Intl.DateTimeFormat("en", {
     month: "short",
@@ -117,17 +138,71 @@ function formatDraftTime(value: string | null) {
   }).format(date);
 }
 
-function FlagPill({ label, enabled }: { label: string; enabled: boolean }) {
+function getTagCount(value: string) {
+  return value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .slice(0, 5).length;
+}
+
+function V2TopNav() {
   return (
-    <span
-      className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-        enabled
-          ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
-          : "border-white/10 bg-white/5 text-slate-300"
-      }`}
-    >
-      {label}: {enabled ? "on" : "off"}
-    </span>
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#061942] text-white shadow-sm">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/v2" className="flex items-center gap-3 font-bold">
+          <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 object-contain" />
+          <span className="text-xl">Loombus</span>
+        </Link>
+        <nav className="hidden items-center gap-1 md:flex">
+          {V2_NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  item.active
+                    ? "bg-white/10 text-white ring-1 ring-white/20"
+                    : item.primary
+                      ? "border border-white/40 text-white hover:bg-white/10"
+                      : "text-blue-100 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <Icon className="size-4" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="flex items-center gap-2">
+          <Link href="/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
+            <Search className="size-5" />
+          </Link>
+          <Link href="/notifications" aria-label="Notifications" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
+            <Bell className="size-5" />
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function MobileBottomNav() {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pb-3 pt-2 shadow-2xl backdrop-blur md:hidden">
+      <div className="mx-auto grid max-w-md grid-cols-5 gap-1 text-xs font-semibold text-slate-500">
+        {V2_NAV_ITEMS.slice(0, 5).map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 rounded-2xl py-2 ${item.active ? "text-blue-600" : "text-slate-500"}`}>
+              <Icon className={`size-5 ${item.primary ? "rounded-full bg-blue-600 p-1 text-white" : ""}`} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
@@ -143,11 +218,8 @@ function GateCard({
   payload?: ShellPayload | null;
 }) {
   return (
-    <main
-      className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white"
-      style={{ colorScheme: "dark", backgroundColor: "#020617" }}
-    >
-      <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-slate-900/90 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
+    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
+      <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
         <div className="mb-6 flex items-center gap-3">
           <div className="grid size-12 place-items-center rounded-2xl bg-blue-500/15 text-blue-200 ring-1 ring-blue-300/20">
             {loading ? <Loader2 className="size-5 animate-spin" /> : <Lock className="size-5" />}
@@ -157,28 +229,18 @@ function GateCard({
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
           </div>
         </div>
-
         <p className="text-sm leading-6 text-slate-300 sm:text-base">{message}</p>
-
         {payload && (
-          <div className="mt-5 flex flex-wrap gap-2">
-            <FlagPill label="v2_shell" enabled={payload.flags.v2_shell} />
-            <FlagPill label="v2_signal_brief" enabled={payload.flags.v2_signal_brief} />
-            <FlagPill label="v2_rooms" enabled={payload.flags.v2_rooms} />
+          <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-300">
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">v2_shell: {payload.flags.v2_shell ? "on" : "off"}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">v2_rooms: {payload.flags.v2_rooms ? "on" : "off"}</span>
           </div>
         )}
-
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link
-            href="/v2"
-            className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200"
-          >
+          <Link href="/v2" className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200">
             Return to V2 Home
           </Link>
-          <Link
-            href="/create"
-            className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
-          >
+          <Link href="/create" className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">
             Open V1 Create
           </Link>
         </div>
@@ -194,6 +256,7 @@ export default function V2CreatePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
+  const [purpose, setPurpose] = useState("");
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
   const [mode, setMode] = useState<DiscussionMode>("open_discussion");
@@ -208,35 +271,23 @@ export default function V2CreatePage() {
   const selectedMode = DISCUSSION_MODES.find((option) => option.key === mode) ?? DISCUSSION_MODES[0];
 
   const draftFingerprint = useMemo(
-    () => JSON.stringify({ title, topic, body, tags, mode }),
-    [body, mode, tags, title, topic]
+    () => JSON.stringify({ title, topic, purpose, body, tags, mode }),
+    [body, mode, purpose, tags, title, topic]
   );
 
   const hasDraftContent = useMemo(
-    () => Boolean(title.trim() || topic.trim() || body.trim() || tags.trim() || mode !== "open_discussion"),
-    [body, mode, tags, title, topic]
+    () => Boolean(title.trim() || topic.trim() || purpose.trim() || body.trim() || tags.trim() || mode !== "open_discussion"),
+    [body, mode, purpose, tags, title, topic]
   );
 
   const readiness = useMemo(() => {
     const checks = [
-      {
-        label: "Clear title",
-        done: title.trim().length >= 8,
-      },
-      {
-        label: "Topic selected",
-        done: topic.trim().length >= 2,
-      },
-      {
-        label: "Body has context",
-        done: body.trim().length >= 40,
-      },
-      {
-        label: "Mode selected",
-        done: Boolean(mode),
-      },
+      { label: "Choose a clear title", done: title.trim().length >= 8 },
+      { label: "Select the right topic", done: topic.trim().length >= 2 },
+      { label: "Select the right mode", done: Boolean(mode) },
+      { label: "Add useful context", done: body.trim().length >= 40 },
+      { label: "Invite meaningful responses", done: purpose.trim().length >= 8 },
     ];
-
     const completed = checks.filter((check) => check.done).length;
 
     return {
@@ -245,7 +296,7 @@ export default function V2CreatePage() {
       total: checks.length,
       percent: Math.round((completed / checks.length) * 100),
     };
-  }, [body, mode, title, topic]);
+  }, [body, mode, purpose, title, topic]);
 
   async function loadSavedDraft(nextUserId: string) {
     setDraftLoading(true);
@@ -268,7 +319,6 @@ export default function V2CreatePage() {
       }
 
       const draft = data as V2CreateDraft | null;
-
       if (!draft) {
         setDraftId(null);
         setDraftSavedAt(null);
@@ -281,6 +331,7 @@ export default function V2CreatePage() {
       setDraftSavedAt(draft.updated_at);
       setTitle(draft.title ?? "");
       setTopic(draft.topic ?? "");
+      setPurpose("");
       setBody(draft.body ?? "");
       setTags(draft.tags ?? "");
       setMode(isDiscussionMode(draft.mode) ? draft.mode : "open_discussion");
@@ -298,14 +349,11 @@ export default function V2CreatePage() {
 
   async function persistDraft({ manual = false }: { manual?: boolean } = {}) {
     if (!userId) {
-      if (manual) {
-        setDraftMessage("Sign in is required before saving a V2 draft.");
-      }
+      if (manual) setDraftMessage("Sign in is required before saving a V2 draft.");
       return false;
     }
 
     setDraftLoading(true);
-
     if (manual) {
       setDraftMessage("");
     } else {
@@ -313,6 +361,7 @@ export default function V2CreatePage() {
     }
 
     try {
+      const bodyWithPurpose = purpose.trim() ? `Purpose: ${purpose.trim()}\n\n${body}` : body;
       const { data, error } = await supabase
         .from("loombus_v2_create_drafts")
         .upsert(
@@ -320,7 +369,7 @@ export default function V2CreatePage() {
             user_id: userId,
             title,
             topic,
-            body,
+            body: bodyWithPurpose,
             tags,
             mode,
           },
@@ -339,11 +388,7 @@ export default function V2CreatePage() {
       setDraftId(savedDraft.id);
       setDraftSavedAt(savedDraft.updated_at);
       setAutosaveStatus("Autosaved");
-
-      if (manual) {
-        setDraftMessage("Private V2 draft saved.");
-      }
-
+      if (manual) setDraftMessage("Private V2 draft saved.");
       return true;
     } catch {
       if (manual) {
@@ -369,11 +414,7 @@ export default function V2CreatePage() {
 
     try {
       if (draftId) {
-        const { error } = await supabase
-          .from("loombus_v2_create_drafts")
-          .delete()
-          .eq("user_id", userId);
-
+        const { error } = await supabase.from("loombus_v2_create_drafts").delete().eq("user_id", userId);
         if (error) {
           setAutosaveStatus("Migration required");
           setDraftMessage(DRAFT_MIGRATION_REQUIRED_MESSAGE);
@@ -385,6 +426,7 @@ export default function V2CreatePage() {
       setDraftSavedAt(null);
       setTitle("");
       setTopic("");
+      setPurpose("");
       setBody("");
       setTags("");
       setMode("open_discussion");
@@ -393,29 +435,26 @@ export default function V2CreatePage() {
       setDraftMessage("Private V2 draft cleared.");
     } catch {
       setAutosaveStatus("Clear failed");
-      setDraftMessage("Draft could not be cleared. Current V1 Create remains unchanged.");
+      setDraftMessage("Unable to clear this V2 draft safely.");
     } finally {
       setDraftLoading(false);
     }
   }
 
   async function copyPreviewDraft() {
-    setCopyMessage("");
-
-    const draft = [
-      `Title: ${title.trim() || "Untitled signal"}`,
-      `Topic: ${topic.trim() || "Not selected"}`,
-      `Mode: ${selectedMode?.label ?? "Open discussion"}`,
-      tags.trim() ? `Tags: ${tags.trim()}` : null,
+    const text = [
+      title.trim() ? `Title: ${title.trim()}` : "Title:",
+      topic.trim() ? `Topic: ${topic.trim()}` : "Topic:",
+      `Mode: ${selectedMode.label}`,
+      purpose.trim() ? `Purpose: ${purpose.trim()}` : "Purpose:",
+      tags.trim() ? `Tags: ${tags.trim()}` : "Tags:",
       "",
-      body.trim() || "No body text yet.",
-    ]
-      .filter(Boolean)
-      .join("\n");
+      body.trim() || "Body:",
+    ].join("\n");
 
     try {
-      await navigator.clipboard.writeText(draft);
-      setCopyMessage("Draft copied. Paste it into the current V1 composer when ready.");
+      await navigator.clipboard.writeText(text);
+      setCopyMessage("Draft copied. You can paste it into V1 Create if needed.");
     } catch {
       setCopyMessage("Unable to copy this draft from the browser. You can still manually copy the fields.");
     }
@@ -438,13 +477,7 @@ export default function V2CreatePage() {
       setPayload(nextPayload);
       setUserId(nextUserId);
 
-      if (
-        nextUserId &&
-        accessToken &&
-        nextPayload.configured &&
-        nextPayload.flags.v2_shell &&
-        nextPayload.version === "v2"
-      ) {
+      if (nextUserId && accessToken && nextPayload.configured && nextPayload.flags.v2_shell && nextPayload.version === "v2") {
         await loadSavedDraft(nextUserId);
       }
     } catch {
@@ -478,12 +511,9 @@ export default function V2CreatePage() {
       payload.version === "v2" &&
       hasDraftContent;
 
-    if (!canAutosave) {
-      return;
-    }
+    if (!canAutosave) return;
 
     setAutosaveStatus("Autosave pending...");
-
     const timer = window.setTimeout(() => {
       persistDraft({ manual: false });
     }, AUTOSAVE_DELAY_MS);
@@ -492,266 +522,239 @@ export default function V2CreatePage() {
   }, [draftFingerprint, draftHydrated, hasDraftContent, loading, payload, userId]);
 
   if (loading) {
-    return (
-      <GateCard
-        title="Checking V2 access"
-        message="Loombus is verifying whether this account can use the V2 Create preview."
-        loading
-      />
-    );
+    return <GateCard title="Checking V2 access" message="Loombus is verifying whether this account can use the V2 Create shell." loading />;
   }
 
   if (message) {
-    return (
-      <GateCard
-        title="V2 Create preview check failed safely"
-        message={message}
-        payload={payload}
-      />
-    );
+    return <GateCard title="V2 Create check failed safely" message={message} payload={payload} />;
   }
 
   if (!payload?.authenticated) {
-    return (
-      <GateCard
-        title="Sign in required"
-        message="The V2 Create preview is internal-only right now. Sign in first so Loombus can check your v2_shell access."
-        payload={payload}
-      />
-    );
+    return <GateCard title="Sign in required" message="The V2 Create shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
   }
 
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") {
-    return (
-      <GateCard
-        title="V2 Create preview is not enabled"
-        message="This account is not currently allowed through the v2_shell flag. Public users remain on the V1 Create experience."
-        payload={payload}
-      />
-    );
+    return <GateCard title="V2 Create is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on the V1 Create experience." payload={payload} />;
   }
 
   return (
-    <main
-      className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#07111f] text-white"
-      style={{ colorScheme: "dark", backgroundColor: "#07111f" }}
-    >
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.26),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(212,175,55,0.18),_transparent_32%)]" />
-
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 text-white sm:px-6 lg:px-8">
-        <header className="mb-6 flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <Link href="/v2" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-blue-200 transition hover:text-white">
-              <ArrowLeft className="size-4" />
-              Back to V2 Home
-            </Link>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Preview</p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Create a signal with structure.</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-              This gated V2 Create preview can autosave one private draft for your signed-in account. It still does not submit or publish posts.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <FlagPill label="v2_shell" enabled={payload.flags.v2_shell} />
-            <FlagPill label="v2_signal_brief" enabled={payload.flags.v2_signal_brief} />
-            <FlagPill label="v2_rooms" enabled={payload.flags.v2_rooms} />
-          </div>
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] text-slate-950">
+      <V2TopNav />
+      <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
+        <header className="mb-5">
+          <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Create Discussion</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+            Start a meaningful conversation. Give your community something worth discussing.
+          </p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-5">
-            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <PenLine className="size-5 text-blue-200" />
-                  <h2 className="text-xl font-bold text-white">Signal draft</h2>
-                </div>
-                <span className="text-xs text-slate-400">{draftLoading ? "Syncing draft..." : formatDraftTime(draftSavedAt)}</span>
-              </div>
-
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               {draftMessage && (
-                <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm font-medium text-amber-100">
+                <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
                   {draftMessage}
                 </div>
               )}
 
-              <div className="mt-5 grid gap-4">
+              <div className="grid gap-4">
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Title</span>
+                  <span className="mb-2 block text-sm font-bold text-slate-700">Discussion Title <span className="text-red-500">*</span></span>
                   <input
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
-                    placeholder="Ask a clear question or frame a useful discussion"
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
+                    placeholder="e.g., The future of decentralized identity"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                   />
+                  <p className="mt-2 text-xs font-medium text-slate-500">Be clear, specific, and engaging.</p>
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Topic</span>
+                  <span className="mb-2 block text-sm font-bold text-slate-700">Topic <span className="text-red-500">*</span></span>
                   <input
                     value={topic}
                     onChange={(event) => setTopic(event.target.value)}
-                    placeholder="Technology, community, business, health, education..."
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
+                    placeholder="Search or select a topic"
+                    list="v2-topic-options"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                   />
+                  <datalist id="v2-topic-options">
+                    {TOPIC_OPTIONS.map((option) => <option key={option} value={option} />)}
+                  </datalist>
+                  <p className="mt-2 text-xs font-medium text-slate-500">Choose the best fit for your discussion.</p>
+                </label>
+
+                <div>
+                  <p className="mb-3 text-sm font-bold text-slate-700">Discussion Mode <span className="text-red-500">*</span></p>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {DISCUSSION_MODES.map((option) => {
+                      const Icon = option.Icon;
+                      const selected = mode === option.key;
+                      return (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() => setMode(option.key)}
+                          className={`rounded-2xl border p-4 text-center transition ${selected ? "border-blue-500 bg-blue-50 shadow-sm ring-2 ring-blue-100" : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/50"}`}
+                        >
+                          <Icon className={`mx-auto size-7 ${selected ? "text-blue-600" : "text-slate-700"}`} />
+                          <span className={`mt-3 block text-sm font-black ${selected ? "text-blue-700" : "text-slate-800"}`}>{option.label}</span>
+                          <span className="mt-1 block text-xs leading-5 text-slate-500">{option.shortLabel}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <label className="block">
+                  <span className="mb-2 block text-sm font-bold text-slate-700">Purpose <span className="text-red-500">*</span></span>
+                  <input
+                    value={purpose}
+                    onChange={(event) => setPurpose(event.target.value)}
+                    placeholder="What do you hope to achieve with this discussion?"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  />
+                  <p className="mt-2 text-xs font-medium text-slate-500">Define your intent to guide better responses.</p>
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Body</span>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold text-slate-700">Body <span className="text-red-500">*</span></span>
+                    <span className="text-xs font-semibold text-slate-400">{body.length}/3000</span>
+                  </div>
                   <textarea
                     value={body}
-                    onChange={(event) => setBody(event.target.value)}
-                    placeholder="Add context, what you are trying to understand, and what kind of replies would be useful."
-                    rows={9}
-                    className="w-full resize-y rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
+                    onChange={(event) => setBody(event.target.value.slice(0, 3000))}
+                    placeholder="Provide context, background, or details for your discussion..."
+                    rows={8}
+                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                   />
+                  <p className="mt-2 text-xs font-medium text-slate-500">The more context you provide, the better the conversation.</p>
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Optional tags</span>
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold text-slate-700">Tags</span>
+                    <span className="text-xs font-semibold text-slate-400">{getTagCount(tags)}/5</span>
+                  </div>
                   <input
                     value={tags}
                     onChange={(event) => setTags(event.target.value)}
-                    placeholder="clarity, ai, jacksonville, policy"
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-blue-300/50"
+                    placeholder="Add up to 5 tags, e.g., web3, governance, identity"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
                   />
+                  <p className="mt-2 text-xs font-medium text-slate-500">Tags help others discover your discussion.</p>
                 </label>
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <MessageCircle className="size-5 text-blue-200" />
-                <h2 className="text-xl font-bold text-white">Discussion mode</h2>
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <p className="text-sm font-black text-slate-800">Attach supporting context <span className="font-medium text-slate-400">(optional)</span></p>
+              <p className="mt-1 text-xs font-medium text-slate-500">Add relevant materials that help others contribute with more depth.</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Paperclip className="size-5" /></span>
+                    <div>
+                      <p className="text-sm font-black text-slate-800">Attach Files</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">Placeholder for V2 file uploads. Current upload remains in V1 Create.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Mic className="size-5" /></span>
+                    <div>
+                      <p className="text-sm font-black text-slate-800">Video Context</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">Placeholder for V2 video context. Current upload remains in V1 Create.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {DISCUSSION_MODES.map((option) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    onClick={() => setMode(option.key)}
-                    className={`appearance-none rounded-3xl border p-4 text-left transition ${
-                      mode === option.key
-                        ? "border-blue-300/45 bg-blue-500/15 text-white"
-                        : "border-white/10 bg-slate-950/80 text-slate-300 hover:border-blue-300/25 hover:bg-blue-500/10"
-                    }`}
-                  >
-                    <span className="text-sm font-bold">{option.label}</span>
-                    <span className="mt-2 block text-xs leading-5 text-slate-400">{option.description}</span>
+              <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap gap-3">
+                  <button type="button" onClick={() => persistDraft({ manual: true })} disabled={draftLoading} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60">
+                    <Save className="size-4" />
+                    {draftLoading ? "Saving..." : "Save Draft"}
                   </button>
-                ))}
+                  <button type="button" onClick={clearDraft} disabled={draftLoading} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60">
+                    <Trash2 className="size-4" />
+                    Clear
+                  </button>
+                </div>
+                <Link href="/v2/create/review" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-blue-700">
+                  <Send className="size-4" />
+                  Review Draft
+                </Link>
               </div>
             </section>
           </div>
 
           <aside className="space-y-4">
-            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <Save className="size-5 text-blue-200" />
-                <h2 className="font-bold text-white">Private draft</h2>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-slate-300">
-                Autosave stores one V2 draft to your signed-in account. This does not publish anything and does not affect V1 Create.
-              </p>
-              <p className="mt-3 rounded-2xl border border-blue-300/20 bg-blue-400/10 px-3 py-2 text-xs font-semibold text-blue-100">
-                {autosaveStatus}
-              </p>
-              <div className="mt-4 flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => persistDraft({ manual: true })}
-                  disabled={draftLoading}
-                  className={PRIMARY_ACTION_BUTTON_CLASS}
-                >
-                  {draftLoading ? "Saving..." : "Save now"}
-                </button>
-                <Link href="/v2/create/review" className={SECONDARY_ACTION_LINK_CLASS}>
-                  <Eye className="size-4" />
-                  Review draft
-                </Link>
-                <button
-                  type="button"
-                  onClick={clearDraft}
-                  disabled={draftLoading}
-                  className="inline-flex appearance-none items-center justify-center gap-2 rounded-2xl border border-white/15 bg-transparent px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Trash2 className="size-4" />
-                  Clear draft
-                </button>
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="size-5 text-emerald-200" />
-                <h2 className="font-bold text-white">Draft readiness</h2>
-              </div>
-
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-blue-400" style={{ width: `${readiness.percent}%` }} />
-              </div>
-              <p className="mt-3 text-sm text-slate-300">
-                {readiness.completed} of {readiness.total} structure checks complete.
-              </p>
-
-              <div className="mt-4 space-y-2">
-                {readiness.checks.map((check) => (
-                  <div key={check.label} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-950/80 px-3 py-2 text-sm">
-                    <span className="text-slate-300">{check.label}</span>
-                    <span className={check.done ? "text-emerald-200" : "text-slate-500"}>{check.done ? "Ready" : "Needed"}</span>
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-black text-slate-950">Create with clarity</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">A great discussion starts with a clear setup.</p>
+              <div className="mt-5 space-y-5">
+                {readiness.checks.map((check, index) => (
+                  <div key={check.label} className="flex gap-3">
+                    <span className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${check.done ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600"}`}>{index + 1}</span>
+                    <div>
+                      <p className="text-sm font-black text-slate-800">{check.label}</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">{check.done ? "Ready" : "Needs attention before review"}</p>
+                    </div>
                   </div>
                 ))}
               </div>
+              <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-blue-600" style={{ width: `${readiness.percent}%` }} />
+              </div>
+              <p className="mt-3 text-xs font-semibold text-slate-500">{readiness.completed} of {readiness.total} checks complete.</p>
             </section>
 
-            <section className="rounded-[2rem] border border-[#d4af37]/25 bg-[#d4af37]/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-3">
-                <Sparkles className="size-5 text-[#f7d56d]" />
-                <h2 className="font-bold text-[#f7d56d]">Preview only</h2>
+                <Save className="size-5 text-blue-600" />
+                <h2 className="font-black text-slate-950">Private draft</h2>
               </div>
-              <p className="mt-4 text-sm leading-6 text-[#fff3c4]">
-                This screen can autosave a private draft, but it still does not write to the live discussions table.
-              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{autosaveStatus}</p>
+              <p className="mt-2 text-xs font-semibold text-slate-400">Last saved: {formatDraftTime(draftSavedAt)}</p>
             </section>
 
-            <section className="rounded-[2rem] border border-emerald-400/25 bg-emerald-400/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
+            <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
               <div className="flex items-center gap-3">
-                <ShieldCheck className="size-5 text-emerald-200" />
-                <h2 className="font-bold text-emerald-100">Safe handoff</h2>
+                <ShieldCheck className="size-5 text-amber-700" />
+                <h2 className="font-black text-amber-900">Preview only</h2>
               </div>
-              <p className="mt-4 text-sm leading-6 text-emerald-50/80">
-                Copy your preview draft, then open the current V1 composer when you are ready to publish.
-              </p>
+              <p className="mt-3 text-sm leading-6 text-amber-800">This V2 shell can autosave a private draft, but it does not publish to the live discussion feed.</p>
+            </section>
+
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="font-black text-slate-950">Safe handoff</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-600">Use V1 Create if you need to publish before V2 release testing is complete.</p>
               <div className="mt-4 flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={copyPreviewDraft}
-                  className={PRIMARY_ACTION_BUTTON_CLASS}
-                >
+                <button type="button" onClick={copyPreviewDraft} className="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-700">
                   Copy draft
                 </button>
-                <Link
-                  href="/create"
-                  className="rounded-2xl border border-white/10 px-4 py-2 text-center text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white"
-                >
+                <Link href="/create" className="rounded-2xl border border-slate-200 px-4 py-2 text-center text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:text-blue-700">
                   Open V1 Create
                 </Link>
               </div>
-              {copyMessage && <p className="mt-3 text-xs leading-5 text-emerald-50/80">{copyMessage}</p>}
+              {copyMessage && <p className="mt-3 text-xs leading-5 text-slate-500">{copyMessage}</p>}
             </section>
 
-            <section className="rounded-[2rem] border border-white/10 bg-slate-950/75 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-3">
-                <FileText className="size-5 text-blue-200" />
-                <h2 className="font-bold text-white">Selected mode</h2>
+                <FileText className="size-5 text-blue-600" />
+                <h2 className="font-black text-slate-950">Selected mode</h2>
               </div>
-              <p className="mt-3 text-sm font-semibold text-white">{selectedMode?.label}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">{selectedMode?.description}</p>
+              <p className="mt-3 text-sm font-bold text-slate-800">{selectedMode.label}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{selectedMode.description}</p>
             </section>
           </aside>
         </section>
-      </div>
+      </section>
+      <MobileBottomNav />
     </main>
   );
 }
