@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Bell,
   Bookmark,
-  FileText,
+  ChevronRight,
+  FlaskConical,
   Home,
   Loader2,
   Lock,
@@ -13,7 +14,6 @@ import {
   Plus,
   Reply,
   Search,
-  Settings,
   ShieldCheck,
   Sparkles,
   TrendingUp,
@@ -85,7 +85,7 @@ const V2_NAV_ITEMS = [
   { label: "Create", href: "/v2/create", icon: Plus, primary: true },
   { label: "Rooms", href: "/v2/rooms", icon: Users },
   { label: "Messages", href: "/v2/messages", icon: Bell },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "People", href: "/v2/people", icon: Users },
 ];
 
 function getDefaultShellPayload(): ShellPayload {
@@ -184,7 +184,7 @@ function V2TopNav() {
                 href={item.href}
                 className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
                   item.active
-                    ? "bg-white/10 text-white ring-1 ring-white/20"
+                    ? "border-b border-white text-white"
                     : item.primary
                       ? "border border-white/40 text-white hover:bg-white/10"
                       : "text-blue-100 hover:bg-white/10 hover:text-white"
@@ -197,10 +197,10 @@ function V2TopNav() {
           })}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
+          <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
             <Search className="size-5" />
           </Link>
-          <Link href="/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
+          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
             <Bell className="size-5" />
             <span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">3</span>
           </Link>
@@ -228,9 +228,25 @@ function MobileBottomNav() {
   );
 }
 
-function AttentionCard({ title, count, description, href, children }: { title: string; count: number; description: string; href: string; children: React.ReactNode }) {
+function AttentionCard({
+  title,
+  count,
+  description,
+  href,
+  actionLabel,
+  children,
+  items,
+}: {
+  title: string;
+  count: number;
+  description: string;
+  href: string;
+  actionLabel: string;
+  children: React.ReactNode;
+  items: string[];
+}) {
   return (
-    <Link href={href} className="block rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)] transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_18px_44px_rgba(15,23,42,0.14)]">
+    <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <span className="grid size-11 place-items-center rounded-2xl bg-blue-50 text-blue-600">{children}</span>
@@ -241,12 +257,21 @@ function AttentionCard({ title, count, description, href, children }: { title: s
         </div>
         <span className="grid size-8 place-items-center rounded-full bg-blue-100 text-sm font-black text-blue-700">{formatCount(count)}</span>
       </div>
-    </Link>
+      <div className="mt-5 divide-y divide-slate-100 border-t border-slate-100 pt-2">
+        {items.map((item) => (
+          <p key={item} className="py-2 text-sm font-semibold text-slate-600">{item}</p>
+        ))}
+      </div>
+      <Link href={href} className="mt-3 flex items-center justify-between rounded-2xl px-1 py-2 text-sm font-black text-blue-700 transition hover:text-blue-900">
+        {actionLabel}
+        <ChevronRight className="size-4" />
+      </Link>
+    </article>
   );
 }
 
 function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: ShellPayload; homeData: V2HomeData; homeLoading: boolean; homeMessage: string }) {
-  const attentionCount = homeData.unreadMessages + homeData.unreadNotifications;
+  const labsUpdateCount = payload.flags.v2_rooms ? 3 : 1;
   const featuredDiscussion = homeData.recentDiscussions[0] ?? null;
   const recentSignals = homeData.recentDiscussions.slice(1, 5);
   const topicCounts = useMemo(() => {
@@ -258,10 +283,12 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [homeData.recentDiscussions]);
 
+  const trendingTopics = topicCounts.length > 0 ? topicCounts : [["Discussions", 0]];
+
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] text-slate-950">
       <V2TopNav />
-      <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
         <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
@@ -269,10 +296,13 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
             </h1>
             <p className="mt-2 text-sm leading-6 text-slate-600">Here is what needs attention across your Loombus activity.</p>
           </div>
-          <Link href="/v2#signal-brief" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-100">
-            <Sparkles className="size-4" />
-            Signal Brief
-          </Link>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <Link href="/v2#signal-brief" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-100">
+              <Sparkles className="size-4" />
+              Signal Brief
+            </Link>
+            <span className="text-sm font-semibold text-slate-500">Today</span>
+          </div>
         </header>
 
         {homeMessage && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{homeMessage}</div>}
@@ -280,14 +310,35 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
         <section className="mb-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_16px_42px_rgba(15,23,42,0.12)] sm:p-6">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.18em] text-slate-500">Needs attention</p>
           <div className="grid gap-4 lg:grid-cols-3">
-            <AttentionCard title="New Replies" count={homeData.replyCount} description={`${formatCount(homeData.replyCount)} replies connected to your activity`} href="/my-activity">
+            <AttentionCard
+              title="New Replies"
+              count={homeData.replyCount}
+              description={`${formatCount(homeData.replyCount)} replies connected to your activity`}
+              href="/v2/my-replies"
+              actionLabel="View all replies"
+              items={homeData.replyCount > 0 ? ["Unread replies in active discussions", "New context waiting for review"] : ["No new replies right now", "Recent replies will appear here"]}
+            >
               <Reply className="size-5" />
             </AttentionCard>
-            <AttentionCard title="Saved Discussions" count={homeData.savedCount} description={`${formatCount(homeData.savedCount)} discussions saved`} href="/saved">
+            <AttentionCard
+              title="Saved Discussions"
+              count={homeData.savedCount}
+              description={`${formatCount(homeData.savedCount)} discussions saved`}
+              href="/v2/saved"
+              actionLabel="View all saved"
+              items={homeData.savedCount > 0 ? ["Saved discussions ready to revisit", "Organized for later reading"] : ["No saved discussions yet", "Saved items will appear here"]}
+            >
               <Bookmark className="size-5" />
             </AttentionCard>
-            <AttentionCard title="Alerts" count={attentionCount} description={`${formatCount(homeData.unreadMessages)} messages and ${formatCount(homeData.unreadNotifications)} notifications`} href="/notifications">
-              <Bell className="size-5" />
+            <AttentionCard
+              title="Labs Updates"
+              count={labsUpdateCount}
+              description={`${formatCount(labsUpdateCount)} updates from labs you follow`}
+              href="/v2/labs"
+              actionLabel="View all updates"
+              items={["Loombus Research Lab", "Civic Futures Lab", "Open Systems Lab"]}
+            >
+              <FlaskConical className="size-5" />
             </AttentionCard>
           </div>
         </section>
@@ -299,21 +350,29 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
               {homeLoading ? (
                 <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">Loading featured signal...</div>
               ) : featuredDiscussion ? (
-                <Link href={`/v2/discussions/${featuredDiscussion.id}`} className="mt-4 block rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_18px_40px_rgba(15,23,42,0.14)] ring-1 ring-white/80 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_24px_54px_rgba(15,23,42,0.18)] sm:p-6">
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{featuredDiscussion.topic || "Discussion"}</span>
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Discussion</span>
+                <article className="mt-4 grid gap-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_18px_40px_rgba(15,23,42,0.14)] ring-1 ring-white/80 transition sm:grid-cols-[260px_minmax(0,1fr)] sm:p-6">
+                  <Link href={`/v2/discussions/${featuredDiscussion.id}`} className="grid min-h-56 place-items-center rounded-3xl bg-gradient-to-br from-blue-950 via-blue-700 to-cyan-400 text-white shadow-inner">
+                    <Sparkles className="size-16" />
+                  </Link>
+                  <div className="min-w-0">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{featuredDiscussion.topic || "Discussion"}</span>
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">Discussion</span>
+                    </div>
+                    <Link href={`/v2/discussions/${featuredDiscussion.id}`} className="text-3xl font-black tracking-tight text-slate-950 transition hover:text-blue-700">
+                      {featuredDiscussion.title}
+                    </Link>
+                    <p className="mt-3 text-base leading-7 text-slate-600">A recent discussion with signal worth reviewing.</p>
+                    <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-4 text-sm font-bold text-slate-500">
+                      <span>💬 {getCompactCount(featuredDiscussion.replyCount)}</span>
+                      <span>🔖 {getCompactCount(featuredDiscussion.savedCount)}</span>
+                      <span>👁 {getCompactCount(featuredDiscussion.viewCount)}</span>
+                      <span>{getRecentDiscussionAge(featuredDiscussion.created_at)}</span>
+                      <button type="button" className="ml-auto rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-600 transition hover:border-blue-200 hover:bg-blue-50">Save</button>
+                      <Link href={`/v2/discussions/${featuredDiscussion.id}`} className="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">View Discussion</Link>
+                    </div>
                   </div>
-                  <h2 className="text-3xl font-black tracking-tight text-slate-950">{featuredDiscussion.title}</h2>
-                  <p className="mt-3 text-base leading-7 text-slate-600">A recent discussion with signal worth reviewing.</p>
-                  <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 text-sm font-bold text-slate-500">
-                    <span>💬 {getCompactCount(featuredDiscussion.replyCount)}</span>
-                    <span>🔖 {getCompactCount(featuredDiscussion.savedCount)}</span>
-                    <span>👁 {getCompactCount(featuredDiscussion.viewCount)}</span>
-                    <span>{getRecentDiscussionAge(featuredDiscussion.created_at)}</span>
-                    <span className="ml-auto rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-black text-orange-800">Signal {getSignalScore(featuredDiscussion)}</span>
-                  </div>
-                </Link>
+                </article>
               ) : (
                 <div className="mt-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">No featured signal yet.</div>
               )}
@@ -349,48 +408,38 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage }: { payload: She
                 <TrendingUp className="size-5 text-blue-600" />
               </div>
               <div className="mt-4 space-y-3">
-                {(topicCounts.length > 0 ? topicCounts : [["Discussions", 0]]).map(([topic, count], index) => (
+                {trendingTopics.map(([topic, count], index) => (
                   <Link key={topic} href="/v2/discussions" className="flex items-center justify-between gap-3 text-sm">
                     <span className="flex items-center gap-2 font-bold text-slate-700"><span className="grid size-6 place-items-center rounded-full bg-blue-100 text-xs font-black text-blue-700">{index + 1}</span>{topic}</span>
                     <span className="text-xs font-semibold text-slate-400">{count} signals</span>
                   </Link>
                 ))}
               </div>
+              <Link href="/v2/discussions" className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-black text-blue-700">
+                View all topics
+                <ChevronRight className="size-4" />
+              </Link>
             </section>
 
             <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
-              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Your Rooms</h2>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Your Rooms</h2>
+                <Link href="/v2/rooms" className="text-sm font-black text-blue-700">View all</Link>
+              </div>
               <div className="mt-4 space-y-3 text-sm">
-                {["Loombus Research Lab", "Builders’ Room", "Civic Futures Lab"].map((room) => (
-                  <Link key={room} href="/v2/rooms" className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-3 font-bold text-slate-700">
-                    <span className="flex items-center gap-3"><Users className="size-4 text-blue-600" /> {room}</span>
+                {[
+                  { title: "Loombus Research Lab", meta: "12 members · 3 new" },
+                  { title: "Builders’ Room", meta: "8 members" },
+                  { title: "Civic Futures Lab", meta: "15 members · 1 new" },
+                ].map((room) => (
+                  <Link key={room.title} href="/v2/rooms" className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-3 font-bold text-slate-700">
+                    <span className="flex items-center gap-3"><Users className="size-4 text-blue-600" /> <span><span className="block">{room.title}</span><span className="block text-xs font-semibold text-slate-400">{room.meta}</span></span></span>
                     <span className="text-blue-600">•</span>
                   </Link>
                 ))}
               </div>
             </section>
-
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
-              <div className="flex items-center gap-3"><ShieldCheck className="size-5 text-emerald-600" /><h2 className="font-black text-slate-950">Rollout state</h2></div>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-2xl bg-blue-50 p-3"><p className="font-black text-blue-700">{payload.flags.v2_shell ? "On" : "Off"}</p><p className="text-xs font-bold text-slate-500">V2 shell</p></div>
-                <div className="rounded-2xl bg-blue-50 p-3"><p className="font-black text-blue-700">{payload.flags.v2_rooms ? "On" : "Off"}</p><p className="text-xs font-bold text-slate-500">Rooms</p></div>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-slate-600">Public users remain on V1 until the full V2 shell passes your test.</p>
-            </section>
-
-            <section id="signal-brief" className="rounded-[2rem] border border-blue-200 bg-blue-50 p-5 shadow-sm">
-              <div className="flex items-center gap-3"><Sparkles className="size-5 text-blue-700" /><h2 className="font-black text-blue-950">Signal Brief</h2></div>
-              <p className="mt-3 text-sm leading-6 text-blue-900">{attentionCount > 0 ? "You have activity to review before moving deeper into discussions." : "No urgent activity. Continue building signal at your pace."}</p>
-            </section>
           </aside>
-        </section>
-
-        <section className="mt-6 grid gap-4 md:grid-cols-4">
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"><FileText className="size-6 text-blue-600" /><h3 className="mt-3 font-black text-slate-950">Signal First</h3><p className="mt-1 text-xs leading-5 text-slate-500">Surface what matters most across your activity.</p></div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"><MessageCircle className="size-6 text-blue-600" /><h3 className="mt-3 font-black text-slate-950">Structured Discussions</h3><p className="mt-1 text-xs leading-5 text-slate-500">Topic-driven conversations with clear context.</p></div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"><Users className="size-6 text-blue-600" /><h3 className="mt-3 font-black text-slate-950">Quality Connections</h3><p className="mt-1 text-xs leading-5 text-slate-500">Engage with people and ideas that add value.</p></div>
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"><ShieldCheck className="size-6 text-blue-600" /><h3 className="mt-3 font-black text-slate-950">Thoughtful by Design</h3><p className="mt-1 text-xs leading-5 text-slate-500">A calm, focused experience built for deep engagement.</p></div>
         </section>
       </section>
       <MobileBottomNav />
