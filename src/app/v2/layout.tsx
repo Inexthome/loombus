@@ -12,12 +12,31 @@ export default function V2Layout({ children }: { children: ReactNode }) {
   return (
     <>
       <style>{`
+        header a[href="/v2"] img[src="/assets/brand/loombus-mark-transparent.png"],
         header a[href="/v2"] span.text-xl {
-          display: none !important;
+          visibility: hidden !important;
         }
 
         header a[href="/v2"] {
+          width: 2.5rem !important;
+          min-width: 2.5rem !important;
           gap: 0 !important;
+        }
+
+        .v2-avatar-menu {
+          left: max(1rem, calc((100vw - 80rem) / 2 + 1rem));
+        }
+
+        @media (min-width: 640px) {
+          .v2-avatar-menu {
+            left: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem));
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .v2-avatar-menu {
+            left: max(2rem, calc((100vw - 80rem) / 2 + 2rem));
+          }
         }
       `}</style>
       {children}
