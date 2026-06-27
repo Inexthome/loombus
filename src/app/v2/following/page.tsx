@@ -6,7 +6,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   BellRing,
-  BookOpen,
   ChevronRight,
   FlaskConical,
   Home,
@@ -230,7 +229,7 @@ function MobileBottomNav() {
         {MOBILE_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
-            <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 rounded-2xl py-2 ${item.active ? "text-blue-600" : "text-slate-500"}`}>
+            <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 rounded-2xl py-2 ${item.primary ? "text-blue-600" : "text-slate-500"}`}>
               <Icon className={`size-5 ${item.primary ? "rounded-full bg-blue-600 p-1 text-white" : ""}`} />
               <span>{item.label}</span>
             </Link>
@@ -321,17 +320,8 @@ export default function V2FollowingPage() {
     setMessage("");
     try {
       const [{ data: discussionRows, error: discussionError }, { data: profileRows }] = await Promise.all([
-        supabase
-          .from("discussions")
-          .select("id, user_id, title, topic, body, created_at, discussion_type")
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .limit(8),
-        supabase
-          .from("profiles")
-          .select("id, full_name, username, avatar_url")
-          .neq("id", userId)
-          .limit(6),
+        supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("profiles").select("id, full_name, username, avatar_url").neq("id", userId).limit(6),
       ]);
 
       if (discussionError) {
