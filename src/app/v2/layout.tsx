@@ -23,6 +23,10 @@ export default function V2Layout({ children }: { children: ReactNode }) {
           gap: 0 !important;
         }
 
+        header nav a[href="/settings"] {
+          display: none !important;
+        }
+
         header nav {
           gap: clamp(0.45rem, 1vw, 0.9rem) !important;
           margin-left: clamp(1rem, 2vw, 2.5rem) !important;
