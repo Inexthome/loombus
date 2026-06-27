@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { V2ShellLinkRouter } from "./v2-shell-link-router";
 import { V2UserAvatarMenu } from "./v2-user-avatar-menu";
-import { V2SignalStickyPolish } from "./v2-signal-sticky-polish";
 import { V2CreateReviewAction } from "./create/v2-create-review-action";
 import { V2CreateServerCheck } from "./create/v2-create-server-check";
 import { V2CreateFinalLockCheck } from "./create/v2-create-final-lock-check";
@@ -19,9 +18,19 @@ export default function V2Layout({ children }: { children: ReactNode }) {
         }
 
         header a[href="/v2"] {
-          width: 2.5rem !important;
-          min-width: 2.5rem !important;
+          width: 2.75rem !important;
+          min-width: 2.75rem !important;
           gap: 0 !important;
+        }
+
+        header nav {
+          gap: clamp(0.45rem, 1vw, 0.9rem) !important;
+          margin-left: clamp(1rem, 2vw, 2.5rem) !important;
+          margin-right: clamp(1rem, 2vw, 2.5rem) !important;
+        }
+
+        header nav a {
+          white-space: nowrap !important;
         }
 
         .v2-avatar-menu {
@@ -42,7 +51,6 @@ export default function V2Layout({ children }: { children: ReactNode }) {
       `}</style>
       {children}
       <V2UserAvatarMenu />
-      <V2SignalStickyPolish />
       <V2ShellLinkRouter />
       <V2CreateReviewAction />
       <V2CreateServerCheck />
