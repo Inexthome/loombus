@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type V2Profile = {
@@ -89,18 +88,17 @@ export function V2UserAvatarMenu() {
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex h-10 items-center gap-2 rounded-full border border-white/25 bg-white/95 px-1.5 py-1 text-slate-900 shadow-lg shadow-slate-950/15 ring-1 ring-slate-900/5 backdrop-blur transition hover:bg-white"
+        className="grid size-11 place-items-center rounded-full border border-white/25 bg-white/95 p-0 text-slate-900 shadow-lg shadow-slate-950/15 ring-1 ring-slate-900/5 backdrop-blur transition hover:bg-white"
         aria-expanded={open}
         aria-label="Open V2 menu"
       >
         {profile?.avatar_url ? (
-          <img src={profile.avatar_url} alt="" className="size-8 rounded-full object-cover" />
+          <img src={profile.avatar_url} alt="" className="size-9 rounded-full object-cover" />
         ) : (
-          <span className="grid size-8 place-items-center rounded-full bg-blue-600 text-sm font-black text-white">
+          <span className="grid size-9 place-items-center rounded-full bg-blue-600 text-sm font-black text-white">
             {getInitial(profile, email)}
           </span>
         )}
-        <ChevronDown className={`mr-1 size-4 text-slate-500 transition ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
