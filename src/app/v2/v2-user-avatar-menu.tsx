@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Settings, UserRound } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type V2Profile = {
@@ -10,6 +10,17 @@ type V2Profile = {
   username: string | null;
   avatar_url: string | null;
 };
+
+const MENU_ITEMS = [
+  { label: "People", href: "/people" },
+  { label: "Labs", href: "/labs" },
+  { label: "Saved", href: "/saved" },
+  { label: "Stickies", href: "/stickies" },
+  { label: "Profile", href: "/profile" },
+  { label: "My Discussions", href: "/my-discussions" },
+  { label: "My Replies / Activity", href: "/my-activity" },
+  { label: "Settings", href: "/settings" },
+];
 
 function getInitial(profile: V2Profile | null, email: string | null) {
   const label = profile?.full_name?.trim() || profile?.username?.trim() || email?.trim() || "User";
@@ -74,13 +85,13 @@ export function V2UserAvatarMenu() {
   const displayName = getDisplayName(profile, email);
 
   return (
-    <div ref={menuRef} className="fixed right-4 top-3 z-[140] sm:right-6 lg:right-8">
+    <div ref={menuRef} className="v2-avatar-menu fixed top-3 z-[140]">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex h-10 items-center gap-2 rounded-full border border-white/20 bg-white/95 px-1.5 py-1 text-slate-900 shadow-lg shadow-slate-950/15 ring-1 ring-slate-900/5 backdrop-blur transition hover:bg-white"
+        className="flex h-10 items-center gap-2 rounded-full border border-white/25 bg-white/95 px-1.5 py-1 text-slate-900 shadow-lg shadow-slate-950/15 ring-1 ring-slate-900/5 backdrop-blur transition hover:bg-white"
         aria-expanded={open}
-        aria-label="Open account menu"
+        aria-label="Open V2 menu"
       >
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt="" className="size-8 rounded-full object-cover" />
@@ -93,20 +104,24 @@ export function V2UserAvatarMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-3xl border border-slate-200 bg-white p-2 text-slate-900 shadow-2xl shadow-slate-950/20">
+        <div className="absolute left-0 mt-3 w-72 overflow-hidden rounded-3xl border border-slate-200 bg-white p-2 text-slate-900 shadow-2xl shadow-slate-950/20">
           <div className="px-3 py-3">
             <p className="truncate text-sm font-black text-slate-950">{displayName}</p>
             {email && <p className="mt-1 truncate text-xs font-medium text-slate-500">{email}</p>}
           </div>
           <div className="h-px bg-slate-100" />
-          <Link href="/profile" onClick={() => setOpen(false)} className="mt-2 flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
-            <UserRound className="size-4" />
-            Profile
-          </Link>
-          <Link href="/settings" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700">
-            <Settings className="size-4" />
-            Settings
-          </Link>
+          <div className="py-2">
+            {MENU_ITEMS.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className="block rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>
