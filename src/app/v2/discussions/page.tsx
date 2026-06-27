@@ -3,16 +3,26 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  BadgeCheck,
   Bell,
   Bookmark,
+  BriefcaseBusiness,
+  Building2,
+  ChevronRight,
+  Eye,
   FileText,
+  FlaskConical,
+  FolderOpen,
   Home,
+  Landmark,
   Loader2,
   Lock,
+  MapPin,
   MessageCircle,
   Plus,
   Search,
-  Settings,
+  SlidersHorizontal,
+  Sparkles,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -84,10 +94,10 @@ const V2_NAV_ITEMS = [
   { label: "Create", href: "/v2/create", icon: Plus, primary: true },
   { label: "Rooms", href: "/v2/rooms", icon: Users },
   { label: "Messages", href: "/v2/messages", icon: Bell },
-  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 const TOPIC_FILTERS = ["All", "Following", "Research Questions", "Debates", "Problem Solving", "Saved", "Trending"];
+const BROWSE_TOPICS = ["Technology", "Society", "Governance", "Science", "Local", "Business"];
 
 function getDefaultShellPayload(): ShellPayload {
   return {
@@ -119,10 +129,14 @@ function getAuthorLabel(discussion: V2DiscussionCard) {
   return discussion.authorName?.trim() || discussion.authorUsername?.trim() || "Loombus member";
 }
 
+function getAuthorSubLabel(discussion: V2DiscussionCard) {
+  return discussion.authorUsername?.trim() ? `@${discussion.authorUsername}` : "Loombus Lab";
+}
+
 function getDiscussionPreview(body: string | null) {
   const cleanBody = (body ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   if (!cleanBody) return "Open this discussion to review the full signal.";
-  return cleanBody.length > 190 ? `${cleanBody.slice(0, 190)}...` : cleanBody;
+  return cleanBody.length > 150 ? `${cleanBody.slice(0, 150)}...` : cleanBody;
 }
 
 function formatCompactCount(value: number | undefined) {
@@ -142,6 +156,13 @@ function getModeLabel(value: string | null | undefined) {
   return "Discussion";
 }
 
+function getModeClass(value: string | null | undefined) {
+  if (value === "debate") return "bg-rose-50 text-rose-700";
+  if (value === "research_question") return "bg-violet-50 text-violet-700";
+  if (value === "problem_solving") return "bg-orange-50 text-orange-700";
+  return "bg-emerald-50 text-emerald-700";
+}
+
 function isImageAttachment(value: string | null | undefined) {
   return value?.startsWith("image/") ?? false;
 }
@@ -154,6 +175,24 @@ function getAttachmentLabel(discussion: V2DiscussionCard) {
   if (isVideoAttachment(discussion.attachmentMimeType)) return "Video context";
   if (isImageAttachment(discussion.attachmentMimeType)) return "Image context";
   return discussion.attachmentKind || "Supporting file";
+}
+
+function getTopicIcon(topic: string) {
+  if (topic === "Society") return Users;
+  if (topic === "Governance") return Landmark;
+  if (topic === "Science") return FlaskConical;
+  if (topic === "Local") return MapPin;
+  if (topic === "Business") return BriefcaseBusiness;
+  return Sparkles;
+}
+
+function getPreviewGradient(discussion: V2DiscussionCard) {
+  const topic = (discussion.topic || "").toLowerCase();
+  if (topic.includes("science") || topic.includes("climate")) return "from-emerald-500 via-lime-400 to-sky-400";
+  if (topic.includes("society") || topic.includes("ai")) return "from-purple-700 via-fuchsia-500 to-blue-500";
+  if (topic.includes("governance")) return "from-amber-500 via-orange-400 to-blue-500";
+  if (topic.includes("local")) return "from-sky-600 via-cyan-400 to-emerald-400";
+  return "from-blue-950 via-blue-700 to-cyan-400";
 }
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
@@ -206,7 +245,7 @@ function V2TopNav() {
                 href={item.href}
                 className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
                   item.active
-                    ? "bg-white/10 text-white ring-1 ring-white/20"
+                    ? "border-b border-white text-white"
                     : item.primary
                       ? "border border-white/40 text-white hover:bg-white/10"
                       : "text-blue-100 hover:bg-white/10 hover:text-white"
@@ -219,10 +258,10 @@ function V2TopNav() {
           })}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
+          <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
             <Search className="size-5" />
           </Link>
-          <Link href="/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
+          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
             <Bell className="size-5" />
             <span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">3</span>
           </Link>
@@ -250,23 +289,33 @@ function MobileBottomNav() {
   );
 }
 
-function AttachmentPreview({ discussion }: { discussion: V2DiscussionCard }) {
-  if (!discussion.attachmentUrl) return null;
-  const label = getAttachmentLabel(discussion);
+function DiscussionVisual({ discussion }: { discussion: V2DiscussionCard }) {
+  if (discussion.attachmentUrl && isImageAttachment(discussion.attachmentMimeType)) {
+    return (
+      <Link href={`/v2/discussions/${discussion.id}`} className="block overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 transition hover:border-blue-200">
+        <img src={discussion.attachmentUrl} alt="" className="aspect-square w-full object-cover" />
+      </Link>
+    );
+  }
+
+  if (discussion.attachmentUrl) {
+    return (
+      <Link href={`/v2/discussions/${discussion.id}`} className="grid aspect-square place-items-center rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center text-slate-700 transition hover:border-blue-200 hover:bg-blue-50">
+        <div>
+          <FileText className="mx-auto size-8 text-blue-600" />
+          <p className="mt-3 text-sm font-black">{getAttachmentLabel(discussion)}</p>
+          <p className="mt-1 line-clamp-2 text-xs text-slate-500">{discussion.attachmentName || "Attached context"}</p>
+        </div>
+      </Link>
+    );
+  }
 
   return (
-    <Link href={`/v2/discussions/${discussion.id}`} className="block overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 transition hover:border-blue-200">
-      {isImageAttachment(discussion.attachmentMimeType) ? (
-        <img src={discussion.attachmentUrl} alt="" className="aspect-square w-full object-cover" />
-      ) : (
-        <div className="grid aspect-square place-items-center bg-slate-100 p-4 text-center text-slate-700">
-          <div>
-            <FileText className="mx-auto size-8 text-blue-600" />
-            <p className="mt-3 text-sm font-black">{label}</p>
-            <p className="mt-1 line-clamp-2 text-xs text-slate-500">{discussion.attachmentName || "Attached context"}</p>
-          </div>
-        </div>
-      )}
+    <Link href={`/v2/discussions/${discussion.id}`} className={`grid aspect-square place-items-center overflow-hidden rounded-2xl bg-gradient-to-br ${getPreviewGradient(discussion)} p-4 text-white shadow-inner transition hover:scale-[1.01]`}>
+      <div className="relative grid size-full place-items-center rounded-xl border border-white/20 bg-white/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.35),transparent_42%)]" />
+        <Sparkles className="relative size-10 drop-shadow" />
+      </div>
     </Link>
   );
 }
@@ -280,58 +329,55 @@ function DiscussionCard({
   onAddSticky: (discussionId: string) => void;
   addingSticky: boolean;
 }) {
-  const hasAttachment = Boolean(discussion.attachmentUrl);
   const signalScore = getSignalScore(discussion);
 
   return (
-    <article
-      className={`rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.16)] ring-1 ring-white/80 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_24px_54px_rgba(15,23,42,0.2)] sm:p-5 ${
-        hasAttachment ? "grid gap-4 sm:grid-cols-[150px_minmax(0,1fr)]" : ""
-      }`}
-    >
-      {hasAttachment && <AttachmentPreview discussion={discussion} />}
+    <article className="grid gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md sm:grid-cols-[150px_minmax(0,1fr)]">
+      <DiscussionVisual discussion={discussion} />
       <div className="min-w-0">
         <Link href={`/v2/discussions/${discussion.id}`} className="block rounded-2xl transition hover:text-blue-700">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{discussion.topic || "Discussion"}</span>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{getModeLabel(discussion.discussion_type)}</span>
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${getModeClass(discussion.discussion_type)}`}>{getModeLabel(discussion.discussion_type)}</span>
             {discussion.purpose_lane && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{discussion.purpose_lane}</span>}
           </div>
-          <h2 className="line-clamp-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{discussion.title}</h2>
-          <p className="mt-3 line-clamp-2 text-base leading-7 text-slate-600">{getDiscussionPreview(discussion.body)}</p>
+          <h2 className="line-clamp-2 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">{discussion.title}</h2>
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{getDiscussionPreview(discussion.body)}</p>
         </Link>
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
-          <span className="inline-flex min-w-0 items-center gap-2">
-            {discussion.authorAvatarUrl ? (
-              <img src={discussion.authorAvatarUrl} alt="" className="size-8 rounded-full object-cover" />
-            ) : (
-              <span className="grid size-8 place-items-center rounded-full bg-slate-100 font-bold text-slate-600">{getAuthorLabel(discussion).slice(0, 1)}</span>
-            )}
-            <span className="truncate font-bold text-slate-700">{getAuthorLabel(discussion)}</span>
-            <span>·</span>
-            <span>{getDiscussionAge(discussion.created_at)}</span>
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          {discussion.authorAvatarUrl ? (
+            <img src={discussion.authorAvatarUrl} alt="" className="size-8 rounded-full object-cover" />
+          ) : (
+            <span className="grid size-8 place-items-center rounded-full bg-slate-100 font-bold text-slate-600">{getAuthorLabel(discussion).slice(0, 1)}</span>
+          )}
+          <span className="min-w-0">
+            <span className="flex items-center gap-1 font-black text-slate-800">
+              {getAuthorLabel(discussion)}
+              <BadgeCheck className="size-3.5 text-blue-600" />
+            </span>
+            <span className="block truncate font-semibold text-slate-500">{getAuthorSubLabel(discussion)} · {getDiscussionAge(discussion.created_at)}</span>
           </span>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-4 text-sm font-bold text-slate-500">
-          <span aria-label={`${discussion.replyCount ?? 0} replies`} title={`${discussion.replyCount ?? 0} replies`} className="inline-flex items-center gap-1">
-            <span aria-hidden="true">💬</span>
+        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-slate-100 pt-3 text-sm font-bold text-slate-500">
+          <span aria-label={`${discussion.replyCount ?? 0} replies`} title={`${discussion.replyCount ?? 0} replies`} className="inline-flex items-center gap-1.5">
+            <MessageCircle className="size-4 text-slate-500" />
             <span>{formatCompactCount(discussion.replyCount)}</span>
           </span>
-          <span aria-label={`${discussion.savedCount ?? 0} saves`} title={`${discussion.savedCount ?? 0} saves`} className="inline-flex items-center gap-1">
-            <span aria-hidden="true">🔖</span>
-            <span>{formatCompactCount(discussion.savedCount)}</span>
-          </span>
-          <span aria-label={`${discussion.viewCount ?? 0} views`} title={`${discussion.viewCount ?? 0} views`} className="inline-flex items-center gap-1">
-            <span aria-hidden="true">👁</span>
+          <span aria-label={`${discussion.viewCount ?? 0} views`} title={`${discussion.viewCount ?? 0} views`} className="inline-flex items-center gap-1.5">
+            <Eye className="size-4 text-slate-500" />
             <span>{formatCompactCount(discussion.viewCount)}</span>
+          </span>
+          <span aria-label={`${discussion.savedCount ?? 0} saves`} title={`${discussion.savedCount ?? 0} saves`} className="inline-flex items-center gap-1.5">
+            <Bookmark className="size-4 text-slate-500" />
+            <span>{formatCompactCount(discussion.savedCount)}</span>
           </span>
           <button
             type="button"
             onClick={() => onAddSticky(discussion.id)}
             disabled={addingSticky || discussion.isStickied}
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-bold transition ${
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black transition ${
               discussion.isStickied
                 ? "border-blue-200 bg-blue-50 text-blue-700"
                 : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
@@ -342,7 +388,7 @@ function DiscussionCard({
             <span aria-hidden="true">📌</span>
             <span>{addingSticky ? "Adding" : discussion.isStickied ? "Added" : "Add"}</span>
           </button>
-          <span className="ml-auto rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-black text-orange-800" aria-label={`Signal score ${signalScore}`} title={`Signal score ${signalScore}`}>
+          <span className="ml-auto rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-black text-orange-800" aria-label={`Signal score ${signalScore}`} title={`Signal score ${signalScore}`}>
             Signal {signalScore}
           </span>
         </div>
@@ -387,18 +433,19 @@ export default function V2DiscussionsPage() {
     const counts = new Map<string, number>();
     for (const discussion of discussions) {
       const topic = discussion.topic || "Discussion";
-      counts.set(topic, (counts.get(topic) ?? 0) + 1);
+      counts.set(topic, (counts.get(topic) ?? 0) + Math.max(1, getSignalScore(discussion)));
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [discussions]);
 
   const topContributors = useMemo(() => {
-    const counts = new Map<string, number>();
+    const counts = new Map<string, { count: number; avatarUrl: string | null; username: string | null }>();
     for (const discussion of discussions) {
       const author = getAuthorLabel(discussion);
-      counts.set(author, (counts.get(author) ?? 0) + 1);
+      const current = counts.get(author) ?? { count: 0, avatarUrl: discussion.authorAvatarUrl ?? null, username: discussion.authorUsername ?? null };
+      counts.set(author, { ...current, count: current.count + Math.max(1, getSignalScore(discussion)) });
     }
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+    return [...counts.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 5);
   }, [discussions]);
 
   async function loadDiscussions() {
@@ -460,8 +507,8 @@ export default function V2DiscussionsPage() {
       }
 
       if (currentUserId) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData.session?.access_token;
+        const { data: stickySessionData } = await supabase.auth.getSession();
+        const accessToken = stickySessionData.session?.access_token;
         if (accessToken) {
           const response = await fetch("/api/stickies", {
             headers: { Authorization: `Bearer ${accessToken}` },
@@ -576,21 +623,36 @@ export default function V2DiscussionsPage() {
     return <GateCard title="V2 shell is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
   }
 
+  const fallbackTrendingTopics = trendingTopics.length > 0 ? trendingTopics : [["Discussions", 0] as [string, number]];
+  const fallbackTopContributors = topContributors.length > 0 ? topContributors : [["Loombus member", { count: 0, avatarUrl: null, username: null }] as [string, { count: number; avatarUrl: string | null; username: string | null }]];
+
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] text-slate-950">
       <V2TopNav />
-      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-28 pt-6 sm:px-6 lg:grid-cols-[220px_minmax(0,1fr)_300px] lg:px-8">
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-28 pt-6 sm:px-6 lg:grid-cols-[210px_minmax(0,1fr)_300px] lg:px-8">
         <aside className="hidden lg:block">
-          <div className="sticky top-24 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Browse topics</p>
+          <div className="sticky top-24 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Browse topics</p>
             <div className="mt-4 space-y-2">
-              {["Technology", "Society", "Governance", "Science", "Local", "Business"].map((topic) => (
-                <button key={topic} type="button" onClick={() => setQuery(topic)} className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left text-sm font-semibold text-slate-600 transition hover:bg-blue-50 hover:text-blue-700">
-                  <span className="grid size-8 place-items-center rounded-xl bg-slate-100 text-slate-500">#</span>
-                  {topic}
-                </button>
-              ))}
+              {BROWSE_TOPICS.map((topic, index) => {
+                const Icon = getTopicIcon(topic);
+                return (
+                  <button
+                    key={topic}
+                    type="button"
+                    onClick={() => setQuery(topic)}
+                    className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-bold transition ${index === 0 ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"}`}
+                  >
+                    <span className="grid size-8 place-items-center rounded-xl bg-slate-100 text-slate-500"><Icon className="size-4" /></span>
+                    {topic}
+                  </button>
+                );
+              })}
             </div>
+            <Link href="/v2/discussions" className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-black text-blue-700">
+              View all topics
+              <ChevronRight className="size-4" />
+            </Link>
           </div>
         </aside>
 
@@ -601,12 +663,12 @@ export default function V2DiscussionsPage() {
           </div>
 
           <div className="mb-4 flex gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
               <Search className="size-5 text-slate-400" />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search discussions, topics, and contributors" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
             </div>
-            <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-              <Settings className="size-5" />
+            <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+              <SlidersHorizontal className="size-5" />
             </button>
           </div>
 
@@ -620,7 +682,7 @@ export default function V2DiscussionsPage() {
 
           {message && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{message}</div>}
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {discussionLoading && <div className="rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">Loading V2 discussion shell...</div>}
             {!discussionLoading && filteredDiscussions.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">No discussions match this V2 shell filter.</div>}
             {!discussionLoading && filteredDiscussions.map((discussion) => (
@@ -630,40 +692,64 @@ export default function V2DiscussionsPage() {
         </section>
 
         <aside className="hidden space-y-4 lg:block">
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
+          <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Trending topics</h2>
               <TrendingUp className="size-5 text-blue-600" />
             </div>
             <div className="mt-4 space-y-3">
-              {trendingTopics.map(([topic, count], index) => (
+              {fallbackTrendingTopics.map(([topic, count], index) => (
                 <button key={topic} type="button" onClick={() => setQuery(topic)} className="flex w-full items-center justify-between text-left text-sm">
-                  <span className="flex items-center gap-2 font-semibold text-slate-700"><span className="grid size-6 place-items-center rounded-full bg-blue-100 text-xs font-black text-blue-700">{index + 1}</span>{topic}</span>
-                  <span className="text-xs text-slate-400">{count} signals</span>
+                  <span className="flex items-center gap-2 font-bold text-slate-700"><span className="grid size-6 place-items-center rounded-full bg-blue-100 text-xs font-black text-blue-700">{index + 1}</span>{topic}</span>
+                  <span className="text-xs font-semibold text-slate-400">{formatCompactCount(count)} signals</span>
                 </button>
               ))}
             </div>
+            <Link href="/v2/discussions" className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-black text-blue-700">
+              View all topics
+              <ChevronRight className="size-4" />
+            </Link>
           </section>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
-            <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Top contributors</h2>
-            <div className="mt-4 space-y-3">
-              {topContributors.map(([author, count]) => (
+          <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Top contributors</h2>
+              <Link href="/v2/people" className="text-sm font-black text-blue-700">View all</Link>
+            </div>
+            <div className="mt-4 space-y-4">
+              {fallbackTopContributors.map(([author, contributor]) => (
                 <div key={author} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="font-semibold text-slate-700">{author}</span>
-                  <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">{count}</span>
+                  <span className="flex min-w-0 items-center gap-3">
+                    {contributor.avatarUrl ? <img src={contributor.avatarUrl} alt="" className="size-9 rounded-full object-cover" /> : <span className="grid size-9 place-items-center rounded-full bg-slate-100 font-black text-slate-600">{author.slice(0, 1)}</span>}
+                    <span className="min-w-0">
+                      <span className="block truncate font-black text-slate-800">{author}</span>
+                      <span className="block truncate text-xs font-semibold text-slate-400">{contributor.username ? `@${contributor.username}` : "Contributor"} · {formatCompactCount(contributor.count)} signals</span>
+                    </span>
+                  </span>
+                  <Link href="/v2/people" className="rounded-xl bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-100">Follow</Link>
                 </div>
               ))}
             </div>
           </section>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.1)]">
+          <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Saved folders</h2>
             <div className="mt-4 space-y-3 text-sm text-slate-600">
-              <div className="flex items-center gap-3"><Bookmark className="size-4 text-blue-600" /> High signal</div>
-              <div className="flex items-center gap-3"><Bookmark className="size-4 text-blue-600" /> Research</div>
-              <div className="flex items-center gap-3"><Bookmark className="size-4 text-blue-600" /> Community</div>
+              {[
+                ["Decentralized Identity", "12 discussions"],
+                ["AI Safety", "8 discussions"],
+                ["Climate & Energy", "15 discussions"],
+              ].map(([folder, meta]) => (
+                <Link key={folder} href="/v2/saved" className="flex items-center gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
+                  <FolderOpen className="size-5 text-blue-600" />
+                  <span><span className="block font-black text-slate-700">{folder}</span><span className="block text-xs font-semibold text-slate-400">{meta}</span></span>
+                </Link>
+              ))}
             </div>
+            <Link href="/v2/saved" className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-black text-blue-700">
+              View all folders
+              <ChevronRight className="size-4" />
+            </Link>
           </section>
         </aside>
       </section>
