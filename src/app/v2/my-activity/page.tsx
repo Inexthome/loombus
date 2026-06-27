@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   Award,
   Bell,
   Bookmark,
   ChevronDown,
-  ChevronRight,
   EyeOff,
   FolderOpen,
   Home,
-  Image,
   Loader2,
   Lock,
   MessageCircle,
@@ -70,9 +69,12 @@ type ProfileRow = {
   avatar_url: string | null;
 };
 
+type ActivityKind = "reply" | "discussion" | "save" | "follow" | "room" | "lab" | "message";
+type ActivityAccent = "blue" | "green" | "violet" | "amber" | "slate";
+
 type ActivityItem = {
   id: string;
-  kind: "reply" | "discussion" | "save" | "follow" | "room" | "lab" | "message";
+  kind: ActivityKind;
   eyebrow: string;
   title: string;
   description: string;
@@ -82,7 +84,32 @@ type ActivityItem = {
   href: string;
   actionLabel: string;
   avatarUrl?: string | null;
-  accent: "blue" | "green" | "violet" | "amber" | "slate";
+  accent: ActivityAccent;
+};
+
+type SidebarMetric = {
+  label: string;
+  value: number;
+};
+
+type AttentionItem = {
+  title: string;
+  meta: string;
+  count: number;
+  icon: LucideIcon;
+};
+
+type AchievementItem = {
+  title: string;
+  meta: string;
+  count: number;
+  icon: LucideIcon;
+};
+
+type PrivacyItem = {
+  label: string;
+  value: string;
+  icon: LucideIcon;
 };
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -109,6 +136,24 @@ const MOBILE_NAV_ITEMS = [
 ];
 
 const FILTERS = ["All", "Replies", "Discussions", "Saves", "Follows", "Rooms", "Labs", "Messages"];
+
+const ATTENTION_ITEMS: AttentionItem[] = [
+  { title: "2 unread replies", meta: "In discussions", count: 2, icon: MessageCircle },
+  { title: "1 room update", meta: "Waiting for your review", count: 1, icon: Users },
+  { title: "1 discussion awaiting reply", meta: "Started by you", count: 1, icon: MessageCircle },
+];
+
+const ACHIEVEMENTS: AchievementItem[] = [
+  { title: "Thoughtful Contributor", meta: "Replied in 10 discussions", count: 10, icon: Award },
+  { title: "Knowledge Explorer", meta: "Saved 10 discussions", count: 10, icon: Star },
+  { title: "Active Participant", meta: "Followed 5 experts", count: 5, icon: Trophy },
+];
+
+const PRIVACY_CONTROLS: PrivacyItem[] = [
+  { label: "Profile visibility", value: "Private", icon: EyeOff },
+  { label: "Activity visibility", value: "Only me", icon: ShieldCheck },
+  { label: "Data & permissions", value: "Manage", icon: FolderOpen },
+];
 
 function getDefaultShellPayload(): ShellPayload {
   return {
@@ -164,14 +209,13 @@ function getPreviewGradient(activity: ActivityItem) {
   return "from-blue-950 via-blue-700 to-cyan-400";
 }
 
-function getActivityIcon(kind: ActivityItem["kind"]) {
-  if (kind === "reply") return MessageCircle;
-  if (kind === "discussion") return MessageCircle;
+function getActivityIcon(kind: ActivityKind) {
   if (kind === "save") return Bookmark;
   if (kind === "follow") return UserPlus;
   if (kind === "room") return Users;
   if (kind === "lab") return Trophy;
-  return Bell;
+  if (kind === "message") return Bell;
+  return MessageCircle;
 }
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
@@ -325,31 +369,25 @@ export default function V2MyActivityPage() {
     messages: activity.filter((item) => item.kind === "message").length,
   }), [activity]);
 
+  const summaryMetrics: SidebarMetric[] = [
+    { label: "Replies", value: counts.replies },
+    { label: "Discussions", value: counts.discussions },
+    { label: "Saves", value: counts.saves },
+    { label: "Follows", value: counts.follows },
+    { label: "Rooms", value: counts.rooms },
+    { label: "Labs", value: counts.labs },
+    { label: "Messages", value: counts.messages },
+    { label: "Total", value: activity.length },
+  ];
+
   async function loadActivity(userId: string) {
     setActivityLoading(true);
     setMessage("");
     try {
       const [{ data: discussionRows }, { data: replyRows }, { data: bookmarkRows }] = await Promise.all([
-        supabase
-          .from("discussions")
-          .select("id, user_id, title, topic, body, created_at, discussion_type")
-          .eq("user_id", userId)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .limit(8),
-        supabase
-          .from("replies")
-          .select("id, user_id, discussion_id, body, created_at")
-          .eq("user_id", userId)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .limit(8),
-        supabase
-          .from("bookmarks")
-          .select("id, discussion_id, created_at")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(8),
+        supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("replies").select("id, user_id, discussion_id, body, created_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
+        supabase.from("bookmarks").select("id, discussion_id, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(8),
       ]);
 
       const discussions = (discussionRows ?? []) as DiscussionRow[];
@@ -359,19 +397,11 @@ export default function V2MyActivityPage() {
       const linkedDiscussionsById = new Map<string, DiscussionRow>();
 
       if (linkedDiscussionIds.length > 0) {
-        const { data: linkedDiscussionRows } = await supabase
-          .from("discussions")
-          .select("id, user_id, title, topic, body, created_at, discussion_type")
-          .in("id", linkedDiscussionIds)
-          .is("deleted_at", null);
+        const { data: linkedDiscussionRows } = await supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").in("id", linkedDiscussionIds).is("deleted_at", null);
         for (const discussion of (linkedDiscussionRows ?? []) as DiscussionRow[]) linkedDiscussionsById.set(discussion.id, discussion);
       }
 
-      const { data: profileRows } = await supabase
-        .from("profiles")
-        .select("id, full_name, username, avatar_url")
-        .neq("id", userId)
-        .limit(3);
+      const { data: profileRows } = await supabase.from("profiles").select("id, full_name, username, avatar_url").neq("id", userId).limit(3);
       const profiles = (profileRows ?? []) as ProfileRow[];
 
       const discussionActivities: ActivityItem[] = discussions.map((discussion) => ({
@@ -451,11 +481,7 @@ export default function V2MyActivityPage() {
         },
       ];
 
-      const nextActivity = [...replyActivities, ...saveActivities, ...profileActivities, ...supplementalActivities, ...discussionActivities]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 12);
-
-      setActivity(nextActivity);
+      setActivity([...replyActivities, ...saveActivities, ...profileActivities, ...supplementalActivities, ...discussionActivities].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 12));
     } catch {
       setMessage("Unable to load V2 My Activity safely. Current account activity remains available through existing pages.");
       setActivity([]);
@@ -470,15 +496,11 @@ export default function V2MyActivityPage() {
     try {
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
-      const response = await fetch("/api/v2/shell", {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      });
+      const response = await fetch("/api/v2/shell", { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined });
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
       setPayload(nextPayload);
 
-      if (accessToken && data.session?.user.id && nextPayload.configured && nextPayload.flags.v2_shell && nextPayload.version === "v2") {
-        await loadActivity(data.session.user.id);
-      }
+      if (accessToken && data.session?.user.id && nextPayload.configured && nextPayload.flags.v2_shell && nextPayload.version === "v2") await loadActivity(data.session.user.id);
     } catch {
       setPayload(getDefaultShellPayload());
       setMessage("Unable to verify V2 My Activity access. Current Loombus remains on V1.");
@@ -489,9 +511,7 @@ export default function V2MyActivityPage() {
 
   useEffect(() => {
     loadShell();
-    const { data } = supabase.auth.onAuthStateChange(() => {
-      loadShell();
-    });
+    const { data } = supabase.auth.onAuthStateChange(() => loadShell());
     return () => data.subscription.unsubscribe();
   }, []);
 
@@ -515,17 +535,11 @@ export default function V2MyActivityPage() {
                 <Search className="size-5 text-slate-400" />
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your activity" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
               </div>
-              <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
-                <SlidersHorizontal className="size-5" />
-              </button>
+              <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><SlidersHorizontal className="size-5" /></button>
             </div>
 
             <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-              {FILTERS.map((filter) => (
-                <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>
-                  {filter}
-                </button>
-              ))}
+              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter}</button>)}
             </div>
 
             {message && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{message}</div>}
@@ -536,30 +550,14 @@ export default function V2MyActivityPage() {
               {!activityLoading && filteredActivity.map((item) => <ActivityRow key={item.id} activity={item} />)}
             </div>
 
-            {!activityLoading && filteredActivity.length > 0 && (
-              <Link href="/v2/my-activity" className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50">
-                Load more activity
-                <ChevronDown className="size-4" />
-              </Link>
-            )}
+            {!activityLoading && filteredActivity.length > 0 && <Link href="/v2/my-activity" className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50">Load more activity<ChevronDown className="size-4" /></Link>}
           </div>
 
           <aside className="space-y-4">
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Activity summary</h2><Link href="/v2/my-activity" className="text-sm font-black text-blue-700">View all</Link></div>
               <div className="mt-4 grid grid-cols-4 overflow-hidden rounded-2xl border border-slate-100 text-center text-xs font-semibold text-slate-500">
-                {[
-                  ["Replies", counts.replies],
-                  ["Discussions", counts.discussions],
-                  ["Saves", counts.saves],
-                  ["Follows", counts.follows],
-                  ["Rooms", counts.rooms],
-                  ["Labs", counts.labs],
-                  ["Messages", counts.messages],
-                  ["Total", activity.length],
-                ].map(([label, value]) => (
-                  <div key={label} className="border-b border-r border-slate-100 p-3 last:border-r-0"><p className="text-xl font-black text-slate-950">{value}</p><p>{label}</p></div>
-                ))}
+                {summaryMetrics.map((metric) => <div key={metric.label} className="border-b border-r border-slate-100 p-3"><p className="text-xl font-black text-slate-950">{metric.value}</p><p>{metric.label}</p></div>)}
               </div>
               <p className="mt-4 text-sm text-slate-500">All activity is private and only visible to you.</p>
             </section>
@@ -567,13 +565,9 @@ export default function V2MyActivityPage() {
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Needs attention</h2><Link href="/v2/notifications" className="text-sm font-black text-blue-700">View all</Link></div>
               <div className="mt-4 space-y-4">
-                {[
-                  ["2 unread replies", "In discussions", 2, MessageCircle],
-                  ["1 room update", "Waiting for your review", 1, Users],
-                  ["1 discussion awaiting reply", "Started by you", 1, MessageCircle],
-                ].map(([title, meta, count, Icon]) => {
-                  const AlertIcon = Icon as typeof MessageCircle;
-                  return <Link key={String(title)} href="/v2/notifications" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-full bg-blue-50 text-blue-700"><AlertIcon className="size-4" /></span><span><span className="block text-sm font-black text-slate-800">{title}</span><span className="block text-xs font-semibold text-slate-500">{meta}</span></span></span><span className="grid size-7 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-700">{count}</span></Link>;
+                {ATTENTION_ITEMS.map((item) => {
+                  const Icon = item.icon;
+                  return <Link key={item.title} href="/v2/notifications" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-full bg-blue-50 text-blue-700"><Icon className="size-4" /></span><span><span className="block text-sm font-black text-slate-800">{item.title}</span><span className="block text-xs font-semibold text-slate-500">{item.meta}</span></span></span><span className="grid size-7 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-700">{item.count}</span></Link>;
                 })}
               </div>
             </section>
@@ -581,13 +575,9 @@ export default function V2MyActivityPage() {
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Recent achievements</h2><Link href="/v2/profile" className="text-sm font-black text-blue-700">View all</Link></div>
               <div className="mt-4 space-y-4">
-                {[
-                  ["Thoughtful Contributor", "Replied in 10 discussions", 10, Award],
-                  ["Knowledge Explorer", "Saved 10 discussions", 10, Star],
-                  ["Active Participant", "Followed 5 experts", 5, Trophy],
-                ].map(([title, meta, count, Icon]) => {
-                  const AwardIcon = Icon as typeof Award;
-                  return <div key={String(title)} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2"><span className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-full bg-blue-50 text-blue-700"><AwardIcon className="size-4" /></span><span><span className="block text-sm font-black text-slate-800">{title}</span><span className="block text-xs font-semibold text-slate-500">{meta}</span></span></span><span className="grid size-7 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-700">{count}</span></div>;
+                {ACHIEVEMENTS.map((item) => {
+                  const Icon = item.icon;
+                  return <div key={item.title} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2"><span className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-full bg-blue-50 text-blue-700"><Icon className="size-4" /></span><span><span className="block text-sm font-black text-slate-800">{item.title}</span><span className="block text-xs font-semibold text-slate-500">{item.meta}</span></span></span><span className="grid size-7 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-700">{item.count}</span></div>;
                 })}
               </div>
             </section>
@@ -595,13 +585,9 @@ export default function V2MyActivityPage() {
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Privacy controls</h2><Link href="/settings" className="text-sm font-black text-blue-700">Manage</Link></div>
               <div className="mt-4 space-y-3 text-sm text-slate-600">
-                {[
-                  [EyeOff, "Profile visibility", "Private"],
-                  [ShieldCheck, "Activity visibility", "Only me"],
-                  [FolderOpen, "Data & permissions", "Manage"],
-                ].map(([Icon, label, value]) => {
-                  const PrivacyIcon = Icon as typeof EyeOff;
-                  return <div key={String(label)} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2"><span className="inline-flex items-center gap-3 font-black text-slate-800"><PrivacyIcon className="size-4 text-blue-700" />{label}</span><span className="font-semibold text-slate-500">{value}</span></div>;
+                {PRIVACY_CONTROLS.map((item) => {
+                  const Icon = item.icon;
+                  return <div key={item.label} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2"><span className="inline-flex items-center gap-3 font-black text-slate-800"><Icon className="size-4 text-blue-700" />{item.label}</span><span className="font-semibold text-slate-500">{item.value}</span></div>;
                 })}
               </div>
             </section>
