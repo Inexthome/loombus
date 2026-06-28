@@ -134,25 +134,25 @@ export function V2UserAvatarMenu() {
   const displayName = getDisplayName(profile, email);
 
   return (
-    <div ref={menuRef} className="v2-avatar-menu fixed top-3 z-[140]">
+    <div ref={menuRef} className="v2-avatar-menu fixed top-2.5 z-[140]">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="grid size-11 place-items-center rounded-full border border-white/25 bg-white/95 p-0 text-slate-900 shadow-lg shadow-slate-950/15 ring-1 ring-slate-900/5 backdrop-blur transition hover:bg-white"
+        className="grid size-11 place-items-center rounded-full border border-white/25 bg-white/10 p-0 text-white shadow-none backdrop-blur transition hover:bg-white/15"
         aria-expanded={open}
         aria-label="Open V2 menu"
       >
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt="" className="size-9 rounded-full object-cover" />
         ) : (
-          <span className="grid size-9 place-items-center rounded-full bg-blue-600 text-sm font-black text-white">
+          <span className="grid size-9 place-items-center rounded-full bg-amber-100 text-sm font-black text-amber-900">
             {getInitial(profile, email)}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute left-0 mt-3 max-h-[calc(100vh-5rem)] w-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl shadow-slate-950/20">
+        <div className="absolute right-0 mt-3 max-h-[calc(100vh-5rem)] w-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl shadow-slate-950/20">
           <div className="px-3 py-3">
             <p className="truncate text-sm font-black text-slate-950">{displayName}</p>
             {email && <p className="mt-1 truncate text-xs font-medium text-slate-500">{email}</p>}
