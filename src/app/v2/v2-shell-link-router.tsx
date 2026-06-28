@@ -2,42 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-
-const V2_EXACT_ROUTE_MAP: Record<string, string> = {
-  "/": "/v2",
-  "/home": "/v2",
-  "/discussions": "/v2/discussions",
-  "/create": "/v2/create",
-  "/rooms": "/v2/rooms",
-  "/messages": "/v2/messages",
-  "/people": "/v2/people",
-  "/labs": "/v2/labs",
-  "/topics": "/v2/topics",
-  "/following": "/v2/following",
-  "/saved": "/v2/saved",
-  "/stickies": "/v2/stickies",
-  "/reading-history": "/v2/reading-history",
-  "/my-activity": "/v2/my-activity",
-  "/my-discussions": "/v2/my-discussions",
-  "/my-replies": "/v2/my-replies",
-  "/profile": "/v2/profile",
-  "/settings": "/v2/settings",
-  "/premium": "/v2/premium",
-  "/support": "/v2/support",
-  "/privacy-security": "/v2/privacy-security",
-  "/notifications": "/v2/notifications",
-  "/search": "/v2/search",
-  "/onboarding": "/v2/onboarding",
-  "/admin": "/v2/admin",
-};
-
-const V2_DYNAMIC_ROUTE_PREFIXES: Array<{ from: string; to: string }> = [
-  { from: "/discussions/", to: "/v2/discussions/" },
-  { from: "/people/", to: "/v2/people/" },
-  { from: "/rooms/", to: "/v2/rooms/" },
-  { from: "/labs/", to: "/v2/labs/" },
-  { from: "/topics/", to: "/v2/topics/" },
-];
+import { V2_DYNAMIC_ROUTE_PREFIXES, V2_EXACT_ROUTE_MAP } from "./v2-navigation";
 
 function splitHref(href: string) {
   const hashIndex = href.indexOf("#");
