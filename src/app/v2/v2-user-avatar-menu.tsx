@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { V2_MENU_GROUPS } from "./v2-navigation";
 
 type V2Profile = {
   full_name: string | null;
@@ -11,51 +12,7 @@ type V2Profile = {
   avatar_url: string | null;
 };
 
-type MenuGroup = {
-  title: string;
-  items: Array<{ label: string; href: string }>;
-};
-
 const ENTRY_PATHS = new Set(["/v2/login", "/v2/signup", "/v2/reset-password"]);
-
-const MENU_GROUPS: MenuGroup[] = [
-  {
-    title: "Discover",
-    items: [
-      { label: "People", href: "/v2/people" },
-      { label: "Labs", href: "/v2/labs" },
-      { label: "Topics", href: "/v2/topics" },
-      { label: "Following", href: "/v2/following" },
-    ],
-  },
-  {
-    title: "Library",
-    items: [
-      { label: "Saved", href: "/v2/saved" },
-      { label: "Stickies", href: "/v2/stickies" },
-      { label: "Reading History", href: "/v2/reading-history" },
-    ],
-  },
-  {
-    title: "My Loombus",
-    items: [
-      { label: "My Activity", href: "/v2/my-activity" },
-      { label: "My Discussions", href: "/v2/my-discussions" },
-      { label: "My Replies", href: "/v2/my-replies" },
-      { label: "Profile", href: "/v2/profile" },
-    ],
-  },
-  {
-    title: "Account",
-    items: [
-      { label: "Settings", href: "/v2/settings" },
-      { label: "Premium", href: "/v2/premium" },
-      { label: "Support", href: "/v2/support" },
-      { label: "Privacy/Security", href: "/v2/privacy-security" },
-      { label: "Admin", href: "/v2/admin" },
-    ],
-  },
-];
 
 function getInitial(profile: V2Profile | null, email: string | null) {
   const label = profile?.full_name?.trim() || profile?.username?.trim() || email?.trim() || "User";
@@ -159,20 +116,27 @@ export function V2UserAvatarMenu() {
           </div>
           <div className="h-px bg-slate-100" />
           <div className="space-y-3 py-3">
-            {MENU_GROUPS.map((group) => (
+            {V2_MENU_GROUPS.map((group) => (
               <section key={group.title}>
                 <p className="px-3 pb-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{group.title}</p>
                 <div className="space-y-1">
-                  {group.items.map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className="block rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center justify-between rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                      >
+                        <span className="inline-flex min-w-0 items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </span>
+                        {item.badge && <span className="grid size-5 place-items-center rounded-full bg-blue-600 text-[10px] font-black text-white">{item.badge}</span>}
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
             ))}
