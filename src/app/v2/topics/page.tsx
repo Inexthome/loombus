@@ -1,12 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   ChevronDown,
   ChevronRight,
   Filter,
-  Heart,
   Landmark,
   Leaf,
   LineChart,
@@ -14,7 +14,6 @@ import {
   Search,
   Shield,
   Sparkles,
-  TrendingUp,
   Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
@@ -119,12 +118,6 @@ function getTopicDescription(topic: string, latestDiscussion: Discussion | null)
 
 function getAuthorLabel(profile: Profile | null) {
   return profile?.full_name?.trim() || profile?.username?.trim() || "Loombus member";
-}
-
-function getAuthorSubLabel(profile: Profile | null, discussion: Discussion | null) {
-  const username = profile?.username?.trim();
-  if (username) return `@${username}`;
-  return discussion?.purpose_lane || discussion?.discussion_type || "Contributor";
 }
 
 function getInitials(label: string) {
