@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Home, Loader2, Lock, Mail, MessageCircle, Plus, Search, Users } from "lucide-react";
+import { Loader2, Lock } from "lucide-react";
+import { V2_ACTION_NAV_ITEMS, V2_PRIMARY_NAV_ITEMS } from "./v2-navigation";
 
 export type FeatureFlags = {
   v2_shell: boolean;
@@ -21,14 +22,6 @@ const DEFAULT_FLAGS: FeatureFlags = {
   v2_signal_brief: false,
   v2_rooms: false,
 };
-
-const V2_NAV_ITEMS = [
-  { label: "Home", href: "/v2", icon: Home },
-  { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
-  { label: "Create", href: "/v2/create", icon: Plus, primary: true },
-  { label: "Rooms", href: "/v2/rooms", icon: Users },
-  { label: "Messages", href: "/v2/messages", icon: Mail },
-];
 
 export function getDefaultShellPayload(): ShellPayload {
   return {
@@ -71,7 +64,7 @@ export function V2ShellTopNav() {
           <span className="text-xl">Loombus</span>
         </Link>
         <nav className="hidden items-center gap-1 md:flex">
-          {V2_NAV_ITEMS.map((item) => {
+          {V2_PRIMARY_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
               <Link key={item.label} href={item.href} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${item.primary ? "border border-white/40 text-white hover:bg-white/10" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}>
@@ -82,8 +75,15 @@ export function V2ShellTopNav() {
           })}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Search className="size-5" /></Link>
-          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /><span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">8</span></Link>
+          {V2_ACTION_NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link key={item.label} href={item.href} aria-label={item.label} className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
+                <Icon className="size-5" />
+                {item.badge && <span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">{item.badge}</span>}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </header>
@@ -94,7 +94,7 @@ export function V2ShellMobileNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pb-3 pt-2 shadow-2xl backdrop-blur md:hidden">
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1 text-xs font-semibold text-slate-500">
-        {V2_NAV_ITEMS.map((item) => {
+        {V2_PRIMARY_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
             <Link key={item.label} href={item.href} className="flex flex-col items-center gap-1 rounded-2xl py-2 text-slate-500">
