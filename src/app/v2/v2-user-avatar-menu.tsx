@@ -134,51 +134,86 @@ export function V2UserAvatarMenu() {
   const displayName = getDisplayName(profile, email);
 
   return (
-    <div ref={menuRef} className="v2-avatar-menu fixed top-2.5 z-[140]">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        className="grid size-11 place-items-center rounded-full border border-white/25 bg-white/10 p-0 text-white shadow-none backdrop-blur transition hover:bg-white/15"
-        aria-expanded={open}
-        aria-label="Open V2 menu"
-      >
-        {profile?.avatar_url ? (
-          <img src={profile.avatar_url} alt="" className="size-9 rounded-full object-cover" />
-        ) : (
-          <span className="grid size-9 place-items-center rounded-full bg-amber-100 text-sm font-black text-amber-900">
-            {getInitial(profile, email)}
-          </span>
-        )}
-      </button>
+    <>
+      <style>{`
+        header a[href="/v2"] img[src="/assets/brand/loombus-mark-transparent.png"],
+        header a[href="/v2"] span.text-xl {
+          visibility: visible !important;
+        }
 
-      {open && (
-        <div className="absolute right-0 mt-3 max-h-[calc(100vh-5rem)] w-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl shadow-slate-950/20">
-          <div className="px-3 py-3">
-            <p className="truncate text-sm font-black text-slate-950">{displayName}</p>
-            {email && <p className="mt-1 truncate text-xs font-medium text-slate-500">{email}</p>}
+        header a[href="/v2"] {
+          width: auto !important;
+          min-width: 0 !important;
+          gap: 0.75rem !important;
+        }
+
+        main > header:first-child > div > div:last-child {
+          margin-right: 3.75rem !important;
+        }
+
+        .v2-avatar-menu {
+          left: auto !important;
+          right: max(1rem, calc((100vw - 80rem) / 2 + 1rem)) !important;
+        }
+
+        @media (min-width: 640px) {
+          .v2-avatar-menu {
+            right: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem)) !important;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .v2-avatar-menu {
+            right: max(2rem, calc((100vw - 80rem) / 2 + 2rem)) !important;
+          }
+        }
+      `}</style>
+      <div ref={menuRef} className="v2-avatar-menu fixed top-2.5 z-[140]">
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          className="grid size-11 place-items-center rounded-full border border-white/25 bg-white/10 p-0 text-white shadow-none backdrop-blur transition hover:bg-white/15"
+          aria-expanded={open}
+          aria-label="Open V2 menu"
+        >
+          {profile?.avatar_url ? (
+            <img src={profile.avatar_url} alt="" className="size-9 rounded-full object-cover" />
+          ) : (
+            <span className="grid size-9 place-items-center rounded-full bg-amber-100 text-sm font-black text-amber-900">
+              {getInitial(profile, email)}
+            </span>
+          )}
+        </button>
+
+        {open && (
+          <div className="absolute right-0 mt-3 max-h-[calc(100vh-5rem)] w-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl shadow-slate-950/20">
+            <div className="px-3 py-3">
+              <p className="truncate text-sm font-black text-slate-950">{displayName}</p>
+              {email && <p className="mt-1 truncate text-xs font-medium text-slate-500">{email}</p>}
+            </div>
+            <div className="h-px bg-slate-100" />
+            <div className="space-y-3 py-3">
+              {MENU_GROUPS.map((group) => (
+                <section key={group.title}>
+                  <p className="px-3 pb-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{group.title}</p>
+                  <div className="space-y-1">
+                    {group.items.map((item) => (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className="block rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
           </div>
-          <div className="h-px bg-slate-100" />
-          <div className="space-y-3 py-3">
-            {MENU_GROUPS.map((group) => (
-              <section key={group.title}>
-                <p className="px-3 pb-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{group.title}</p>
-                <div className="space-y-1">
-                  {group.items.map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      onClick={() => setOpen(false)}
-                      className="block rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
