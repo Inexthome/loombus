@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics";
 
 type FeatureFlags = {
   v2_shell: boolean;
@@ -37,6 +38,13 @@ type V2CreateDraft = {
   tags: string | null;
   mode: string | null;
   updated_at: string | null;
+};
+
+type ParsedDraftBody = {
+  body: string;
+  purpose: string;
+  realityLens: string;
+  purposeLane: string;
 };
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -89,7 +97,38 @@ function getTags(tags: string | null) {
     .filter(Boolean);
 }
 
-function getDraftReadiness(draft: V2CreateDraft | null, tags: string[]) {
+function isValidDiscussionTopic(value: string | null | undefined): value is DiscussionTopic {
+  return DISCUSSION_TOPICS.includes((value ?? "").trim() as DiscussionTopic);
+}
+
+function parseDraftBody(value: string | null): ParsedDraftBody {
+  const raw = value ?? "";
+  const parts = raw.split(/\n\n/);
+  const firstBlock = parts[0] ?? "";
+  const rest = parts.slice(1).join("\n\n");
+  const metadataLines = firstBlock.split("\n").filter((line) => line.trim().length > 0);
+  const hasMetadata = metadataLines.length > 0 && metadataLines.every((line) => /^(Purpose|Reality Lens|Purpose Lane):\s*/.test(line));
+
+  if (!hasMetadata) {
+    return { body: raw, purpose: "", realityLens: "", purposeLane: "" };
+  }
+
+  const metadata: Record<string, string> = {};
+
+  for (const line of metadataLines) {
+    const [key, ...valueParts] = line.split(":");
+    metadata[key.trim()] = valueParts.join(":").trim();
+  }
+
+  return {
+    body: rest,
+    purpose: metadata.Purpose ?? "",
+    realityLens: metadata["Reality Lens"] ?? "",
+    purposeLane: metadata["Purpose Lane"] ?? "",
+  };
+}
+
+function getDraftReadiness(draft: V2CreateDraft | null, tags: string[], parsedBody: ParsedDraftBody) {
   const checks = [
     {
       label: "Title is clear",
@@ -97,19 +136,24 @@ function getDraftReadiness(draft: V2CreateDraft | null, tags: string[]) {
       helper: "Use a title long enough to frame the signal.",
     },
     {
-      label: "Topic is selected",
-      done: (draft?.topic?.trim().length ?? 0) >= 2,
-      helper: "Add a topic so the discussion can be classified.",
+      label: "Topic is valid",
+      done: isValidDiscussionTopic(draft?.topic),
+      helper: "Choose a valid Loombus topic from V2 Create before publishing.",
     },
     {
       label: "Body has context",
-      done: (draft?.body?.trim().length ?? 0) >= 40,
+      done: parsedBody.body.trim().length >= 40,
       helper: "Add enough context for useful replies.",
     },
     {
       label: "Mode is selected",
       done: Boolean(draft?.mode),
       helper: "Choose how the discussion should be structured.",
+    },
+    {
+      label: "Framing reviewed",
+      done: Boolean(parsedBody.purpose.trim() || parsedBody.realityLens.trim() || parsedBody.purposeLane.trim()),
+      helper: "Add a purpose, reality lens, or purpose lane before publishing.",
     },
     {
       label: "Tags reviewed",
@@ -204,12 +248,15 @@ export default function V2CreateReviewPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
+  const [publishMessage, setPublishMessage] = useState("");
   const [reviewAcknowledged, setReviewAcknowledged] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   const tags = useMemo(() => getTags(draft?.tags ?? null), [draft?.tags]);
-  const readiness = useMemo(() => getDraftReadiness(draft, tags), [draft, tags]);
+  const parsedBody = useMemo(() => parseDraftBody(draft?.body ?? null), [draft?.body]);
+  const readiness = useMemo(() => getDraftReadiness(draft, tags, parsedBody), [draft, parsedBody, tags]);
   const hasDraftContent = Boolean(
-    draft?.title?.trim() || draft?.topic?.trim() || draft?.body?.trim() || tags.length > 0
+    draft?.title?.trim() || draft?.topic?.trim() || parsedBody.body.trim() || tags.length > 0
   );
   const publishPrepared = readiness.ready && reviewAcknowledged && hasDraftContent;
 
@@ -219,25 +266,96 @@ export default function V2CreateReviewPage() {
     const reviewText = [
       `Title: ${draft.title?.trim() || "Untitled signal"}`,
       `Topic: ${draft.topic?.trim() || "Not selected"}`,
+      parsedBody.realityLens ? `Reality Lens: ${parsedBody.realityLens}` : null,
+      parsedBody.purposeLane ? `Purpose Lane: ${parsedBody.purposeLane}` : null,
       `Mode: ${getModeLabel(draft.mode)}`,
+      parsedBody.purpose ? `Purpose: ${parsedBody.purpose}` : null,
       tags.length > 0 ? `Tags: ${tags.join(", ")}` : null,
       "",
-      draft.body?.trim() || "No body text yet.",
+      parsedBody.body.trim() || "No body text yet.",
     ]
       .filter(Boolean)
       .join("\n");
 
     try {
       await navigator.clipboard.writeText(reviewText);
-      setCopyMessage("Review draft copied. Paste it into V1 Create when you are ready to publish.");
+      setCopyMessage("Review draft copied.");
     } catch {
       setCopyMessage("Unable to copy from this browser. You can manually copy the review text.");
+    }
+  }
+
+  async function publishDraft() {
+    setPublishMessage("");
+
+    if (!draft || !hasDraftContent) {
+      setPublishMessage("No V2 draft is ready to publish.");
+      return;
+    }
+
+    if (!publishPrepared) {
+      setPublishMessage("Review the readiness checks and confirm the acknowledgment before publishing.");
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session;
+
+    if (!session) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setPublishing(true);
+
+    try {
+      const response = await fetch("/api/discussions/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          title: draft.title ?? "",
+          topic: draft.topic ?? "",
+          realityLens: parsedBody.realityLens,
+          purposeLane: parsedBody.purposeLane,
+          discussionType: draft.mode ?? "open_discussion",
+          discussionMetadata: parsedBody.purpose ? { purpose: parsedBody.purpose } : {},
+          body: parsedBody.body,
+          tags: draft.tags ?? "",
+          pastedCharacterCount: 0,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setPublishMessage(result.error ?? "Unable to publish this V2 draft.");
+        return;
+      }
+
+      if (draft.id) {
+        await supabase
+          .from("loombus_v2_create_drafts")
+          .delete()
+          .eq("id", draft.id)
+          .eq("user_id", session.user.id);
+      }
+
+      const discussionId = result.discussion?.id;
+      window.location.href = discussionId ? `/v2/discussions/${discussionId}` : "/v2/discussions";
+    } catch {
+      setPublishMessage("Unable to publish this V2 draft safely. Your draft was not cleared.");
+    } finally {
+      setPublishing(false);
     }
   }
 
   async function loadReview() {
     setLoading(true);
     setMessage("");
+    setPublishMessage("");
 
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -336,10 +454,10 @@ export default function V2CreateReviewPage() {
           </Link>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Review Preview</p>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2 Review</p>
               <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">Review before publishing.</h1>
               <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-                This screen prepares your private V2 draft for a future publish action. The publish control remains locked.
+                This screen now publishes guarded V2 drafts to the live discussion feed while V2 access remains behind the internal flag.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -353,6 +471,12 @@ export default function V2CreateReviewPage() {
         {message && (
           <div className="mb-5 rounded-2xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm font-medium text-amber-100">
             {message}
+          </div>
+        )}
+
+        {publishMessage && (
+          <div className="mb-5 rounded-2xl border border-blue-300/30 bg-blue-300/10 px-4 py-3 text-sm font-medium text-blue-100">
+            {publishMessage}
           </div>
         )}
 
@@ -378,6 +502,16 @@ export default function V2CreateReviewPage() {
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                     {getModeLabel(draft.mode)}
                   </span>
+                  {parsedBody.realityLens && (
+                    <span className="rounded-full border border-violet-300/20 bg-violet-400/10 px-3 py-1 text-violet-100">
+                      Reality Lens: {parsedBody.realityLens}
+                    </span>
+                  )}
+                  {parsedBody.purposeLane && (
+                    <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-emerald-100">
+                      Purpose Lane: {parsedBody.purposeLane}
+                    </span>
+                  )}
                   {tags.map((tag) => (
                     <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                       #{tag}
@@ -385,8 +519,14 @@ export default function V2CreateReviewPage() {
                   ))}
                 </div>
 
+                {parsedBody.purpose && (
+                  <div className="mt-5 rounded-3xl border border-blue-300/20 bg-blue-400/10 p-4 text-sm leading-6 text-blue-50">
+                    <span className="font-bold text-blue-100">Purpose: </span>{parsedBody.purpose}
+                  </div>
+                )}
+
                 <div className="mt-6 whitespace-pre-wrap rounded-3xl border border-white/10 bg-slate-950/80 p-5 text-base leading-8 text-slate-200">
-                  {draft.body?.trim() || "No body text yet."}
+                  {parsedBody.body.trim() || "No body text yet."}
                 </div>
               </>
             )}
@@ -399,7 +539,7 @@ export default function V2CreateReviewPage() {
                 <h2 className="font-bold text-blue-100">Publish preparation</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-blue-50/80">
-                This panel checks whether the draft is structurally ready. The publish action is intentionally locked in this checkpoint.
+                This panel checks whether the draft is structurally ready before calling the existing live discussion publish API.
               </p>
               <div className="mt-4 space-y-2">
                 {readiness.checks.map((check) => (
@@ -419,15 +559,16 @@ export default function V2CreateReviewPage() {
                   onChange={(event) => setReviewAcknowledged(event.target.checked)}
                   className="mt-1 size-4 accent-blue-500"
                 />
-                <span>I reviewed this draft and understand V2 publishing is still locked.</span>
+                <span>I reviewed this draft and understand it will publish to the live discussion feed.</span>
               </label>
               <button
                 type="button"
-                disabled
-                className="mt-4 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-700 px-4 py-3 text-sm font-bold text-slate-300 opacity-80"
+                onClick={publishDraft}
+                disabled={!publishPrepared || publishing}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-300/20 bg-blue-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-300 disabled:opacity-80"
               >
-                <Lock className="size-4" />
-                {publishPrepared ? "Publish prepared — locked" : "Publish locked"}
+                {publishing ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                {publishing ? "Publishing..." : publishPrepared ? "Publish live discussion" : "Complete review to publish"}
               </button>
             </section>
 
@@ -437,7 +578,7 @@ export default function V2CreateReviewPage() {
                 <h2 className="font-bold text-emerald-100">Guardrails active</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-emerald-50/80">
-                This page does not publish, submit, or write to the live discussions table. It only reads your private V2 draft.
+                Publishing uses the existing discussion create API, including auth, profile checks, topic validation, tags, cooldown, moderation, audit logging, and notifications.
               </p>
             </section>
 
@@ -457,20 +598,20 @@ export default function V2CreateReviewPage() {
             <section className="rounded-[2rem] border border-[#d4af37]/25 bg-[#d4af37]/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <Sparkles className="size-5 text-[#f7d56d]" />
-                <h2 className="font-bold text-[#f7d56d]">Next step later</h2>
+                <h2 className="font-bold text-[#f7d56d]">V2 publishing path</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-[#fff3c4]">
-                A future checkpoint can connect this prepared state to a guarded publish API after review is fully validated.
+                A successful publish clears the private V2 draft and opens the new discussion inside the V2 discussion detail route.
               </p>
             </section>
 
             <section className="rounded-[2rem] border border-amber-300/25 bg-amber-300/10 p-5 text-white shadow-xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="size-5 text-amber-200" />
-                <h2 className="font-bold text-amber-100">Not live publishing</h2>
+                <h2 className="font-bold text-amber-100">Still behind V2 flag</h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-amber-50/80">
-                The visible publish button is disabled on purpose. No live discussion row is created by this PR.
+                This unlock does not expose V2 publicly by itself. Only accounts allowed through v2_shell can reach this review flow.
               </p>
             </section>
 
