@@ -109,23 +109,22 @@ function SettingsSidebar() {
 function PrivacyControlRow({ control }: { control: PrivacyControl }) {
   const Icon = control.icon;
   const content = (
-    <article className="rounded-[1.15rem] border border-slate-200 bg-white p-3 shadow-sm transition hover:border-blue-200 hover:shadow-md sm:p-4">
-      <div className="grid gap-3 sm:grid-cols-[2.5rem_minmax(0,1fr)_auto_auto] sm:items-start">
-        <span className={`grid size-10 place-items-center rounded-xl ${control.tone ?? "bg-blue-50 text-blue-700"}`}>
-          <Icon className="size-5" />
+    <article className="rounded-[1.6rem] border border-slate-200/90 bg-white p-6 shadow-[0_18px_55px_rgba(15,23,42,0.08)] ring-1 ring-white/80 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_24px_70px_rgba(37,99,235,0.12)] sm:p-7">
+      <div className="flex items-center gap-5 sm:gap-7">
+        <span className={`grid size-16 shrink-0 place-items-center rounded-2xl ${control.tone ?? "bg-blue-50 text-blue-700"} sm:size-[4.5rem]`}>
+          <Icon className="size-7 sm:size-8" />
         </span>
-        <div className="min-w-0">
-          <h3 className="text-sm font-black leading-tight text-slate-950 sm:text-base">{control.label}</h3>
-          <p className="mt-1 max-w-2xl text-xs font-semibold leading-5 text-slate-600 sm:text-sm">{control.description}</p>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-xl font-black leading-tight text-slate-950 sm:text-2xl">{control.label}</h3>
+          <p className="mt-3 text-base font-semibold leading-7 text-slate-600 sm:text-lg">{control.description}</p>
+          <span className="sr-only">{control.value}</span>
         </div>
-        <span className="w-fit rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 sm:text-sm">{control.value}</span>
-        <ChevronRight className="hidden size-5 shrink-0 text-blue-700 sm:block" />
       </div>
     </article>
   );
 
   if (!control.href) return content;
-  return <Link href={control.href}>{content}</Link>;
+  return <Link href={control.href} className="block">{content}</Link>;
 }
 
 function SecurityStatusCard({ user }: { user: User | null }) {
@@ -212,53 +211,53 @@ export default function V2PrivacySecurityPage() {
   const privacyControls = useMemo<PrivacyControl[]>(() => [
     {
       label: "Profile Visibility",
-      description: "Profile visibility currently follows your public profile settings.",
+      description: "Choose who can view your profile information.",
       icon: UserRound,
       value: "View profile",
       href: "/v2/profile",
     },
     {
       label: "Messaging Permissions",
-      description: "Messaging is controlled through your current Loombus message and mutual-connection rules.",
+      description: "Control who can message you directly.",
       icon: Mail,
       value: "Current rules",
       href: "/v2/messages",
     },
     {
       label: "Activity Visibility",
-      description: "Review the activity Loombus can currently show for your account.",
+      description: "Manage how your activity and presence are seen.",
       icon: Eye,
       value: "View activity",
       href: "/v2/my-activity",
     },
     {
       label: "Two-Factor Authentication",
-      description: "Loombus currently uses Supabase auth, provider verification, and platform session controls.",
+      description: "Add an extra layer of security to your account.",
       icon: ShieldCheck,
       value: user?.email_confirmed_at ? "Email verified" : "Needs review",
       tone: user?.email_confirmed_at ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700",
     },
     {
       label: "Login Sessions",
-      description: "This browser has an active Loombus session. Full multi-device session management needs a backend endpoint.",
+      description: "View and manage your active sessions.",
       icon: Monitor,
       value: user ? "Current active" : "Not active",
     },
     {
       label: "Blocked Users",
-      description: "Blocked-user count is read from account data when available.",
+      description: "Manage users you’ve blocked.",
       icon: UserRoundX,
       value: blockedCount === null ? "Not available" : `${blockedCount} blocked`,
     },
     {
       label: "Download Your Data",
-      description: "Request an export from Loombus support until an automated export flow is added.",
+      description: "Export a copy of your data from Loombus.",
       icon: CloudDownload,
       value: "Request export",
     },
     {
       label: "Reading History",
-      description: "Review your current V2 reading-history view.",
+      description: "Control how your reading activity is recorded.",
       icon: BookOpen,
       value: "View history",
       href: "/v2/reading-history",
@@ -332,14 +331,14 @@ export default function V2PrivacySecurityPage() {
           </header>
 
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="min-w-0 space-y-3">
+            <div className="min-w-0 space-y-6">
               <label className="relative flex md:hidden">
                 <span className="sr-only">Search privacy and security settings</span>
                 <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
                 <input type="search" placeholder="Search privacy and security settings" className="h-14 w-full rounded-2xl border border-slate-200 bg-white pl-12 pr-4 text-sm font-semibold text-slate-700 shadow-sm outline-none transition placeholder:text-slate-500 focus:border-blue-300 focus:ring-4 focus:ring-blue-100" />
               </label>
 
-              <section className="space-y-3">
+              <section className="space-y-6">
                 {privacyControls.map((control) => <PrivacyControlRow key={control.label} control={control} />)}
               </section>
 
