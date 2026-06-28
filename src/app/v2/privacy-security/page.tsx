@@ -109,17 +109,17 @@ function SettingsSidebar() {
 function PrivacyControlRow({ control }: { control: PrivacyControl }) {
   const Icon = control.icon;
   const content = (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md sm:p-5">
-      <div className="flex items-center gap-4">
-        <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${control.tone ?? "bg-blue-50 text-blue-700"}`}>
+    <article className="rounded-[1.15rem] border border-slate-200 bg-white p-3 shadow-sm transition hover:border-blue-200 hover:shadow-md sm:p-4">
+      <div className="grid gap-3 sm:grid-cols-[2.5rem_minmax(0,1fr)_auto_auto] sm:items-start">
+        <span className={`grid size-10 place-items-center rounded-xl ${control.tone ?? "bg-blue-50 text-blue-700"}`}>
           <Icon className="size-5" />
         </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-black text-slate-950 sm:text-base">{control.label}</h3>
-          <p className="mt-1 text-xs font-semibold leading-5 text-slate-600 sm:text-sm">{control.description}</p>
+        <div className="min-w-0">
+          <h3 className="text-sm font-black leading-tight text-slate-950 sm:text-base">{control.label}</h3>
+          <p className="mt-1 max-w-2xl text-xs font-semibold leading-5 text-slate-600 sm:text-sm">{control.description}</p>
         </div>
-        <span className="hidden rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 sm:inline-flex">{control.value}</span>
-        <ChevronRight className="size-5 shrink-0 text-blue-700" />
+        <span className="w-fit rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 sm:text-sm">{control.value}</span>
+        <ChevronRight className="hidden size-5 shrink-0 text-blue-700 sm:block" />
       </div>
     </article>
   );
@@ -332,7 +332,7 @@ export default function V2PrivacySecurityPage() {
           </header>
 
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="min-w-0 space-y-5">
+            <div className="min-w-0 space-y-3">
               <label className="relative flex md:hidden">
                 <span className="sr-only">Search privacy and security settings</span>
                 <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
@@ -343,7 +343,7 @@ export default function V2PrivacySecurityPage() {
                 {privacyControls.map((control) => <PrivacyControlRow key={control.label} control={control} />)}
               </section>
 
-              <p className="flex items-center justify-center gap-2 pt-3 text-sm font-semibold text-slate-600">
+              <p className="flex items-center justify-center gap-2 pt-2 text-sm font-semibold text-slate-600">
                 <ShieldCheck className="size-4 text-blue-700" />
                 Account-specific values are shown only when Loombus can read them from the current signed-in session.
               </p>
