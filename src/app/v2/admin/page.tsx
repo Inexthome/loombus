@@ -15,7 +15,6 @@ import {
   Filter,
   Flag,
   FlaskConical,
-  Gauge,
   Home,
   Inbox,
   KeyRound,
@@ -30,7 +29,6 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
-  SlidersHorizontal,
   TrendingDown,
   TrendingUp,
   TriangleAlert,
@@ -123,10 +121,7 @@ const MOBILE_NAV_ITEMS = [
 ];
 
 const ADMIN_NAV_GROUPS: Array<{ label: string; items: AdminNavItem[] }> = [
-  {
-    label: "Overview",
-    items: [{ label: "Overview", href: "/v2/admin", icon: Home, active: true }],
-  },
+  { label: "Overview", items: [{ label: "Overview", href: "/v2/admin", icon: Home, active: true }] },
   {
     label: "Manage",
     items: [
@@ -203,12 +198,7 @@ const BENEFITS = [
 ];
 
 function getDefaultShellPayload(): ShellPayload {
-  return {
-    version: "v1",
-    configured: false,
-    authenticated: false,
-    flags: DEFAULT_FLAGS,
-  };
+  return { version: "v1", configured: false, authenticated: false, flags: DEFAULT_FLAGS };
 }
 
 function getSeverityClass(severity: QueueItem["severity"]) {
@@ -270,12 +260,7 @@ function V2TopNav() {
         <nav className="hidden items-center gap-1 md:flex">
           {V2_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            return (
-              <Link key={item.label} href={item.href} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${item.primary ? "border border-white/40 text-white hover:bg-white/10" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}>
-                <Icon className="size-4" />
-                {item.label}
-              </Link>
-            );
+            return <Link key={item.label} href={item.href} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${item.primary ? "border border-white/40 text-white hover:bg-white/10" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}><Icon className="size-4" />{item.label}</Link>;
           })}
         </nav>
         <div className="flex items-center gap-2">
@@ -293,12 +278,7 @@ function MobileBottomNav() {
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1 text-xs font-semibold text-slate-500">
         {MOBILE_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          return (
-            <Link key={item.label} href={item.href} className="flex flex-col items-center gap-1 rounded-2xl py-2 text-slate-500">
-              <Icon className={`size-5 ${item.primary ? "rounded-full bg-blue-600 p-1 text-white" : ""}`} />
-              <span>{item.label}</span>
-            </Link>
-          );
+          return <Link key={item.label} href={item.href} className="flex flex-col items-center gap-1 rounded-2xl py-2 text-slate-500"><Icon className={`size-5 ${item.primary ? "rounded-full bg-blue-600 p-1 text-white" : ""}`} /><span>{item.label}</span></Link>;
         })}
       </div>
     </nav>
@@ -310,17 +290,7 @@ function AdminSidebar() {
     <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-white p-5 lg:block">
       <div className="mb-8 flex items-center gap-3 text-xl font-black text-slate-950"><Shield className="size-6" />Admin</div>
       <nav className="space-y-7">
-        {ADMIN_NAV_GROUPS.map((group) => (
-          <div key={group.label}>
-            <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500">{group.label}</p>
-            <div className="space-y-1">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return <Link key={item.label} href={item.href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black transition ${item.active ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"}`}><Icon className="size-4" />{item.label}</Link>;
-              })}
-            </div>
-          </div>
-        ))}
+        {ADMIN_NAV_GROUPS.map((group) => <div key={group.label}><p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500">{group.label}</p><div className="space-y-1">{group.items.map((item) => { const Icon = item.icon; return <Link key={item.label} href={item.href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black transition ${item.active ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"}`}><Icon className="size-4" />{item.label}</Link>; })}</div></div>)}
       </nav>
       <button type="button" className="mt-16 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"><ChevronLeft className="size-4" />Collapse</button>
     </aside>
@@ -331,15 +301,7 @@ function StatCardView({ stat }: { stat: StatCard }) {
   const Icon = stat.icon;
   const TrendIcon = stat.trendDirection === "up" ? TrendingUp : TrendingDown;
   const trendClass = stat.trendDirection === "up" && stat.tone === "red" ? "text-red-600" : "text-emerald-600";
-  return (
-    <article className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div><p className="text-sm font-black text-slate-700">{stat.label}</p><p className="mt-3 text-3xl font-black text-slate-950">{stat.value}</p></div>
-        <span className={`grid size-12 place-items-center rounded-2xl ${getStatToneClass(stat.tone)}`}><Icon className="size-5" /></span>
-      </div>
-      <p className={`mt-5 inline-flex items-center gap-2 text-sm font-black ${trendClass}`}><TrendIcon className="size-4" />{stat.trend}</p>
-    </article>
-  );
+  return <article className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-black text-slate-700">{stat.label}</p><p className="mt-3 text-3xl font-black text-slate-950">{stat.value}</p></div><span className={`grid size-12 place-items-center rounded-2xl ${getStatToneClass(stat.tone)}`}><Icon className="size-5" /></span></div><p className={`mt-5 inline-flex items-center gap-2 text-sm font-black ${trendClass}`}><TrendIcon className="size-4" />{stat.trend}</p></article>;
 }
 
 function ModerationQueue() {
@@ -347,38 +309,16 @@ function ModerationQueue() {
     <section className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-black text-slate-950">Moderation Queue <span className="ml-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">126</span></h2>
-        <div className="flex gap-2">
-          <button type="button" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Filter className="size-4" />Filters</button>
-          <button type="button" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700">Newest</button>
-        </div>
+        <div className="flex gap-2"><button type="button" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Filter className="size-4" />Filters</button><button type="button" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700">Newest</button></div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">
-            <tr>
-              <th className="px-5 py-4">Report / Item</th><th className="px-4 py-4">Type</th><th className="px-4 py-4">Severity</th><th className="px-4 py-4">Reported By</th><th className="px-4 py-4">Time</th><th className="px-4 py-4">Status</th><th className="px-4 py-4" />
-            </tr>
-          </thead>
-          <tbody>
-            {QUEUE_ITEMS.map((item) => <tr key={item.report} className="border-t border-slate-100"><td className="px-5 py-4"><p className="font-black text-slate-900">{item.report}</p><p className="text-xs font-semibold text-slate-500">{item.context}</p></td><td className="px-4 py-4 font-semibold text-slate-600">{item.type}</td><td className="px-4 py-4"><span className={`rounded-lg px-3 py-1 text-xs font-black ${getSeverityClass(item.severity)}`}>{item.severity}</span></td><td className="px-4 py-4"><span className="inline-flex items-center gap-2 font-semibold text-slate-700"><span className="grid size-8 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.reportedBy.split(" ").map((part) => part[0]).join("")}</span>{item.reportedBy}</span></td><td className="px-4 py-4 font-semibold text-slate-500">{item.time}</td><td className="px-4 py-4"><span className={`rounded-lg px-3 py-1 text-xs font-black ${getStatusClass(item.status)}`}>{item.status}</span></td><td className="px-4 py-4"><MoreHorizontal className="size-4 text-slate-500" /></td></tr>)}
-          </tbody>
-        </table>
-      </div>
+      <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="text-xs font-black uppercase tracking-[0.12em] text-slate-500"><tr><th className="px-5 py-4">Report / Item</th><th className="px-4 py-4">Type</th><th className="px-4 py-4">Severity</th><th className="px-4 py-4">Reported By</th><th className="px-4 py-4">Time</th><th className="px-4 py-4">Status</th><th className="px-4 py-4" /></tr></thead><tbody>{QUEUE_ITEMS.map((item) => <tr key={item.report} className="border-t border-slate-100"><td className="px-5 py-4"><p className="font-black text-slate-900">{item.report}</p><p className="text-xs font-semibold text-slate-500">{item.context}</p></td><td className="px-4 py-4 font-semibold text-slate-600">{item.type}</td><td className="px-4 py-4"><span className={`rounded-lg px-3 py-1 text-xs font-black ${getSeverityClass(item.severity)}`}>{item.severity}</span></td><td className="px-4 py-4"><span className="inline-flex items-center gap-2 font-semibold text-slate-700"><span className="grid size-8 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.reportedBy.split(" ").map((part) => part[0]).join("")}</span>{item.reportedBy}</span></td><td className="px-4 py-4 font-semibold text-slate-500">{item.time}</td><td className="px-4 py-4"><span className={`rounded-lg px-3 py-1 text-xs font-black ${getStatusClass(item.status)}`}>{item.status}</span></td><td className="px-4 py-4"><MoreHorizontal className="size-4 text-slate-500" /></td></tr>)}</tbody></table></div>
       <Link href="/admin/reports" className="flex items-center justify-center gap-2 border-t border-slate-100 px-4 py-4 text-sm font-black text-blue-700 hover:bg-blue-50">View all reports <ChevronRight className="size-4" /></Link>
     </section>
   );
 }
 
 function RecentActivity() {
-  return (
-    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <h2 className="text-lg font-black text-slate-950">Recent Activity</h2>
-      <div className="mt-4 divide-y divide-slate-100">
-        {RECENT_ACTIVITY.map((item) => <div key={`${item.person}-${item.time}`} className="flex items-start gap-3 py-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.person === "System" ? "S" : item.person.split(" ").map((part) => part[0]).join("")}</span><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-700"><span className="font-black text-slate-950">{item.person}</span> {item.action}</p><p className="text-xs font-semibold text-slate-500">{item.detail}</p></div><span className="text-xs font-semibold text-slate-500">{item.time}</span></div>)}
-      </div>
-      <Link href="/admin/audit" className="mt-3 flex items-center justify-center gap-2 text-sm font-black text-blue-700">View all activity <ChevronRight className="size-4" /></Link>
-    </section>
-  );
+  return <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-black text-slate-950">Recent Activity</h2><div className="mt-4 divide-y divide-slate-100">{RECENT_ACTIVITY.map((item) => <div key={`${item.person}-${item.time}`} className="flex items-start gap-3 py-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.person === "System" ? "S" : item.person.split(" ").map((part) => part[0]).join("")}</span><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-700"><span className="font-black text-slate-950">{item.person}</span> {item.action}</p><p className="text-xs font-semibold text-slate-500">{item.detail}</p></div><span className="text-xs font-semibold text-slate-500">{item.time}</span></div>)}</div><Link href="/admin/audit" className="mt-3 flex items-center justify-center gap-2 text-sm font-black text-blue-700">View all activity <ChevronRight className="size-4" /></Link></section>;
 }
 
 export default function V2AdminPage() {
@@ -416,34 +356,9 @@ export default function V2AdminPage() {
       <div className="mx-auto flex max-w-7xl bg-white/40">
         <AdminSidebar />
         <section className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-8">
-          <header className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div><h1 className="text-3xl font-black tracking-tight text-slate-950">Admin Overview</h1><p className="mt-2 text-sm leading-6 text-slate-600">Monitor platform health, moderate content, and support your community.</p></div>
-            <button type="button" className="inline-flex w-fit items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm"><CalendarDays className="size-4 text-blue-700" />May 20 – May 26, 2025 <ChevronDown className="size-4" /></button>
-          </header>
-
+          <header className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"><div><h1 className="text-3xl font-black tracking-tight text-slate-950">Admin Overview</h1><p className="mt-2 text-sm leading-6 text-slate-600">Monitor platform health, moderate content, and support your community.</p></div><button type="button" className="inline-flex w-fit items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm"><CalendarDays className="size-4 text-blue-700" />May 20 – May 26, 2025 <ChevronRight className="size-4 rotate-90" /></button></header>
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{STATS.map((stat) => <StatCardView key={stat.label} stat={stat} />)}</section>
-
-          <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-5"><ModerationQueue /><RecentActivity /></div>
-            <aside className="space-y-4">
-              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-950">Priority Alerts</h2><span className="grid size-7 place-items-center rounded-full bg-red-50 text-sm font-black text-red-600">3</span></div>
-                <div className="mt-4 space-y-4">{ALERTS.map((alert) => { const Icon = alert.icon; return <div key={alert.title} className="flex items-start gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl ${getAlertToneClass(alert.tone)}`}><Icon className="size-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-black text-slate-900">{alert.title}</p><p className="text-xs font-semibold text-slate-500">{alert.detail}</p></div><span className="text-xs font-semibold text-slate-500">{alert.time}</span></div>; })}</div>
-                <Link href="/admin/reports" className="mt-5 flex items-center justify-center gap-2 text-sm font-black text-blue-700">View all alerts <ChevronRight className="size-4" /></Link>
-              </section>
-
-              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-950">Team Activity</h2><Link href="/admin/audit" className="text-sm font-black text-blue-700">View all</Link></div>
-                <div className="mt-4 space-y-4">{TEAM_ACTIVITY.map((item) => <div key={item.person} className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.person.split(" ").map((part) => part[0]).join("")}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900">{item.person}</p><p className="truncate text-xs font-semibold text-slate-500">{item.action}</p></div><span className="text-xs font-semibold text-slate-500">{item.time}</span></div>)}</div>
-              </section>
-
-              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                <h2 className="text-lg font-black text-slate-950">Quick Actions</h2>
-                <div className="mt-4 grid grid-cols-2 gap-3">{QUICK_ACTIONS.map((action) => { const Icon = action.icon; return <Link key={action.label} href={action.href} className="rounded-xl border border-slate-200 p-4 text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><Icon className="mb-3 size-5 text-blue-700" />{action.label}</Link>; })}</div>
-              </section>
-            </aside>
-          </section>
-
+          <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]"><div className="space-y-5"><ModerationQueue /><RecentActivity /></div><aside className="space-y-4"><section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-950">Priority Alerts</h2><span className="grid size-7 place-items-center rounded-full bg-red-50 text-sm font-black text-red-600">3</span></div><div className="mt-4 space-y-4">{ALERTS.map((alert) => { const Icon = alert.icon; return <div key={alert.title} className="flex items-start gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl ${getAlertToneClass(alert.tone)}`}><Icon className="size-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-black text-slate-900">{alert.title}</p><p className="text-xs font-semibold text-slate-500">{alert.detail}</p></div><span className="text-xs font-semibold text-slate-500">{alert.time}</span></div>; })}</div><Link href="/admin/reports" className="mt-5 flex items-center justify-center gap-2 text-sm font-black text-blue-700">View all alerts <ChevronRight className="size-4" /></Link></section><section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-950">Team Activity</h2><Link href="/admin/audit" className="text-sm font-black text-blue-700">View all</Link></div><div className="mt-4 space-y-4">{TEAM_ACTIVITY.map((item) => <div key={item.person} className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.person.split(" ").map((part) => part[0]).join("")}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900">{item.person}</p><p className="truncate text-xs font-semibold text-slate-500">{item.action}</p></div><span className="text-xs font-semibold text-slate-500">{item.time}</span></div>)}</div></section><section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-black text-slate-950">Quick Actions</h2><div className="mt-4 grid grid-cols-2 gap-3">{QUICK_ACTIONS.map((action) => { const Icon = action.icon; return <Link key={action.label} href={action.href} className="rounded-xl border border-slate-200 p-4 text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><Icon className="mb-3 size-5 text-blue-700" />{action.label}</Link>; })}</div></section></aside></section>
           <section className="mt-6 grid gap-4 md:grid-cols-4">{BENEFITS.map((benefit) => { const Icon = benefit.icon; return <article key={benefit.label} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm"><span className="grid size-12 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon className="size-5" /></span><h3 className="mt-3 text-sm font-black text-blue-700">{benefit.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{benefit.detail}</p></article>; })}</section>
         </section>
       </div>
