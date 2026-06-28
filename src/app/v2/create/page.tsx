@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
-  Bell,
+  Brain,
   CheckCircle2,
-  Eye,
+  ChevronDown,
+  Circle,
   FileText,
-  Home,
-  Loader2,
-  Lock,
   MessageCircle,
   MessageSquare,
   Mic,
@@ -20,27 +19,25 @@ import {
   Scale,
   Search,
   Send,
-  Settings,
   ShieldCheck,
+  Sparkles,
   Trash2,
-  Users,
+  WandSparkles,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-
-type FeatureFlags = {
-  v2_shell: boolean;
-  v2_signal_brief: boolean;
-  v2_rooms: boolean;
-};
-
-type ShellPayload = {
-  version: "v1" | "v2";
-  configured: boolean;
-  authenticated: boolean;
-  flags: FeatureFlags;
-};
+import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import { REALITY_LENSES } from "@/lib/reality-lenses";
+import { PURPOSE_LANES } from "@/lib/purpose-lanes";
+import {
+  getDefaultShellPayload,
+  V2ShellGateCard,
+  V2ShellMobileNav,
+  V2ShellTopNav,
+  type ShellPayload,
+} from "../v2-shell-components";
 
 type DiscussionMode = "open_discussion" | "debate" | "research_question" | "problem_solving";
+type MetadataPickerPanel = "topics" | "reality_lens" | "purpose_lane";
 
 type V2CreateDraft = {
   id: string;
@@ -53,34 +50,25 @@ type V2CreateDraft = {
   updated_at: string | null;
 };
 
-const DEFAULT_FLAGS: FeatureFlags = {
-  v2_shell: false,
-  v2_signal_brief: false,
-  v2_rooms: false,
+type DiscussionModeOption = {
+  key: DiscussionMode;
+  label: string;
+  shortLabel: string;
+  description: string;
+  Icon: LucideIcon;
+};
+
+type AiFinding = {
+  label: string;
+  done: boolean;
+  detail: string;
 };
 
 const AUTOSAVE_DELAY_MS = 1400;
 const DRAFT_MIGRATION_REQUIRED_MESSAGE =
   "Draft storage is not configured yet. Apply the V2 draft migration before testing save, restore, or autosave.";
 
-const V2_NAV_ITEMS = [
-  { label: "Home", href: "/v2", icon: Home },
-  { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
-  { label: "Create", href: "/v2/create", icon: Plus, active: true, primary: true },
-  { label: "Rooms", href: "/v2/rooms", icon: Users },
-  { label: "Messages", href: "/v2/messages", icon: Bell },
-  { label: "Settings", href: "/settings", icon: Settings },
-];
-
-const TOPIC_OPTIONS = ["Technology", "Society", "Governance", "Science", "Local", "Business", "Community", "Education"];
-
-const DISCUSSION_MODES: Array<{
-  key: DiscussionMode;
-  label: string;
-  shortLabel: string;
-  description: string;
-  Icon: typeof MessageSquare;
-}> = [
+const DISCUSSION_MODES: DiscussionModeOption[] = [
   {
     key: "open_discussion",
     label: "Open Discussion",
@@ -111,15 +99,6 @@ const DISCUSSION_MODES: Array<{
   },
 ];
 
-function getDefaultShellPayload(): ShellPayload {
-  return {
-    version: "v1",
-    configured: false,
-    authenticated: false,
-    flags: DEFAULT_FLAGS,
-  };
-}
-
 function isDiscussionMode(value: string | null | undefined): value is DiscussionMode {
   return DISCUSSION_MODES.some((option) => option.key === value);
 }
@@ -146,106 +125,215 @@ function getTagCount(value: string) {
     .slice(0, 5).length;
 }
 
-function V2TopNav() {
-  return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#061942] text-white shadow-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/v2" className="flex items-center gap-3 font-bold">
-          <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 object-contain" />
-          <span className="text-xl">Loombus</span>
-        </Link>
-        <nav className="hidden items-center gap-1 md:flex">
-          {V2_NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  item.active
-                    ? "bg-white/10 text-white ring-1 ring-white/20"
-                    : item.primary
-                      ? "border border-white/40 text-white hover:bg-white/10"
-                      : "text-blue-100 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <Icon className="size-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="flex items-center gap-2">
-          <Link href="/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
-            <Search className="size-5" />
-          </Link>
-          <Link href="/notifications" aria-label="Notifications" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
-            <Bell className="size-5" />
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
+function getCleanBody(value: string) {
+  return value.replace(/\s+/g, " ").trim();
 }
 
-function MobileBottomNav() {
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pb-3 pt-2 shadow-2xl backdrop-blur md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5 gap-1 text-xs font-semibold text-slate-500">
-        {V2_NAV_ITEMS.slice(0, 5).map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 rounded-2xl py-2 ${item.active ? "text-blue-600" : "text-slate-500"}`}>
-              <Icon className={`size-5 ${item.primary ? "rounded-full bg-blue-600 p-1 text-white" : ""}`} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
+function buildDraftBody({
+  body,
+  purpose,
+  realityLens,
+  purposeLane,
+}: {
+  body: string;
+  purpose: string;
+  realityLens: string;
+  purposeLane: string;
+}) {
+  const metadataLines = [
+    purpose.trim() ? `Purpose: ${purpose.trim()}` : "",
+    realityLens.trim() ? `Reality Lens: ${realityLens.trim()}` : "",
+    purposeLane.trim() ? `Purpose Lane: ${purposeLane.trim()}` : "",
+  ].filter(Boolean);
+
+  return metadataLines.length > 0 ? `${metadataLines.join("\n")}\n\n${body}` : body;
 }
 
-function GateCard({
+function hydrateDraftBody(value: string | null) {
+  const raw = value ?? "";
+  const parts = raw.split(/\n\n/);
+  const firstBlock = parts[0] ?? "";
+  const rest = parts.slice(1).join("\n\n");
+  const metadata: Record<string, string> = {};
+  const metadataLines = firstBlock.split("\n");
+  const hasMetadata = metadataLines.every((line) => /^(Purpose|Reality Lens|Purpose Lane):\s*/.test(line));
+
+  if (!hasMetadata) {
+    return { body: raw, purpose: "", realityLens: "", purposeLane: "" };
+  }
+
+  for (const line of metadataLines) {
+    const [key, ...valueParts] = line.split(":");
+    metadata[key.trim()] = valueParts.join(":").trim();
+  }
+
+  return {
+    body: rest,
+    purpose: metadata.Purpose ?? "",
+    realityLens: metadata["Reality Lens"] ?? "",
+    purposeLane: metadata["Purpose Lane"] ?? "",
+  };
+}
+
+function buildQualityFindings({
   title,
-  message,
-  loading = false,
-  payload,
+  topic,
+  realityLens,
+  purposeLane,
+  purpose,
+  body,
+  tags,
 }: {
   title: string;
-  message: string;
-  loading?: boolean;
-  payload?: ShellPayload | null;
+  topic: string;
+  realityLens: string;
+  purposeLane: string;
+  purpose: string;
+  body: string;
+  tags: string;
+}): AiFinding[] {
+  const cleanBody = getCleanBody(body);
+  const bodyWords = cleanBody ? cleanBody.split(" ").length : 0;
+
+  return [
+    {
+      label: "Clear title",
+      done: title.trim().length >= 8,
+      detail: title.trim().length >= 8 ? "The title gives readers a clear entry point." : "Use a specific title with at least 8 characters.",
+    },
+    {
+      label: "Topic selected",
+      done: topic.trim().length >= 2,
+      detail: topic.trim().length >= 2 ? "A topic is selected for discovery." : "Pick a topic from the plus menu or type one in.",
+    },
+    {
+      label: "Reality lens",
+      done: realityLens.trim().length > 0,
+      detail: realityLens.trim() ? "A reality lens adds emotional or human context." : "Choose a reality lens when the discussion needs deeper context.",
+    },
+    {
+      label: "Purpose lane",
+      done: purposeLane.trim().length > 0,
+      detail: purposeLane.trim() ? "A purpose lane helps frame why the discussion matters." : "Choose a purpose lane to guide responses.",
+    },
+    {
+      label: "Useful body context",
+      done: bodyWords >= 35,
+      detail: bodyWords >= 35 ? "The body has enough context for meaningful replies." : "Add more background, stakes, or examples before review.",
+    },
+    {
+      label: "Response intent",
+      done: purpose.trim().length >= 8,
+      detail: purpose.trim().length >= 8 ? "The purpose tells readers how to respond." : "Explain what you want others to help clarify, solve, or debate.",
+    },
+    {
+      label: "Discovery tags",
+      done: getTagCount(tags) > 0,
+      detail: getTagCount(tags) > 0 ? "Tags improve discoverability." : "Add one or more tags when useful.",
+    },
+  ];
+}
+
+function buildClarityRewrite({
+  title,
+  topic,
+  realityLens,
+  purposeLane,
+  purpose,
+  body,
+}: {
+  title: string;
+  topic: string;
+  realityLens: string;
+  purposeLane: string;
+  purpose: string;
+  body: string;
 }) {
+  const cleanBody = body.trim();
+  const sections = [
+    title.trim() ? `Main point: ${title.trim()}` : "Main point: I want to start a focused discussion.",
+    topic.trim() ? `Topic: ${topic.trim()}` : "",
+    realityLens.trim() ? `Reality lens: ${realityLens.trim()}` : "",
+    purposeLane.trim() ? `Purpose lane: ${purposeLane.trim()}` : "",
+    "",
+    "Context:",
+    cleanBody || "Add the background, situation, or question that people need before responding.",
+    "",
+    "What I want from the discussion:",
+    purpose.trim() || "I want thoughtful replies that add clarity, useful examples, and practical insight.",
+  ].filter((section, index) => section !== "" || index === 4 || index === 7);
+
+  return sections.join("\n");
+}
+
+function MetadataPicker({
+  open,
+  activePanel,
+  setActivePanel,
+  onClose,
+  onSelectTopic,
+  onSelectRealityLens,
+  onSelectPurposeLane,
+}: {
+  open: boolean;
+  activePanel: MetadataPickerPanel;
+  setActivePanel: (panel: MetadataPickerPanel) => void;
+  onClose: () => void;
+  onSelectTopic: (value: string) => void;
+  onSelectRealityLens: (value: string) => void;
+  onSelectPurposeLane: (value: string) => void;
+}) {
+  if (!open) return null;
+
+  const options =
+    activePanel === "topics"
+      ? DISCUSSION_TOPICS
+      : activePanel === "reality_lens"
+        ? REALITY_LENSES
+        : PURPOSE_LANES;
+  const selectOption =
+    activePanel === "topics"
+      ? onSelectTopic
+      : activePanel === "reality_lens"
+        ? onSelectRealityLens
+        : onSelectPurposeLane;
+
   return (
-    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
-      <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="grid size-12 place-items-center rounded-2xl bg-blue-500/15 text-blue-200 ring-1 ring-blue-300/20">
-            {loading ? <Loader2 className="size-5 animate-spin" /> : <Lock className="size-5" />}
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2</p>
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
-          </div>
-        </div>
-        <p className="text-sm leading-6 text-slate-300 sm:text-base">{message}</p>
-        {payload && (
-          <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-300">
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">v2_shell: {payload.flags.v2_shell ? "on" : "off"}</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">v2_rooms: {payload.flags.v2_rooms ? "on" : "off"}</span>
-          </div>
-        )}
-        <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/v2" className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200">
-            Return to V2 Home
-          </Link>
-          <Link href="/create" className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">
-            Open V1 Create
-          </Link>
-        </div>
-      </section>
-    </main>
+    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-950/15 ring-1 ring-slate-900/5">
+      <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+        {[
+          { key: "topics" as const, label: "Topics" },
+          { key: "reality_lens" as const, label: "Reality Lens" },
+          { key: "purpose_lane" as const, label: "Purpose Lane" },
+        ].map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => setActivePanel(item.key)}
+            className={`shrink-0 rounded-full px-3 py-2 text-xs font-black transition ${
+              activePanel === item.key ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <div className="grid max-h-64 gap-2 overflow-y-auto sm:grid-cols-2">
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => {
+              selectOption(option);
+              onClose();
+            }}
+            className="rounded-2xl border border-slate-200 px-3 py-2 text-left text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -256,6 +344,8 @@ export default function V2CreatePage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [topic, setTopic] = useState("");
+  const [realityLens, setRealityLens] = useState("");
+  const [purposeLane, setPurposeLane] = useState("");
   const [purpose, setPurpose] = useState("");
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
@@ -267,17 +357,21 @@ export default function V2CreatePage() {
   const [draftMessage, setDraftMessage] = useState("");
   const [autosaveStatus, setAutosaveStatus] = useState("Autosave idle");
   const [draftHydrated, setDraftHydrated] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [activePickerPanel, setActivePickerPanel] = useState<MetadataPickerPanel>("topics");
+  const [aiFindings, setAiFindings] = useState<AiFinding[]>([]);
+  const [aiMessage, setAiMessage] = useState("");
 
   const selectedMode = DISCUSSION_MODES.find((option) => option.key === mode) ?? DISCUSSION_MODES[0];
 
   const draftFingerprint = useMemo(
-    () => JSON.stringify({ title, topic, purpose, body, tags, mode }),
-    [body, mode, purpose, tags, title, topic]
+    () => JSON.stringify({ title, topic, realityLens, purposeLane, purpose, body, tags, mode }),
+    [body, mode, purpose, purposeLane, realityLens, tags, title, topic]
   );
 
   const hasDraftContent = useMemo(
-    () => Boolean(title.trim() || topic.trim() || purpose.trim() || body.trim() || tags.trim() || mode !== "open_discussion"),
-    [body, mode, purpose, tags, title, topic]
+    () => Boolean(title.trim() || topic.trim() || realityLens.trim() || purposeLane.trim() || purpose.trim() || body.trim() || tags.trim() || mode !== "open_discussion"),
+    [body, mode, purpose, purposeLane, realityLens, tags, title, topic]
   );
 
   const readiness = useMemo(() => {
@@ -286,7 +380,7 @@ export default function V2CreatePage() {
       { label: "Select the right topic", done: topic.trim().length >= 2 },
       { label: "Select the right mode", done: Boolean(mode) },
       { label: "Add useful context", done: body.trim().length >= 40 },
-      { label: "Invite meaningful responses", done: purpose.trim().length >= 8 },
+      { label: "Invite meaningful responses", done: purpose.trim().length >= 8 || purposeLane.trim().length > 0 },
     ];
     const completed = checks.filter((check) => check.done).length;
 
@@ -296,7 +390,21 @@ export default function V2CreatePage() {
       total: checks.length,
       percent: Math.round((completed / checks.length) * 100),
     };
-  }, [body, mode, purpose, title, topic]);
+  }, [body, mode, purpose, purposeLane, title, topic]);
+
+  function runQualityCheck() {
+    const findings = buildQualityFindings({ title, topic, realityLens, purposeLane, purpose, body, tags });
+    const completed = findings.filter((finding) => finding.done).length;
+    setAiFindings(findings);
+    setAiMessage(`Discussion quality check complete: ${completed} of ${findings.length} checks are ready.`);
+  }
+
+  function rewriteForClarity() {
+    const rewrittenBody = buildClarityRewrite({ title, topic, realityLens, purposeLane, purpose, body });
+    setBody(rewrittenBody.slice(0, 3000));
+    setAiMessage("Rewrite for clarity applied to the body field. Review it before saving or publishing.");
+    setAiFindings(buildQualityFindings({ title, topic, realityLens, purposeLane, purpose, body: rewrittenBody, tags }));
+  }
 
   async function loadSavedDraft(nextUserId: string) {
     setDraftLoading(true);
@@ -327,12 +435,15 @@ export default function V2CreatePage() {
         return;
       }
 
+      const hydratedBody = hydrateDraftBody(draft.body);
       setDraftId(draft.id);
       setDraftSavedAt(draft.updated_at);
       setTitle(draft.title ?? "");
       setTopic(draft.topic ?? "");
-      setPurpose("");
-      setBody(draft.body ?? "");
+      setRealityLens(hydratedBody.realityLens);
+      setPurposeLane(hydratedBody.purposeLane);
+      setPurpose(hydratedBody.purpose);
+      setBody(hydratedBody.body);
       setTags(draft.tags ?? "");
       setMode(isDiscussionMode(draft.mode) ? draft.mode : "open_discussion");
       setDraftHydrated(true);
@@ -361,7 +472,6 @@ export default function V2CreatePage() {
     }
 
     try {
-      const bodyWithPurpose = purpose.trim() ? `Purpose: ${purpose.trim()}\n\n${body}` : body;
       const { data, error } = await supabase
         .from("loombus_v2_create_drafts")
         .upsert(
@@ -369,7 +479,7 @@ export default function V2CreatePage() {
             user_id: userId,
             title,
             topic,
-            body: bodyWithPurpose,
+            body: buildDraftBody({ body, purpose, realityLens, purposeLane }),
             tags,
             mode,
           },
@@ -426,10 +536,14 @@ export default function V2CreatePage() {
       setDraftSavedAt(null);
       setTitle("");
       setTopic("");
+      setRealityLens("");
+      setPurposeLane("");
       setPurpose("");
       setBody("");
       setTags("");
       setMode("open_discussion");
+      setAiFindings([]);
+      setAiMessage("");
       setDraftHydrated(true);
       setAutosaveStatus("Draft cleared");
       setDraftMessage("Private V2 draft cleared.");
@@ -445,6 +559,8 @@ export default function V2CreatePage() {
     const text = [
       title.trim() ? `Title: ${title.trim()}` : "Title:",
       topic.trim() ? `Topic: ${topic.trim()}` : "Topic:",
+      realityLens.trim() ? `Reality Lens: ${realityLens.trim()}` : "Reality Lens:",
+      purposeLane.trim() ? `Purpose Lane: ${purposeLane.trim()}` : "Purpose Lane:",
       `Mode: ${selectedMode.label}`,
       purpose.trim() ? `Purpose: ${purpose.trim()}` : "Purpose:",
       tags.trim() ? `Tags: ${tags.trim()}` : "Tags:",
@@ -522,24 +638,24 @@ export default function V2CreatePage() {
   }, [draftFingerprint, draftHydrated, hasDraftContent, loading, payload, userId]);
 
   if (loading) {
-    return <GateCard title="Checking V2 access" message="Loombus is verifying whether this account can use the V2 Create shell." loading />;
+    return <V2ShellGateCard title="Checking V2 access" message="Loombus is verifying whether this account can use the V2 Create shell." loading />;
   }
 
   if (message) {
-    return <GateCard title="V2 Create check failed safely" message={message} payload={payload} />;
+    return <V2ShellGateCard title="V2 Create check failed safely" message={message} payload={payload} />;
   }
 
   if (!payload?.authenticated) {
-    return <GateCard title="Sign in required" message="The V2 Create shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
+    return <V2ShellGateCard title="Sign in required" message="The V2 Create shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
   }
 
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") {
-    return <GateCard title="V2 Create is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on the V1 Create experience." payload={payload} />;
+    return <V2ShellGateCard title="V2 Create is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on the V1 Create experience." payload={payload} />;
   }
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] text-slate-950">
-      <V2TopNav />
+      <V2ShellTopNav />
       <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         <header className="mb-5">
           <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Create Discussion</h1>
@@ -569,20 +685,44 @@ export default function V2CreatePage() {
                   <p className="mt-2 text-xs font-medium text-slate-500">Be clear, specific, and engaging.</p>
                 </label>
 
-                <label className="block">
+                <div className="relative">
                   <span className="mb-2 block text-sm font-bold text-slate-700">Topic <span className="text-red-500">*</span></span>
-                  <input
-                    value={topic}
-                    onChange={(event) => setTopic(event.target.value)}
-                    placeholder="Search or select a topic"
-                    list="v2-topic-options"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  <div className="flex rounded-xl border border-slate-200 bg-white shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                    <button
+                      type="button"
+                      onClick={() => setPickerOpen((current) => !current)}
+                      aria-expanded={pickerOpen}
+                      aria-label="Open topic and metadata picker"
+                      className="grid w-12 shrink-0 place-items-center rounded-l-xl border-r border-slate-200 text-blue-700 transition hover:bg-blue-50"
+                    >
+                      <Plus className="size-5" />
+                    </button>
+                    <input
+                      value={topic}
+                      onChange={(event) => setTopic(event.target.value)}
+                      placeholder="Search or select a topic"
+                      list="v2-topic-options"
+                      className="min-w-0 flex-1 rounded-r-xl bg-transparent px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                    />
+                    <datalist id="v2-topic-options">
+                      {DISCUSSION_TOPICS.map((option) => <option key={option} value={option} />)}
+                    </datalist>
+                  </div>
+                  <MetadataPicker
+                    open={pickerOpen}
+                    activePanel={activePickerPanel}
+                    setActivePanel={setActivePickerPanel}
+                    onClose={() => setPickerOpen(false)}
+                    onSelectTopic={setTopic}
+                    onSelectRealityLens={setRealityLens}
+                    onSelectPurposeLane={setPurposeLane}
                   />
-                  <datalist id="v2-topic-options">
-                    {TOPIC_OPTIONS.map((option) => <option key={option} value={option} />)}
-                  </datalist>
-                  <p className="mt-2 text-xs font-medium text-slate-500">Choose the best fit for your discussion.</p>
-                </label>
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
+                    {realityLens && <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700">Reality Lens: {realityLens}</span>}
+                    {purposeLane && <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">Purpose Lane: {purposeLane}</span>}
+                  </div>
+                  <p className="mt-2 text-xs font-medium text-slate-500">Use the plus menu to choose a topic, reality lens, or purpose lane.</p>
+                </div>
 
                 <div>
                   <p className="mb-3 text-sm font-bold text-slate-700">Discussion Mode <span className="text-red-500">*</span></p>
@@ -607,7 +747,7 @@ export default function V2CreatePage() {
                 </div>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-slate-700">Purpose <span className="text-red-500">*</span></span>
+                  <span className="mb-2 block text-sm font-bold text-slate-700">Discussion Purpose <span className="text-red-500">*</span></span>
                   <input
                     value={purpose}
                     onChange={(event) => setPurpose(event.target.value)}
@@ -631,6 +771,39 @@ export default function V2CreatePage() {
                   />
                   <p className="mt-2 text-xs font-medium text-slate-500">The more context you provide, the better the conversation.</p>
                 </label>
+
+                <section className="rounded-2xl border border-blue-200 bg-blue-50/50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="flex items-center gap-2 text-sm font-black text-blue-900"><Brain className="size-4" />AI draft tools</h2>
+                      <p className="mt-1 text-xs font-semibold leading-5 text-blue-800">Check discussion quality or rewrite the body for clarity before review.</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={runQualityCheck} className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-black text-blue-700 shadow-sm ring-1 ring-blue-100 transition hover:bg-blue-100">
+                        <Sparkles className="size-4" />
+                        Discussion quality check
+                      </button>
+                      <button type="button" onClick={rewriteForClarity} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-blue-700">
+                        <WandSparkles className="size-4" />
+                        Rewrite for clarity
+                      </button>
+                    </div>
+                  </div>
+                  {aiMessage && <p className="mt-3 text-xs font-bold text-blue-900">{aiMessage}</p>}
+                  {aiFindings.length > 0 && (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {aiFindings.map((finding) => (
+                        <div key={finding.label} className="rounded-xl bg-white px-3 py-2 text-xs shadow-sm ring-1 ring-blue-100">
+                          <p className={`flex items-center gap-2 font-black ${finding.done ? "text-emerald-700" : "text-amber-700"}`}>
+                            {finding.done ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
+                            {finding.label}
+                          </p>
+                          <p className="mt-1 leading-5 text-slate-600">{finding.detail}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
 
                 <label className="block">
                   <div className="mb-2 flex items-center justify-between gap-3">
@@ -746,15 +919,20 @@ export default function V2CreatePage() {
             <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-3">
                 <FileText className="size-5 text-blue-600" />
-                <h2 className="font-black text-slate-950">Selected mode</h2>
+                <h2 className="font-black text-slate-950">Selected framing</h2>
               </div>
               <p className="mt-3 text-sm font-bold text-slate-800">{selectedMode.label}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">{selectedMode.description}</p>
+              <div className="mt-4 space-y-2 text-xs font-semibold text-slate-500">
+                <p>Topic: {topic || "Not selected"}</p>
+                <p>Reality Lens: {realityLens || "Not selected"}</p>
+                <p>Purpose Lane: {purposeLane || "Not selected"}</p>
+              </div>
             </section>
           </aside>
         </section>
       </section>
-      <MobileBottomNav />
+      <V2ShellMobileNav />
     </main>
   );
 }
