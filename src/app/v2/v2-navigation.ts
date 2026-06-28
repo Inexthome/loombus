@@ -46,7 +46,7 @@ export const V2_PRIMARY_NAV_ITEMS: V2NavItem[] = [
 
 export const V2_ACTION_NAV_ITEMS: V2NavItem[] = [
   { label: "Search", href: "/v2/search", icon: Search },
-  { label: "Notifications", href: "/v2/notifications", icon: Bell, badge: "8" },
+  { label: "Notifications", href: "/v2/notifications", icon: Bell },
 ];
 
 export const V2_MENU_GROUPS: V2MenuGroup[] = [
@@ -79,7 +79,7 @@ export const V2_MENU_GROUPS: V2MenuGroup[] = [
   {
     title: "Account",
     items: [
-      { label: "Notifications", href: "/v2/notifications", icon: Bell, badge: "8" },
+      { label: "Notifications", href: "/v2/notifications", icon: Bell },
       { label: "Settings", href: "/v2/settings", icon: Settings },
       { label: "Premium", href: "/v2/premium", icon: WalletCards },
       { label: "Support", href: "/v2/support", icon: Wrench },
