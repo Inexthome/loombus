@@ -8,6 +8,14 @@ export function V2AppearanceStyles() {
         color-scheme: light;
       }
 
+      main article:has(> a[href^="/v2/discussions/"][class~="bg-gradient-to-br"]) {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+
+      main article:has(> a[href^="/v2/discussions/"][class~="bg-gradient-to-br"]) > a[href^="/v2/discussions/"][class~="bg-gradient-to-br"] {
+        display: none !important;
+      }
+
       html[data-v2-appearance="dark_gold"],
       body[data-v2-appearance="dark_gold"] {
         color-scheme: dark;
