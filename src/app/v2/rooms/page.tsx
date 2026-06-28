@@ -393,7 +393,7 @@ export default function V2RoomsPage() {
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
       setPayload(nextPayload);
 
-      if (userId && accessToken && nextPayload.configured && nextPayload.flags.v2_shell && nextPayload.flags.v2_rooms && nextPayload.version === "v2") {
+      if (userId && accessToken && nextPayload.configured && nextPayload.flags.v2_shell && nextPayload.version === "v2") {
         const liveState = await fetchLiveRooms(userId);
         setRooms(liveState.rooms);
         setJoinedRoomIdList(liveState.joinedRoomIds);
@@ -427,7 +427,6 @@ export default function V2RoomsPage() {
   if (message) return <V2ShellGateCard title="V2 Rooms check failed safely" message={message} payload={payload} />;
   if (!payload?.authenticated) return <V2ShellGateCard title="Sign in required" message="The V2 Rooms shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard title="V2 Rooms is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on the current Loombus experience." payload={payload} />;
-  if (!payload.flags.v2_rooms) return <V2ShellGateCard title="V2 Rooms flag is off" message="The V2 shell is enabled, but the v2_rooms flag is not enabled for this account yet." payload={payload} />;
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] text-slate-950">
