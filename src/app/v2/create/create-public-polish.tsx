@@ -7,6 +7,8 @@ import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 const AI_OUTPUT_ID = "loombus-create-ai-suggestion-output";
 const WIRED_ATTR = "data-loombus-ai-wired";
 const REVIEW_CTA_ATTR = "data-loombus-review-cta-restored";
+const REVIEW_BUTTON_ATTR = "data-loombus-review-draft-button";
+let polishAttemptTimer: number | null = null;
 
 function setTextWithOptionalIcon(element: HTMLElement, text: string) {
   const icon = element.querySelector("svg")?.cloneNode(true);
@@ -17,9 +19,13 @@ function setTextWithOptionalIcon(element: HTMLElement, text: string) {
 
 function restoreReviewDraftButton(publishLink: HTMLAnchorElement) {
   if (publishLink.getAttribute(REVIEW_CTA_ATTR) === "true") return;
+  if (publishLink.getAttribute(REVIEW_BUTTON_ATTR) === "true") return;
+  if (publishLink.parentElement?.querySelector(`[${REVIEW_BUTTON_ATTR}="true"]`)) return;
+
   publishLink.setAttribute(REVIEW_CTA_ATTR, "true");
 
   const reviewLink = publishLink.cloneNode(true) as HTMLAnchorElement;
+  reviewLink.setAttribute(REVIEW_BUTTON_ATTR, "true");
   reviewLink.removeAttribute(REVIEW_CTA_ATTR);
   reviewLink.setAttribute("aria-label", "Review draft");
   reviewLink.className = "rounded-2xl border border-slate-200 px-4 py-2 text-center text-sm font-black text-amber-800 transition hover:border-amber-300 hover:bg-amber-50";
@@ -146,6 +152,8 @@ function wireButton(button: HTMLButtonElement, kind: "quality" | "rewrite") {
 
 function applyCreatePolish() {
   for (const link of Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href="/v2/create/review"]'))) {
+    if (link.getAttribute(REVIEW_BUTTON_ATTR) === "true") continue;
+
     if (/review draft/i.test(link.textContent ?? "")) {
       restoreReviewDraftButton(link);
       setTextWithOptionalIcon(link, "Publish");
@@ -169,10 +177,24 @@ function applyCreatePolish() {
 
 export default function CreatePublicPolish() {
   useEffect(() => {
-    applyCreatePolish();
-    const observer = new MutationObserver(applyCreatePolish);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    let attempts = 0;
+
+    function runBoundedPolish() {
+      applyCreatePolish();
+      attempts += 1;
+
+      if (attempts < 12) {
+        polishAttemptTimer = window.setTimeout(runBoundedPolish, 250);
+      }
+    }
+
+    runBoundedPolish();
+
+    return () => {
+      if (polishAttemptTimer !== null) {
+        window.clearTimeout(polishAttemptTimer);
+      }
+    };
   }, []);
 
   return null;
