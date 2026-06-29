@@ -122,7 +122,7 @@ function ensureFilterPanel() {
   }
 
   filterButton.addEventListener("click", () => {
-    const nextOpen = panel ? panel.hidden : false;
+    const nextOpen = Boolean(panel?.hidden);
     if (panel) panel.hidden = !nextOpen;
     filterButton.setAttribute("aria-expanded", String(nextOpen));
     filterButton.classList.toggle("border-amber-300", nextOpen);
