@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Brain,
   CheckCircle2,
-  ChevronDown,
   Circle,
   FileText,
-  MessageCircle,
   MessageSquare,
   Mic,
   Paperclip,
@@ -23,6 +21,7 @@ import {
   Sparkles,
   Trash2,
   WandSparkles,
+  X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
@@ -38,6 +37,7 @@ import {
 
 type DiscussionMode = "open_discussion" | "debate" | "research_question" | "problem_solving";
 type MetadataPickerPanel = "topics" | "reality_lens" | "purpose_lane";
+type SupportingContextKind = "file" | "video";
 
 type V2CreateDraft = {
   id: string;
@@ -64,9 +64,19 @@ type AiFinding = {
   detail: string;
 };
 
+type SupportingContextItem = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  kind: SupportingContextKind;
+};
+
 const AUTOSAVE_DELAY_MS = 1400;
 const DRAFT_MIGRATION_REQUIRED_MESSAGE =
-  "Draft storage is not configured yet. Apply the V2 draft migration before testing save, restore, or autosave.";
+  "Draft storage is not configured yet. Save and autosave need the V2 draft table before they can run.";
+const LOOMBUS_GOLD = "#d6a84f";
+const LOOMBUS_GOLD_DARK = "#8a621d";
 
 const DISCUSSION_MODES: DiscussionModeOption[] = [
   {
@@ -103,6 +113,10 @@ function isDiscussionMode(value: string | null | undefined): value is Discussion
   return DISCUSSION_MODES.some((option) => option.key === value);
 }
 
+function isOtherTopic(value: string) {
+  return value.trim().toLowerCase() === "other";
+}
+
 function formatDraftTime(value: string | null) {
   if (!value) return "Not saved yet";
 
@@ -115,6 +129,12 @@ function formatDraftTime(value: string | null) {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function getTagCount(value: string) {
@@ -155,8 +175,8 @@ function hydrateDraftBody(value: string | null) {
   const firstBlock = parts[0] ?? "";
   const rest = parts.slice(1).join("\n\n");
   const metadata: Record<string, string> = {};
-  const metadataLines = firstBlock.split("\n");
-  const hasMetadata = metadataLines.every((line) => /^(Purpose|Reality Lens|Purpose Lane):\s*/.test(line));
+  const metadataLines = firstBlock.split("\n").filter((line) => line.trim().length > 0);
+  const hasMetadata = metadataLines.length > 0 && metadataLines.every((line) => /^(Purpose|Reality Lens|Purpose Lane):\s*/.test(line));
 
   if (!hasMetadata) {
     return { body: raw, purpose: "", realityLens: "", purposeLane: "" };
@@ -209,7 +229,7 @@ function buildQualityFindings({
     {
       label: "Reality lens",
       done: realityLens.trim().length > 0,
-      detail: realityLens.trim() ? "A reality lens adds emotional or human context." : "Choose a reality lens when the discussion needs deeper context.",
+      detail: realityLens.trim() ? "A reality lens adds human context." : "Choose a reality lens when the discussion needs deeper context.",
     },
     {
       label: "Purpose lane",
@@ -291,12 +311,7 @@ function MetadataPicker({
       : activePanel === "reality_lens"
         ? REALITY_LENSES
         : PURPOSE_LANES;
-  const selectOption =
-    activePanel === "topics"
-      ? onSelectTopic
-      : activePanel === "reality_lens"
-        ? onSelectRealityLens
-        : onSelectPurposeLane;
+  const panelLabel = activePanel === "topics" ? "Topics" : activePanel === "reality_lens" ? "Reality Lens" : "Purpose Lane";
 
   return (
     <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl shadow-slate-950/15 ring-1 ring-slate-900/5">
@@ -311,23 +326,42 @@ function MetadataPicker({
             type="button"
             onClick={() => setActivePanel(item.key)}
             className={`shrink-0 rounded-full px-3 py-2 text-xs font-black transition ${
-              activePanel === item.key ? "bg-blue-600 text-white" : "bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+              activePanel === item.key ? "bg-[#d6a84f] text-slate-950" : "bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-800"
             }`}
           >
             {item.label}
           </button>
         ))}
       </div>
+      <p className="mb-2 text-xs font-semibold text-slate-500">
+        {activePanel === "topics" ? "Choose a topic. If you choose Other, pick a Reality Lens and Purpose Lane next." : `Choose a ${panelLabel}.`}
+      </p>
       <div className="grid max-h-64 gap-2 overflow-y-auto sm:grid-cols-2">
         {options.map((option) => (
           <button
             key={option}
             type="button"
             onClick={() => {
-              selectOption(option);
+              if (activePanel === "topics") {
+                onSelectTopic(option);
+                if (isOtherTopic(option)) {
+                  setActivePanel("reality_lens");
+                  return;
+                }
+                onClose();
+                return;
+              }
+
+              if (activePanel === "reality_lens") {
+                onSelectRealityLens(option);
+                if (isOtherTopic(option)) setActivePanel("purpose_lane");
+                return;
+              }
+
+              onSelectPurposeLane(option);
               onClose();
             }}
-            className="rounded-2xl border border-slate-200 px-3 py-2 text-left text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+            className="rounded-2xl border border-slate-200 px-3 py-2 text-left text-sm font-bold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900"
           >
             {option}
           </button>
@@ -361,8 +395,12 @@ export default function V2CreatePage() {
   const [activePickerPanel, setActivePickerPanel] = useState<MetadataPickerPanel>("topics");
   const [aiFindings, setAiFindings] = useState<AiFinding[]>([]);
   const [aiMessage, setAiMessage] = useState("");
+  const [supportingContext, setSupportingContext] = useState<SupportingContextItem[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedMode = DISCUSSION_MODES.find((option) => option.key === mode) ?? DISCUSSION_MODES[0];
+  const hasOtherTopic = isOtherTopic(topic);
 
   const draftFingerprint = useMemo(
     () => JSON.stringify({ title, topic, realityLens, purposeLane, purpose, body, tags, mode }),
@@ -406,6 +444,38 @@ export default function V2CreatePage() {
     setAiFindings(buildQualityFindings({ title, topic, realityLens, purposeLane, purpose, body: rewrittenBody, tags }));
   }
 
+  function addSupportingContext(event: ChangeEvent<HTMLInputElement>, kind: SupportingContextKind) {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length === 0) return;
+
+    setSupportingContext((current) => {
+      const nextItems = files.map((file) => ({
+        id: `${kind}-${file.name}-${file.size}-${file.lastModified}`,
+        name: file.name,
+        size: file.size,
+        type: file.type || "Unknown type",
+        kind,
+      }));
+      const merged = [...current, ...nextItems];
+      return merged.filter((item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index).slice(0, 6);
+    });
+
+    setDraftMessage("");
+    event.target.value = "";
+  }
+
+  function removeSupportingContext(id: string) {
+    setSupportingContext((current) => current.filter((item) => item.id !== id));
+  }
+
+  function handleTopicSelect(value: string) {
+    setTopic(value);
+    if (isOtherTopic(value)) {
+      setActivePickerPanel("reality_lens");
+      setPickerOpen(true);
+    }
+  }
+
   async function loadSavedDraft(nextUserId: string) {
     setDraftLoading(true);
     setDraftHydrated(false);
@@ -421,7 +491,7 @@ export default function V2CreatePage() {
 
       if (error) {
         setDraftHydrated(false);
-        setAutosaveStatus("Migration required");
+        setAutosaveStatus("Draft table unavailable");
         setDraftMessage(DRAFT_MIGRATION_REQUIRED_MESSAGE);
         return;
       }
@@ -447,12 +517,11 @@ export default function V2CreatePage() {
       setTags(draft.tags ?? "");
       setMode(isDiscussionMode(draft.mode) ? draft.mode : "open_discussion");
       setDraftHydrated(true);
-      setAutosaveStatus("Draft restored");
-      setDraftMessage("Private V2 draft restored.");
+      setAutosaveStatus("Draft loaded");
     } catch {
       setDraftHydrated(false);
       setAutosaveStatus("Autosave unavailable");
-      setDraftMessage("Unable to load the private V2 draft. V1 Create remains available.");
+      setDraftMessage("Unable to load this V2 draft safely.");
     } finally {
       setDraftLoading(false);
     }
@@ -489,7 +558,7 @@ export default function V2CreatePage() {
         .single();
 
       if (error) {
-        setAutosaveStatus("Migration required");
+        setAutosaveStatus("Draft table unavailable");
         setDraftMessage(DRAFT_MIGRATION_REQUIRED_MESSAGE);
         return false;
       }
@@ -498,11 +567,11 @@ export default function V2CreatePage() {
       setDraftId(savedDraft.id);
       setDraftSavedAt(savedDraft.updated_at);
       setAutosaveStatus("Autosaved");
-      if (manual) setDraftMessage("Private V2 draft saved.");
+      if (manual) setDraftMessage("Draft saved.");
       return true;
     } catch {
       if (manual) {
-        setDraftMessage("Draft could not be saved. Current V1 Create remains unchanged.");
+        setDraftMessage("Draft could not be saved.");
       } else {
         setAutosaveStatus("Autosave failed");
       }
@@ -526,7 +595,7 @@ export default function V2CreatePage() {
       if (draftId) {
         const { error } = await supabase.from("loombus_v2_create_drafts").delete().eq("user_id", userId);
         if (error) {
-          setAutosaveStatus("Migration required");
+          setAutosaveStatus("Draft table unavailable");
           setDraftMessage(DRAFT_MIGRATION_REQUIRED_MESSAGE);
           return;
         }
@@ -542,11 +611,11 @@ export default function V2CreatePage() {
       setBody("");
       setTags("");
       setMode("open_discussion");
+      setSupportingContext([]);
       setAiFindings([]);
       setAiMessage("");
       setDraftHydrated(true);
       setAutosaveStatus("Draft cleared");
-      setDraftMessage("Private V2 draft cleared.");
     } catch {
       setAutosaveStatus("Clear failed");
       setDraftMessage("Unable to clear this V2 draft safely.");
@@ -564,13 +633,14 @@ export default function V2CreatePage() {
       `Mode: ${selectedMode.label}`,
       purpose.trim() ? `Purpose: ${purpose.trim()}` : "Purpose:",
       tags.trim() ? `Tags: ${tags.trim()}` : "Tags:",
+      supportingContext.length > 0 ? `Supporting context: ${supportingContext.map((item) => item.name).join(", ")}` : "",
       "",
       body.trim() || "Body:",
-    ].join("\n");
+    ].filter(Boolean).join("\n");
 
     try {
       await navigator.clipboard.writeText(text);
-      setCopyMessage("Draft copied. You can paste it into V1 Create if needed.");
+      setCopyMessage("Draft copied.");
     } catch {
       setCopyMessage("Unable to copy this draft from the browser. You can still manually copy the fields.");
     }
@@ -599,7 +669,7 @@ export default function V2CreatePage() {
     } catch {
       setPayload(getDefaultShellPayload());
       setAutosaveStatus("Autosave unavailable");
-      setMessage("Unable to verify V2 create preview access. Current Loombus remains on V1.");
+      setMessage("Unable to verify V2 Create access.");
     } finally {
       setLoading(false);
     }
@@ -638,7 +708,7 @@ export default function V2CreatePage() {
   }, [draftFingerprint, draftHydrated, hasDraftContent, loading, payload, userId]);
 
   if (loading) {
-    return <V2ShellGateCard title="Checking V2 access" message="Loombus is verifying whether this account can use the V2 Create shell." loading />;
+    return <V2ShellGateCard title="Checking V2 Create" message="Loombus is loading the V2 Create experience." loading />;
   }
 
   if (message) {
@@ -646,11 +716,11 @@ export default function V2CreatePage() {
   }
 
   if (!payload?.authenticated) {
-    return <V2ShellGateCard title="Sign in required" message="The V2 Create shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
+    return <V2ShellGateCard title="Sign in required" message="Sign in to create a Loombus discussion." payload={payload} />;
   }
 
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") {
-    return <V2ShellGateCard title="V2 Create is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on the V1 Create experience." payload={payload} />;
+    return <V2ShellGateCard title="V2 Create is unavailable" message="This account cannot access V2 Create yet." payload={payload} />;
   }
 
   return (
@@ -680,20 +750,20 @@ export default function V2CreatePage() {
                     value={title}
                     onChange={(event) => setTitle(event.target.value)}
                     placeholder="e.g., The future of decentralized identity"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
                   />
                   <p className="mt-2 text-xs font-medium text-slate-500">Be clear, specific, and engaging.</p>
                 </label>
 
                 <div className="relative">
                   <span className="mb-2 block text-sm font-bold text-slate-700">Topic <span className="text-red-500">*</span></span>
-                  <div className="flex rounded-xl border border-slate-200 bg-white shadow-sm transition focus-within:border-blue-400 focus-within:ring-4 focus-within:ring-blue-100">
+                  <div className="flex rounded-xl border border-slate-200 bg-white shadow-sm transition focus-within:border-amber-400 focus-within:ring-4 focus-within:ring-amber-100">
                     <button
                       type="button"
                       onClick={() => setPickerOpen((current) => !current)}
                       aria-expanded={pickerOpen}
                       aria-label="Open topic and metadata picker"
-                      className="grid w-12 shrink-0 place-items-center rounded-l-xl border-r border-slate-200 text-blue-700 transition hover:bg-blue-50"
+                      className="grid w-12 shrink-0 place-items-center rounded-l-xl border-r border-slate-200 text-amber-800 transition hover:bg-amber-50"
                     >
                       <Plus className="size-5" />
                     </button>
@@ -713,10 +783,19 @@ export default function V2CreatePage() {
                     activePanel={activePickerPanel}
                     setActivePanel={setActivePickerPanel}
                     onClose={() => setPickerOpen(false)}
-                    onSelectTopic={setTopic}
+                    onSelectTopic={handleTopicSelect}
                     onSelectRealityLens={setRealityLens}
                     onSelectPurposeLane={setPurposeLane}
                   />
+                  {hasOtherTopic && (
+                    <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-900">
+                      Other needs framing. Choose a Reality Lens and Purpose Lane so readers understand the angle.
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button type="button" onClick={() => { setActivePickerPanel("reality_lens"); setPickerOpen(true); }} className="rounded-full bg-white px-3 py-1 font-black text-amber-900 ring-1 ring-amber-200">Choose Reality Lens</button>
+                        <button type="button" onClick={() => { setActivePickerPanel("purpose_lane"); setPickerOpen(true); }} className="rounded-full bg-white px-3 py-1 font-black text-amber-900 ring-1 ring-amber-200">Choose Purpose Lane</button>
+                      </div>
+                    </div>
+                  )}
                   <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
                     {realityLens && <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700">Reality Lens: {realityLens}</span>}
                     {purposeLane && <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">Purpose Lane: {purposeLane}</span>}
@@ -735,10 +814,10 @@ export default function V2CreatePage() {
                           key={option.key}
                           type="button"
                           onClick={() => setMode(option.key)}
-                          className={`rounded-2xl border p-4 text-center transition ${selected ? "border-blue-500 bg-blue-50 shadow-sm ring-2 ring-blue-100" : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/50"}`}
+                          className={`rounded-2xl border p-4 text-center transition ${selected ? "border-amber-400 bg-amber-50 shadow-sm ring-2 ring-amber-100" : "border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/50"}`}
                         >
-                          <Icon className={`mx-auto size-7 ${selected ? "text-blue-600" : "text-slate-700"}`} />
-                          <span className={`mt-3 block text-sm font-black ${selected ? "text-blue-700" : "text-slate-800"}`}>{option.label}</span>
+                          <Icon className={`mx-auto size-7 ${selected ? "text-amber-700" : "text-slate-700"}`} />
+                          <span className={`mt-3 block text-sm font-black ${selected ? "text-amber-900" : "text-slate-800"}`}>{option.label}</span>
                           <span className="mt-1 block text-xs leading-5 text-slate-500">{option.shortLabel}</span>
                         </button>
                       );
@@ -752,7 +831,7 @@ export default function V2CreatePage() {
                     value={purpose}
                     onChange={(event) => setPurpose(event.target.value)}
                     placeholder="What do you hope to achieve with this discussion?"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
                   />
                   <p className="mt-2 text-xs font-medium text-slate-500">Define your intent to guide better responses.</p>
                 </label>
@@ -767,33 +846,33 @@ export default function V2CreatePage() {
                     onChange={(event) => setBody(event.target.value.slice(0, 3000))}
                     placeholder="Provide context, background, or details for your discussion..."
                     rows={8}
-                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    className="w-full resize-y rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
                   />
                   <p className="mt-2 text-xs font-medium text-slate-500">The more context you provide, the better the conversation.</p>
                 </label>
 
-                <section className="rounded-2xl border border-blue-200 bg-blue-50/50 p-4">
+                <section className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <h2 className="flex items-center gap-2 text-sm font-black text-blue-900"><Brain className="size-4" />AI draft tools</h2>
-                      <p className="mt-1 text-xs font-semibold leading-5 text-blue-800">Check discussion quality or rewrite the body for clarity before review.</p>
+                      <h2 className="flex items-center gap-2 text-sm font-black text-amber-950"><Brain className="size-4" />AI draft tools</h2>
+                      <p className="mt-1 text-xs font-semibold leading-5 text-amber-900">Check discussion quality or rewrite the body for clarity before review.</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={runQualityCheck} className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-black text-blue-700 shadow-sm ring-1 ring-blue-100 transition hover:bg-blue-100">
+                      <button type="button" onClick={runQualityCheck} className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-black text-amber-800 shadow-sm ring-1 ring-amber-100 transition hover:bg-amber-100">
                         <Sparkles className="size-4" />
                         Discussion quality check
                       </button>
-                      <button type="button" onClick={rewriteForClarity} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-blue-700">
+                      <button type="button" onClick={rewriteForClarity} className="inline-flex items-center gap-2 rounded-xl bg-[#d6a84f] px-3 py-2 text-xs font-black text-slate-950 shadow-sm transition hover:bg-[#c7993f]">
                         <WandSparkles className="size-4" />
                         Rewrite for clarity
                       </button>
                     </div>
                   </div>
-                  {aiMessage && <p className="mt-3 text-xs font-bold text-blue-900">{aiMessage}</p>}
+                  {aiMessage && <p className="mt-3 text-xs font-bold text-amber-950">{aiMessage}</p>}
                   {aiFindings.length > 0 && (
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       {aiFindings.map((finding) => (
-                        <div key={finding.label} className="rounded-xl bg-white px-3 py-2 text-xs shadow-sm ring-1 ring-blue-100">
+                        <div key={finding.label} className="rounded-xl bg-white px-3 py-2 text-xs shadow-sm ring-1 ring-amber-100">
                           <p className={`flex items-center gap-2 font-black ${finding.done ? "text-emerald-700" : "text-amber-700"}`}>
                             {finding.done ? <CheckCircle2 className="size-4" /> : <Circle className="size-4" />}
                             {finding.label}
@@ -814,7 +893,7 @@ export default function V2CreatePage() {
                     value={tags}
                     onChange={(event) => setTags(event.target.value)}
                     placeholder="Add up to 5 tags, e.g., web3, governance, identity"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
                   />
                   <p className="mt-2 text-xs font-medium text-slate-500">Tags help others discover your discussion.</p>
                 </label>
@@ -823,31 +902,48 @@ export default function V2CreatePage() {
 
             <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <p className="text-sm font-black text-slate-800">Attach supporting context <span className="font-medium text-slate-400">(optional)</span></p>
-              <p className="mt-1 text-xs font-medium text-slate-500">Add relevant materials that help others contribute with more depth.</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">Attach files or video context to support the draft setup. Upload publishing transfer can be completed in the next wiring pass.</p>
+              <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.txt,.doc,.docx" className="hidden" onChange={(event) => addSupportingContext(event, "file")} />
+              <input ref={videoInputRef} type="file" multiple accept="video/*" className="hidden" onChange={(event) => addSupportingContext(event, "video")} />
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-amber-300 hover:bg-amber-50">
                   <div className="flex items-center gap-3">
-                    <span className="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Paperclip className="size-5" /></span>
+                    <span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-700"><Paperclip className="size-5" /></span>
                     <div>
                       <p className="text-sm font-black text-slate-800">Attach Files</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">Placeholder for V2 file uploads. Current upload remains in V1 Create.</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">Images, PDFs, text, or documents.</p>
                     </div>
                   </div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                </button>
+                <button type="button" onClick={() => videoInputRef.current?.click()} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-amber-300 hover:bg-amber-50">
                   <div className="flex items-center gap-3">
-                    <span className="grid size-10 place-items-center rounded-2xl bg-blue-50 text-blue-600"><Mic className="size-5" /></span>
+                    <span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-700"><Mic className="size-5" /></span>
                     <div>
                       <p className="text-sm font-black text-slate-800">Video Context</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">Placeholder for V2 video context. Current upload remains in V1 Create.</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">Select a video file to stage with the draft.</p>
                     </div>
                   </div>
-                </div>
+                </button>
               </div>
+              {supportingContext.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {supportingContext.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                      <div className="min-w-0">
+                        <p className="truncate font-black text-slate-800">{item.name}</p>
+                        <p className="text-xs font-semibold text-slate-400">{item.kind === "video" ? "Video" : "File"} · {formatFileSize(item.size)}</p>
+                      </div>
+                      <button type="button" onClick={() => removeSupportingContext(item.id)} className="grid size-8 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-red-50 hover:text-red-600" aria-label={`Remove ${item.name}`}>
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap gap-3">
-                  <button type="button" onClick={() => persistDraft({ manual: true })} disabled={draftLoading} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60">
+                  <button type="button" onClick={() => persistDraft({ manual: true })} disabled={draftLoading} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-amber-800 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60">
                     <Save className="size-4" />
                     {draftLoading ? "Saving..." : "Save Draft"}
                   </button>
@@ -856,7 +952,7 @@ export default function V2CreatePage() {
                     Clear
                   </button>
                 </div>
-                <Link href="/v2/create/review" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-blue-700">
+                <Link href="/v2/create/review" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#d6a84f] px-5 py-2.5 text-sm font-black text-slate-950 shadow-sm transition hover:bg-[#c7993f]">
                   <Send className="size-4" />
                   Review Draft
                 </Link>
@@ -871,7 +967,12 @@ export default function V2CreatePage() {
               <div className="mt-5 space-y-5">
                 {readiness.checks.map((check, index) => (
                   <div key={check.label} className="flex gap-3">
-                    <span className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${check.done ? "bg-blue-600 text-white" : "bg-blue-50 text-blue-600"}`}>{index + 1}</span>
+                    <span
+                      className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${check.done ? "text-slate-950" : "bg-amber-50 text-amber-800"}`}
+                      style={check.done ? { backgroundColor: LOOMBUS_GOLD } : undefined}
+                    >
+                      {index + 1}
+                    </span>
                     <div>
                       <p className="text-sm font-black text-slate-800">{check.label}</p>
                       <p className="mt-1 text-xs leading-5 text-slate-500">{check.done ? "Ready" : "Needs attention before review"}</p>
@@ -880,37 +981,32 @@ export default function V2CreatePage() {
                 ))}
               </div>
               <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-100">
-                <div className="h-full rounded-full bg-blue-600" style={{ width: `${readiness.percent}%` }} />
+                <div className="h-full rounded-full" style={{ width: `${readiness.percent}%`, backgroundColor: LOOMBUS_GOLD }} />
               </div>
               <p className="mt-3 text-xs font-semibold text-slate-500">{readiness.completed} of {readiness.total} checks complete.</p>
             </section>
 
             <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-3">
-                <Save className="size-5 text-blue-600" />
+                <Save className="size-5 text-amber-700" />
                 <h2 className="font-black text-slate-950">Private draft</h2>
               </div>
               <p className="mt-3 text-sm leading-6 text-slate-600">{autosaveStatus}</p>
               <p className="mt-2 text-xs font-semibold text-slate-400">Last saved: {formatDraftTime(draftSavedAt)}</p>
             </section>
 
-            <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="size-5 text-amber-700" />
-                <h2 className="font-black text-amber-900">Preview only</h2>
+                <h2 className="font-black text-slate-950">Public V2 flow</h2>
               </div>
-              <p className="mt-3 text-sm leading-6 text-amber-800">This V2 shell can autosave a private draft, but it does not publish to the live discussion feed.</p>
-            </section>
-
-            <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="font-black text-slate-950">Safe handoff</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">Use V1 Create if you need to publish before V2 release testing is complete.</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">Create is now part of the public V2 experience. Review the draft before publishing so the final discussion keeps its context and framing.</p>
               <div className="mt-4 flex flex-col gap-3">
-                <button type="button" onClick={copyPreviewDraft} className="rounded-2xl bg-blue-600 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-700">
+                <button type="button" onClick={copyPreviewDraft} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-amber-800 transition hover:border-amber-300 hover:bg-amber-50">
                   Copy draft
                 </button>
-                <Link href="/create" className="rounded-2xl border border-slate-200 px-4 py-2 text-center text-sm font-bold text-slate-700 transition hover:border-blue-200 hover:text-blue-700">
-                  Open V1 Create
+                <Link href="/v2/create/review" className="rounded-2xl bg-[#d6a84f] px-4 py-2 text-center text-sm font-black text-slate-950 transition hover:bg-[#c7993f]">
+                  Review draft
                 </Link>
               </div>
               {copyMessage && <p className="mt-3 text-xs leading-5 text-slate-500">{copyMessage}</p>}
@@ -918,7 +1014,7 @@ export default function V2CreatePage() {
 
             <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-3">
-                <FileText className="size-5 text-blue-600" />
+                <FileText className="size-5 text-amber-700" />
                 <h2 className="font-black text-slate-950">Selected framing</h2>
               </div>
               <p className="mt-3 text-sm font-bold text-slate-800">{selectedMode.label}</p>
@@ -927,6 +1023,7 @@ export default function V2CreatePage() {
                 <p>Topic: {topic || "Not selected"}</p>
                 <p>Reality Lens: {realityLens || "Not selected"}</p>
                 <p>Purpose Lane: {purposeLane || "Not selected"}</p>
+                <p>Supporting context: {supportingContext.length > 0 ? `${supportingContext.length} staged` : "None staged"}</p>
               </div>
             </section>
           </aside>
