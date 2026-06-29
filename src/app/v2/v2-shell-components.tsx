@@ -62,9 +62,9 @@ export function V2ShellTopNav() {
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#061942] loombus-v2-top-nav shadow-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/v2/" className="flex min-w-0 items-center gap-3 font-bold">
+        <Link href="/v2/home" className="flex min-w-0 items-center gap-3 font-bold">
           <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 shrink-0 object-contain" />
-          <span className="text-lg font-black tracking-tight sm:text-xl">Loombus</span>
+          <span className="text-lg font-black tracking-tight text-slate-950 sm:text-xl">Loombus</span>
         </Link>
         <nav className="hidden items-center gap-1 md:flex">
           {V2_TOP_NAV_ITEMS.map((item) => {
@@ -83,7 +83,7 @@ export function V2ShellTopNav() {
             return (
               <Link key={item.label} href={item.href} aria-label={item.label} className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
                 <Icon className="size-5" />
-                {item.badge && <span className="v2-notification-badge absolute right-0 top-0 grid size-5 place-items-center rounded-full border border-slate-300 bg-white text-[10px] font-black text-slate-950 shadow-sm">{item.badge}</span>}
+                {item.badge && <span className="absolute right-0 top-0 grid size-5 place-items-center rounded-full border border-slate-300 bg-white text-[10px] font-black text-slate-950 shadow-sm">{item.badge}</span>}
               </Link>
             );
           })}
@@ -102,7 +102,7 @@ export function V2ShellMobileNav() {
           const Icon = item.icon;
           return (
             <Link key={item.label} href={item.href} className="flex flex-col items-center gap-1 rounded-2xl py-2 text-slate-500">
-              <Icon className={`size-5 ${item.primary ? "rounded-full bg-blue-600 p-1 text-white" : ""}`} />
+              <Icon className={`size-5 ${item.primary ? "rounded-full border border-zinc-300 bg-zinc-50 p-1 text-zinc-950 shadow-sm" : ""}`} />
               <span>{item.label}</span>
             </Link>
           );
