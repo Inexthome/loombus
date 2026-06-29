@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { V2AppearanceStyle } from "./v2-appearance-style";
 
 export type V2AppearanceTheme = "light" | "dark" | "system";
 
@@ -91,5 +92,10 @@ export function V2AppearanceProvider({ children }: { children: React.ReactNode }
     return () => mediaQuery.removeEventListener("change", handleSystemChange);
   }, [pathname]);
 
-  return <>{children}</>;
+  return (
+    <>
+      <V2AppearanceStyle />
+      {children}
+    </>
+  );
 }
