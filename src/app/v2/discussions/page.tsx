@@ -442,7 +442,7 @@ export default function V2DiscussionsPage() {
   const fallbackTopContributors = topContributors.length > 0 ? topContributors : [["Loombus member", { count: 0, avatarUrl: null, username: null }] as [string, { count: number; avatarUrl: string | null; username: string | null }]];
 
   return (
-    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] text-slate-950">
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
       <V2ShellTopNav />
       <section className="mx-auto grid max-w-7xl gap-6 px-4 pb-28 pt-6 sm:px-6 lg:grid-cols-[210px_minmax(0,1fr)_300px] lg:px-8">
         <aside className="hidden lg:block">
