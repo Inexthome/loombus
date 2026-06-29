@@ -1,5 +1,19 @@
 import type { NextConfig } from "next";
 
+const permissionsPolicy = [
+  "camera=()",
+  "microphone=()",
+  "geolocation=()",
+  "payment=()",
+  "usb=()",
+  "bluetooth=()",
+  "accelerometer=()",
+  "gyroscope=()",
+  "magnetometer=()",
+  "clipboard-read=()",
+  "clipboard-write=()",
+].join(", ");
+
 const securityHeaders = [
   {
     key: "Strict-Transport-Security",
@@ -35,7 +49,7 @@ const securityHeaders = [
   },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), accelerometer=(), gyroscope=(), magnetometer=(), clipboard-read=(), clipboard-write=()",
+    value: permissionsPolicy,
   },
   {
     key: "Cross-Origin-Opener-Policy",
@@ -48,8 +62,6 @@ const securityHeaders = [
 ];
 
 const v2DefaultRedirects = [
-  { source: "/", destination: "/v2", permanent: false },
-  { source: "/home", destination: "/v2", permanent: false },
   { source: "/discussions", destination: "/v2/discussions", permanent: false },
   { source: "/discussions/:path*", destination: "/v2/discussions/:path*", permanent: false },
   { source: "/create", destination: "/v2/create", permanent: false },
