@@ -300,7 +300,7 @@ function MobileSettingsSummary({ profile, user }: { profile: ProfileRow | null; 
 }
 
 function ThemeCard({ option, selected, onSelect }: { option: (typeof V2_APPEARANCE_OPTIONS)[number]; selected: boolean; onSelect: () => void }) {
-  const Icon = option.key === "light_blue" ? Sun : option.key === "dark_gold" ? Moon : Monitor;
+  const Icon = option.key === "light" ? Sun : option.key === "dark" ? Moon : Monitor;
 
   return (
     <button type="button" onClick={onSelect} className={`relative min-h-[128px] rounded-2xl border p-5 text-center transition ${selected ? "border-blue-600 bg-blue-50/40 shadow-sm ring-1 ring-blue-200" : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40"}`}>
@@ -431,7 +431,7 @@ export default function V2SettingsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [preferences, setPreferences] = useState<Preference[]>([]);
-  const [appearance, setAppearance] = useState<V2AppearanceTheme>("light_blue");
+  const [appearance, setAppearance] = useState<V2AppearanceTheme>("light");
 
   const connectedAccounts = useMemo(() => getConnectedAccounts(user), [user]);
 

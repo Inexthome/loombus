@@ -61,8 +61,8 @@ export function V2AppearanceControl() {
               <span className="text-base font-black text-slate-950">{option.label}</span>
               <span className="mt-2 block text-sm leading-6 text-slate-600">{option.description}</span>
               <span className="mt-4 flex h-12 overflow-hidden rounded-2xl border border-slate-200">
-                <span className={`flex-1 ${option.key === "dark_gold" ? "bg-[#050710]" : "bg-[#f7fbff]"}`} />
-                <span className={`flex-1 ${option.key === "dark_gold" ? "bg-[#d4af37]" : "bg-blue-600"}`} />
+                <span className={`flex-1 ${option.key === "dark" ? "bg-[#050710]" : "bg-[#f7fbff]"}`} />
+                <span className={`flex-1 ${option.key === "dark" ? "bg-[#d4af37]" : "bg-blue-600"}`} />
               </span>
             </button>
           );
