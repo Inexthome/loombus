@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-type AppearanceTheme = "system" | "dark_gold" | "light_blue";
+type AppearanceTheme = "system" | "dark" | "light";
 
 function getBearerToken(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -12,7 +12,7 @@ function getBearerToken(request: NextRequest) {
 }
 
 function isAppearanceTheme(value: unknown): value is AppearanceTheme {
-  return value === "system" || value === "dark_gold" || value === "light_blue";
+  return value === "system" || value === "dark" || value === "light";
 }
 
 export async function PUT(request: NextRequest) {
