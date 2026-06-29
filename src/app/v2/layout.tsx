@@ -172,6 +172,93 @@ export default function V2Layout({ children }: { children: ReactNode }) {
         html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="ring-blue-600"] {
           --tw-ring-color: color-mix(in srgb, var(--loombus-border) 70%, var(--loombus-text) 14%) !important;
         }
+
+        /* Stage 1: Light-only contrast repair. Do not change Dark yet. */
+        html[data-loombus-theme="light"] .loombus-v2-top-nav :is(a, button, svg, [class~="text-blue-100"], [class~="text-blue-200"], [class~="text-blue-300"], [class~="text-blue-400"], [class~="text-blue-500"], [class~="text-blue-600"], [class~="text-blue-700"], [class~="text-white"]) {
+          color: #52525b !important;
+          stroke: currentColor !important;
+        }
+
+        html[data-loombus-theme="light"] .loombus-v2-top-nav :is(a, button):hover,
+        html[data-loombus-theme="light"] .loombus-v2-top-nav :is([class~="hover:text-white"], [class~="hover:text-blue-700"]):hover {
+          color: #18181b !important;
+          background-color: #f4f4f5 !important;
+          border-color: #d4d4d8 !important;
+        }
+
+        html[data-loombus-theme="light"] .loombus-v2-top-nav :is(a[class~="border"], a[aria-current="page"], a[data-active="true"]) {
+          color: #18181b !important;
+          background-color: #ffffff !important;
+          border-color: #d4d4d8 !important;
+          box-shadow: 0 10px 24px rgba(24, 24, 27, 0.08) !important;
+        }
+
+        html[data-loombus-theme="light"] .loombus-v2-top-nav :is([class~="bg-blue-500"], [class~="bg-blue-600"], [class~="bg-blue-700"]) {
+          background-color: #18181b !important;
+          color: #ffffff !important;
+        }
+
+        html[data-loombus-theme="light"] main[class*="loombus-v2-page-bg"] :is(a, button):is([class~="bg-blue-600"], [class~="bg-blue-700"], [class~="bg-black"], [class~="bg-slate-950"], [class~="bg-zinc-950"], [class~="bg-zinc-900"]) {
+          background-color: #ffffff !important;
+          color: #18181b !important;
+          border: 1px solid #d4d4d8 !important;
+          box-shadow: 0 12px 28px rgba(24, 24, 27, 0.08) !important;
+        }
+
+        html[data-loombus-theme="light"] main[class*="loombus-v2-page-bg"] :is(a, button):is([class~="bg-blue-600"], [class~="bg-blue-700"], [class~="bg-black"], [class~="bg-slate-950"], [class~="bg-zinc-950"], [class~="bg-zinc-900"]):hover {
+          background-color: #f4f4f5 !important;
+          border-color: #a1a1aa !important;
+          color: #09090b !important;
+        }
+
+        html[data-loombus-theme="light"] main[class*="loombus-v2-page-bg"] :is(a, button):is([class~="bg-blue-600"], [class~="bg-blue-700"], [class~="bg-black"], [class~="bg-slate-950"], [class~="bg-zinc-950"], [class~="bg-zinc-900"]) * {
+          color: inherit !important;
+          stroke: currentColor !important;
+        }
+
+        @media (prefers-color-scheme: light) {
+          html[data-loombus-theme="system"] .loombus-v2-top-nav :is(a, button, svg, [class~="text-blue-100"], [class~="text-blue-200"], [class~="text-blue-300"], [class~="text-blue-400"], [class~="text-blue-500"], [class~="text-blue-600"], [class~="text-blue-700"], [class~="text-white"]) {
+            color: #52525b !important;
+            stroke: currentColor !important;
+          }
+
+          html[data-loombus-theme="system"] .loombus-v2-top-nav :is(a, button):hover,
+          html[data-loombus-theme="system"] .loombus-v2-top-nav :is([class~="hover:text-white"], [class~="hover:text-blue-700"]):hover {
+            color: #18181b !important;
+            background-color: #f4f4f5 !important;
+            border-color: #d4d4d8 !important;
+          }
+
+          html[data-loombus-theme="system"] .loombus-v2-top-nav :is(a[class~="border"], a[aria-current="page"], a[data-active="true"]) {
+            color: #18181b !important;
+            background-color: #ffffff !important;
+            border-color: #d4d4d8 !important;
+            box-shadow: 0 10px 24px rgba(24, 24, 27, 0.08) !important;
+          }
+
+          html[data-loombus-theme="system"] .loombus-v2-top-nav :is([class~="bg-blue-500"], [class~="bg-blue-600"], [class~="bg-blue-700"]) {
+            background-color: #18181b !important;
+            color: #ffffff !important;
+          }
+
+          html[data-loombus-theme="system"] main[class*="loombus-v2-page-bg"] :is(a, button):is([class~="bg-blue-600"], [class~="bg-blue-700"], [class~="bg-black"], [class~="bg-slate-950"], [class~="bg-zinc-950"], [class~="bg-zinc-900"]) {
+            background-color: #ffffff !important;
+            color: #18181b !important;
+            border: 1px solid #d4d4d8 !important;
+            box-shadow: 0 12px 28px rgba(24, 24, 27, 0.08) !important;
+          }
+
+          html[data-loombus-theme="system"] main[class*="loombus-v2-page-bg"] :is(a, button):is([class~="bg-blue-600"], [class~="bg-blue-700"], [class~="bg-black"], [class~="bg-slate-950"], [class~="bg-zinc-950"], [class~="bg-zinc-900"]):hover {
+            background-color: #f4f4f5 !important;
+            border-color: #a1a1aa !important;
+            color: #09090b !important;
+          }
+
+          html[data-loombus-theme="system"] main[class*="loombus-v2-page-bg"] :is(a, button):is([class~="bg-blue-600"], [class~="bg-blue-700"], [class~="bg-black"], [class~="bg-slate-950"], [class~="bg-zinc-950"], [class~="bg-zinc-900"]) * {
+            color: inherit !important;
+            stroke: currentColor !important;
+          }
+        }
       `}</style>
       {children}
       <V2UserAvatarMenu />
