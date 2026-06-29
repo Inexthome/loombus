@@ -6,12 +6,27 @@ import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
 
 const AI_OUTPUT_ID = "loombus-create-ai-suggestion-output";
 const WIRED_ATTR = "data-loombus-ai-wired";
+const REVIEW_CTA_ATTR = "data-loombus-review-cta-restored";
 
 function setTextWithOptionalIcon(element: HTMLElement, text: string) {
   const icon = element.querySelector("svg")?.cloneNode(true);
   element.textContent = "";
   if (icon) element.appendChild(icon);
   element.append(` ${text}`);
+}
+
+function restoreReviewDraftButton(publishLink: HTMLAnchorElement) {
+  if (publishLink.getAttribute(REVIEW_CTA_ATTR) === "true") return;
+  publishLink.setAttribute(REVIEW_CTA_ATTR, "true");
+
+  const reviewLink = publishLink.cloneNode(true) as HTMLAnchorElement;
+  reviewLink.removeAttribute(REVIEW_CTA_ATTR);
+  reviewLink.setAttribute("aria-label", "Review draft");
+  reviewLink.className = "rounded-2xl border border-slate-200 px-4 py-2 text-center text-sm font-black text-amber-800 transition hover:border-amber-300 hover:bg-amber-50";
+  reviewLink.removeAttribute("style");
+  setTextWithOptionalIcon(reviewLink, "Review draft");
+
+  publishLink.parentElement?.insertBefore(reviewLink, publishLink);
 }
 
 function getCreateValues() {
@@ -132,6 +147,7 @@ function wireButton(button: HTMLButtonElement, kind: "quality" | "rewrite") {
 function applyCreatePolish() {
   for (const link of Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href="/v2/create/review"]'))) {
     if (/review draft/i.test(link.textContent ?? "")) {
+      restoreReviewDraftButton(link);
       setTextWithOptionalIcon(link, "Publish");
       link.setAttribute("aria-label", "Publish discussion");
     }
