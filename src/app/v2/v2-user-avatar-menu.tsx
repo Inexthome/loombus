@@ -12,6 +12,10 @@ type V2Profile = {
   avatar_url: string | null;
 };
 
+type V2UserAvatarMenuProps = {
+  placement?: "topnav" | "disabled";
+};
+
 const ENTRY_PATHS = new Set(["/v2/login", "/v2/signup", "/v2/reset-password"]);
 
 function getInitial(profile: V2Profile | null, email: string | null) {
@@ -23,7 +27,7 @@ function getDisplayName(profile: V2Profile | null, email: string | null) {
   return profile?.full_name?.trim() || profile?.username?.trim() || email?.split("@")[0] || "Account";
 }
 
-export function V2UserAvatarMenu() {
+export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuProps = {}) {
   const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -84,32 +88,32 @@ export function V2UserAvatarMenu() {
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
 
-  if (ENTRY_PATHS.has(pathname) || !hasSession) {
+  if (placement !== "topnav" || ENTRY_PATHS.has(pathname) || !hasSession) {
     return null;
   }
 
   const displayName = getDisplayName(profile, email);
 
   return (
-    <div ref={menuRef} className="v2-avatar-menu fixed top-3 z-[140]">
+    <div ref={menuRef} className="v2-avatar-menu-inline relative z-[140]">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="grid size-11 place-items-center rounded-full border border-white/25 bg-white/95 p-0 text-slate-900 shadow-lg shadow-slate-950/15 ring-1 ring-slate-900/5 backdrop-blur transition hover:bg-white"
+        className="grid size-11 place-items-center rounded-full border border-slate-200 bg-white p-0 text-slate-900 shadow-lg shadow-slate-950/10 ring-1 ring-slate-900/5 transition hover:bg-slate-50"
         aria-expanded={open}
         aria-label="Open V2 menu"
       >
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt="" className="size-9 rounded-full object-cover" />
         ) : (
-          <span className="grid size-9 place-items-center rounded-full bg-blue-600 text-sm font-black text-white">
+          <span className="grid size-9 place-items-center rounded-full bg-slate-950 text-sm font-black text-white">
             {getInitial(profile, email)}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute left-0 mt-3 max-h-[calc(100vh-5rem)] w-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl shadow-slate-950/20">
+        <div className="absolute right-0 mt-3 max-h-[calc(100vh-5rem)] w-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl shadow-slate-950/20">
           <div className="px-3 py-3">
             <p className="truncate text-sm font-black text-slate-950">{displayName}</p>
             {email && <p className="mt-1 truncate text-xs font-medium text-slate-500">{email}</p>}
@@ -127,13 +131,13 @@ export function V2UserAvatarMenu() {
                         key={item.label}
                         href={item.href}
                         onClick={() => setOpen(false)}
-                        className="flex items-center justify-between rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                        className="flex items-center justify-between rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
                       >
                         <span className="inline-flex min-w-0 items-center gap-2">
                           <Icon className="size-4 shrink-0" />
                           <span className="truncate">{item.label}</span>
                         </span>
-                        {item.badge && <span className="grid size-5 place-items-center rounded-full bg-blue-600 text-[10px] font-black text-white">{item.badge}</span>}
+                        {item.badge && <span className="grid size-5 place-items-center rounded-full bg-slate-950 text-[10px] font-black text-white">{item.badge}</span>}
                       </Link>
                     );
                   })}
