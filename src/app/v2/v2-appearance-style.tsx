@@ -45,7 +45,7 @@ export function V2AppearanceStyle() {
         stroke: currentColor !important;
       }
 
-      html[data-loombus-theme="dark"] .loombus-v2-top-nav .v2-notification-badge {
+      html[data-loombus-theme="dark"] .loombus-v2-top-nav :is(.v2-notification-badge, span[class~="right-0"][class~="top-0"][class~="size-5"]) {
         background: #f4f4f5 !important;
         border-color: #a1a1aa !important;
         color: #09090b !important;
@@ -96,7 +96,7 @@ export function V2AppearanceStyle() {
           stroke: currentColor !important;
         }
 
-        html[data-loombus-theme="system"] .loombus-v2-top-nav .v2-notification-badge {
+        html[data-loombus-theme="system"] .loombus-v2-top-nav :is(.v2-notification-badge, span[class~="right-0"][class~="top-0"][class~="size-5"]) {
           background: #f4f4f5 !important;
           border-color: #a1a1aa !important;
           color: #09090b !important;
