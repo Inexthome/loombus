@@ -62,7 +62,7 @@ export function V2ShellTopNav() {
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#061942] loombus-v2-top-nav shadow-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/v2" className="flex min-w-0 items-center gap-3 font-bold">
+        <Link href="/v2/" className="flex min-w-0 items-center gap-3 font-bold">
           <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 shrink-0 object-contain" />
           <span className="text-lg font-black tracking-tight sm:text-xl">Loombus</span>
         </Link>
@@ -87,7 +87,7 @@ export function V2ShellTopNav() {
               </Link>
             );
           })}
-          <V2UserAvatarMenu />
+          <V2UserAvatarMenu placement="topnav" />
         </div>
       </div>
     </header>
