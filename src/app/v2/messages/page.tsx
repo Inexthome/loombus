@@ -145,7 +145,7 @@ function getDefaultShellPayload(): ShellPayload {
 
 function V2TopNav() {
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#061942] text-white shadow-sm">
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#061942] loombus-v2-top-nav shadow-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/v2" className="flex items-center gap-3 font-bold">
           <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 object-contain" />
@@ -188,7 +188,7 @@ function V2TopNav() {
 
 function MobileBottomNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-3 pb-3 pt-2 shadow-2xl backdrop-blur md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 loombus-v2-bottom-nav px-3 pb-3 pt-2 shadow-2xl backdrop-blur md:hidden">
       <div className="mx-auto grid max-w-md grid-cols-5 gap-1 text-xs font-semibold text-slate-500">
         {V2_NAV_ITEMS.slice(0, 5).map((item) => {
           const Icon = item.icon;
@@ -304,7 +304,7 @@ export default function V2MessagesPage() {
   }
 
   return (
-    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] text-slate-950">
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
       <V2TopNav />
       <section className="mx-auto max-w-7xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
         <section className="grid min-h-[760px] overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_44px_rgba(15,23,42,0.08)] lg:grid-cols-[320px_minmax(0,1fr)_300px]">
