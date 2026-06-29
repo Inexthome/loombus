@@ -19,9 +19,7 @@ export function V2AppearanceControl() {
 
     function handleAppearanceChange(event: Event) {
       const nextTheme = (event as CustomEvent<{ theme?: unknown }>).detail?.theme;
-      if (isV2AppearanceTheme(nextTheme)) {
-        setTheme(nextTheme);
-      }
+      if (isV2AppearanceTheme(nextTheme)) setTheme(nextTheme);
     }
 
     window.addEventListener("loombus:v2-appearance-changed", handleAppearanceChange);
@@ -33,8 +31,8 @@ export function V2AppearanceControl() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-600">Appearance</p>
-          <h2 className="mt-2 text-2xl font-black text-slate-950">V2 Appearance</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Choose how the V2 shell looks across pages, including login, signup, and reset password.</p>
+          <h2 className="mt-2 text-2xl font-black text-slate-950">Theme</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">Choose how Loombus looks on this device.</p>
         </div>
         {status && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{status}</span>}
       </div>
@@ -61,8 +59,8 @@ export function V2AppearanceControl() {
               <span className="text-base font-black text-slate-950">{option.label}</span>
               <span className="mt-2 block text-sm leading-6 text-slate-600">{option.description}</span>
               <span className="mt-4 flex h-12 overflow-hidden rounded-2xl border border-slate-200">
-                <span className={`flex-1 ${option.key === "dark" ? "bg-[#050710]" : "bg-[#faf6ef]"}`} />
-                <span className={`flex-1 ${option.key === "dark" ? "bg-[#d4af37]" : "bg-[#c9a227]"}`} />
+                <span className={`flex-1 ${option.key === "dark" ? "bg-[#000000]" : option.key === "system" ? "bg-gradient-to-r from-[#000000] to-[#f4f4f5]" : "bg-[#f4f4f5]"}`} />
+                <span className={`flex-1 ${option.key === "dark" ? "bg-[#09090b]" : option.key === "system" ? "bg-gradient-to-r from-[#09090b] to-[#ffffff]" : "bg-[#ffffff]"}`} />
               </span>
             </button>
           );
