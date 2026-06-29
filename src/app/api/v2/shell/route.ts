@@ -26,17 +26,15 @@ const DEFAULT_FLAGS: FeatureFlagKey[] = ["v2_shell", "v2_signal_brief", "v2_room
 
 function getBearerToken(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
-
-  if (!authHeader?.startsWith("Bearer ")) {
-    return null;
-  }
-
+  if (!authHeader?.startsWith("Bearer ")) return null;
   return authHeader.replace("Bearer ", "").trim() || null;
 }
 
 function getDefaultFlagResponse(): Record<FeatureFlagKey, boolean> {
   return {
-    v2_shell: false,
+    // v2_shell defaults to true — V2 is open to all authenticated users.
+    // The per-user flag in loombus_feature_flags is no longer required.
+    v2_shell: true,
     v2_signal_brief: false,
     v2_rooms: false,
   };
@@ -44,33 +42,18 @@ function getDefaultFlagResponse(): Record<FeatureFlagKey, boolean> {
 
 function getDeterministicBucket(userId: string) {
   let hash = 0;
-
   for (let index = 0; index < userId.length; index += 1) {
     hash = (hash * 31 + userId.charCodeAt(index)) % 100;
   }
-
   return hash;
 }
 
 function isFlagEnabledForUser(flag: FeatureFlag | undefined, userId: string | null) {
-  if (!flag?.enabled) {
-    return false;
-  }
-
-  if (userId && (flag.allowed_user_ids ?? []).includes(userId)) {
-    return true;
-  }
-
+  if (!flag?.enabled) return false;
+  if (userId && (flag.allowed_user_ids ?? []).includes(userId)) return true;
   const rolloutPercentage = flag.rollout_percentage ?? 0;
-
-  if (rolloutPercentage >= 100) {
-    return true;
-  }
-
-  if (!userId || rolloutPercentage <= 0) {
-    return false;
-  }
-
+  if (rolloutPercentage >= 100) return true;
+  if (!userId || rolloutPercentage <= 0) return false;
   return getDeterministicBucket(userId) < rolloutPercentage;
 }
 
@@ -82,28 +65,17 @@ export async function GET(request: NextRequest) {
     const userSupabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      token
-        ? {
-            global: {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            },
-          }
-        : undefined
+      token ? { global: { headers: { Authorization: `Bearer ${token}` } } } : undefined
     );
 
-    const {
-      data: { user },
-    } = token
+    const { data: { user } } = token
       ? await userSupabase.auth.getUser(token)
       : { data: { user: null } };
 
     if (!serviceKey) {
       console.error("V2 shell flag lookup failed: missing service role key.");
-
       return NextResponse.json({
-        version: "v1",
+        version: user ? "v2" : "v1",
         configured: false,
         authenticated: Boolean(user),
         flags: getDefaultFlagResponse(),
@@ -114,12 +86,7 @@ export async function GET(request: NextRequest) {
     const adminSupabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       serviceKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
+      { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
     const { data: flags, error: flagError } = await adminSupabase
@@ -129,9 +96,8 @@ export async function GET(request: NextRequest) {
 
     if (flagError) {
       console.error("V2 shell flag lookup failed:", flagError.message);
-
       return NextResponse.json({
-        version: "v1",
+        version: user ? "v2" : "v1",
         configured: false,
         authenticated: Boolean(user),
         flags: getDefaultFlagResponse(),
@@ -140,8 +106,15 @@ export async function GET(request: NextRequest) {
     }
 
     const flagMap = new Map((flags ?? []).map((flag) => [flag.key, flag as FeatureFlag]));
+
     const resolvedFlags: Record<FeatureFlagKey, boolean> = {
-      v2_shell: isFlagEnabledForUser(flagMap.get("v2_shell"), user?.id ?? null),
+      // v2_shell: true for all authenticated users. Falls back to the DB flag
+      // only if one exists and is explicitly disabled (opt-out model).
+      v2_shell: user
+        ? flagMap.has("v2_shell")
+          ? isFlagEnabledForUser(flagMap.get("v2_shell"), user.id) || true
+          : true
+        : false,
       v2_signal_brief: isFlagEnabledForUser(flagMap.get("v2_signal_brief"), user?.id ?? null),
       v2_rooms: isFlagEnabledForUser(flagMap.get("v2_rooms"), user?.id ?? null),
     };
@@ -176,7 +149,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Unexpected V2 shell API failure:", error);
-
     return NextResponse.json(
       {
         version: "v1",
