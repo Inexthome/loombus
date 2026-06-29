@@ -18,8 +18,26 @@ export function V2AppearanceStyle() {
         color: #cbd5e1 !important;
       }
 
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg [class*="text-blue-"],
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg [class*="text-slate-"],
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg [class*="text-zinc-"] {
+        color: #dbe4f0 !important;
+      }
+
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg :is(article, main, section, div)[class*="leading-"] {
+        color: #dbe4f0 !important;
+      }
+
       html[data-loombus-theme="dark"] .loombus-v2-page-bg :is([class~="bg-white"], [class~="bg-white/95"], [class~="bg-slate-50"], [class~="bg-zinc-50"], [class~="bg-slate-100"], [class~="bg-blue-50"], [class~="bg-blue-50/40"]) {
         background-color: #0f0f10 !important;
+        color: #f4f4f5 !important;
+      }
+
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg [class*="bg-white"],
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg [class*="bg-slate-50"],
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg [class*="bg-zinc-50"] {
+        background-color: #18181b !important;
+        border-color: #52525b !important;
         color: #f4f4f5 !important;
       }
 
@@ -31,6 +49,21 @@ export function V2AppearanceStyle() {
         background-color: #18181b !important;
         border: 1px solid #52525b !important;
         color: #f4f4f5 !important;
+      }
+
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg :is(a, button)[class*="bg-white"],
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg :is(a, button)[class*="bg-slate-50"],
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg :is(a, button)[class*="bg-zinc-50"] {
+        background-color: #18181b !important;
+        border: 1px solid #52525b !important;
+        color: #f4f4f5 !important;
+      }
+
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg :is(a, button)[class*="bg-white"] *,
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg :is(a, button)[class*="bg-slate-50"] *,
+      html[data-loombus-theme="dark"] .loombus-v2-page-bg :is(a, button)[class*="bg-zinc-50"] * {
+        color: #f4f4f5 !important;
+        stroke: currentColor !important;
       }
 
       html[data-loombus-theme="dark"] .loombus-v2-page-bg :is([class~="bg-orange-50"], [class~="bg-amber-50"], [class~="bg-emerald-50"], [class~="bg-green-50"], [class~="bg-cyan-50"], [class~="bg-blue-50"], [class~="bg-indigo-50"], [class~="bg-purple-50"]) {
@@ -104,8 +137,26 @@ export function V2AppearanceStyle() {
           color: #cbd5e1 !important;
         }
 
+        html[data-loombus-theme="system"] .loombus-v2-page-bg [class*="text-blue-"],
+        html[data-loombus-theme="system"] .loombus-v2-page-bg [class*="text-slate-"],
+        html[data-loombus-theme="system"] .loombus-v2-page-bg [class*="text-zinc-"] {
+          color: #dbe4f0 !important;
+        }
+
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is(article, main, section, div)[class*="leading-"] {
+          color: #dbe4f0 !important;
+        }
+
         html[data-loombus-theme="system"] .loombus-v2-page-bg :is([class~="bg-white"], [class~="bg-white/95"], [class~="bg-slate-50"], [class~="bg-zinc-50"], [class~="bg-slate-100"], [class~="bg-blue-50"], [class~="bg-blue-50/40"]) {
           background-color: #0f0f10 !important;
+          color: #f4f4f5 !important;
+        }
+
+        html[data-loombus-theme="system"] .loombus-v2-page-bg [class*="bg-white"],
+        html[data-loombus-theme="system"] .loombus-v2-page-bg [class*="bg-slate-50"],
+        html[data-loombus-theme="system"] .loombus-v2-page-bg [class*="bg-zinc-50"] {
+          background-color: #18181b !important;
+          border-color: #52525b !important;
           color: #f4f4f5 !important;
         }
 
@@ -117,6 +168,21 @@ export function V2AppearanceStyle() {
           background-color: #18181b !important;
           border: 1px solid #52525b !important;
           color: #f4f4f5 !important;
+        }
+
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is(a, button)[class*="bg-white"],
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is(a, button)[class*="bg-slate-50"],
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is(a, button)[class*="bg-zinc-50"] {
+          background-color: #18181b !important;
+          border: 1px solid #52525b !important;
+          color: #f4f4f5 !important;
+        }
+
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is(a, button)[class*="bg-white"] *,
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is(a, button)[class*="bg-slate-50"] *,
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is(a, button)[class*="bg-zinc-50"] * {
+          color: #f4f4f5 !important;
+          stroke: currentColor !important;
         }
 
         html[data-loombus-theme="system"] .loombus-v2-page-bg :is([class~="bg-orange-50"], [class~="bg-amber-50"], [class~="bg-emerald-50"], [class~="bg-green-50"], [class~="bg-cyan-50"], [class~="bg-blue-50"], [class~="bg-indigo-50"], [class~="bg-purple-50"]) {
