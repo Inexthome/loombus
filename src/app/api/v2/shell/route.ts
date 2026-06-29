@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 
 type FeatureFlagKey = "v2_shell" | "v2_signal_brief" | "v2_rooms";
-type AppearanceTheme = "system" | "dark_gold" | "light_blue";
+type AppearanceTheme = "system" | "dark" | "light";
 
 type FeatureFlag = {
   key: string;
@@ -170,8 +170,8 @@ export async function GET(request: NextRequest) {
       preferences,
       appearanceOptions: [
         { key: "system", label: "System", description: "Follows the device setting." },
-        { key: "dark_gold", label: "Dark with Gold", description: "Loombus dark identity theme." },
-        { key: "light_blue", label: "Light with Blue", description: "Current clean light theme." },
+        { key: "dark", label: "Dark", description: "Loombus dark identity theme." },
+        { key: "light", label: "Light", description: "Clean light theme." },
       ],
     });
   } catch (error) {
