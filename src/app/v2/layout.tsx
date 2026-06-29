@@ -123,44 +123,54 @@ export default function V2Layout({ children }: { children: ReactNode }) {
           }
         }
 
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="text-blue-"] {
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="text-blue-500"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="text-blue-600"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="text-blue-700"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="text-blue-800"] {
           color: var(--loombus-text-muted) !important;
         }
 
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="hover:text-blue-"]:hover,
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] a[class*="text-blue-"]:hover,
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] button[class*="text-blue-"]:hover {
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="hover:text-blue-600"]:hover,
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="hover:text-blue-700"]:hover,
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="hover:text-blue-800"]:hover {
           color: var(--loombus-text) !important;
         }
 
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="bg-blue-"] {
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="bg-blue-50"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="bg-blue-50/40"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="bg-blue-100"] {
           background-color: var(--loombus-surface-strong) !important;
         }
 
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="bg-blue-600"],
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="bg-blue-700"] {
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="bg-blue-600"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="bg-blue-700"] {
           background-color: var(--loombus-primary-bg) !important;
           color: var(--loombus-primary-text) !important;
         }
 
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="hover:bg-blue-"]:hover {
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="hover:bg-blue-50"]:hover,
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="hover:bg-blue-50/40"]:hover,
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="hover:bg-blue-100"]:hover {
           background-color: var(--loombus-surface-muted) !important;
         }
 
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="border-blue-"] {
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="border-blue-200"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="border-blue-300"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="border-blue-600"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="border-blue-700"] {
           border-color: var(--loombus-border) !important;
         }
 
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="hover:border-blue-"]:hover {
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="hover:border-blue-200"]:hover,
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="hover:border-blue-300"]:hover,
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="hover:border-blue-600"]:hover {
           border-color: var(--loombus-text-subtle) !important;
         }
 
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="ring-blue-"] {
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="ring-blue-200"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="ring-blue-300"],
+        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class~="ring-blue-600"] {
           --tw-ring-color: color-mix(in srgb, var(--loombus-border) 70%, var(--loombus-text) 14%) !important;
-        }
-
-        html[data-loombus-theme] main[class*="loombus-v2-page-bg"] [class*="shadow-blue-"] {
-          --tw-shadow-color: rgba(0, 0, 0, 0.16) !important;
         }
       `}</style>
       {children}
