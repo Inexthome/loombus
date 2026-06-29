@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { V2AppearanceStyle } from "./v2-appearance-style";
+import { V2BadgeStyle } from "./v2-badge-style";
 
 export type V2AppearanceTheme = "light" | "dark" | "system";
 
@@ -95,6 +96,7 @@ export function V2AppearanceProvider({ children }: { children: React.ReactNode }
   return (
     <>
       <V2AppearanceStyle />
+      <V2BadgeStyle />
       {children}
     </>
   );
