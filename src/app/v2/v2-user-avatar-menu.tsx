@@ -12,6 +12,10 @@ type V2Profile = {
   avatar_url: string | null;
 };
 
+type V2UserAvatarMenuProps = {
+  placement?: "topnav" | "disabled";
+};
+
 const ENTRY_PATHS = new Set(["/v2/login", "/v2/signup", "/v2/reset-password"]);
 
 function getInitial(profile: V2Profile | null, email: string | null) {
@@ -23,7 +27,7 @@ function getDisplayName(profile: V2Profile | null, email: string | null) {
   return profile?.full_name?.trim() || profile?.username?.trim() || email?.split("@")[0] || "Account";
 }
 
-export function V2UserAvatarMenu() {
+export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuProps = {}) {
   const pathname = usePathname();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -84,14 +88,14 @@ export function V2UserAvatarMenu() {
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
 
-  if (ENTRY_PATHS.has(pathname) || !hasSession) {
+  if (placement !== "topnav" || ENTRY_PATHS.has(pathname) || !hasSession) {
     return null;
   }
 
   const displayName = getDisplayName(profile, email);
 
   return (
-    <div ref={menuRef} className="v2-avatar-menu relative z-[140]">
+    <div ref={menuRef} className="v2-avatar-menu-inline relative z-[140]">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
