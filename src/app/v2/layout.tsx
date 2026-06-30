@@ -1,23 +1,11 @@
 import type { ReactNode } from "react";
 import { V2ShellLinkRouter } from "./v2-shell-link-router";
-import { V2UserAvatarMenu } from "./v2-user-avatar-menu";
 import { V2AppearanceProvider } from "./v2-appearance";
 
 export default function V2Layout({ children }: { children: ReactNode }) {
   return (
     <V2AppearanceProvider>
       <style>{`
-        header a[href="/v2"] img[src="/assets/brand/loombus-mark-transparent.png"],
-        header a[href="/v2"] span.text-xl {
-          visibility: hidden !important;
-        }
-
-        header a[href="/v2"] {
-          width: 2.75rem !important;
-          min-width: 2.75rem !important;
-          gap: 0 !important;
-        }
-
         header nav a[href="/settings"] {
           display: none !important;
         }
@@ -255,7 +243,6 @@ export default function V2Layout({ children }: { children: ReactNode }) {
         }
       `}</style>
       {children}
-      <V2UserAvatarMenu />
       <V2ShellLinkRouter />
     </V2AppearanceProvider>
   );
