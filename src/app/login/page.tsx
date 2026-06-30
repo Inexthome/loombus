@@ -22,7 +22,6 @@ function getSafeNext(value: string | null) {
 
 function getOAuthRedirectTo(nextPath: string) {
   const safeNext = getSafeNext(nextPath);
-
   const encodedNext = encodeURIComponent(safeNext);
 
   if (isIosNativeApp()) {
@@ -32,27 +31,18 @@ function getOAuthRedirectTo(nextPath: string) {
   return `${window.location.origin}/auth/callback?next=${encodedNext}`;
 }
 
-type MobileAuthSheet = "join" | "return";
-
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(
-    null
-  );
-
+  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
   const [biometricLoginReady, setBiometricLoginReady] = useState(false);
   const [rememberedBiometricEmail, setRememberedBiometricEmail] = useState("");
   const [checkingBiometricLogin, setCheckingBiometricLogin] = useState(true);
   const [biometricSigningIn, setBiometricSigningIn] = useState(false);
   const [showManualLogin, setShowManualLogin] = useState(false);
   const [nativeApp, setNativeApp] = useState<boolean | null>(null);
-  const [mobileAuthSheet, setMobileAuthSheet] =
-    useState<MobileAuthSheet | null>(null);
-  const [mobileEmailLoginVisible, setMobileEmailLoginVisible] = useState(false);
 
   const autoBiometricStarted = useRef(false);
 
@@ -210,10 +200,7 @@ export default function LoginPage() {
         );
 
         if (shouldRemember) {
-          const saved = await saveNativeBiometricLoginCredentials(
-            email,
-            password
-          );
+          const saved = await saveNativeBiometricLoginCredentials(email, password);
 
           if (!saved.ok) {
             setMessage(
@@ -254,10 +241,10 @@ export default function LoginPage() {
         setOauthLoading(null);
       }
     } catch (error) {
-      const message =
+      const errorMessage =
         error instanceof Error ? error.message : "Unable to start OAuth login.";
       setMessage(
-        `${provider === "apple" ? "Apple" : "Google"} login error: ${message}`
+        `${provider === "apple" ? "Apple" : "Google"} login error: ${errorMessage}`
       );
       setOauthLoading(null);
     }
@@ -275,24 +262,17 @@ export default function LoginPage() {
     !biometricLoginReady || showManualLogin || nativeApp !== true;
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-xl">
-        <Link
-          href="/"
-          className="mb-12 inline-block text-sm text-zinc-500 hover:text-white"
-        >
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-xl flex-col justify-center sm:min-h-0 sm:block">
+        <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white sm:mb-12">
           ← Back to home
         </Link>
 
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-          Loombus
-        </p>
+        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">Loombus</p>
 
-        <h1 className="mb-6 text-5xl font-semibold tracking-tight">
-          Log in.
-        </h1>
+        <h1 className="mb-6 text-4xl font-semibold tracking-tight sm:text-5xl">Log in.</h1>
 
-        <p className="mb-10 leading-relaxed text-zinc-400">
+        <p className="mb-8 leading-relaxed text-zinc-400 sm:mb-10">
           Return to your high-signal discussion environment.
         </p>
 
@@ -308,16 +288,10 @@ export default function LoginPage() {
               Saved biometric sign-in
             </p>
 
-            <h2 className="mb-3 text-xl font-medium">
-              Sign in with Face ID.
-            </h2>
+            <h2 className="mb-3 text-xl font-medium">Sign in with Face ID.</h2>
 
             <p className="mb-5 text-sm leading-relaxed text-zinc-500">
-              Continue as{" "}
-              <span className="text-zinc-300">
-                {rememberedBiometricEmail || "the saved account"}
-              </span>
-              .
+              Continue as <span className="text-zinc-300">{rememberedBiometricEmail || "the saved account"}</span>.
             </p>
 
             <button
@@ -356,193 +330,23 @@ export default function LoginPage() {
 
         {shouldShowManualLogin ? (
           <>
-            <div className="space-y-4 md:hidden">
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-                  New to Loombus
-                </p>
-                <h2 className="mb-3 text-2xl font-semibold tracking-tight">
-                  Join the conversation.
-                </h2>
-                <p className="mb-5 text-sm leading-relaxed text-zinc-500">
-                  Join a calmer, higher-signal environment for thoughtful discussion.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setMobileAuthSheet("join")}
-                  className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
-                >
-                  Join the conversation
-                </button>
-              </div>
-
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-                  Already a member
-                </p>
-                <h2 className="mb-3 text-2xl font-semibold tracking-tight">
-                  Return to Loombus.
-                </h2>
-                <p className="mb-5 text-sm leading-relaxed text-zinc-500">
-                  Return to your high-signal discussion environment.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setMobileAuthSheet("return")}
-                  className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
-                >
-                  Return to Loombus
-                </button>
-              </div>
-
-              {mobileEmailLoginVisible ? (
-                <form
-                  onSubmit={handleLogin}
-                  className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
-                >
-                  <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      autoComplete="email"
-                      required
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      value={password}
-                      autoComplete="current-password"
-                      required
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
-                  >
-                    {loading ? "Logging in..." : "Sign in with email"}
-                  </button>
-
-                  {message && <p className="text-sm text-zinc-400">{message}</p>}
-                </form>
-              ) : null}
-            </div>
-
-            {mobileAuthSheet ? (
-              <div className="fixed inset-0 z-50 flex items-end bg-black/70 px-4 pb-4 md:hidden">
-                <div className="w-full rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/50">
-                  <div className="mb-5 flex items-start justify-between gap-4">
-                    <div>
-                      <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-                        {mobileAuthSheet === "join" ? "Join Loombus" : "Return to Loombus"}
-                      </p>
-                      <h2 className="text-2xl font-semibold tracking-tight">
-                        {mobileAuthSheet === "join"
-                          ? "Join the conversation."
-                          : "Welcome back."}
-                      </h2>
-                      <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                        {mobileAuthSheet === "join"
-                          ? "Join a calmer, higher-signal environment for thoughtful discussion."
-                          : "Return to your high-signal discussion environment."}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setMobileAuthSheet(null)}
-                      className="rounded-full border border-zinc-800 px-3 py-1 text-sm text-zinc-500"
-                    >
-                      Close
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleOAuthLogin("google")}
-                    disabled={loading || Boolean(oauthLoading)}
-                    className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {oauthLoading === "google"
-                      ? "Opening Google..."
-                      : mobileAuthSheet === "join"
-                        ? "Sign up with Google"
-                        : "Continue with Google"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleOAuthLogin("apple")}
-                    disabled={loading || Boolean(oauthLoading)}
-                    className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {oauthLoading === "apple"
-                      ? "Opening Apple..."
-                      : mobileAuthSheet === "join"
-                        ? "Sign up with Apple"
-                        : "Continue with Apple"}
-                  </button>
-
-                  {mobileAuthSheet === "join" ? (
-                    <Link
-                      href="/signup"
-                      className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-                    >
-                      Sign up with email
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileAuthSheet(null);
-                        setMobileEmailLoginVisible(true);
-                      }}
-                      className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-                    >
-                      Sign in with email
-                    </button>
-                  )}
-
-                  {message ? <p className="mt-4 text-sm text-zinc-400">{message}</p> : null}
-                </div>
-              </div>
-            ) : null}
-
-            <div className="hidden md:block">
             <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
               <button
                 type="button"
-                onClick={() => handleOAuthLogin("apple")}
+                onClick={() => void handleOAuthLogin("apple")}
                 disabled={loading || Boolean(oauthLoading)}
                 className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {oauthLoading === "apple"
-                  ? "Opening Apple..."
-                  : "Continue with Apple"}
+                {oauthLoading === "apple" ? "Opening Apple..." : "Continue with Apple"}
               </button>
 
               <button
                 type="button"
-                onClick={() => handleOAuthLogin("google")}
+                onClick={() => void handleOAuthLogin("google")}
                 disabled={loading || Boolean(oauthLoading)}
                 className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {oauthLoading === "google"
-                  ? "Opening Google..."
-                  : "Continue with Google"}
+                {oauthLoading === "google" ? "Opening Google..." : "Continue with Google"}
               </button>
 
               <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
@@ -557,38 +361,32 @@ export default function LoginPage() {
               className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
             >
               <div>
-                <label className="mb-2 block text-sm text-zinc-400">
-                  Email
-                </label>
+                <label className="mb-2 block text-sm text-zinc-400">Email</label>
                 <input
                   type="email"
                   value={email}
                   autoComplete="email"
                   required
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-zinc-400">
-                  Password
-                </label>
+                <label className="mb-2 block text-sm text-zinc-400">Password</label>
                 <input
                   type="password"
                   value={password}
                   autoComplete="current-password"
                   required
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
                 />
               </div>
 
               {nativeApp === true ? (
                 <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-relaxed text-zinc-500">
-                  After a successful email login, Loombus can ask whether you
-                  want to save this login with Face ID or device biometrics on
-                  this device.
+                  After a successful email login, Loombus can ask whether you want to save this login with Face ID or device biometrics on this device.
                 </p>
               ) : null}
 
@@ -600,66 +398,30 @@ export default function LoginPage() {
                 {loading ? "Logging in..." : "Log In"}
               </button>
 
-              {message && <p className="text-sm text-zinc-400">{message}</p>}
+              {message ? <p className="text-sm text-zinc-400">{message}</p> : null}
 
               <p className="text-xs leading-relaxed text-zinc-500">
-                By logging in or continuing with Apple, Google, or email, you
-                agree to the{" "}
-                <Link
-                  href="/terms"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Terms
-                </Link>
+                By logging in or continuing with Apple, Google, or email, you agree to the{" "}
+                <Link href="/terms" className="text-zinc-400 underline-offset-4 hover:underline">Terms</Link>
                 ,{" "}
-                <Link
-                  href="/privacy"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Privacy Policy
-                </Link>
+                <Link href="/privacy" className="text-zinc-400 underline-offset-4 hover:underline">Privacy Policy</Link>
                 ,{" "}
-                <Link
-                  href="/cookies"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Cookie Use
-                </Link>
+                <Link href="/cookies" className="text-zinc-400 underline-offset-4 hover:underline">Cookie Use</Link>
                 ,{" "}
-                <Link
-                  href="/guidelines"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Community Guidelines
-                </Link>
+                <Link href="/guidelines" className="text-zinc-400 underline-offset-4 hover:underline">Community Guidelines</Link>
                 ,{" "}
-                <Link
-                  href="/safety"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Safety
-                </Link>
+                <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">Safety</Link>
                 , and{" "}
-                <Link
-                  href="/contact"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Contact
-                </Link>
-                .
+                <Link href="/contact" className="text-zinc-400 underline-offset-4 hover:underline">Contact</Link>.
               </p>
 
               <p className="text-center text-sm text-zinc-500">
                 Don’t have an account?{" "}
-                <Link
-                  href="/signup"
-                  className="text-zinc-300 underline underline-offset-4 hover:text-white"
-                >
+                <Link href="/signup" className="text-zinc-300 underline underline-offset-4 hover:text-white">
                   Create one
                 </Link>
               </p>
             </form>
-            </div>
           </>
         ) : null}
       </div>
