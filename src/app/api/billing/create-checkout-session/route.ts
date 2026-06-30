@@ -65,6 +65,14 @@ function getPriceId(planKey: CheckoutPlanKey) {
   return undefined;
 }
 
+function getSafeReturnPath(value: unknown) {
+  if (value === "/v2/premium") {
+    return "/v2/premium";
+  }
+
+  return "/premium";
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -98,9 +106,11 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json().catch(() => ({}))) as {
       planKey?: string;
+      returnPath?: string;
     };
 
     const requestedPlanKey = body.planKey ?? "premium_monthly";
+    const returnPath = getSafeReturnPath(body.returnPath);
 
     if (!isCheckoutPlanKey(requestedPlanKey)) {
       return NextResponse.json(
@@ -157,8 +167,8 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/premium?checkout=success&plan=${requestedPlanKey}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/premium?checkout=cancelled&plan=${requestedPlanKey}`,
+      success_url: `${origin}${returnPath}?checkout=success&plan=${requestedPlanKey}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}${returnPath}?checkout=cancelled&plan=${requestedPlanKey}`,
       client_reference_id: user.id,
       customer_email: user.email ?? undefined,
       metadata,
