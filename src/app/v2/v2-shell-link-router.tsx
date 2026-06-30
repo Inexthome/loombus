@@ -83,15 +83,39 @@ export function V2ShellLinkRouter() {
       <style>{`
         .loombus-v2-top-nav nav a[href="/v2"],
         .loombus-v2-top-nav nav a[href="/v2/messages"],
-        .loombus-v2-top-nav nav a[href="/v2/people"] {
+        .loombus-v2-top-nav nav a[href="/v2/people"],
+        .loombus-v2-bottom-nav a[href="/v2"],
+        .loombus-v2-bottom-nav a[href="/v2/messages"],
+        .loombus-v2-bottom-nav a[href="/v2/people"] {
           display: none !important;
         }
 
-        .loombus-v2-top-nav a[href="/v2/notifications"] span {
-          background: #ffffff !important;
+        .loombus-v2-bottom-nav > div {
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          max-width: 24rem !important;
+        }
+
+        html[data-loombus-theme] .loombus-v2-top-nav a[href="/v2/notifications"] span,
+        html[data-loombus-theme] .loombus-v2-top-nav a[href="/v2/notifications"] .v2-nav-badge,
+        html[data-loombus-theme] .loombus-v2-bottom-nav a[href="/v2/notifications"] span,
+        html[data-loombus-theme] .loombus-v2-bottom-nav a[href="/v2/notifications"] .v2-nav-badge,
+        .loombus-v2-top-nav a[href="/v2/notifications"] span,
+        .loombus-v2-top-nav a[href="/v2/notifications"] .v2-nav-badge,
+        .loombus-v2-bottom-nav a[href="/v2/notifications"] span,
+        .loombus-v2-bottom-nav a[href="/v2/notifications"] .v2-nav-badge {
+          background: #facc15 !important;
+          background-color: #facc15 !important;
           color: #111827 !important;
-          border: 1px solid #d1d5db !important;
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16) !important;
+          -webkit-text-fill-color: #111827 !important;
+          border: 1px solid #92400e !important;
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18) !important;
+          opacity: 1 !important;
+        }
+
+        html[data-loombus-theme] .loombus-v2-top-nav a[href="/v2/notifications"] span *,
+        html[data-loombus-theme] .loombus-v2-bottom-nav a[href="/v2/notifications"] span * {
+          color: #111827 !important;
+          -webkit-text-fill-color: #111827 !important;
         }
 
         .loombus-v2-top-nav .v2-avatar-menu-inline {

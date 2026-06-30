@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Loader2, Lock } from "lucide-react";
-import { V2_ACTION_NAV_ITEMS, V2_PRIMARY_NAV_ITEMS, V2_TOP_NAV_ITEMS } from "./v2-navigation";
+import { V2_ACTION_NAV_ITEMS, V2_TOP_NAV_ITEMS } from "./v2-navigation";
 import { V2UserAvatarMenu } from "./v2-user-avatar-menu";
 
 export type FeatureFlags = {
@@ -112,7 +112,7 @@ export function V2ShellTopNav() {
                 }`}
               >
                 <Icon className="size-5" />
-                {item.badge && <span className="absolute right-0 top-0 grid size-5 place-items-center rounded-full border border-slate-300 bg-white text-[10px] font-black text-slate-950 shadow-sm">{item.badge}</span>}
+                {item.badge && <span className="v2-nav-badge absolute right-0 top-0 grid size-5 place-items-center rounded-full border border-amber-500 bg-amber-300 text-[10px] font-black text-slate-950 shadow-sm">{item.badge}</span>}
               </Link>
             );
           })}
@@ -124,13 +124,16 @@ export function V2ShellTopNav() {
 }
 
 export function V2ShellMobileNav() {
+  const pathname = usePathname() ?? "/v2";
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 loombus-v2-bottom-nav px-3 pb-3 pt-2 shadow-2xl backdrop-blur md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5 gap-1 text-xs font-semibold text-slate-500">
-        {V2_PRIMARY_NAV_ITEMS.slice(0, 5).map((item) => {
+      <div className="mx-auto grid max-w-sm grid-cols-3 gap-1 text-xs font-semibold text-slate-500">
+        {V2_TOP_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
+          const active = isNavActive(pathname, item.href);
           return (
-            <Link key={item.label} href={item.href} className="flex flex-col items-center gap-1 rounded-2xl py-2 text-slate-500">
+            <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} data-active={active ? "true" : undefined} className={`flex flex-col items-center gap-1 rounded-2xl py-2 ${active ? "text-slate-950" : "text-slate-500"}`}>
               <Icon className={`size-5 ${item.primary ? "rounded-full border border-zinc-300 bg-zinc-50 p-1 text-zinc-950 shadow-sm" : ""}`} />
               <span>{item.label}</span>
             </Link>
