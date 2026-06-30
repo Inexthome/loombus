@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   Activity,
-  BarChart3,
-  Bell,
   Bot,
+  Bookmark,
   Check,
   ChevronRight,
   CreditCard,
@@ -14,377 +14,632 @@ import {
   Database,
   FileText,
   HardDrive,
-  Home,
   LayoutList,
   Loader2,
-  Lock,
-  MessageCircle,
   Network,
-  Plus,
   Receipt,
-  Search,
   ShieldCheck,
   Sparkles,
   Video,
   WalletCards,
-  Users,
 } from "lucide-react";
+import { purchaseApplePlan } from "@/lib/apple-purchases";
+import { isIosNativeApp } from "@/lib/native-app";
 import { supabase } from "@/lib/supabase/client";
+import {
+  getDefaultShellPayload,
+  V2ShellGateCard,
+  V2ShellMobileNav,
+  V2ShellTopNav,
+  type ShellPayload,
+} from "../v2-shell-components";
 
-type FeatureFlags = {
-  v2_shell: boolean;
-  v2_signal_brief: boolean;
-  v2_rooms: boolean;
+type PlanKey = "free" | "premium" | "premium_plus";
+type CheckoutPlanKey = "premium_monthly" | "premium_annual" | "premium_plus_monthly" | "premium_plus_annual" | "extra_ai_pack";
+type BillingCycle = "monthly" | "annual";
+type FeatureStatus = "available" | "planned";
+
+type Entitlement = {
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
+  stripe_customer_id?: string | null;
 };
 
-type ShellPayload = {
-  version: "v1" | "v2";
-  configured: boolean;
-  authenticated: boolean;
-  flags: FeatureFlags;
-};
-
-type Plan = {
-  name: string;
-  description: string;
-  price: string;
-  cadence: string;
-  badge?: string;
-  cta: string;
-  featured?: boolean;
-  plus?: boolean;
-  features: string[];
-};
-
-type UsageItem = {
+type PlanFeature = {
   label: string;
-  value: string;
-  progress: number;
-  icon: typeof Activity;
+  status: FeatureStatus;
 };
 
-const DEFAULT_FLAGS: FeatureFlags = {
-  v2_shell: false,
-  v2_signal_brief: false,
-  v2_rooms: false,
+type PlanDefinition = {
+  key: PlanKey;
+  name: string;
+  eyebrow: string;
+  description: string;
+  monthlyPrice: string;
+  annualPrice: string;
+  annualNote?: string;
+  standardNote?: string;
+  badge?: string;
+  features: PlanFeature[];
+  highlighted?: boolean;
 };
 
-const V2_NAV_ITEMS = [
-  { label: "Home", href: "/v2", icon: Home },
-  { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
-  { label: "Create", href: "/v2/create", icon: Plus, primary: true },
-  { label: "Rooms", href: "/v2/rooms", icon: Users },
-  { label: "Messages", href: "/v2/messages", icon: Bell },
-  { label: "People", href: "/v2/people", icon: Users },
+type CheckoutStatus = {
+  kind: "success" | "cancelled";
+  planLabel: string;
+} | null;
+
+type CdvPurchaseWindow = Window & {
+  CdvPurchase?: {
+    store?: {
+      manageSubscriptions?: () => Promise<void> | void;
+    };
+  };
+};
+
+const PLAN_LABELS: Record<string, string> = {
+  premium_monthly: "Premium Monthly",
+  premium_annual: "Premium Annual",
+  premium_plus_monthly: "Premium Plus Monthly",
+  premium_plus_annual: "Premium Plus Annual",
+  extra_ai_pack: "Extra AI Pack",
+};
+
+const FREE_FEATURES: PlanFeature[] = [
+  { label: "Read public discussions", status: "available" },
+  { label: "Create discussions", status: "available" },
+  { label: "Reply to discussions", status: "available" },
+  { label: "Follow people", status: "available" },
+  { label: "Basic public profile", status: "available" },
+  { label: "Save/bookmark discussions", status: "available" },
+  { label: "Basic notifications", status: "available" },
+  { label: "Discussion attachments: images and PDFs", status: "available" },
+  { label: "Video Context: 5 videos/month, up to 60 seconds each", status: "available" },
 ];
 
-const MOBILE_NAV_ITEMS = [
-  { label: "Home", href: "/v2", icon: Home },
-  { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
-  { label: "Create", href: "/v2/create", icon: Plus, primary: true },
-  { label: "Rooms", href: "/v2/rooms", icon: Users },
-  { label: "Messages", href: "/v2/messages", icon: Bell },
+const PREMIUM_FEATURES: PlanFeature[] = [
+  { label: "Everything in Free", status: "available" },
+  { label: "AI discussion summaries", status: "available" },
+  { label: "AI key takeaways", status: "available" },
+  { label: "Thread Evolution / What Changed", status: "available" },
+  { label: "Viewpoint Map / Disagreement Mapping", status: "available" },
+  { label: "Conversation Map and Related Ideas", status: "available" },
+  { label: "Higher monthly AI usage limit", status: "available" },
+  { label: "Advanced discussion filters", status: "available" },
+  { label: "Saved folders / collections", status: "available" },
+  { label: "Personal reading history", status: "available" },
+  { label: "Custom profile badge: Premium Member", status: "available" },
+  { label: "Better notification controls", status: "available" },
+  { label: "Premium email digest", status: "available" },
+  { label: "Premium topic alerts", status: "available" },
+  { label: "Draft mode for discussions", status: "available" },
+  { label: "Extended edit window: 7 days after publishing", status: "available" },
+  { label: "Video Context: 25 videos/month, up to 120 seconds each", status: "available" },
 ];
 
-const PLANS: Plan[] = [
+const PREMIUM_PLUS_FEATURES: PlanFeature[] = [
+  { label: "Everything in Premium", status: "available" },
+  { label: "Highest included AI usage for summaries, takeaways, viewpoint maps, thread evolution, Conversation Map, and Related Ideas", status: "available" },
+  { label: "AI discussion quality check before posting", status: "available" },
+  { label: "AI rewrite for clarity before posting", status: "available" },
+  { label: "Private notes on saved discussions", status: "available" },
+  { label: "Export saved discussions and notes", status: "available" },
+  { label: "Longer discussion posts", status: "available" },
+  { label: "Video Context: 50 videos/month, up to 3 minutes each", status: "available" },
+  { label: "Priority feature access / Loombus Labs", status: "available" },
+  { label: "Premium Plus Labs voting", status: "available" },
+  { label: "Optional creator/supporter profile tools", status: "available" },
+];
+
+const PLANS: PlanDefinition[] = [
   {
+    key: "free",
     name: "Free",
-    description: "Everything you need to get started with signal-first conversations.",
-    price: "$0",
-    cadence: "forever",
-    cta: "Current Plan",
-    features: [
-      "Up to 250 signals / month",
-      "Standard AI tools",
-      "Attach files up to 10MB",
-      "Video context up to 5 min",
-      "5GB storage",
-      "Community support",
-      "Access on web and mobile",
-    ],
+    eyebrow: "Core access",
+    description: "Core Loombus access for reading, posting, replying, following, saving, basic attachments, and limited Video Context.",
+    monthlyPrice: "$0",
+    annualPrice: "$0",
+    features: FREE_FEATURES,
   },
   {
+    key: "premium",
     name: "Premium",
-    description: "Advanced tools and higher limits for power users and teams.",
-    price: "$12.00",
-    cadence: "per user / month",
+    eyebrow: "Early Access pricing",
+    description: "Built for members who want AI discussion tools, better organization, draft support, topic alerts, and longer Video Context.",
+    monthlyPrice: "$7",
+    annualPrice: "$70",
+    annualNote: "Early Access annual: $70/year",
+    standardNote: "Standard: $9/month or $90/year. You save $2/month or $20/year during Early Access.",
     badge: "Recommended",
-    cta: "Current Plan",
-    featured: true,
-    features: [
-      "Up to 2,000 signals / month",
-      "Advanced AI tools",
-      "Attach files up to 100MB",
-      "Video context up to 60 min",
-      "50GB storage",
-      "Priority support",
-      "Access on web and mobile",
-      "Custom rooms & permissions",
-    ],
+    highlighted: true,
+    features: PREMIUM_FEATURES,
   },
   {
+    key: "premium_plus",
     name: "Premium Plus",
-    description: "Maximum limits, advanced AI, and priority everything.",
-    price: "$24.00",
-    cadence: "per user / month",
+    eyebrow: "Early Access pricing",
+    description: "Built for heavier AI usage, Labs access, creator tools, exports, longer posts, pre-posting AI support, and the longest Video Context limits.",
+    monthlyPrice: "$12",
+    annualPrice: "$120",
+    annualNote: "Early Access annual: $120/year",
+    standardNote: "Standard: $15/month or $150/year. You save $3/month or $30/year during Early Access.",
     badge: "Best Value",
-    cta: "Upgrade to Premium Plus",
-    plus: true,
-    features: [
-      "Unlimited signals",
-      "Advanced AI tools + early access",
-      "Attach files up to 250MB",
-      "Video context up to 180 min",
-      "250GB storage",
-      "Priority support + dedicated rep",
-      "Access on web and mobile",
-      "Advanced analytics & exports",
-      "SAML SSO & SCIM provisioning",
-    ],
+    features: PREMIUM_PLUS_FEATURES,
   },
-];
-
-const USAGE: UsageItem[] = [
-  { label: "Signals", value: "1,240 / 2,000", progress: 62, icon: Activity },
-  { label: "AI Requests", value: "580 / 2,000", progress: 29, icon: Bot },
-  { label: "Storage", value: "18.4 GB / 50 GB", progress: 37, icon: HardDrive },
-  { label: "Video Context", value: "32 / 60 min", progress: 53, icon: Video },
 ];
 
 const AI_TOOLS = [
-  { label: "Summary", detail: "Instant overviews", icon: FileText, tone: "bg-blue-50 text-blue-700" },
-  { label: "Key Takeaways", detail: "Extract the essentials", icon: LayoutList, tone: "bg-violet-50 text-violet-700" },
-  { label: "What Changed", detail: "Track updates", icon: Activity, tone: "bg-emerald-50 text-emerald-700" },
-  { label: "Conversation Map", detail: "Visualize threads", icon: Network, tone: "bg-blue-50 text-blue-700" },
-  { label: "AI Insights", detail: "Deeper understanding", icon: Sparkles, tone: "bg-pink-50 text-pink-700" },
+  { label: "Summary", detail: "AI discussion summaries", icon: FileText },
+  { label: "Key Takeaways", detail: "Extract the strongest points", icon: LayoutList },
+  { label: "What Changed", detail: "Track thread evolution", icon: Activity },
+  { label: "Conversation Map", detail: "Map relationships and ideas", icon: Network },
+  { label: "Related Ideas", detail: "Find adjacent signal", icon: Sparkles },
 ];
 
 const BENEFITS = [
-  { label: "Advanced AI Tools", detail: "Access powerful AI features that surface insights fast.", icon: Bot },
-  { label: "Higher Limits", detail: "More signals, storage, and video context every month.", icon: Database },
-  { label: "Rich Context", detail: "Attach bigger files and longer videos to tell the full story.", icon: HardDrive },
-  { label: "Flexible Billing", detail: "Choose monthly or yearly plans that fit your needs.", icon: ShieldCheck },
+  { label: "Advanced AI Tools", detail: "Summaries, takeaways, disagreement maps, conversation maps, and related ideas.", icon: Bot },
+  { label: "Higher Limits", detail: "More AI usage and longer Video Context limits as your plan increases.", icon: Database },
+  { label: "Rich Context", detail: "Attach images, PDFs, and videos to support written discussions without creating an endless video feed.", icon: HardDrive },
+  { label: "Flexible Billing", detail: "Use monthly, annual, Stripe web checkout, Apple purchases on iOS, and the billing portal where available.", icon: ShieldCheck },
 ];
 
-function getDefaultShellPayload(): ShellPayload {
-  return {
-    version: "v1",
-    configured: false,
-    authenticated: false,
-    flags: DEFAULT_FLAGS,
-  };
+function getPlanRank(plan: PlanKey) {
+  if (plan === "premium_plus") return 2;
+  if (plan === "premium") return 1;
+  return 0;
 }
 
-function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
+function getCurrentPlan(entitlement: Entitlement | null): PlanKey | "admin" {
+  if (!entitlement?.ai_assisted_enabled) return "free";
+  if (entitlement.tier === "admin") return "admin";
+  if (entitlement.tier === "premium_plus") return "premium_plus";
+  if (entitlement.tier === "premium" && (entitlement.monthly_summary_limit ?? 0) > 50) return "premium_plus";
+  if (entitlement.tier === "premium") return "premium";
+  return "free";
+}
+
+function getPlanLabel(plan: PlanKey | "admin") {
+  if (plan === "premium_plus") return "Premium Plus";
+  if (plan === "premium") return "Premium";
+  if (plan === "admin") return "Admin";
+  return "Free";
+}
+
+function getPlanDescription(plan: PlanKey | "admin") {
+  if (plan === "premium_plus") return "Highest AI usage, pre-posting AI support, private notes, exports, Labs access, creator tools, and 3-minute Video Context.";
+  if (plan === "premium") return "AI discussion tools, saved folders, drafts, topic alerts, extended editing, and longer Video Context.";
+  if (plan === "admin") return "Administrative access with Premium AI tools and operational controls.";
+  return "Core Loombus access with basic publishing, replies, saving, and limited Video Context.";
+}
+
+function getAiUsageLabel(entitlement: Entitlement | null) {
+  const currentPlan = getCurrentPlan(entitlement);
+  if (currentPlan === "admin") return "Unlimited/admin";
+  const limit = entitlement?.monthly_summary_limit ?? 0;
+  return limit > 0 ? `${limit} AI actions/month` : "No Premium AI usage included";
+}
+
+function getCheckoutPlanKey(plan: PlanKey, billingCycle: BillingCycle): CheckoutPlanKey | null {
+  if (plan === "premium") return billingCycle === "annual" ? "premium_annual" : "premium_monthly";
+  if (plan === "premium_plus") return billingCycle === "annual" ? "premium_plus_annual" : "premium_plus_monthly";
+  return null;
+}
+
+function getCheckoutLabel(plan: PlanDefinition, currentPlan: PlanKey | "admin", billingCycle: BillingCycle) {
+  if (plan.key === "free") return currentPlan === "free" ? "Current plan" : `Included with ${getPlanLabel(currentPlan)}`;
+  const interval = billingCycle === "annual" ? "annual" : "monthly";
+  if (currentPlan === plan.key) return "Current plan";
+  if (currentPlan === "admin" || getPlanRank(plan.key) < getPlanRank(currentPlan as PlanKey)) return `Included with ${getPlanLabel(currentPlan)}`;
+  return currentPlan === "free" ? `Start ${plan.name} ${interval}` : `Upgrade to ${plan.name} ${interval}`;
+}
+
+function getCheckoutStatusFromWindow(): CheckoutStatus {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get("checkout");
+  const plan = PLAN_LABELS[params.get("plan") ?? ""] ?? "your Loombus plan";
+  if (status === "success") return { kind: "success", planLabel: plan };
+  if (status === "cancelled" || status === "canceled") return { kind: "cancelled", planLabel: plan };
+  return null;
+}
+
+async function openAppleSubscriptionManagement() {
+  const store = (window as CdvPurchaseWindow).CdvPurchase?.store;
+  if (store?.manageSubscriptions) {
+    await store.manageSubscriptions();
+    return true;
+  }
+  return false;
+}
+
+function FeatureList({ features }: { features: PlanFeature[] }) {
   return (
-    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
-      <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="grid size-12 place-items-center rounded-2xl bg-blue-500/15 text-blue-200 ring-1 ring-blue-300/20">
-            {loading ? <Loader2 className="size-5 animate-spin" /> : <Lock className="size-5" />}
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2</p>
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
-          </div>
-        </div>
-        <p className="text-sm leading-6 text-slate-300 sm:text-base">{message}</p>
-        {payload && <p className="mt-5 text-xs text-slate-300">v2_shell: {payload.flags.v2_shell ? "on" : "off"}</p>}
-        <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/v2" className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200">Back to V2 Home</Link>
-          <Link href="/premium" className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">Open current Premium</Link>
-        </div>
-      </section>
-    </main>
+    <ul className="mt-7 space-y-3 text-sm leading-6 text-slate-600">
+      {features.map((feature) => (
+        <li key={feature.label} className="flex gap-3">
+          <Check className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+          <span className="flex flex-wrap items-center gap-2">
+            <span>{feature.label}</span>
+            {feature.status === "planned" ? <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-black text-slate-500 ring-1 ring-slate-200">Planned</span> : null}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-function V2TopNav() {
+function StatusBanner({ status }: { status: CheckoutStatus }) {
+  if (!status) return null;
+  const success = status.kind === "success";
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#061942] loombus-v2-top-nav shadow-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/v2" className="flex items-center gap-3 font-bold">
-          <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 object-contain" />
-          <span className="text-xl">Loombus</span>
-        </Link>
-        <nav className="hidden items-center gap-1 md:flex">
-          {V2_NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link key={item.label} href={item.href} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${item.primary ? "border border-white/40 text-white hover:bg-white/10" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}>
-                <Icon className="size-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="flex items-center gap-2">
-          <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Search className="size-5" /></Link>
-          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /><span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">8</span></Link>
-        </div>
+    <section className={`mb-6 rounded-[1.5rem] border p-5 shadow-sm ${success ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
+      <p className="text-xs font-black uppercase tracking-[0.22em]">{success ? "Payment completed" : "Checkout cancelled"}</p>
+      <h2 className="mt-2 text-xl font-black text-slate-950">{success ? `${status.planLabel} checkout was completed.` : "No payment was completed."}</h2>
+      <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+        {success ? "If your plan badge or AI usage limit does not update immediately, refresh in a moment while the payment confirmation finishes." : "You can restart checkout whenever you are ready. Your current Loombus access remains unchanged."}
+      </p>
+    </section>
+  );
+}
+
+function CheckoutActionButton({ children, planKey, variant = "primary", onAfterPurchase }: { children: ReactNode; planKey: CheckoutPlanKey; variant?: "primary" | "secondary"; onAfterPurchase: () => void }) {
+  const [startingCheckout, setStartingCheckout] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function startCheckout() {
+    if (startingCheckout) return;
+    setMessage("");
+    setStartingCheckout(true);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        window.location.href = `/login?next=${encodeURIComponent("/v2/premium")}`;
+        return;
+      }
+
+      if (isIosNativeApp()) {
+        await purchaseApplePlan(planKey);
+        setMessage("Apple purchase completed. Your Loombus access is being updated.");
+        onAfterPurchase();
+        return;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 20000);
+      const response = await fetch("/api/billing/create-checkout-session", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ planKey, returnPath: "/v2/premium" }),
+        signal: controller.signal,
+      });
+      window.clearTimeout(timeoutId);
+
+      const result = await response.json().catch(() => ({ error: "Checkout returned an unreadable response." }));
+      if (!response.ok) {
+        setMessage(result.detail ? `${result.error ?? "Unable to start Premium checkout."} ${result.detail}` : result.error ?? "Unable to start Premium checkout.");
+        return;
+      }
+      if (!result.url) {
+        setMessage("Checkout URL was not returned.");
+        return;
+      }
+      window.location.href = result.url;
+    } catch (error) {
+      const errorMessage = error instanceof DOMException && error.name === "AbortError" ? "Checkout request timed out. Please try again." : error instanceof Error ? error.message : "Unable to start Premium checkout.";
+      setMessage(errorMessage);
+    } finally {
+      setStartingCheckout(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={startCheckout}
+        disabled={startingCheckout}
+        className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60 ${variant === "primary" ? "bg-amber-300 text-slate-950 hover:bg-amber-400" : "border border-slate-200 bg-white text-amber-800 hover:border-amber-200 hover:bg-amber-50"}`}
+      >
+        {startingCheckout ? "Starting checkout..." : children}
+      </button>
+      {message ? <p className="text-xs font-semibold leading-5 text-slate-500">{message}</p> : null}
+    </div>
+  );
+}
+
+function BillingPortalAction({ children = "Manage billing", onAfterPortal }: { children?: ReactNode; onAfterPortal?: () => void }) {
+  const [openingPortal, setOpeningPortal] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function openBillingPortal() {
+    if (openingPortal) return;
+    setOpeningPortal(true);
+    setMessage("");
+
+    if (isIosNativeApp()) {
+      try {
+        const opened = await openAppleSubscriptionManagement();
+        setMessage(opened ? "Apple subscription management opened." : "To manage Apple subscriptions, open iPhone Settings, tap your Apple ID, then Subscriptions.");
+      } catch {
+        setMessage("To manage Apple subscriptions, open iPhone Settings, tap your Apple ID, then Subscriptions.");
+      } finally {
+        setOpeningPortal(false);
+      }
+      return;
+    }
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        window.location.href = `/login?next=${encodeURIComponent("/v2/premium")}`;
+        return;
+      }
+
+      const response = await fetch("/api/billing/create-portal-session", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ returnPath: "/v2/premium" }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || !result.url) {
+        setMessage(result.error ?? "Unable to open billing portal.");
+        return;
+      }
+      onAfterPortal?.();
+      window.location.href = result.url;
+    } catch {
+      setMessage("Unable to open billing portal.");
+    } finally {
+      setOpeningPortal(false);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <button type="button" onClick={openBillingPortal} disabled={openingPortal} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-amber-800 transition hover:border-amber-200 hover:bg-amber-50 disabled:opacity-60">
+        {openingPortal ? "Opening billing..." : children}
+        {!openingPortal ? <ChevronRight className="size-4" /> : null}
+      </button>
+      {message ? <p className="text-xs font-semibold leading-5 text-slate-500">{message}</p> : null}
+    </div>
+  );
+}
+
+function PlanAction({ plan, billingCycle, currentPlan, onRefresh }: { plan: PlanDefinition; billingCycle: BillingCycle; currentPlan: PlanKey | "admin"; onRefresh: () => void }) {
+  const checkoutPlanKey = getCheckoutPlanKey(plan.key, billingCycle);
+  const label = getCheckoutLabel(plan, currentPlan, billingCycle);
+  const currentRank = currentPlan === "admin" ? 3 : getPlanRank(currentPlan);
+  const targetRank = getPlanRank(plan.key);
+
+  if (plan.key === currentPlan) {
+    return (
+      <div className="space-y-2">
+        <div className="rounded-xl bg-slate-950 px-4 py-3 text-center text-sm font-black text-white">Current plan</div>
+        <BillingPortalAction onAfterPortal={onRefresh}>Manage billing</BillingPortalAction>
       </div>
-    </header>
+    );
+  }
+
+  if (plan.key === "free" || targetRank < currentRank) {
+    return <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-sm font-black text-slate-600">{label}</div>;
+  }
+
+  if (!checkoutPlanKey) return null;
+
+  return (
+    <CheckoutActionButton planKey={checkoutPlanKey} variant={plan.highlighted ? "primary" : "secondary"} onAfterPurchase={onRefresh}>
+      {label}
+    </CheckoutActionButton>
   );
 }
 
-function MobileBottomNav() {
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 loombus-v2-bottom-nav px-3 pb-3 pt-2 shadow-2xl backdrop-blur md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5 gap-1 text-xs font-semibold text-slate-500">
-        {MOBILE_NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link key={item.label} href={item.href} className="flex flex-col items-center gap-1 rounded-2xl py-2 text-slate-500">
-              <Icon className={`size-5 ${item.primary ? "rounded-full bg-blue-600 p-1 text-white" : ""}`} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
+function PlanCard({ plan, billingCycle, currentPlan, onRefresh }: { plan: PlanDefinition; billingCycle: BillingCycle; currentPlan: PlanKey | "admin"; onRefresh: () => void }) {
+  const price = billingCycle === "annual" ? plan.annualPrice : plan.monthlyPrice;
+  const cadence = plan.key === "free" ? "forever" : billingCycle === "annual" ? "/ year" : "/ month";
 
-function PlanCard({ plan }: { plan: Plan }) {
   return (
-    <article className={`relative flex min-h-full flex-col rounded-[1.5rem] border bg-white p-6 shadow-sm ${plan.featured ? "border-violet-400 ring-2 ring-violet-100" : plan.plus ? "border-amber-200 bg-amber-50/30" : "border-slate-200"}`}>
-      {plan.badge && <span className={`absolute right-5 top-5 rounded-full px-3 py-1 text-xs font-black ${plan.plus ? "bg-amber-100 text-amber-700" : "bg-violet-100 text-violet-700"}`}>{plan.badge}</span>}
+    <article className={`relative flex min-h-full flex-col rounded-[1.5rem] border bg-white p-6 shadow-sm ${plan.highlighted ? "border-amber-300 ring-2 ring-amber-100" : "border-slate-200"}`}>
+      {plan.badge ? <span className="absolute right-5 top-5 rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-800 ring-1 ring-amber-200">{plan.badge}</span> : null}
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">{plan.eyebrow}</p>
       <h2 className="mt-4 text-2xl font-black text-slate-950">{plan.name}</h2>
-      <p className="mt-3 min-h-[56px] text-sm leading-6 text-slate-600">{plan.description}</p>
+      <p className="mt-3 min-h-[72px] text-sm leading-6 text-slate-600">{plan.description}</p>
       <div className="mt-6">
-        <span className="text-4xl font-black tracking-tight text-slate-950">{plan.price}</span>
-        <p className="mt-1 text-sm font-semibold text-slate-500">{plan.cadence}</p>
+        <span className="text-4xl font-black tracking-tight text-slate-950">{price}</span>
+        <span className="ml-2 text-sm font-semibold text-slate-500">{cadence}</span>
       </div>
-      <Link href="/premium" className={`mt-6 rounded-xl border px-4 py-3 text-center text-sm font-black transition ${plan.featured ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700" : "border-slate-200 bg-white text-blue-700 hover:border-blue-200 hover:bg-blue-50"}`}>{plan.cta}</Link>
-      {plan.featured && <p className="mt-3 text-center text-sm font-bold text-emerald-600">✓ You’re on this plan</p>}
-      {plan.plus && <Link href="/premium" className="mt-3 text-center text-sm font-black text-blue-700 hover:text-blue-900">Learn more</Link>}
-      <ul className="mt-8 space-y-4 text-sm text-slate-700">
-        {plan.features.map((feature) => <li key={feature} className="flex gap-3"><Check className="mt-0.5 size-4 shrink-0 text-emerald-600" /><span>{feature}</span></li>)}
-      </ul>
+      {billingCycle === "annual" && plan.annualNote ? <p className="mt-2 text-sm font-bold text-emerald-700">{plan.annualNote}</p> : null}
+      {plan.standardNote ? <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">{plan.standardNote}</p> : null}
+      <div className="mt-6"><PlanAction plan={plan} billingCycle={billingCycle} currentPlan={currentPlan} onRefresh={onRefresh} /></div>
+      <FeatureList features={plan.features} />
     </article>
   );
 }
 
-function UsageRow({ item }: { item: UsageItem }) {
-  const Icon = item.icon;
+function InfoCard({ children, icon: Icon, title }: { children: ReactNode; icon: LucideIcon; title: string }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="inline-flex items-center gap-3 font-black text-slate-700"><Icon className="size-4 text-blue-700" />{item.label}</span>
-        <span className="font-semibold text-slate-500">{item.value}</span>
+    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-800 ring-1 ring-amber-200"><Icon className="size-5" /></span>
+        <h2 className="font-black text-slate-950">{title}</h2>
       </div>
-      <div className="h-2 rounded-full bg-slate-200"><div className="h-2 rounded-full bg-blue-600" style={{ width: `${item.progress}%` }} /></div>
-    </div>
+      <div className="mt-4 text-sm leading-6 text-slate-600">{children}</div>
+    </section>
   );
 }
 
 export default function V2PremiumPage() {
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [loading, setLoading] = useState(true);
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
+  const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>(null);
+  const [message, setMessage] = useState("");
 
-  async function loadShell() {
+  async function loadPage() {
     setLoading(true);
+    setMessage("");
     try {
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
+      const userId = data.session?.user.id ?? null;
+
       const response = await fetch("/api/v2/shell", { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined });
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
       setPayload(nextPayload);
+
+      if (userId) {
+        const { data: entitlementData, error } = await supabase
+          .from("user_ai_entitlements")
+          .select("tier, ai_assisted_enabled, monthly_summary_limit, stripe_customer_id")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (error) setMessage(error.message);
+        setEntitlement((entitlementData ?? null) as Entitlement | null);
+      } else {
+        setEntitlement(null);
+      }
     } catch {
       setPayload(getDefaultShellPayload());
+      setEntitlement(null);
+      setMessage("Unable to load Premium billing state safely.");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadShell();
-    const { data } = supabase.auth.onAuthStateChange(() => loadShell());
+    setCheckoutStatus(getCheckoutStatusFromWindow());
+    void loadPage();
+    const { data } = supabase.auth.onAuthStateChange(() => void loadPage());
     return () => data.subscription.unsubscribe();
   }, []);
 
-  if (loading) return <GateCard title="Checking V2 Premium access" message="Loombus is verifying access before loading the V2 Premium shell." loading />;
-  if (!payload?.authenticated) return <GateCard title="Sign in required" message="The V2 Premium shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
-  if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <GateCard title="V2 Premium is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
+  const currentPlan = useMemo(() => getCurrentPlan(entitlement), [entitlement]);
+  const currentPlanLabel = getPlanLabel(currentPlan);
+  const currentPlanDescription = getPlanDescription(currentPlan);
+
+  if (loading) return <V2ShellGateCard title="Checking V2 Premium access" message="Loombus is verifying access before loading the V2 Premium page." loading />;
+  if (!payload?.authenticated) return <V2ShellGateCard title="Sign in required" message="Sign in first so Loombus can check your V2 access and load live Premium billing options." payload={payload} />;
+  if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard title="V2 Premium is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on the current experience." payload={payload} />;
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
-      <V2TopNav />
+      <V2ShellTopNav />
       <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
-        <header className="mb-6">
-          <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Premium</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Unlock advanced tools, deeper context, and a richer Loombus experience.</p>
+        <StatusBanner status={checkoutStatus} />
+        {message ? <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">{message}</div> : null}
+
+        <header className="mb-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-800">Loombus Premium</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Choose your Loombus plan.</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">Core discussion access stays available for every member. Paid tiers add deeper AI assistance, better organization, longer Video Context, and stronger creation tools.</p>
+          </div>
+          <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Current Plan</p>
+            <div className="mt-3 flex items-center gap-3">
+              <span className="grid size-12 place-items-center rounded-2xl bg-amber-50 text-amber-800 ring-1 ring-amber-200"><Crown className="size-6" /></span>
+              <div>
+                <h2 className="text-lg font-black text-slate-950">{currentPlanLabel}</h2>
+                <p className="text-xs font-semibold text-slate-500">{getAiUsageLabel(entitlement)}</p>
+              </div>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-slate-600">{currentPlanDescription}</p>
+            <div className="mt-4"><BillingPortalAction onAfterPortal={() => void loadPage()}>Manage billing</BillingPortalAction></div>
+          </div>
         </header>
 
         <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="min-w-0 space-y-5">
-            <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
-              <button type="button" onClick={() => setBillingCycle("monthly")} className={`rounded-full px-6 py-2 text-sm font-black transition ${billingCycle === "monthly" ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:text-blue-700"}`}>Monthly</button>
-              <button type="button" onClick={() => setBillingCycle("yearly")} className={`rounded-full px-6 py-2 text-sm font-black transition ${billingCycle === "yearly" ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:text-blue-700"}`}>Yearly</button>
-              <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">Save 20%</span>
+          <div className="min-w-0 space-y-6">
+            <div className="flex flex-wrap items-center gap-3 rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-sm">
+              <button type="button" onClick={() => setBillingCycle("monthly")} className={`rounded-full px-5 py-2 text-sm font-black transition ${billingCycle === "monthly" ? "bg-amber-300 text-slate-950" : "text-slate-500 hover:bg-amber-50 hover:text-amber-800"}`}>Monthly</button>
+              <button type="button" onClick={() => setBillingCycle("annual")} className={`rounded-full px-5 py-2 text-sm font-black transition ${billingCycle === "annual" ? "bg-amber-300 text-slate-950" : "text-slate-500 hover:bg-amber-50 hover:text-amber-800"}`}>Annual</button>
+              <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700 ring-1 ring-emerald-200">Early Access annual savings</span>
             </div>
 
             <section className="grid gap-4 lg:grid-cols-3">
-              {PLANS.map((plan) => <PlanCard key={plan.name} plan={plan} />)}
+              {PLANS.map((plan) => <PlanCard key={plan.key} plan={plan} billingCycle={billingCycle} currentPlan={currentPlan} onRefresh={() => void loadPage()} />)}
             </section>
 
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-black text-slate-950">Premium includes access to all AI Tools</h2>
+              <h2 className="text-lg font-black text-slate-950">Premium includes access to Loombus AI Tools</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">These tools support written discussions instead of replacing them with a feed.</p>
               <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 {AI_TOOLS.map((tool) => {
                   const Icon = tool.icon;
-                  return <div key={tool.label} className="rounded-2xl p-3"><span className={`grid size-12 place-items-center rounded-xl ${tool.tone}`}><Icon className="size-5" /></span><h3 className="mt-3 text-sm font-black text-slate-900">{tool.label}</h3><p className="text-xs font-semibold text-slate-500">{tool.detail}</p></div>;
+                  return <div key={tool.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-3"><span className="grid size-12 place-items-center rounded-xl bg-amber-50 text-amber-800 ring-1 ring-amber-200"><Icon className="size-5" /></span><h3 className="mt-3 text-sm font-black text-slate-900">{tool.label}</h3><p className="text-xs font-semibold text-slate-500">{tool.detail}</p></div>;
                 })}
+              </div>
+            </section>
+
+            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="grid gap-6 md:grid-cols-[0.8fr_1.2fr] md:items-center">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Add-on</p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">Extra AI Pack</h2>
+                </div>
+                <div>
+                  <div className="flex items-end gap-2">
+                    <span className="text-4xl font-black text-slate-950">$5</span>
+                    <span className="pb-1 text-sm font-semibold text-slate-500">for 25 additional AI actions</span>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">Optional one-time add-on for members who reach their included monthly AI limit without changing subscription tiers.</p>
+                  <div className="mt-5 max-w-sm"><CheckoutActionButton planKey="extra_ai_pack" variant="secondary" onAfterPurchase={() => void loadPage()}>Buy Extra AI Pack</CheckoutActionButton></div>
+                </div>
               </div>
             </section>
           </div>
 
           <aside className="space-y-4">
-            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black text-slate-950">Current Plan</h2>
-              <div className="mt-5 flex gap-4">
-                <span className="grid size-14 place-items-center rounded-2xl bg-violet-600 text-white"><Crown className="size-7" /></span>
-                <div>
-                  <h3 className="text-xl font-black text-slate-950">Premium</h3>
-                  <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">Active</span>
-                  <p className="mt-2 text-sm font-semibold text-slate-600">$12.00 / month</p>
-                  <p className="text-sm text-slate-500">Renews Jun 20, 2025</p>
-                </div>
+            <InfoCard title="Live Plan State" icon={Activity}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-700">Tier</span><span className="font-black text-slate-950">{currentPlanLabel}</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-700">AI access</span><span className="font-black text-slate-950">{entitlement?.ai_assisted_enabled ? "Enabled" : "Not enabled"}</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold text-slate-700">Included AI usage</span><span className="font-black text-slate-950">{getAiUsageLabel(entitlement)}</span></div>
               </div>
-              <Link href="/premium" className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-50">Manage Plan <ChevronRight className="size-4" /></Link>
-            </section>
+            </InfoCard>
 
-            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-black text-slate-950">Usage This Month</h2>
-              <div className="mt-5 space-y-5">{USAGE.map((item) => <UsageRow key={item.label} item={item} />)}</div>
-              <Link href="/v2/premium" className="mt-5 flex items-center justify-between text-sm font-black text-blue-700">View usage details <ChevronRight className="size-4" /></Link>
-            </section>
-
-            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-black text-slate-950">Manage Billing</h2>
-              <div className="mt-4 space-y-4 text-sm">
-                <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-3 font-black text-slate-700"><CreditCard className="size-4 text-blue-700" />Payment Method</span><span className="text-slate-500">Visa •••• 4242</span></div>
-                <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-3 font-black text-slate-700"><Receipt className="size-4 text-blue-700" />Billing History</span><Link href="/premium" className="text-blue-700">View past invoices</Link></div>
-                <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-3 font-black text-slate-700"><WalletCards className="size-4 text-blue-700" />Billing Portal</span><Link href="/premium" className="text-blue-700">Update billing info</Link></div>
+            <InfoCard title="Billing" icon={CreditCard}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-2 font-bold text-slate-700"><Receipt className="size-4 text-amber-700" />Invoices</span><span className="text-slate-500">Portal</span></div>
+                <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-2 font-bold text-slate-700"><WalletCards className="size-4 text-amber-700" />Payment method</span><span className="text-slate-500">Portal</span></div>
+                <BillingPortalAction onAfterPortal={() => void loadPage()}>Open billing portal</BillingPortalAction>
               </div>
-            </section>
+            </InfoCard>
 
-            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-black text-slate-950">Compare Features</h2>
-              <Link href="/premium" className="mt-2 flex items-center justify-between text-sm font-semibold text-slate-600">See plan-by-plan comparison <ChevronRight className="size-4 text-blue-700" /></Link>
-            </section>
+            <InfoCard title="Subscription Details" icon={ShieldCheck}>
+              <div className="space-y-3">
+                <p>Premium Monthly and Premium Annual are auto-renewable subscriptions.</p>
+                <p>Premium Plus Monthly and Premium Plus Annual are auto-renewable subscriptions.</p>
+                <p>Pricing is shown before purchase and your plan is activated after payment succeeds.</p>
+                <p>Review the <Link href="/privacy" className="font-black text-amber-800">Privacy Policy</Link>, <Link href="/terms" className="font-black text-amber-800">Terms</Link>, and <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/" target="_blank" rel="noopener noreferrer" className="font-black text-amber-800">Apple Standard EULA</a>.</p>
+              </div>
+            </InfoCard>
+
+            <InfoCard title="Video Context" icon={Video}>
+              <p>Video Context is designed to support written discussions, not replace them with a video feed. Videos remain attached to discussions and are limited by plan.</p>
+            </InfoCard>
           </aside>
         </section>
 
         <section className="mt-6 grid gap-4 md:grid-cols-4">
           {BENEFITS.map((benefit) => {
             const Icon = benefit.icon;
-            return <article key={benefit.label} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm"><span className="grid size-12 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon className="size-5" /></span><h3 className="mt-3 text-sm font-black text-blue-700">{benefit.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{benefit.detail}</p></article>;
+            return <article key={benefit.label} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm"><span className="grid size-12 place-items-center rounded-xl bg-amber-50 text-amber-800 ring-1 ring-amber-200"><Icon className="size-5" /></span><h3 className="mt-3 text-sm font-black text-slate-950">{benefit.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{benefit.detail}</p></article>;
           })}
         </section>
       </section>
-      <MobileBottomNav />
+      <V2ShellMobileNav />
     </main>
   );
 }
