@@ -106,17 +106,17 @@ const DEFAULT_PRIVACY_PREFS: PrivacyPrefs = {
 };
 
 const PROFILE_VISIBILITY_OPTIONS = [
-  { value: "public", label: "Public", helper: "Anyone who can access Loombus can view your profile." },
-  { value: "members", label: "Members only", helper: "Only signed-in Loombus members can view your profile." },
-  { value: "followers", label: "Followers / friends only", helper: "Limit profile visibility to your relationship graph." },
-  { value: "private", label: "Private", helper: "Hide public profile details where Loombus supports visibility checks." },
+  { value: "public", label: "Public" },
+  { value: "members", label: "Members Only" },
+  { value: "followers", label: "Friends Only" },
+  { value: "private", label: "Private" },
 ] as const;
 
 const MESSAGE_PERMISSION_OPTIONS = [
-  { value: "everyone", label: "Everyone", helper: "Any signed-in member can message you." },
-  { value: "members", label: "Members only", helper: "Restrict messages to signed-in Loombus members." },
-  { value: "mutuals", label: "Mutuals only", helper: "Only mutual relationships should be able to message you." },
-  { value: "none", label: "No one", helper: "Turn off new direct-message access." },
+  { value: "everyone", label: "Everyone" },
+  { value: "members", label: "Members Only" },
+  { value: "mutuals", label: "Mutuals Only" },
+  { value: "none", label: "No One" },
 ] as const;
 
 function formatRelativeTime(value: string | null | undefined) {
@@ -143,6 +143,14 @@ function getProfileHandle(profile: ProfileRow | null) {
 
 function getInitial(profile: ProfileRow | null) {
   return getProfileName(profile).slice(0, 1).toUpperCase() || "L";
+}
+
+function getProfileVisibilityLabel(value: PrivacyPrefs["profileVisibility"]) {
+  return PROFILE_VISIBILITY_OPTIONS.find((option) => option.value === value)?.label ?? "Public";
+}
+
+function getMessagingPermissionLabel(value: PrivacyPrefs["messagingPermission"]) {
+  return MESSAGE_PERMISSION_OPTIONS.find((option) => option.value === value)?.label ?? "Mutuals Only";
 }
 
 function isV2Allowed(payload: ShellPayload | null) {
@@ -195,37 +203,84 @@ function SettingsSidebar() {
   );
 }
 
-function SettingPanel({ children, description, icon: Icon, title }: { children: React.ReactNode; description: string; icon: LucideIcon; title: string }) {
-  return (
-    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="mb-5 flex items-start gap-4">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-800 ring-1 ring-amber-200">
-          <Icon className="size-6" />
-        </span>
-        <div>
-          <h2 className="text-lg font-black text-slate-950">{title}</h2>
-          <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">{description}</p>
-        </div>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function ToggleControl({ checked, disabled = false, label, onChange }: { checked: boolean; disabled?: boolean; label: string; onChange: (next: boolean) => void }) {
+function ToggleSwitch({ checked, disabled = false, onChange }: { checked: boolean; disabled?: boolean; onChange: (next: boolean) => void }) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-amber-200 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60"
+      aria-pressed={checked}
+      className={`relative h-8 w-14 rounded-full transition disabled:cursor-not-allowed disabled:opacity-60 ${checked ? "bg-amber-400" : "bg-slate-300"}`}
     >
-      <span className="text-sm font-black text-slate-700">{label}</span>
-      <span className={`relative h-7 w-12 rounded-full transition ${checked ? "bg-amber-400" : "bg-slate-300"}`}>
-        <span className={`absolute top-1 grid size-5 place-items-center rounded-full bg-white shadow-sm transition ${checked ? "left-6" : "left-1"}`} />
-      </span>
+      <span className={`absolute top-1 grid size-6 place-items-center rounded-full bg-white shadow-sm transition ${checked ? "left-7" : "left-1"}`} />
     </button>
   );
+}
+
+function PrivacyRow({
+  action,
+  children,
+  description,
+  icon: Icon,
+  title,
+}: {
+  action: React.ReactNode;
+  children?: React.ReactNode;
+  description: string;
+  icon: LucideIcon;
+  title: string;
+}) {
+  return (
+    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-800 ring-1 ring-amber-200">
+            <Icon className="size-6" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-base font-black text-slate-950 sm:text-lg">{title}</h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">{description}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center justify-end gap-3 sm:min-w-[230px]">{action}</div>
+      </div>
+      {children ? <div className="mt-4 border-t border-slate-100 pt-4">{children}</div> : null}
+    </section>
+  );
+}
+
+function ControlSelect({
+  disabled,
+  icon: Icon,
+  onChange,
+  options,
+  value,
+}: {
+  disabled?: boolean;
+  icon: LucideIcon;
+  onChange: (value: string) => void;
+  options: ReadonlyArray<{ value: string; label: string }>;
+  value: string;
+}) {
+  return (
+    <label className="relative inline-flex min-w-[210px] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-black text-slate-700 shadow-sm transition focus-within:border-amber-300 focus-within:ring-2 focus-within:ring-amber-100">
+      <Icon className="size-4 text-amber-800" />
+      <select
+        disabled={disabled}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="min-w-0 flex-1 appearance-none bg-transparent pr-6 outline-none disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+      <ChevronRight className="pointer-events-none absolute right-3 size-4 rotate-90 text-slate-400" />
+    </label>
+  );
+}
+
+function StatusPill({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "green" | "neutral" | "red" }) {
+  const toneClass = tone === "green" ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : tone === "red" ? "bg-red-50 text-red-700 ring-red-200" : "bg-slate-50 text-slate-600 ring-slate-200";
+  return <span className={`rounded-full px-3 py-1 text-xs font-black ring-1 ${toneClass}`}>{children}</span>;
 }
 
 function SecurityStatusCard({ user, mfaEnabled }: { user: User | null; mfaEnabled: boolean }) {
@@ -291,7 +346,14 @@ function PasswordPanel({
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
   return (
-    <SettingPanel title="Change Password" description="Update the password used for email sign-in." icon={KeyRound}>
+    <section className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-800 ring-1 ring-amber-200"><KeyRound className="size-5" /></span>
+        <div>
+          <h2 className="font-black text-slate-950">Change Password</h2>
+          <p className="text-xs font-semibold text-slate-500">Update email sign-in password.</p>
+        </div>
+      </div>
       <form onSubmit={onSubmit} className="grid gap-3">
         <input
           type="password"
@@ -314,7 +376,7 @@ function PasswordPanel({
           {saving ? "Updating..." : "Update password"}
         </button>
       </form>
-    </SettingPanel>
+    </section>
   );
 }
 
@@ -328,7 +390,17 @@ function BlockedUsersPanel({
   onUnblock: (blockedId: string) => void;
 }) {
   return (
-    <SettingPanel title="Blocked Users" description="Manage users you have blocked." icon={UserRoundX}>
+    <section className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-800 ring-1 ring-amber-200"><UserRoundX className="size-5" /></span>
+          <div>
+            <h2 className="font-black text-slate-950">Blocked Users</h2>
+            <p className="text-xs font-semibold text-slate-500">Manage users you've blocked.</p>
+          </div>
+        </div>
+        <StatusPill>{blockedUsers.length} blocked</StatusPill>
+      </div>
       <div className="space-y-3">
         {blockedUsers.length === 0 ? (
           <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-semibold text-slate-600">No blocked users.</div>
@@ -352,30 +424,24 @@ function BlockedUsersPanel({
           </article>
         ))}
       </div>
-    </SettingPanel>
+    </section>
   );
 }
 
-function DangerZone({ onSignOutAll, onRequestDeletion, signingOut }: { onSignOutAll: () => void; onRequestDeletion: () => void; signingOut: boolean }) {
+function DangerZone({ onRequestDeletion }: { onRequestDeletion: () => void }) {
   return (
-    <section className="rounded-[1.5rem] border border-red-200 bg-red-50 p-5 shadow-sm">
+    <section className="rounded-[1.25rem] border border-red-200 bg-red-50 p-5 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
         <span className="grid size-10 place-items-center rounded-2xl bg-white text-red-700 ring-1 ring-red-200"><ShieldAlert className="size-5" /></span>
         <div>
-          <h2 className="font-black text-slate-950">Security Actions</h2>
-          <p className="text-xs font-semibold text-slate-600">Use carefully. These actions affect account access.</p>
+          <h2 className="font-black text-slate-950">Account Deletion</h2>
+          <p className="text-xs font-semibold text-slate-600">Deletion opens a support request.</p>
         </div>
       </div>
-      <div className="grid gap-3">
-        <button type="button" onClick={onSignOutAll} disabled={signingOut} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-red-700 ring-1 ring-red-200 transition hover:bg-red-100 disabled:opacity-60">
-          {signingOut ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
-          {signingOut ? "Signing out..." : "Sign out all sessions"}
-        </button>
-        <button type="button" onClick={onRequestDeletion} className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-red-700">
-          <Trash2 className="size-4" />
-          Request account deletion
-        </button>
-      </div>
+      <button type="button" onClick={onRequestDeletion} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-red-700">
+        <Trash2 className="size-4" />
+        Request account deletion
+      </button>
     </section>
   );
 }
@@ -435,7 +501,7 @@ export default function V2PrivacySecurityPage() {
     }
 
     const result = await mfaApi.listFactors();
-    const factors = [ ...(result.data?.all ?? []), ...(result.data?.totp ?? []) ] as Array<{ status?: string }>;
+    const factors = [...(result.data?.all ?? []), ...(result.data?.totp ?? [])] as Array<{ status?: string }>;
     setMfaEnabled(factors.some((factor) => factor.status === "verified"));
   }
 
@@ -798,129 +864,161 @@ export default function V2PrivacySecurityPage() {
           <header className="mb-6">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.32em] text-amber-800 lg:hidden">Account</p>
             <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Privacy & Security</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Control who can see your profile, who can message you, whether your activity is visible, two-factor authentication, sessions, blocked users, and your data.</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Control profile visibility, messaging permissions, activity visibility, account security, blocked users, and data access.</p>
           </header>
 
           {message && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">{message}</div>}
 
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="min-w-0 space-y-6">
-              <section className="grid gap-5 lg:grid-cols-2">
-                <SettingPanel title="Profile Visibility" description="Choose who can view your profile information." icon={UserRound}>
-                  <div className="space-y-3">
-                    {PROFILE_VISIBILITY_OPTIONS.map((option) => (
-                      <button key={option.value} type="button" disabled={Boolean(preferenceSavingKey)} onClick={() => void savePrivacyPreference({ ...privacyPrefs, profileVisibility: option.value }, "profileVisibility")} className={`w-full rounded-2xl border px-4 py-3 text-left transition disabled:opacity-60 ${privacyPrefs.profileVisibility === option.value ? "border-amber-300 bg-amber-50 ring-2 ring-amber-100" : "border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/40"}`}>
-                        <span className="flex items-center justify-between gap-3">
-                          <span className="text-sm font-black text-slate-950">{option.label}</span>
-                          {preferenceSavingKey === "profileVisibility" && privacyPrefs.profileVisibility === option.value ? <Loader2 className="size-4 animate-spin text-amber-700" /> : null}
-                        </span>
-                        <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{option.helper}</span>
-                      </button>
-                    ))}
-                  </div>
-                </SettingPanel>
+            <div className="min-w-0 space-y-4">
+              <PrivacyRow
+                title="Profile Visibility"
+                description="Choose who can view your profile information."
+                icon={UserRound}
+                action={
+                  <ControlSelect
+                    icon={Users}
+                    value={privacyPrefs.profileVisibility}
+                    disabled={Boolean(preferenceSavingKey)}
+                    options={PROFILE_VISIBILITY_OPTIONS}
+                    onChange={(value) => void savePrivacyPreference({ ...privacyPrefs, profileVisibility: value as PrivacyPrefs["profileVisibility"] }, "profileVisibility")}
+                  />
+                }
+              />
 
-                <SettingPanel title="Messaging Permissions" description="Control who can message you directly." icon={Mail}>
-                  <div className="space-y-3">
-                    {MESSAGE_PERMISSION_OPTIONS.map((option) => (
-                      <button key={option.value} type="button" disabled={Boolean(preferenceSavingKey)} onClick={() => void savePrivacyPreference({ ...privacyPrefs, messagingPermission: option.value }, "messagingPermission")} className={`w-full rounded-2xl border px-4 py-3 text-left transition disabled:opacity-60 ${privacyPrefs.messagingPermission === option.value ? "border-amber-300 bg-amber-50 ring-2 ring-amber-100" : "border-slate-200 bg-white hover:border-amber-200 hover:bg-amber-50/40"}`}>
-                        <span className="flex items-center justify-between gap-3">
-                          <span className="text-sm font-black text-slate-950">{option.label}</span>
-                          {preferenceSavingKey === "messagingPermission" && privacyPrefs.messagingPermission === option.value ? <Loader2 className="size-4 animate-spin text-amber-700" /> : null}
-                        </span>
-                        <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{option.helper}</span>
-                      </button>
-                    ))}
-                  </div>
-                </SettingPanel>
-              </section>
+              <PrivacyRow
+                title="Messaging Permissions"
+                description="Control who can message you directly."
+                icon={Mail}
+                action={
+                  <ControlSelect
+                    icon={Globe}
+                    value={privacyPrefs.messagingPermission}
+                    disabled={Boolean(preferenceSavingKey)}
+                    options={MESSAGE_PERMISSION_OPTIONS}
+                    onChange={(value) => void savePrivacyPreference({ ...privacyPrefs, messagingPermission: value as PrivacyPrefs["messagingPermission"] }, "messagingPermission")}
+                  />
+                }
+              />
 
-              <section className="grid gap-5 lg:grid-cols-2">
-                <SettingPanel title="Activity Visibility" description="Manage how your activity and presence are seen." icon={Eye}>
-                  <ToggleControl checked={privacyPrefs.activityVisible} disabled={Boolean(preferenceSavingKey)} label={privacyPrefs.activityVisible ? "Activity visibility is on" : "Activity visibility is off"} onChange={(next) => void savePrivacyPreference({ ...privacyPrefs, activityVisible: next }, "activityVisible")} />
-                  <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">When off, V2 pages should treat your activity and presence as hidden where visibility checks are supported.</p>
-                </SettingPanel>
+              <PrivacyRow
+                title="Activity Visibility"
+                description="Manage how your activity and presence are seen."
+                icon={Eye}
+                action={
+                  <ToggleSwitch
+                    checked={privacyPrefs.activityVisible}
+                    disabled={Boolean(preferenceSavingKey)}
+                    onChange={(next) => void savePrivacyPreference({ ...privacyPrefs, activityVisible: next }, "activityVisible")}
+                  />
+                }
+              />
 
-                <SettingPanel title="Two-Factor Authentication" description="Add an extra layer of security to your account." icon={ShieldCheck}>
-                  <ToggleControl checked={mfaEnabled} disabled={mfaWorking || Boolean(mfaEnrollment)} label={mfaEnabled ? "Two-factor authentication is enabled" : "Two-factor authentication is disabled"} onChange={(next) => next ? void handleStartMfaEnrollment() : void handleDisableMfa()} />
-                  {mfaEnrollment ? (
-                    <form onSubmit={handleVerifyMfa} className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                      <p className="text-sm font-black text-slate-950">Finish authenticator setup</p>
-                      {mfaEnrollment.qrCode ? (
-                        <div className="mt-3 rounded-xl bg-white p-3">
-                          {mfaEnrollment.qrCode.trim().startsWith("<svg") ? (
-                            <div dangerouslySetInnerHTML={{ __html: mfaEnrollment.qrCode }} />
-                          ) : (
-                            <img src={mfaEnrollment.qrCode} alt="Two-factor QR code" className="mx-auto max-h-56" />
-                          )}
-                        </div>
-                      ) : null}
-                      {mfaEnrollment.secret ? <p className="mt-3 break-all rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600">Secret: {mfaEnrollment.secret}</p> : null}
-                      <input value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} inputMode="numeric" placeholder="Enter 6-digit code" className="mt-3 w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-amber-400" />
-                      <button type="submit" disabled={mfaWorking || mfaCode.trim().length < 6} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
-                        {mfaWorking ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
-                        Verify and enable
-                      </button>
-                    </form>
-                  ) : null}
-                </SettingPanel>
-              </section>
-
-              <section className="grid gap-5 lg:grid-cols-2">
-                <SettingPanel title="Login Sessions" description="View and manage active sessions." icon={Monitor}>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm font-black text-slate-950">Current session</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">{user?.email ?? "Signed-in account"}</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">Last sign-in: {formatRelativeTime(user?.last_sign_in_at)}</p>
-                  </div>
-                  <button type="button" onClick={() => void handleSignOutAllSessions()} disabled={signingOut} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
-                    {signingOut ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
-                    {signingOut ? "Signing out..." : "Sign out all sessions"}
+              <PrivacyRow
+                title="Two-Factor Authentication"
+                description="Add an extra layer of security to your account."
+                icon={ShieldCheck}
+                action={
+                  <button type="button" onClick={() => mfaEnabled ? void handleDisableMfa() : void handleStartMfaEnrollment()} disabled={mfaWorking || Boolean(mfaEnrollment)} className="inline-flex min-w-[160px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800 disabled:opacity-60">
+                    {mfaWorking ? <Loader2 className="size-4 animate-spin" /> : <StatusPill tone={mfaEnabled ? "green" : "neutral"}>{mfaEnabled ? "Enabled" : "Disabled"}</StatusPill>}
+                    <ChevronRight className="size-4" />
                   </button>
-                </SettingPanel>
+                }
+              >
+                {mfaEnrollment ? (
+                  <form onSubmit={handleVerifyMfa} className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm font-black text-slate-950">Finish authenticator setup</p>
+                    {mfaEnrollment.qrCode ? <img src={mfaEnrollment.qrCode} alt="Two-factor QR code" className="mt-3 max-h-56 rounded-xl bg-white p-3" /> : null}
+                    {mfaEnrollment.secret ? <p className="mt-3 break-all rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600">Secret: {mfaEnrollment.secret}</p> : null}
+                    <input value={mfaCode} onChange={(event) => setMfaCode(event.target.value)} inputMode="numeric" placeholder="Enter 6-digit code" className="mt-3 w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-semibold outline-none focus:border-amber-400" />
+                    <button type="submit" disabled={mfaWorking || mfaCode.trim().length < 6} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
+                      {mfaWorking ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+                      Verify and enable
+                    </button>
+                  </form>
+                ) : null}
+              </PrivacyRow>
 
-                <SettingPanel title="Reading History" description="Control how your reading activity is recorded." icon={BookOpen}>
-                  <ToggleControl checked={privacyPrefs.readingHistoryEnabled} disabled={Boolean(preferenceSavingKey)} label={privacyPrefs.readingHistoryEnabled ? "Reading history is on" : "Reading history is off"} onChange={(next) => void savePrivacyPreference({ ...privacyPrefs, readingHistoryEnabled: next }, "readingHistoryEnabled")} />
-                  <Link href="/v2/reading-history" className="mt-4 inline-flex items-center gap-2 text-sm font-black text-amber-800">View reading history <ChevronRight className="size-4" /></Link>
-                </SettingPanel>
-              </section>
-
-              <section className="grid gap-5 lg:grid-cols-2">
-                <SettingPanel title="Download Your Data" description="Download a local JSON export of account, profile, privacy, security, and blocked-user data available to this page." icon={CloudDownload}>
-                  <button type="button" onClick={handleDownloadData} disabled={exportingData} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
-                    {exportingData ? <Loader2 className="size-4 animate-spin" /> : <CloudDownload className="size-4" />}
-                    {exportingData ? "Preparing export..." : "Download export"}
+              <PrivacyRow
+                title="Login Sessions"
+                description="View and manage your active sessions."
+                icon={Monitor}
+                action={
+                  <button type="button" onClick={() => void handleSignOutAllSessions()} disabled={signingOut} className="inline-flex min-w-[160px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-amber-800 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 disabled:opacity-60">
+                    {signingOut ? <Loader2 className="size-4 animate-spin" /> : <span>1 Active</span>}
+                    <ChevronRight className="size-4" />
                   </button>
-                </SettingPanel>
+                }
+              >
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-sm font-black text-slate-950">Current session</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{user?.email ?? "Signed-in account"}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">Last sign-in: {formatRelativeTime(user?.last_sign_in_at)}</p>
+                  <p className="mt-3 text-xs font-bold text-amber-800">Click 1 Active to sign out all sessions.</p>
+                </div>
+              </PrivacyRow>
 
-                <SettingPanel title="Email Verification" description="Confirm the email tied to this account." icon={Mail}>
-                  <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
-                    <p className="font-black text-slate-950">{user?.email ?? "No email available"}</p>
-                    <p className="mt-1">Status: {user?.email_confirmed_at ? "Verified" : "Not verified"}</p>
-                  </div>
-                  <button type="button" onClick={() => void handleResendVerification()} disabled={resendingEmail || !user?.email || Boolean(user?.email_confirmed_at)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60">
-                    {resendingEmail ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
-                    {user?.email_confirmed_at ? "Email verified" : resendingEmail ? "Sending..." : "Resend verification"}
-                  </button>
-                </SettingPanel>
-              </section>
-
-              <PasswordPanel passwordForm={passwordForm} setPasswordForm={setPasswordForm} saving={passwordSaving} onSubmit={handlePasswordSubmit} />
-
-              <div id="v2-blocked-users">
+              <PrivacyRow
+                title="Blocked Users"
+                description="Manage users you've blocked."
+                icon={UserRoundX}
+                action={<StatusPill>{blockedUsers.length} Blocked</StatusPill>}
+              >
                 <BlockedUsersPanel blockedUsers={blockedUsers} workingBlockedId={workingBlockedId} onUnblock={(blockedId) => void handleUnblock(blockedId)} />
-              </div>
+              </PrivacyRow>
 
-              <p className="flex items-center justify-center gap-2 pt-2 text-sm font-semibold text-slate-600">
-                <ShieldCheck className="size-4 text-amber-700" />
-                These controls save to the signed-in account metadata or existing Loombus tables where available.
-              </p>
+              <PrivacyRow
+                title="Download Your Data"
+                description="Export a copy of your data from Loombus."
+                icon={CloudDownload}
+                action={
+                  <button type="button" onClick={handleDownloadData} disabled={exportingData} className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-amber-800 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 disabled:opacity-60">
+                    {exportingData ? <Loader2 className="size-4 animate-spin" /> : <span>Request Export</span>}
+                    <ChevronRight className="size-4" />
+                  </button>
+                }
+              />
+
+              <PrivacyRow
+                title="Reading History"
+                description="Control how your reading activity is recorded."
+                icon={BookOpen}
+                action={
+                  <ControlSelect
+                    icon={BookOpen}
+                    value={privacyPrefs.readingHistoryEnabled ? "full" : "off"}
+                    disabled={Boolean(preferenceSavingKey)}
+                    options={[{ value: "full", label: "Full History" }, { value: "off", label: "Paused" }]}
+                    onChange={(value) => void savePrivacyPreference({ ...privacyPrefs, readingHistoryEnabled: value === "full" }, "readingHistoryEnabled")}
+                  />
+                }
+              >
+                <Link href="/v2/reading-history" className="inline-flex items-center gap-2 text-sm font-black text-amber-800">Open reading history <ChevronRight className="size-4" /></Link>
+              </PrivacyRow>
             </div>
 
             <aside className="space-y-4">
               <SecurityStatusCard user={user} mfaEnabled={mfaEnabled} />
               <SecurityEventsCard events={securityEvents} />
-              <DangerZone onSignOutAll={() => void handleSignOutAllSessions()} onRequestDeletion={handleRequestDeletion} signingOut={signingOut} />
+              <PasswordPanel passwordForm={passwordForm} setPasswordForm={setPasswordForm} saving={passwordSaving} onSubmit={handlePasswordSubmit} />
+              <section className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-800 ring-1 ring-amber-200"><Mail className="size-5" /></span>
+                  <div>
+                    <h2 className="font-black text-slate-950">Email Verification</h2>
+                    <p className="text-xs font-semibold text-slate-500">Confirm account email.</p>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                  <p className="font-black text-slate-950">{user?.email ?? "No email available"}</p>
+                  <p className="mt-1">Status: {user?.email_confirmed_at ? "Verified" : "Not verified"}</p>
+                </div>
+                <button type="button" onClick={() => void handleResendVerification()} disabled={resendingEmail || !user?.email || Boolean(user?.email_confirmed_at)} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60">
+                  {resendingEmail ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
+                  {user?.email_confirmed_at ? "Email verified" : resendingEmail ? "Sending..." : "Resend verification"}
+                </button>
+              </section>
+              <DangerZone onRequestDeletion={handleRequestDeletion} />
               <section className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm">
                 <h2 className="text-xs font-black uppercase tracking-[0.14em] text-slate-700">Privacy Links</h2>
                 <div className="mt-4 space-y-3">
@@ -934,6 +1032,10 @@ export default function V2PrivacySecurityPage() {
                   </Link>
                 </div>
               </section>
+              <p className="flex items-center justify-center gap-2 pt-2 text-xs font-semibold text-slate-600">
+                <ShieldCheck className="size-4 text-amber-700" />
+                Controls save to account metadata or existing Loombus tables where available.
+              </p>
             </aside>
           </section>
         </section>
