@@ -38,6 +38,15 @@ const ALLOWED_ATTACHMENT_MIME_TYPES = new Set([
   "application/pdf",
 ]);
 
+const REPORT_REASONS = [
+  { value: "harassment", label: "Harassment or bullying" },
+  { value: "hate", label: "Hate or abusive content" },
+  { value: "threats", label: "Threats or safety concern" },
+  { value: "spam", label: "Spam or scam" },
+  { value: "sexual_content", label: "Sexual or inappropriate content" },
+  { value: "other", label: "Something else" },
+];
+
 type Conversation = {
   id: string;
   otherUserId: string | null;
@@ -168,6 +177,9 @@ export default function V2MessagesPage() {
   const [sending, setSending] = useState(false);
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const [conversationAction, setConversationAction] = useState<string | null>(null);
+  const [reportPanelOpen, setReportPanelOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("harassment");
+  const [reportNotes, setReportNotes] = useState("");
 
   const selectedConversation = useMemo(
     () => conversations.find((conversation) => conversation.id === selectedConversationId) ?? null,
@@ -500,16 +512,14 @@ export default function V2MessagesPage() {
     }
   }
 
-  async function runConversationAction(action: "archive" | "delete" | "mute" | "unmute" | "report") {
+  async function runConversationAction(action: "archive" | "delete" | "mute" | "unmute") {
     if (!selectedConversationId || conversationAction) return;
 
     const confirmed = action === "archive"
       ? window.confirm("Archive this conversation from your inbox?")
       : action === "delete"
         ? window.confirm("Delete this conversation from your inbox? This only removes it for you.")
-        : action === "report"
-          ? window.confirm("Report this conversation for review?")
-          : true;
+        : true;
 
     if (!confirmed) return;
 
@@ -528,7 +538,6 @@ export default function V2MessagesPage() {
         body: JSON.stringify({
           conversationId: selectedConversationId,
           ...(action === "mute" || action === "unmute" ? { muted: action === "mute" } : {}),
-          ...(action === "report" ? { reason: "harassment", notes: "Reported from V2 Messages." } : {}),
         }),
       });
       const result = await response.json();
@@ -543,13 +552,50 @@ export default function V2MessagesPage() {
         setSelectedConversationId(null);
         setThreadMessages([]);
         setMobileThreadOpen(false);
+        setReportPanelOpen(false);
       } else if (action === "mute" || action === "unmute") {
         setConversations((current) => current.map((conversation) => conversation.id === selectedConversationId ? { ...conversation, mutedAt: result.mutedAt } : conversation));
-      } else {
-        setMessage("Conversation reported for review.");
       }
     } catch {
       setMessage(`Unable to ${action} conversation.`);
+    } finally {
+      setConversationAction(null);
+    }
+  }
+
+  async function submitReport() {
+    if (!selectedConversationId || conversationAction) return;
+
+    setConversationAction("report");
+    setMessage("");
+
+    try {
+      const accessToken = await getAccessToken();
+      const response = await fetch("/api/messages/report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          conversationId: selectedConversationId,
+          reason: reportReason,
+          notes: reportNotes,
+        }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to report conversation.");
+        return;
+      }
+
+      setReportPanelOpen(false);
+      setReportReason("harassment");
+      setReportNotes("");
+      setMessage("Conversation reported for review.");
+    } catch {
+      setMessage("Unable to report conversation.");
     } finally {
       setConversationAction(null);
     }
@@ -730,15 +776,33 @@ export default function V2MessagesPage() {
               <button type="button" onClick={() => void runConversationAction("archive")} disabled={!selectedConversation || Boolean(conversationAction)} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50">
                 <Archive className="size-4" /> Archive
               </button>
-              <button type="button" onClick={() => void runConversationAction("report")} disabled={!selectedConversation || Boolean(conversationAction)} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50">
+              <button type="button" onClick={() => setReportPanelOpen((open) => !open)} disabled={!selectedConversation || Boolean(conversationAction)} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50">
                 <ShieldAlert className="size-4" /> Report
               </button>
             </div>
 
-            <section className="mt-6 rounded-2xl bg-slate-50 p-4">
-              <h3 className="text-sm font-black text-slate-700">Live wiring</h3>
-              <p className="mt-2 text-sm font-medium leading-6 text-slate-500">This V2 shell uses the live Messages conversations, threads, sending, attachments, and safety actions.</p>
-            </section>
+            {reportPanelOpen ? (
+              <section className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <h3 className="text-sm font-black text-slate-950">Report conversation</h3>
+                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">Choose a reason and add any context that will help moderation review this conversation.</p>
+                <label className="mt-4 block text-xs font-black uppercase tracking-[0.16em] text-slate-500" htmlFor="v2-message-report-reason">Reason</label>
+                <select id="v2-message-report-reason" value={reportReason} onChange={(event) => setReportReason(event.target.value)} className="mt-2 w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-amber-400">
+                  {REPORT_REASONS.map((reason) => (
+                    <option key={reason.value} value={reason.value}>{reason.label}</option>
+                  ))}
+                </select>
+                <label className="mt-4 block text-xs font-black uppercase tracking-[0.16em] text-slate-500" htmlFor="v2-message-report-notes">Notes</label>
+                <textarea id="v2-message-report-notes" value={reportNotes} onChange={(event) => setReportNotes(event.target.value)} rows={4} placeholder="Add optional context for the moderation team." className="mt-2 w-full resize-none rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-amber-400" />
+                <div className="mt-4 flex gap-2">
+                  <button type="button" onClick={() => void submitReport()} disabled={conversationAction === "report"} className="flex-1 rounded-xl bg-amber-300 px-3 py-2 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
+                    {conversationAction === "report" ? "Reporting..." : "Submit report"}
+                  </button>
+                  <button type="button" onClick={() => setReportPanelOpen(false)} disabled={conversationAction === "report"} className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-black text-slate-600 transition hover:text-slate-950 disabled:opacity-60">
+                    Cancel
+                  </button>
+                </div>
+              </section>
+            ) : null}
           </aside>
         </section>
       </section>
