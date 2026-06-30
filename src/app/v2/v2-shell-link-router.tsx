@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { V2_DYNAMIC_ROUTE_PREFIXES, V2_EXACT_ROUTE_MAP } from "./v2-navigation";
+import { V2UserAvatarMenu } from "./v2-user-avatar-menu";
 
 function splitHref(href: string) {
   const hashIndex = href.indexOf("#");
@@ -77,5 +78,37 @@ export function V2ShellLinkRouter() {
     };
   }, [router]);
 
-  return null;
+  return (
+    <>
+      <style>{`
+        .loombus-v2-top-nav .v2-avatar-menu-inline {
+          display: none !important;
+        }
+
+        .loombus-v2-top-nav > div > div:last-child {
+          padding-right: 3.25rem !important;
+        }
+
+        .v2-global-avatar-slot {
+          top: 0.5rem;
+          right: max(1rem, calc((100vw - 80rem) / 2 + 1rem));
+        }
+
+        @media (min-width: 640px) {
+          .v2-global-avatar-slot {
+            right: max(1.5rem, calc((100vw - 80rem) / 2 + 1.5rem));
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .v2-global-avatar-slot {
+            right: max(2rem, calc((100vw - 80rem) / 2 + 2rem));
+          }
+        }
+      `}</style>
+      <div className="v2-global-avatar-slot fixed z-[120]">
+        <V2UserAvatarMenu placement="topnav" />
+      </div>
+    </>
+  );
 }
