@@ -42,6 +42,7 @@ export const V2_PRIMARY_NAV_ITEMS: V2NavItem[] = [
   { label: "Create", href: "/v2/create", icon: Plus, primary: true },
   { label: "Rooms", href: "/v2/rooms", icon: Users },
   { label: "Messages", href: "/v2/messages", icon: Mail },
+  { label: "People", href: "/v2/people", icon: Users },
 ];
 
 export const V2_ACTION_NAV_ITEMS: V2NavItem[] = [
