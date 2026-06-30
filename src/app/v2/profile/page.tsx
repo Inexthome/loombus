@@ -1,45 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Award,
   BadgeCheck,
-  Bell,
   Bookmark,
   BookOpen,
   CalendarDays,
   Edit3,
   Eye,
   Globe2,
-  Home,
   Loader2,
-  Lock,
-  MapPin,
   MessageCircle,
-  Plus,
   Reply,
-  Search,
+  Save,
   Settings,
   ShieldCheck,
   Sparkles,
   UserRound,
-  Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-
-type FeatureFlags = {
-  v2_shell: boolean;
-  v2_signal_brief: boolean;
-  v2_rooms: boolean;
-};
-
-type ShellPayload = {
-  version: "v1" | "v2";
-  configured: boolean;
-  authenticated: boolean;
-  flags: FeatureFlags;
-};
+import {
+  getDefaultShellPayload,
+  V2ShellGateCard,
+  V2ShellMobileNav,
+  V2ShellTopNav,
+  type ShellPayload,
+} from "../v2-shell-components";
 
 type ProfileRow = {
   id: string;
@@ -77,7 +65,6 @@ type ProfileStats = {
   discussions: number;
   replies: number;
   signals: number;
-  rooms: number;
   saved: number;
 };
 
@@ -86,40 +73,38 @@ type ProfileData = {
   stats: ProfileStats;
   discussions: DiscussionRow[];
   replies: ReplyCard[];
+  topics: string[];
 };
 
-const DEFAULT_FLAGS: FeatureFlags = {
-  v2_shell: false,
-  v2_signal_brief: false,
-  v2_rooms: false,
+type ProfileFormState = {
+  fullName: string;
+  username: string;
+  bio: string;
+  perspectiveMarker: string;
+  avatarUrl: string;
+  creatorWebsiteUrl: string;
+  creatorSupportUrl: string;
+  creatorSupportLabel: string;
 };
 
 const DEFAULT_STATS: ProfileStats = {
   discussions: 0,
   replies: 0,
   signals: 0,
-  rooms: 0,
   saved: 0,
 };
 
-const V2_NAV_ITEMS = [
-  { label: "Home", href: "/v2", icon: Home },
-  { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
-  { label: "Create", href: "/v2/create", icon: Plus, primary: true },
-  { label: "Rooms", href: "/v2/rooms", icon: Users },
-  { label: "People", href: "/v2/people", icon: Users },
+const PROFILE_TABS = ["Overview", "Discussions", "Replies", "Contributions"];
+
+const PERSPECTIVE_MARKERS = [
+  "",
+  "Lived experience",
+  "Professional experience",
+  "Research-based",
+  "Builder / operator",
+  "Student / learner",
+  "Question / exploring",
 ];
-
-const PROFILE_TABS = ["Overview", "Discussions", "Replies", "Rooms", "Labs", "Contributions"];
-
-function getDefaultShellPayload(): ShellPayload {
-  return {
-    version: "v1",
-    configured: false,
-    authenticated: false,
-    flags: DEFAULT_FLAGS,
-  };
-}
 
 function isV2Allowed(payload: ShellPayload | null) {
   return Boolean(payload?.authenticated && payload.configured && payload.flags.v2_shell && payload.version === "v2");
@@ -158,7 +143,7 @@ function formatRelativeTime(value: string | null | undefined) {
 function formatCount(value: number) {
   if (value >= 1000000) return `${(value / 1000000).toFixed(1)}m`;
   if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
-  return String(value);
+  return String(Math.max(0, value));
 }
 
 function getDisplayName(profile: ProfileRow | null) {
@@ -182,6 +167,24 @@ function getInitials(profile: ProfileRow | null) {
   );
 }
 
+function isValidOptionalUrl(value: string) {
+  const clean = value.trim();
+  return !clean || /^https?:\/\//i.test(clean);
+}
+
+function profileToForm(profile: ProfileRow | null): ProfileFormState {
+  return {
+    fullName: profile?.full_name ?? "",
+    username: profile?.username ?? "",
+    bio: profile?.bio ?? "",
+    perspectiveMarker: profile?.perspective_marker ?? "",
+    avatarUrl: profile?.avatar_url ?? "",
+    creatorWebsiteUrl: profile?.creator_website_url ?? "",
+    creatorSupportUrl: profile?.creator_support_url ?? "",
+    creatorSupportLabel: profile?.creator_support_label ?? "",
+  };
+}
+
 async function loadProfileData(viewerId: string): Promise<ProfileData> {
   const [profileResult, discussionCountResult, replyCountResult, savedCountResult, discussionListResult, replyListResult] = await Promise.all([
     supabase
@@ -198,14 +201,14 @@ async function loadProfileData(viewerId: string): Promise<ProfileData> {
       .eq("user_id", viewerId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
-      .limit(3),
+      .limit(8),
     supabase
       .from("replies")
       .select("id, discussion_id, body, created_at")
       .eq("user_id", viewerId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
-      .limit(4),
+      .limit(8),
   ]);
 
   if (profileResult.error) throw profileResult.error;
@@ -242,6 +245,7 @@ async function loadProfileData(viewerId: string): Promise<ProfileData> {
   const discussionCount = discussionCountResult.count ?? 0;
   const replyCount = replyCountResult.count ?? 0;
   const savedCount = savedCountResult.count ?? 0;
+  const topics = [...new Set(discussions.map((discussion) => discussion.topic).filter((topic): topic is string => Boolean(topic)))].slice(0, 6);
 
   return {
     profile: (profileResult.data ?? null) as ProfileRow | null,
@@ -249,116 +253,25 @@ async function loadProfileData(viewerId: string): Promise<ProfileData> {
       discussions: discussionCount,
       replies: replyCount,
       signals: discussionCount + replyCount + savedCount,
-      rooms: 0,
       saved: savedCount,
     },
     discussions,
     replies,
+    topics,
   };
 }
 
-function GateCard({
-  title,
-  message,
-  loading = false,
-  payload,
+function ProfileHero({
+  profile,
+  stats,
+  topics,
+  onEdit,
 }: {
-  title: string;
-  message: string;
-  loading?: boolean;
-  payload?: ShellPayload | null;
+  profile: ProfileRow | null;
+  stats: ProfileStats;
+  topics: string[];
+  onEdit: () => void;
 }) {
-  return (
-    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
-      <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="grid size-12 place-items-center rounded-2xl bg-blue-500/15 text-blue-200 ring-1 ring-blue-300/20">
-            {loading ? <Loader2 className="size-5 animate-spin" /> : <Lock className="size-5" />}
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2</p>
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
-          </div>
-        </div>
-        <p className="text-sm leading-6 text-slate-300 sm:text-base">{message}</p>
-        {payload && <p className="mt-5 text-xs text-slate-300">v2_shell: {payload.flags.v2_shell ? "on" : "off"}</p>}
-        <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/v2" className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200">
-            Back to V2 Home
-          </Link>
-          <Link href="/profile" className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">
-            Open Profile Settings
-          </Link>
-        </div>
-      </section>
-    </main>
-  );
-}
-
-function V2TopNav() {
-  return (
-    <header className="sticky top-0 z-30 border-b border-blue-950 bg-[#061942] loombus-v2-top-nav shadow-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/v2" className="flex items-center gap-3 font-bold">
-          <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 object-contain" />
-          <span className="text-xl">Loombus</span>
-        </Link>
-        <nav className="hidden items-center gap-1 md:flex">
-          {V2_NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  item.primary ? "border border-white/40 text-white hover:bg-white/10" : "text-blue-100 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <Icon className="size-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="flex items-center gap-2">
-          <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
-            <Search className="size-5" />
-          </Link>
-          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white">
-            <Bell className="size-5" />
-            <span className="absolute right-1 top-1 size-2 rounded-full bg-blue-400" />
-          </Link>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function MobileBottomNav() {
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 loombus-v2-bottom-nav px-3 pb-3 pt-2 shadow-2xl backdrop-blur md:hidden">
-      <div className="mx-auto grid max-w-md grid-cols-5 gap-1 text-xs font-semibold text-slate-500">
-        {[
-          { label: "Home", href: "/v2", icon: Home },
-          { label: "Discuss", href: "/v2/discussions", icon: MessageCircle },
-          { label: "Create", href: "/v2/create", icon: Plus, primary: true },
-          { label: "Rooms", href: "/v2/rooms", icon: Users },
-          { label: "Profile", href: "/v2/profile", icon: UserRound, active: true },
-        ].map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link key={item.label} href={item.href} className={`flex flex-col items-center gap-1 rounded-2xl py-2 ${item.active ? "text-blue-700" : "text-slate-500"}`}>
-              <Icon className={`size-5 ${item.primary ? "rounded-full bg-blue-600 p-1 text-white" : ""}`} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}
-
-function ProfileHero({ profile, stats }: { profile: ProfileRow | null; stats: ProfileStats }) {
   const displayName = getDisplayName(profile);
   const username = getUsername(profile);
   const bio = stripHtml(profile?.bio) || "Share who you are, what you care about, and how others can understand your perspective.";
@@ -369,13 +282,12 @@ function ProfileHero({ profile, stats }: { profile: ProfileRow | null; stats: Pr
     { label: "Discussions", value: stats.discussions, icon: BookOpen },
     { label: "Replies", value: stats.replies, icon: Reply },
     { label: "Signals", value: stats.signals, icon: Sparkles },
-    { label: "Rooms", value: stats.rooms, icon: Users },
     { label: "Saved", value: stats.saved, icon: Bookmark },
   ];
 
   return (
     <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_44px_rgba(15,23,42,0.08)]">
-      <div className="h-24 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.25),transparent_32%),linear-gradient(120deg,#eaf4ff,#f8fbff)]" />
+      <div className="h-24 bg-[radial-gradient(circle_at_top_left,rgba(214,168,79,0.28),transparent_32%),linear-gradient(120deg,#fff8e6,#f8fafc)]" />
       <div className="px-5 pb-5 sm:px-7 sm:pb-6">
         <div className="flex flex-col gap-5 border-b border-slate-200 pb-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
@@ -385,43 +297,43 @@ function ProfileHero({ profile, stats }: { profile: ProfileRow | null; stats: Pr
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-2xl font-black tracking-tight text-slate-950">{displayName}</h2>
-                <BadgeCheck className="size-5 text-blue-600" />
+                <BadgeCheck className="size-5 text-amber-700" />
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-500">
                 <span>{username}</span>
                 <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">{perspective}</span>
               </div>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{truncate(bio, 170)}</p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">{truncate(bio, 190)}</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                {["Technology", "Research", "Identity", "Web3"].map((tag) => (
-                  <span key={tag} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                {(topics.length > 0 ? topics : ["No topics yet"]).map((tag) => (
+                  <span key={tag} className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-800 ring-1 ring-amber-200">
                     {tag}
                   </span>
                 ))}
               </div>
               <div className="mt-4 flex flex-wrap gap-4 text-sm font-semibold text-slate-500">
-                <span className="inline-flex items-center gap-1.5"><CalendarDays className="size-4" /> Joined Loombus</span>
-                <span className="inline-flex items-center gap-1.5"><MapPin className="size-4" /> Profile hub</span>
+                <span className="inline-flex items-center gap-1.5"><CalendarDays className="size-4" /> Public profile</span>
+                <span className="inline-flex items-center gap-1.5"><Eye className="size-4" /> Visible contribution overview</span>
               </div>
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3">
-            <Link href="/profile" className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">
+            <button type="button" onClick={onEdit} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-300 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-amber-900/10 transition hover:bg-amber-400">
               <Edit3 className="size-4" />
               Edit Profile
-            </Link>
-            <Link href="/settings" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
+            </button>
+            <Link href="/v2/settings" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-700 transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800">
               <Settings className="size-4" />
               Settings
             </Link>
           </div>
         </div>
-        <div className="grid gap-3 pt-5 sm:grid-cols-5">
+        <div className="grid gap-3 pt-5 sm:grid-cols-4">
           {statItems.map((item) => {
             const Icon = item.icon;
             return (
               <div key={item.label} className="flex items-center justify-center gap-2 border-slate-200 py-2 text-center sm:border-r last:sm:border-r-0">
-                <Icon className="size-4 text-blue-700" />
+                <Icon className="size-4 text-amber-700" />
                 <div>
                   <p className="text-base font-black text-slate-950">{formatCount(item.value)}</p>
                   <p className="text-xs font-semibold text-slate-500">{item.label}</p>
@@ -435,37 +347,106 @@ function ProfileHero({ profile, stats }: { profile: ProfileRow | null; stats: Pr
   );
 }
 
-function FeaturedDiscussions({ discussions }: { discussions: DiscussionRow[] }) {
-  const items = discussions.length > 0 ? discussions : [
-    { id: "empty-1", title: "Start a discussion", topic: "Discussion", body: "Your featured discussions will appear here as you publish on Loombus.", created_at: new Date().toISOString() },
-  ];
+function ProfileEditor({
+  form,
+  setForm,
+  saving,
+  onSubmit,
+  onCancel,
+}: {
+  form: ProfileFormState;
+  setForm: (next: ProfileFormState) => void;
+  saving: boolean;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onCancel: () => void;
+}) {
+  return (
+    <section className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-sm sm:p-6">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-xl font-black text-slate-950">Edit public profile</h2>
+          <p className="mt-1 text-sm font-semibold text-slate-600">These fields power your visible Loombus profile.</p>
+        </div>
+        <button type="button" onClick={onCancel} disabled={saving} className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-black text-slate-600 transition hover:text-slate-950 disabled:opacity-60">
+          Cancel
+        </button>
+      </div>
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-2 text-sm font-black text-slate-700">
+            Display name
+            <input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} className="rounded-xl border border-amber-200 bg-white px-3 py-2 font-medium outline-none focus:border-amber-400" />
+          </label>
+          <label className="grid gap-2 text-sm font-black text-slate-700">
+            Username
+            <input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} className="rounded-xl border border-amber-200 bg-white px-3 py-2 font-medium outline-none focus:border-amber-400" />
+          </label>
+        </div>
+        <label className="grid gap-2 text-sm font-black text-slate-700">
+          Bio
+          <textarea value={form.bio} onChange={(event) => setForm({ ...form, bio: event.target.value })} rows={4} className="resize-none rounded-xl border border-amber-200 bg-white px-3 py-2 font-medium leading-6 outline-none focus:border-amber-400" />
+        </label>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-2 text-sm font-black text-slate-700">
+            Perspective marker
+            <select value={form.perspectiveMarker} onChange={(event) => setForm({ ...form, perspectiveMarker: event.target.value })} className="rounded-xl border border-amber-200 bg-white px-3 py-2 font-medium outline-none focus:border-amber-400">
+              {PERSPECTIVE_MARKERS.map((marker) => <option key={marker || "blank"} value={marker}>{marker || "None"}</option>)}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-black text-slate-700">
+            Avatar URL
+            <input value={form.avatarUrl} onChange={(event) => setForm({ ...form, avatarUrl: event.target.value })} placeholder="https://..." className="rounded-xl border border-amber-200 bg-white px-3 py-2 font-medium outline-none focus:border-amber-400" />
+          </label>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <label className="grid gap-2 text-sm font-black text-slate-700 md:col-span-1">
+            Website URL
+            <input value={form.creatorWebsiteUrl} onChange={(event) => setForm({ ...form, creatorWebsiteUrl: event.target.value })} placeholder="https://..." className="rounded-xl border border-amber-200 bg-white px-3 py-2 font-medium outline-none focus:border-amber-400" />
+          </label>
+          <label className="grid gap-2 text-sm font-black text-slate-700 md:col-span-1">
+            Support URL
+            <input value={form.creatorSupportUrl} onChange={(event) => setForm({ ...form, creatorSupportUrl: event.target.value })} placeholder="https://..." className="rounded-xl border border-amber-200 bg-white px-3 py-2 font-medium outline-none focus:border-amber-400" />
+          </label>
+          <label className="grid gap-2 text-sm font-black text-slate-700 md:col-span-1">
+            Support label
+            <input value={form.creatorSupportLabel} onChange={(event) => setForm({ ...form, creatorSupportLabel: event.target.value })} placeholder="Support" className="rounded-xl border border-amber-200 bg-white px-3 py-2 font-medium outline-none focus:border-amber-400" />
+          </label>
+        </div>
+        <div className="flex justify-end">
+          <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-amber-300 px-5 py-2.5 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
+            {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            {saving ? "Saving..." : "Save profile"}
+          </button>
+        </div>
+      </form>
+    </section>
+  );
+}
 
+function FeaturedDiscussions({ discussions }: { discussions: DiscussionRow[] }) {
   return (
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="font-black text-slate-950">Featured Discussions</h2>
-        <Link href="/v2/my-discussions" className="text-sm font-black text-blue-700">View all</Link>
+        <h2 className="font-black text-slate-950">Latest Discussions</h2>
+        <Link href="/v2/my-discussions" className="text-sm font-black text-amber-800">View all</Link>
       </div>
       <div className="space-y-4">
-        {items.map((discussion, index) => (
-          <article key={discussion.id} className="grid gap-4 rounded-2xl border border-slate-100 p-3 sm:grid-cols-[112px_minmax(0,1fr)]">
-            <div className="grid aspect-square place-items-center rounded-2xl bg-gradient-to-br from-blue-950 via-blue-700 to-cyan-400 text-white">
-              <Sparkles className="size-8" />
+        {discussions.length === 0 ? (
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-sm font-semibold text-slate-600">No discussions yet. Published discussions will appear here.</div>
+        ) : discussions.map((discussion) => (
+          <article key={discussion.id} className="grid gap-4 rounded-2xl border border-slate-100 p-3 sm:grid-cols-[88px_minmax(0,1fr)]">
+            <div className="grid aspect-square place-items-center rounded-2xl bg-gradient-to-br from-slate-950 via-slate-800 to-amber-400 text-white">
+              <Sparkles className="size-7" />
             </div>
             <div className="min-w-0">
-              <Link href={discussion.id.startsWith("empty") ? "/v2/create" : `/v2/discussions/${discussion.id}`} className="font-black text-slate-950 hover:text-blue-700">
+              <Link href={`/v2/discussions/${discussion.id}`} className="font-black text-slate-950 hover:text-amber-800">
                 {discussion.title}
               </Link>
               <div className="mt-2 flex flex-wrap gap-2">
-                <span className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">{discussion.topic || "Discussion"}</span>
-                <span className="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-black text-emerald-700">Signal</span>
+                <span className="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-black text-amber-800 ring-1 ring-amber-200">{discussion.topic || "Discussion"}</span>
+                <span className="rounded-full bg-slate-50 px-2 py-1 text-[11px] font-black text-slate-600">{formatRelativeTime(discussion.created_at)}</span>
               </div>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{truncate(stripHtml(discussion.body) || "Discussion preview will appear here.", 110)}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-bold text-slate-500">
-                <span>{index === 0 ? 128 : 84} replies</span>
-                <span>{index === 0 ? "1.2k" : 870} signals</span>
-                <span>{formatRelativeTime(discussion.created_at)}</span>
-              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{truncate(stripHtml(discussion.body) || "Discussion preview will appear here.", 130)}</p>
             </div>
           </article>
         ))}
@@ -475,26 +456,24 @@ function FeaturedDiscussions({ discussions }: { discussions: DiscussionRow[] }) 
 }
 
 function RecentReplies({ replies }: { replies: ReplyCard[] }) {
-  const items = replies.length > 0 ? replies : [
-    { id: "empty-reply", discussion_id: "", discussionTitle: "Recent replies", discussionTopic: "Reply", body: "Replies you post across Loombus will appear here.", created_at: new Date().toISOString() },
-  ];
-
   return (
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="font-black text-slate-950">Recent Replies</h2>
-        <Link href="/v2/my-replies" className="text-sm font-black text-blue-700">View all</Link>
+        <Link href="/v2/my-replies" className="text-sm font-black text-amber-800">View all</Link>
       </div>
       <div className="space-y-3">
-        {items.map((reply) => (
-          <Link key={reply.id} href={reply.discussion_id ? `/v2/discussions/${reply.discussion_id}` : "/v2/discussions"} className="flex items-start gap-3 rounded-2xl border border-slate-100 p-3 transition hover:border-blue-200 hover:bg-blue-50/30">
+        {replies.length === 0 ? (
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-sm font-semibold text-slate-600">No replies yet. Replies you post across Loombus will appear here.</div>
+        ) : replies.map((reply) => (
+          <Link key={reply.id} href={`/v2/discussions/${reply.discussion_id}`} className="flex items-start gap-3 rounded-2xl border border-slate-100 p-3 transition hover:border-amber-200 hover:bg-amber-50/30">
             <div className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-950 text-white"><Reply className="size-4" /></div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-black text-slate-950">{reply.discussionTitle}</p>
               <p className="mt-1 text-xs font-semibold text-slate-500">{reply.discussionTopic || "Discussion"} · {formatRelativeTime(reply.created_at)}</p>
-              <p className="mt-1 text-sm leading-5 text-slate-600">{truncate(stripHtml(reply.body) || "Reply preview will appear here.", 85)}</p>
+              <p className="mt-1 text-sm leading-5 text-slate-600">{truncate(stripHtml(reply.body) || "Reply preview will appear here.", 95)}</p>
             </div>
-            <span className="mt-2 size-2 rounded-full bg-blue-600" />
+            <span className="mt-2 size-2 rounded-full bg-amber-600" />
           </Link>
         ))}
       </div>
@@ -502,35 +481,7 @@ function RecentReplies({ replies }: { replies: ReplyCard[] }) {
   );
 }
 
-function RoomsAndLabs() {
-  const rooms = [
-    { title: "Loombus Research Lab", meta: "Member" },
-    { title: "Builders Room", meta: "Member" },
-    { title: "Open Systems Lab", meta: "Member" },
-  ];
-
-  return (
-    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="font-black text-slate-950">Rooms & Labs</h2>
-        <Link href="/v2/rooms" className="text-sm font-black text-blue-700">View all</Link>
-      </div>
-      <div className="space-y-3">
-        {rooms.map((room) => (
-          <div key={room.title} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3">
-            <div className="grid size-10 place-items-center rounded-xl bg-slate-950 text-white"><Users className="size-4" /></div>
-            <div>
-              <p className="text-sm font-black text-slate-950">{room.title}</p>
-              <p className="text-xs font-semibold text-slate-500">{room.meta}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function RightRail({ profile, stats }: { profile: ProfileRow | null; stats: ProfileStats }) {
+function RightRail({ profile, stats, topics }: { profile: ProfileRow | null; stats: ProfileStats; topics: string[] }) {
   const websiteUrl = profile?.creator_website_url?.trim();
   const supportUrl = profile?.creator_support_url?.trim();
 
@@ -540,14 +491,14 @@ function RightRail({ profile, stats }: { profile: ProfileRow | null; stats: Prof
         <h2 className="mb-4 font-black text-slate-950">Known For</h2>
         <div className="space-y-4">
           {[
-            { title: "Thoughtful Insights", meta: `${formatCount(stats.signals)} signals across profile activity`, icon: Award },
-            { title: "In-Depth Research", meta: "Context-driven participation", icon: BookOpen },
-            { title: "Quality Contributor", meta: "Consistent and constructive", icon: ShieldCheck },
+            { title: topics[0] ?? "Discussion Builder", meta: `${formatCount(stats.discussions)} published discussions`, icon: Award },
+            { title: topics[1] ?? "Constructive Replies", meta: `${formatCount(stats.replies)} replies across Loombus`, icon: MessageCircle },
+            { title: topics[2] ?? "Signal Contributor", meta: `${formatCount(stats.signals)} total visible signals`, icon: ShieldCheck },
           ].map((item) => {
             const Icon = item.icon;
             return (
               <div key={item.title} className="flex gap-3">
-                <Icon className="mt-1 size-5 shrink-0 text-blue-600" />
+                <Icon className="mt-1 size-5 shrink-0 text-amber-700" />
                 <div>
                   <p className="text-sm font-black text-slate-950">{item.title}</p>
                   <p className="text-xs font-semibold leading-5 text-slate-500">{item.meta}</p>
@@ -560,30 +511,18 @@ function RightRail({ profile, stats }: { profile: ProfileRow | null; stats: Prof
 
       <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="font-black text-slate-950">Recent Activity</h2>
-          <Link href="/v2/my-discussions" className="text-sm font-black text-blue-700">View all</Link>
-        </div>
-        <div className="space-y-4 text-sm">
-          <div className="flex gap-3"><span className="mt-1 size-2 rounded-full border border-blue-600" /><p className="text-slate-600">Started or updated profile activity <span className="font-bold text-slate-950">recently</span></p></div>
-          <div className="flex gap-3"><span className="mt-1 size-2 rounded-full border border-blue-600" /><p className="text-slate-600">Replied across active discussions</p></div>
-          <div className="flex gap-3"><span className="mt-1 size-2 rounded-full border border-blue-600" /><p className="text-slate-600">Saved discussions for later review</p></div>
-        </div>
-      </section>
-
-      <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="font-black text-slate-950">Privacy & Visibility</h2>
-          <Link href="/profile" className="text-sm font-black text-blue-700">Manage</Link>
+          <Link href="/v2/privacy-security" className="text-sm font-black text-amber-800">Manage</Link>
         </div>
         <div className="space-y-3 text-sm font-semibold text-slate-600">
           <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-2"><Eye className="size-4" />Profile Visibility</span><span>Public</span></div>
           <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-2"><Globe2 className="size-4" />Activity Visibility</span><span>Public</span></div>
-          <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-2"><MessageCircle className="size-4" />Messages</span><span>Guarded</span></div>
+          <div className="flex items-center justify-between gap-3"><span className="inline-flex items-center gap-2"><Bookmark className="size-4" />Saved Items</span><span>Private</span></div>
         </div>
         {(websiteUrl || supportUrl) && (
           <div className="mt-4 border-t border-slate-100 pt-4">
-            {websiteUrl && <Link href={websiteUrl} target="_blank" className="mb-2 block text-sm font-black text-blue-700">Creator website</Link>}
-            {supportUrl && <Link href={supportUrl} target="_blank" className="block text-sm font-black text-blue-700">{profile?.creator_support_label?.trim() || "Support"}</Link>}
+            {websiteUrl && <Link href={websiteUrl} target="_blank" className="mb-2 block text-sm font-black text-amber-800">Creator website</Link>}
+            {supportUrl && <Link href={supportUrl} target="_blank" className="block text-sm font-black text-amber-800">{profile?.creator_support_label?.trim() || "Support"}</Link>}
           </div>
         )}
       </section>
@@ -595,16 +534,16 @@ function FooterCards() {
   return (
     <section className="mt-6 grid gap-4 md:grid-cols-4">
       {[
-        { title: "Identity & Presence", description: "Showcase who you are and how others find you.", icon: UserRound },
-        { title: "Contribution Overview", description: "See your discussions, replies, saved items, and signals.", icon: Sparkles },
-        { title: "Manage Visibility", description: "Use profile settings to control how you engage.", icon: ShieldCheck },
-        { title: "Quality Reputation", description: "Build trust through constructive participation.", icon: Award },
+        { title: "Identity & Presence", description: "Showcase who you are and how others understand your perspective.", icon: UserRound },
+        { title: "Contribution Overview", description: "Live counts for discussions, replies, saved items, and signals.", icon: Sparkles },
+        { title: "Public Visibility", description: "Your profile card reflects visible activity across Loombus.", icon: ShieldCheck },
+        { title: "Quality Reputation", description: "Build trust through constructive public participation.", icon: Award },
       ].map((item) => {
         const Icon = item.icon;
         return (
           <div key={item.title} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="grid size-11 place-items-center rounded-2xl bg-blue-50 text-blue-700"><Icon className="size-6" /></div>
-            <h3 className="mt-3 font-black text-blue-700">{item.title}</h3>
+            <div className="grid size-11 place-items-center rounded-2xl bg-amber-50 text-amber-800 ring-1 ring-amber-200"><Icon className="size-6" /></div>
+            <h3 className="mt-3 font-black text-slate-950">{item.title}</h3>
             <p className="mt-1 text-sm leading-6 text-slate-500">{item.description}</p>
           </div>
         );
@@ -616,77 +555,131 @@ function FooterCards() {
 export default function V2ProfilePage() {
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [viewerId, setViewerId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState("Overview");
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<ProfileFormState>(profileToForm(null));
+
+  async function loadPage() {
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const response = await fetch("/api/v2/shell", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      });
+      const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
+
+      setPayload(nextPayload);
+      if (!isV2Allowed(nextPayload)) return;
+
+      const currentViewerId = sessionData.session?.user.id ?? null;
+      if (!currentViewerId) return;
+
+      setViewerId(currentViewerId);
+      const nextProfileData = await loadProfileData(currentViewerId);
+      setProfileData(nextProfileData);
+      setForm(profileToForm(nextProfileData.profile));
+    } catch {
+      setPayload(getDefaultShellPayload());
+      setMessage("Unable to load the V2 profile safely. Current Loombus remains available.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let mounted = true;
-
-    async function loadPage() {
-      if (mounted) {
-        setLoading(true);
-        setMessage("");
-      }
-
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData.session?.access_token;
-        const requestInit = accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : {};
-        const response = await fetch("/api/v2/shell", requestInit);
-        const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
-
-        if (mounted) setPayload(nextPayload);
-        if (!isV2Allowed(nextPayload)) return;
-
-        const { data: userData } = await supabase.auth.getUser();
-        const viewerId = userData.user?.id;
-        if (!viewerId) return;
-
-        const nextProfileData = await loadProfileData(viewerId);
-        if (mounted) setProfileData(nextProfileData);
-      } catch {
-        if (mounted) {
-          setPayload(getDefaultShellPayload());
-          setMessage("Unable to load the V2 profile dashboard safely. Current Loombus remains available.");
-        }
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
     void loadPage();
     const { data } = supabase.auth.onAuthStateChange(() => {
       void loadPage();
     });
-
-    return () => {
-      mounted = false;
-      data.subscription.unsubscribe();
-    };
+    return () => data.subscription.unsubscribe();
   }, []);
 
-  const data = useMemo<ProfileData>(() => profileData ?? { profile: null, stats: DEFAULT_STATS, discussions: [], replies: [] }, [profileData]);
+  async function handleSaveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!viewerId || saving) return;
 
-  if (loading) return <GateCard title="Loading Profile" message="Loombus is verifying access before loading this V2 profile page." loading />;
-  if (message) return <GateCard title="V2 profile check failed safely" message={message} payload={payload} />;
-  if (!payload?.authenticated) return <GateCard title="Sign in required" message="The V2 shell is internal-only right now. Sign in first so Loombus can verify access." payload={payload} />;
+    setMessage("");
+
+    if (!form.fullName.trim() || !form.username.trim()) {
+      setMessage("Display name and username are required for a public profile.");
+      return;
+    }
+
+    if (!isValidOptionalUrl(form.avatarUrl) || !isValidOptionalUrl(form.creatorWebsiteUrl) || !isValidOptionalUrl(form.creatorSupportUrl)) {
+      setMessage("Profile links must start with http:// or https://.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: form.fullName.trim(),
+          username: form.username.trim(),
+          bio: form.bio.trim(),
+          perspective_marker: form.perspectiveMarker || null,
+          avatar_url: form.avatarUrl.trim() || null,
+          creator_website_url: form.creatorWebsiteUrl.trim() || null,
+          creator_support_url: form.creatorSupportUrl.trim() || null,
+          creator_support_label: form.creatorSupportLabel.trim() || null,
+        })
+        .eq("id", viewerId);
+
+      if (error) {
+        setMessage(error.message || "Unable to save profile.");
+        return;
+      }
+
+      const nextProfileData = await loadProfileData(viewerId);
+      setProfileData(nextProfileData);
+      setForm(profileToForm(nextProfileData.profile));
+      setEditing(false);
+      setMessage("Profile updated.");
+    } catch {
+      setMessage("Unable to save profile.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const data = useMemo<ProfileData>(() => profileData ?? { profile: null, stats: DEFAULT_STATS, discussions: [], replies: [], topics: [] }, [profileData]);
+  const visibleDiscussions = activeTab === "Overview" ? data.discussions.slice(0, 4) : data.discussions;
+  const visibleReplies = activeTab === "Overview" ? data.replies.slice(0, 4) : data.replies;
+
+  if (loading) return <V2ShellGateCard title="Loading Profile" message="Loombus is verifying access before loading this V2 profile page." loading />;
+  if (message && !payload?.authenticated) return <V2ShellGateCard title="V2 profile check failed safely" message={message} payload={payload} />;
+  if (!payload?.authenticated) return <V2ShellGateCard title="Sign in required" message="Sign in first so Loombus can verify access to the V2 profile page." payload={payload} />;
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") {
-    return <GateCard title="V2 shell is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
+    return <V2ShellGateCard title="V2 shell is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on the current experience." payload={payload} />;
   }
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
-      <V2TopNav />
+      <V2ShellTopNav />
       <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         <header className="mb-5">
           <h1 className="text-3xl font-black tracking-tight text-slate-950">Profile</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Your profile, contributions, and presence across Loombus.</p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Your live public profile, contribution overview, and visible Loombus activity.</p>
         </header>
+
+        {message && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">{message}</div>}
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-6">
-            <ProfileHero profile={data.profile} stats={data.stats} />
+            <ProfileHero profile={data.profile} stats={data.stats} topics={data.topics} onEdit={() => setEditing(true)} />
+
+            {editing ? (
+              <ProfileEditor form={form} setForm={setForm} saving={saving} onSubmit={handleSaveProfile} onCancel={() => { setForm(profileToForm(data.profile)); setEditing(false); }} />
+            ) : null}
 
             <div className="flex gap-2 overflow-x-auto border-b border-slate-200 pb-0">
               {PROFILE_TABS.map((tab) => (
@@ -694,28 +687,48 @@ export default function V2ProfilePage() {
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`shrink-0 border-b-2 px-4 py-3 text-sm font-black transition ${activeTab === tab ? "border-blue-600 text-blue-700" : "border-transparent text-slate-500 hover:text-blue-700"}`}
+                  className={`shrink-0 border-b-2 px-4 py-3 text-sm font-black transition ${activeTab === tab ? "border-amber-500 text-amber-800" : "border-transparent text-slate-500 hover:text-amber-800"}`}
                 >
                   {tab}
                 </button>
               ))}
             </div>
 
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)]">
-              <FeaturedDiscussions discussions={data.discussions} />
-              <div className="space-y-5">
-                <RecentReplies replies={data.replies} />
-                <RoomsAndLabs />
+            {activeTab === "Contributions" ? (
+              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                <h2 className="font-black text-slate-950">Contribution Overview</h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                  {[
+                    { label: "Discussions", value: data.stats.discussions, icon: BookOpen },
+                    { label: "Replies", value: data.stats.replies, icon: Reply },
+                    { label: "Saved", value: data.stats.saved, icon: Bookmark },
+                    { label: "Signals", value: data.stats.signals, icon: Sparkles },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <Icon className="size-5 text-amber-700" />
+                        <p className="mt-3 text-2xl font-black text-slate-950">{formatCount(item.value)}</p>
+                        <p className="text-xs font-bold text-slate-500">{item.label}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : (
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)]">
+                {(activeTab === "Overview" || activeTab === "Discussions") && <FeaturedDiscussions discussions={visibleDiscussions} />}
+                {(activeTab === "Overview" || activeTab === "Replies") && <RecentReplies replies={visibleReplies} />}
               </div>
-            </div>
+            )}
           </div>
 
-          <RightRail profile={data.profile} stats={data.stats} />
+          <RightRail profile={data.profile} stats={data.stats} topics={data.topics} />
         </section>
 
         <FooterCards />
       </section>
-      <MobileBottomNav />
+      <V2ShellMobileNav />
     </main>
   );
 }
