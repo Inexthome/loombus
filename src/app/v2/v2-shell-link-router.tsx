@@ -81,6 +81,19 @@ export function V2ShellLinkRouter() {
   return (
     <>
       <style>{`
+        .loombus-v2-top-nav nav a[href="/v2"],
+        .loombus-v2-top-nav nav a[href="/v2/messages"],
+        .loombus-v2-top-nav nav a[href="/v2/people"] {
+          display: none !important;
+        }
+
+        .loombus-v2-top-nav a[href="/v2/notifications"] span {
+          background: #ffffff !important;
+          color: #111827 !important;
+          border: 1px solid #d1d5db !important;
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16) !important;
+        }
+
         .loombus-v2-top-nav .v2-avatar-menu-inline {
           display: none !important;
         }

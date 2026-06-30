@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Loader2, Lock } from "lucide-react";
-import { V2_ACTION_NAV_ITEMS, V2_PRIMARY_NAV_ITEMS } from "./v2-navigation";
+import { V2_ACTION_NAV_ITEMS, V2_PRIMARY_NAV_ITEMS, V2_TOP_NAV_ITEMS } from "./v2-navigation";
 import { V2UserAvatarMenu } from "./v2-user-avatar-menu";
 
 export type FeatureFlags = {
@@ -73,7 +73,7 @@ export function V2ShellTopNav() {
           <span className="text-lg font-black tracking-tight text-slate-950 sm:text-xl">Loombus</span>
         </Link>
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex">
-          {V2_PRIMARY_NAV_ITEMS.map((item) => {
+          {V2_TOP_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isNavActive(pathname, item.href);
             return (
