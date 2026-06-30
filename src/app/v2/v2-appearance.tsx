@@ -25,15 +25,18 @@ export function isV2AppearanceTheme(value: unknown): value is V2AppearanceTheme 
   return value === "light" || value === "dark" || value === "system";
 }
 
+function getStoredV2AppearanceRaw() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(V2_APPEARANCE_STORAGE_KEY);
+}
+
 export function applyV2Appearance(theme: V2AppearanceTheme) {
   if (typeof document === "undefined") return;
-  // Write data-loombus-theme on <html> — identical to V1's globals.css system.
   document.documentElement.setAttribute("data-loombus-theme", theme);
 }
 
 export function getStoredV2Appearance(): V2AppearanceTheme {
-  if (typeof window === "undefined") return V2_DEFAULT_APPEARANCE;
-  const stored = window.localStorage.getItem(V2_APPEARANCE_STORAGE_KEY);
+  const stored = getStoredV2AppearanceRaw();
   return isV2AppearanceTheme(stored) ? stored : V2_DEFAULT_APPEARANCE;
 }
 
@@ -54,9 +57,9 @@ async function persistSignedInV2Appearance(theme: V2AppearanceTheme) {
 export function setV2AppearancePreference(theme: V2AppearanceTheme) {
   if (typeof window !== "undefined") {
     window.localStorage.setItem(V2_APPEARANCE_STORAGE_KEY, theme);
+    window.dispatchEvent(new CustomEvent("loombus:v2-appearance-changed", { detail: { theme } }));
   }
   applyV2Appearance(theme);
-  window.dispatchEvent(new CustomEvent("loombus:v2-appearance-changed", { detail: { theme } }));
   void persistSignedInV2Appearance(theme);
 }
 
@@ -64,15 +67,36 @@ export function V2AppearanceProvider({ children }: { children: React.ReactNode }
   const pathname = usePathname();
 
   useEffect(() => {
-    applyV2Appearance(getStoredV2Appearance());
+    function applyStoredPreference() {
+      applyV2Appearance(getStoredV2Appearance());
+    }
+
+    applyStoredPreference();
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     function handleSystemChange() {
       if (getStoredV2Appearance() === "system") applyV2Appearance("system");
     }
+
+    function handleAppearanceEvent(event: Event) {
+      const theme = (event as CustomEvent<{ theme?: unknown }>).detail?.theme;
+      if (isV2AppearanceTheme(theme)) applyV2Appearance(theme);
+    }
+
+    function handleStorageEvent(event: StorageEvent) {
+      if (event.key !== V2_APPEARANCE_STORAGE_KEY) return;
+      applyStoredPreference();
+    }
+
     mediaQuery.addEventListener("change", handleSystemChange);
+    window.addEventListener("loombus:v2-appearance-changed", handleAppearanceEvent as EventListener);
+    window.addEventListener("storage", handleStorageEvent);
 
     async function loadSignedInPreference() {
+      // Settings writes the user's choice to localStorage immediately. Do not let a
+      // stale /api/v2/shell response on the next route override that same-tab choice.
+      if (isV2AppearanceTheme(getStoredV2AppearanceRaw())) return;
+
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
       if (!accessToken) return;
@@ -90,7 +114,11 @@ export function V2AppearanceProvider({ children }: { children: React.ReactNode }
     }
     void loadSignedInPreference();
 
-    return () => mediaQuery.removeEventListener("change", handleSystemChange);
+    return () => {
+      mediaQuery.removeEventListener("change", handleSystemChange);
+      window.removeEventListener("loombus:v2-appearance-changed", handleAppearanceEvent as EventListener);
+      window.removeEventListener("storage", handleStorageEvent);
+    };
   }, [pathname]);
 
   return (
