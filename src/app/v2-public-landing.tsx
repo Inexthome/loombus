@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, MessageCircle, Search, Sparkles, Users } from "lucide-react";
+import { ArrowRight, MessageCircle, Search, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 const publicSignals = [
@@ -49,9 +49,9 @@ export function V2PublicLanding() {
   }, []);
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f7f7f4] text-slate-950">
+    <main className="min-h-screen overflow-hidden bg-stone-50 text-slate-950">
       <section className="relative isolate min-h-screen px-5 py-6 sm:px-8 lg:px-12">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(214,168,79,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(15,23,42,0.10),transparent_36%)]" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-amber-50 via-stone-50 to-slate-100" />
         <div className="absolute inset-x-0 top-0 -z-10 h-56 bg-gradient-to-b from-white to-transparent" />
 
         <header className="mx-auto flex max-w-7xl items-center justify-between gap-4">
@@ -59,17 +59,13 @@ export function V2PublicLanding() {
             <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-10 object-contain" />
             <span className="text-xl">Loombus</span>
           </Link>
-          <Link href="/login" className="rounded-full bg-slate-950 px-4 py-2 text-sm font-black text-white shadow-xl shadow-slate-900/20 transition hover:bg-slate-800">
+          <Link href="/login" className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-slate-900/10 transition hover:border-slate-400 hover:bg-slate-50">
             Join Loombus
           </Link>
         </header>
 
-        <section className="mx-auto grid max-w-7xl gap-10 pb-16 pt-16 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:pt-24">
+        <section className="mx-auto grid max-w-7xl gap-10 pb-16 pt-24 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:pt-32">
           <div className="max-w-3xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-slate-700 shadow-sm">
-              <Sparkles className="size-4 text-amber-700" />
-              Loombus V2
-            </div>
             <h1 className="text-5xl font-black tracking-tight text-slate-950 sm:text-6xl lg:text-7xl">
               You deserve better than the scroll.
             </h1>
@@ -77,7 +73,7 @@ export function V2PublicLanding() {
               Loombus is a signal-first discussion platform built for clearer conversations, stronger ideas, and less noise.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/login" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-6 py-4 text-base font-black text-white shadow-2xl shadow-slate-900/20 transition hover:bg-slate-800">
+              <Link href="/login" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-300 px-6 py-4 text-base font-black text-slate-950 shadow-2xl shadow-amber-900/15 transition hover:bg-amber-400">
                 Get started
                 <ArrowRight className="size-5" />
               </Link>
