@@ -16,6 +16,7 @@ import {
   Search,
   Send,
   ShieldAlert,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { ProfileAvatar } from "@/components/profile-avatar";
@@ -115,7 +116,12 @@ function formatMessageTime(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "";
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(date);
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function MessagesGateCard({
@@ -177,6 +183,7 @@ export default function V2MessagesPage() {
   const [sending, setSending] = useState(false);
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const [conversationAction, setConversationAction] = useState<string | null>(null);
+  const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
   const [reportPanelOpen, setReportPanelOpen] = useState(false);
   const [reportReason, setReportReason] = useState("harassment");
   const [reportNotes, setReportNotes] = useState("");
@@ -319,6 +326,8 @@ export default function V2MessagesPage() {
       setThreadMessages([]);
       return;
     }
+    setConversationMenuOpen(false);
+    setReportPanelOpen(false);
     void loadThread(selectedConversationId);
   }, [selectedConversationId]);
 
@@ -524,6 +533,8 @@ export default function V2MessagesPage() {
     if (!confirmed) return;
 
     setConversationAction(action);
+    setConversationMenuOpen(false);
+    setReportPanelOpen(false);
     setMessage("");
 
     try {
@@ -552,7 +563,6 @@ export default function V2MessagesPage() {
         setSelectedConversationId(null);
         setThreadMessages([]);
         setMobileThreadOpen(false);
-        setReportPanelOpen(false);
       } else if (action === "mute" || action === "unmute") {
         setConversations((current) => current.map((conversation) => conversation.id === selectedConversationId ? { ...conversation, mutedAt: result.mutedAt } : conversation));
       }
@@ -567,6 +577,7 @@ export default function V2MessagesPage() {
     if (!selectedConversationId || conversationAction) return;
 
     setConversationAction("report");
+    setConversationMenuOpen(false);
     setMessage("");
 
     try {
@@ -601,6 +612,12 @@ export default function V2MessagesPage() {
     }
   }
 
+  function openReportPanel() {
+    if (!selectedConversation) return;
+    setConversationMenuOpen(false);
+    setReportPanelOpen(true);
+  }
+
   if (shellLoading) {
     return <MessagesGateCard title="Checking Messages access" message="Loombus is preparing your private conversations." loading />;
   }
@@ -616,6 +633,8 @@ export default function V2MessagesPage() {
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") {
     return <MessagesGateCard title="V2 Messages is not enabled" message="This account is not currently allowed through the v2_shell flag. You can continue using the current Messages experience." payload={payload} />;
   }
+
+  const actionDisabled = !selectedConversation || Boolean(conversationAction);
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
@@ -689,19 +708,70 @@ export default function V2MessagesPage() {
           </aside>
 
           <section className={`min-h-[760px] flex-col bg-white lg:flex ${mobileThreadOpen ? "flex" : "hidden"}`}>
-            <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
-              <div className="flex items-center gap-3">
+            <header className="relative flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
+              <div className="flex min-w-0 items-center gap-3">
                 <button type="button" onClick={() => setMobileThreadOpen(false)} className="grid size-9 place-items-center rounded-full text-slate-500 transition hover:bg-slate-50 hover:text-slate-950 lg:hidden" aria-label="Back to messages">
                   <ArrowLeft className="size-5" />
                 </button>
                 <ProfileAvatar profile={{ avatar_url: selectedConversation?.otherAvatarUrl ?? null, full_name: selectedConversation?.otherFullName ?? null, username: selectedConversation?.otherUsername ?? null }} size="sm" />
-                <div>
-                  <h2 className="font-black text-slate-950">{getDisplayName(selectedConversation)}</h2>
-                  <p className="text-xs font-semibold text-slate-500">{getSubLabel(selectedConversation)}{selectedConversation?.mutedAt ? " · Muted" : ""}</p>
+                <div className="min-w-0">
+                  <h2 className="truncate font-black text-slate-950">{getDisplayName(selectedConversation)}</h2>
+                  <p className="truncate text-xs font-semibold text-slate-500">{getSubLabel(selectedConversation)}{selectedConversation?.mutedAt ? " · Muted" : ""}</p>
                 </div>
               </div>
-              <MoreHorizontal className="size-5 text-slate-400" />
+              <button
+                type="button"
+                onClick={() => setConversationMenuOpen((open) => !open)}
+                disabled={!selectedConversation}
+                className="grid size-10 place-items-center rounded-full text-slate-500 transition hover:bg-slate-50 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Conversation actions"
+                aria-expanded={conversationMenuOpen}
+              >
+                <MoreHorizontal className="size-5" />
+              </button>
+
+              {conversationMenuOpen ? (
+                <div className="absolute right-4 top-16 z-20 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/15">
+                  <button type="button" onClick={() => void runConversationAction(selectedConversation?.mutedAt ? "unmute" : "mute")} disabled={actionDisabled} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
+                    <EyeOff className="size-4" /> {selectedConversation?.mutedAt ? "Unmute conversation" : "Mute conversation"}
+                  </button>
+                  <button type="button" onClick={() => void runConversationAction("archive")} disabled={actionDisabled} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
+                    <Archive className="size-4" /> Archive conversation
+                  </button>
+                  <button type="button" onClick={openReportPanel} disabled={actionDisabled} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
+                    <ShieldAlert className="size-4" /> Report conversation
+                  </button>
+                  <button type="button" onClick={() => void runConversationAction("delete")} disabled={actionDisabled} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm font-black text-red-700 transition hover:bg-red-50 disabled:opacity-50">
+                    <Trash2 className="size-4" /> Delete conversation
+                  </button>
+                </div>
+              ) : null}
             </header>
+
+            {reportPanelOpen ? (
+              <section className="border-b border-amber-200 bg-amber-50 px-5 py-4">
+                <div className="mx-auto max-w-3xl rounded-2xl border border-amber-200 bg-white p-4 shadow-sm">
+                  <h3 className="text-sm font-black text-slate-950">Report conversation</h3>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">Choose a reason and add any context that will help moderation review this conversation.</p>
+                  <label className="mt-4 block text-xs font-black uppercase tracking-[0.16em] text-slate-500" htmlFor="v2-message-report-reason-main">Reason</label>
+                  <select id="v2-message-report-reason-main" value={reportReason} onChange={(event) => setReportReason(event.target.value)} className="mt-2 w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-amber-400">
+                    {REPORT_REASONS.map((reason) => (
+                      <option key={reason.value} value={reason.value}>{reason.label}</option>
+                    ))}
+                  </select>
+                  <label className="mt-4 block text-xs font-black uppercase tracking-[0.16em] text-slate-500" htmlFor="v2-message-report-notes-main">Notes</label>
+                  <textarea id="v2-message-report-notes-main" value={reportNotes} onChange={(event) => setReportNotes(event.target.value)} rows={3} placeholder="Add optional context for the moderation team." className="mt-2 w-full resize-none rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-amber-400" />
+                  <div className="mt-4 flex gap-2">
+                    <button type="button" onClick={() => void submitReport()} disabled={conversationAction === "report"} className="rounded-xl bg-amber-300 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
+                      {conversationAction === "report" ? "Reporting..." : "Submit report"}
+                    </button>
+                    <button type="button" onClick={() => setReportPanelOpen(false)} disabled={conversationAction === "report"} className="rounded-xl border border-amber-200 bg-white px-4 py-2 text-sm font-black text-slate-600 transition hover:text-slate-950 disabled:opacity-60">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </section>
+            ) : null}
 
             <div className="flex-1 space-y-4 overflow-y-auto bg-white px-5 py-5">
               {message ? <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">{message}</div> : null}
@@ -770,39 +840,19 @@ export default function V2MessagesPage() {
               <Link href={selectedConversation?.otherUsername ? `/v2/people/${selectedConversation.otherUsername}` : "/v2/people"} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950">
                 <UserRound className="size-4" /> View profile
               </Link>
-              <button type="button" onClick={() => void runConversationAction(selectedConversation?.mutedAt ? "unmute" : "mute")} disabled={!selectedConversation || Boolean(conversationAction)} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50">
+              <button type="button" onClick={() => void runConversationAction(selectedConversation?.mutedAt ? "unmute" : "mute")} disabled={actionDisabled} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50">
                 <EyeOff className="size-4" /> {selectedConversation?.mutedAt ? "Unmute" : "Mute"}
               </button>
-              <button type="button" onClick={() => void runConversationAction("archive")} disabled={!selectedConversation || Boolean(conversationAction)} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50">
+              <button type="button" onClick={() => void runConversationAction("archive")} disabled={actionDisabled} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50">
                 <Archive className="size-4" /> Archive
               </button>
-              <button type="button" onClick={() => setReportPanelOpen((open) => !open)} disabled={!selectedConversation || Boolean(conversationAction)} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50">
+              <button type="button" onClick={openReportPanel} disabled={actionDisabled} className="flex items-center gap-3 rounded-2xl border border-slate-200 px-3 py-3 text-left text-sm font-black text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 disabled:opacity-50">
                 <ShieldAlert className="size-4" /> Report
               </button>
+              <button type="button" onClick={() => void runConversationAction("delete")} disabled={actionDisabled} className="flex items-center gap-3 rounded-2xl border border-red-100 px-3 py-3 text-left text-sm font-black text-red-700 transition hover:bg-red-50 disabled:opacity-50">
+                <Trash2 className="size-4" /> Delete
+              </button>
             </div>
-
-            {reportPanelOpen ? (
-              <section className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <h3 className="text-sm font-black text-slate-950">Report conversation</h3>
-                <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">Choose a reason and add any context that will help moderation review this conversation.</p>
-                <label className="mt-4 block text-xs font-black uppercase tracking-[0.16em] text-slate-500" htmlFor="v2-message-report-reason">Reason</label>
-                <select id="v2-message-report-reason" value={reportReason} onChange={(event) => setReportReason(event.target.value)} className="mt-2 w-full rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-amber-400">
-                  {REPORT_REASONS.map((reason) => (
-                    <option key={reason.value} value={reason.value}>{reason.label}</option>
-                  ))}
-                </select>
-                <label className="mt-4 block text-xs font-black uppercase tracking-[0.16em] text-slate-500" htmlFor="v2-message-report-notes">Notes</label>
-                <textarea id="v2-message-report-notes" value={reportNotes} onChange={(event) => setReportNotes(event.target.value)} rows={4} placeholder="Add optional context for the moderation team." className="mt-2 w-full resize-none rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 focus:border-amber-400" />
-                <div className="mt-4 flex gap-2">
-                  <button type="button" onClick={() => void submitReport()} disabled={conversationAction === "report"} className="flex-1 rounded-xl bg-amber-300 px-3 py-2 text-sm font-black text-slate-950 transition hover:bg-amber-400 disabled:opacity-60">
-                    {conversationAction === "report" ? "Reporting..." : "Submit report"}
-                  </button>
-                  <button type="button" onClick={() => setReportPanelOpen(false)} disabled={conversationAction === "report"} className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-black text-slate-600 transition hover:text-slate-950 disabled:opacity-60">
-                    Cancel
-                  </button>
-                </div>
-              </section>
-            ) : null}
           </aside>
         </section>
       </section>
