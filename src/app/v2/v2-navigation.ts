@@ -45,6 +45,10 @@ export const V2_PRIMARY_NAV_ITEMS: V2NavItem[] = [
   { label: "People", href: "/v2/people", icon: Users },
 ];
 
+export const V2_TOP_NAV_ITEMS: V2NavItem[] = V2_PRIMARY_NAV_ITEMS.filter(
+  (item) => !["Home", "Messages", "People"].includes(item.label)
+);
+
 export const V2_ACTION_NAV_ITEMS: V2NavItem[] = [
   { label: "Search", href: "/v2/search", icon: Search },
   { label: "Notifications", href: "/v2/notifications", icon: Bell },
@@ -52,9 +56,16 @@ export const V2_ACTION_NAV_ITEMS: V2NavItem[] = [
 
 export const V2_MENU_GROUPS: V2MenuGroup[] = [
   {
+    title: "Main",
+    items: [
+      { label: "Home", href: "/v2", icon: Home },
+      { label: "Messages", href: "/v2/messages", icon: Mail },
+      { label: "People", href: "/v2/people", icon: Users },
+    ],
+  },
+  {
     title: "Discover",
     items: [
-      { label: "People", href: "/v2/people", icon: Users },
       { label: "Labs", href: "/v2/labs", icon: FlaskConical },
       { label: "Topics", href: "/v2/topics", icon: Sparkles },
       { label: "Following", href: "/v2/following", icon: Heart },
