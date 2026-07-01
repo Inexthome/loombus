@@ -1,15 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import {
   Bell,
-  Building2,
   ChevronRight,
-  Code2,
   FlaskConical,
   Home,
-  Leaf,
   Loader2,
   Lock,
   MessageCircle,
@@ -18,6 +15,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  ThumbsUp,
   Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
@@ -35,24 +33,53 @@ type ShellPayload = {
   flags: FeatureFlags;
 };
 
-type LabCard = {
+type AiEntitlement = {
+  tier: string | null;
+  ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
+} | null;
+
+type LabsFeatureRequestStatus = "submitted" | "reviewing" | "planned" | "shipped" | "declined";
+
+type LabsFeatureRequest = {
+  id: string;
+  user_id: string;
   title: string;
   description: string;
-  members: string;
-  followers: string;
-  latestUpdate: string;
-  latestAge: string;
-  status: "Member" | "Requested" | "Open";
-  category: "Research" | "Civic" | "Technology" | "Product Experiments";
-  accent: string;
-  icon: typeof FlaskConical;
+  status: LabsFeatureRequestStatus;
+  admin_note: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  vote_count: number;
+  voted_by_me: boolean;
 };
+
+type RequestFilter = "All" | "Submitted" | "Reviewing" | "Planned" | "Shipped" | "Declined" | "My requests";
 
 const DEFAULT_FLAGS: FeatureFlags = {
   v2_shell: false,
   v2_signal_brief: false,
   v2_rooms: false,
 };
+
+const STATUS_LABELS: Record<LabsFeatureRequestStatus, string> = {
+  submitted: "Submitted",
+  reviewing: "Reviewing",
+  planned: "Planned",
+  shipped: "Shipped",
+  declined: "Declined",
+};
+
+const STATUS_CLASSES: Record<LabsFeatureRequestStatus, string> = {
+  submitted: "bg-slate-100 text-slate-700",
+  reviewing: "bg-blue-50 text-blue-700",
+  planned: "bg-violet-50 text-violet-700",
+  shipped: "bg-emerald-50 text-emerald-700",
+  declined: "bg-rose-50 text-rose-700",
+};
+
+const FILTERS: RequestFilter[] = ["All", "Submitted", "Reviewing", "Planned", "Shipped", "Declined", "My requests"];
 
 const V2_NAV_ITEMS = [
   { label: "Home", href: "/v2", icon: Home },
@@ -71,78 +98,6 @@ const MOBILE_NAV_ITEMS = [
   { label: "Labs", href: "/v2/labs", icon: FlaskConical, active: true },
 ];
 
-const FILTERS = ["All Labs", "Following", "Research", "Product Experiments", "Civic", "Technology", "Requested"];
-
-const LABS: LabCard[] = [
-  {
-    title: "Loombus Research Lab",
-    description: "Advancing decentralized systems, identity, trust, and social coordination.",
-    members: "1.8k",
-    followers: "124",
-    latestUpdate: "Exploring verifiable reputation in cross-platform communities.",
-    latestAge: "2h ago",
-    status: "Member",
-    category: "Research",
-    accent: "from-slate-950 to-indigo-700",
-    icon: FlaskConical,
-  },
-  {
-    title: "Civic Futures Lab",
-    description: "Designing civic tools and infrastructure for participatory, transparent communities.",
-    members: "1.4k",
-    followers: "96",
-    latestUpdate: "New draft: Civic data portability for transparent governance.",
-    latestAge: "1d ago",
-    status: "Member",
-    category: "Civic",
-    accent: "from-emerald-700 to-teal-400",
-    icon: Users,
-  },
-  {
-    title: "Open Systems Lab",
-    description: "Building open protocols, open data, and interoperable social systems.",
-    members: "980",
-    followers: "72",
-    latestUpdate: "Experiment: Interoperable discussion threads.",
-    latestAge: "3d ago",
-    status: "Requested",
-    category: "Technology",
-    accent: "from-violet-700 to-purple-500",
-    icon: Code2,
-  },
-  {
-    title: "AI Conversation Tools Lab",
-    description: "Exploring ethical AI tools that enhance meaningful conversations.",
-    members: "870",
-    followers: "54",
-    latestUpdate: "Prototype: Context-aware summaries for long threads.",
-    latestAge: "4d ago",
-    status: "Requested",
-    category: "Product Experiments",
-    accent: "from-blue-700 to-cyan-400",
-    icon: MessageCircle,
-  },
-  {
-    title: "Climate Solutions Hub",
-    description: "Coordinating climate research, data, and action across communities.",
-    members: "620",
-    followers: "48",
-    latestUpdate: "New dataset: Community climate resilience indicators.",
-    latestAge: "5d ago",
-    status: "Member",
-    category: "Civic",
-    accent: "from-teal-700 to-emerald-400",
-    icon: Leaf,
-  },
-];
-
-const RECENT_UPDATES = [
-  { title: "Verifiable reputation in communities", lab: "Loombus Research Lab", age: "2h ago", icon: FlaskConical },
-  { title: "Civic data portability draft", lab: "Civic Futures Lab", age: "1d ago", icon: Users },
-  { title: "Interoperable discussion threads", lab: "Open Systems Lab", age: "3d ago", icon: Code2 },
-  { title: "AI thread summarization prototype", lab: "AI Conversation Tools Lab", age: "4d ago", icon: MessageCircle },
-];
-
 function getDefaultShellPayload(): ShellPayload {
   return {
     version: "v1",
@@ -150,6 +105,28 @@ function getDefaultShellPayload(): ShellPayload {
     authenticated: false,
     flags: DEFAULT_FLAGS,
   };
+}
+
+function hasLabsVotingAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+  if (isAdmin || entitlement?.tier === "admin") return true;
+  const isPremiumPlus = entitlement?.tier === "premium_plus" || (entitlement?.tier === "premium" && (entitlement.monthly_summary_limit ?? 0) > 50);
+  return entitlement?.ai_assisted_enabled === true && isPremiumPlus;
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "Recently";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Recently";
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
+}
+
+function statusFromFilter(filter: RequestFilter): LabsFeatureRequestStatus | null {
+  if (filter === "Submitted") return "submitted";
+  if (filter === "Reviewing") return "reviewing";
+  if (filter === "Planned") return "planned";
+  if (filter === "Shipped") return "shipped";
+  if (filter === "Declined") return "declined";
+  return null;
 }
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
@@ -188,13 +165,7 @@ function V2TopNav() {
           {V2_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             return (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  item.primary ? "border border-white/40 text-white hover:bg-white/10" : "text-blue-100 hover:bg-white/10 hover:text-white"
-                }`}
-              >
+              <Link key={item.label} href={item.href} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${item.primary ? "border border-white/40 text-white hover:bg-white/10" : "text-blue-100 hover:bg-white/10 hover:text-white"}`}>
                 <Icon className="size-4" />
                 {item.label}
               </Link>
@@ -203,7 +174,7 @@ function V2TopNav() {
         </nav>
         <div className="flex items-center gap-2">
           <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Search className="size-5" /></Link>
-          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /><span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">3</span></Link>
+          <Link href="/v2/notifications" aria-label="Notifications" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /></Link>
         </div>
       </div>
     </header>
@@ -228,43 +199,26 @@ function MobileBottomNav() {
   );
 }
 
-function StatusPill({ status }: { status: LabCard["status"] }) {
-  if (status === "Member") return <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">Member</span>;
-  if (status === "Requested") return <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-orange-700">Requested</span>;
-  return <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">Open</span>;
-}
-
-function LabCardView({ lab }: { lab: LabCard }) {
-  const Icon = lab.icon;
-  const needsAccess = lab.status === "Requested";
+function RequestCard({ request, currentUserId, canVote, onVote }: { request: LabsFeatureRequest; currentUserId: string | null; canVote: boolean; onVote: (requestId: string) => void }) {
+  const mine = request.user_id === currentUserId;
   return (
-    <article className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className={`grid size-20 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${lab.accent} text-white shadow-lg`}>
-          <Icon className="size-9" />
-        </div>
+    <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl font-black text-slate-950">{lab.title}</h2>
-            <ShieldCheck className="size-4 text-blue-600" />
+            <span className={`rounded-full px-3 py-1 text-xs font-black ${STATUS_CLASSES[request.status]}`}>{STATUS_LABELS[request.status]}</span>
+            {mine && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">Your request</span>}
+            <span className="text-xs font-semibold text-slate-400">Submitted {formatDate(request.created_at)}</span>
           </div>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">{lab.description}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-5 text-sm font-semibold text-slate-500">
-            <span className="inline-flex items-center gap-1.5"><Users className="size-4" /> {lab.members} members</span>
-            <span className="inline-flex items-center gap-1.5"><MessageCircle className="size-4" /> {lab.followers} followers</span>
-          </div>
-          <p className="mt-4 border-t border-slate-100 pt-3 text-sm font-semibold text-slate-600">
-            <span className="font-black text-slate-800">Latest update:</span> {lab.latestUpdate}
-            <span className="ml-3 text-xs text-slate-400">{lab.latestAge}</span>
-          </p>
+          <h2 className="mt-3 text-xl font-black text-slate-950">{request.title}</h2>
+          <p className="mt-2 max-w-3xl whitespace-pre-wrap text-sm leading-6 text-slate-600">{request.description}</p>
+          {request.admin_note && <p className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-800"><span className="font-black">Admin note:</span> {request.admin_note}</p>}
         </div>
-        <div className="flex gap-2 sm:min-w-[120px] sm:flex-col">
-          <Link href="/labs" className="rounded-xl bg-blue-600 px-4 py-2 text-center text-sm font-black text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700">
-            {needsAccess ? "Request Access" : "View Lab"}
-          </Link>
-          <Link href="/labs" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-center text-sm font-black text-blue-700 transition hover:border-blue-200 hover:bg-blue-50">
-            {needsAccess ? "Learn More" : "Follow"}
-          </Link>
+        <div className="flex shrink-0 gap-2 sm:flex-col sm:items-stretch">
+          <button type="button" onClick={() => onVote(request.id)} disabled={!canVote} className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition ${request.voted_by_me ? "bg-blue-600 text-white hover:bg-blue-700" : "border border-slate-200 bg-white text-blue-700 hover:border-blue-200 hover:bg-blue-50"} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400`}>
+            <ThumbsUp className="size-4" /> {request.vote_count}
+          </button>
+          <Link href="/labs" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">V1 View <ChevronRight className="size-4" /></Link>
         </div>
       </div>
     </article>
@@ -273,23 +227,81 @@ function LabCardView({ lab }: { lab: LabCard }) {
 
 export default function V2LabsPage() {
   const [payload, setPayload] = useState<ShellPayload | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [entitlement, setEntitlement] = useState<AiEntitlement>(null);
+  const [requests, setRequests] = useState<LabsFeatureRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [labsLoading, setLabsLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All Labs");
+  const [activeFilter, setActiveFilter] = useState<RequestFilter>("All");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
-  const filteredLabs = useMemo(() => {
+  const canVoteLabs = hasLabsVotingAccess(entitlement, isAdmin);
+
+  const statusCounts = useMemo(() => requests.reduce<Record<LabsFeatureRequestStatus, number>>((counts, request) => {
+    counts[request.status] = (counts[request.status] ?? 0) + 1;
+    return counts;
+  }, { submitted: 0, reviewing: 0, planned: 0, shipped: 0, declined: 0 }), [requests]);
+
+  const filteredRequests = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
-    return LABS.filter((lab) => {
-      const matchesQuery = !cleanQuery || `${lab.title} ${lab.description} ${lab.category} ${lab.status}`.toLowerCase().includes(cleanQuery);
-      const matchesFilter =
-        activeFilter === "All Labs" ||
-        activeFilter === "Following" ||
-        (activeFilter === "Requested" && lab.status === "Requested") ||
-        activeFilter === lab.category;
+    const statusFilter = statusFromFilter(activeFilter);
+    return requests.filter((request) => {
+      const matchesQuery = !cleanQuery || `${request.title} ${request.description} ${request.status} ${request.admin_note ?? ""}`.toLowerCase().includes(cleanQuery);
+      const matchesFilter = activeFilter === "All" || (activeFilter === "My requests" && request.user_id === currentUserId) || request.status === statusFilter;
       return matchesQuery && matchesFilter;
     });
-  }, [activeFilter, query]);
+  }, [activeFilter, currentUserId, query, requests]);
+
+  const topRequests = useMemo(() => [...requests].sort((a, b) => b.vote_count - a.vote_count).slice(0, 3), [requests]);
+
+  async function loadLabs(userId: string) {
+    setLabsLoading(true);
+    setMessage("");
+    try {
+      const [{ data: profileData }, { data: entitlementData }, { data: requestData, error: requestError }] = await Promise.all([
+        supabase.from("profiles").select("is_admin").eq("id", userId).maybeSingle(),
+        supabase.from("user_ai_entitlements").select("tier, ai_assisted_enabled, monthly_summary_limit").eq("user_id", userId).maybeSingle(),
+        supabase.from("labs_feature_requests").select("id, user_id, title, description, status, admin_note, reviewed_at, created_at, updated_at").order("created_at", { ascending: false }),
+      ]);
+
+      if (requestError) {
+        setMessage(`Unable to load Labs requests: ${requestError.message}`);
+        setRequests([]);
+        return;
+      }
+
+      const resolvedEntitlement = (entitlementData ?? null) as AiEntitlement;
+      setIsAdmin(Boolean(profileData?.is_admin) || resolvedEntitlement?.tier === "admin");
+      setEntitlement(resolvedEntitlement);
+
+      const loadedRequests = (requestData ?? []) as Omit<LabsFeatureRequest, "vote_count" | "voted_by_me">[];
+      const requestIds = loadedRequests.map((request) => request.id);
+      let voteRows: { request_id: string; user_id: string }[] = [];
+
+      if (requestIds.length > 0) {
+        const { data: votes } = await supabase.from("labs_feature_request_votes").select("request_id, user_id").in("request_id", requestIds);
+        voteRows = (votes ?? []) as { request_id: string; user_id: string }[];
+      }
+
+      const voteCounts = voteRows.reduce<Record<string, number>>((counts, vote) => {
+        counts[vote.request_id] = (counts[vote.request_id] ?? 0) + 1;
+        return counts;
+      }, {});
+      const myVotes = new Set(voteRows.filter((vote) => vote.user_id === userId).map((vote) => vote.request_id));
+
+      setRequests(loadedRequests.map((request) => ({ ...request, vote_count: voteCounts[request.id] ?? 0, voted_by_me: myVotes.has(request.id) })));
+    } catch {
+      setMessage("Unable to load V2 Labs safely. Current Labs remains available.");
+      setRequests([]);
+    } finally {
+      setLabsLoading(false);
+    }
+  }
 
   async function loadShell() {
     setLoading(true);
@@ -297,11 +309,11 @@ export default function V2LabsPage() {
     try {
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
-      const response = await fetch("/api/v2/shell", {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      });
+      const response = await fetch("/api/v2/shell", { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined });
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
       setPayload(nextPayload);
+      setCurrentUserId(data.session?.user.id ?? null);
+      if (data.session?.user.id && nextPayload.configured && nextPayload.flags.v2_shell && nextPayload.version === "v2") await loadLabs(data.session.user.id);
     } catch {
       setPayload(getDefaultShellPayload());
       setMessage("Unable to verify V2 Labs access. Current Labs remains available.");
@@ -310,16 +322,80 @@ export default function V2LabsPage() {
     }
   }
 
+  async function toggleVote(requestId: string) {
+    setMessage("");
+    if (!currentUserId) return;
+    if (!canVoteLabs) {
+      setMessage("Labs voting is available to Premium Plus and admin accounts.");
+      return;
+    }
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) return;
+    try {
+      const response = await fetch("/api/labs/requests/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ requestId }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error ?? "Unable to update Labs vote.");
+        return;
+      }
+      setRequests((current) => current.map((request) => request.id === requestId ? { ...request, vote_count: result.voteCount ?? request.vote_count, voted_by_me: Boolean(result.voted) } : request));
+    } catch {
+      setMessage("Unable to update Labs vote.");
+    }
+  }
+
+  async function submitRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    if (!currentUserId || submitting) return;
+    const cleanTitle = title.trim();
+    const cleanDescription = description.trim();
+    if (cleanTitle.length < 3) {
+      setMessage("Feature request title must be at least 3 characters.");
+      return;
+    }
+    if (cleanDescription.length < 10) {
+      setMessage("Feature request description must be at least 10 characters.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) return;
+      const response = await fetch("/api/labs/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ title: cleanTitle, description: cleanDescription }),
+      });
+      const result = (await response.json().catch(() => ({}))) as { request?: Omit<LabsFeatureRequest, "vote_count" | "voted_by_me">; error?: string };
+      if (!response.ok || !result.request) {
+        setMessage(result.error ?? "Unable to submit feature request.");
+        return;
+      }
+      setRequests((current) => [{ ...result.request!, vote_count: 0, voted_by_me: false }, ...current]);
+      setTitle("");
+      setDescription("");
+      setMessage("Feature request submitted to Loombus Labs.");
+    } catch {
+      setMessage("Unable to submit feature request.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   useEffect(() => {
     loadShell();
-    const { data } = supabase.auth.onAuthStateChange(() => {
-      loadShell();
-    });
+    const { data } = supabase.auth.onAuthStateChange(() => loadShell());
     return () => data.subscription.unsubscribe();
   }, []);
 
   if (loading) return <GateCard title="Checking V2 Labs access" message="Loombus is verifying access before loading the V2 Labs shell." loading />;
-  if (message) return <GateCard title="V2 Labs check failed safely" message={message} payload={payload} />;
   if (!payload?.authenticated) return <GateCard title="Sign in required" message="The V2 Labs shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <GateCard title="V2 Labs is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
 
@@ -329,98 +405,69 @@ export default function V2LabsPage() {
       <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         <header className="mb-6">
           <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Labs</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Explore research, experiments, and early Loombus features.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Submit feature requests, follow review status, and help shape what gets built next.</p>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="min-w-0">
             <div className="mb-4 flex gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                 <Search className="size-5 text-slate-400" />
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search labs, experiments, and updates" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Labs requests" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
               </div>
-              <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">
-                <SlidersHorizontal className="size-5" />
-              </button>
+              <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><SlidersHorizontal className="size-5" /></button>
             </div>
 
             <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-              {FILTERS.map((filter) => (
-                <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>
-                  {filter}
-                </button>
-              ))}
+              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter}</button>)}
             </div>
 
-            <div className="space-y-3 rounded-[1.75rem] border border-slate-200 bg-white p-3 shadow-sm">
-              {filteredLabs.length === 0 && <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-slate-600">No labs match this V2 filter.</div>}
-              {filteredLabs.map((lab) => <LabCardView key={lab.title} lab={lab} />)}
-              <div className="flex items-center justify-between border-t border-slate-100 px-1 pt-4 text-sm text-slate-600">
-                <span>Explore more labs and experiments shaping the future of Loombus.</span>
-                <Link href="/labs" className="inline-flex items-center gap-2 font-black text-blue-700 transition hover:text-blue-900">View all labs <ChevronRight className="size-4" /></Link>
+            {message && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{message}</div>}
+            {labsLoading && <div className="mb-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">Loading Labs requests...</div>}
+
+            <section className="mb-5 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-700"><Sparkles className="size-5" /></span>
+                <div>
+                  <h2 className="text-lg font-black text-slate-950">Submit a Labs request</h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">Tell Loombus what would make the platform more useful, focused, or valuable for high-signal discussion.</p>
+                </div>
               </div>
+              <form onSubmit={submitRequest} className="mt-5 space-y-4">
+                <div><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Feature title</label><input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} placeholder="Example: Saved discussion tags" className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-300" /><p className="mt-2 text-xs font-semibold text-slate-400">{title.length}/120 characters</p></div>
+                <div><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Why should this exist?</label><textarea value={description} onChange={(event) => setDescription(event.target.value)} maxLength={2000} rows={5} placeholder="Describe the problem, who it helps, and how it should work..." className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-300" /><p className="mt-2 text-xs font-semibold text-slate-400">{description.length}/2000 characters</p></div>
+                <button type="submit" disabled={submitting} className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300">{submitting ? "Submitting..." : "Submit request"}</button>
+              </form>
+            </section>
+
+            <div className="space-y-3">
+              {!labsLoading && filteredRequests.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">No Labs requests match this V2 filter.</div>}
+              {!labsLoading && filteredRequests.map((request) => <RequestCard key={request.id} request={request} currentUserId={currentUserId} canVote={canVoteLabs} onVote={toggleVote} />)}
             </div>
           </div>
 
           <aside className="space-y-4">
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Your lab access</h2>
-                <Link href="/labs" className="text-sm font-black text-blue-700">View all</Link>
-              </div>
+              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Request status</h2><Link href="/labs" className="text-sm font-black text-blue-700">V1 Labs</Link></div>
               <div className="mt-4 space-y-3">
-                {LABS.slice(0, 4).map((lab) => {
-                  const Icon = lab.icon;
-                  return (
-                    <Link key={lab.title} href="/labs" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
-                      <span className="flex min-w-0 items-center gap-3"><span className={`grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${lab.accent} text-white`}><Icon className="size-4" /></span><span className="truncate text-sm font-black text-slate-800">{lab.title}</span></span>
-                      <span className="flex items-center gap-2"><StatusPill status={lab.status} /><ChevronRight className="size-4 text-slate-400" /></span>
-                    </Link>
-                  );
-                })}
+                {(Object.keys(STATUS_LABELS) as LabsFeatureRequestStatus[]).map((status) => <div key={status} className="flex items-center justify-between rounded-2xl px-1 py-2"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><span className={`size-3 rounded-full ${status === "shipped" ? "bg-emerald-500" : status === "planned" ? "bg-violet-500" : status === "reviewing" ? "bg-blue-500" : status === "declined" ? "bg-rose-500" : "bg-slate-400"}`} />{STATUS_LABELS[status]}</span><span className="font-black text-blue-700">{statusCounts[status] ?? 0}</span></div>)}
               </div>
             </section>
 
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Recent lab updates</h2>
-                <Link href="/labs" className="text-sm font-black text-blue-700">View all</Link>
-              </div>
+              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Top requests</h2>
               <div className="mt-4 space-y-4">
-                {RECENT_UPDATES.map((update) => {
-                  const Icon = update.icon;
-                  return (
-                    <Link key={update.title} href="/labs" className="flex gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
-                      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon className="size-4" /></span>
-                      <span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{update.title}</span><span className="block truncate text-xs font-semibold text-slate-500">{update.lab} · {update.age}</span></span>
-                    </Link>
-                  );
-                })}
+                {topRequests.length === 0 && <p className="text-sm leading-6 text-slate-500">Submitted requests will appear here.</p>}
+                {topRequests.map((request) => <Link key={request.id} href="/v2/labs" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{request.title}</span><span className="block text-xs font-semibold text-slate-500">{STATUS_LABELS[request.status]} · {request.vote_count} votes</span></span><ChevronRight className="size-4 shrink-0 text-slate-400" /></Link>)}
               </div>
             </section>
 
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Request lab access</h2>
-              <p className="mt-4 text-sm font-black text-slate-950">Want to join a lab?</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">Request access to collaborate on experiments and early features.</p>
-              <Link href="/labs" className="mt-4 block rounded-xl border border-slate-200 bg-white px-4 py-2 text-center text-sm font-black text-blue-700 transition hover:border-blue-200 hover:bg-blue-50">Browse Labs</Link>
-            </section>
-
-            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Labs you follow</h2>
-                <Link href="/labs" className="text-sm font-black text-blue-700">View all</Link>
-              </div>
-              <div className="mt-4 space-y-3">
-                {LABS.filter((lab) => lab.status === "Member").map((lab) => {
-                  const Icon = lab.icon;
-                  return (
-                    <Link key={lab.title} href="/labs" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
-                      <span className="flex min-w-0 items-center gap-3"><span className={`grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${lab.accent} text-white`}><Icon className="size-4" /></span><span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{lab.title}</span><span className="block text-xs font-semibold text-slate-400">{lab.members} members</span></span></span>
-                      <span className="size-2 rounded-full bg-blue-600" />
-                    </Link>
-                  );
-                })}
+              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Labs access</h2>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
+                <p><ShieldCheck className="mr-2 inline size-4 text-blue-700" />Signed-in members can submit requests.</p>
+                <p><ThumbsUp className="mr-2 inline size-4 text-blue-700" />Premium Plus and admins can vote on requests.</p>
+                {isAdmin && <Link href="/admin/labs" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-blue-200 px-4 py-2 text-sm font-black text-blue-700 transition hover:bg-blue-50">Open Admin Labs <ChevronRight className="size-4" /></Link>}
               </div>
             </section>
           </aside>
