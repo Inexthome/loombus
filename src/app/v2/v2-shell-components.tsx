@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Loader2, Lock } from "lucide-react";
 import { V2_ACTION_NAV_ITEMS, V2_TOP_NAV_ITEMS } from "./v2-navigation";
 import { V2UserAvatarMenu } from "./v2-user-avatar-menu";
 
@@ -104,27 +103,23 @@ export function getDefaultShellPayload(): ShellPayload {
   };
 }
 
-export function V2ShellGateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
+function V2ShellLogoLoader({ label }: { label: string }) {
   return (
-    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
-      <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="grid size-12 place-items-center rounded-2xl bg-blue-500/15 text-blue-200 ring-1 ring-blue-300/20">
-            {loading ? <Loader2 className="size-5 animate-spin" /> : <Lock className="size-5" />}
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2</p>
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
-          </div>
+    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-[color:var(--loombus-page-bg)] px-4 py-10 text-[color:var(--loombus-text)]">
+      <section className="flex flex-col items-center text-center" role="status" aria-live="polite" aria-label={label}>
+        <div className="relative grid size-24 place-items-center rounded-[2rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-2xl shadow-black/20">
+          <span className="absolute inset-[-6px] rounded-[2.25rem] border-2 border-transparent border-t-[color:var(--loombus-primary-bg)] border-r-[color:var(--loombus-primary-bg)] opacity-80 animate-spin" aria-hidden="true" />
+          <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-14 object-contain" />
         </div>
-        <p className="text-sm leading-6 text-slate-300 sm:text-base">{message}</p>
-        {payload && <p className="mt-5 text-xs text-slate-300">v2_shell: {payload.flags.v2_shell ? "on" : "off"}</p>}
-        <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/v2" className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200">Back to V2 Home</Link>
-        </div>
+        <p className="mt-6 text-sm font-black uppercase tracking-[0.28em] text-[color:var(--loombus-text-muted)]">Loombus</p>
+        <p className="mt-2 text-sm font-semibold text-[color:var(--loombus-text-subtle)]">Loading your workspace…</p>
       </section>
     </main>
   );
+}
+
+export function V2ShellGateCard({ title, loading = false }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
+  return <V2ShellLogoLoader label={loading ? title : "Loading Loombus"} />;
 }
 
 export function V2ShellTopNav() {
