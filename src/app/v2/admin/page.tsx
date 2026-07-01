@@ -1,20 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   BarChart3,
   Bell,
+  Bot,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Download,
   FileText,
-  Filter,
   Flag,
   FlaskConical,
+  HeartPulse,
   Home,
   Inbox,
   KeyRound,
@@ -22,15 +22,13 @@ import {
   Lock,
   Mail,
   MessageCircle,
-  MoreHorizontal,
   Plus,
+  RotateCcw,
   Search,
   Settings,
   Shield,
   ShieldAlert,
   ShieldCheck,
-  TrendingDown,
-  TrendingUp,
   TriangleAlert,
   UserRoundCheck,
   Users,
@@ -51,13 +49,28 @@ type ShellPayload = {
   flags: FeatureFlags;
 };
 
+type AdminCounts = {
+  totalUsers: number;
+  totalReports: number;
+  openReports: number;
+  dismissedReports: number;
+  actionedReports: number;
+  profileReports: number;
+  deletedDiscussions: number;
+  deletedReplies: number;
+  labsRequests: number;
+  supportRequests: number;
+  safetyEvents: number;
+  auditEvents: number;
+};
+
 type StatCard = {
   label: string;
   value: string;
-  trend: string;
-  trendDirection: "up" | "down";
+  detail: string;
   icon: LucideIcon;
-  tone: "blue" | "red" | "emerald";
+  tone: "blue" | "red" | "emerald" | "amber";
+  href: string;
 };
 
 type AdminNavItem = {
@@ -67,29 +80,34 @@ type AdminNavItem = {
   active?: boolean;
 };
 
-type QueueItem = {
-  report: string;
-  context: string;
-  type: string;
-  severity: "High" | "Medium" | "Low";
-  reportedBy: string;
-  time: string;
-  status: "New" | "In Review" | "Dismissed";
-};
-
-type AlertItem = {
-  title: string;
-  detail: string;
-  time: string;
+type AdminModule = {
+  label: string;
+  description: string;
+  href: string;
   icon: LucideIcon;
-  tone: "red" | "amber" | "blue";
+  countKey?: keyof AdminCounts;
+  action: string;
 };
 
-type ActivityItem = {
-  person: string;
+type ReportPreview = {
+  id: string;
+  reason: string | null;
+  status: string | null;
+  created_at: string;
+  discussion_id: string | null;
+  reply_id: string | null;
+  reported_profile_id: string | null;
+  discussions: { title: string | null; topic: string | null } | null;
+  replies: { body: string | null } | null;
+};
+
+type AuditPreview = {
+  id: string;
   action: string;
-  detail: string;
-  time: string;
+  target_type: string;
+  target_id: string | null;
+  created_at: string;
+  actor_id: string | null;
 };
 
 type QuickAction = {
@@ -104,6 +122,21 @@ const DEFAULT_FLAGS: FeatureFlags = {
   v2_rooms: false,
 };
 
+const EMPTY_COUNTS: AdminCounts = {
+  totalUsers: 0,
+  totalReports: 0,
+  openReports: 0,
+  dismissedReports: 0,
+  actionedReports: 0,
+  profileReports: 0,
+  deletedDiscussions: 0,
+  deletedReplies: 0,
+  labsRequests: 0,
+  supportRequests: 0,
+  safetyEvents: 0,
+  auditEvents: 0,
+};
+
 const V2_NAV_ITEMS = [
   { label: "Home", href: "/v2", icon: Home },
   { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
@@ -112,30 +145,129 @@ const V2_NAV_ITEMS = [
   { label: "Messages", href: "/v2/messages", icon: Mail },
 ];
 
-const MOBILE_NAV_ITEMS = [
-  { label: "Home", href: "/v2", icon: Home },
-  { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
-  { label: "Create", href: "/v2/create", icon: Plus, primary: true },
-  { label: "Rooms", href: "/v2/rooms", icon: Users },
-  { label: "Messages", href: "/v2/messages", icon: Mail },
+const MOBILE_NAV_ITEMS = V2_NAV_ITEMS;
+
+const ADMIN_MODULES: AdminModule[] = [
+  {
+    label: "Reports",
+    description: "Review community-submitted moderation reports for discussions, replies, profiles, and private messages.",
+    href: "/admin/reports",
+    icon: Flag,
+    countKey: "openReports",
+    action: "Open reports",
+  },
+  {
+    label: "Safety Queue",
+    description: "Review pre-submit safety blocks and warnings from rule-based and AI-assisted checks.",
+    href: "/admin/safety",
+    icon: ShieldCheck,
+    countKey: "safetyEvents",
+    action: "Open safety",
+  },
+  {
+    label: "Deleted Discussions",
+    description: "Review and restore soft-deleted discussions when needed.",
+    href: "/admin/deleted",
+    icon: RotateCcw,
+    countKey: "deletedDiscussions",
+    action: "Open deleted discussions",
+  },
+  {
+    label: "Deleted Replies",
+    description: "Review and restore soft-deleted replies when needed.",
+    href: "/admin/deleted-replies",
+    icon: MessageCircle,
+    countKey: "deletedReplies",
+    action: "Open deleted replies",
+  },
+  {
+    label: "Support Requests",
+    description: "Review structured contact form submissions and track support status.",
+    href: "/admin/support",
+    icon: Inbox,
+    countKey: "supportRequests",
+    action: "Open support",
+  },
+  {
+    label: "User Lookup",
+    description: "Search members, review account status, Premium access, teen safety, and identity verification.",
+    href: "/admin/users",
+    icon: Users,
+    countKey: "totalUsers",
+    action: "Open users",
+  },
+  {
+    label: "Billing Diagnostics",
+    description: "Review Stripe config presence, subscription sync, and Extra AI Pack fulfillment.",
+    href: "/admin/billing",
+    icon: KeyRound,
+    action: "Open billing",
+  },
+  {
+    label: "Platform Health",
+    description: "Review config presence, database visibility, AI failures, reports, and operational warnings.",
+    href: "/admin/health",
+    icon: HeartPulse,
+    action: "Open health",
+  },
+  {
+    label: "AI Access",
+    description: "Manage Premium AI-Assisted Layer access and review AI usage.",
+    href: "/admin/ai-access",
+    icon: Bot,
+    action: "Open AI access",
+  },
+  {
+    label: "Topic Memory",
+    description: "Review recurring topics, Reality Lenses, tags, and AI idea coverage.",
+    href: "/admin/topic-memory",
+    icon: BarChart3,
+    action: "Open topic memory",
+  },
+  {
+    label: "Loombus Labs",
+    description: "Review Premium Plus feature requests and update Labs status.",
+    href: "/admin/labs",
+    icon: FlaskConical,
+    countKey: "labsRequests",
+    action: "Open labs",
+  },
+  {
+    label: "Audit Log",
+    description: "Review platform activity, moderation actions, actors, targets, and system events.",
+    href: "/admin/audit",
+    icon: FileText,
+    countKey: "auditEvents",
+    action: "Open audit log",
+  },
 ];
 
 const ADMIN_NAV_GROUPS: Array<{ label: string; items: AdminNavItem[] }> = [
   { label: "Overview", items: [{ label: "Overview", href: "/v2/admin", icon: Home, active: true }] },
   {
-    label: "Manage",
+    label: "Moderation",
     items: [
-      { label: "Users", href: "/admin/users", icon: Users },
       { label: "Reports", href: "/admin/reports", icon: Flag },
       { label: "Safety Queue", href: "/admin/safety", icon: ShieldCheck },
-      { label: "Support Tickets", href: "/admin/support", icon: Inbox },
-      { label: "Labs Requests", href: "/admin/labs", icon: FlaskConical },
+      { label: "Deleted Discussions", href: "/admin/deleted", icon: RotateCcw },
+      { label: "Deleted Replies", href: "/admin/deleted-replies", icon: MessageCircle },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { label: "Users", href: "/admin/users", icon: Users },
+      { label: "Support Requests", href: "/admin/support", icon: Inbox },
+      { label: "Billing Diagnostics", href: "/admin/billing", icon: KeyRound },
+      { label: "Platform Health", href: "/admin/health", icon: HeartPulse },
     ],
   },
   {
     label: "Intelligence",
     items: [
+      { label: "AI Access", href: "/admin/ai-access", icon: Bot },
       { label: "Topic Memory", href: "/admin/topic-memory", icon: BarChart3 },
+      { label: "Labs Requests", href: "/admin/labs", icon: FlaskConical },
       { label: "Audit Log", href: "/admin/audit", icon: FileText },
     ],
   },
@@ -143,86 +275,111 @@ const ADMIN_NAV_GROUPS: Array<{ label: string; items: AdminNavItem[] }> = [
     label: "System",
     items: [
       { label: "Settings", href: "/settings", icon: Settings },
-      { label: "Integrations", href: "/admin", icon: KeyRound },
+      { label: "Current V1 Admin", href: "/admin", icon: Wrench },
     ],
   },
 ];
 
-const STATS: StatCard[] = [
-  { label: "Total Users", value: "24,581", trend: "8.2% vs. last 7 days", trendDirection: "up", icon: Users, tone: "blue" },
-  { label: "Open Reports", value: "126", trend: "14.6% vs. last 7 days", trendDirection: "up", icon: Flag, tone: "red" },
-  { label: "Pending Reviews", value: "42", trend: "12.5% vs. last 7 days", trendDirection: "down", icon: ShieldCheck, tone: "emerald" },
-  { label: "Support Backlog", value: "18", trend: "5.6% vs. last 7 days", trendDirection: "down", icon: Inbox, tone: "emerald" },
-];
-
-const QUEUE_ITEMS: QueueItem[] = [
-  { report: "Harassment in Discussion", context: "The Future of Work", type: "Harassment", severity: "High", reportedBy: "Nadia Karim", time: "15m ago", status: "New" },
-  { report: "Spam or Self-Promotion", context: "Open Systems Lab", type: "Spam", severity: "Medium", reportedBy: "Alex Rivera", time: "40m ago", status: "New" },
-  { report: "Misinformation", context: "Climate Tech Roadmap 2030", type: "Misinformation", severity: "Medium", reportedBy: "Mason Alvarado", time: "1h ago", status: "In Review" },
-  { report: "Inappropriate Content", context: "Builders’ Room", type: "Inappropriate", severity: "Low", reportedBy: "Priya Desai", time: "2h ago", status: "New" },
-  { report: "Off-Topic / Irrelevant", context: "AI Alignment Debate", type: "Off-Topic", severity: "Low", reportedBy: "James Wu", time: "3h ago", status: "Dismissed" },
-];
-
-const ALERTS: AlertItem[] = [
-  { title: "Spike in harassment reports", detail: "42% vs. last 24h", time: "15m ago", icon: Flag, tone: "red" },
-  { title: "Misinformation trend detected", detail: "2 discussions affected", time: "1h ago", icon: TriangleAlert, tone: "amber" },
-  { title: "Unusual login activity", detail: "5 accounts flagged", time: "2h ago", icon: ShieldAlert, tone: "blue" },
-];
-
-const TEAM_ACTIVITY: ActivityItem[] = [
-  { person: "Nadia Karim", action: "Resolved 18 reports", detail: "Moderation", time: "2m ago" },
-  { person: "Alex Rivera", action: "Reviewed 12 items", detail: "Safety queue", time: "8m ago" },
-  { person: "Priya Desai", action: "Closed 7 tickets", detail: "Support", time: "12m ago" },
-  { person: "Mason Alvarado", action: "Approved 5 requests", detail: "Labs", time: "15m ago" },
-];
-
-const RECENT_ACTIVITY: ActivityItem[] = [
-  { person: "Nadia Karim", action: "updated the status of a report in The Future of Work", detail: "Marked as In Review", time: "15m ago" },
-  { person: "Mason Alvarado", action: "resolved a support ticket", detail: "Ticket #8742 · Unable to upload file", time: "32m ago" },
-  { person: "Alex Rivera", action: "approved a labs request", detail: "Request · Climate Data Explorer", time: "1h ago" },
-  { person: "System", action: "flagged a potential misinformation pattern in 2 discussions", detail: "Auto-detection", time: "2h ago" },
-];
-
 const QUICK_ACTIONS: QuickAction[] = [
-  { label: "Create Announcement", icon: Bell, href: "/admin" },
-  { label: "Bulk User Actions", icon: UserRoundCheck, href: "/admin/users" },
-  { label: "Export Reports", icon: Download, href: "/admin/reports" },
-  { label: "System Health", icon: Activity, href: "/admin" },
+  { label: "Review reports", icon: Flag, href: "/admin/reports" },
+  { label: "Open users", icon: UserRoundCheck, href: "/admin/users" },
+  { label: "Support queue", icon: Inbox, href: "/admin/support" },
+  { label: "System health", icon: Activity, href: "/admin/health" },
 ];
 
 const BENEFITS = [
-  { label: "Moderation Overview", detail: "See what needs attention with real-time metrics and queues.", icon: ShieldCheck },
-  { label: "Safety Queue", detail: "Review reports and take action quickly with smart prioritization.", icon: MessageCircle },
-  { label: "Operational Visibility", detail: "Track platform health, trends, and team performance.", icon: BarChart3 },
-  { label: "Admin Tools", detail: "Powerful tools for support, users, content, and settings.", icon: Wrench },
+  { label: "V1 parity", detail: "Every V1 admin destination is present and active from this V2 shell.", icon: ShieldCheck },
+  { label: "Live metrics", detail: "Counts come from the same Supabase tables used by current admin tools.", icon: BarChart3 },
+  { label: "Safe rollout", detail: "V2 shell remains gated while active actions continue to use existing admin routes.", icon: Lock },
+  { label: "Operational focus", detail: "Reports, safety, support, users, billing, health, AI, Labs, and audit stay visible.", icon: Wrench },
 ];
 
 function getDefaultShellPayload(): ShellPayload {
   return { version: "v1", configured: false, authenticated: false, flags: DEFAULT_FLAGS };
 }
 
-function getSeverityClass(severity: QueueItem["severity"]) {
-  if (severity === "High") return "bg-red-50 text-red-700";
-  if (severity === "Medium") return "bg-amber-50 text-amber-700";
-  return "bg-blue-50 text-blue-700";
+function formatCount(value: number) {
+  return new Intl.NumberFormat("en-US").format(value);
 }
 
-function getStatusClass(status: QueueItem["status"]) {
-  if (status === "In Review") return "bg-violet-50 text-violet-700";
-  if (status === "Dismissed") return "bg-slate-100 text-slate-600";
-  return "bg-blue-50 text-blue-700";
+function formatTime(value: string | null | undefined) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function normalizeJoined<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value ?? null;
+}
+
+function getReportTarget(report: ReportPreview) {
+  if (report.discussions?.title) return report.discussions.title;
+  if (report.replies?.body) return `Reply: ${report.replies.body.slice(0, 70)}`;
+  if (report.reported_profile_id) return "Reported profile";
+  return report.discussion_id || report.reply_id || "Reported item";
+}
+
+function getStatusClass(status: string | null | undefined) {
+  if (status === "actioned") return "border-amber-200 bg-amber-50 text-amber-700";
+  if (status === "dismissed") return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (status === "reviewing") return "border-violet-200 bg-violet-50 text-violet-700";
+  return "border-blue-200 bg-blue-50 text-blue-700";
 }
 
 function getStatToneClass(tone: StatCard["tone"]) {
   if (tone === "red") return "bg-red-50 text-red-700";
   if (tone === "emerald") return "bg-emerald-50 text-emerald-700";
+  if (tone === "amber") return "bg-amber-50 text-amber-700";
   return "bg-blue-50 text-blue-700";
 }
 
-function getAlertToneClass(tone: AlertItem["tone"]) {
-  if (tone === "red") return "bg-red-50 text-red-700";
-  if (tone === "amber") return "bg-amber-50 text-amber-700";
-  return "bg-blue-50 text-blue-700";
+function getModuleCount(module: AdminModule, counts: AdminCounts) {
+  if (!module.countKey) return null;
+  return counts[module.countKey];
+}
+
+function getStats(counts: AdminCounts): StatCard[] {
+  return [
+    {
+      label: "Total Users",
+      value: formatCount(counts.totalUsers),
+      detail: "Profiles visible to admin lookup",
+      icon: Users,
+      tone: "blue",
+      href: "/admin/users",
+    },
+    {
+      label: "New Reports",
+      value: formatCount(counts.openReports),
+      detail: `${formatCount(counts.totalReports)} total moderation reports`,
+      icon: Flag,
+      tone: counts.openReports > 0 ? "red" : "emerald",
+      href: "/admin/reports",
+    },
+    {
+      label: "Support Backlog",
+      value: formatCount(counts.supportRequests),
+      detail: "New or reviewing support requests",
+      icon: Inbox,
+      tone: counts.supportRequests > 0 ? "amber" : "emerald",
+      href: "/admin/support",
+    },
+    {
+      label: "Safety Events",
+      value: formatCount(counts.safetyEvents),
+      detail: "Blocked or warned content events",
+      icon: ShieldCheck,
+      tone: counts.safetyEvents > 0 ? "amber" : "emerald",
+      href: "/admin/safety",
+    },
+  ];
 }
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
@@ -265,7 +422,7 @@ function V2TopNav() {
         </nav>
         <div className="flex items-center gap-2">
           <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Search className="size-5" /></Link>
-          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /><span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">8</span></Link>
+          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /></Link>
         </div>
       </div>
     </header>
@@ -287,10 +444,20 @@ function MobileBottomNav() {
 
 function AdminSidebar() {
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-white p-5 lg:block">
+    <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white p-5 lg:block">
       <div className="mb-8 flex items-center gap-3 text-xl font-black text-slate-950"><Shield className="size-6" />Admin</div>
       <nav className="space-y-7">
-        {ADMIN_NAV_GROUPS.map((group) => <div key={group.label}><p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500">{group.label}</p><div className="space-y-1">{group.items.map((item) => { const Icon = item.icon; return <Link key={item.label} href={item.href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black transition ${item.active ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"}`}><Icon className="size-4" />{item.label}</Link>; })}</div></div>)}
+        {ADMIN_NAV_GROUPS.map((group) => (
+          <div key={group.label}>
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.16em] text-slate-500">{group.label}</p>
+            <div className="space-y-1">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                return <Link key={item.label} href={item.href} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black transition ${item.active ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-blue-50 hover:text-blue-700"}`}><Icon className="size-4" />{item.label}</Link>;
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
       <button type="button" className="mt-16 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"><ChevronLeft className="size-4" />Collapse</button>
     </aside>
@@ -299,31 +466,186 @@ function AdminSidebar() {
 
 function StatCardView({ stat }: { stat: StatCard }) {
   const Icon = stat.icon;
-  const TrendIcon = stat.trendDirection === "up" ? TrendingUp : TrendingDown;
-  const trendClass = stat.trendDirection === "up" && stat.tone === "red" ? "text-red-600" : "text-emerald-600";
-  return <article className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-black text-slate-700">{stat.label}</p><p className="mt-3 text-3xl font-black text-slate-950">{stat.value}</p></div><span className={`grid size-12 place-items-center rounded-2xl ${getStatToneClass(stat.tone)}`}><Icon className="size-5" /></span></div><p className={`mt-5 inline-flex items-center gap-2 text-sm font-black ${trendClass}`}><TrendIcon className="size-4" />{stat.trend}</p></article>;
+  return (
+    <Link href={stat.href} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-md">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-black text-slate-700">{stat.label}</p>
+          <p className="mt-3 text-3xl font-black text-slate-950">{stat.value}</p>
+        </div>
+        <span className={`grid size-12 place-items-center rounded-2xl ${getStatToneClass(stat.tone)}`}><Icon className="size-5" /></span>
+      </div>
+      <p className="mt-5 text-sm font-semibold text-slate-500">{stat.detail}</p>
+    </Link>
+  );
 }
 
-function ModerationQueue() {
+function ModerationQueue({ reports, count }: { reports: ReportPreview[]; count: number }) {
   return (
     <section className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-lg font-black text-slate-950">Moderation Queue <span className="ml-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">126</span></h2>
-        <div className="flex gap-2"><button type="button" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Filter className="size-4" />Filters</button><button type="button" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700">Newest</button></div>
+        <h2 className="text-lg font-black text-slate-950">Moderation Queue <span className="ml-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{formatCount(count)}</span></h2>
+        <Link href="/admin/reports" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-700"><Flag className="size-4" />Open reports</Link>
       </div>
-      <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="text-xs font-black uppercase tracking-[0.12em] text-slate-500"><tr><th className="px-5 py-4">Report / Item</th><th className="px-4 py-4">Type</th><th className="px-4 py-4">Severity</th><th className="px-4 py-4">Reported By</th><th className="px-4 py-4">Time</th><th className="px-4 py-4">Status</th><th className="px-4 py-4" /></tr></thead><tbody>{QUEUE_ITEMS.map((item) => <tr key={item.report} className="border-t border-slate-100"><td className="px-5 py-4"><p className="font-black text-slate-900">{item.report}</p><p className="text-xs font-semibold text-slate-500">{item.context}</p></td><td className="px-4 py-4 font-semibold text-slate-600">{item.type}</td><td className="px-4 py-4"><span className={`rounded-lg px-3 py-1 text-xs font-black ${getSeverityClass(item.severity)}`}>{item.severity}</span></td><td className="px-4 py-4"><span className="inline-flex items-center gap-2 font-semibold text-slate-700"><span className="grid size-8 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.reportedBy.split(" ").map((part) => part[0]).join("")}</span>{item.reportedBy}</span></td><td className="px-4 py-4 font-semibold text-slate-500">{item.time}</td><td className="px-4 py-4"><span className={`rounded-lg px-3 py-1 text-xs font-black ${getStatusClass(item.status)}`}>{item.status}</span></td><td className="px-4 py-4"><MoreHorizontal className="size-4 text-slate-500" /></td></tr>)}</tbody></table></div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead className="text-xs font-black uppercase tracking-[0.12em] text-slate-500"><tr><th className="px-5 py-4">Report / Item</th><th className="px-4 py-4">Reason</th><th className="px-4 py-4">Status</th><th className="px-4 py-4">Created</th><th className="px-4 py-4" /></tr></thead>
+          <tbody>
+            {reports.length > 0 ? reports.map((report) => (
+              <tr key={report.id} className="border-t border-slate-100">
+                <td className="px-5 py-4"><p className="font-black text-slate-900">{getReportTarget(report)}</p><p className="text-xs font-semibold text-slate-500">{report.discussions?.topic ?? (report.reply_id ? "Reply report" : report.reported_profile_id ? "Profile report" : "Moderation report")}</p></td>
+                <td className="px-4 py-4 font-semibold text-slate-600">{report.reason ?? "Unspecified"}</td>
+                <td className="px-4 py-4"><span className={`rounded-lg border px-3 py-1 text-xs font-black ${getStatusClass(report.status)}`}>{report.status ?? "new"}</span></td>
+                <td className="px-4 py-4 font-semibold text-slate-500">{formatTime(report.created_at)}</td>
+                <td className="px-4 py-4"><Link href="/admin/reports" className="text-sm font-black text-blue-700">Review</Link></td>
+              </tr>
+            )) : (
+              <tr><td colSpan={5} className="px-5 py-8 text-center text-sm font-semibold text-slate-500">No recent reports loaded.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
       <Link href="/admin/reports" className="flex items-center justify-center gap-2 border-t border-slate-100 px-4 py-4 text-sm font-black text-blue-700 hover:bg-blue-50">View all reports <ChevronRight className="size-4" /></Link>
     </section>
   );
 }
 
-function RecentActivity() {
-  return <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-black text-slate-950">Recent Activity</h2><div className="mt-4 divide-y divide-slate-100">{RECENT_ACTIVITY.map((item) => <div key={`${item.person}-${item.time}`} className="flex items-start gap-3 py-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.person === "System" ? "S" : item.person.split(" ").map((part) => part[0]).join("")}</span><div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-700"><span className="font-black text-slate-950">{item.person}</span> {item.action}</p><p className="text-xs font-semibold text-slate-500">{item.detail}</p></div><span className="text-xs font-semibold text-slate-500">{item.time}</span></div>)}</div><Link href="/admin/audit" className="mt-3 flex items-center justify-center gap-2 text-sm font-black text-blue-700">View all activity <ChevronRight className="size-4" /></Link></section>;
+function RecentActivity({ activity }: { activity: AuditPreview[] }) {
+  return (
+    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-950">Recent Activity</h2><Link href="/admin/audit" className="text-sm font-black text-blue-700">View all</Link></div>
+      <div className="mt-4 divide-y divide-slate-100">
+        {activity.length > 0 ? activity.map((item) => (
+          <div key={item.id} className="flex items-start gap-3 py-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.action.slice(0, 1).toUpperCase()}</span>
+            <div className="min-w-0 flex-1"><p className="text-sm font-semibold text-slate-700"><span className="font-black text-slate-950">{item.action.replaceAll(".", " ")}</span></p><p className="text-xs font-semibold text-slate-500">{item.target_type}{item.target_id ? ` · ${item.target_id}` : ""}</p></div>
+            <span className="text-xs font-semibold text-slate-500">{formatTime(item.created_at)}</span>
+          </div>
+        )) : <p className="py-6 text-center text-sm font-semibold text-slate-500">No recent audit activity loaded.</p>}
+      </div>
+    </section>
+  );
+}
+
+function AdminModuleGrid({ counts }: { counts: AdminCounts }) {
+  return (
+    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {ADMIN_MODULES.map((module) => {
+        const Icon = module.icon;
+        const count = getModuleCount(module, counts);
+        return (
+          <Link key={module.href} href={module.href} className="group flex min-h-[210px] flex-col rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-md">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <span className="grid size-12 place-items-center rounded-2xl bg-blue-50 text-blue-700"><Icon className="size-5" /></span>
+              {typeof count === "number" && <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-black text-slate-700">{formatCount(count)}</span>}
+            </div>
+            <h3 className="text-lg font-black text-slate-950">{module.label}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">{module.description}</p>
+            <span className="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-black text-blue-700">{module.action} <ChevronRight className="size-4 transition group-hover:translate-x-1" /></span>
+          </Link>
+        );
+      })}
+    </section>
+  );
 }
 
 export default function V2AdminPage() {
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [adminChecked, setAdminChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [counts, setCounts] = useState<AdminCounts>(EMPTY_COUNTS);
+  const [recentReports, setRecentReports] = useState<ReportPreview[]>([]);
+  const [recentActivity, setRecentActivity] = useState<AuditPreview[]>([]);
+  const [dataMessage, setDataMessage] = useState("");
+
+  const stats = useMemo(() => getStats(counts), [counts]);
+
+  async function loadAdminData() {
+    const { data: userData } = await supabase.auth.getUser();
+
+    if (!userData.user) {
+      setIsAdmin(false);
+      setAdminChecked(true);
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", userData.user.id)
+      .maybeSingle();
+
+    if (!profile?.is_admin) {
+      setIsAdmin(false);
+      setAdminChecked(true);
+      return;
+    }
+
+    setIsAdmin(true);
+
+    try {
+      const [
+        totalUsers,
+        totalReports,
+        openReports,
+        dismissedReports,
+        actionedReports,
+        profileReports,
+        deletedDiscussions,
+        deletedReplies,
+        labsRequests,
+        supportRequests,
+        safetyEvents,
+        auditEvents,
+        reportRows,
+        auditRows,
+      ] = await Promise.all([
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("reports").select("*", { count: "exact", head: true }),
+        supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "new"),
+        supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "dismissed"),
+        supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "actioned"),
+        supabase.from("reports").select("*", { count: "exact", head: true }).not("reported_profile_id", "is", null),
+        supabase.from("discussions").select("*", { count: "exact", head: true }).not("deleted_at", "is", null),
+        supabase.from("replies").select("*", { count: "exact", head: true }).not("deleted_at", "is", null),
+        supabase.from("labs_feature_requests").select("*", { count: "exact", head: true }),
+        supabase.from("support_requests").select("*", { count: "exact", head: true }).in("status", ["new", "reviewing"]),
+        supabase.from("audit_logs").select("*", { count: "exact", head: true }).in("action", ["content_safety.blocked", "content_safety.warned"]),
+        supabase.from("audit_logs").select("*", { count: "exact", head: true }),
+        supabase.from("reports").select("id, reason, status, created_at, discussion_id, reply_id, reported_profile_id, discussions(title, topic), replies(body)").order("created_at", { ascending: false }).limit(5),
+        supabase.from("audit_logs").select("id, action, target_type, target_id, created_at, actor_id").order("created_at", { ascending: false }).limit(6),
+      ]);
+
+      setCounts({
+        totalUsers: totalUsers.count ?? 0,
+        totalReports: totalReports.count ?? 0,
+        openReports: openReports.count ?? 0,
+        dismissedReports: dismissedReports.count ?? 0,
+        actionedReports: actionedReports.count ?? 0,
+        profileReports: profileReports.count ?? 0,
+        deletedDiscussions: deletedDiscussions.count ?? 0,
+        deletedReplies: deletedReplies.count ?? 0,
+        labsRequests: labsRequests.count ?? 0,
+        supportRequests: supportRequests.count ?? 0,
+        safetyEvents: safetyEvents.count ?? 0,
+        auditEvents: auditEvents.count ?? 0,
+      });
+
+      setRecentReports(((reportRows.data ?? []) as any[]).map((report) => ({
+        ...report,
+        discussions: normalizeJoined(report.discussions),
+        replies: normalizeJoined(report.replies),
+      })) as ReportPreview[]);
+      setRecentActivity((auditRows.data ?? []) as AuditPreview[]);
+      setDataMessage("");
+    } catch (error) {
+      console.error("Unable to load V2 admin overview.", error);
+      setDataMessage("Some admin overview data could not be loaded. Open the specific admin tool for full details.");
+    } finally {
+      setAdminChecked(true);
+    }
+  }
 
   async function loadShell() {
     setLoading(true);
@@ -333,22 +655,33 @@ export default function V2AdminPage() {
       const response = await fetch("/api/v2/shell", { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined });
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
       setPayload(nextPayload);
+
+      if (nextPayload.authenticated && nextPayload.configured && nextPayload.flags.v2_shell && nextPayload.version === "v2") {
+        await loadAdminData();
+      } else {
+        setAdminChecked(false);
+        setIsAdmin(false);
+      }
     } catch {
       setPayload(getDefaultShellPayload());
+      setAdminChecked(false);
+      setIsAdmin(false);
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadShell();
-    const { data } = supabase.auth.onAuthStateChange(() => loadShell());
+    void loadShell();
+    const { data } = supabase.auth.onAuthStateChange(() => { void loadShell(); });
     return () => data.subscription.unsubscribe();
   }, []);
 
   if (loading) return <GateCard title="Checking V2 Admin access" message="Loombus is verifying access before loading the V2 Admin shell." loading />;
   if (!payload?.authenticated) return <GateCard title="Sign in required" message="The V2 Admin shell is internal-only right now. Sign in first so Loombus can check your v2_shell access." payload={payload} />;
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <GateCard title="V2 Admin is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
+  if (!adminChecked) return <GateCard title="Checking admin role" message="Loombus is confirming your admin role before loading admin tools." loading payload={payload} />;
+  if (!isAdmin) return <GateCard title="Admin access denied" message="This area is available only to Loombus admin accounts." payload={payload} />;
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
@@ -356,9 +689,30 @@ export default function V2AdminPage() {
       <div className="mx-auto flex max-w-7xl bg-white/40">
         <AdminSidebar />
         <section className="min-w-0 flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-8">
-          <header className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between"><div><h1 className="text-3xl font-black tracking-tight text-slate-950">Admin Overview</h1><p className="mt-2 text-sm leading-6 text-slate-600">Monitor platform health, moderate content, and support your community.</p></div><button type="button" className="inline-flex w-fit items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm"><CalendarDays className="size-4 text-blue-700" />May 20 – May 26, 2025 <ChevronRight className="size-4 rotate-90" /></button></header>
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{STATS.map((stat) => <StatCardView key={stat.label} stat={stat} />)}</section>
-          <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]"><div className="space-y-5"><ModerationQueue /><RecentActivity /></div><aside className="space-y-4"><section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-950">Priority Alerts</h2><span className="grid size-7 place-items-center rounded-full bg-red-50 text-sm font-black text-red-600">3</span></div><div className="mt-4 space-y-4">{ALERTS.map((alert) => { const Icon = alert.icon; return <div key={alert.title} className="flex items-start gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl ${getAlertToneClass(alert.tone)}`}><Icon className="size-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-black text-slate-900">{alert.title}</p><p className="text-xs font-semibold text-slate-500">{alert.detail}</p></div><span className="text-xs font-semibold text-slate-500">{alert.time}</span></div>; })}</div><Link href="/admin/reports" className="mt-5 flex items-center justify-center gap-2 text-sm font-black text-blue-700">View all alerts <ChevronRight className="size-4" /></Link></section><section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-950">Team Activity</h2><Link href="/admin/audit" className="text-sm font-black text-blue-700">View all</Link></div><div className="mt-4 space-y-4">{TEAM_ACTIVITY.map((item) => <div key={item.person} className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">{item.person.split(" ").map((part) => part[0]).join("")}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-slate-900">{item.person}</p><p className="truncate text-xs font-semibold text-slate-500">{item.action}</p></div><span className="text-xs font-semibold text-slate-500">{item.time}</span></div>)}</div></section><section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-black text-slate-950">Quick Actions</h2><div className="mt-4 grid grid-cols-2 gap-3">{QUICK_ACTIONS.map((action) => { const Icon = action.icon; return <Link key={action.label} href={action.href} className="rounded-xl border border-slate-200 p-4 text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><Icon className="mb-3 size-5 text-blue-700" />{action.label}</Link>; })}</div></section></aside></section>
+          <header className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-blue-700">V2 Admin · V1 tool parity</p>
+              <h1 className="text-3xl font-black tracking-tight text-slate-950">Admin Overview</h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Complete V2 shell overview for the current V1 admin surface. All modules below are active and continue to use existing admin permissions and workflows.</p>
+            </div>
+            <div className="inline-flex w-fit items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm"><CalendarDays className="size-4 text-blue-700" />Live overview <ChevronRight className="size-4 rotate-90" /></div>
+          </header>
+
+          {dataMessage && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">{dataMessage}</div>}
+
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{stats.map((stat) => <StatCardView key={stat.label} stat={stat} />)}</section>
+
+          <section className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-5"><ModerationQueue reports={recentReports} count={counts.openReports} /><RecentActivity activity={recentActivity} /></div>
+            <aside className="space-y-4">
+              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between"><h2 className="text-lg font-black text-slate-950">Priority Alerts</h2><span className="grid size-7 place-items-center rounded-full bg-red-50 text-sm font-black text-red-600">{formatCount(counts.openReports + counts.supportRequests)}</span></div><div className="mt-4 space-y-4"><Link href="/admin/reports" className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-red-50 text-red-700"><Flag className="size-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-black text-slate-900">New reports</p><p className="text-xs font-semibold text-slate-500">{formatCount(counts.openReports)} reports need review</p></div></Link><Link href="/admin/support" className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-50 text-amber-700"><Inbox className="size-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-black text-slate-900">Support backlog</p><p className="text-xs font-semibold text-slate-500">{formatCount(counts.supportRequests)} requests new or reviewing</p></div></Link><Link href="/admin/safety" className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><TriangleAlert className="size-4" /></span><div className="min-w-0 flex-1"><p className="text-sm font-black text-slate-900">Safety events</p><p className="text-xs font-semibold text-slate-500">{formatCount(counts.safetyEvents)} blocked or warned records</p></div></Link></div></section>
+              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-lg font-black text-slate-950">Quick Actions</h2><div className="mt-4 grid grid-cols-2 gap-3">{QUICK_ACTIONS.map((action) => { const Icon = action.icon; return <Link key={action.label} href={action.href} className="rounded-xl border border-slate-200 p-4 text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><Icon className="mb-3 size-5 text-blue-700" />{action.label}</Link>; })}</div></section>
+              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-emerald-50 text-emerald-700"><ShieldAlert className="size-4" /></span><div><h2 className="text-lg font-black text-slate-950">Access model</h2><p className="text-xs font-semibold text-slate-500">v2_shell + admin role required</p></div></div></section>
+            </aside>
+          </section>
+
+          <section className="mt-6"><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-xl font-black text-slate-950">Complete Admin Tool Surface</h2><p className="mt-1 text-sm font-semibold text-slate-500">Every V1 admin destination is active from the V2 admin shell.</p></div><Link href="/admin" className="hidden rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 sm:inline-flex">Open V1 dashboard</Link></div><AdminModuleGrid counts={counts} /></section>
+
           <section className="mt-6 grid gap-4 md:grid-cols-4">{BENEFITS.map((benefit) => { const Icon = benefit.icon; return <article key={benefit.label} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-sm"><span className="grid size-12 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon className="size-5" /></span><h3 className="mt-3 text-sm font-black text-blue-700">{benefit.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{benefit.detail}</p></article>; })}</section>
         </section>
       </div>
