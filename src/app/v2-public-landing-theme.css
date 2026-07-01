@@ -26,15 +26,29 @@ html[data-loombus-theme="dark"] [data-loombus-public-landing] .text-slate-600 {
   color: #cbd5e1 !important;
 }
 
-html[data-loombus-theme="dark"] [data-loombus-public-landing] a.bg-white {
+html[data-loombus-theme="dark"] [data-loombus-public-landing] a[href="/login"].bg-white,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] a[href="/v2/discussions"].bg-white {
+  background: #f8fafc !important;
   background-color: #f8fafc !important;
   border-color: #f8fafc !important;
   color: #020617 !important;
+  opacity: 1 !important;
 }
 
-html[data-loombus-theme="dark"] [data-loombus-public-landing] a.bg-amber-300 {
+html[data-loombus-theme="dark"] [data-loombus-public-landing] a[href="/login"].bg-white *,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] a[href="/v2/discussions"].bg-white * {
+  color: #020617 !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] a[href="/login"].bg-amber-300 {
+  background: #facc15 !important;
   background-color: #facc15 !important;
   border-color: #facc15 !important;
+  color: #111827 !important;
+  opacity: 1 !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] a[href="/login"].bg-amber-300 * {
   color: #111827 !important;
 }
 
@@ -64,15 +78,29 @@ html[data-loombus-theme="dark"] [data-loombus-public-landing] a.bg-amber-300 {
     color: #cbd5e1 !important;
   }
 
-  html[data-loombus-theme="system"] [data-loombus-public-landing] a.bg-white {
+  html[data-loombus-theme="system"] [data-loombus-public-landing] a[href="/login"].bg-white,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] a[href="/v2/discussions"].bg-white {
+    background: #f8fafc !important;
     background-color: #f8fafc !important;
     border-color: #f8fafc !important;
     color: #020617 !important;
+    opacity: 1 !important;
   }
 
-  html[data-loombus-theme="system"] [data-loombus-public-landing] a.bg-amber-300 {
+  html[data-loombus-theme="system"] [data-loombus-public-landing] a[href="/login"].bg-white *,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] a[href="/v2/discussions"].bg-white * {
+    color: #020617 !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] a[href="/login"].bg-amber-300 {
+    background: #facc15 !important;
     background-color: #facc15 !important;
     border-color: #facc15 !important;
+    color: #111827 !important;
+    opacity: 1 !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] a[href="/login"].bg-amber-300 * {
     color: #111827 !important;
   }
 }
