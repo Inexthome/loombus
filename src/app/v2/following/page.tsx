@@ -13,7 +13,6 @@ import {
   MessageCircle,
   Plus,
   Search,
-  ShieldCheck,
   SlidersHorizontal,
   UserPlus,
   Users,
@@ -98,6 +97,7 @@ type SidebarItem = {
   icon: LucideIcon;
   accent: FollowingAccent;
   actionLabel?: string;
+  avatarUrl?: string | null;
 };
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -257,7 +257,7 @@ function MobileBottomNav() {
 
 function UpdateAvatar({ update }: { update: FollowingUpdate }) {
   const Icon = getKindIcon(update.kind);
-  if (update.avatarUrl && update.kind === "People") return <img src={update.avatarUrl} alt="" className="size-16 rounded-full object-cover" />;
+  if (update.avatarUrl) return <img src={update.avatarUrl} alt="" className="size-16 rounded-full object-cover" />;
   return <span className={`grid size-16 place-items-center rounded-full ${getAccentClasses(update.accent)}`}><Icon className="size-7" /></span>;
 }
 
@@ -289,7 +289,7 @@ function SidebarItemRow({ item }: { item: SidebarItem }) {
   return (
     <Link href={item.href} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
       <span className="flex min-w-0 items-center gap-3">
-        <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${getAccentClasses(item.accent)}`}><Icon className="size-4" /></span>
+        {item.avatarUrl ? <img src={item.avatarUrl} alt="" className="size-10 shrink-0 rounded-full object-cover" /> : <span className={`grid size-10 shrink-0 place-items-center rounded-full ${getAccentClasses(item.accent)}`}><Icon className="size-4" /></span>}
         <span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{item.title}</span><span className="block truncate text-xs font-semibold text-slate-500">{item.meta}</span></span>
       </span>
       {item.actionLabel && <span className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700">{item.actionLabel}</span>}
@@ -347,6 +347,7 @@ export default function V2FollowingPage() {
     icon: UserPlus,
     accent: getAccent(index),
     actionLabel: "View",
+    avatarUrl: profile.avatar_url,
   }));
 
   const recommendedItems: SidebarItem[] = suggestedProfiles.slice(0, 3).map((profile, index) => ({
@@ -356,6 +357,7 @@ export default function V2FollowingPage() {
     icon: UserPlus,
     accent: getAccent(index + 1),
     actionLabel: "Open",
+    avatarUrl: profile.avatar_url,
   }));
 
   function resetFilters() {
@@ -537,11 +539,6 @@ export default function V2FollowingPage() {
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Discover people</h2><Link href="/v2/people" className="text-sm font-black text-blue-700">Open People</Link></div>
               <div className="mt-4 space-y-3">{recommendedItems.length > 0 ? recommendedItems.map((item) => <SidebarItemRow key={item.title} item={item} />) : <p className="text-sm leading-6 text-slate-500">No recommendations are available right now.</p>}</div>
-            </section>
-
-            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Read-only pass</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600"><ShieldCheck className="mr-2 inline size-4 text-blue-700" />This V2 Following page only reads existing follows and activity. Follow and notification mutations remain on existing pages.</p>
             </section>
           </aside>
         </section>
