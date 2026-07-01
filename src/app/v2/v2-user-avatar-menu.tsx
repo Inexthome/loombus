@@ -28,10 +28,19 @@ function getDisplayName(profile: V2Profile | null, email: string | null) {
   return profile?.full_name?.trim() || profile?.username?.trim() || email?.split("@")[0] || "Account";
 }
 
+function hasNativeInlineAvatar(topNav: HTMLElement) {
+  const avatars = Array.from(topNav.querySelectorAll<HTMLElement>(".v2-avatar-menu-inline"));
+  return avatars.some((avatar) => !avatar.closest(".v2-avatar-portal-host"));
+}
+
 function findV2TopNavActionGroup() {
   const topNav = document.querySelector<HTMLElement>(".loombus-v2-top-nav");
   if (!topNav) return null;
-  if (topNav.querySelector(".v2-avatar-menu-inline")) return null;
+  if (hasNativeInlineAvatar(topNav)) return null;
+
+  const actionLink = topNav.querySelector<HTMLAnchorElement>('a[aria-label="Search"], a[href="/v2/search"], a[aria-label="Notifications"], a[href="/v2/notifications"]');
+  if (actionLink?.parentElement) return actionLink.parentElement as HTMLElement;
+
   const directContainer = topNav.querySelector<HTMLElement>(":scope > div");
   const actionGroup = directContainer?.querySelector<HTMLElement>(":scope > div:last-child");
   return actionGroup ?? null;
@@ -50,6 +59,7 @@ export function V2UserAvatarMenuPortal() {
     let mounted = true;
     let hostNode: HTMLDivElement | null = null;
     let observer: MutationObserver | null = null;
+    let frame = 0;
 
     function cleanupHost() {
       hostNode?.remove();
@@ -65,7 +75,10 @@ export function V2UserAvatarMenuPortal() {
         return;
       }
 
-      if (hostNode && actionGroup.contains(hostNode)) return;
+      if (hostNode && hostNode.parentElement === actionGroup) {
+        if (mounted) setHost(hostNode);
+        return;
+      }
 
       cleanupHost();
       hostNode = document.createElement("div");
@@ -74,13 +87,18 @@ export function V2UserAvatarMenuPortal() {
       if (mounted) setHost(hostNode);
     }
 
-    const frame = window.requestAnimationFrame(mountIntoLegacyNav);
-    observer = new MutationObserver(mountIntoLegacyNav);
+    function scheduleMount() {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(mountIntoLegacyNav);
+    }
+
+    scheduleMount();
+    observer = new MutationObserver(scheduleMount);
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       mounted = false;
-      window.cancelAnimationFrame(frame);
+      if (frame) window.cancelAnimationFrame(frame);
       observer?.disconnect();
       cleanupHost();
     };
