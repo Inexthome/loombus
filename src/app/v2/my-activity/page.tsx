@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Award,
   Bell,
   Bookmark,
-  ChevronDown,
+  ChevronRight,
   EyeOff,
   FolderOpen,
   Home,
@@ -20,7 +20,6 @@ import {
   SlidersHorizontal,
   Star,
   Trophy,
-  UserPlus,
   Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
@@ -46,6 +45,7 @@ type DiscussionRow = {
   body: string | null;
   created_at: string;
   discussion_type?: string | null;
+  deleted_at?: string | null;
 };
 
 type ReplyRow = {
@@ -62,15 +62,10 @@ type BookmarkRow = {
   created_at: string;
 };
 
-type ProfileRow = {
-  id: string;
-  full_name: string | null;
-  username: string | null;
-  avatar_url: string | null;
-};
-
-type ActivityKind = "reply" | "discussion" | "save" | "follow" | "room" | "lab" | "message";
+type ActivityKind = "reply" | "discussion" | "save";
 type ActivityAccent = "blue" | "green" | "violet" | "amber" | "slate";
+type ActivityFilter = "All" | "Replies" | "Discussions" | "Saves";
+type ActivitySort = "recent" | "oldest" | "type" | "title";
 
 type ActivityItem = {
   id: string;
@@ -83,8 +78,8 @@ type ActivityItem = {
   createdAt: string;
   href: string;
   actionLabel: string;
-  avatarUrl?: string | null;
   accent: ActivityAccent;
+  available: boolean;
 };
 
 type SidebarMetric = {
@@ -92,10 +87,10 @@ type SidebarMetric = {
   value: number;
 };
 
-type AttentionItem = {
+type QuickLinkItem = {
   title: string;
   meta: string;
-  count: number;
+  href: string;
   icon: LucideIcon;
 };
 
@@ -135,19 +130,7 @@ const MOBILE_NAV_ITEMS = [
   { label: "People", href: "/v2/people", icon: Users, active: true },
 ];
 
-const FILTERS = ["All", "Replies", "Discussions", "Saves", "Follows", "Rooms", "Labs", "Messages"];
-
-const ATTENTION_ITEMS: AttentionItem[] = [
-  { title: "2 unread replies", meta: "In discussions", count: 2, icon: MessageCircle },
-  { title: "1 room update", meta: "Waiting for your review", count: 1, icon: Users },
-  { title: "1 discussion awaiting reply", meta: "Started by you", count: 1, icon: MessageCircle },
-];
-
-const ACHIEVEMENTS: AchievementItem[] = [
-  { title: "Thoughtful Contributor", meta: "Replied in 10 discussions", count: 10, icon: Award },
-  { title: "Knowledge Explorer", meta: "Saved 10 discussions", count: 10, icon: Star },
-  { title: "Active Participant", meta: "Followed 5 experts", count: 5, icon: Trophy },
-];
+const FILTERS: ActivityFilter[] = ["All", "Replies", "Discussions", "Saves"];
 
 const PRIVACY_CONTROLS: PrivacyItem[] = [
   { label: "Profile visibility", value: "Private", icon: EyeOff },
@@ -187,6 +170,10 @@ function formatRelativeTime(value: string | null | undefined) {
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(new Date(value));
 }
 
+function isThisWeek(value: string) {
+  return Date.now() - new Date(value).getTime() <= 7 * 24 * 60 * 60 * 1000;
+}
+
 function getModeLabel(value: string | null | undefined) {
   if (value === "debate") return "Debate";
   if (value === "research_question") return "Research Question";
@@ -211,11 +198,14 @@ function getPreviewGradient(activity: ActivityItem) {
 
 function getActivityIcon(kind: ActivityKind) {
   if (kind === "save") return Bookmark;
-  if (kind === "follow") return UserPlus;
-  if (kind === "room") return Users;
-  if (kind === "lab") return Trophy;
-  if (kind === "message") return Bell;
   return MessageCircle;
+}
+
+function getFilterCount(filter: ActivityFilter, items: ActivityItem[]) {
+  if (filter === "Replies") return items.filter((item) => item.kind === "reply").length;
+  if (filter === "Discussions") return items.filter((item) => item.kind === "discussion").length;
+  if (filter === "Saves") return items.filter((item) => item.kind === "save").length;
+  return items.length;
 }
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
@@ -269,7 +259,7 @@ function V2TopNav() {
         </nav>
         <div className="flex items-center gap-2">
           <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Search className="size-5" /></Link>
-          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /><span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">4</span></Link>
+          <Link href="/v2/notifications" aria-label="Notifications" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /></Link>
         </div>
       </div>
     </header>
@@ -296,8 +286,6 @@ function MobileBottomNav() {
 
 function ActivityVisual({ activity }: { activity: ActivityItem }) {
   const Icon = getActivityIcon(activity.kind);
-  if (activity.avatarUrl && activity.kind === "follow") return <img src={activity.avatarUrl} alt="" className="size-24 rounded-2xl object-cover sm:size-28" />;
-  if (activity.kind === "room") return <span className="grid size-24 place-items-center rounded-2xl bg-blue-600 text-white sm:size-28"><Users className="size-10" /></span>;
   return (
     <span className={`grid size-24 place-items-center rounded-2xl bg-gradient-to-br ${getPreviewGradient(activity)} text-white sm:size-28`}>
       <Icon className="size-10" />
@@ -322,11 +310,12 @@ function ActivityRow({ activity }: { activity: ActivityItem }) {
             <div className="mt-2 flex flex-wrap gap-2">
               {activity.topic && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{activity.topic}</span>}
               {activity.mode && <span className={`rounded-full px-3 py-1 text-xs font-bold ${getModeClass(activity.mode)}`}>{getModeLabel(activity.mode)}</span>}
+              {!activity.available && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">Unavailable</span>}
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{activity.description}</p>
             <p className="mt-2 text-xs font-semibold text-slate-400">{formatRelativeTime(activity.createdAt)}</p>
           </div>
-          <Link href={activity.href} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-center text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">{activity.actionLabel}</Link>
+          <Link href={activity.href} className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-center text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">{activity.actionLabel}<ChevronRight className="size-4" /></Link>
         </div>
       </div>
     </article>
@@ -340,54 +329,86 @@ export default function V2MyActivityPage() {
   const [activityLoading, setActivityLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeFilter, setActiveFilter] = useState<ActivityFilter>("All");
+  const [sortBy, setSortBy] = useState<ActivitySort>("recent");
+  const [showFilters, setShowFilters] = useState(false);
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  const filterCounts = useMemo(() => ({
+    All: getFilterCount("All", activity),
+    Replies: getFilterCount("Replies", activity),
+    Discussions: getFilterCount("Discussions", activity),
+    Saves: getFilterCount("Saves", activity),
+  }), [activity]);
 
   const filteredActivity = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
-    return activity.filter((item) => {
+    const nextActivity = activity.filter((item) => {
       const matchesQuery = !cleanQuery || `${item.eyebrow} ${item.title} ${item.description} ${item.topic ?? ""}`.toLowerCase().includes(cleanQuery);
       const matchesFilter =
         activeFilter === "All" ||
         (activeFilter === "Replies" && item.kind === "reply") ||
         (activeFilter === "Discussions" && item.kind === "discussion") ||
-        (activeFilter === "Saves" && item.kind === "save") ||
-        (activeFilter === "Follows" && item.kind === "follow") ||
-        (activeFilter === "Rooms" && item.kind === "room") ||
-        (activeFilter === "Labs" && item.kind === "lab") ||
-        (activeFilter === "Messages" && item.kind === "message");
+        (activeFilter === "Saves" && item.kind === "save");
       return matchesQuery && matchesFilter;
     });
-  }, [activeFilter, activity, query]);
+
+    return [...nextActivity].sort((a, b) => {
+      if (sortBy === "oldest") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (sortBy === "type") return a.kind.localeCompare(b.kind) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortBy === "title") return a.title.localeCompare(b.title);
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [activeFilter, activity, query, sortBy]);
 
   const counts = useMemo(() => ({
     replies: activity.filter((item) => item.kind === "reply").length,
     discussions: activity.filter((item) => item.kind === "discussion").length,
     saves: activity.filter((item) => item.kind === "save").length,
-    follows: activity.filter((item) => item.kind === "follow").length,
-    rooms: activity.filter((item) => item.kind === "room").length,
-    labs: activity.filter((item) => item.kind === "lab").length,
-    messages: activity.filter((item) => item.kind === "message").length,
+    thisWeek: activity.filter((item) => isThisWeek(item.createdAt)).length,
   }), [activity]);
 
   const summaryMetrics: SidebarMetric[] = [
     { label: "Replies", value: counts.replies },
     { label: "Discussions", value: counts.discussions },
     { label: "Saves", value: counts.saves },
-    { label: "Follows", value: counts.follows },
-    { label: "Rooms", value: counts.rooms },
-    { label: "Labs", value: counts.labs },
-    { label: "Messages", value: counts.messages },
+    { label: "This week", value: counts.thisWeek },
     { label: "Total", value: activity.length },
   ];
+
+  const quickLinks: QuickLinkItem[] = activity.slice(0, 3).map((item) => ({
+    title: item.title,
+    meta: `${item.eyebrow} · ${formatRelativeTime(item.createdAt)}`,
+    href: item.href,
+    icon: getActivityIcon(item.kind),
+  }));
+
+  const achievements: AchievementItem[] = [
+    { title: "Conversation Builder", meta: `${counts.discussions} discussions started`, count: counts.discussions, icon: Award },
+    { title: "Thoughtful Contributor", meta: `${counts.replies} replies posted`, count: counts.replies, icon: Trophy },
+    { title: "Knowledge Library", meta: `${counts.saves} discussions saved`, count: counts.saves, icon: Star },
+  ];
+
+  function focusList() {
+    requestAnimationFrame(() => listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  function resetFilters() {
+    setActiveFilter("All");
+    setSortBy("recent");
+    setQuery("");
+    setShowFilters(false);
+    focusList();
+  }
 
   async function loadActivity(userId: string) {
     setActivityLoading(true);
     setMessage("");
     try {
       const [{ data: discussionRows }, { data: replyRows }, { data: bookmarkRows }] = await Promise.all([
-        supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
-        supabase.from("replies").select("id, user_id, discussion_id, body, created_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
-        supabase.from("bookmarks").select("id, discussion_id, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(8),
+        supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type, deleted_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(25),
+        supabase.from("replies").select("id, user_id, discussion_id, body, created_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(25),
+        supabase.from("bookmarks").select("id, discussion_id, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(25),
       ]);
 
       const discussions = (discussionRows ?? []) as DiscussionRow[];
@@ -397,91 +418,64 @@ export default function V2MyActivityPage() {
       const linkedDiscussionsById = new Map<string, DiscussionRow>();
 
       if (linkedDiscussionIds.length > 0) {
-        const { data: linkedDiscussionRows } = await supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").in("id", linkedDiscussionIds).is("deleted_at", null);
+        const { data: linkedDiscussionRows } = await supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type, deleted_at").in("id", linkedDiscussionIds).is("deleted_at", null);
         for (const discussion of (linkedDiscussionRows ?? []) as DiscussionRow[]) linkedDiscussionsById.set(discussion.id, discussion);
       }
-
-      const { data: profileRows } = await supabase.from("profiles").select("id, full_name, username, avatar_url").neq("id", userId).limit(3);
-      const profiles = (profileRows ?? []) as ProfileRow[];
 
       const discussionActivities: ActivityItem[] = discussions.map((discussion) => ({
         id: `discussion-${discussion.id}`,
         kind: "discussion",
-        eyebrow: "Your discussion received new activity",
+        eyebrow: "You started a discussion",
         title: discussion.title,
-        description: truncate(stripHtml(discussion.body) || "New insights from the community. Great points."),
+        description: truncate(stripHtml(discussion.body) || "You opened a discussion for the community."),
         topic: discussion.topic,
         mode: discussion.discussion_type,
         createdAt: discussion.created_at,
         href: `/v2/discussions/${discussion.id}`,
-        actionLabel: "View Thread",
+        actionLabel: "Open Thread",
         accent: "violet",
+        available: true,
       }));
 
       const replyActivities: ActivityItem[] = replies.map((reply) => {
         const discussion = linkedDiscussionsById.get(reply.discussion_id);
+        const available = Boolean(discussion && !discussion.deleted_at);
         return {
           id: `reply-${reply.id}`,
           kind: "reply",
           eyebrow: "You replied to",
-          title: discussion?.title ?? "A discussion",
+          title: discussion?.title ?? "Discussion unavailable",
           description: truncate(stripHtml(reply.body) || "You added a reply to this discussion."),
           topic: discussion?.topic ?? null,
           mode: discussion?.discussion_type ?? null,
           createdAt: reply.created_at,
-          href: discussion ? `/v2/discussions/${discussion.id}` : "/v2/discussions",
-          actionLabel: "Open",
+          href: available ? `/v2/discussions/${reply.discussion_id}?reply=${reply.id}` : "/v2/my-replies",
+          actionLabel: available ? "Open Reply" : "Review Replies",
           accent: "blue",
+          available,
         } satisfies ActivityItem;
       });
 
       const saveActivities: ActivityItem[] = bookmarks.map((bookmark) => {
         const discussion = linkedDiscussionsById.get(bookmark.discussion_id);
+        const available = Boolean(discussion && !discussion.deleted_at);
         return {
           id: `save-${bookmark.id}`,
           kind: "save",
           eyebrow: "You saved",
-          title: discussion?.title ?? "Saved discussion",
+          title: discussion?.title ?? "Saved discussion unavailable",
           description: truncate(stripHtml(discussion?.body) || "Saved to your personal library for later review."),
           topic: discussion?.topic ?? null,
           mode: discussion?.discussion_type ?? null,
           createdAt: bookmark.created_at,
-          href: discussion ? `/v2/discussions/${discussion.id}` : "/v2/saved",
-          actionLabel: "Open",
+          href: available ? `/v2/discussions/${bookmark.discussion_id}` : "/v2/saved",
+          actionLabel: available ? "Open Saved" : "Open Saved",
           accent: "green",
+          available,
         } satisfies ActivityItem;
       });
 
-      const profileActivities: ActivityItem[] = profiles.slice(0, 1).map((profile) => ({
-        id: `follow-${profile.id}`,
-        kind: "follow",
-        eyebrow: "You followed",
-        title: profile.full_name?.trim() || profile.username?.trim() || "Loombus contributor",
-        description: profile.username ? `@${profile.username}` : "Loombus Lab",
-        topic: null,
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        href: "/v2/people",
-        actionLabel: "View",
-        avatarUrl: profile.avatar_url,
-        accent: "slate",
-      }));
-
-      const supplementalActivities: ActivityItem[] = [
-        {
-          id: "room-update",
-          kind: "room",
-          eyebrow: "Builders’ Room posted 2 new updates",
-          title: "Builders’ Room",
-          description: "2 new updates: Governance poll results and roadmap Q&A.",
-          topic: null,
-          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-          href: "/v2/rooms",
-          actionLabel: "Open",
-          accent: "blue",
-        },
-      ];
-
-      setActivity([...replyActivities, ...saveActivities, ...profileActivities, ...supplementalActivities, ...discussionActivities].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 12));
+      setActivity([...replyActivities, ...saveActivities, ...discussionActivities].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch {
       setMessage("Unable to load V2 My Activity safely. Current account activity remains available through existing pages.");
       setActivity([]);
@@ -525,7 +519,7 @@ export default function V2MyActivityPage() {
       <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         <header className="mb-6">
           <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">My Activity</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Review your recent contributions, saves, follows, and account activity.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Review your recent discussions, replies, and saved items in one private activity timeline.</p>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -535,47 +529,50 @@ export default function V2MyActivityPage() {
                 <Search className="size-5 text-slate-400" />
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your activity" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
               </div>
-              <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><SlidersHorizontal className="size-5" /></button>
+              <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((current) => !current)} className={`grid size-12 place-items-center rounded-2xl border shadow-sm transition ${showFilters ? "border-blue-300 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}><SlidersHorizontal className="size-5" /></button>
             </div>
 
             <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter}</button>)}
+              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter} <span className="ml-1 opacity-75">{filterCounts[filter]}</span></button>)}
             </div>
+
+            {showFilters && <section className="mb-5 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Filters</h2><p className="mt-1 text-xs font-semibold text-slate-400">Refine your private activity timeline.</p></div><button type="button" onClick={resetFilters} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 transition hover:border-blue-200 hover:text-blue-700">Reset</button></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Type<select value={activeFilter} onChange={(event) => setActiveFilter(event.target.value as ActivityFilter)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none">{FILTERS.map((filter) => <option key={filter}>{filter}</option>)}</select></label><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Sort<select value={sortBy} onChange={(event) => setSortBy(event.target.value as ActivitySort)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none"><option value="recent">Newest activity</option><option value="oldest">Oldest activity</option><option value="type">Activity type</option><option value="title">Title A-Z</option></select></label></div></section>}
 
             {message && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{message}</div>}
             {activityLoading && <div className="mb-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">Loading activity...</div>}
 
-            <div className="space-y-3">
+            <div ref={listRef} className="space-y-3">
               {!activityLoading && filteredActivity.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">No activity matches this V2 shell filter.</div>}
               {!activityLoading && filteredActivity.map((item) => <ActivityRow key={item.id} activity={item} />)}
             </div>
 
-            {!activityLoading && filteredActivity.length > 0 && <Link href="/v2/my-activity" className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50">Load more activity<ChevronDown className="size-4" /></Link>}
+            {!activityLoading && filteredActivity.length > 0 && <button type="button" onClick={resetFilters} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50">Showing {filteredActivity.length} of {activity.length} activity items <ChevronRight className="size-4" /></button>}
           </div>
 
           <aside className="space-y-4">
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Activity summary</h2><Link href="/v2/my-activity" className="text-sm font-black text-blue-700">View all</Link></div>
-              <div className="mt-4 grid grid-cols-4 overflow-hidden rounded-2xl border border-slate-100 text-center text-xs font-semibold text-slate-500">
+              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Activity summary</h2><button type="button" onClick={resetFilters} className="text-sm font-black text-blue-700">View all</button></div>
+              <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-2xl border border-slate-100 text-center text-xs font-semibold text-slate-500 sm:grid-cols-3">
                 {summaryMetrics.map((metric) => <div key={metric.label} className="border-b border-r border-slate-100 p-3"><p className="text-xl font-black text-slate-950">{metric.value}</p><p>{metric.label}</p></div>)}
               </div>
-              <p className="mt-4 text-sm text-slate-500">All activity is private and only visible to you.</p>
+              <p className="mt-4 text-sm text-slate-500">This page is read-only and private to your account.</p>
             </section>
 
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Needs attention</h2><Link href="/v2/notifications" className="text-sm font-black text-blue-700">View all</Link></div>
+              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Recent activity</h2><button type="button" onClick={() => { setSortBy("recent"); setActiveFilter("All"); focusList(); }} className="text-sm font-black text-blue-700">View all</button></div>
               <div className="mt-4 space-y-4">
-                {ATTENTION_ITEMS.map((item) => {
+                {quickLinks.map((item) => {
                   const Icon = item.icon;
-                  return <Link key={item.title} href="/v2/notifications" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-full bg-blue-50 text-blue-700"><Icon className="size-4" /></span><span><span className="block text-sm font-black text-slate-800">{item.title}</span><span className="block text-xs font-semibold text-slate-500">{item.meta}</span></span></span><span className="grid size-7 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-700">{item.count}</span></Link>;
+                  return <Link key={`${item.href}-${item.title}`} href={item.href} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="flex min-w-0 items-center gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-700"><Icon className="size-4" /></span><span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{item.title}</span><span className="block truncate text-xs font-semibold text-slate-500">{item.meta}</span></span></span><ChevronRight className="size-4 shrink-0 text-slate-400" /></Link>;
                 })}
+                {quickLinks.length === 0 && <p className="text-sm text-slate-500">Recent activity will appear here after you participate.</p>}
               </div>
             </section>
 
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Recent achievements</h2><Link href="/v2/profile" className="text-sm font-black text-blue-700">View all</Link></div>
+              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Contribution signals</h2><Link href="/v2/profile" className="text-sm font-black text-blue-700">Profile</Link></div>
               <div className="mt-4 space-y-4">
-                {ACHIEVEMENTS.map((item) => {
+                {achievements.map((item) => {
                   const Icon = item.icon;
                   return <div key={item.title} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2"><span className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-full bg-blue-50 text-blue-700"><Icon className="size-4" /></span><span><span className="block text-sm font-black text-slate-800">{item.title}</span><span className="block text-xs font-semibold text-slate-500">{item.meta}</span></span></span><span className="grid size-7 place-items-center rounded-full bg-blue-50 text-xs font-black text-blue-700">{item.count}</span></div>;
                 })}
