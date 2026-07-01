@@ -2,24 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   Bookmark,
-  ChevronDown,
-  FileText,
-  FlaskConical,
+  ChevronRight,
   Home,
   Loader2,
   Lock,
   MessageCircle,
-  MoreHorizontal,
-  PauseCircle,
   Plus,
   Search,
   ShieldCheck,
   SlidersHorizontal,
-  Trash2,
   User,
   Users,
 } from "lucide-react";
@@ -48,15 +42,24 @@ type DiscussionRow = {
   discussion_type?: string | null;
 };
 
-type ProfileRow = {
+type ReplyRow = {
   id: string;
-  full_name: string | null;
-  username: string | null;
-  avatar_url: string | null;
+  discussion_id: string;
+  body: string | null;
+  created_at: string;
 };
 
-type HistoryKind = "Discussion" | "Room" | "People" | "Lab" | "File";
-type HistoryAccent = "blue" | "green" | "violet" | "red" | "slate";
+type BookmarkRow = {
+  id: string;
+  discussion_id: string;
+  created_at: string;
+  private_note: string | null;
+};
+
+type HistoryKind = "Saved" | "Discussion" | "Reply";
+type HistoryAccent = "blue" | "green" | "violet" | "slate";
+type HistoryFilter = "All" | "Saved" | "Discussions" | "Replies";
+type HistorySort = "recent" | "oldest" | "title";
 
 type HistoryItem = {
   id: string;
@@ -66,19 +69,8 @@ type HistoryItem = {
   topic: string | null;
   mode?: string | null;
   href: string;
-  viewedAt: string;
-  progress: number;
+  occurredAt: string;
   actionLabel: string;
-  accent: HistoryAccent;
-  avatarUrl?: string | null;
-};
-
-type SidebarItem = {
-  title: string;
-  meta: string;
-  href: string;
-  progress?: number;
-  icon: LucideIcon;
   accent: HistoryAccent;
 };
 
@@ -105,14 +97,7 @@ const MOBILE_NAV_ITEMS = [
   { label: "Messages", href: "/v2/messages", icon: Bell },
 ];
 
-const FILTERS = ["All", "Discussions", "Rooms", "People", "Labs", "Files"];
-const SINCE_ITEMS = [
-  { label: "8 new replies in discussions", icon: MessageCircle },
-  { label: "3 updates in labs", icon: FlaskConical },
-  { label: "2 new messages in rooms", icon: Home },
-  { label: "5 new files added", icon: FileText },
-];
-const QUICK_CLEAR = ["Clear today", "Clear last 7 days", "Clear all history"];
+const FILTERS: HistoryFilter[] = ["All", "Saved", "Discussions", "Replies"];
 
 function getDefaultShellPayload(): ShellPayload {
   return {
@@ -127,7 +112,7 @@ function stripHtml(value: string | null | undefined) {
   return (value ?? "").replace(/<br\s*\/?\s*>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function truncate(value: string, maxLength = 120) {
+function truncate(value: string, maxLength = 130) {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, maxLength - 1).trim()}…`;
 }
@@ -162,31 +147,28 @@ function getModeClass(value: string | null | undefined) {
 }
 
 function getAccent(index: number): HistoryAccent {
-  return ["blue", "green", "violet", "slate", "red"][index % 5] as HistoryAccent;
+  return ["blue", "green", "violet", "slate"][index % 4] as HistoryAccent;
 }
 
-function getHistoryIcon(kind: HistoryKind) {
-  if (kind === "Room") return Home;
-  if (kind === "People") return User;
-  if (kind === "Lab") return FlaskConical;
-  if (kind === "File") return FileText;
-  return MessageCircle;
-}
-
-function getPreviewGradient(item: HistoryItem) {
-  if (item.accent === "green") return "from-emerald-500 via-lime-400 to-sky-400";
-  if (item.accent === "violet") return "from-violet-700 via-fuchsia-500 to-blue-500";
-  if (item.accent === "red") return "from-red-600 via-rose-500 to-orange-400";
-  if (item.accent === "slate") return "from-slate-900 via-slate-700 to-blue-500";
-  return "from-blue-950 via-blue-700 to-cyan-400";
-}
-
-function getSidebarAccentClass(accent: HistoryAccent) {
+function getAccentClasses(accent: HistoryAccent) {
   if (accent === "green") return "bg-emerald-50 text-emerald-700";
   if (accent === "violet") return "bg-violet-50 text-violet-700";
-  if (accent === "red") return "bg-red-50 text-red-700";
   if (accent === "slate") return "bg-slate-100 text-slate-700";
   return "bg-blue-50 text-blue-700";
+}
+
+function getFilterCount(filter: HistoryFilter, items: HistoryItem[]) {
+  if (filter === "Saved") return items.filter((item) => item.kind === "Saved").length;
+  if (filter === "Discussions") return items.filter((item) => item.kind === "Discussion").length;
+  if (filter === "Replies") return items.filter((item) => item.kind === "Reply").length;
+  return items.length;
+}
+
+function KindIcon({ kind, className = "size-4 text-blue-700" }: { kind: HistoryKind | "Total"; className?: string }) {
+  if (kind === "Saved") return <Bookmark className={className} />;
+  if (kind === "Reply") return <MessageCircle className={className} />;
+  if (kind === "Total") return <ShieldCheck className={className} />;
+  return <User className={className} />;
 }
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
@@ -234,7 +216,7 @@ function V2TopNav() {
         </nav>
         <div className="flex items-center gap-2">
           <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Search className="size-5" /></Link>
-          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /><span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">3</span></Link>
+          <Link href="/v2/notifications" aria-label="Notifications" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /></Link>
         </div>
       </div>
     </header>
@@ -260,71 +242,59 @@ function MobileBottomNav() {
 }
 
 function HistoryVisual({ item }: { item: HistoryItem }) {
-  const Icon = getHistoryIcon(item.kind);
-  if (item.avatarUrl && item.kind === "People") return <img src={item.avatarUrl} alt="" className="size-20 rounded-2xl object-cover" />;
-  return (
-    <span className={`grid size-20 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${getPreviewGradient(item)} text-white shadow-sm`}>
-      <Icon className="size-8" />
-    </span>
-  );
-}
-
-function ProgressBar({ value }: { value: number }) {
-  return (
-    <span className="inline-flex min-w-[128px] items-center gap-3 text-xs font-semibold text-slate-500">
-      <span className="h-1.5 flex-1 rounded-full bg-slate-200"><span className="block h-1.5 rounded-full bg-blue-600" style={{ width: `${value}%` }} /></span>
-      Read {value}%
-    </span>
-  );
+  return <span className={`grid size-16 shrink-0 place-items-center rounded-2xl ${getAccentClasses(item.accent)}`}><KindIcon kind={item.kind} className="size-7" /></span>;
 }
 
 function HistoryRow({ item }: { item: HistoryItem }) {
   return (
-    <article className="flex flex-col gap-4 border-b border-slate-100 p-4 last:border-b-0 sm:flex-row sm:items-center">
+    <article className="flex flex-col gap-4 border-b border-slate-100 p-4 last:border-b-0 sm:flex-row sm:items-start">
       <Link href={item.href} className="shrink-0"><HistoryVisual item={item} /></Link>
       <div className="min-w-0 flex-1">
         <Link href={item.href} className="text-lg font-black text-slate-950 transition hover:text-blue-700">{item.title}</Link>
         <div className="mt-2 flex flex-wrap gap-2">
-          <span className={`rounded-full px-3 py-1 text-xs font-bold ${item.kind === "File" ? "bg-orange-50 text-orange-700" : item.kind === "People" ? "bg-emerald-50 text-emerald-700" : getModeClass(item.mode)}`}>{item.kind === "Discussion" ? getModeLabel(item.mode) : item.kind}</span>
+          <span className={`rounded-full px-3 py-1 text-xs font-bold ${item.kind === "Saved" ? "bg-emerald-50 text-emerald-700" : item.kind === "Reply" ? "bg-slate-100 text-slate-700" : getModeClass(item.mode)}`}>{item.kind === "Discussion" ? getModeLabel(item.mode) : item.kind}</span>
           {item.topic && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{item.topic}</span>}
         </div>
-        <p className="mt-2 text-sm font-semibold text-slate-600">{item.subtitle}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <span className="size-1.5 rounded-full bg-blue-600" />
-          <ProgressBar value={item.progress} />
-        </div>
+        <p className="mt-2 text-sm leading-6 text-slate-600">{item.subtitle}</p>
+        <p className="mt-2 text-xs font-semibold text-slate-400">{formatRelativeTime(item.occurredAt)}</p>
       </div>
-      <span className="text-sm font-semibold text-slate-500 sm:w-24">{formatRelativeTime(item.viewedAt)}</span>
-      <div className="flex gap-2 sm:w-40 sm:justify-end">
-        <Link href={item.href} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-700">{item.actionLabel}</Link>
-        <button type="button" className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-600 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">Save</button>
-        <button type="button" aria-label="More history actions" className="grid size-10 place-items-center rounded-xl text-slate-500 transition hover:bg-blue-50 hover:text-blue-700"><MoreHorizontal className="size-5" /></button>
+      <div className="flex gap-2 sm:justify-end">
+        <Link href={item.href} className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-700">{item.actionLabel}<ChevronRight className="size-4" /></Link>
       </div>
     </article>
   );
 }
 
-function SidebarList({ title, items }: { title: string; items: SidebarItem[] }) {
+function SidebarList({ title, items, kind }: { title: string; items: HistoryItem[]; kind: HistoryKind }) {
   return (
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">{title}</h2><Link href="/v2/reading-history" className="text-sm font-black text-blue-700">View all</Link></div>
-      <div className="mt-4 space-y-4">
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link key={`${title}-${item.title}`} href={item.href} className="flex gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
-              <span className={`grid size-16 shrink-0 place-items-center rounded-xl ${getSidebarAccentClass(item.accent)}`}><Icon className="size-6" /></span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-black text-slate-800">{item.title}</span>
-                <span className="block truncate text-xs font-semibold text-slate-500">{item.meta}</span>
-                {typeof item.progress === "number" && <span className="mt-2 block"><ProgressBar value={item.progress} /></span>}
-              </span>
-            </Link>
-          );
-        })}
+      <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">{title}</h2>
+      <div className="mt-4 space-y-3">
+        {items.length === 0 && <p className="text-sm leading-6 text-slate-500">No items yet.</p>}
+        {items.map((item, index) => (
+          <Link key={`${title}-${item.id}`} href={item.href} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
+            <span className="flex min-w-0 items-center gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl ${getAccentClasses(getAccent(index))}`}><KindIcon kind={kind} /></span><span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{item.title}</span><span className="block truncate text-xs font-semibold text-slate-500">{formatRelativeTime(item.occurredAt)}</span></span></span>
+            <ChevronRight className="size-4 shrink-0 text-slate-400" />
+          </Link>
+        ))}
       </div>
     </section>
   );
+}
+
+function makeDiscussionItem(discussion: DiscussionRow, index: number): HistoryItem {
+  return {
+    id: `discussion-${discussion.id}`,
+    kind: "Discussion",
+    title: discussion.title,
+    subtitle: truncate(stripHtml(discussion.body) || "You started this discussion."),
+    topic: discussion.topic,
+    mode: discussion.discussion_type ?? null,
+    href: `/v2/discussions/${discussion.id}`,
+    occurredAt: discussion.created_at,
+    actionLabel: "Open",
+    accent: getAccent(index),
+  };
 }
 
 export default function V2ReadingHistoryPage() {
@@ -334,126 +304,95 @@ export default function V2ReadingHistoryPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeFilter, setActiveFilter] = useState<HistoryFilter>("All");
+  const [sortBy, setSortBy] = useState<HistorySort>("recent");
+  const [showFilters, setShowFilters] = useState(false);
 
   const filteredItems = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
-    return items.filter((item) => {
+    const nextItems = items.filter((item) => {
       const matchesQuery = !cleanQuery || `${item.title} ${item.subtitle} ${item.topic ?? ""} ${item.kind}`.toLowerCase().includes(cleanQuery);
-      const matchesFilter =
-        activeFilter === "All" ||
-        (activeFilter === "Discussions" && item.kind === "Discussion") ||
-        (activeFilter === "Rooms" && item.kind === "Room") ||
-        (activeFilter === "People" && item.kind === "People") ||
-        (activeFilter === "Labs" && item.kind === "Lab") ||
-        (activeFilter === "Files" && item.kind === "File");
+      const matchesFilter = activeFilter === "All" || (activeFilter === "Saved" && item.kind === "Saved") || (activeFilter === "Discussions" && item.kind === "Discussion") || (activeFilter === "Replies" && item.kind === "Reply");
       return matchesQuery && matchesFilter;
     });
-  }, [activeFilter, items, query]);
 
-  const todayItems = filteredItems.slice(0, 5);
-  const yesterdayItems = filteredItems.slice(5);
-  const continueReading: SidebarItem[] = items.slice(0, 2).map((item) => ({
-    title: item.title,
-    meta: item.kind,
-    href: item.href,
-    progress: item.progress,
-    icon: getHistoryIcon(item.kind),
-    accent: item.accent,
-  }));
+    return [...nextItems].sort((a, b) => {
+      if (sortBy === "oldest") return new Date(a.occurredAt).getTime() - new Date(b.occurredAt).getTime();
+      if (sortBy === "title") return a.title.localeCompare(b.title);
+      return new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime();
+    });
+  }, [activeFilter, items, query, sortBy]);
+
+  const savedItems = useMemo(() => items.filter((item) => item.kind === "Saved").slice(0, 4), [items]);
+  const replyItems = useMemo(() => items.filter((item) => item.kind === "Reply").slice(0, 4), [items]);
+  const savedCount = getFilterCount("Saved", items);
+  const discussionCount = getFilterCount("Discussions", items);
+  const replyCount = getFilterCount("Replies", items);
+  const totalCount = getFilterCount("All", items);
+
+  function resetFilters() {
+    setActiveFilter("All");
+    setSortBy("recent");
+    setQuery("");
+    setShowFilters(false);
+  }
 
   async function loadHistory(userId: string) {
     setHistoryLoading(true);
     setMessage("");
     try {
-      const { data: discussionRows, error } = await supabase
-        .from("discussions")
-        .select("id, user_id, title, topic, body, created_at, discussion_type")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(6);
+      const [discussionResult, replyResult, bookmarkResult] = await Promise.all([
+        supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
+        supabase.from("replies").select("id, discussion_id, body, created_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
+        supabase.from("bookmarks").select("id, discussion_id, created_at, private_note").eq("user_id", userId).order("created_at", { ascending: false }).limit(24),
+      ]);
 
-      if (error) {
-        setMessage("Unable to load V2 Reading History safely. Current navigation remains available.");
-        setItems([]);
-        return;
+      const discussions = (discussionResult.data ?? []) as DiscussionRow[];
+      const replies = replyResult.error ? [] : ((replyResult.data ?? []) as ReplyRow[]);
+      const bookmarks = bookmarkResult.error ? [] : ((bookmarkResult.data ?? []) as BookmarkRow[]);
+      const discussionIds = [...new Set([...replies.map((reply) => reply.discussion_id), ...bookmarks.map((bookmark) => bookmark.discussion_id)].filter(Boolean))];
+      const linkedDiscussionsById = new Map<string, DiscussionRow>();
+
+      if (discussionIds.length > 0) {
+        const { data: linkedDiscussionRows } = await supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").in("id", discussionIds).is("deleted_at", null);
+        for (const discussion of (linkedDiscussionRows ?? []) as DiscussionRow[]) linkedDiscussionsById.set(discussion.id, discussion);
       }
 
-      const discussions = (discussionRows ?? []) as DiscussionRow[];
-      const { data: profileRows } = await supabase
-        .from("profiles")
-        .select("id, full_name, username, avatar_url")
-        .neq("id", userId)
-        .limit(1);
-      const profile = ((profileRows ?? []) as ProfileRow[])[0];
-
-      const discussionItems: HistoryItem[] = discussions.map((discussion, index) => ({
-        id: `discussion-${discussion.id}`,
-        kind: "Discussion",
-        title: discussion.title,
-        subtitle: index === 0 ? "3 new replies since you viewed" : truncate(stripHtml(discussion.body) || "Return to this discussion and continue reading."),
-        topic: discussion.topic,
-        mode: discussion.discussion_type ?? null,
-        href: `/v2/discussions/${discussion.id}`,
-        viewedAt: new Date(Date.now() - (index + 1) * 60 * 60 * 1000).toISOString(),
-        progress: Math.max(30, 80 - index * 10),
-        actionLabel: "Resume",
-        accent: getAccent(index),
-      }));
-
-      const supplementalItems: HistoryItem[] = [
-        {
-          id: "room-builders",
-          kind: "Room",
-          title: "Builders’ Room",
-          subtitle: "12 new messages",
-          topic: null,
-          href: "/v2/rooms",
-          viewedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-          progress: 65,
+      const discussionItems = discussions.map(makeDiscussionItem);
+      const replyItemsForHistory: HistoryItem[] = replies.flatMap((reply, index) => {
+        const discussion = linkedDiscussionsById.get(reply.discussion_id);
+        if (!discussion) return [];
+        return [{
+          id: `reply-${reply.id}`,
+          kind: "Reply",
+          title: discussion.title,
+          subtitle: truncate(stripHtml(reply.body) || "You replied to this discussion."),
+          topic: discussion.topic,
+          mode: discussion.discussion_type ?? null,
+          href: `/v2/discussions/${reply.discussion_id}?reply=${reply.id}`,
+          occurredAt: reply.created_at,
+          actionLabel: "Open Reply",
+          accent: getAccent(index + discussionItems.length),
+        }];
+      });
+      const savedItemsForHistory: HistoryItem[] = bookmarks.flatMap((bookmark, index) => {
+        const discussion = linkedDiscussionsById.get(bookmark.discussion_id);
+        if (!discussion) return [];
+        return [{
+          id: `saved-${bookmark.id}`,
+          kind: "Saved",
+          title: discussion.title,
+          subtitle: bookmark.private_note?.trim() ? truncate(bookmark.private_note.trim()) : truncate(stripHtml(discussion.body) || "Saved discussion ready to revisit."),
+          topic: discussion.topic,
+          mode: discussion.discussion_type ?? null,
+          href: `/v2/discussions/${discussion.id}`,
+          occurredAt: bookmark.created_at,
           actionLabel: "Resume",
-          accent: "blue",
-        },
-        {
-          id: "profile-person",
-          kind: "People",
-          title: profile?.full_name?.trim() || profile?.username?.trim() || "Nadia Karim",
-          subtitle: "Viewed profile",
-          topic: null,
-          href: "/v2/people",
-          viewedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          progress: 100,
-          actionLabel: "View Again",
-          accent: "slate",
-          avatarUrl: profile?.avatar_url ?? null,
-        },
-        {
-          id: "lab-research",
-          kind: "Lab",
-          title: "Loombus Research Lab",
-          subtitle: "2 new updates since you viewed",
-          topic: null,
-          href: "/v2/labs",
-          viewedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          progress: 40,
-          actionLabel: "Resume",
-          accent: "blue",
-        },
-        {
-          id: "file-trust-models",
-          kind: "File",
-          title: "Trust Models Overview.pdf",
-          subtitle: "Read 100%",
-          topic: null,
-          href: "/v2/saved",
-          viewedAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-          progress: 100,
-          actionLabel: "Open",
-          accent: "red",
-        },
-      ];
+          accent: getAccent(index + discussionItems.length + replyItemsForHistory.length),
+        }];
+      });
 
-      setItems([...discussionItems.slice(0, 1), ...supplementalItems.slice(0, 4), ...discussionItems.slice(1)]);
+      setItems([...savedItemsForHistory, ...discussionItems, ...replyItemsForHistory].sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()));
     } catch {
       setMessage("Unable to load V2 Reading History safely. Current navigation remains available.");
       setItems([]);
@@ -496,72 +435,52 @@ export default function V2ReadingHistoryPage() {
       <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         <header className="mb-6">
           <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Reading History</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Return to discussions, rooms, people, and labs you recently viewed.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Return to saved discussions, discussions you started, and replies you recently made.</p>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0">
-            <div className="mb-4 flex flex-col gap-3 xl:flex-row">
+            <div className="mb-4 flex gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                 <Search className="size-5 text-slate-400" />
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your history" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search saved items, discussions, and replies" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
               </div>
-              <div className="flex gap-3">
-                <button type="button" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 bg-white px-4 py-3 text-sm font-black text-red-600 shadow-sm transition hover:bg-red-50"><Trash2 className="size-4" />Clear History</button>
-                <button type="button" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-blue-700 shadow-sm transition hover:bg-blue-50"><PauseCircle className="size-4" />Pause History</button>
-                <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><SlidersHorizontal className="size-5" /></button>
-              </div>
+              <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((current) => !current)} className={`grid size-12 place-items-center rounded-2xl border shadow-sm transition ${showFilters ? "border-blue-300 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}><SlidersHorizontal className="size-5" /></button>
             </div>
 
             <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter}</button>)}
+              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter} <span className="ml-1 opacity-75">{getFilterCount(filter, items)}</span></button>)}
             </div>
+
+            {showFilters && <section className="mb-5 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Filters</h2><p className="mt-1 text-xs font-semibold text-slate-400">Refine recent history by source and order.</p></div><button type="button" onClick={resetFilters} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 transition hover:border-blue-200 hover:text-blue-700">Reset</button></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Source<select value={activeFilter} onChange={(event) => setActiveFilter(event.target.value as HistoryFilter)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none">{FILTERS.map((filter) => <option key={filter}>{filter}</option>)}</select></label><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Sort<select value={sortBy} onChange={(event) => setSortBy(event.target.value as HistorySort)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none"><option value="recent">Newest first</option><option value="oldest">Oldest first</option><option value="title">Title A-Z</option></select></label></div></section>}
 
             {message && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{message}</div>}
             {historyLoading && <div className="mb-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">Loading reading history...</div>}
 
             <section className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-              {!historyLoading && filteredItems.length === 0 && <div className="p-6 text-slate-600">No history matches this V2 shell filter.</div>}
-              {!historyLoading && todayItems.length > 0 && <h2 className="border-b border-slate-100 px-4 py-4 text-sm font-black uppercase tracking-[0.16em] text-slate-600">Today</h2>}
-              {!historyLoading && todayItems.map((item) => <HistoryRow key={item.id} item={item} />)}
-              {!historyLoading && yesterdayItems.length > 0 && <h2 className="border-y border-slate-100 px-4 py-4 text-sm font-black uppercase tracking-[0.16em] text-slate-600">Yesterday</h2>}
-              {!historyLoading && yesterdayItems.map((item) => <HistoryRow key={item.id} item={item} />)}
-              {!historyLoading && filteredItems.length > 0 && <Link href="/v2/reading-history" className="flex items-center justify-center gap-2 border-t border-slate-100 px-4 py-4 text-sm font-black text-blue-700 transition hover:bg-blue-50">Load more history <ChevronDown className="size-4" /></Link>}
+              {!historyLoading && filteredItems.length === 0 && <div className="p-6 text-slate-600">No real reading history sources are available yet.</div>}
+              {!historyLoading && filteredItems.map((item) => <HistoryRow key={item.id} item={item} />)}
+              {!historyLoading && filteredItems.length > 0 && <button type="button" onClick={resetFilters} className="flex w-full items-center justify-center gap-2 border-t border-slate-100 px-4 py-4 text-sm font-black text-blue-700 transition hover:bg-blue-50">Showing {filteredItems.length} of {items.length} history items<ChevronRight className="size-4" /></button>}
             </section>
           </div>
 
           <aside className="space-y-4">
-            <SidebarList title="Continue reading" items={continueReading} />
-
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Since you viewed</h2><Link href="/v2/notifications" className="text-sm font-black text-blue-700">View all</Link></div>
-              <div className="mt-4 space-y-4">
-                {SINCE_ITEMS.map((item) => {
-                  const Icon = item.icon;
-                  return <Link key={item.label} href="/v2/notifications" className="flex items-center gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="grid size-9 place-items-center rounded-full bg-blue-50 text-blue-700"><Icon className="size-4" /></span><span className="text-sm font-semibold text-slate-700">{item.label}</span></Link>;
-                })}
-              </div>
-            </section>
-
-            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Privacy settings</h2><Link href="/settings" className="text-sm font-black text-blue-700">Manage</Link></div>
-              <div className="mt-4 space-y-4 text-sm text-slate-600">
-                <div className="flex items-center justify-between"><span>History is recording</span><span className="font-black text-emerald-600">On ·</span></div>
-                <div className="flex items-center justify-between"><span>Auto-delete history</span><span className="font-black text-slate-700">30 days ›</span></div>
-                <div className="flex items-center justify-between"><span>Private mode</span><span className="font-black text-slate-700">Off ›</span></div>
-              </div>
-            </section>
-
-            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Quick clear</h2><button type="button" className="text-sm font-black text-blue-700">Clear all</button></div>
+              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">History sources</h2>
               <div className="mt-4 space-y-3">
-                {QUICK_CLEAR.map((item) => <button key={item} type="button" className="flex w-full items-center gap-3 rounded-2xl px-1 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-red-50 hover:text-red-700"><Trash2 className="size-4 text-red-500" />{item}</button>)}
+                <Link href="/v2/saved" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><KindIcon kind="Saved" />Saved items</span><span className="font-black text-blue-700">{savedCount}</span></Link>
+                <Link href="/v2/my-discussions" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><KindIcon kind="Discussion" />Your discussions</span><span className="font-black text-blue-700">{discussionCount}</span></Link>
+                <Link href="/v2/my-replies" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><KindIcon kind="Reply" />Your replies</span><span className="font-black text-blue-700">{replyCount}</span></Link>
+                <Link href="/v2/reading-history" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><KindIcon kind="Total" />Total</span><span className="font-black text-blue-700">{totalCount}</span></Link>
               </div>
             </section>
 
+            <SidebarList title="Saved to resume" items={savedItems} kind="Saved" />
+            <SidebarList title="Recent replies" items={replyItems} kind="Reply" />
+
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Smart recall</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600"><ShieldCheck className="mr-2 inline size-4 text-blue-700" />Quickly find what matters with read-only context-aware suggestions.</p>
+              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Tracking source</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-600"><ShieldCheck className="mr-2 inline size-4 text-blue-700" />This view uses existing saved items, discussions, and replies only. Dedicated page-view tracking can be added later with a database migration.</p>
             </section>
           </aside>
         </section>
