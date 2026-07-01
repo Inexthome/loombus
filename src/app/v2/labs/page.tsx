@@ -218,7 +218,7 @@ function RequestCard({ request, currentUserId, canVote, onVote }: { request: Lab
           <button type="button" onClick={() => onVote(request.id)} disabled={!canVote} className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-black transition ${request.voted_by_me ? "bg-blue-600 text-white hover:bg-blue-700" : "border border-slate-200 bg-white text-blue-700 hover:border-blue-200 hover:bg-blue-50"} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400`}>
             <ThumbsUp className="size-4" /> {request.vote_count}
           </button>
-          <Link href="/labs" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">V1 View <ChevronRight className="size-4" /></Link>
+          <Link href="/labs" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700">Open Labs <ChevronRight className="size-4" /></Link>
         </div>
       </div>
     </article>
@@ -237,6 +237,7 @@ export default function V2LabsPage() {
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<RequestFilter>("All");
+  const [showFilters, setShowFilters] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -258,6 +259,12 @@ export default function V2LabsPage() {
   }, [activeFilter, currentUserId, query, requests]);
 
   const topRequests = useMemo(() => [...requests].sort((a, b) => b.vote_count - a.vote_count).slice(0, 3), [requests]);
+
+  function resetFilters() {
+    setQuery("");
+    setActiveFilter("All");
+    setShowFilters(false);
+  }
 
   async function loadLabs(userId: string) {
     setLabsLoading(true);
@@ -415,12 +422,14 @@ export default function V2LabsPage() {
                 <Search className="size-5 text-slate-400" />
                 <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Labs requests" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
               </div>
-              <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><SlidersHorizontal className="size-5" /></button>
+              <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((current) => !current)} className={`grid size-12 place-items-center rounded-2xl border shadow-sm transition ${showFilters ? "border-blue-300 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}><SlidersHorizontal className="size-5" /></button>
             </div>
 
             <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
               {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter}</button>)}
             </div>
+
+            {showFilters && <section className="mb-5 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Search filters</h2><p className="mt-1 text-xs font-semibold text-slate-400">Filter Labs requests by status or ownership.</p></div><button type="button" onClick={resetFilters} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 transition hover:border-blue-200 hover:text-blue-700">Reset</button></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Request status<select value={activeFilter} onChange={(event) => setActiveFilter(event.target.value as RequestFilter)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none">{FILTERS.map((filter) => <option key={filter}>{filter}</option>)}</select></label><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Search terms<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Title, description, status" className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none placeholder:text-slate-400" /></label></div></section>}
 
             {message && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{message}</div>}
             {labsLoading && <div className="mb-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">Loading Labs requests...</div>}
@@ -441,14 +450,13 @@ export default function V2LabsPage() {
             </section>
 
             <div className="space-y-3">
-              {!labsLoading && filteredRequests.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">No Labs requests match this V2 filter.</div>}
               {!labsLoading && filteredRequests.map((request) => <RequestCard key={request.id} request={request} currentUserId={currentUserId} canVote={canVoteLabs} onVote={toggleVote} />)}
             </div>
           </div>
 
           <aside className="space-y-4">
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Request status</h2><Link href="/labs" className="text-sm font-black text-blue-700">V1 Labs</Link></div>
+              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Request status</h2><Link href="/labs" className="text-sm font-black text-blue-700">Manage</Link></div>
               <div className="mt-4 space-y-3">
                 {(Object.keys(STATUS_LABELS) as LabsFeatureRequestStatus[]).map((status) => <div key={status} className="flex items-center justify-between rounded-2xl px-1 py-2"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><span className={`size-3 rounded-full ${status === "shipped" ? "bg-emerald-500" : status === "planned" ? "bg-violet-500" : status === "reviewing" ? "bg-blue-500" : status === "declined" ? "bg-rose-500" : "bg-slate-400"}`} />{STATUS_LABELS[status]}</span><span className="font-black text-blue-700">{statusCounts[status] ?? 0}</span></div>)}
               </div>
