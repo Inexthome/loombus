@@ -56,6 +56,10 @@ type BookmarkRow = {
   private_note: string | null;
 };
 
+type ProfileRow = {
+  avatar_url: string | null;
+};
+
 type HistoryKind = "Saved" | "Discussion" | "Reply";
 type HistoryAccent = "blue" | "green" | "violet" | "slate";
 type HistoryFilter = "All" | "Saved" | "Discussions" | "Replies";
@@ -72,6 +76,7 @@ type HistoryItem = {
   occurredAt: string;
   actionLabel: string;
   accent: HistoryAccent;
+  avatarUrl?: string | null;
 };
 
 const DEFAULT_FLAGS: FeatureFlags = {
@@ -242,7 +247,8 @@ function MobileBottomNav() {
 }
 
 function HistoryVisual({ item }: { item: HistoryItem }) {
-  return <span className={`grid size-16 shrink-0 place-items-center rounded-2xl ${getAccentClasses(item.accent)}`}><KindIcon kind={item.kind} className="size-7" /></span>;
+  if (item.avatarUrl) return <img src={item.avatarUrl} alt="" className="size-16 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm" />;
+  return <span className={`grid size-16 shrink-0 place-items-center rounded-full ${getAccentClasses(item.accent)}`}><KindIcon kind={item.kind} className="size-7" /></span>;
 }
 
 function HistoryRow({ item }: { item: HistoryItem }) {
@@ -265,6 +271,11 @@ function HistoryRow({ item }: { item: HistoryItem }) {
   );
 }
 
+function SidebarAvatar({ item, kind, index }: { item: HistoryItem; kind: HistoryKind; index: number }) {
+  if (item.avatarUrl) return <img src={item.avatarUrl} alt="" className="size-10 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm" />;
+  return <span className={`grid size-10 shrink-0 place-items-center rounded-full ${getAccentClasses(getAccent(index))}`}><KindIcon kind={kind} /></span>;
+}
+
 function SidebarList({ title, items, kind }: { title: string; items: HistoryItem[]; kind: HistoryKind }) {
   return (
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
@@ -273,7 +284,7 @@ function SidebarList({ title, items, kind }: { title: string; items: HistoryItem
         {items.length === 0 && <p className="text-sm leading-6 text-slate-500">No items yet.</p>}
         {items.map((item, index) => (
           <Link key={`${title}-${item.id}`} href={item.href} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
-            <span className="flex min-w-0 items-center gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl ${getAccentClasses(getAccent(index))}`}><KindIcon kind={kind} /></span><span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{item.title}</span><span className="block truncate text-xs font-semibold text-slate-500">{formatRelativeTime(item.occurredAt)}</span></span></span>
+            <span className="flex min-w-0 items-center gap-3"><SidebarAvatar item={item} kind={kind} index={index} /><span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{item.title}</span><span className="block truncate text-xs font-semibold text-slate-500">{formatRelativeTime(item.occurredAt)}</span></span></span>
             <ChevronRight className="size-4 shrink-0 text-slate-400" />
           </Link>
         ))}
@@ -282,7 +293,7 @@ function SidebarList({ title, items, kind }: { title: string; items: HistoryItem
   );
 }
 
-function makeDiscussionItem(discussion: DiscussionRow, index: number): HistoryItem {
+function makeDiscussionItem(discussion: DiscussionRow, index: number, avatarUrl: string | null): HistoryItem {
   return {
     id: `discussion-${discussion.id}`,
     kind: "Discussion",
@@ -294,6 +305,7 @@ function makeDiscussionItem(discussion: DiscussionRow, index: number): HistoryIt
     occurredAt: discussion.created_at,
     actionLabel: "Open",
     accent: getAccent(index),
+    avatarUrl,
   };
 }
 
@@ -341,15 +353,18 @@ export default function V2ReadingHistoryPage() {
     setHistoryLoading(true);
     setMessage("");
     try {
-      const [discussionResult, replyResult, bookmarkResult] = await Promise.all([
+      const [discussionResult, replyResult, bookmarkResult, profileResult] = await Promise.all([
         supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
         supabase.from("replies").select("id, discussion_id, body, created_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
         supabase.from("bookmarks").select("id, discussion_id, created_at, private_note").eq("user_id", userId).order("created_at", { ascending: false }).limit(24),
+        supabase.from("profiles").select("avatar_url").eq("id", userId).maybeSingle(),
       ]);
 
       const discussions = (discussionResult.data ?? []) as DiscussionRow[];
       const replies = replyResult.error ? [] : ((replyResult.data ?? []) as ReplyRow[]);
       const bookmarks = bookmarkResult.error ? [] : ((bookmarkResult.data ?? []) as BookmarkRow[]);
+      const profile = profileResult.error ? null : ((profileResult.data ?? null) as ProfileRow | null);
+      const userAvatarUrl = profile?.avatar_url ?? null;
       const discussionIds = [...new Set([...replies.map((reply) => reply.discussion_id), ...bookmarks.map((bookmark) => bookmark.discussion_id)].filter(Boolean))];
       const linkedDiscussionsById = new Map<string, DiscussionRow>();
 
@@ -358,7 +373,7 @@ export default function V2ReadingHistoryPage() {
         for (const discussion of (linkedDiscussionRows ?? []) as DiscussionRow[]) linkedDiscussionsById.set(discussion.id, discussion);
       }
 
-      const discussionItems = discussions.map(makeDiscussionItem);
+      const discussionItems = discussions.map((discussion, index) => makeDiscussionItem(discussion, index, userAvatarUrl));
       const replyItemsForHistory: HistoryItem[] = replies.flatMap((reply, index) => {
         const discussion = linkedDiscussionsById.get(reply.discussion_id);
         if (!discussion) return [];
@@ -373,6 +388,7 @@ export default function V2ReadingHistoryPage() {
           occurredAt: reply.created_at,
           actionLabel: "Open Reply",
           accent: getAccent(index + discussionItems.length),
+          avatarUrl: userAvatarUrl,
         }];
       });
       const savedItemsForHistory: HistoryItem[] = bookmarks.flatMap((bookmark, index) => {
@@ -389,6 +405,7 @@ export default function V2ReadingHistoryPage() {
           occurredAt: bookmark.created_at,
           actionLabel: "Resume",
           accent: getAccent(index + discussionItems.length + replyItemsForHistory.length),
+          avatarUrl: userAvatarUrl,
         }];
       });
 
