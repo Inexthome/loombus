@@ -1,0 +1,78 @@
+/* Public landing theme repair.
+   Light mode keeps the current warm landing page.
+   Dark and System-in-dark get a true dark surface with readable text. */
+html[data-loombus-theme="dark"] [data-loombus-public-landing] {
+  background: #050505 !important;
+  color: #f8fafc !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] > section > div.absolute {
+  background: radial-gradient(circle at 70% 10%, rgba(250, 204, 21, 0.08), transparent 28rem), #050505 !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] .bg-white,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] .bg-white\/90 {
+  background-color: #111113 !important;
+  border-color: #27272a !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] .text-slate-950,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] .text-slate-900 {
+  color: #f8fafc !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] .text-slate-700,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] a.bg-white {
+  background-color: #f8fafc !important;
+  border-color: #f8fafc !important;
+  color: #020617 !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] a.bg-amber-300 {
+  background-color: #facc15 !important;
+  border-color: #facc15 !important;
+  color: #111827 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] [data-loombus-public-landing] {
+    background: #050505 !important;
+    color: #f8fafc !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] > section > div.absolute {
+    background: radial-gradient(circle at 70% 10%, rgba(250, 204, 21, 0.08), transparent 28rem), #050505 !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] .bg-white,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] .bg-white\/90 {
+    background-color: #111113 !important;
+    border-color: #27272a !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] .text-slate-950,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] .text-slate-900 {
+    color: #f8fafc !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] .text-slate-700,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] .text-slate-600 {
+    color: #cbd5e1 !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] a.bg-white {
+    background-color: #f8fafc !important;
+    border-color: #f8fafc !important;
+    color: #020617 !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] a.bg-amber-300 {
+    background-color: #facc15 !important;
+    border-color: #facc15 !important;
+    color: #111827 !important;
+  }
+}
