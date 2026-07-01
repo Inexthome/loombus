@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   Bookmark,
@@ -41,12 +40,10 @@ type DiscussionRow = {
   body: string | null;
   created_at: string;
   discussion_type?: string | null;
-  deleted_at?: string | null;
 };
 
 type ReplyRow = {
   id: string;
-  user_id: string;
   discussion_id: string;
   body: string | null;
   created_at: string;
@@ -74,21 +71,6 @@ type HistoryItem = {
   href: string;
   occurredAt: string;
   actionLabel: string;
-  accent: HistoryAccent;
-};
-
-type SidebarCount = {
-  label: string;
-  value: number;
-  icon: LucideIcon;
-  href: string;
-};
-
-type SidebarItem = {
-  title: string;
-  meta: string;
-  href: string;
-  icon: LucideIcon;
   accent: HistoryAccent;
 };
 
@@ -168,12 +150,6 @@ function getAccent(index: number): HistoryAccent {
   return ["blue", "green", "violet", "slate"][index % 4] as HistoryAccent;
 }
 
-function getHistoryIcon(kind: HistoryKind) {
-  if (kind === "Saved") return Bookmark;
-  if (kind === "Reply") return MessageCircle;
-  return User;
-}
-
 function getAccentClasses(accent: HistoryAccent) {
   if (accent === "green") return "bg-emerald-50 text-emerald-700";
   if (accent === "violet") return "bg-violet-50 text-violet-700";
@@ -186,6 +162,13 @@ function getFilterCount(filter: HistoryFilter, items: HistoryItem[]) {
   if (filter === "Discussions") return items.filter((item) => item.kind === "Discussion").length;
   if (filter === "Replies") return items.filter((item) => item.kind === "Reply").length;
   return items.length;
+}
+
+function KindIcon({ kind, className = "size-4 text-blue-700" }: { kind: HistoryKind | "Total"; className?: string }) {
+  if (kind === "Saved") return <Bookmark className={className} />;
+  if (kind === "Reply") return <MessageCircle className={className} />;
+  if (kind === "Total") return <ShieldCheck className={className} />;
+  return <User className={className} />;
 }
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
@@ -259,8 +242,7 @@ function MobileBottomNav() {
 }
 
 function HistoryVisual({ item }: { item: HistoryItem }) {
-  const Icon = getHistoryIcon(item.kind);
-  return <span className={`grid size-16 shrink-0 place-items-center rounded-2xl ${getAccentClasses(item.accent)}`}><Icon className="size-7" /></span>;
+  return <span className={`grid size-16 shrink-0 place-items-center rounded-2xl ${getAccentClasses(item.accent)}`}><KindIcon kind={item.kind} className="size-7" /></span>;
 }
 
 function HistoryRow({ item }: { item: HistoryItem }) {
@@ -283,24 +265,36 @@ function HistoryRow({ item }: { item: HistoryItem }) {
   );
 }
 
-function SidebarList({ title, items }: { title: string; items: SidebarItem[] }) {
+function SidebarList({ title, items, kind }: { title: string; items: HistoryItem[]; kind: HistoryKind }) {
   return (
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
       <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">{title}</h2>
       <div className="mt-4 space-y-3">
         {items.length === 0 && <p className="text-sm leading-6 text-slate-500">No items yet.</p>}
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link key={`${title}-${item.title}`} href={item.href} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
-              <span className="flex min-w-0 items-center gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl ${getAccentClasses(item.accent)}`}><Icon className="size-4" /></span><span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{item.title}</span><span className="block truncate text-xs font-semibold text-slate-500">{item.meta}</span></span></span>
-              <ChevronRight className="size-4 shrink-0 text-slate-400" />
-            </Link>
-          );
-        })}
+        {items.map((item, index) => (
+          <Link key={`${title}-${item.id}`} href={item.href} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
+            <span className="flex min-w-0 items-center gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-xl ${getAccentClasses(getAccent(index))}`}><KindIcon kind={kind} /></span><span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{item.title}</span><span className="block truncate text-xs font-semibold text-slate-500">{formatRelativeTime(item.occurredAt)}</span></span></span>
+            <ChevronRight className="size-4 shrink-0 text-slate-400" />
+          </Link>
+        ))}
       </div>
     </section>
   );
+}
+
+function makeDiscussionItem(discussion: DiscussionRow, index: number): HistoryItem {
+  return {
+    id: `discussion-${discussion.id}`,
+    kind: "Discussion",
+    title: discussion.title,
+    subtitle: truncate(stripHtml(discussion.body) || "You started this discussion."),
+    topic: discussion.topic,
+    mode: discussion.discussion_type ?? null,
+    href: `/v2/discussions/${discussion.id}`,
+    occurredAt: discussion.created_at,
+    actionLabel: "Open",
+    accent: getAccent(index),
+  };
 }
 
 export default function V2ReadingHistoryPage() {
@@ -329,22 +323,12 @@ export default function V2ReadingHistoryPage() {
     });
   }, [activeFilter, items, query, sortBy]);
 
-  const filterCounts = useMemo(() => ({
-    All: getFilterCount("All", items),
-    Saved: getFilterCount("Saved", items),
-    Discussions: getFilterCount("Discussions", items),
-    Replies: getFilterCount("Replies", items),
-  }), [items]);
-
-  const sourceCounts: SidebarCount[] = [
-    { label: "Saved items", value: filterCounts.Saved, icon: Bookmark, href: "/v2/saved" },
-    { label: "Your discussions", value: filterCounts.Discussions, icon: User, href: "/v2/my-discussions" },
-    { label: "Your replies", value: filterCounts.Replies, icon: MessageCircle, href: "/v2/my-replies" },
-    { label: "Total", value: filterCounts.All, icon: ShieldCheck, href: "/v2/reading-history" },
-  ];
-
-  const savedItems: SidebarItem[] = items.filter((item) => item.kind === "Saved").slice(0, 4).map((item, index) => ({ title: item.title, meta: formatRelativeTime(item.occurredAt), href: item.href, icon: Bookmark, accent: getAccent(index) }));
-  const replyItems: SidebarItem[] = items.filter((item) => item.kind === "Reply").slice(0, 4).map((item, index) => ({ title: item.title, meta: formatRelativeTime(item.occurredAt), href: item.href, icon: MessageCircle, accent: getAccent(index + 1) }));
+  const savedItems = useMemo(() => items.filter((item) => item.kind === "Saved").slice(0, 4), [items]);
+  const replyItems = useMemo(() => items.filter((item) => item.kind === "Reply").slice(0, 4), [items]);
+  const savedCount = getFilterCount("Saved", items);
+  const discussionCount = getFilterCount("Discussions", items);
+  const replyCount = getFilterCount("Replies", items);
+  const totalCount = getFilterCount("All", items);
 
   function resetFilters() {
     setActiveFilter("All");
@@ -357,40 +341,28 @@ export default function V2ReadingHistoryPage() {
     setHistoryLoading(true);
     setMessage("");
     try {
-      const [{ data: discussionRows }, { data: replyRows }, { data: bookmarkRows, error: bookmarkError }] = await Promise.all([
-        supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type, deleted_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
-        supabase.from("replies").select("id, user_id, discussion_id, body, created_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
+      const [discussionResult, replyResult, bookmarkResult] = await Promise.all([
+        supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
+        supabase.from("replies").select("id, discussion_id, body, created_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
         supabase.from("bookmarks").select("id, discussion_id, created_at, private_note").eq("user_id", userId).order("created_at", { ascending: false }).limit(24),
       ]);
 
-      const discussions = (discussionRows ?? []) as DiscussionRow[];
-      const replies = (replyRows ?? []) as ReplyRow[];
-      const bookmarks = bookmarkError ? [] : ((bookmarkRows ?? []) as BookmarkRow[]);
+      const discussions = (discussionResult.data ?? []) as DiscussionRow[];
+      const replies = replyResult.error ? [] : ((replyResult.data ?? []) as ReplyRow[]);
+      const bookmarks = bookmarkResult.error ? [] : ((bookmarkResult.data ?? []) as BookmarkRow[]);
       const discussionIds = [...new Set([...replies.map((reply) => reply.discussion_id), ...bookmarks.map((bookmark) => bookmark.discussion_id)].filter(Boolean))];
       const linkedDiscussionsById = new Map<string, DiscussionRow>();
 
       if (discussionIds.length > 0) {
-        const { data: linkedDiscussionRows } = await supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type, deleted_at").in("id", discussionIds).is("deleted_at", null);
+        const { data: linkedDiscussionRows } = await supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").in("id", discussionIds).is("deleted_at", null);
         for (const discussion of (linkedDiscussionRows ?? []) as DiscussionRow[]) linkedDiscussionsById.set(discussion.id, discussion);
       }
 
-      const discussionItems: HistoryItem[] = discussions.map((discussion, index) => ({
-        id: `discussion-${discussion.id}`,
-        kind: "Discussion",
-        title: discussion.title,
-        subtitle: truncate(stripHtml(discussion.body) || "You started this discussion."),
-        topic: discussion.topic,
-        mode: discussion.discussion_type ?? null,
-        href: `/v2/discussions/${discussion.id}`,
-        occurredAt: discussion.created_at,
-        actionLabel: "Open",
-        accent: getAccent(index),
-      }));
-
-      const replyItemsForHistory: HistoryItem[] = replies.map((reply, index) => {
+      const discussionItems = discussions.map(makeDiscussionItem);
+      const replyItemsForHistory: HistoryItem[] = replies.flatMap((reply, index) => {
         const discussion = linkedDiscussionsById.get(reply.discussion_id);
-        if (!discussion) return null;
-        return {
+        if (!discussion) return [];
+        return [{
           id: `reply-${reply.id}`,
           kind: "Reply",
           title: discussion.title,
@@ -401,13 +373,12 @@ export default function V2ReadingHistoryPage() {
           occurredAt: reply.created_at,
           actionLabel: "Open Reply",
           accent: getAccent(index + discussionItems.length),
-        } satisfies HistoryItem;
-      }).filter((item): item is HistoryItem => Boolean(item));
-
-      const savedItemsForHistory: HistoryItem[] = bookmarks.map((bookmark, index) => {
+        }];
+      });
+      const savedItemsForHistory: HistoryItem[] = bookmarks.flatMap((bookmark, index) => {
         const discussion = linkedDiscussionsById.get(bookmark.discussion_id);
-        if (!discussion) return null;
-        return {
+        if (!discussion) return [];
+        return [{
           id: `saved-${bookmark.id}`,
           kind: "Saved",
           title: discussion.title,
@@ -418,8 +389,8 @@ export default function V2ReadingHistoryPage() {
           occurredAt: bookmark.created_at,
           actionLabel: "Resume",
           accent: getAccent(index + discussionItems.length + replyItemsForHistory.length),
-        } satisfies HistoryItem;
-      }).filter((item): item is HistoryItem => Boolean(item));
+        }];
+      });
 
       setItems([...savedItemsForHistory, ...discussionItems, ...replyItemsForHistory].sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime()));
     } catch {
@@ -478,7 +449,7 @@ export default function V2ReadingHistoryPage() {
             </div>
 
             <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter} <span className="ml-1 opacity-75">{filterCounts[filter]}</span></button>)}
+              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter} <span className="ml-1 opacity-75">{getFilterCount(filter, items)}</span></button>)}
             </div>
 
             {showFilters && <section className="mb-5 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Filters</h2><p className="mt-1 text-xs font-semibold text-slate-400">Refine recent history by source and order.</p></div><button type="button" onClick={resetFilters} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 transition hover:border-blue-200 hover:text-blue-700">Reset</button></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Source<select value={activeFilter} onChange={(event) => setActiveFilter(event.target.value as HistoryFilter)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none">{FILTERS.map((filter) => <option key={filter}>{filter}</option>)}</select></label><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Sort<select value={sortBy} onChange={(event) => setSortBy(event.target.value as HistorySort)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none"><option value="recent">Newest first</option><option value="oldest">Oldest first</option><option value="title">Title A-Z</option></select></label></div></section>}
@@ -497,15 +468,15 @@ export default function V2ReadingHistoryPage() {
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">History sources</h2>
               <div className="mt-4 space-y-3">
-                {sourceCounts.map((item) => {
-                  const Icon = item.icon;
-                  return <Link key={item.label} href={item.href} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><Icon className="size-4 text-blue-700" />{item.label}</span><span className="font-black text-blue-700">{item.value}</span></Link>;
-                })}
+                <Link href="/v2/saved" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><KindIcon kind="Saved" />Saved items</span><span className="font-black text-blue-700">{savedCount}</span></Link>
+                <Link href="/v2/my-discussions" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><KindIcon kind="Discussion" />Your discussions</span><span className="font-black text-blue-700">{discussionCount}</span></Link>
+                <Link href="/v2/my-replies" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><KindIcon kind="Reply" />Your replies</span><span className="font-black text-blue-700">{replyCount}</span></Link>
+                <Link href="/v2/reading-history" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><KindIcon kind="Total" />Total</span><span className="font-black text-blue-700">{totalCount}</span></Link>
               </div>
             </section>
 
-            <SidebarList title="Saved to resume" items={savedItems} />
-            <SidebarList title="Recent replies" items={replyItems} />
+            <SidebarList title="Saved to resume" items={savedItems} kind="Saved" />
+            <SidebarList title="Recent replies" items={replyItems} kind="Reply" />
 
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Tracking source</h2>
