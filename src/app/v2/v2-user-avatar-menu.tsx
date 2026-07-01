@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase/client";
 import { V2_MENU_GROUPS } from "./v2-navigation";
 
@@ -25,6 +26,68 @@ function getInitial(profile: V2Profile | null, email: string | null) {
 
 function getDisplayName(profile: V2Profile | null, email: string | null) {
   return profile?.full_name?.trim() || profile?.username?.trim() || email?.split("@")[0] || "Account";
+}
+
+function findV2TopNavActionGroup() {
+  const topNav = document.querySelector<HTMLElement>(".loombus-v2-top-nav");
+  if (!topNav) return null;
+  if (topNav.querySelector(".v2-avatar-menu-inline")) return null;
+  const directContainer = topNav.querySelector<HTMLElement>(":scope > div");
+  const actionGroup = directContainer?.querySelector<HTMLElement>(":scope > div:last-child");
+  return actionGroup ?? null;
+}
+
+export function V2UserAvatarMenuPortal() {
+  const pathname = usePathname();
+  const [host, setHost] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (ENTRY_PATHS.has(pathname)) {
+      setHost(null);
+      return;
+    }
+
+    let mounted = true;
+    let hostNode: HTMLDivElement | null = null;
+    let observer: MutationObserver | null = null;
+
+    function cleanupHost() {
+      hostNode?.remove();
+      hostNode = null;
+      if (mounted) setHost(null);
+    }
+
+    function mountIntoLegacyNav() {
+      const actionGroup = findV2TopNavActionGroup();
+
+      if (!actionGroup) {
+        cleanupHost();
+        return;
+      }
+
+      if (hostNode && actionGroup.contains(hostNode)) return;
+
+      cleanupHost();
+      hostNode = document.createElement("div");
+      hostNode.className = "v2-avatar-portal-host flex size-10 shrink-0 items-center justify-center";
+      actionGroup.appendChild(hostNode);
+      if (mounted) setHost(hostNode);
+    }
+
+    const frame = window.requestAnimationFrame(mountIntoLegacyNav);
+    observer = new MutationObserver(mountIntoLegacyNav);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      mounted = false;
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      cleanupHost();
+    };
+  }, [pathname]);
+
+  if (!host) return null;
+  return createPortal(<V2UserAvatarMenu placement="topnav" />, host);
 }
 
 export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuProps = {}) {
