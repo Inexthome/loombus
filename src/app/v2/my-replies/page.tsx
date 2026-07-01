@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, ChevronRight, Copy, Home, Loader2, Lock, MessageCircle, Plus, Search, ShieldCheck, SlidersHorizontal, Users } from "lucide-react";
+import { BarChart3, Bell, ChevronRight, Copy, Home, LinkIcon, Loader2, Lock, MessageCircle, Plus, Search, ShieldCheck, SlidersHorizontal, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type FeatureFlags = { v2_shell: boolean; v2_signal_brief: boolean; v2_rooms: boolean };
 type ShellPayload = { version: "v1" | "v2"; configured: boolean; authenticated: boolean; flags: FeatureFlags };
 type ReplyRow = { id: string; discussion_id: string; body: string | null; created_at: string };
 type DiscussionRow = { id: string; title: string; topic: string | null; body: string | null; discussion_type?: string | null; deleted_at?: string | null };
-type ReplyItem = ReplyRow & { discussionTitle: string; topic: string | null; mode: string | null; href: string; context: string; totalInThread: number; available: boolean };
+type ReplyItem = ReplyRow & { discussionTitle: string; topic: string | null; mode: string | null; href: string; context: string; totalInThread: number; available: boolean; highlighted: boolean; accent?: string };
 type ReplyFilter = "All Replies" | "Recent" | "With Responses" | "Quoted";
 type ReplySort = "recent" | "oldest" | "responses" | "title";
 
@@ -24,6 +24,7 @@ const V2_NAV_ITEMS = [
   { label: "People", href: "/v2/people", icon: Users },
 ];
 const MOBILE_NAV_ITEMS = V2_NAV_ITEMS.slice(0, 5);
+const TOPIC_COLORS = ["bg-blue-600", "bg-emerald-600", "bg-violet-600", "bg-orange-500", "bg-slate-600"];
 
 function getDefaultShellPayload(): ShellPayload { return { version: "v1", configured: false, authenticated: false, flags: DEFAULT_FLAGS }; }
 function clean(value: string | null | undefined) { return (value ?? "").replace(/<br\s*\/?\s*>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(); }
@@ -33,6 +34,7 @@ function ago(value: string | null | undefined) { if (!value) return "Recently"; 
 function modeLabel(value: string | null | undefined) { if (value === "debate") return "Debate"; if (value === "research_question") return "Research Question"; if (value === "problem_solving") return "Problem Solving"; return "Discussion"; }
 function modeClass(value: string | null | undefined) { if (value === "debate") return "bg-rose-50 text-rose-700"; if (value === "research_question") return "bg-violet-50 text-violet-700"; if (value === "problem_solving") return "bg-orange-50 text-orange-700"; return "bg-emerald-50 text-emerald-700"; }
 function replyUrl(item: ReplyItem) { return typeof window === "undefined" ? `${item.href}?reply=${item.id}` : `${window.location.origin}${item.href}?reply=${item.id}`; }
+function getAccent(index: number) { return TOPIC_COLORS[index % TOPIC_COLORS.length]; }
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
   return <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white"><section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8"><div className="mb-6 flex items-center gap-3"><div className="grid size-12 place-items-center rounded-2xl bg-blue-500/15 text-blue-200 ring-1 ring-blue-300/20">{loading ? <Loader2 className="size-5 animate-spin" /> : <Lock className="size-5" />}</div><div><p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2</p><h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1></div></div><p className="text-sm leading-6 text-slate-300 sm:text-base">{message}</p>{payload && <p className="mt-5 text-xs text-slate-300">v2_shell: {payload.flags.v2_shell ? "on" : "off"}</p>}<div className="mt-7 flex flex-wrap gap-3"><Link href="/v2" className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200">Back to V2 Home</Link><Link href="/my-replies" className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">Open current My Replies</Link></div></section></main>;
@@ -55,7 +57,7 @@ export default function V2MyRepliesPage() {
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const filterCounts = useMemo(() => ({ "All Replies": items.length, Recent: items.filter((item) => isRecent(item.created_at)).length, Quoted: items.filter((item) => Boolean(item.context)).length, "With Responses": items.filter((item) => item.totalInThread > 1).length }), [items]);
-  const filteredItems = useMemo(() => { const cleanQuery = query.trim().toLowerCase(); const nextItems = items.filter((item) => { const matchesQuery = !cleanQuery || `${item.discussionTitle} ${item.topic ?? ""} ${item.body ?? ""} ${item.context}`.toLowerCase().includes(cleanQuery); const matchesFilter = activeFilter === "All Replies" || (activeFilter === "Recent" && isRecent(item.created_at)) || (activeFilter === "Highlighted" && item.highlighted) || (activeFilter === "Quoted" && Boolean(item.context)) || (activeFilter === "With Responses" && item.totalInThread > 1); return matchesQuery && matchesFilter; }); return [...nextItems].sort((a, b) => { if (sortBy === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); if (sortBy === "responses") return b.totalInThread - a.totalInThread; if (sortBy === "title") return a.discussionTitle.localeCompare(b.discussionTitle); return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); }); }, [activeFilter, items, query, sortBy]);
+  const filteredItems = useMemo(() => { const cleanQuery = query.trim().toLowerCase(); const nextItems = items.filter((item) => { const matchesQuery = !cleanQuery || `${item.discussionTitle} ${item.topic ?? ""} ${item.body ?? ""} ${item.context}`.toLowerCase().includes(cleanQuery); const matchesFilter = activeFilter === "All Replies" || (activeFilter === "Recent" && isRecent(item.created_at)) || (activeFilter === "Quoted" && Boolean(item.context)) || (activeFilter === "With Responses" && item.totalInThread > 1); return matchesQuery && matchesFilter; }); return [...nextItems].sort((a, b) => { if (sortBy === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime(); if (sortBy === "responses") return b.totalInThread - a.totalInThread; if (sortBy === "title") return a.discussionTitle.localeCompare(b.discussionTitle); return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); }); }, [activeFilter, items, query, sortBy]);
   const attentionItems = [...items].sort((a, b) => b.totalInThread - a.totalInThread).slice(0, 3).map((item) => ({ title: item.discussionTitle, meta: `${item.totalInThread} thread replies`, value: item.totalInThread, href: item.href, icon: MessageCircle }));
   const openConversationItems = items.filter((item) => item.totalInThread > 1).slice(0, 3).map((item) => ({ title: item.discussionTitle, meta: `You replied ${ago(item.created_at)}`, value: item.totalInThread, href: item.href, icon: LinkIcon }));
   const continueItems = items.slice(0, 3).map((item) => ({ title: item.discussionTitle, meta: `You replied ${ago(item.created_at)}`, href: item.href, icon: Users }));
