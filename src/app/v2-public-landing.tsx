@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, MessageCircle, Search, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import "./v2-public-landing-theme.css";
 
 const publicSignals = [
   {
@@ -49,7 +50,7 @@ export function V2PublicLanding() {
   }, []);
 
   return (
-    <main className="min-h-screen overflow-hidden bg-stone-50 text-slate-950">
+    <main data-loombus-public-landing className="min-h-screen overflow-hidden bg-stone-50 text-slate-950">
       <section className="relative isolate min-h-screen px-5 py-6 sm:px-8 lg:px-12">
         <div className="absolute inset-0 -z-10 bg-gradient-to-br from-amber-50 via-stone-50 to-slate-100" />
         <div className="absolute inset-x-0 top-0 -z-10 h-56 bg-gradient-to-b from-white to-transparent" />
