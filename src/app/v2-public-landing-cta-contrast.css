@@ -1,0 +1,78 @@
+/* Final public landing CTA contrast repair.
+   Light mode is untouched. */
+
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="primary"],
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="primary"]:visited,
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="primary"]:hover,
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="primary"]:focus-visible {
+  background: #facc15 !important;
+  background-color: #facc15 !important;
+  background-image: none !important;
+  border-color: #facc15 !important;
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  opacity: 1 !important;
+}
+
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"],
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"]:visited,
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"]:hover,
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"]:focus-visible,
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="top"],
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="top"]:visited,
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="top"]:hover,
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta="top"]:focus-visible {
+  background: #f8fafc !important;
+  background-color: #f8fafc !important;
+  background-image: none !important;
+  border-color: #f8fafc !important;
+  color: #020617 !important;
+  -webkit-text-fill-color: #020617 !important;
+  opacity: 1 !important;
+}
+
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta] *,
+html[data-loombus-theme="dark"] body main[data-loombus-public-landing] a[data-loombus-public-cta] svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="primary"],
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="primary"]:visited,
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="primary"]:hover,
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="primary"]:focus-visible {
+    background: #facc15 !important;
+    background-color: #facc15 !important;
+    background-image: none !important;
+    border-color: #facc15 !important;
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+    opacity: 1 !important;
+  }
+
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"],
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"]:visited,
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"]:hover,
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"]:focus-visible,
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="top"],
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="top"]:visited,
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="top"]:hover,
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta="top"]:focus-visible {
+    background: #f8fafc !important;
+    background-color: #f8fafc !important;
+    background-image: none !important;
+    border-color: #f8fafc !important;
+    color: #020617 !important;
+    -webkit-text-fill-color: #020617 !important;
+    opacity: 1 !important;
+  }
+
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta] *,
+  html[data-loombus-theme="system"] body main[data-loombus-public-landing] a[data-loombus-public-cta] svg {
+    color: inherit !important;
+    stroke: currentColor !important;
+    -webkit-text-fill-color: inherit !important;
+  }
+}

@@ -4,6 +4,7 @@ import "./v2-public-landing-theme.css";
 import "./v2-public-signed-out-theme.css";
 import "./v2-public-final-contrast.css";
 import "./v2-public-landing-login-readability.css";
+import "./v2-public-landing-cta-contrast.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
