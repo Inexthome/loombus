@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, MessageCircle, Search, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import "./v2-public-landing-theme.css";
 
 const publicSignals = [
   {
