@@ -44,6 +44,7 @@ type DiscussionRow = {
 
 type ReplyRow = {
   id: string;
+  user_id: string;
   discussion_id: string;
   body: string | null;
   created_at: string;
@@ -57,6 +58,7 @@ type BookmarkRow = {
 };
 
 type ProfileRow = {
+  id: string;
   avatar_url: string | null;
 };
 
@@ -353,18 +355,15 @@ export default function V2ReadingHistoryPage() {
     setHistoryLoading(true);
     setMessage("");
     try {
-      const [discussionResult, replyResult, bookmarkResult, profileResult] = await Promise.all([
+      const [discussionResult, replyResult, bookmarkResult] = await Promise.all([
         supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
-        supabase.from("replies").select("id, discussion_id, body, created_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
+        supabase.from("replies").select("id, user_id, discussion_id, body, created_at").eq("user_id", userId).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
         supabase.from("bookmarks").select("id, discussion_id, created_at, private_note").eq("user_id", userId).order("created_at", { ascending: false }).limit(24),
-        supabase.from("profiles").select("avatar_url").eq("id", userId).maybeSingle(),
       ]);
 
       const discussions = (discussionResult.data ?? []) as DiscussionRow[];
       const replies = replyResult.error ? [] : ((replyResult.data ?? []) as ReplyRow[]);
       const bookmarks = bookmarkResult.error ? [] : ((bookmarkResult.data ?? []) as BookmarkRow[]);
-      const profile = profileResult.error ? null : ((profileResult.data ?? null) as ProfileRow | null);
-      const userAvatarUrl = profile?.avatar_url ?? null;
       const discussionIds = [...new Set([...replies.map((reply) => reply.discussion_id), ...bookmarks.map((bookmark) => bookmark.discussion_id)].filter(Boolean))];
       const linkedDiscussionsById = new Map<string, DiscussionRow>();
 
@@ -373,7 +372,16 @@ export default function V2ReadingHistoryPage() {
         for (const discussion of (linkedDiscussionRows ?? []) as DiscussionRow[]) linkedDiscussionsById.set(discussion.id, discussion);
       }
 
-      const discussionItems = discussions.map((discussion, index) => makeDiscussionItem(discussion, index, userAvatarUrl));
+      const profileIds = [...new Set([userId, ...discussions.map((discussion) => discussion.user_id), ...Array.from(linkedDiscussionsById.values()).map((discussion) => discussion.user_id)].filter(Boolean))];
+      const avatarByUserId = new Map<string, string | null>();
+
+      if (profileIds.length > 0) {
+        const { data: profileRows } = await supabase.from("profiles").select("id, avatar_url").in("id", profileIds);
+        for (const profile of (profileRows ?? []) as ProfileRow[]) avatarByUserId.set(profile.id, profile.avatar_url ?? null);
+      }
+
+      const getAvatarForUser = (ownerId: string | null | undefined) => ownerId ? avatarByUserId.get(ownerId) ?? null : null;
+      const discussionItems = discussions.map((discussion, index) => makeDiscussionItem(discussion, index, getAvatarForUser(discussion.user_id)));
       const replyItemsForHistory: HistoryItem[] = replies.flatMap((reply, index) => {
         const discussion = linkedDiscussionsById.get(reply.discussion_id);
         if (!discussion) return [];
@@ -388,7 +396,7 @@ export default function V2ReadingHistoryPage() {
           occurredAt: reply.created_at,
           actionLabel: "Open Reply",
           accent: getAccent(index + discussionItems.length),
-          avatarUrl: userAvatarUrl,
+          avatarUrl: getAvatarForUser(reply.user_id),
         }];
       });
       const savedItemsForHistory: HistoryItem[] = bookmarks.flatMap((bookmark, index) => {
@@ -405,7 +413,7 @@ export default function V2ReadingHistoryPage() {
           occurredAt: bookmark.created_at,
           actionLabel: "Resume",
           accent: getAccent(index + discussionItems.length + replyItemsForHistory.length),
-          avatarUrl: userAvatarUrl,
+          avatarUrl: getAvatarForUser(discussion.user_id),
         }];
       });
 
