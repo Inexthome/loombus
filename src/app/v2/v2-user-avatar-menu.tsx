@@ -60,9 +60,7 @@ export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuPro
         .eq("id", user.id)
         .maybeSingle();
 
-      if (mounted) {
-        setProfile((profileData as V2Profile | null) ?? null);
-      }
+      if (mounted) setProfile((profileData as V2Profile | null) ?? null);
     }
 
     loadProfile();
@@ -79,41 +77,38 @@ export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuPro
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      if (!menuRef.current?.contains(event.target as Node)) setOpen(false);
     }
 
     document.addEventListener("mousedown", handlePointerDown);
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, []);
 
-  if (placement !== "topnav" || ENTRY_PATHS.has(pathname) || !hasSession) {
-    return null;
-  }
+  if (placement !== "topnav" || ENTRY_PATHS.has(pathname) || !hasSession) return null;
 
   const displayName = getDisplayName(profile, email);
 
   return (
-    <div ref={menuRef} className="v2-avatar-menu-inline relative z-[140]">
+    <div ref={menuRef} className="v2-avatar-menu-inline relative flex size-10 shrink-0 items-center justify-center">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="grid size-11 place-items-center rounded-full border border-slate-200 bg-white p-0 text-slate-900 shadow-lg shadow-slate-950/10 ring-1 ring-slate-900/5 transition hover:bg-slate-50"
+        className="grid size-10 place-items-center rounded-full border border-white/20 bg-white/10 p-0 text-white transition hover:bg-white/15 data-[open=true]:bg-white data-[open=true]:text-slate-950"
+        data-open={open ? "true" : undefined}
         aria-expanded={open}
         aria-label="Open V2 menu"
       >
         {profile?.avatar_url ? (
-          <img src={profile.avatar_url} alt="" className="size-9 rounded-full object-cover" />
+          <img src={profile.avatar_url} alt="" className="size-8 rounded-full object-cover" />
         ) : (
-          <span className="grid size-9 place-items-center rounded-full bg-slate-950 text-sm font-black text-white">
+          <span className="grid size-8 place-items-center rounded-full bg-white text-sm font-black text-slate-950">
             {getInitial(profile, email)}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-3 max-h-[calc(100vh-5rem)] w-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl shadow-slate-950/20">
+        <div className="absolute right-0 top-full z-50 mt-3 max-h-[calc(100vh-5rem)] w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl shadow-slate-950/20">
           <div className="px-3 py-3">
             <p className="truncate text-sm font-black text-slate-950">{displayName}</p>
             {email && <p className="mt-1 truncate text-xs font-medium text-slate-500">{email}</p>}
