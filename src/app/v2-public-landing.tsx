@@ -60,7 +60,7 @@ export function V2PublicLanding() {
             <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-10 object-contain" />
             <span className="text-xl">Loombus</span>
           </Link>
-          <Link href="/login" className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-slate-900/10 transition hover:border-slate-400 hover:bg-slate-50">
+          <Link href="/login" data-loombus-public-cta="top" className="rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-black text-slate-950 shadow-lg shadow-slate-900/10 transition hover:border-slate-400 hover:bg-slate-50">
             Join Loombus
           </Link>
         </header>
@@ -74,11 +74,11 @@ export function V2PublicLanding() {
               Loombus is a signal-first discussion platform built for clearer conversations, stronger ideas, and less noise.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/login" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-300 px-6 py-4 text-base font-black text-slate-950 shadow-2xl shadow-amber-900/15 transition hover:bg-amber-400">
+              <Link href="/login" data-loombus-public-cta="primary" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-300 px-6 py-4 text-base font-black text-slate-950 shadow-2xl shadow-amber-900/15 transition hover:bg-amber-400">
                 Get started
                 <ArrowRight className="size-5" />
               </Link>
-              <Link href="/v2/discussions" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-black text-slate-900 shadow-sm transition hover:border-slate-400 hover:bg-slate-50">
+              <Link href="/v2/discussions" data-loombus-public-cta="secondary" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-4 text-base font-black text-slate-900 shadow-sm transition hover:border-slate-400 hover:bg-slate-50">
                 Explore discussions
               </Link>
             </div>
