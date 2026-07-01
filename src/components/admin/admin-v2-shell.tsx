@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
@@ -81,7 +82,7 @@ function isActivePath(pathname: string, item: NavItem) {
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
-export function AdminV2Shell({ children }: { children: React.ReactNode }) {
+export function AdminV2Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
