@@ -1,0 +1,113 @@
+/* V2 mobile Dark/System contrast repair.
+   Keeps Light mode untouched while preventing mobile V2/public preview pages from mixing
+   light backgrounds with dark cards and unreadable slate text in Dark/System. */
+@media (max-width: 767px) {
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg,
+  html[data-loombus-theme="dark"] main.bg-stone-50,
+  html[data-loombus-theme="system"] main.bg-stone-50 {
+    background-color: var(--loombus-page-bg) !important;
+    color: var(--loombus-text) !important;
+  }
+
+  html[data-loombus-theme="dark"] main.bg-stone-50 .bg-gradient-to-br,
+  html[data-loombus-theme="system"] main.bg-stone-50 .bg-gradient-to-br,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .bg-gradient-to-br,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .bg-gradient-to-br {
+    background-image: linear-gradient(
+      to bottom right,
+      var(--loombus-page-bg),
+      var(--loombus-surface),
+      var(--loombus-surface-strong)
+    ) !important;
+  }
+
+  html[data-loombus-theme="dark"] main.bg-stone-50 .bg-gradient-to-b,
+  html[data-loombus-theme="system"] main.bg-stone-50 .bg-gradient-to-b,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .bg-gradient-to-b,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .bg-gradient-to-b {
+    background-image: linear-gradient(to bottom, var(--loombus-page-bg), transparent) !important;
+  }
+
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .bg-white,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .bg-white,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .bg-white,
+  html[data-loombus-theme="system"] main.bg-stone-50 .bg-white,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .bg-white\/90,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .bg-white\/90,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .bg-white\/90,
+  html[data-loombus-theme="system"] main.bg-stone-50 .bg-white\/90 {
+    background-color: var(--loombus-surface) !important;
+  }
+
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .bg-slate-50,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .bg-slate-50,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .bg-slate-50,
+  html[data-loombus-theme="system"] main.bg-stone-50 .bg-slate-50,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .bg-slate-100,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .bg-slate-100,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .bg-slate-100,
+  html[data-loombus-theme="system"] main.bg-stone-50 .bg-slate-100 {
+    background-color: var(--loombus-surface-strong) !important;
+  }
+
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .border-slate-100,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .border-slate-100,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .border-slate-100,
+  html[data-loombus-theme="system"] main.bg-stone-50 .border-slate-100,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .border-slate-200,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .border-slate-200,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .border-slate-200,
+  html[data-loombus-theme="system"] main.bg-stone-50 .border-slate-200,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .border-slate-300,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .border-slate-300,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .border-slate-300,
+  html[data-loombus-theme="system"] main.bg-stone-50 .border-slate-300 {
+    border-color: var(--loombus-border) !important;
+  }
+
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .text-slate-950,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .text-slate-950,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .text-slate-950,
+  html[data-loombus-theme="system"] main.bg-stone-50 .text-slate-950,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .text-slate-900,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .text-slate-900,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .text-slate-900,
+  html[data-loombus-theme="system"] main.bg-stone-50 .text-slate-900,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .text-slate-800,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .text-slate-800,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .text-slate-800,
+  html[data-loombus-theme="system"] main.bg-stone-50 .text-slate-800 {
+    color: var(--loombus-text) !important;
+  }
+
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .text-slate-700,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .text-slate-700,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .text-slate-700,
+  html[data-loombus-theme="system"] main.bg-stone-50 .text-slate-700,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .text-slate-600,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .text-slate-600,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .text-slate-600,
+  html[data-loombus-theme="system"] main.bg-stone-50 .text-slate-600,
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .text-slate-500,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .text-slate-500,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .text-slate-500,
+  html[data-loombus-theme="system"] main.bg-stone-50 .text-slate-500 {
+    color: var(--loombus-text-muted) !important;
+  }
+
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg .text-slate-400,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg .text-slate-400,
+  html[data-loombus-theme="dark"] main.bg-stone-50 .text-slate-400,
+  html[data-loombus-theme="system"] main.bg-stone-50 .text-slate-400 {
+    color: var(--loombus-text-subtle) !important;
+  }
+
+  html[data-loombus-theme="dark"] .loombus-v2-page-bg input::placeholder,
+  html[data-loombus-theme="system"] .loombus-v2-page-bg input::placeholder,
+  html[data-loombus-theme="dark"] main.bg-stone-50 input::placeholder,
+  html[data-loombus-theme="system"] main.bg-stone-50 input::placeholder {
+    color: var(--loombus-text-subtle) !important;
+    opacity: 1 !important;
+  }
+}
