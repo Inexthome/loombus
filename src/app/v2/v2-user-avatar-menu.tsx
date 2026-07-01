@@ -95,49 +95,49 @@ export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuPro
   const displayName = getDisplayName(profile, email);
 
   return (
-    <div ref={menuRef} className="v2-avatar-menu-inline relative flex size-10 shrink-0 items-center justify-center">
+    <div ref={menuRef} className="v2-avatar-menu-inline relative z-[140]">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className={`loombus-mobile-shell-avatar grid size-10 place-items-center rounded-full border p-0 transition ${open ? "ring-2 ring-[color:var(--loombus-text-subtle)]" : ""}`}
+        className="grid size-11 place-items-center rounded-full border border-slate-200 bg-white p-0 text-slate-900 shadow-lg shadow-slate-950/10 ring-1 ring-slate-900/5 transition hover:bg-slate-50"
         aria-expanded={open}
         aria-label="Open V2 menu"
       >
         {profile?.avatar_url ? (
-          <img src={profile.avatar_url} alt="" className="size-8 rounded-full object-cover" />
+          <img src={profile.avatar_url} alt="" className="size-9 rounded-full object-cover" />
         ) : (
-          <span className="grid size-8 place-items-center rounded-full bg-[color:var(--loombus-primary-bg)] text-sm font-black text-[color:var(--loombus-primary-text)]">
+          <span className="grid size-9 place-items-center rounded-full bg-slate-950 text-sm font-black text-white">
             {getInitial(profile, email)}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="loombus-mobile-menu-panel absolute right-0 top-full z-50 mt-2 max-h-[calc(100vh-5rem)] w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto rounded-3xl border p-3">
-          <div className="loombus-mobile-menu-header border-b px-3 py-3">
-            <p className="loombus-mobile-menu-title truncate text-sm font-black">{displayName}</p>
-            {email && <p className="loombus-mobile-menu-subtitle mt-1 truncate text-xs font-medium">{email}</p>}
+        <div className="absolute right-0 mt-3 max-h-[calc(100vh-5rem)] w-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 text-slate-900 shadow-2xl shadow-slate-950/20">
+          <div className="px-3 py-3">
+            <p className="truncate text-sm font-black text-slate-950">{displayName}</p>
+            {email && <p className="mt-1 truncate text-xs font-medium text-slate-500">{email}</p>}
           </div>
+          <div className="h-px bg-slate-100" />
           <div className="space-y-3 py-3">
             {V2_MENU_GROUPS.map((group) => (
               <section key={group.title}>
-                <p className="loombus-mobile-menu-section-label px-3 pb-1 text-[11px] font-black uppercase tracking-[0.18em]">{group.title}</p>
+                <p className="px-3 pb-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{group.title}</p>
                 <div className="space-y-1">
                   {group.items.map((item) => {
                     const Icon = item.icon;
-                    const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
                     return (
                       <Link
                         key={item.label}
                         href={item.href}
                         onClick={() => setOpen(false)}
-                        className={`flex items-center justify-between rounded-2xl border px-3 py-2 text-sm font-bold transition ${active ? "loombus-mobile-menu-link-active" : "loombus-mobile-menu-link-inactive"}`}
+                        className="flex items-center justify-between rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
                       >
                         <span className="inline-flex min-w-0 items-center gap-2">
                           <Icon className="size-4 shrink-0" />
                           <span className="truncate">{item.label}</span>
                         </span>
-                        {item.badge && <span className="loombus-mobile-nav-badge grid size-5 place-items-center rounded-full text-[10px] font-black">{item.badge}</span>}
+                        {item.badge && <span className="grid size-5 place-items-center rounded-full bg-slate-950 text-[10px] font-black text-white">{item.badge}</span>}
                       </Link>
                     );
                   })}

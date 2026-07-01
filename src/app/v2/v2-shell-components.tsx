@@ -132,39 +132,37 @@ export function V2ShellTopNav() {
   const navHidden = useMobileNavAutoHide();
 
   return (
-    <header className={`sticky top-0 z-40 loombus-v2-top-nav loombus-mobile-topbar shadow-sm backdrop-blur-xl transition-transform duration-200 ease-out md:translate-y-0 ${navHidden ? "-translate-y-full" : "translate-y-0"}`}>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-6 lg:px-8">
+    <header className={`sticky top-0 z-30 border-b border-slate-200 bg-[#061942] loombus-v2-top-nav shadow-sm transition-transform duration-200 ease-out md:translate-y-0 ${navHidden ? "-translate-y-full" : "translate-y-0"}`}>
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/v2" className="flex min-w-0 shrink-0 items-center gap-3 font-bold">
           <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 shrink-0 object-contain" />
-          <span className="truncate text-lg font-black tracking-tight text-[color:var(--loombus-text)] sm:text-xl">Loombus</span>
+          <span className="text-lg font-black tracking-tight text-slate-950 sm:text-xl">Loombus</span>
         </Link>
-        <nav className="hidden min-w-0 flex-1 items-center justify-center md:flex">
-          <div className="inline-flex items-center gap-1 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface-strong)] p-1">
-            {V2_TOP_NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const active = isNavActive(pathname, item.href);
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  data-active={active ? "true" : undefined}
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black transition ${
-                    active
-                      ? "bg-[color:var(--loombus-primary-bg)] text-[color:var(--loombus-primary-text)] shadow-sm"
-                      : item.primary
-                        ? "bg-[color:var(--loombus-text)] text-[color:var(--loombus-page-bg)] shadow-sm hover:opacity-90"
-                        : "text-[color:var(--loombus-text-muted)] hover:bg-[color:var(--loombus-surface-muted)] hover:text-[color:var(--loombus-text)]"
-                  }`}
-                >
-                  <Icon className="size-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex">
+          {V2_TOP_NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isNavActive(pathname, item.href);
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                data-active={active ? "true" : undefined}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  active
+                    ? "border border-white/40 bg-white text-slate-950 shadow-sm"
+                    : item.primary
+                      ? "border border-white/40 text-white hover:bg-white/10"
+                      : "text-blue-100 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <Icon className="size-4" />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
-        <div className="flex shrink-0 items-center gap-1 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface-strong)] p-1">
+        <div className="flex shrink-0 items-center gap-2">
           {V2_ACTION_NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isNavActive(pathname, item.href);
@@ -176,13 +174,11 @@ export function V2ShellTopNav() {
                 aria-current={active ? "page" : undefined}
                 data-active={active ? "true" : undefined}
                 className={`relative grid size-10 place-items-center rounded-full transition ${
-                  active
-                    ? "bg-[color:var(--loombus-primary-bg)] text-[color:var(--loombus-primary-text)] shadow-sm"
-                    : "text-[color:var(--loombus-text-muted)] hover:bg-[color:var(--loombus-surface-muted)] hover:text-[color:var(--loombus-text)]"
+                  active ? "bg-white text-slate-950 shadow-sm" : "text-blue-100 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <Icon className="size-5" />
-                {item.badge && <span className="loombus-mobile-nav-badge absolute right-0 top-0 grid size-5 place-items-center rounded-full border border-[color:var(--loombus-border)] text-[10px] font-black shadow-sm">{item.badge}</span>}
+                {item.badge && <span className="v2-nav-badge absolute right-0 top-0 grid size-5 place-items-center rounded-full border border-amber-500 bg-amber-300 text-[10px] font-black text-slate-950 shadow-sm">{item.badge}</span>}
               </Link>
             );
           })}
@@ -198,14 +194,14 @@ export function V2ShellMobileNav() {
   const navHidden = useMobileNavAutoHide();
 
   return (
-    <nav className={`fixed inset-x-3 bottom-3 z-40 rounded-[1.75rem] border loombus-mobile-bottom-nav px-2 py-2 backdrop-blur-xl transition-transform duration-200 ease-out md:hidden ${navHidden ? "translate-y-[140%]" : "translate-y-0"}`}>
-      <div className="mx-auto grid max-w-sm grid-cols-3 gap-1 text-xs font-black">
+    <nav className={`fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 loombus-v2-bottom-nav px-3 pb-3 pt-2 shadow-2xl backdrop-blur transition-transform duration-200 ease-out md:hidden ${navHidden ? "translate-y-[120%]" : "translate-y-0"}`}>
+      <div className="mx-auto grid max-w-sm grid-cols-3 gap-1 text-xs font-semibold text-slate-500">
         {V2_TOP_NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = isNavActive(pathname, item.href);
           return (
-            <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} data-active={active ? "true" : undefined} className={`flex flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 transition ${active ? "loombus-mobile-bottom-tab-active" : "loombus-mobile-bottom-tab-inactive"}`}>
-              <Icon className={`size-5 ${item.primary ? "rounded-full border border-current/20 p-1" : ""}`} />
+            <Link key={item.label} href={item.href} aria-current={active ? "page" : undefined} data-active={active ? "true" : undefined} className={`flex flex-col items-center gap-1 rounded-2xl py-2 ${active ? "text-slate-950" : "text-slate-500"}`}>
+              <Icon className={`size-5 ${item.primary ? "rounded-full border border-zinc-300 bg-zinc-50 p-1 text-zinc-950 shadow-sm" : ""}`} />
               <span>{item.label}</span>
             </Link>
           );
