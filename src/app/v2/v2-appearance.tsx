@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { V2AppearanceStyle } from "./v2-appearance-style";
 import { V2BadgeStyle } from "./v2-badge-style";
+import { V2NavigationConsistencyStyle } from "./v2-navigation-consistency-style";
 
 export type V2AppearanceTheme = "light" | "dark" | "system";
 
@@ -125,6 +126,7 @@ export function V2AppearanceProvider({ children }: { children: React.ReactNode }
     <>
       <V2AppearanceStyle />
       <V2BadgeStyle />
+      <V2NavigationConsistencyStyle />
       {children}
     </>
   );

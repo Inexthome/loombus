@@ -95,7 +95,7 @@ export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuPro
   const displayName = getDisplayName(profile, email);
 
   return (
-    <div ref={menuRef} className="relative z-40 flex size-10 shrink-0 items-center justify-center">
+    <div ref={menuRef} className="v2-avatar-menu-inline relative z-40 flex size-10 shrink-0 items-center justify-center">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
