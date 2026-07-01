@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./v2-mobile-theme-fixes.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
