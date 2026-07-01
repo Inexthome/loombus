@@ -5,23 +5,18 @@ import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
-  BellRing,
+  Bookmark,
   ChevronRight,
-  FlaskConical,
   Home,
-  Layers,
   Loader2,
   Lock,
   MessageCircle,
-  MoreHorizontal,
   Plus,
   Search,
   ShieldCheck,
   SlidersHorizontal,
-  Tag,
   UserPlus,
   Users,
-  VolumeX,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -46,6 +41,15 @@ type DiscussionRow = {
   body: string | null;
   created_at: string;
   discussion_type?: string | null;
+  deleted_at?: string | null;
+};
+
+type ReplyRow = {
+  id: string;
+  user_id: string;
+  discussion_id: string;
+  body: string | null;
+  created_at: string;
 };
 
 type ProfileRow = {
@@ -53,10 +57,17 @@ type ProfileRow = {
   full_name: string | null;
   username: string | null;
   avatar_url: string | null;
+  bio?: string | null;
 };
 
-type FollowingKind = "People" | "Rooms" | "Topics" | "Labs" | "Discussions";
+type FollowRow = {
+  following_id: string | null;
+};
+
+type FollowingKind = "People" | "Discussions" | "Replies";
 type FollowingAccent = "blue" | "green" | "violet" | "slate";
+type FollowingFilter = "All" | FollowingKind;
+type FollowingSort = "recent" | "oldest" | "source" | "title";
 
 type FollowingUpdate = {
   id: string;
@@ -70,6 +81,7 @@ type FollowingUpdate = {
   actionLabel: string;
   avatarUrl?: string | null;
   accent: FollowingAccent;
+  available: boolean;
 };
 
 type SidebarCount = {
@@ -111,13 +123,7 @@ const MOBILE_NAV_ITEMS = [
   { label: "Messages", href: "/v2/messages", icon: Bell },
 ];
 
-const FILTERS = ["All", "People", "Rooms", "Topics", "Labs", "Discussions"];
-
-const MUTED_SOURCES: SidebarItem[] = [
-  { title: "Web3 Governance", meta: "Topic", href: "/v2/following", icon: Tag, accent: "green" },
-  { title: "Random Debates", meta: "Room", href: "/v2/following", icon: Users, accent: "blue" },
-  { title: "Off-topic Threads", meta: "Discussion", href: "/v2/following", icon: MessageCircle, accent: "slate" },
-];
+const FILTERS: FollowingFilter[] = ["All", "People", "Discussions", "Replies"];
 
 function getDefaultShellPayload(): ShellPayload {
   return {
@@ -157,10 +163,8 @@ function getAccent(index: number): FollowingAccent {
 
 function getKindIcon(kind: FollowingKind) {
   if (kind === "People") return UserPlus;
-  if (kind === "Rooms") return Users;
-  if (kind === "Topics") return Tag;
-  if (kind === "Labs") return FlaskConical;
-  return MessageCircle;
+  if (kind === "Replies") return MessageCircle;
+  return Bookmark;
 }
 
 function getAccentClasses(accent: FollowingAccent) {
@@ -168,6 +172,17 @@ function getAccentClasses(accent: FollowingAccent) {
   if (accent === "violet") return "bg-violet-50 text-violet-700";
   if (accent === "slate") return "bg-slate-100 text-slate-700";
   return "bg-blue-50 text-blue-700";
+}
+
+function getFilterCount(filter: FollowingFilter, updates: FollowingUpdate[], followedCount: number) {
+  if (filter === "People") return followedCount;
+  if (filter === "Discussions") return updates.filter((update) => update.kind === "Discussions").length;
+  if (filter === "Replies") return updates.filter((update) => update.kind === "Replies").length;
+  return updates.length;
+}
+
+function profileName(profile: ProfileRow | undefined) {
+  return profile?.full_name?.trim() || profile?.username?.trim() || "Loombus member";
 }
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
@@ -215,7 +230,7 @@ function V2TopNav() {
         </nav>
         <div className="flex items-center gap-2">
           <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Search className="size-5" /></Link>
-          <Link href="/v2/notifications" aria-label="Notifications" className="relative grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /><span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-blue-500 text-[10px] font-bold text-white">3</span></Link>
+          <Link href="/v2/notifications" aria-label="Notifications" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /></Link>
         </div>
       </div>
     </header>
@@ -257,12 +272,12 @@ function FollowingUpdateCard({ update }: { update: FollowingUpdate }) {
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{update.description}</p>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-500">
             {update.tag && <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">{update.tag}</span>}
+            {!update.available && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">Unavailable</span>}
             <span>{formatRelativeTime(update.createdAt)}</span>
           </div>
         </div>
         <div className="flex gap-2 sm:justify-end">
-          <Link href={update.href} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-blue-700 transition hover:border-blue-200 hover:bg-blue-50">{update.actionLabel}</Link>
-          <button type="button" aria-label="More following actions" className="grid size-10 place-items-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><MoreHorizontal className="size-5" /></button>
+          <Link href={update.href} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-blue-700 transition hover:border-blue-200 hover:bg-blue-50">{update.actionLabel}<ChevronRight className="size-4" /></Link>
         </div>
       </div>
     </article>
@@ -285,117 +300,154 @@ function SidebarItemRow({ item }: { item: SidebarItem }) {
 export default function V2FollowingPage() {
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [updates, setUpdates] = useState<FollowingUpdate[]>([]);
-  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [followedProfiles, setFollowedProfiles] = useState<ProfileRow[]>([]);
+  const [suggestedProfiles, setSuggestedProfiles] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [followingLoading, setFollowingLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeFilter, setActiveFilter] = useState<FollowingFilter>("All");
+  const [sortBy, setSortBy] = useState<FollowingSort>("recent");
+  const [showFilters, setShowFilters] = useState(false);
 
   const filteredUpdates = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
-    return updates.filter((update) => {
+    const nextUpdates = updates.filter((update) => {
       const matchesQuery = !cleanQuery || `${update.actor} ${update.title} ${update.description} ${update.tag ?? ""}`.toLowerCase().includes(cleanQuery);
       const matchesFilter = activeFilter === "All" || update.kind === activeFilter;
       return matchesQuery && matchesFilter;
     });
-  }, [activeFilter, query, updates]);
+
+    return [...nextUpdates].sort((a, b) => {
+      if (sortBy === "oldest") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (sortBy === "source") return a.actor.localeCompare(b.actor) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      if (sortBy === "title") return a.title.localeCompare(b.title);
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }, [activeFilter, query, sortBy, updates]);
+
+  const filterCounts = useMemo(() => ({
+    All: getFilterCount("All", updates, followedProfiles.length),
+    People: getFilterCount("People", updates, followedProfiles.length),
+    Discussions: getFilterCount("Discussions", updates, followedProfiles.length),
+    Replies: getFilterCount("Replies", updates, followedProfiles.length),
+  }), [followedProfiles.length, updates]);
 
   const manageCounts: SidebarCount[] = [
-    { label: "People", value: Math.max(128, profiles.length), icon: Users, href: "/v2/people" },
-    { label: "Rooms", value: 16, icon: Users, href: "/v2/rooms" },
-    { label: "Topics", value: 24, icon: Layers, href: "/v2/discussions" },
-    { label: "Labs", value: 8, icon: FlaskConical, href: "/v2/labs" },
-    { label: "Discussions", value: Math.max(56, updates.length), icon: MessageCircle, href: "/v2/discussions" },
+    { label: "Following", value: followedProfiles.length, icon: Users, href: "/v2/people" },
+    { label: "Discussions", value: updates.filter((update) => update.kind === "Discussions").length, icon: MessageCircle, href: "/v2/discussions" },
+    { label: "Replies", value: updates.filter((update) => update.kind === "Replies").length, icon: MessageCircle, href: "/v2/my-replies" },
+    { label: "Total updates", value: updates.length, icon: Bell, href: "/v2/following" },
   ];
 
-  const recommendedItems: SidebarItem[] = [
-    { title: "Open Systems Lab", meta: "Research Lab", href: "/v2/labs", icon: FlaskConical, accent: "slate", actionLabel: "Follow" },
-    { title: "Ethics of AI", meta: "Topic", href: "/v2/discussions", icon: Tag, accent: "green", actionLabel: "Follow" },
-    { title: profiles[0]?.full_name?.trim() || profiles[0]?.username?.trim() || "Alex Rivera", meta: "Policy researcher", href: "/v2/people", icon: UserPlus, accent: "blue", actionLabel: "Follow" },
-  ];
+  const recentPeople: SidebarItem[] = followedProfiles.slice(0, 4).map((profile, index) => ({
+    title: profileName(profile),
+    meta: profile.username ? `@${profile.username}` : "Followed member",
+    href: "/v2/people",
+    icon: UserPlus,
+    accent: getAccent(index),
+    actionLabel: "View",
+  }));
+
+  const recommendedItems: SidebarItem[] = suggestedProfiles.slice(0, 3).map((profile, index) => ({
+    title: profileName(profile),
+    meta: profile.bio ? truncate(stripHtml(profile.bio), 56) : profile.username ? `@${profile.username}` : "Discover member",
+    href: "/v2/people",
+    icon: UserPlus,
+    accent: getAccent(index + 1),
+    actionLabel: "Open",
+  }));
+
+  function resetFilters() {
+    setActiveFilter("All");
+    setSortBy("recent");
+    setQuery("");
+    setShowFilters(false);
+  }
 
   async function loadFollowing(userId: string) {
     setFollowingLoading(true);
     setMessage("");
     try {
-      const [{ data: discussionRows, error: discussionError }, { data: profileRows }] = await Promise.all([
-        supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type").is("deleted_at", null).order("created_at", { ascending: false }).limit(8),
-        supabase.from("profiles").select("id, full_name, username, avatar_url").neq("id", userId).limit(6),
-      ]);
+      const { data: followRows, error: followError } = await supabase.from("follows").select("following_id").eq("follower_id", userId).limit(100);
 
-      if (discussionError) {
-        setMessage("Unable to load V2 Following safely. Current People and Discussions remain available.");
+      if (followError) throw followError;
+
+      const followingIds = ((followRows ?? []) as FollowRow[]).map((follow) => follow.following_id).filter((profileId): profileId is string => Boolean(profileId));
+
+      if (followingIds.length === 0) {
+        const { data: suggestedRows } = await supabase.from("profiles").select("id, full_name, username, avatar_url, bio").neq("id", userId).limit(6);
+        setFollowedProfiles([]);
+        setSuggestedProfiles((suggestedRows ?? []) as ProfileRow[]);
         setUpdates([]);
         return;
       }
 
-      const discussions = (discussionRows ?? []) as DiscussionRow[];
-      const nextProfiles = (profileRows ?? []) as ProfileRow[];
-      setProfiles(nextProfiles);
-      const profilesById = new Map(nextProfiles.map((profile) => [profile.id, profile]));
+      const [{ data: profileRows }, { data: discussionRows }, { data: replyRows }, { data: suggestedRows }] = await Promise.all([
+        supabase.from("profiles").select("id, full_name, username, avatar_url, bio").in("id", followingIds),
+        supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type, deleted_at").in("user_id", followingIds).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
+        supabase.from("replies").select("id, user_id, discussion_id, body, created_at").in("user_id", followingIds).is("deleted_at", null).order("created_at", { ascending: false }).limit(24),
+        supabase.from("profiles").select("id, full_name, username, avatar_url, bio").neq("id", userId).limit(12),
+      ]);
 
-      const discussionUpdates: FollowingUpdate[] = discussions.slice(0, 4).map((discussion, index) => {
-        const profile = profilesById.get(discussion.user_id) ?? nextProfiles[index % Math.max(1, nextProfiles.length)];
-        const actor = profile?.full_name?.trim() || profile?.username?.trim() || "Loombus member";
+      const profiles = (profileRows ?? []) as ProfileRow[];
+      const profilesById = new Map(profiles.map((profile) => [profile.id, profile]));
+      const discussions = (discussionRows ?? []) as DiscussionRow[];
+      const replies = (replyRows ?? []) as ReplyRow[];
+      const replyDiscussionIds = [...new Set(replies.map((reply) => reply.discussion_id).filter(Boolean))];
+      const linkedDiscussionsById = new Map<string, DiscussionRow>();
+
+      if (replyDiscussionIds.length > 0) {
+        const { data: linkedDiscussionRows } = await supabase.from("discussions").select("id, user_id, title, topic, body, created_at, discussion_type, deleted_at").in("id", replyDiscussionIds).is("deleted_at", null);
+        for (const discussion of (linkedDiscussionRows ?? []) as DiscussionRow[]) linkedDiscussionsById.set(discussion.id, discussion);
+      }
+
+      const discussionUpdates: FollowingUpdate[] = discussions.map((discussion, index) => {
+        const profile = profilesById.get(discussion.user_id);
         return {
           id: `discussion-${discussion.id}`,
-          kind: index % 2 === 0 ? "People" : "Discussions",
-          actor: `${actor} ${index % 2 === 0 ? "started a discussion" : "replied to a discussion you follow"}`,
+          kind: "Discussions",
+          actor: `${profileName(profile)} started a discussion`,
           title: discussion.title,
-          description: truncate(stripHtml(discussion.body) || "A followed discussion has new signal worth reviewing."),
+          description: truncate(stripHtml(discussion.body) || "A followed member opened a new discussion."),
           tag: discussion.topic,
           href: `/v2/discussions/${discussion.id}`,
           createdAt: discussion.created_at,
           actionLabel: "Open",
           avatarUrl: profile?.avatar_url ?? null,
           accent: getAccent(index),
+          available: true,
         } satisfies FollowingUpdate;
       });
 
-      const supplementalUpdates: FollowingUpdate[] = [
-        {
-          id: "lab-weekly-update",
-          kind: "Labs",
-          actor: "Civic Futures Lab published a weekly update",
-          title: "Weekly Update · May 20, 2025",
-          description: "Highlights from our latest research and experiments.",
-          tag: null,
-          href: "/v2/labs",
-          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-          actionLabel: "Open",
-          accent: "blue",
-        },
-        {
-          id: "topic-climate-tech",
-          kind: "Topics",
-          actor: "Climate Tech topic has 6 new discussions",
-          title: "Top discussions this week",
-          description: "From renewable infrastructure to carbon markets.",
-          tag: "Environment",
-          href: "/v2/discussions",
-          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-          actionLabel: "Open",
-          accent: "green",
-        },
-        {
-          id: "room-builders-events",
-          kind: "Rooms",
-          actor: "Builders’ Room has 2 new events",
-          title: "Workshop · May 23, 2025",
-          description: "Hands-on session: Building on open standards.",
-          tag: null,
-          href: "/v2/rooms",
-          createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          actionLabel: "Open",
-          accent: "blue",
-        },
-      ];
+      const replyUpdates: FollowingUpdate[] = replies.map((reply, index) => {
+        const profile = profilesById.get(reply.user_id);
+        const discussion = linkedDiscussionsById.get(reply.discussion_id);
+        const available = Boolean(discussion && !discussion.deleted_at);
+        return {
+          id: `reply-${reply.id}`,
+          kind: "Replies",
+          actor: `${profileName(profile)} replied`,
+          title: discussion?.title ?? "Discussion unavailable",
+          description: truncate(stripHtml(reply.body) || "A followed member added a reply."),
+          tag: discussion?.topic ?? null,
+          href: available ? `/v2/discussions/${reply.discussion_id}?reply=${reply.id}` : "/v2/following",
+          createdAt: reply.created_at,
+          actionLabel: available ? "Open Reply" : "Review",
+          avatarUrl: profile?.avatar_url ?? null,
+          accent: getAccent(index + discussionUpdates.length),
+          available,
+        } satisfies FollowingUpdate;
+      });
 
-      setUpdates([...discussionUpdates.slice(0, 1), supplementalUpdates[0], ...discussionUpdates.slice(1, 3), supplementalUpdates[1], supplementalUpdates[2], ...discussionUpdates.slice(3)]);
+      setFollowedProfiles(profiles);
+      setSuggestedProfiles(((suggestedRows ?? []) as ProfileRow[]).filter((profile) => profile.id !== userId && !followingIds.includes(profile.id)));
+      setUpdates([...discussionUpdates, ...replyUpdates].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch {
       setMessage("Unable to load V2 Following safely. Current People and Discussions remain available.");
       setUpdates([]);
+      setFollowedProfiles([]);
+      setSuggestedProfiles([]);
     } finally {
       setFollowingLoading(false);
     }
@@ -435,7 +487,7 @@ export default function V2FollowingPage() {
       <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         <header className="mb-6">
           <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Following</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Updates from the people, rooms, topics, and labs you follow.</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Updates from people you follow, including their latest discussions and replies.</p>
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -443,14 +495,16 @@ export default function V2FollowingPage() {
             <div className="mb-4 flex gap-3">
               <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                 <Search className="size-5 text-slate-400" />
-                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search followed people, rooms, topics, and labs" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search followed people and updates" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
               </div>
-              <button type="button" className="grid size-12 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"><SlidersHorizontal className="size-5" /></button>
+              <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters((current) => !current)} className={`grid size-12 place-items-center rounded-2xl border shadow-sm transition ${showFilters ? "border-blue-300 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"}`}><SlidersHorizontal className="size-5" /></button>
             </div>
 
             <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
-              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter}</button>)}
+              {FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-blue-600 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-blue-700"}`}>{filter} <span className="ml-1 opacity-75">{filterCounts[filter]}</span></button>)}
             </div>
+
+            {showFilters && <section className="mb-5 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Filters</h2><p className="mt-1 text-xs font-semibold text-slate-400">Refine followed-member updates.</p></div><button type="button" onClick={resetFilters} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 transition hover:border-blue-200 hover:text-blue-700">Reset</button></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Type<select value={activeFilter} onChange={(event) => setActiveFilter(event.target.value as FollowingFilter)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none">{FILTERS.map((filter) => <option key={filter}>{filter}</option>)}</select></label><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Sort<select value={sortBy} onChange={(event) => setSortBy(event.target.value as FollowingSort)} className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none"><option value="recent">Newest updates</option><option value="oldest">Oldest updates</option><option value="source">Source A-Z</option><option value="title">Title A-Z</option></select></label></div></section>}
 
             {message && <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{message}</div>}
             {followingLoading && <div className="mb-4 rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm">Loading followed updates...</div>}
@@ -460,49 +514,34 @@ export default function V2FollowingPage() {
               {!followingLoading && filteredUpdates.map((update) => <FollowingUpdateCard key={update.id} update={update} />)}
             </div>
 
-            {!followingLoading && filteredUpdates.length > 0 && <Link href="/v2/following" className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50">View all activity<ChevronRight className="size-4" /></Link>}
+            {!followingLoading && filteredUpdates.length > 0 && <button type="button" onClick={resetFilters} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm font-black text-blue-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50">Showing {filteredUpdates.length} of {updates.length} updates<ChevronRight className="size-4" /></button>}
           </div>
 
           <aside className="space-y-4">
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Manage following</h2>
+              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Following summary</h2>
               <div className="mt-4 space-y-3">
                 {manageCounts.map((item) => {
                   const Icon = item.icon;
                   return <Link key={item.label} href={item.href} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50"><span className="inline-flex items-center gap-3 text-sm font-black text-slate-800"><Icon className="size-4 text-blue-700" />{item.label}</span><span className="font-black text-blue-700">{item.value}</span></Link>;
                 })}
               </div>
-              <Link href="/v2/people" className="mt-4 flex items-center justify-between rounded-xl text-sm font-black text-blue-700">View all <ChevronRight className="size-4" /></Link>
+              <Link href="/v2/people" className="mt-4 flex items-center justify-between rounded-xl text-sm font-black text-blue-700">Manage in People <ChevronRight className="size-4" /></Link>
             </section>
 
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Recommended to follow</h2><Link href="/v2/people" className="text-sm font-black text-blue-700">View all</Link></div>
-              <div className="mt-4 space-y-3">{recommendedItems.map((item) => <SidebarItemRow key={item.title} item={item} />)}</div>
+              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">People you follow</h2><Link href="/v2/people" className="text-sm font-black text-blue-700">View all</Link></div>
+              <div className="mt-4 space-y-3">{recentPeople.length > 0 ? recentPeople.map((item) => <SidebarItemRow key={item.title} item={item} />) : <p className="text-sm leading-6 text-slate-500">Follow people from the People page to build this feed.</p>}</div>
             </section>
 
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Muted sources</h2><Link href="/v2/following" className="text-sm font-black text-blue-700">View all</Link></div>
-              <div className="mt-4 space-y-3">
-                {MUTED_SOURCES.map((item) => (
-                  <div key={item.title} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2">
-                    <SidebarItemRow item={item} />
-                    <VolumeX className="size-4 shrink-0 text-slate-500" />
-                  </div>
-                ))}
-              </div>
+              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Discover people</h2><Link href="/v2/people" className="text-sm font-black text-blue-700">Open People</Link></div>
+              <div className="mt-4 space-y-3">{recommendedItems.length > 0 ? recommendedItems.map((item) => <SidebarItemRow key={item.title} item={item} />) : <p className="text-sm leading-6 text-slate-500">No recommendations are available right now.</p>}</div>
             </section>
 
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Notification preferences</h2>
-              <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-800">
-                <BellRing className="mr-2 inline size-5" />Choose how you want to stay updated.
-              </div>
-              <Link href="/settings" className="mt-4 flex items-center justify-between text-sm font-black text-blue-700">Manage preferences <ChevronRight className="size-4" /></Link>
-            </section>
-
-            <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Stay in context</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600"><ShieldCheck className="mr-2 inline size-4 text-blue-700" />Personalized updates stay read-only in this V2 shell pass.</p>
+              <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-600">Read-only pass</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-600"><ShieldCheck className="mr-2 inline size-4 text-blue-700" />This V2 Following page only reads existing follows and activity. Follow and notification mutations remain on existing pages.</p>
             </section>
           </aside>
         </section>
