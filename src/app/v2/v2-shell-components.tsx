@@ -27,7 +27,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
 };
 
 function isNavActive(pathname: string, href: string) {
-  if (href === "/home") return pathname === "/" || pathname === "/home";
+  if (href === "/v2") return pathname === "/v2" || pathname === "/v2/home";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -109,13 +109,13 @@ export function V2ShellGateCard(_props: { title: string; message: string; loadin
 }
 
 export function V2ShellTopNav() {
-  const pathname = usePathname() ?? "/home";
+  const pathname = usePathname() ?? "/v2";
   const navHidden = useMobileNavAutoHide();
 
   return (
-    <header className={`fixed inset-x-0 top-0 z-[120] border-b border-slate-200 bg-[#061942] loombus-v2-top-nav shadow-sm transition-transform duration-200 ease-out md:translate-y-0 ${navHidden ? "-translate-y-full" : "translate-y-0"}`}>
+    <header className={`sticky top-0 z-30 border-b border-slate-200 bg-[#061942] loombus-v2-top-nav shadow-sm transition-transform duration-200 ease-out md:translate-y-0 ${navHidden ? "-translate-y-full" : "translate-y-0"}`}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/home" className="flex min-w-0 shrink-0 items-center gap-3 font-bold">
+        <Link href="/v2" className="flex min-w-0 shrink-0 items-center gap-3 font-bold">
           <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 shrink-0 object-contain" />
           <span className="text-lg font-black tracking-tight text-slate-950 sm:text-xl">Loombus</span>
         </Link>
@@ -171,11 +171,11 @@ export function V2ShellTopNav() {
 }
 
 export function V2ShellMobileNav() {
-  const pathname = usePathname() ?? "/home";
+  const pathname = usePathname() ?? "/v2";
   const navHidden = useMobileNavAutoHide();
 
   return (
-    <nav className={`fixed inset-x-0 bottom-0 z-[120] border-t border-slate-200 bg-white/95 loombus-v2-bottom-nav px-3 pb-3 pt-2 shadow-2xl backdrop-blur transition-transform duration-200 ease-out md:hidden ${navHidden ? "translate-y-[120%]" : "translate-y-0"}`}>
+    <nav className={`fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 loombus-v2-bottom-nav px-3 pb-3 pt-2 shadow-2xl backdrop-blur transition-transform duration-200 ease-out md:hidden ${navHidden ? "translate-y-[120%]" : "translate-y-0"}`}>
       <div className="mx-auto grid max-w-sm grid-cols-3 gap-1 text-xs font-semibold text-slate-500">
         {V2_TOP_NAV_ITEMS.map((item) => {
           const Icon = item.icon;

@@ -1,3 +1,8 @@
-import V2SettingsPage from "../v2/settings/page";
+import SettingsClientPage from "./client-page";
 
-export default V2SettingsPage;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default function SettingsPage() {
+  return <SettingsClientPage />;
+}

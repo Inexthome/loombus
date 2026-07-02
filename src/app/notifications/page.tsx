@@ -1,3 +1,8 @@
-import V2NotificationsPage from "../v2/notifications/page";
+import NotificationsClientPage from "./client-page";
 
-export default V2NotificationsPage;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default function NotificationsPage() {
+  return <NotificationsClientPage />;
+}
