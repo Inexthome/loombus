@@ -37,12 +37,12 @@ export type V2MenuGroup = {
 };
 
 export const V2_PRIMARY_NAV_ITEMS: V2NavItem[] = [
-  { label: "Home", href: "/v2", icon: Home },
-  { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
-  { label: "Create", href: "/v2/create", icon: Plus, primary: true },
-  { label: "Rooms", href: "/v2/rooms", icon: Users },
-  { label: "Messages", href: "/v2/messages", icon: Mail },
-  { label: "People", href: "/v2/people", icon: Users },
+  { label: "Home", href: "/home", icon: Home },
+  { label: "Discussions", href: "/discussions", icon: MessageCircle },
+  { label: "Create", href: "/create", icon: Plus, primary: true },
+  { label: "Rooms", href: "/rooms", icon: Users },
+  { label: "Messages", href: "/messages", icon: Mail },
+  { label: "People", href: "/people", icon: Users },
 ];
 
 export const V2_TOP_NAV_ITEMS: V2NavItem[] = V2_PRIMARY_NAV_ITEMS.filter(
@@ -50,53 +50,53 @@ export const V2_TOP_NAV_ITEMS: V2NavItem[] = V2_PRIMARY_NAV_ITEMS.filter(
 );
 
 export const V2_ACTION_NAV_ITEMS: V2NavItem[] = [
-  { label: "Search", href: "/v2/search", icon: Search },
-  { label: "Notifications", href: "/v2/notifications", icon: Bell },
+  { label: "Search", href: "/search", icon: Search },
+  { label: "Notifications", href: "/notifications", icon: Bell },
 ];
 
 export const V2_MENU_GROUPS: V2MenuGroup[] = [
   {
     title: "Main",
     items: [
-      { label: "Home", href: "/v2", icon: Home },
-      { label: "Messages", href: "/v2/messages", icon: Mail },
-      { label: "People", href: "/v2/people", icon: Users },
+      { label: "Home", href: "/home", icon: Home },
+      { label: "Messages", href: "/messages", icon: Mail },
+      { label: "People", href: "/people", icon: Users },
     ],
   },
   {
     title: "Discover",
     items: [
-      { label: "Labs", href: "/v2/labs", icon: FlaskConical },
-      { label: "Topics", href: "/v2/topics", icon: Sparkles },
-      { label: "Following", href: "/v2/following", icon: Heart },
+      { label: "Labs", href: "/labs", icon: FlaskConical },
+      { label: "Topics", href: "/topics", icon: Sparkles },
+      { label: "Following", href: "/following", icon: Heart },
     ],
   },
   {
     title: "Library",
     items: [
-      { label: "Saved", href: "/v2/saved", icon: Bookmark },
-      { label: "Stickies", href: "/v2/stickies", icon: StickyNote },
-      { label: "Reading History", href: "/v2/reading-history", icon: Clock3 },
+      { label: "Saved", href: "/saved", icon: Bookmark },
+      { label: "Stickies", href: "/stickies", icon: StickyNote },
+      { label: "Reading History", href: "/reading-history", icon: Clock3 },
     ],
   },
   {
     title: "My Loombus",
     items: [
-      { label: "My Activity", href: "/v2/my-activity", icon: Library },
-      { label: "My Discussions", href: "/v2/my-discussions", icon: MessageCircle },
-      { label: "My Replies", href: "/v2/my-replies", icon: MessageSquareReply },
-      { label: "Profile", href: "/v2/profile", icon: UserCircle },
+      { label: "My Activity", href: "/my-activity", icon: Library },
+      { label: "My Discussions", href: "/my-discussions", icon: MessageCircle },
+      { label: "My Replies", href: "/my-replies", icon: MessageSquareReply },
+      { label: "Profile", href: "/profile", icon: UserCircle },
     ],
   },
   {
     title: "Account",
     items: [
-      { label: "Notifications", href: "/v2/notifications", icon: Bell },
-      { label: "Settings", href: "/v2/settings", icon: Settings },
-      { label: "Premium", href: "/v2/premium", icon: WalletCards },
-      { label: "Support", href: "/v2/support", icon: Wrench },
-      { label: "Privacy/Security", href: "/v2/privacy-security", icon: LockKeyhole },
-      { label: "Admin", href: "/v2/admin", icon: Shield },
+      { label: "Notifications", href: "/notifications", icon: Bell },
+      { label: "Settings", href: "/settings", icon: Settings },
+      { label: "Premium", href: "/premium", icon: WalletCards },
+      { label: "Support", href: "/support", icon: Wrench },
+      { label: "Privacy/Security", href: "/privacy-security", icon: LockKeyhole },
+      { label: "Admin", href: "/admin", icon: Shield },
     ],
   },
 ];
