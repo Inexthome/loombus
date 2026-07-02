@@ -67,7 +67,6 @@ const v2PublicRouteRewrites = [
   { source: "/discussions/:path*", destination: "/v2/discussions/:path*" },
   { source: "/create", destination: "/v2/create" },
   { source: "/rooms", destination: "/v2/rooms" },
-  { source: "/rooms/:path*", destination: "/v2/rooms/:path*" },
   { source: "/messages", destination: "/v2/messages" },
   { source: "/people", destination: "/v2/people" },
   { source: "/people/:path*", destination: "/v2/people/:path*" },
@@ -94,12 +93,13 @@ const v2PublicRouteRewrites = [
 ];
 
 const v2LegacyRedirects = [
+  { source: "/rooms/:path*", destination: "/rooms", permanent: false },
   { source: "/v2", destination: "/home", permanent: false },
   { source: "/v2/discussions", destination: "/discussions", permanent: false },
   { source: "/v2/discussions/:path*", destination: "/discussions/:path*", permanent: false },
   { source: "/v2/create", destination: "/create", permanent: false },
   { source: "/v2/rooms", destination: "/rooms", permanent: false },
-  { source: "/v2/rooms/:path*", destination: "/rooms/:path*", permanent: false },
+  { source: "/v2/rooms/:path*", destination: "/rooms", permanent: false },
   { source: "/v2/messages", destination: "/messages", permanent: false },
   { source: "/v2/people", destination: "/people", permanent: false },
   { source: "/v2/people/:path*", destination: "/people/:path*", permanent: false },
