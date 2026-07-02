@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { V2_ACTION_NAV_ITEMS, V2_TOP_NAV_ITEMS } from "./v2-navigation";
 import { V2UserAvatarMenu } from "./v2-user-avatar-menu";
 
@@ -103,23 +104,8 @@ export function getDefaultShellPayload(): ShellPayload {
   };
 }
 
-function V2ShellLogoLoader({ label }: { label: string }) {
-  return (
-    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-[color:var(--loombus-page-bg)] px-4 py-10 text-[color:var(--loombus-text)]">
-      <section className="flex flex-col items-center text-center" role="status" aria-live="polite" aria-label={label}>
-        <div className="relative grid size-24 place-items-center rounded-[2rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-2xl shadow-black/20">
-          <span className="absolute inset-[-6px] rounded-[2.25rem] border-2 border-transparent border-t-[color:var(--loombus-primary-bg)] border-r-[color:var(--loombus-primary-bg)] opacity-80 animate-spin" aria-hidden="true" />
-          <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-14 object-contain" />
-        </div>
-        <p className="mt-6 text-sm font-black uppercase tracking-[0.28em] text-[color:var(--loombus-text-muted)]">Loombus</p>
-        <p className="mt-2 text-sm font-semibold text-[color:var(--loombus-text-subtle)]">Loading your workspace…</p>
-      </section>
-    </main>
-  );
-}
-
-export function V2ShellGateCard({ title, loading = false }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
-  return <V2ShellLogoLoader label={loading ? title : "Loading Loombus"} />;
+export function V2ShellGateCard(_props: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
+  return <LoombusLoadingScreen fixed />;
 }
 
 export function V2ShellTopNav() {
