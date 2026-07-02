@@ -1,0 +1,85 @@
+/* V2 Settings gold accent repair.
+   Scoped to /v2/settings by the settings-only left rail width so other V2 pages keep their existing accents. */
+
+main.loombus-v2-page-bg:has(aside.w-60) {
+  --v2-settings-gold: #b45309;
+  --v2-settings-gold-bright: #facc15;
+  --v2-settings-gold-bg: #fffbeb;
+  --v2-settings-gold-bg-strong: #fef3c7;
+  --v2-settings-gold-border: #facc15;
+  --v2-settings-gold-ring: rgb(250 204 21 / 0.38);
+}
+
+main.loombus-v2-page-bg:has(aside.w-60) .text-blue-700,
+main.loombus-v2-page-bg:has(aside.w-60) .text-blue-600,
+main.loombus-v2-page-bg:has(aside.w-60) .hover\:text-blue-700:hover {
+  color: var(--v2-settings-gold) !important;
+  -webkit-text-fill-color: var(--v2-settings-gold) !important;
+}
+
+main.loombus-v2-page-bg:has(aside.w-60) .bg-blue-50,
+main.loombus-v2-page-bg:has(aside.w-60) .bg-blue-50\/40,
+main.loombus-v2-page-bg:has(aside.w-60) .hover\:bg-blue-50:hover,
+main.loombus-v2-page-bg:has(aside.w-60) .hover\:bg-blue-50\/40:hover {
+  background-color: var(--v2-settings-gold-bg) !important;
+}
+
+main.loombus-v2-page-bg:has(aside.w-60) .border-blue-600,
+main.loombus-v2-page-bg:has(aside.w-60) .hover\:border-blue-200:hover {
+  border-color: var(--v2-settings-gold-border) !important;
+}
+
+main.loombus-v2-page-bg:has(aside.w-60) .ring-blue-200 {
+  --tw-ring-color: var(--v2-settings-gold-ring) !important;
+}
+
+main.loombus-v2-page-bg:has(aside.w-60) button[aria-pressed="true"],
+main.loombus-v2-page-bg:has(aside.w-60) [data-selected="true"] {
+  border-color: var(--v2-settings-gold-border) !important;
+}
+
+html[data-loombus-theme="dark"] main.loombus-v2-page-bg:has(aside.w-60) {
+  --v2-settings-gold: #facc15;
+  --v2-settings-gold-bg: rgb(250 204 21 / 0.1);
+  --v2-settings-gold-bg-strong: rgb(250 204 21 / 0.16);
+  --v2-settings-gold-border: #facc15;
+  --v2-settings-gold-ring: rgb(250 204 21 / 0.4);
+}
+
+html[data-loombus-theme="dark"] main.loombus-v2-page-bg:has(aside.w-60) .text-blue-700,
+html[data-loombus-theme="dark"] main.loombus-v2-page-bg:has(aside.w-60) .text-blue-600,
+html[data-loombus-theme="dark"] main.loombus-v2-page-bg:has(aside.w-60) .hover\:text-blue-700:hover {
+  color: var(--v2-settings-gold) !important;
+  -webkit-text-fill-color: var(--v2-settings-gold) !important;
+}
+
+html[data-loombus-theme="dark"] main.loombus-v2-page-bg:has(aside.w-60) .bg-blue-50,
+html[data-loombus-theme="dark"] main.loombus-v2-page-bg:has(aside.w-60) .bg-blue-50\/40,
+html[data-loombus-theme="dark"] main.loombus-v2-page-bg:has(aside.w-60) .hover\:bg-blue-50:hover,
+html[data-loombus-theme="dark"] main.loombus-v2-page-bg:has(aside.w-60) .hover\:bg-blue-50\/40:hover {
+  background-color: var(--v2-settings-gold-bg) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] main.loombus-v2-page-bg:has(aside.w-60) {
+    --v2-settings-gold: #facc15;
+    --v2-settings-gold-bg: rgb(250 204 21 / 0.1);
+    --v2-settings-gold-bg-strong: rgb(250 204 21 / 0.16);
+    --v2-settings-gold-border: #facc15;
+    --v2-settings-gold-ring: rgb(250 204 21 / 0.4);
+  }
+
+  html[data-loombus-theme="system"] main.loombus-v2-page-bg:has(aside.w-60) .text-blue-700,
+  html[data-loombus-theme="system"] main.loombus-v2-page-bg:has(aside.w-60) .text-blue-600,
+  html[data-loombus-theme="system"] main.loombus-v2-page-bg:has(aside.w-60) .hover\:text-blue-700:hover {
+    color: var(--v2-settings-gold) !important;
+    -webkit-text-fill-color: var(--v2-settings-gold) !important;
+  }
+
+  html[data-loombus-theme="system"] main.loombus-v2-page-bg:has(aside.w-60) .bg-blue-50,
+  html[data-loombus-theme="system"] main.loombus-v2-page-bg:has(aside.w-60) .bg-blue-50\/40,
+  html[data-loombus-theme="system"] main.loombus-v2-page-bg:has(aside.w-60) .hover\:bg-blue-50:hover,
+  html[data-loombus-theme="system"] main.loombus-v2-page-bg:has(aside.w-60) .hover\:bg-blue-50\/40:hover {
+    background-color: var(--v2-settings-gold-bg) !important;
+  }
+}
