@@ -81,6 +81,7 @@ const v2DefaultRedirects = [
   { source: "/topics", destination: "/v2/topics", permanent: false },
   { source: "/privacy-security", destination: "/v2/privacy-security", permanent: false },
   { source: "/rooms", destination: "/v2/rooms", permanent: false },
+  { source: "/traverze", destination: `/v2/rooms/${traverzeCultureRoomId}`, permanent: false },
   { source: "/traverzeculture", destination: `/v2/rooms/${traverzeCultureRoomId}`, permanent: false },
   { source: "/traverze-culture", destination: `/v2/rooms/${traverzeCultureRoomId}`, permanent: false },
   { source: "/quietcreek", destination: `/v2/rooms/${quietCreekRoomId}`, permanent: false },
