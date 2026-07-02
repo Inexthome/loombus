@@ -203,19 +203,30 @@ export default function AdminSupportPage() {
 
       setIsAdmin(true);
 
-      const { data, error } = await supabase
-        .from("support_requests")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      if (error) {
-        setMessage(`Unable to load support requests: ${error.message}`);
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/admin/support/requests", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(`Unable to load support requests: ${result.error ?? "Unknown error."}`);
         setAuthChecked(true);
         setLoading(false);
         return;
       }
 
-      const loaded = (data ?? []) as SupportRequest[];
+      const loaded = (result.requests ?? []) as SupportRequest[];
       setRequests(loaded);
       setStatusDrafts(
         loaded.reduce<Record<string, string>>((drafts, item) => {

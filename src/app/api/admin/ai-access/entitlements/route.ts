@@ -71,6 +71,22 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
+function getServiceRoleClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase service role configuration.");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
@@ -177,6 +193,98 @@ function cleanEntitlementUpdates(value: unknown): EntitlementUpdates | null {
   }
 
   return updates;
+}
+
+const USAGE_SELECT = `
+  id,
+  user_id,
+  feature_key,
+  target_type,
+  target_id,
+  provider,
+  model_name,
+  cached,
+  success,
+  error_message,
+  prompt_tokens,
+  completion_tokens,
+  total_tokens,
+  estimated_cost_usd,
+  created_at
+`;
+
+export async function GET(request: NextRequest) {
+  let supabase;
+
+  try {
+    supabase = getSupabaseForRequest(request);
+  } catch {
+    return jsonError("Server configuration error.", 500);
+  }
+
+  const { error: adminError } = await requireAdmin(supabase);
+
+  if (adminError) {
+    return adminError;
+  }
+
+  let admin;
+
+  try {
+    admin = getServiceRoleClient();
+  } catch {
+    return jsonError("Server configuration error.", 500);
+  }
+
+  const { data: entitlementRows, error: entitlementsError } = await admin
+    .from("user_ai_entitlements")
+    .select(ENTITLEMENT_SELECT)
+    .order("updated_at", { ascending: false });
+
+  if (entitlementsError) {
+    return jsonError(
+      entitlementsError.message || "Unable to load AI entitlements.",
+      400
+    );
+  }
+
+  const entitlements = (entitlementRows ?? []) as AiEntitlementRow[];
+
+  const { data: usageRows, error: usageError } = await admin
+    .from("ai_usage_events")
+    .select(USAGE_SELECT)
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (usageError) {
+    return jsonError(usageError.message || "Unable to load AI usage events.", 400);
+  }
+
+  const usageEvents = usageRows ?? [];
+
+  const profileIds = [
+    ...new Set([
+      ...entitlements.map((item) => item.user_id),
+      ...usageEvents.map((event: { user_id: string }) => event.user_id),
+    ]),
+  ];
+
+  let profiles: ProfileRow[] = [];
+
+  if (profileIds.length > 0) {
+    const { data: profileRows, error: profilesError } = await admin
+      .from("profiles")
+      .select("id, username, full_name, avatar_url")
+      .in("id", profileIds);
+
+    if (profilesError) {
+      return jsonError(profilesError.message || "Unable to load profiles.", 400);
+    }
+
+    profiles = (profileRows ?? []) as ProfileRow[];
+  }
+
+  return NextResponse.json({ entitlements, usageEvents, profiles });
 }
 
 export async function PATCH(request: NextRequest) {

@@ -200,38 +200,38 @@ export default function AdminSafetyPage() {
 
       setAuthorized(true);
 
-      const { data } = await supabase
-        .from("audit_logs")
-        .select("id, action, target_type, target_id, metadata, created_at, actor_id")
-        .in("action", ["content_safety.blocked", "content_safety.warned"])
-        .order("created_at", { ascending: false })
-        .limit(250);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      const loadedEvents = (data ?? []) as SafetyEvent[];
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/admin/safety", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(`Unable to load safety events: ${result.error ?? "Unknown error."}`);
+        setLoading(false);
+        return;
+      }
+
+      const loadedEvents = (result.events ?? []) as SafetyEvent[];
       setEvents(loadedEvents);
 
-      const actorIds = [
-        ...new Set(
-          loadedEvents
-            .map((event) => event.actor_id)
-            .filter((id): id is string => Boolean(id))
-        ),
-      ];
+      const profileMap: Record<string, Profile> = {};
 
-      if (actorIds.length > 0) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("id, username, full_name, avatar_url")
-          .in("id", actorIds);
-
-        const profileMap: Record<string, Profile> = {};
-
-        for (const item of profileData ?? []) {
-          profileMap[item.id] = item;
-        }
-
-        setProfiles(profileMap);
+      for (const item of (result.profiles ?? []) as Profile[]) {
+        profileMap[item.id] = item;
       }
+
+      setProfiles(profileMap);
 
       setLoading(false);
     }

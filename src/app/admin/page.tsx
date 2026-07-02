@@ -98,64 +98,35 @@ export default function AdminDashboardPage() {
 
       setIsAdmin(true);
 
-      const [
-        totalReports,
-        openReports,
-        dismissedReports,
-          actionedReports,
-        profileReports,
-        deletedDiscussions,
-        deletedReplies,
-        labsRequests,
-        supportRequests,
-      ] = await Promise.all([
-        supabase
-          .from("reports")
-          .select("*", { count: "exact", head: true }),
-        supabase
-          .from("reports")
-          .select("*", { count: "exact", head: true })
-          .eq("status", "new"),
-        supabase
-          .from("reports")
-          .select("*", { count: "exact", head: true })
-          .eq("status", "dismissed"),
-        supabase
-          .from("reports")
-          .select("*", { count: "exact", head: true })
-          .eq("status", "actioned"),
-        supabase
-          .from("reports")
-          .select("*", { count: "exact", head: true })
-          .not("reported_profile_id", "is", null),
-        supabase
-          .from("discussions")
-          .select("*", { count: "exact", head: true })
-          .not("deleted_at", "is", null),
-        supabase
-          .from("replies")
-          .select("*", { count: "exact", head: true })
-          .not("deleted_at", "is", null),
-        supabase
-          .from("labs_feature_requests")
-          .select("*", { count: "exact", head: true }),
-        supabase
-          .from("support_requests")
-          .select("*", { count: "exact", head: true })
-          .in("status", ["new", "reviewing"]),
-      ]);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      setCounts({
-        totalReports: totalReports.count ?? 0,
-        openReports: openReports.count ?? 0,
-        dismissedReports: dismissedReports.count ?? 0,
-        actionedReports: actionedReports.count ?? 0,
-        profileReports: profileReports.count ?? 0,
-        deletedDiscussions: deletedDiscussions.count ?? 0,
-        deletedReplies: deletedReplies.count ?? 0,
-        labsRequests: labsRequests.count ?? 0,
-        supportRequests: supportRequests.count ?? 0,
+      if (!accessToken) {
+        window.location.replace("/login?next=/admin");
+        return;
+      }
+
+      const response = await fetch("/api/admin/dashboard", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (response.ok) {
+        setCounts({
+          totalReports: result.totalReports ?? 0,
+          openReports: result.openReports ?? 0,
+          dismissedReports: result.dismissedReports ?? 0,
+          actionedReports: result.actionedReports ?? 0,
+          profileReports: result.profileReports ?? 0,
+          deletedDiscussions: result.deletedDiscussions ?? 0,
+          deletedReplies: result.deletedReplies ?? 0,
+          labsRequests: result.labsRequests ?? 0,
+          supportRequests: result.supportRequests ?? 0,
+        });
+      }
 
       setAuthChecked(true);
     }

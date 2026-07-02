@@ -58,60 +58,45 @@ export default function DeletedRepliesPage() {
 
       setAuthorized(true);
 
-      const { data } = await supabase
-        .from("replies")
-        .select("id, body, user_id, discussion_id, created_at, deleted_at, deleted_by")
-        .not("deleted_at", "is", null)
-        .order("deleted_at", { ascending: false });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      const loadedReplies = (data ?? []) as Reply[];
-      setReplies(loadedReplies);
-
-      const userIds = [
-        ...new Set(
-          loadedReplies
-            .map((reply) => reply.user_id)
-            .filter((id): id is string => Boolean(id))
-        ),
-      ];
-
-      if (userIds.length > 0) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("id, username, full_name")
-          .in("id", userIds);
-
-        const profileMap: Record<string, Profile> = {};
-
-        for (const item of profileData ?? []) {
-          profileMap[item.id] = item;
-        }
-
-        setProfiles(profileMap);
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
       }
 
-      const discussionIds = [
-        ...new Set(
-          loadedReplies
-            .map((reply) => reply.discussion_id)
-            .filter((id): id is string => Boolean(id))
-        ),
-      ];
+      const response = await fetch("/api/admin/deleted-replies", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
-      if (discussionIds.length > 0) {
-        const { data: discussionData } = await supabase
-          .from("discussions")
-          .select("id, title, topic")
-          .in("id", discussionIds);
+      const result = await response.json().catch(() => ({}));
 
-        const discussionMap: Record<string, Discussion> = {};
-
-        for (const item of discussionData ?? []) {
-          discussionMap[item.id] = item;
-        }
-
-        setDiscussions(discussionMap);
+      if (!response.ok) {
+        setMessage(`Unable to load deleted replies: ${result.error ?? "Unknown error."}`);
+        setLoading(false);
+        return;
       }
+
+      setReplies((result.replies ?? []) as Reply[]);
+
+      const profileMap: Record<string, Profile> = {};
+
+      for (const item of (result.profiles ?? []) as Profile[]) {
+        profileMap[item.id] = item;
+      }
+
+      setProfiles(profileMap);
+
+      const discussionMap: Record<string, Discussion> = {};
+
+      for (const item of (result.discussions ?? []) as Discussion[]) {
+        discussionMap[item.id] = item;
+      }
+
+      setDiscussions(discussionMap);
 
       setLoading(false);
     }

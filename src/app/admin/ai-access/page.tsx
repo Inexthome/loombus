@@ -157,99 +157,38 @@ export default function AdminAiAccessPage() {
 
       setAuthorized(true);
 
-      const { data: entitlementData, error: entitlementError } = await supabase
-        .from("user_ai_entitlements")
-        .select(`
-          user_id,
-          tier,
-          ai_assisted_enabled,
-          monthly_summary_limit,
-          monthly_writing_limit,
-          monthly_research_limit,
-          monthly_discovery_limit,
-          notes,
-          updated_at
-        `)
-        .order("updated_at", { ascending: false });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      if (entitlementError) {
-        setMessage(`Unable to load AI entitlements: ${entitlementError.message}`);
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/admin/ai-access/entitlements", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(`Unable to load AI entitlements: ${result.error ?? "Unknown error."}`);
         setLoading(false);
         return;
       }
 
-      const loadedEntitlements = (entitlementData ?? []) as AiEntitlement[];
-      setEntitlements(loadedEntitlements);
+      setEntitlements((result.entitlements ?? []) as AiEntitlement[]);
+      setUsageEvents((result.usageEvents ?? []) as UsageEvent[]);
 
-      const userIds = [
-        ...new Set(loadedEntitlements.map((item) => item.user_id)),
-      ];
+      const profileMap: Record<string, Profile> = {};
 
-      if (userIds.length > 0) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("id, username, full_name, avatar_url")
-          .in("id", userIds);
-
-        const profileMap: Record<string, Profile> = {};
-
-        for (const profile of (profileData ?? []) as Profile[]) {
-          profileMap[profile.id] = profile;
-        }
-
-        setProfiles(profileMap);
+      for (const profile of (result.profiles ?? []) as Profile[]) {
+        profileMap[profile.id] = profile;
       }
 
-      const { data: usageData } = await supabase
-        .from("ai_usage_events")
-        .select(`
-          id,
-          user_id,
-          feature_key,
-          target_type,
-          target_id,
-          provider,
-          model_name,
-          cached,
-          success,
-          error_message,
-          prompt_tokens,
-          completion_tokens,
-          total_tokens,
-          estimated_cost_usd,
-          created_at
-        `)
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      const loadedUsageEvents = (usageData ?? []) as UsageEvent[];
-      setUsageEvents(loadedUsageEvents);
-
-      const usageUserIds = [
-        ...new Set(loadedUsageEvents.map((item) => item.user_id)),
-      ];
-
-      const missingUsageUserIds = usageUserIds.filter(
-        (userId) => !userIds.includes(userId)
-      );
-
-      if (missingUsageUserIds.length > 0) {
-        const { data: usageProfileData } = await supabase
-          .from("profiles")
-          .select("id, username, full_name, avatar_url")
-          .in("id", missingUsageUserIds);
-
-        const usageProfileMap: Record<string, Profile> = {};
-
-        for (const profile of (usageProfileData ?? []) as Profile[]) {
-          usageProfileMap[profile.id] = profile;
-        }
-
-        setProfiles((current) => ({
-          ...current,
-          ...usageProfileMap,
-        }));
-      }
+      setProfiles(profileMap);
 
       setLoading(false);
     }
