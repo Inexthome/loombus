@@ -13,10 +13,8 @@ export function LoombusLoadingScreen({
   waitLabel = "Please wait",
   fixed = false,
 }: LoombusLoadingScreenProps) {
-  const Root = fixed ? "main" : "section";
-
   return (
-    <Root
+    <main
       className={`${fixed ? "fixed inset-0 z-[90]" : "min-h-screen"} flex items-center justify-center overflow-hidden bg-[#111113] px-6 py-16 text-white`}
       role="status"
       aria-live="polite"
@@ -33,21 +31,21 @@ export function LoombusLoadingScreen({
           <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-20 object-contain sm:size-24" />
         </div>
 
-        <p className="mt-14 text-2xl font-medium uppercase tracking-[0.42em] text-zinc-400 sm:text-4xl">
+        <p className="mt-12 text-2xl font-medium uppercase tracking-[0.42em] text-zinc-400 sm:mt-14 sm:text-4xl">
           {eyebrow}
         </p>
-        <h1 className="mt-14 text-5xl font-black tracking-tight text-white sm:text-7xl">
+        <h1 className="mt-10 text-5xl font-black tracking-tight text-white sm:mt-14 sm:text-7xl">
           {title}
         </h1>
-        <p className="mt-12 max-w-3xl text-2xl leading-relaxed text-zinc-400 sm:text-4xl">
+        <p className="mt-8 max-w-3xl text-2xl leading-relaxed text-zinc-400 sm:mt-12 sm:text-4xl">
           {message}
         </p>
-        <div className="mt-16 flex w-full max-w-3xl items-center gap-8 text-2xl font-medium uppercase tracking-[0.48em] text-zinc-400 sm:text-4xl">
+        <div className="mt-12 flex w-full max-w-3xl items-center gap-5 text-2xl font-medium uppercase tracking-[0.38em] text-zinc-400 sm:mt-16 sm:gap-8 sm:text-4xl sm:tracking-[0.48em]">
           <span className="h-px flex-1 bg-white/10" />
           <span>{waitLabel}</span>
           <span className="h-px flex-1 bg-white/10" />
         </div>
       </div>
-    </Root>
+    </main>
   );
 }
