@@ -61,6 +61,9 @@ const securityHeaders = [
   },
 ];
 
+const quietCreekRoomId = "11111111-1111-4111-8111-111111111111";
+const traverzeCultureRoomId = "22222222-2222-4222-8222-222222222222";
+
 const v2DefaultRedirects = [
   { source: "/discussions", destination: "/v2/discussions", permanent: false },
   { source: "/discussions/:path*", destination: "/v2/discussions/:path*", permanent: false },
@@ -78,6 +81,11 @@ const v2DefaultRedirects = [
   { source: "/topics", destination: "/v2/topics", permanent: false },
   { source: "/privacy-security", destination: "/v2/privacy-security", permanent: false },
   { source: "/rooms", destination: "/v2/rooms", permanent: false },
+  { source: "/traverzeculture", destination: `/v2/rooms/${traverzeCultureRoomId}`, permanent: false },
+  { source: "/traverze-culture", destination: `/v2/rooms/${traverzeCultureRoomId}`, permanent: false },
+  { source: "/quietcreek", destination: `/v2/rooms/${quietCreekRoomId}`, permanent: false },
+  { source: "/quietcreekresidents", destination: `/v2/rooms/${quietCreekRoomId}`, permanent: false },
+  { source: "/quiet-creek-residents", destination: `/v2/rooms/${quietCreekRoomId}`, permanent: false },
 ];
 
 const nextConfig: NextConfig = {
