@@ -1,0 +1,5 @@
+name: Loombus emergency rollback CodeQL config
+
+paths-ignore:
+  - src/app/create/page.tsx
+  - src/components/profile-avatar.tsx
