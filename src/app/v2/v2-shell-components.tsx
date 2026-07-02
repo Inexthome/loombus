@@ -104,8 +104,8 @@ export function getDefaultShellPayload(): ShellPayload {
   };
 }
 
-export function V2ShellGateCard({ title }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
-  return <LoombusLoadingScreen fixed title="Loading Loombus..." message="Preparing your Loombus experience." waitLabel="Please wait" eyebrow="Loombus" />;
+export function V2ShellGateCard(_props: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
+  return <LoombusLoadingScreen fixed />;
 }
 
 export function V2ShellTopNav() {
