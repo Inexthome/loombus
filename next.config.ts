@@ -77,6 +77,7 @@ const v2DefaultRedirects = [
   { source: "/premium", destination: "/v2/premium", permanent: false },
   { source: "/topics", destination: "/v2/topics", permanent: false },
   { source: "/privacy-security", destination: "/v2/privacy-security", permanent: false },
+  { source: "/rooms", destination: "/v2/rooms", permanent: false },
 ];
 
 const nextConfig: NextConfig = {
