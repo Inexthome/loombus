@@ -7,6 +7,7 @@ import "./v2-public-landing-login-readability.css";
 import "./v2-public-landing-cta-contrast.css";
 import "./v2-settings-gold-accent.css";
 import "./loombus-loading-standard.css";
+import "./v2-global-gold-accent.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
