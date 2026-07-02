@@ -114,6 +114,10 @@ function normalizeRoom(row: RoomRow, index: number): LiveRoom {
   };
 }
 
+function getRoomHref(roomId: string) {
+  return `/v2/rooms/${encodeURIComponent(roomId)}`;
+}
+
 function formatRelativeTime(value: string | null) {
   if (!value) return "No recent activity";
   const timestamp = new Date(value).getTime();
@@ -252,16 +256,17 @@ async function fetchLiveRooms(userId: string | null) {
 
 function RoomCardView({ room, joined }: { room: LiveRoom; joined: boolean }) {
   const Icon = getRoomIcon(room);
+  const roomHref = getRoomHref(room.id);
 
   return (
     <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
       <div className="grid gap-4 sm:grid-cols-[76px_minmax(0,1fr)]">
-        <div className={`grid size-16 place-items-center rounded-2xl bg-gradient-to-br ${getRoomAccent(room)} text-white shadow-lg`}>
+        <Link href={roomHref} aria-label={`Open ${room.name}`} className={`grid size-16 place-items-center rounded-2xl bg-gradient-to-br ${getRoomAccent(room)} text-white shadow-lg transition hover:scale-105`}>
           <Icon className="size-8" />
-        </div>
+        </Link>
         <div className="min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <h2 className="text-lg font-black text-slate-950">{room.name}</h2>
+            <Link href={roomHref} className="text-lg font-black text-slate-950 transition hover:text-blue-700">{room.name}</Link>
             <div className="flex flex-wrap gap-2">
               {joined && <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-black text-blue-700">Joined</span>}
               {room.isPrivate && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">Private</span>}
@@ -283,8 +288,8 @@ function RoomCardView({ room, joined }: { room: LiveRoom; joined: boolean }) {
             <p>{formatRelativeTime(room.latestActivityAt ?? room.updatedAt)}</p>
           </div>
         </div>
-        <Link href="/v2/rooms" className="rounded-2xl bg-blue-50 px-4 py-2 text-sm font-black text-blue-700 transition hover:bg-blue-100">
-          View Room
+        <Link href={roomHref} className="rounded-2xl bg-blue-50 px-4 py-2 text-sm font-black text-blue-700 transition hover:bg-blue-100">
+          Open Room
         </Link>
       </div>
     </article>
@@ -304,7 +309,7 @@ function SuggestedRoomsCard({ rooms, joinedRoomIds }: { rooms: LiveRoom[]; joine
         {suggestedRooms.map((room) => {
           const Icon = getRoomIcon(room);
           return (
-            <Link key={room.id} href="/v2/rooms" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
+            <Link key={room.id} href={getRoomHref(room.id)} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 transition hover:bg-blue-50">
               <span className="flex min-w-0 items-center gap-3">
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon className="size-4" /></span>
                 <span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800">{room.name}</span><span className="block text-xs font-semibold text-slate-400">{room.memberCount} members</span></span>
@@ -330,7 +335,7 @@ function RoomEventsCard({ events }: { events: LiveEvent[] }) {
         {events.map((event) => {
           const eventDate = formatEventDate(event.startsAt);
           return (
-            <Link key={event.id} href="/v2/rooms" className="grid grid-cols-[52px_minmax(0,1fr)] gap-3 border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
+            <Link key={event.id} href={getRoomHref(event.roomId)} className="grid grid-cols-[52px_minmax(0,1fr)] gap-3 border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
               <div className="rounded-2xl bg-blue-50 px-2 py-2 text-center">
                 <p className="text-[10px] font-black text-slate-500">{eventDate.month}</p>
                 <p className="text-xl font-black text-slate-950">{eventDate.day}</p>
@@ -469,7 +474,7 @@ export default function V2RoomsPage() {
                 {rooms.filter((room) => joinedRoomIds.has(room.id)).slice(0, 5).map((room) => {
                   const Icon = getRoomIcon(room);
                   return (
-                    <Link key={room.id} href="/v2/rooms" className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50">
+                    <Link key={room.id} href={getRoomHref(room.id)} className="flex items-center justify-between gap-3 rounded-2xl px-1 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50">
                       <span className="flex min-w-0 items-center gap-3">
                         <span className={`grid size-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${getRoomAccent(room)} text-white`}><Icon className="size-4" /></span>
                         <span className="min-w-0"><span className="block truncate">{room.name}</span><span className="block text-xs font-semibold text-slate-400">{room.memberCount} members · {room.activityCount} updates</span></span>
