@@ -1,16 +1,14 @@
-/* Standard Loombus loading presentation for older V2 prompt cards.
-   This keeps straggler access/checking cards from showing prompt-style UI while
-   shared loaders are being consolidated. */
+/* Standard Loombus loading presentation for older V2 prompt cards. */
 
 main.fixed.inset-0.z-\[80\]:has(section.w-full.max-w-2xl) {
   background: #111113 !important;
-  background-image: radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.08), transparent 18rem), linear-gradient(180deg, #202023 0%, #111113 42%, #070707 100%) !important;
+  background-image: radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.08), transparent 17rem), linear-gradient(180deg, #202023 0%, #111113 44%, #070707 100%) !important;
 }
 
 main.fixed.inset-0.z-\[80\]:has(section.w-full.max-w-2xl) > section.w-full.max-w-2xl {
   display: grid !important;
-  width: min(100%, 64rem) !important;
-  max-width: 64rem !important;
+  width: min(100%, 32rem) !important;
+  max-width: 32rem !important;
   place-items: center !important;
   border: 0 !important;
   background: transparent !important;
@@ -25,14 +23,15 @@ main.fixed.inset-0.z-\[80\]:has(section.w-full.max-w-2xl) > section.w-full.max-w
 main.fixed.inset-0.z-\[80\]:has(section.w-full.max-w-2xl) > section.w-full.max-w-2xl::before {
   content: "";
   display: block;
-  width: 13rem;
-  height: 13rem;
+  width: clamp(8rem, 34vw, 10rem);
+  height: clamp(8rem, 34vw, 10rem);
   border-radius: 9999px;
-  background:
-    url("/assets/brand/loombus-mark-transparent.png") center / 6rem 6rem no-repeat,
-    radial-gradient(circle, #000 0 62%, transparent 63%),
-    conic-gradient(from 180deg, transparent 0deg, transparent 220deg, #facc15 270deg, #facc15 330deg, transparent 360deg);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 28px rgba(250, 204, 21, 0.2);
+  background-color: #000;
+  background-image: url("/assets/brand/loombus-mark-transparent.png"), conic-gradient(from 180deg, transparent 0deg, transparent 220deg, #facc15 270deg, #facc15 330deg, transparent 360deg);
+  background-position: center, center;
+  background-repeat: no-repeat;
+  background-size: 42% 42%, cover;
+  box-shadow: 0 24px 65px rgba(0, 0, 0, 0.58), 0 0 24px rgba(250, 204, 21, 0.18);
   animation: loombusLegacyLoaderSpin 1.1s linear infinite;
 }
 
@@ -40,12 +39,12 @@ main.fixed.inset-0.z-\[80\]:has(section.w-full.max-w-2xl) > section.w-full.max-w
   content: "LOOMBUS\A Loading Loombus...\A Preparing your Loombus experience.\A PLEASE WAIT";
   display: block;
   white-space: pre-line;
-  margin-top: 3rem;
+  margin-top: 2rem;
   color: #fff;
-  font-weight: 900;
-  font-size: clamp(2.75rem, 6vw, 4.5rem);
-  line-height: 1.55;
-  letter-spacing: -0.03em;
+  font-weight: 800;
+  font-size: clamp(1rem, 4.6vw, 2.25rem);
+  line-height: 1.9;
+  letter-spacing: 0;
 }
 
 @keyframes loombusLegacyLoaderSpin {
