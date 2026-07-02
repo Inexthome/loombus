@@ -1,21 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { logAuditEvent } from "@/lib/audit-log";
 
 type AdminProfileRow = {
   is_admin: boolean | null;
 };
 
-const SUPPORT_STATUSES = new Set(["new", "reviewing", "resolved", "closed"]);
-
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const authorization = request.headers.get("authorization") ?? "";
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Missing Supabase environment configuration.");
   }
+
+  const authorization = request.headers.get("authorization") ?? "";
 
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
@@ -46,15 +44,6 @@ function getServiceRoleClient() {
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
-}
-
-function isValidUuid(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value
-    )
-  );
 }
 
 async function requireAdmin(supabase: ReturnType<typeof getSupabaseForRequest>) {
@@ -103,72 +92,59 @@ export async function GET(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const { data, error } = await admin
-    .from("support_requests")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [discussionResult, tagResult, aiOutputResult, replyResult, viewResult, bookmarkResult] =
+    await Promise.all([
+      admin
+        .from("discussions")
+        .select("id, title, topic, reality_lens, created_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(500),
+      admin.from("discussion_tags").select("discussion_id, tag").limit(2000),
+      admin
+        .from("discussion_ai_outputs")
+        .select("discussion_id, feature_key, generated_at")
+        .in("feature_key", ["conversation_map", "related_ideas"])
+        .limit(2000),
+      admin
+        .from("replies")
+        .select("discussion_id, created_at")
+        .is("deleted_at", null)
+        .limit(5000),
+      admin.from("discussion_views").select("discussion_id").limit(5000),
+      admin.from("bookmarks").select("discussion_id").limit(5000),
+    ]);
 
-  if (error) {
-    return jsonError(error.message || "Unable to load support requests.", 400);
+  if (discussionResult.error) {
+    return jsonError(discussionResult.error.message || "Unable to load discussions.", 400);
   }
 
-  return NextResponse.json({ requests: data ?? [] });
-}
-
-export async function PATCH(request: NextRequest) {
-  let supabase;
-
-  try {
-    supabase = getSupabaseForRequest(request);
-  } catch {
-    return jsonError("Server configuration error.", 500);
+  if (tagResult.error) {
+    return jsonError(tagResult.error.message || "Unable to load discussion tags.", 400);
   }
 
-  const { user, error: adminError } = await requireAdmin(supabase);
-
-  if (adminError || !user) {
-    return adminError;
+  if (aiOutputResult.error) {
+    return jsonError(aiOutputResult.error.message || "Unable to load AI outputs.", 400);
   }
 
-  const body = await request.json().catch(() => null);
-  const requestId = body?.requestId;
-  const status = typeof body?.status === "string" ? body.status.trim() : "";
-  const adminNote =
-    typeof body?.adminNote === "string" ? body.adminNote.trim().slice(0, 2000) : "";
-
-  if (!isValidUuid(requestId)) {
-    return jsonError("Invalid support request id.", 400);
+  if (replyResult.error) {
+    return jsonError(replyResult.error.message || "Unable to load replies.", 400);
   }
 
-  if (!SUPPORT_STATUSES.has(status)) {
-    return jsonError("Invalid support request status.", 400);
+  if (viewResult.error) {
+    return jsonError(viewResult.error.message || "Unable to load discussion views.", 400);
   }
 
-  const { data, error } = await supabase
-    .from("support_requests")
-    .update({
-      status,
-      admin_note: adminNote || null,
-      reviewed_by: user.id,
-    })
-    .eq("id", requestId)
-    .select("*")
-    .single();
-
-  if (error) {
-    return jsonError(error.message || "Unable to update support request.", 400);
+  if (bookmarkResult.error) {
+    return jsonError(bookmarkResult.error.message || "Unable to load bookmarks.", 400);
   }
 
-  await logAuditEvent({
-    actor_id: user.id,
-    action: "support_request.updated",
-    target_type: "support_request",
-    target_id: requestId,
-    metadata: {
-      status,
-      has_admin_note: Boolean(adminNote),
-    },
+  return NextResponse.json({
+    discussions: discussionResult.data ?? [],
+    tags: tagResult.data ?? [],
+    aiOutputs: aiOutputResult.data ?? [],
+    replies: replyResult.data ?? [],
+    views: viewResult.data ?? [],
+    bookmarks: bookmarkResult.data ?? [],
   });
-
-  return NextResponse.json({ request: data });
 }

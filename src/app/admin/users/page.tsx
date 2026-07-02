@@ -176,55 +176,39 @@ export default function AdminUsersPage() {
 
       setIsAdmin(true);
 
-      const { data: profileRows, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, username, full_name, bio, avatar_url, is_admin, account_status, identity_verification_status, identity_verification_provider, identity_verified_at, legal_name_verified, identity_restriction_reason, date_of_birth, age_band, teen_safety_mode, guardian_required")
-        .order("username", { ascending: true });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      if (profileError) {
-        setMessage(`Unable to load users: ${profileError.message}`);
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/admin/users", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(`Unable to load users: ${result.error ?? "Unknown error."}`);
         setAuthChecked(true);
         setLoading(false);
         return;
       }
 
-      const loadedProfiles = (profileRows ?? []) as ProfileRow[];
+      const loadedProfiles = (result.profiles ?? []) as ProfileRow[];
       setProfiles(loadedProfiles);
 
-      const userIds = loadedProfiles.map((profile) => profile.id);
+      const entitlementMap: Record<string, EntitlementRow> = {};
 
-      if (userIds.length > 0) {
-        const { data: entitlementRows, error: entitlementError } = await supabase
-          .from("user_ai_entitlements")
-          .select(`
-            user_id,
-            tier,
-            ai_assisted_enabled,
-            monthly_summary_limit,
-            monthly_writing_limit,
-            monthly_research_limit,
-            monthly_discovery_limit,
-            stripe_customer_id,
-            stripe_subscription_id,
-            stripe_price_id,
-            stripe_subscription_status,
-            stripe_current_period_end,
-            updated_at
-          `)
-          .in("user_id", userIds);
-
-        if (entitlementError) {
-          setMessage(`Unable to load entitlements: ${entitlementError.message}`);
-        } else {
-          const entitlementMap: Record<string, EntitlementRow> = {};
-
-          for (const entitlement of (entitlementRows ?? []) as EntitlementRow[]) {
-            entitlementMap[entitlement.user_id] = entitlement;
-          }
-
-          setEntitlements(entitlementMap);
-        }
+      for (const entitlement of (result.entitlements ?? []) as EntitlementRow[]) {
+        entitlementMap[entitlement.user_id] = entitlement;
       }
+
+      setEntitlements(entitlementMap);
 
       setAuthChecked(true);
       setLoading(false);

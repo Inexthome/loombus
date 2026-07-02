@@ -43,13 +43,29 @@ export default function DeletedContentPage() {
 
       setAuthorized(true);
 
-      const { data } = await supabase
-        .from("discussions")
-        .select("*")
-        .not("deleted_at", "is", null)
-        .order("deleted_at", { ascending: false });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      setDiscussions(data ?? []);
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/admin/deleted", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(`Unable to load deleted discussions: ${result.error ?? "Unknown error."}`);
+        setLoading(false);
+        return;
+      }
+
+      setDiscussions(result.discussions ?? []);
       setLoading(false);
     }
 

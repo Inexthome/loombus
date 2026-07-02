@@ -255,39 +255,36 @@ export default function AdminReportsPage() {
 
       setAuthorized(true);
 
-      const { data } = await supabase
-        .from("reports")
-        .select(`
-          id,
-          reason,
-          status,
-          reviewed_by,
-          reviewed_at,
-          resolution_note,
-          status_updated_by,
-          status_updated_at,
-          actioned_by,
-          actioned_at,
-          created_at,
-          discussion_id,
-          reply_id,
-          reported_profile_id,
-          discussions (
-            id,
-            title,
-            topic
-          ),
-          replies (
-            id,
-            body,
-            user_id,
-            discussion_id,
-            deleted_at
-          )
-        `)
-        .order("created_at", { ascending: false });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
 
-      const normalized = (data ?? []).map((item) => ({
+      if (!accessToken) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const response = await fetch("/api/admin/reports", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setMessage(`Unable to load reports: ${result.error ?? "Unknown error."}`);
+        setLoading(false);
+        return;
+      }
+
+      type RawReport = Omit<Report, "discussions" | "replies"> & {
+        discussions: DiscussionRef | DiscussionRef[];
+        replies: ReplyRef | ReplyRef[];
+      };
+
+      const data = (result.reports ?? []) as RawReport[];
+
+      const normalized = data.map((item) => ({
         ...item,
         discussions: Array.isArray(item.discussions)
           ? item.discussions[0] ?? null
@@ -299,34 +296,13 @@ export default function AdminReportsPage() {
 
       setReports(normalized);
 
-      const replyUserIds = normalized
-        .map((report) => report.replies?.user_id)
-        .filter((id): id is string => Boolean(id));
+      const profileMap: Record<string, Profile> = {};
 
-      const reportedProfileIds = normalized
-        .map((report) => report.reported_profile_id)
-        .filter((id): id is string => Boolean(id));
-
-      const reviewerIds = normalized
-        .map((report) => report.reviewed_by)
-        .filter((id): id is string => Boolean(id));
-
-      const profileIds = [...new Set([...replyUserIds, ...reportedProfileIds, ...reviewerIds])];
-
-      if (profileIds.length > 0) {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("id, username, full_name, account_status, enforcement_reason, enforcement_note, enforced_at, suspended_until")
-          .in("id", profileIds);
-
-        const profileMap: Record<string, Profile> = {};
-
-        for (const item of profileData ?? []) {
-          profileMap[item.id] = item;
-        }
-
-        setProfiles(profileMap);
+      for (const item of (result.profiles ?? []) as Profile[]) {
+        profileMap[item.id] = item;
       }
+
+      setProfiles(profileMap);
 
       setLoading(false);
     }

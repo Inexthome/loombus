@@ -1,21 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { logAuditEvent } from "@/lib/audit-log";
 
 type AdminProfileRow = {
   is_admin: boolean | null;
 };
 
-const SUPPORT_STATUSES = new Set(["new", "reviewing", "resolved", "closed"]);
-
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const authorization = request.headers.get("authorization") ?? "";
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Missing Supabase environment configuration.");
   }
+
+  const authorization = request.headers.get("authorization") ?? "";
 
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
@@ -46,15 +44,6 @@ function getServiceRoleClient() {
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
-}
-
-function isValidUuid(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value
-    )
-  );
 }
 
 async function requireAdmin(supabase: ReturnType<typeof getSupabaseForRequest>) {
@@ -103,72 +92,84 @@ export async function GET(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const { data, error } = await admin
-    .from("support_requests")
-    .select("*")
+  const { data: reportRows, error: reportsError } = await admin
+    .from("reports")
+    .select(
+      `
+      id,
+      reason,
+      status,
+      reviewed_by,
+      reviewed_at,
+      resolution_note,
+      status_updated_by,
+      status_updated_at,
+      actioned_by,
+      actioned_at,
+      created_at,
+      discussion_id,
+      reply_id,
+      reported_profile_id,
+      discussions (
+        id,
+        title,
+        topic
+      ),
+      replies (
+        id,
+        body,
+        user_id,
+        discussion_id,
+        deleted_at
+      )
+    `
+    )
     .order("created_at", { ascending: false });
 
-  if (error) {
-    return jsonError(error.message || "Unable to load support requests.", 400);
+  if (reportsError) {
+    return jsonError(reportsError.message || "Unable to load reports.", 400);
   }
 
-  return NextResponse.json({ requests: data ?? [] });
-}
+  type RawReportRow = {
+    reported_profile_id: string | null;
+    reviewed_by: string | null;
+    replies: { user_id: string } | { user_id: string }[] | null;
+  };
 
-export async function PATCH(request: NextRequest) {
-  let supabase;
+  const reports = (reportRows ?? []) as unknown as RawReportRow[];
 
-  try {
-    supabase = getSupabaseForRequest(request);
-  } catch {
-    return jsonError("Server configuration error.", 500);
+  const replyUserIds = reports
+    .map((report) =>
+      Array.isArray(report.replies) ? report.replies[0]?.user_id : report.replies?.user_id
+    )
+    .filter((id): id is string => Boolean(id));
+
+  const reportedProfileIds = reports
+    .map((report) => report.reported_profile_id)
+    .filter((id): id is string => Boolean(id));
+
+  const reviewerIds = reports
+    .map((report) => report.reviewed_by)
+    .filter((id): id is string => Boolean(id));
+
+  const profileIds = [...new Set([...replyUserIds, ...reportedProfileIds, ...reviewerIds])];
+
+  let profiles: Record<string, unknown>[] = [];
+
+  if (profileIds.length > 0) {
+    const { data: profileRows, error: profilesError } = await admin
+      .from("profiles")
+      .select(
+        "id, username, full_name, account_status, enforcement_reason, enforcement_note, enforced_at, suspended_until"
+      )
+      .in("id", profileIds);
+
+    if (profilesError) {
+      return jsonError(profilesError.message || "Unable to load profiles.", 400);
+    }
+
+    profiles = profileRows ?? [];
   }
 
-  const { user, error: adminError } = await requireAdmin(supabase);
-
-  if (adminError || !user) {
-    return adminError;
-  }
-
-  const body = await request.json().catch(() => null);
-  const requestId = body?.requestId;
-  const status = typeof body?.status === "string" ? body.status.trim() : "";
-  const adminNote =
-    typeof body?.adminNote === "string" ? body.adminNote.trim().slice(0, 2000) : "";
-
-  if (!isValidUuid(requestId)) {
-    return jsonError("Invalid support request id.", 400);
-  }
-
-  if (!SUPPORT_STATUSES.has(status)) {
-    return jsonError("Invalid support request status.", 400);
-  }
-
-  const { data, error } = await supabase
-    .from("support_requests")
-    .update({
-      status,
-      admin_note: adminNote || null,
-      reviewed_by: user.id,
-    })
-    .eq("id", requestId)
-    .select("*")
-    .single();
-
-  if (error) {
-    return jsonError(error.message || "Unable to update support request.", 400);
-  }
-
-  await logAuditEvent({
-    actor_id: user.id,
-    action: "support_request.updated",
-    target_type: "support_request",
-    target_id: requestId,
-    metadata: {
-      status,
-      has_admin_note: Boolean(adminNote),
-    },
-  });
-
-  return NextResponse.json({ request: data });
+  return NextResponse.json({ reports, profiles });
 }
