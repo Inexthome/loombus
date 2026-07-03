@@ -13,6 +13,36 @@ const sizeClasses: Record<ProfileAvatarSize, string> = {
   xl: "h-12 w-12 text-base",
 };
 
+function getSafeAvatarUrl(value: string | null | undefined) {
+  const rawValue = value?.trim();
+
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const url = new URL(rawValue);
+
+    if (url.protocol !== "https:" && url.protocol !== "http:") {
+      return null;
+    }
+
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+function getSafeInitial(value: string | undefined) {
+  const initial = value?.trim().charAt(0).toUpperCase();
+
+  if (!initial || !/^[A-Z0-9]$/.test(initial)) {
+    return "L";
+  }
+
+  return initial;
+}
+
 export function getProfileInitials(profile: ProfileAvatarProfile) {
   const label = profile?.full_name?.trim() || profile?.username?.trim() || "L";
 
@@ -21,9 +51,9 @@ export function getProfileInitials(profile: ProfileAvatarProfile) {
     .filter(Boolean)
     .slice(0, 2);
 
-  return parts
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "L";
+  const initials = parts.map(getSafeInitial).join("");
+
+  return initials || "L";
 }
 
 export function getProfileDisplayName(
@@ -40,22 +70,24 @@ export function ProfileAvatar({
   profile: ProfileAvatarProfile;
   size?: ProfileAvatarSize;
 }) {
-  const avatarUrl = profile?.avatar_url?.trim();
+  const safeAvatarUrl = getSafeAvatarUrl(profile?.avatar_url);
+  const initials = getProfileInitials(profile);
 
   return (
     <span
       className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-black font-medium text-zinc-300 ${sizeClasses[size]}`}
       aria-hidden="true"
     >
-      {avatarUrl ? (
+      {safeAvatarUrl ? (
         <img
-          src={avatarUrl}
+          src={safeAvatarUrl}
           alt=""
           className="h-full w-full object-cover"
           loading="lazy"
+          referrerPolicy="no-referrer"
         />
       ) : (
-        getProfileInitials(profile)
+        <span>{initials}</span>
       )}
     </span>
   );
