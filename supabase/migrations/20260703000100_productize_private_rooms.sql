@@ -26,38 +26,10 @@ create table if not exists public.room_subscription_plans (
 
 insert into public.room_product_templates (key, name, room_type, description, default_tabs, default_permissions)
 values
-  (
-    'business-team',
-    'Business Team Room',
-    'business',
-    'Private team planning, announcements, decisions, resources, tasks, and events.',
-    '["discussion", "announcements", "resources", "tasks", "events", "members", "about", "settings"]'::jsonb,
-    '{"visibility":"private","posting":"members","joining":"invite_only"}'::jsonb
-  ),
-  (
-    'residents',
-    'Resident / Condo Room',
-    'residents',
-    'Private resident announcements, maintenance updates, questions, documents, and events.',
-    '["discussion", "announcements", "maintenance", "documents", "events", "members", "report_issue", "about", "settings"]'::jsonb,
-    '{"visibility":"private","posting":"members","joining":"invite_only"}'::jsonb
-  ),
-  (
-    'customer-support',
-    'Customer Support Room',
-    'customer_support',
-    'Private support questions, known issues, help articles, feature requests, and product updates.',
-    '["discussion", "questions", "known_issues", "help_articles", "feature_requests", "announcements", "members", "about", "settings"]'::jsonb,
-    '{"visibility":"private","posting":"members","joining":"invite_only"}'::jsonb
-  ),
-  (
-    'classroom',
-    'Classroom Room',
-    'classroom',
-    'Private class prompts, resources, assignments, moderated discussion, and events.',
-    '["discussion", "assignments", "resources", "events", "members", "about", "settings"]'::jsonb,
-    '{"visibility":"private","posting":"members","joining":"invite_only"}'::jsonb
-  )
+  ('business-team', 'Business Team Room', 'business', 'Private team planning, announcements, decisions, resources, tasks, and events.', '["discussion", "announcements", "resources", "tasks", "events", "members", "about", "settings"]'::jsonb, '{"visibility":"private","posting":"members","joining":"invite_only"}'::jsonb),
+  ('residents', 'Resident / Condo Room', 'residents', 'Private resident announcements, maintenance updates, questions, documents, and events.', '["discussion", "announcements", "maintenance", "documents", "events", "members", "report_issue", "about", "settings"]'::jsonb, '{"visibility":"private","posting":"members","joining":"invite_only"}'::jsonb),
+  ('customer-support', 'Customer Support Room', 'customer_support', 'Private support questions, known issues, help articles, feature requests, and product updates.', '["discussion", "questions", "known_issues", "help_articles", "feature_requests", "announcements", "members", "about", "settings"]'::jsonb, '{"visibility":"private","posting":"members","joining":"invite_only"}'::jsonb),
+  ('classroom', 'Classroom Room', 'classroom', 'Private class prompts, resources, assignments, moderated discussion, and events.', '["discussion", "assignments", "resources", "events", "members", "about", "settings"]'::jsonb, '{"visibility":"private","posting":"members","joining":"invite_only"}'::jsonb)
 on conflict (key) do update set
   name = excluded.name,
   room_type = excluded.room_type,
@@ -84,7 +56,7 @@ do $$
 declare
   room_table text;
   room_table_reg regclass;
-  column_name text;
+  room_name_column text;
   match_sql text;
 begin
   foreach room_table in array array['rooms', 'loombus_rooms', 'community_rooms'] loop
@@ -97,20 +69,8 @@ begin
       execute format('alter table public.%I add column if not exists member_limit_label text', room_table);
       execute format('alter table public.%I add column if not exists default_tabs jsonb not null default ''[]''::jsonb', room_table);
       execute format('alter table public.%I add column if not exists default_permissions jsonb not null default ''{}''::jsonb', room_table);
-
-      if exists (
-        select 1 from information_schema.columns
-        where table_schema = 'public' and table_name = room_table and column_name = 'owner_id'
-      ) is false then
-        execute format('alter table public.%I add column owner_id uuid', room_table);
-      end if;
-
-      if exists (
-        select 1 from information_schema.columns
-        where table_schema = 'public' and table_name = room_table and column_name = 'created_by'
-      ) is false then
-        execute format('alter table public.%I add column created_by uuid', room_table);
-      end if;
+      execute format('alter table public.%I add column if not exists owner_id uuid', room_table);
+      execute format('alter table public.%I add column if not exists created_by uuid', room_table);
     end if;
   end loop;
 
@@ -129,20 +89,20 @@ begin
     end if;
 
     if not exists (
-      select 1 from information_schema.columns
-      where table_schema = 'public' and table_name = room_table and column_name = 'id'
+      select 1 from information_schema.columns c
+      where c.table_schema = 'public' and c.table_name = room_table and c.column_name = 'id'
     ) then
       continue;
     end if;
 
     match_sql := '';
 
-    foreach column_name in array array['name', 'title', 'display_name'] loop
+    foreach room_name_column in array array['name', 'title', 'display_name'] loop
       if exists (
-        select 1 from information_schema.columns
-        where table_schema = 'public' and table_name = room_table and column_name = column_name
+        select 1 from information_schema.columns c
+        where c.table_schema = 'public' and c.table_name = room_table and c.column_name = room_name_column
       ) then
-        match_sql := match_sql || case when match_sql = '' then '' else ' or ' end || format('lower(%I::text) in (''quiet creek residents'', ''traverze culture'')', column_name);
+        match_sql := match_sql || case when match_sql = '' then '' else ' or ' end || format('lower(%I::text) in (''quiet creek residents'', ''traverze culture'')', room_name_column);
       end if;
     end loop;
 
@@ -158,8 +118,8 @@ begin
 
   foreach room_table in array array['room_posts', 'room_messages', 'room_discussions', 'loombus_room_posts', 'room_events', 'loombus_room_events', 'community_room_events', 'room_members', 'room_memberships', 'loombus_room_members', 'community_room_members'] loop
     if to_regclass('public.' || room_table) is not null and exists (
-      select 1 from information_schema.columns
-      where table_schema = 'public' and table_name = room_table and column_name = 'room_id'
+      select 1 from information_schema.columns c
+      where c.table_schema = 'public' and c.table_name = room_table and c.column_name = 'room_id'
     ) then
       execute format(
         'delete from public.%I where room_id::text in (select room_id from _loombus_legacy_room_cleanup_ids)',
@@ -170,8 +130,8 @@ begin
 
   foreach room_table in array array['rooms', 'loombus_rooms', 'community_rooms'] loop
     if to_regclass('public.' || room_table) is not null and exists (
-      select 1 from information_schema.columns
-      where table_schema = 'public' and table_name = room_table and column_name = 'id'
+      select 1 from information_schema.columns c
+      where c.table_schema = 'public' and c.table_name = room_table and c.column_name = 'id'
     ) then
       execute format(
         'delete from public.%I where id::text in (select room_id from _loombus_legacy_room_cleanup_ids where source_table = %L)',
