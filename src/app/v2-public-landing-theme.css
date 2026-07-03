@@ -47,11 +47,30 @@ html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-publ
   opacity: 1 !important;
 }
 
-html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta] *,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta],
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta] span,
 html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta] svg {
-  color: inherit !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta="primary"],
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta="primary"] *,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta="primary"] svg {
+  color: #111827 !important;
   stroke: currentColor !important;
-  -webkit-text-fill-color: inherit !important;
+  -webkit-text-fill-color: #111827 !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta="secondary"],
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta="secondary"] *,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta="top"],
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta="top"] *,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta="secondary"] svg,
+html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-public-cta="top"] svg {
+  color: #020617 !important;
+  stroke: currentColor !important;
+  -webkit-text-fill-color: #020617 !important;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -101,10 +120,29 @@ html[data-loombus-theme="dark"] [data-loombus-public-landing] [data-loombus-publ
     opacity: 1 !important;
   }
 
-  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta] *,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta],
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta] span,
   html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta] svg {
-    color: inherit !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta="primary"],
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta="primary"] *,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta="primary"] svg {
+    color: #111827 !important;
     stroke: currentColor !important;
-    -webkit-text-fill-color: inherit !important;
+    -webkit-text-fill-color: #111827 !important;
+  }
+
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta="secondary"],
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta="secondary"] *,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta="top"],
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta="top"] *,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta="secondary"] svg,
+  html[data-loombus-theme="system"] [data-loombus-public-landing] [data-loombus-public-cta="top"] svg {
+    color: #020617 !important;
+    stroke: currentColor !important;
+    -webkit-text-fill-color: #020617 !important;
   }
 }
