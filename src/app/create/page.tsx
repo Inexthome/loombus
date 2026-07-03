@@ -462,47 +462,31 @@ function getRecommendedDiscussionTopic(title: string, body: string) {
   )?.topic ?? "";
 }
 
-function escapeLimitedHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
 function hasLimitedFormattingHtml(value: string) {
   return /<\/?(strong|b|em|i|br|p|div)\b/i.test(value);
 }
 
-function sanitizeLimitedDiscussionHtml(value: string) {
-  const pattern = /<\/?(strong|b|em|i|br|p|div)\b[^>]*>/gi;
-  let safe = "";
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = pattern.exec(value)) !== null) {
-    safe += escapeLimitedHtml(value.slice(lastIndex, match.index));
-
-    const rawTag = match[0].toLowerCase();
-    const tagName = match[1].toLowerCase();
-    const normalizedTag =
-      tagName === "b" ? "strong" : tagName === "i" ? "em" : tagName;
-
-    if (normalizedTag === "br") {
-      safe += "<br>";
-    } else if (rawTag.startsWith("</")) {
-      safe += `</${normalizedTag}>`;
-    } else {
-      safe += `<${normalizedTag}>`;
-    }
-
-    lastIndex = pattern.lastIndex;
+function plainTextToEditorHtml(value: string) {
+  if (!value) {
+    return "";
   }
 
-  safe += escapeLimitedHtml(value.slice(lastIndex));
+  if (typeof document === "undefined") {
+    return value.replace(/\r?\n/g, " ");
+  }
 
-  return safe
-    .replace(/<div><br><\/div>/gi, "<br>")
-    .replace(/<p><br><\/p>/gi, "<br>");
+  const container = document.createElement("div");
+  const lines = value.split(/\r?\n/);
+
+  lines.forEach((line, index) => {
+    if (index > 0) {
+      container.appendChild(document.createElement("br"));
+    }
+
+    container.appendChild(document.createTextNode(line));
+  });
+
+  return container.innerHTML;
 }
 
 function bodyValueToEditorHtml(value: string) {
@@ -510,11 +494,11 @@ function bodyValueToEditorHtml(value: string) {
     return "";
   }
 
-  if (hasLimitedFormattingHtml(value)) {
-    return sanitizeLimitedDiscussionHtml(value);
-  }
+  const plainText = hasLimitedFormattingHtml(value)
+    ? getPlainTextFromLimitedHtml(value)
+    : value;
 
-  return escapeLimitedHtml(value).replace(/\n/g, "<br>");
+  return plainTextToEditorHtml(plainText);
 }
 
 function getPlainTextFromLimitedHtml(value: string) {
@@ -1481,7 +1465,7 @@ export default function CreatePage() {
 
   function syncBodyFromEditor() {
     const rawHtml = bodyEditorRef.current?.innerHTML ?? "";
-    const nextBody = sanitizeLimitedDiscussionHtml(rawHtml);
+    const nextBody = getPlainTextFromLimitedHtml(rawHtml);
 
     setBody(nextBody);
   }
