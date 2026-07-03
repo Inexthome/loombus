@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
   const { data: profileRows, error: profileError } = await admin
     .from("profiles")
     .select(
-      "id, username, full_name, bio, avatar_url, is_admin, account_status, identity_verification_status, identity_verification_provider, identity_verified_at, legal_name_verified, identity_restriction_reason, date_of_birth, age_band, teen_safety_mode, guardian_required"
+      "id, username, full_name, bio, avatar_url, is_admin, account_status, identity_verification_status, identity_verification_provider, identity_verified_at, legal_name_verified, identity_restriction_reason"
     )
     .order("username", { ascending: true });
 
@@ -138,8 +138,43 @@ export async function GET(request: NextRequest) {
     return jsonError(profileError.message || "Unable to load users.", 400);
   }
 
-  const profiles = (profileRows ?? []) as ProfileRow[];
-  const userIds = profiles.map((profile) => profile.id);
+  const baseProfiles = profileRows ?? [];
+  const userIds = baseProfiles.map((profile) => profile.id);
+
+  let sensitiveById = new Map<
+    string,
+    {
+      date_of_birth: string | null;
+      age_band: string | null;
+      teen_safety_mode: boolean | null;
+      guardian_required: boolean | null;
+    }
+  >();
+
+  if (userIds.length > 0) {
+    const { data: sensitiveRows, error: sensitiveError } = await admin
+      .from("profile_sensitive")
+      .select("id, date_of_birth, age_band, teen_safety_mode, guardian_required")
+      .in("id", userIds);
+
+    if (sensitiveError) {
+      return jsonError(sensitiveError.message || "Unable to load age safety data.", 400);
+    }
+
+    sensitiveById = new Map((sensitiveRows ?? []).map((row) => [row.id, row]));
+  }
+
+  const profiles: ProfileRow[] = baseProfiles.map((profile) => {
+    const sensitive = sensitiveById.get(profile.id);
+
+    return {
+      ...profile,
+      date_of_birth: sensitive?.date_of_birth ?? null,
+      age_band: sensitive?.age_band ?? null,
+      teen_safety_mode: sensitive?.teen_safety_mode ?? null,
+      guardian_required: sensitive?.guardian_required ?? null,
+    } as ProfileRow;
+  });
 
   let entitlements: EntitlementRow[] = [];
 

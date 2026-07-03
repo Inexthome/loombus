@@ -16,7 +16,6 @@ type HomeProfile = {
   full_name: string | null;
   username: string | null;
   bio?: string | null;
-  date_of_birth?: string | null;
 };
 
 type HomeSignalCard = {
@@ -275,14 +274,22 @@ export default function Home() {
         }
 
         try {
-          const { data: profileData, error: profileError } = await withTimeout(
-            supabase
-              .from("profiles")
-              .select("full_name, username, bio, date_of_birth")
-              .eq("id", currentUser.id)
-              .maybeSingle(),
-            "Home profile check"
-          );
+          const [{ data: profileData, error: profileError }, { data: sensitiveData }] =
+            await withTimeout(
+              Promise.all([
+                supabase
+                  .from("profiles")
+                  .select("full_name, username, bio")
+                  .eq("id", currentUser.id)
+                  .maybeSingle(),
+                supabase
+                  .from("profile_sensitive")
+                  .select("date_of_birth")
+                  .eq("id", currentUser.id)
+                  .maybeSingle(),
+              ]),
+              "Home profile check"
+            );
 
           if (profileError) {
             console.error("Unable to load home profile greeting.", profileError);
@@ -290,14 +297,14 @@ export default function Home() {
 
           if (isMounted) {
             const nextProfile = (profileData ?? null) as HomeProfile | null;
-            const resolvedDateOfBirth = nextProfile?.date_of_birth ?? metadataDateOfBirth;
+            const resolvedDateOfBirth = sensitiveData?.date_of_birth ?? metadataDateOfBirth;
 
             setProfile(nextProfile);
             setAgeDateOfBirth(resolvedDateOfBirth ?? "");
             setHasAgeVerification(Boolean(resolvedDateOfBirth));
           }
 
-          if (!profileData?.date_of_birth && metadataDateOfBirth && accessToken) {
+          if (!sensitiveData?.date_of_birth && metadataDateOfBirth && accessToken) {
             const metadataAgeBand = getAgeBandFromDateOfBirth(metadataDateOfBirth);
 
             if (metadataAgeBand && metadataAgeBand !== "under_13") {
@@ -380,12 +387,7 @@ export default function Home() {
         return;
       }
 
-      setProfile((current) => ({
-        full_name: current?.full_name ?? null,
-        username: current?.username ?? null,
-        bio: current?.bio ?? null,
-        date_of_birth: result.dateOfBirth ?? ageDateOfBirth,
-      }));
+      setAgeDateOfBirth(result.dateOfBirth ?? ageDateOfBirth);
       setHasAgeVerification(true);
       setAgeVerificationMessage("Age verification saved.");
     } finally {
