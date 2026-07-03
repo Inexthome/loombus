@@ -1,3 +1,8 @@
-import V2PeoplePage from "../v2/people/page";
+import PeopleClientPage from "./client-page";
 
-export default V2PeoplePage;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default function PeoplePage() {
+  return <PeopleClientPage />;
+}
