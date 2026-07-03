@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Building2, CheckCircle2, GraduationCap, Home, Lock, Send, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
@@ -27,6 +27,10 @@ const ROOM_PLANS = [
   { id: "business", name: "Organization", price: "Custom", status: "pending_sales", memberLimit: "Multiple rooms" },
 ];
 
+function getDefaultRoomName(templateTitle: string) {
+  return templateTitle.replace(/ Room$/, "");
+}
+
 function parseInitialValue(paramName: string, fallback: string) {
   if (typeof window === "undefined") return fallback;
   const value = new URLSearchParams(window.location.search).get(paramName);
@@ -40,9 +44,16 @@ async function insertRoomWithFallback(payload: Record<string, unknown>) {
       name: payload.name,
       description: payload.description,
       type: payload.type,
+      room_type: payload.type,
       visibility: "private",
       is_private: true,
+      invite_only: true,
       owner_id: payload.owner_id,
+      created_by: payload.created_by,
+      template_key: payload.template_key,
+      subscription_plan: payload.subscription_plan,
+      subscription_status: payload.subscription_status,
+      member_limit_label: payload.member_limit_label,
     },
     {
       name: payload.name,
@@ -50,11 +61,8 @@ async function insertRoomWithFallback(payload: Record<string, unknown>) {
       type: payload.type,
       visibility: "private",
       is_private: true,
-    },
-    {
-      name: payload.name,
-      description: payload.description,
-      visibility: "private",
+      owner_id: payload.owner_id,
+      created_by: payload.created_by,
     },
   ];
 
@@ -69,6 +77,7 @@ async function insertRoomWithFallback(payload: Record<string, unknown>) {
 
 export default function V2CreateRoomPage() {
   const router = useRouter();
+  const initializedFromUrl = useRef(false);
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,21 +85,23 @@ export default function V2CreateRoomPage() {
   const [message, setMessage] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState(ROOM_TEMPLATES[0].id);
   const [selectedPlanId, setSelectedPlanId] = useState(ROOM_PLANS[0].id);
-  const [roomName, setRoomName] = useState("");
-  const [roomDescription, setRoomDescription] = useState("");
+  const [roomName, setRoomName] = useState(getDefaultRoomName(ROOM_TEMPLATES[0].title));
+  const [roomDescription, setRoomDescription] = useState(ROOM_TEMPLATES[0].description);
 
   const selectedTemplate = useMemo(() => ROOM_TEMPLATES.find((template) => template.id === selectedTemplateId) ?? ROOM_TEMPLATES[0], [selectedTemplateId]);
   const selectedPlan = useMemo(() => ROOM_PLANS.find((plan) => plan.id === selectedPlanId) ?? ROOM_PLANS[0], [selectedPlanId]);
 
   useEffect(() => {
-    setSelectedTemplateId(parseInitialValue("template", ROOM_TEMPLATES[0].id));
-    setSelectedPlanId(parseInitialValue("plan", ROOM_PLANS[0].id));
+    if (initializedFromUrl.current) return;
+    initializedFromUrl.current = true;
+    const initialTemplateId = parseInitialValue("template", ROOM_TEMPLATES[0].id);
+    const initialPlanId = parseInitialValue("plan", ROOM_PLANS[0].id);
+    const initialTemplate = ROOM_TEMPLATES.find((template) => template.id === initialTemplateId) ?? ROOM_TEMPLATES[0];
+    setSelectedTemplateId(initialTemplate.id);
+    setSelectedPlanId(initialPlanId);
+    setRoomName(getDefaultRoomName(initialTemplate.title));
+    setRoomDescription(initialTemplate.description);
   }, []);
-
-  useEffect(() => {
-    if (!roomName) setRoomName(selectedTemplate.title.replace(" Room", ""));
-    if (!roomDescription) setRoomDescription(selectedTemplate.description);
-  }, [roomDescription, roomName, selectedTemplate]);
 
   async function loadShell() {
     setLoading(true);
@@ -120,6 +131,17 @@ export default function V2CreateRoomPage() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  function handleTemplateSelect(template: (typeof ROOM_TEMPLATES)[number]) {
+    setSelectedTemplateId(template.id);
+    setRoomName((currentName) => {
+      const oldDefault = getDefaultRoomName(selectedTemplate.title);
+      return !currentName.trim() || currentName === oldDefault ? getDefaultRoomName(template.title) : currentName;
+    });
+    setRoomDescription((currentDescription) => {
+      return !currentDescription.trim() || currentDescription === selectedTemplate.description ? template.description : currentDescription;
+    });
+  }
+
   async function handleCreateRoom(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userId || !roomName.trim()) return;
@@ -143,14 +165,16 @@ export default function V2CreateRoomPage() {
         member_limit_label: selectedPlan.memberLimit,
       });
 
-      await supabase.from("room_members").insert({ room_id: roomId, user_id: userId, role: "owner" });
+      const membershipResult = await supabase.from("room_members").insert({ room_id: roomId, user_id: userId, role: "owner" });
+      if (membershipResult.error) throw membershipResult.error;
 
-      await supabase.from("room_posts").insert({
+      const welcomePostResult = await supabase.from("room_posts").insert({
         room_id: roomId,
         author_id: userId,
         title: "Welcome to your private Loombus Room",
         body: "This room discussion is private to approved room members and does not appear on the public Loombus discussion page.",
       });
+      if (welcomePostResult.error) throw welcomePostResult.error;
 
       router.push(`/rooms/${encodeURIComponent(roomId)}`);
     } catch {
@@ -192,7 +216,7 @@ export default function V2CreateRoomPage() {
                     const Icon = template.icon;
                     const selected = selectedTemplateId === template.id;
                     return (
-                      <button key={template.id} type="button" onClick={() => { setSelectedTemplateId(template.id); setRoomName(template.title.replace(" Room", "")); setRoomDescription(template.description); }} className={`rounded-[1.25rem] border p-4 text-left transition ${selected ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50"}`}>
+                      <button key={template.id} type="button" onClick={() => handleTemplateSelect(template)} className={`rounded-[1.25rem] border p-4 text-left transition ${selected ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-900 hover:bg-slate-50"}`}>
                         <div className="flex items-start gap-3">
                           <span className={`grid size-10 shrink-0 place-items-center rounded-xl ${selected ? "bg-white/10 text-amber-200" : "bg-slate-100 text-slate-700"}`}><Icon className="size-5" /></span>
                           <span>
@@ -229,8 +253,20 @@ export default function V2CreateRoomPage() {
               <section>
                 <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">3. Name the room</h2>
                 <div className="mt-4 space-y-3">
-                  <input value={roomName} onChange={(event) => setRoomName(event.target.value)} placeholder="Room name" className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100" />
-                  <textarea value={roomDescription} onChange={(event) => setRoomDescription(event.target.value)} placeholder="Room description" rows={4} className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100" />
+                  <input
+                    value={roomName}
+                    onChange={(event) => setRoomName(event.target.value)}
+                    placeholder="Room name"
+                    autoComplete="off"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                  />
+                  <textarea
+                    value={roomDescription}
+                    onChange={(event) => setRoomDescription(event.target.value)}
+                    placeholder="Room description"
+                    rows={4}
+                    className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                  />
                 </div>
               </section>
             </div>
