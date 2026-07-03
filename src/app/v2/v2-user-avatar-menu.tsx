@@ -11,6 +11,7 @@ type V2Profile = {
   full_name: string | null;
   username: string | null;
   avatar_url: string | null;
+  is_admin?: boolean | null;
 };
 
 type V2UserAvatarMenuProps = {
@@ -115,6 +116,7 @@ export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuPro
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<V2Profile | null>(null);
   const [hasSession, setHasSession] = useState(false);
+  const isAdmin = profile?.is_admin === true;
 
   useEffect(() => {
     let mounted = true;
@@ -137,7 +139,7 @@ export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuPro
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("full_name, username, avatar_url")
+        .select("full_name, username, avatar_url, is_admin")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -203,30 +205,35 @@ export function V2UserAvatarMenu({ placement = "disabled" }: V2UserAvatarMenuPro
           </div>
           <div className="h-px bg-slate-100" />
           <div className="space-y-3 py-3">
-            {V2_MENU_GROUPS.map((group) => (
-              <section key={group.title}>
-                <p className="px-3 pb-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{group.title}</p>
-                <div className="space-y-1">
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        onClick={() => setOpen(false)}
-                        className="flex items-center justify-between rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
-                      >
-                        <span className="inline-flex min-w-0 items-center gap-2">
-                          <Icon className="size-4 shrink-0" />
-                          <span className="truncate">{item.label}</span>
-                        </span>
-                        {item.badge && <span className="grid size-5 place-items-center rounded-full bg-slate-950 text-[10px] font-black text-white">{item.badge}</span>}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+            {V2_MENU_GROUPS.map((group) => {
+              const visibleItems = group.items.filter((item) => !item.adminOnly || isAdmin);
+              if (visibleItems.length === 0) return null;
+
+              return (
+                <section key={group.title}>
+                  <p className="px-3 pb-1 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{group.title}</p>
+                  <div className="space-y-1">
+                    {visibleItems.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          onClick={() => setOpen(false)}
+                          className="flex items-center justify-between rounded-2xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
+                        >
+                          <span className="inline-flex min-w-0 items-center gap-2">
+                            <Icon className="size-4 shrink-0" />
+                            <span className="truncate">{item.label}</span>
+                          </span>
+                          {item.badge && <span className="grid size-5 place-items-center rounded-full bg-slate-950 text-[10px] font-black text-white">{item.badge}</span>}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </div>
       )}
