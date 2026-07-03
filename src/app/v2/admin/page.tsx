@@ -384,22 +384,22 @@ function getStats(counts: AdminCounts): StatCard[] {
 
 function GateCard({ title, message, loading = false, payload }: { title: string; message: string; loading?: boolean; payload?: ShellPayload | null }) {
   return (
-    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 text-white">
-      <section className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8">
+    <main className="fixed inset-0 z-[80] flex min-h-screen items-center justify-center overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg px-4 py-10 text-slate-950">
+      <section className="w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl shadow-slate-200/70 sm:p-8">
         <div className="mb-6 flex items-center gap-3">
-          <div className="grid size-12 place-items-center rounded-2xl bg-blue-500/15 text-blue-200 ring-1 ring-blue-300/20">
+          <div className="grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-900 ring-1 ring-slate-200">
             {loading ? <Loader2 className="size-5 animate-spin" /> : <Lock className="size-5" />}
           </div>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-blue-200">Loombus V2</p>
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-500">Loombus V2</p>
+            <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">{title}</h1>
           </div>
         </div>
-        <p className="text-sm leading-6 text-slate-300 sm:text-base">{message}</p>
-        {payload && <p className="mt-5 text-xs text-slate-300">v2_shell: {payload.flags.v2_shell ? "on" : "off"}</p>}
+        <p className="text-sm leading-6 text-slate-600 sm:text-base">{message}</p>
+        {payload && <p className="mt-5 text-xs font-semibold text-slate-500">v2_shell: {payload.flags.v2_shell ? "on" : "off"}</p>}
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/v2" className="rounded-2xl bg-white px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-slate-200">Back to V2 Home</Link>
-          <Link href="/admin" className="rounded-2xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-white/30 hover:text-white">Open current Admin</Link>
+          <Link href="/v2" className="rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800">Back to V2 Home</Link>
+          <Link href="/admin" className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50">Open current Admin</Link>
         </div>
       </section>
     </main>
