@@ -12,6 +12,7 @@ import {
   V2ShellTopNav,
   type ShellPayload,
 } from "../../v2-shell-components";
+import styles from "../room-detail-contrast.module.css";
 
 type RoomRow = Record<string, unknown>;
 type PostRow = Record<string, unknown>;
@@ -259,22 +260,22 @@ export default function V2RoomDetailPage() {
         ) : (
           <>
             <section className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-              <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-700 p-6 text-white sm:p-8">
+              <div className={`${styles.detailHero} bg-gradient-to-br from-slate-950 via-slate-900 to-amber-700 p-6 text-white sm:p-8`}>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-200">Active Room</p>
+                    <p className={`${styles.detailEyebrow} text-xs font-black uppercase tracking-[0.24em] text-amber-200`}>Active Room</p>
                     <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">{room.name}</h1>
-                    <p className="mt-4 max-w-3xl text-sm leading-6 text-amber-50/90 sm:text-base">{room.description}</p>
+                    <p className={`${styles.detailMuted} mt-4 max-w-3xl text-sm leading-6 text-amber-50/90 sm:text-base`}>{room.description}</p>
                   </div>
                   <div className="grid size-16 place-items-center rounded-2xl bg-white/10 ring-1 ring-white/20">
-                    {room.isPrivate ? <Lock className="size-8 text-amber-200" /> : <Building2 className="size-8 text-amber-200" />}
+                    {room.isPrivate ? <Lock className={`${styles.detailEyebrow} size-8 text-amber-200`} /> : <Building2 className={`${styles.detailEyebrow} size-8 text-amber-200`} />}
                   </div>
                 </div>
                 <div className="mt-6 flex flex-wrap gap-3 text-xs font-black uppercase tracking-[0.12em]">
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15">{room.type}</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15">{room.isPrivate ? "Private" : "Public"}</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15">{room.memberCount} members</span>
-                  <span className="rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15">{posts.length || room.activityCount} updates</span>
+                  <span className={`${styles.detailPill} rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15`}>{room.type}</span>
+                  <span className={`${styles.detailPill} rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15`}>{room.isPrivate ? "Private" : "Public"}</span>
+                  <span className={`${styles.detailPill} rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15`}>{room.memberCount} members</span>
+                  <span className={`${styles.detailPill} rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15`}>{posts.length || room.activityCount} updates</span>
                 </div>
               </div>
 
