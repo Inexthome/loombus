@@ -61,6 +61,10 @@ const securityHeaders = [
   },
 ];
 
+const v2LegacyCleanRedirects = [
+  { source: "/v2/discussions/:path*", destination: "/discussions/:path*", permanent: false },
+];
+
 const v2CleanRouteRewrites = [
   { source: "/discussions", destination: "/v2/discussions" },
   { source: "/discussions/:path*", destination: "/v2/discussions/:path*" },
@@ -94,6 +98,9 @@ const v2CleanRouteRewrites = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
+  async redirects() {
+    return v2LegacyCleanRedirects;
+  },
   async rewrites() {
     return {
       beforeFiles: v2CleanRouteRewrites,
