@@ -157,3 +157,77 @@ html[data-loombus-theme="dark"] [data-admin-v2-shell] {
     --loombus-gold-accent-glow: rgb(250 204 21 / 0.22);
   }
 }
+
+/* Final dark/system contrast guard for public landing CTAs and V2 top navigation.
+   This file is imported after the public landing CTA repair, so keep this as the last override layer. */
+html[data-loombus-theme="dark"] main[data-loombus-public-landing] a[data-loombus-public-cta="primary"],
+html[data-loombus-theme="dark"] main[data-loombus-public-landing] a[data-loombus-public-cta="primary"] *,
+html[data-loombus-theme="dark"] main[data-loombus-public-landing] a[data-loombus-public-cta="primary"] svg {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+html[data-loombus-theme="dark"] main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"],
+html[data-loombus-theme="dark"] main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"] *,
+html[data-loombus-theme="dark"] main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"] svg {
+  color: #020617 !important;
+  -webkit-text-fill-color: #020617 !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+html[data-loombus-theme="dark"] .loombus-v2-top-nav a,
+html[data-loombus-theme="dark"] .loombus-v2-top-nav a *,
+html[data-loombus-theme="dark"] .loombus-v2-top-nav svg {
+  color: #eff6ff !important;
+  -webkit-text-fill-color: #eff6ff !important;
+  stroke: currentColor !important;
+}
+
+html[data-loombus-theme="dark"] .loombus-v2-top-nav a[aria-current="page"],
+html[data-loombus-theme="dark"] .loombus-v2-top-nav a[data-active="true"],
+html[data-loombus-theme="dark"] .loombus-v2-top-nav a[aria-current="page"] *,
+html[data-loombus-theme="dark"] .loombus-v2-top-nav a[data-active="true"] * {
+  background-color: #ffffff !important;
+  color: #020617 !important;
+  -webkit-text-fill-color: #020617 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] main[data-loombus-public-landing] a[data-loombus-public-cta="primary"],
+  html[data-loombus-theme="system"] main[data-loombus-public-landing] a[data-loombus-public-cta="primary"] *,
+  html[data-loombus-theme="system"] main[data-loombus-public-landing] a[data-loombus-public-cta="primary"] svg {
+    color: #111827 !important;
+    -webkit-text-fill-color: #111827 !important;
+    stroke: currentColor !important;
+    opacity: 1 !important;
+  }
+
+  html[data-loombus-theme="system"] main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"],
+  html[data-loombus-theme="system"] main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"] *,
+  html[data-loombus-theme="system"] main[data-loombus-public-landing] a[data-loombus-public-cta="secondary"] svg {
+    color: #020617 !important;
+    -webkit-text-fill-color: #020617 !important;
+    stroke: currentColor !important;
+    opacity: 1 !important;
+  }
+
+  html[data-loombus-theme="system"] .loombus-v2-top-nav a,
+  html[data-loombus-theme="system"] .loombus-v2-top-nav a *,
+  html[data-loombus-theme="system"] .loombus-v2-top-nav svg {
+    color: #eff6ff !important;
+    -webkit-text-fill-color: #eff6ff !important;
+    stroke: currentColor !important;
+  }
+
+  html[data-loombus-theme="system"] .loombus-v2-top-nav a[aria-current="page"],
+  html[data-loombus-theme="system"] .loombus-v2-top-nav a[data-active="true"],
+  html[data-loombus-theme="system"] .loombus-v2-top-nav a[aria-current="page"] *,
+  html[data-loombus-theme="system"] .loombus-v2-top-nav a[data-active="true"] * {
+    background-color: #ffffff !important;
+    color: #020617 !important;
+    -webkit-text-fill-color: #020617 !important;
+  }
+}
