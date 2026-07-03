@@ -1,0 +1,21 @@
+.detailHero,
+.detailHero h1,
+.detailHero p,
+.detailHero span,
+.detailHero div {
+  color: #ffffff !important;
+}
+
+.detailHero .detailEyebrow,
+.detailHero svg {
+  color: #fde68a !important;
+  stroke: currentColor !important;
+}
+
+.detailHero .detailMuted {
+  color: rgba(255, 251, 235, 0.92) !important;
+}
+
+.detailHero .detailPill {
+  color: #fffbeb !important;
+}
