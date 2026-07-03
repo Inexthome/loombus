@@ -61,40 +61,43 @@ const securityHeaders = [
   },
 ];
 
-const v2DefaultRedirects = [
-  { source: "/discussions", destination: "/v2/discussions", permanent: false },
-  { source: "/discussions/:path*", destination: "/v2/discussions/:path*", permanent: false },
-  { source: "/create", destination: "/v2/create", permanent: false },
-  { source: "/messages", destination: "/v2/messages", permanent: false },
-  { source: "/people", destination: "/v2/people", permanent: false },
-  { source: "/saved", destination: "/v2/saved", permanent: false },
-  { source: "/following", destination: "/v2/following", permanent: false },
-  { source: "/profile", destination: "/v2/profile", permanent: false },
-  { source: "/my-activity", destination: "/v2/my-activity", permanent: false },
-  { source: "/notifications", destination: "/v2/notifications", permanent: false },
-  { source: "/settings", destination: "/v2/settings", permanent: false },
-  { source: "/support", destination: "/v2/support", permanent: false },
-  { source: "/premium", destination: "/v2/premium", permanent: false },
-  { source: "/topics", destination: "/v2/topics", permanent: false },
-  { source: "/privacy-security", destination: "/v2/privacy-security", permanent: false },
-  { source: "/home", destination: "/v2", permanent: false },
-  { source: "/rooms", destination: "/v2/rooms", permanent: false },
-  { source: "/labs", destination: "/v2/labs", permanent: false },
-  { source: "/stickies", destination: "/v2/stickies", permanent: false },
-  { source: "/reading-history", destination: "/v2/reading-history", permanent: false },
-  { source: "/my-discussions", destination: "/v2/my-discussions", permanent: false },
-  { source: "/my-replies", destination: "/v2/my-replies", permanent: false },
-  { source: "/search", destination: "/v2/search", permanent: false },
-  { source: "/onboarding", destination: "/v2/onboarding", permanent: false },
-  { source: "/admin", destination: "/v2/admin", permanent: false },
-  { source: "/rooms/:path*", destination: "/v2/rooms/:path*", permanent: false },
+const v2CleanRouteRewrites = [
+  { source: "/discussions", destination: "/v2/discussions" },
+  { source: "/discussions/:path*", destination: "/v2/discussions/:path*" },
+  { source: "/create", destination: "/v2/create" },
+  { source: "/messages", destination: "/v2/messages" },
+  { source: "/people", destination: "/v2/people" },
+  { source: "/saved", destination: "/v2/saved" },
+  { source: "/following", destination: "/v2/following" },
+  { source: "/profile", destination: "/v2/profile" },
+  { source: "/my-activity", destination: "/v2/my-activity" },
+  { source: "/notifications", destination: "/v2/notifications" },
+  { source: "/settings", destination: "/v2/settings" },
+  { source: "/support", destination: "/v2/support" },
+  { source: "/premium", destination: "/v2/premium" },
+  { source: "/topics", destination: "/v2/topics" },
+  { source: "/privacy-security", destination: "/v2/privacy-security" },
+  { source: "/home", destination: "/v2" },
+  { source: "/rooms", destination: "/v2/rooms" },
+  { source: "/rooms/:path*", destination: "/v2/rooms/:path*" },
+  { source: "/labs", destination: "/v2/labs" },
+  { source: "/labs/:path*", destination: "/v2/labs/:path*" },
+  { source: "/stickies", destination: "/v2/stickies" },
+  { source: "/reading-history", destination: "/v2/reading-history" },
+  { source: "/my-discussions", destination: "/v2/my-discussions" },
+  { source: "/my-replies", destination: "/v2/my-replies" },
+  { source: "/search", destination: "/v2/search" },
+  { source: "/onboarding", destination: "/v2/onboarding" },
+  { source: "/admin", destination: "/v2/admin" },
 ];
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
-  async redirects() {
-    return v2DefaultRedirects;
+  async rewrites() {
+    return {
+      beforeFiles: v2CleanRouteRewrites,
+    };
   },
   async headers() {
     return [

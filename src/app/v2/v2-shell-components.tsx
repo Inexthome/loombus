@@ -26,9 +26,17 @@ const DEFAULT_FLAGS: FeatureFlags = {
   v2_rooms: false,
 };
 
+function getCleanPath(pathname: string) {
+  if (pathname === "/v2") return "/home";
+  if (pathname.startsWith("/v2/")) return pathname.slice(3);
+  return pathname;
+}
+
 function isNavActive(pathname: string, href: string) {
-  if (href === "/v2") return pathname === "/v2" || pathname === "/v2/home";
-  return pathname === href || pathname.startsWith(`${href}/`);
+  const currentPath = getCleanPath(pathname);
+  const targetPath = getCleanPath(href);
+  if (targetPath === "/home") return currentPath === "/home" || currentPath === "/";
+  return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
 }
 
 function useMobileNavAutoHide() {
@@ -109,13 +117,13 @@ export function V2ShellGateCard(_props: { title: string; message: string; loadin
 }
 
 export function V2ShellTopNav() {
-  const pathname = usePathname() ?? "/v2";
+  const pathname = usePathname() ?? "/home";
   const navHidden = useMobileNavAutoHide();
 
   return (
     <header className={`sticky top-0 z-30 border-b border-slate-200 bg-[#061942] loombus-v2-top-nav shadow-sm transition-transform duration-200 ease-out md:translate-y-0 ${navHidden ? "-translate-y-full" : "translate-y-0"}`}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href="/v2" className="flex min-w-0 shrink-0 items-center gap-3 font-bold">
+        <Link href="/home" className="flex min-w-0 shrink-0 items-center gap-3 font-bold">
           <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 shrink-0 object-contain" />
           <span className="text-lg font-black tracking-tight text-slate-950 sm:text-xl">Loombus</span>
         </Link>
@@ -171,7 +179,7 @@ export function V2ShellTopNav() {
 }
 
 export function V2ShellMobileNav() {
-  const pathname = usePathname() ?? "/v2";
+  const pathname = usePathname() ?? "/home";
   const navHidden = useMobileNavAutoHide();
 
   return (
