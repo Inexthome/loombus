@@ -437,6 +437,7 @@ export default function ClientLayout({
   const lastFloatingTypingSentRef = useRef(0);
   const rightRailDragStartRef = useRef<{ pointerX: number; width: number } | null>(null);
   const pathname = usePathname();
+  const isV2Route = pathname?.startsWith("/v2") ?? false;
   const isDiscussionsIndex = pathname === "/discussions";
   const [mobileDiscussionFeed, setMobileDiscussionFeed] =
     useState<DiscussionFeedMode>("all");
@@ -453,7 +454,8 @@ export default function ClientLayout({
   const canShowDesktopRightRail =
     viewportWidth === 0 ? true : canFitDesktopRightRail(viewportWidth);
 
-  const hasDesktopRightRail = isRightRailRoute && canShowDesktopRightRail;
+  const hasDesktopRightRail =
+    !isV2Route && isRightRailRoute && canShowDesktopRightRail;
 
   useEffect(() => {
     if (!globalSearchOpen) {
@@ -2535,7 +2537,7 @@ export default function ClientLayout({
   return (
     <div className="min-h-screen bg-[var(--loombus-bg)] text-[var(--loombus-text)] antialiased">
       {/* Desktop Signal Rail: U2 app-shell foundation. Mobile keeps the existing floating top/bottom shell. */}
-      {user && (
+      {user && !isV2Route && (
         <aside className="loombus-desktop-rail fixed inset-y-0 left-0 z-40 hidden w-24 border-r border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 px-3 py-4 backdrop-blur-xl md:flex md:flex-col md:items-center">
           <Link
             href="/home"
@@ -2635,7 +2637,7 @@ export default function ClientLayout({
           </div>
         </aside>
       )}
-      {user && (
+      {user && !isV2Route && (
         <header className="hidden">
           <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-5">
             <div className="flex items-center justify-between gap-4">
@@ -2773,8 +2775,8 @@ export default function ClientLayout({
         </header>
       )}
 
-      <div className={user ? "pb-24 md:pb-0 md:pl-24" : ""}>
-        {user && (
+      <div className={user && !isV2Route ? "pb-24 md:pb-0 md:pl-24" : ""}>
+        {user && !isV2Route && (
         <div className={`loombus-mobile-topbar sticky top-0 z-40 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl transition-transform duration-300 md:hidden ${
           topNavHidden ? "-translate-y-full" : "translate-y-0"
         }`}>
@@ -2867,7 +2869,7 @@ export default function ClientLayout({
       {children}
       </div>
 
-      {user && globalSearchOpen && (
+      {user && !isV2Route && globalSearchOpen && (
         <div
           className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[70] px-3 sm:px-6 md:left-24 md:right-auto md:top-5 md:w-[26rem] lg:w-[28rem]"
         >
@@ -3207,7 +3209,7 @@ export default function ClientLayout({
         </div>
       )}
 
-      {user && hasDesktopRightRail && (
+      {user && !isV2Route && hasDesktopRightRail && (
         <button
           type="button"
           aria-label="Resize right panel"
@@ -3246,7 +3248,7 @@ export default function ClientLayout({
         </button>
       )}
 
-      {user && mobileMenuOpen && (
+      {user && !isV2Route && mobileMenuOpen && (
         <div
           className="loombus-mobile-menu-backdrop fixed inset-0 z-50 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md md:hidden"
           onClick={closeMobileMenu}
@@ -3429,7 +3431,7 @@ export default function ClientLayout({
         </div>
       )}
 
-      {user && !mobileMenuOpen && (
+      {user && !isV2Route && !mobileMenuOpen && (
         <>
           <div className="loombus-floating-utility-stack fixed right-4 z-50 flex flex-col gap-2">
             <Link
@@ -4117,7 +4119,7 @@ export default function ClientLayout({
         </>
       )}
 
-      {user && !mobileMenuOpen && !floatingMessagesOpen && (
+      {user && !isV2Route && !mobileMenuOpen && !floatingMessagesOpen && (
         <nav
           aria-label="Mobile app navigation"
           className={`loombus-mobile-bottom-nav fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 rounded-[1.75rem] border p-2 backdrop-blur-xl transition-transform duration-300 md:hidden ${
