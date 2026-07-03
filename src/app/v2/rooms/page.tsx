@@ -10,7 +10,6 @@ import {
   GraduationCap,
   Home,
   Lock,
-  MessageCircle,
   Search,
   ShieldCheck,
   Sparkles,
@@ -30,6 +29,7 @@ type RoomRow = Record<string, unknown>;
 type MemberRow = { room_id?: string | null; user_id?: string | null };
 type ActivityRow = Record<string, unknown>;
 type EventRow = Record<string, unknown>;
+type ProductPanel = "templates" | "plans" | null;
 
 type LiveRoom = {
   id: string;
@@ -327,6 +327,27 @@ function PlanCard({ plan }: { plan: (typeof ROOM_PLANS)[number] }) {
   );
 }
 
+function ProductOptionButton({ active, description, eyebrow, icon: Icon, title, onClick }: { active: boolean; description: string; eyebrow: string; icon: typeof Building2; title: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={active}
+      className={`group flex w-full items-start justify-between gap-4 rounded-[1.5rem] border p-5 text-left shadow-sm transition ${active ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-950 hover:border-amber-300 hover:bg-amber-50/40"}`}
+    >
+      <span className="flex min-w-0 gap-4">
+        <span className={`grid size-12 shrink-0 place-items-center rounded-2xl ${active ? "bg-white/10 text-amber-200" : "bg-slate-100 text-slate-700"}`}><Icon className="size-6" /></span>
+        <span className="min-w-0">
+          <span className={`block text-xs font-black uppercase tracking-[0.16em] ${active ? "text-amber-200" : "text-amber-700"}`}>{eyebrow}</span>
+          <span className={`mt-1 block text-lg font-black ${active ? "text-white" : "text-slate-950"}`}>{title}</span>
+          <span className={`mt-2 block text-sm leading-6 ${active ? "text-slate-200" : "text-slate-600"}`}>{description}</span>
+        </span>
+      </span>
+      <ChevronRight className={`mt-1 size-5 shrink-0 transition ${active ? "rotate-90 text-amber-200" : "text-slate-400 group-hover:text-amber-700"}`} />
+    </button>
+  );
+}
+
 function RoomCardView({ room, joined }: { room: LiveRoom; joined: boolean }) {
   const Icon = getRoomIcon(room);
   const roomHref = getRoomHref(room.id);
@@ -402,6 +423,7 @@ export default function V2RoomsPage() {
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("My Rooms");
+  const [openProductPanel, setOpenProductPanel] = useState<ProductPanel>("templates");
   const [rooms, setRooms] = useState<LiveRoom[]>([]);
   const [joinedRoomIdList, setJoinedRoomIdList] = useState<string[]>([]);
   const [events, setEvents] = useState<LiveEvent[]>([]);
@@ -512,27 +534,67 @@ export default function V2RoomsPage() {
           </div>
         </section>
 
-        <section className="mt-8">
+        <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Room templates</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Ready-made rooms for marketing</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">No manual installation. A visitor chooses the room type, chooses a plan, and Loombus provisions a private room with the right default structure.</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Room setup</p>
+              <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Choose what you want to configure</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Templates and subscriptions are organized into expandable menus so the Rooms page stays clean while still letting visitors create quickly.</p>
             </div>
+            <Link href="/rooms/new" className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
+              Start with defaults
+              <ChevronRight className="size-4" />
+            </Link>
           </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {ROOM_TEMPLATES.map((template) => <TemplateCard key={template.id} template={template} />)}
-          </div>
-        </section>
 
-        <section className="mt-8">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Room subscriptions</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Pick the room plan before creation</h2>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <ProductOptionButton
+              active={openProductPanel === "templates"}
+              description="Pick a ready-made room structure such as business, resident, support, or classroom."
+              eyebrow="Room templates"
+              icon={Building2}
+              title="Choose Room Template"
+              onClick={() => setOpenProductPanel(openProductPanel === "templates" ? null : "templates")}
+            />
+            <ProductOptionButton
+              active={openProductPanel === "plans"}
+              description="Review Free, Starter, Pro, and Organization room plans before creation."
+              eyebrow="Room subscriptions"
+              icon={Sparkles}
+              title="Choose Room Plan"
+              onClick={() => setOpenProductPanel(openProductPanel === "plans" ? null : "plans")}
+            />
           </div>
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {ROOM_PLANS.map((plan) => <PlanCard key={plan.id} plan={plan} />)}
-          </div>
+
+          {openProductPanel === "templates" && (
+            <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">Templates</p>
+                  <h3 className="mt-1 text-lg font-black text-slate-950">Ready-made rooms for marketing</h3>
+                </div>
+                <Link href="/rooms/new" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-800 transition hover:bg-slate-50">Create custom room</Link>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {ROOM_TEMPLATES.map((template) => <TemplateCard key={template.id} template={template} />)}
+              </div>
+            </div>
+          )}
+
+          {openProductPanel === "plans" && (
+            <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">Subscriptions</p>
+                  <h3 className="mt-1 text-lg font-black text-slate-950">Pick the room plan before creation</h3>
+                </div>
+                <Link href="/rooms/new" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-800 transition hover:bg-slate-50">Create first, choose plan</Link>
+              </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {ROOM_PLANS.map((plan) => <PlanCard key={plan.id} plan={plan} />)}
+              </div>
+            </div>
+          )}
         </section>
 
         <section id="my-rooms" className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
