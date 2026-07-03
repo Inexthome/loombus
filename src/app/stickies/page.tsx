@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { type DragEvent, type FormEvent, useEffect, useState } from "react";
+import { ArrowLeft, Bookmark, GripVertical, Sparkles, StickyNote } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { V2ShellMobileNav, V2ShellTopNav } from "../v2/v2-shell-components";
 
 type StickyItem = {
   id: string;
@@ -27,7 +29,6 @@ export default function StickiesPage() {
 
   async function getAccessToken() {
     const { data } = await supabase.auth.getSession();
-
     return data.session?.access_token ?? "";
   }
 
@@ -78,9 +79,7 @@ export default function StickiesPage() {
   async function addDiscussionSticky(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (working) {
-      return;
-    }
+    if (working) return;
 
     const cleanInput = discussionInput.trim();
 
@@ -169,10 +168,7 @@ export default function StickiesPage() {
   }
 
   function handleStickyDragStart(stickyId: string) {
-    if (working) {
-      return;
-    }
-
+    if (working) return;
     setDraggedStickyId(stickyId);
   }
 
@@ -205,21 +201,13 @@ export default function StickiesPage() {
   }
 
   async function moveSticky(stickyId: string, direction: "up" | "down") {
-    if (working) {
-      return;
-    }
+    if (working) return;
 
     const currentIndex = items.findIndex((item) => item.id === stickyId);
-
-    if (currentIndex === -1) {
-      return;
-    }
+    if (currentIndex === -1) return;
 
     const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-
-    if (nextIndex < 0 || nextIndex >= items.length) {
-      return;
-    }
+    if (nextIndex < 0 || nextIndex >= items.length) return;
 
     const nextItems = [...items];
     const [movedItem] = nextItems.splice(currentIndex, 1);
@@ -229,9 +217,7 @@ export default function StickiesPage() {
   }
 
   async function removeSticky(stickyId: string) {
-    if (working) {
-      return;
-    }
+    if (working) return;
 
     setWorking(true);
     setMessage("");
@@ -269,204 +255,194 @@ export default function StickiesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--loombus-bg)] px-4 pb-24 pt-4 text-[var(--loombus-text)] sm:px-6 sm:py-10 lg:py-12">
-      <div className="mx-auto max-w-[46rem]">
-        <Link
-          href="/discussions"
-          className="mb-3 inline-block text-sm text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)] sm:mb-10"
-        >
-          ← Back to discussions
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
+      <V2ShellTopNav />
+      <section className="mx-auto max-w-6xl px-4 pb-24 pt-7 sm:px-6 lg:px-8">
+        <Link href="/discussions" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-amber-700">
+          <ArrowLeft className="size-4" />
+          Back to discussions
         </Link>
 
-        <section className="mb-6 rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10 sm:p-7">
-          <p className="mb-2 text-xs uppercase tracking-[0.25em] text-[var(--loombus-text-subtle)]">
-            Premium Workspace
-          </p>
-
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">
-            Stickies
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[var(--loombus-text-muted)] sm:text-base">
-            Stickies are your personal board for discussion cards you want visible right now. Saved is your library. Stickies are your working surface.
-          </p>
+        <section className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="grid gap-6 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-800 p-6 text-white sm:p-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-200">Premium Workspace</p>
+              <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Stickies</h1>
+              <p className="mt-4 max-w-3xl text-sm leading-6 text-amber-50/90 sm:text-base">
+                Stickies are your personal board for discussion cards you want visible right now. Saved is your library. Stickies are your working surface.
+              </p>
+            </div>
+            <div className="rounded-[1.5rem] bg-white/10 p-5 ring-1 ring-white/15">
+              <div className="flex items-center gap-3">
+                <StickyNote className="size-6 text-amber-200" />
+                <h2 className="text-lg font-black text-white">Working board</h2>
+              </div>
+              <p className="mt-3 text-sm leading-6 text-amber-50/90">
+                Pin active discussions, reorder them, and keep your current focus separate from your long-term saved library.
+              </p>
+            </div>
+          </div>
         </section>
 
         {loading && (
-          <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+          <p className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 text-sm font-semibold text-slate-600 shadow-sm">
             Loading Stickies...
           </p>
         )}
 
         {!loading && !isLoggedIn && (
-          <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
-            <h2 className="text-xl font-semibold">
-              Log in to use Stickies.
-            </h2>
-
-            <p className="mt-2 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-              Stickies are tied to your account.
-            </p>
-
-            <Link
-              href="/login"
-              className="mt-5 inline-flex rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90"
-            >
+          <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-black text-slate-950">Log in to use Stickies.</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Stickies are tied to your account.</p>
+            <Link href="/login" className="mt-5 inline-flex rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800">
               Log In
             </Link>
           </section>
         )}
 
         {!loading && isLoggedIn && upgradeRequired && (
-          <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
-            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
-              Premium Required
-            </p>
-
-            <h2 className="text-xl font-semibold">
-              Stickies are a Premium workspace feature.
-            </h2>
-
-            <p className="mt-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+          <section className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-amber-700">Premium Required</p>
+            <h2 className="mt-2 text-xl font-black text-slate-950">Stickies are a Premium workspace feature.</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-700">
               Free users can keep using Saved. Premium users can pin active discussion cards to a focused workspace board.
             </p>
-
-            <Link
-              href="/premium"
-              className="mt-5 inline-flex rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90"
-            >
+            <Link href="/premium" className="mt-5 inline-flex rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800">
               View Premium
             </Link>
           </section>
         )}
 
         {!loading && isLoggedIn && !upgradeRequired && (
-          <>
-            <form
-              onSubmit={addDiscussionSticky}
-              className="mb-5 rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-2xl shadow-black/10 sm:p-5"
-            >
-              <label className="mb-3 block text-sm font-medium text-[var(--loombus-text)]">
-                Add discussion card
-              </label>
+          <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+            <div>
+              <form onSubmit={addDiscussionSticky} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <label className="block text-sm font-black uppercase tracking-[0.16em] text-slate-500">Add discussion card</label>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <input
+                    type="text"
+                    value={discussionInput}
+                    onChange={(event) => setDiscussionInput(event.target.value)}
+                    placeholder="Paste a discussion link or discussion ID"
+                    className="min-h-12 min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-amber-300 focus:ring-4 focus:ring-amber-100"
+                  />
+                  <button
+                    type="submit"
+                    disabled={working || !discussionInput.trim()}
+                    className="rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {working ? "Adding..." : "Add to Stickies"}
+                  </button>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-slate-500">
+                  Stickies v1 supports discussion cards only. Notes, topics, people, and AI cards are reserved for a later version.
+                </p>
+              </form>
 
-              <div className="flex flex-col gap-3">
-                <input
-                  type="text"
-                  value={discussionInput}
-                  onChange={(event) => setDiscussionInput(event.target.value)}
-                  placeholder="Paste a discussion link or discussion ID"
-                  className="min-h-12 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-base text-[var(--loombus-text)] outline-none transition placeholder:text-[var(--loombus-text-subtle)] focus:border-[var(--loombus-text-subtle)]"
-                />
+              {message && <p className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-600 shadow-sm">{message}</p>}
 
-                <button
-                  type="submit"
-                  disabled={working || !discussionInput.trim()}
-                  className="w-full rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-medium text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-fit"
-                >
-                  {working ? "Adding..." : "Add to Stickies"}
-                </button>
-              </div>
+              {items.length === 0 ? (
+                <section className="mt-5 rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+                  <StickyNote className="mx-auto size-9 text-amber-700" />
+                  <h2 className="mt-3 text-xl font-black text-slate-950">Your board is empty.</h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">Add a discussion card to start building your visible workspace.</p>
+                </section>
+              ) : (
+                <section className="mt-5 grid gap-4">
+                  {items.map((item, index) => (
+                    <article
+                      key={item.id}
+                      onDragOver={handleStickyDragOver}
+                      onDrop={() => handleStickyDrop(item.id)}
+                      className={`rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition ${
+                        draggedStickyId === item.id ? "opacity-60 ring-2 ring-amber-300" : ""
+                      }`}
+                    >
+                      <div className="mb-4 flex items-start justify-between gap-3">
+                        <p className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                          Discussion
+                        </p>
 
-              <p className="mt-3 text-xs leading-relaxed text-[var(--loombus-text-subtle)]">
-                Stickies v1 supports discussion cards only. Notes, topics, people, and AI cards are reserved for a later version.
-              </p>
-            </form>
+                        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                          <span
+                            draggable={!working}
+                            onDragStart={() => handleStickyDragStart(item.id)}
+                            onDragEnd={() => setDraggedStickyId(null)}
+                            className="inline-flex cursor-grab items-center gap-1 rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-slate-500 transition hover:border-amber-300 hover:text-amber-800 active:cursor-grabbing"
+                            title="Drag to reorder"
+                          >
+                            <GripVertical className="size-3" />
+                            Drag
+                          </span>
 
-            {message && (
-              <p className="mb-4 text-sm text-[var(--loombus-text-muted)]">
-                {message}
-              </p>
-            )}
+                          <button
+                            type="button"
+                            onClick={() => moveSticky(item.id, "up")}
+                            disabled={working || index === 0}
+                            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-slate-500 transition hover:border-amber-300 hover:text-amber-800 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            Up
+                          </button>
 
-            {items.length === 0 ? (
-              <section className="rounded-3xl border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 text-center">
-                <h2 className="text-xl font-semibold">
-                  Your board is empty.
-                </h2>
+                          <button
+                            type="button"
+                            onClick={() => moveSticky(item.id, "down")}
+                            disabled={working || index === items.length - 1}
+                            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-slate-500 transition hover:border-amber-300 hover:text-amber-800 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            Down
+                          </button>
 
-                <p className="mt-3 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                  Add a discussion card to start building your visible workspace.
+                          <button
+                            type="button"
+                            onClick={() => removeSticky(item.id)}
+                            disabled={working}
+                            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-bold text-slate-500 transition hover:border-red-200 hover:text-red-700 disabled:opacity-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+
+                      <Link href={item.href} className="block rounded-2xl transition hover:opacity-90">
+                        <h2 className="text-xl font-black leading-snug tracking-tight text-slate-950">{item.title}</h2>
+                        {item.subtitle && <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600">{item.subtitle}</p>}
+                        <p className="mt-4 text-xs font-black uppercase tracking-[0.16em] text-amber-700">Open discussion →</p>
+                      </Link>
+                    </article>
+                  ))}
+                </section>
+              )}
+            </div>
+
+            <aside className="space-y-4">
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Stickies vs Saved</h2>
+                  <Bookmark className="size-4 text-amber-700" />
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  Saved is your long-term library. Stickies is the focused board for what you want visible and active right now.
                 </p>
               </section>
-            ) : (
-              <section className="grid gap-4">
-                {items.map((item, index) => (
-                  <article
-                    key={item.id}
-                    onDragOver={handleStickyDragOver}
-                    onDrop={() => handleStickyDrop(item.id)}
-                    className={`rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-2xl shadow-black/10 transition ${
-                      draggedStickyId === item.id ? "opacity-60 ring-1 ring-[var(--loombus-text-subtle)]" : ""
-                    }`}
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <p className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[var(--loombus-text-muted)]">
-                        Discussion
-                      </p>
 
-                      <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                        <span
-                          draggable={!working}
-                          onDragStart={() => handleStickyDragStart(item.id)}
-                          onDragEnd={() => setDraggedStickyId(null)}
-                          className="cursor-grab rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] active:cursor-grabbing"
-                          title="Drag to reorder"
-                        >
-                          Drag
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => moveSticky(item.id, "up")}
-                          disabled={working || index === 0}
-                          className="rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          Up
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => moveSticky(item.id, "down")}
-                          disabled={working || index === items.length - 1}
-                          className="rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          Down
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => removeSticky(item.id)}
-                          disabled={working}
-                          className="rounded-full border border-[var(--loombus-border)] px-3 py-1 text-xs text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)] disabled:opacity-50"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-
-                    <Link href={item.href} className="block rounded-2xl transition hover:opacity-90">
-                      <h2 className="text-xl font-semibold leading-snug tracking-tight">
-                        {item.title}
-                      </h2>
-
-                      {item.subtitle && (
-                        <p className="mt-3 line-clamp-3 whitespace-pre-line text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                          {item.subtitle}
-                        </p>
-                      )}
-
-                      <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">
-                        Open discussion →
-                      </p>
-                    </Link>
-                  </article>
-                ))}
+              <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Current support</h2>
+                  <Sparkles className="size-4 text-amber-700" />
+                </div>
+                <ul className="mt-3 space-y-2 text-sm font-semibold text-slate-600">
+                  <li>Discussion cards</li>
+                  <li>Drag reorder</li>
+                  <li>Up / Down controls</li>
+                  <li>Remove from board</li>
+                </ul>
               </section>
-            )}
-          </>
+            </aside>
+          </section>
         )}
-      </div>
+      </section>
+      <V2ShellMobileNav />
     </main>
   );
 }
