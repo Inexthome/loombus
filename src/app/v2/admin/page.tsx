@@ -684,7 +684,7 @@ export default function V2AdminPage() {
   if (!isAdmin) return <GateCard title="Admin access denied" message="This area is available only to Loombus admin accounts." payload={payload} />;
 
   return (
-    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
       <V2TopNav />
       <div className="mx-auto flex max-w-7xl bg-white/40">
         <AdminSidebar />

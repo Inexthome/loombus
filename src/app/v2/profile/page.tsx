@@ -248,7 +248,7 @@ export default function V2ProfilePage() {
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard title="V2 shell is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on the current experience." payload={payload} />;
 
   return (
-    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
       <V2ShellTopNav />
       <section className="mx-auto max-w-7xl px-3 pb-24 pt-4 sm:px-6 sm:pb-28 sm:pt-6 lg:px-8">
         <header className="mb-4 sm:mb-5"><h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Profile</h1><p className="mt-1.5 max-w-2xl text-sm leading-5 text-slate-600 sm:mt-2 sm:leading-6">Your live public profile, contribution overview, and visible Loombus activity.</p></header>

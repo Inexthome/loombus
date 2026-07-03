@@ -73,7 +73,7 @@ function Divider({ label }: { label: string }) {
 
 function V2EntryShell({ children, footer }: { children: React.ReactNode; footer: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f7fbff] px-4 py-10 text-slate-950 sm:px-6">
+    <main className="relative min-h-screen overflow-hidden bg-[#f7f7f8] px-4 py-10 text-slate-950 sm:px-6">
       <div className="pointer-events-none absolute -left-24 top-1/3 size-72 rounded-full border-[42px] border-blue-100/70" />
       <div className="pointer-events-none absolute -right-24 bottom-10 size-72 rounded-full border-[42px] border-blue-100/70" />
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] max-w-xl flex-col justify-center">

@@ -309,7 +309,7 @@ function V2Shell({ payload, homeData, homeLoading, homeMessage, onSaveFeatured }
   }
 
   return (
-    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
       <V2TopNav unreadNotifications={homeData.unreadNotifications} />
       <section className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6 lg:px-8">
         <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

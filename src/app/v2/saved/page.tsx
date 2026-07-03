@@ -278,7 +278,7 @@ export default function V2SavedPage() {
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <GateCard title="V2 Saved is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
 
   return (
-    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950" onClick={() => openActionsBookmarkId && setOpenActionsBookmarkId(null)}>
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950" onClick={() => openActionsBookmarkId && setOpenActionsBookmarkId(null)}>
       <V2TopNav />
       <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8" onClick={(event) => event.stopPropagation()}>
         <header className="mb-6"><h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Saved</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Your personal library for discussions, files, notes, and folders.</p></header>

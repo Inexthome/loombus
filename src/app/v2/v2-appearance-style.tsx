@@ -2,12 +2,13 @@ export function V2AppearanceStyle() {
   return (
     <style>{`
       html[data-loombus-theme] .loombus-v2-page-bg {
-        --v2-light-page: #f4f4f5;
+        --v2-light-page: #f7f7f8;
         --v2-light-surface: #ffffff;
-        --v2-light-surface-muted: #f8fafc;
+        --v2-light-surface-muted: #f4f4f5;
         --v2-light-border: #d4d4d8;
         --v2-light-text: #18181b;
         --v2-light-muted: #52525b;
+        --v2-light-action: #18181b;
         --v2-dark-page: #050505;
         --v2-dark-surface: #0f0f10;
         --v2-dark-surface-muted: #18181b;
@@ -15,9 +16,8 @@ export function V2AppearanceStyle() {
         --v2-dark-border: #3f3f46;
         --v2-dark-border-strong: #52525b;
         --v2-dark-text: #f4f4f5;
-        --v2-dark-muted: #cbd5e1;
-        --v2-gold: #fbbf24;
-        --v2-gold-soft: #fef3c7;
+        --v2-dark-muted: #d4d4d8;
+        --v2-dark-action: #f4f4f5;
       }
 
       html[data-loombus-theme="light"] .loombus-v2-page-bg {
@@ -25,6 +25,59 @@ export function V2AppearanceStyle() {
           radial-gradient(circle at 50% -16%, rgba(24, 24, 27, 0.035), transparent 34rem),
           var(--v2-light-page) !important;
         color: var(--v2-light-text) !important;
+      }
+
+      html[data-loombus-theme="light"] .loombus-v2-page-bg :is([class*="text-blue-"], [class*="text-sky-"], [class*="text-indigo-"]) {
+        color: var(--v2-light-muted) !important;
+        stroke: currentColor !important;
+      }
+
+      html[data-loombus-theme="light"] .loombus-v2-page-bg :is([class*="bg-blue-"], [class*="bg-sky-"], [class*="bg-indigo-"]) {
+        background-color: var(--v2-light-surface-muted) !important;
+        color: var(--v2-light-text) !important;
+      }
+
+      html[data-loombus-theme="light"] .loombus-v2-page-bg :is([class*="border-blue-"], [class*="border-sky-"], [class*="border-indigo-"]) {
+        border-color: var(--v2-light-border) !important;
+      }
+
+      html[data-loombus-theme="light"] .loombus-v2-page-bg :is([class*="ring-blue-"], [class*="ring-sky-"], [class*="ring-indigo-"]) {
+        --tw-ring-color: rgba(24, 24, 27, 0.14) !important;
+      }
+
+      html[data-loombus-theme="light"] .loombus-v2-page-bg :is(a, button):is([class*="bg-blue-500"], [class*="bg-blue-600"], [class*="bg-blue-700"], [class*="bg-sky-500"], [class*="bg-sky-600"], [class*="bg-indigo-500"], [class*="bg-indigo-600"]) {
+        background-color: var(--v2-light-action) !important;
+        border-color: var(--v2-light-action) !important;
+        color: #ffffff !important;
+      }
+
+      @media (prefers-color-scheme: light) {
+        html[data-loombus-theme="system"] .loombus-v2-page-bg {
+          background:
+            radial-gradient(circle at 50% -16%, rgba(24, 24, 27, 0.035), transparent 34rem),
+            var(--v2-light-page) !important;
+          color: var(--v2-light-text) !important;
+        }
+
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is([class*="text-blue-"], [class*="text-sky-"], [class*="text-indigo-"]) {
+          color: var(--v2-light-muted) !important;
+          stroke: currentColor !important;
+        }
+
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is([class*="bg-blue-"], [class*="bg-sky-"], [class*="bg-indigo-"]) {
+          background-color: var(--v2-light-surface-muted) !important;
+          color: var(--v2-light-text) !important;
+        }
+
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is([class*="border-blue-"], [class*="border-sky-"], [class*="border-indigo-"]) {
+          border-color: var(--v2-light-border) !important;
+        }
+
+        html[data-loombus-theme="system"] .loombus-v2-page-bg :is(a, button):is([class*="bg-blue-500"], [class*="bg-blue-600"], [class*="bg-blue-700"], [class*="bg-sky-500"], [class*="bg-sky-600"], [class*="bg-indigo-500"], [class*="bg-indigo-600"]) {
+          background-color: var(--v2-light-action) !important;
+          border-color: var(--v2-light-action) !important;
+          color: #ffffff !important;
+        }
       }
 
       html[data-loombus-theme="light"] .loombus-v2-page-bg :is([class*="bg-white"], [class*="bg-slate-50"], [class*="bg-zinc-50"], [class*="bg-gray-50"]) {
