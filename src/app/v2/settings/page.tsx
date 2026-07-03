@@ -356,12 +356,12 @@ function ThemeCard({ option, selected, onSelect }: { option: (typeof V2_APPEARAN
   const Icon = option.key === "light" ? Sun : option.key === "dark" ? Moon : Monitor;
 
   return (
-    <button type="button" onClick={onSelect} className={`relative min-h-[128px] rounded-2xl border p-5 text-center transition ${selected ? "border-blue-600 bg-blue-50/40 shadow-sm ring-1 ring-blue-200" : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40"}`}>
+    <button type="button" onClick={onSelect} className={`relative min-h-[128px] rounded-2xl border p-5 text-center transition ${selected ? "border-zinc-900 bg-zinc-50 shadow-sm ring-1 ring-zinc-200" : "border-slate-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"}`}>
       <Icon className="mx-auto size-8 text-slate-800" />
       <h3 className="mt-3 text-sm font-black text-slate-950">{option.label}</h3>
       <p className="mx-auto mt-2 max-w-[150px] text-xs font-semibold leading-5 text-slate-500">{option.description}</p>
       <span className="absolute bottom-4 left-4">
-        {selected ? <span className="grid size-4 place-items-center rounded-full bg-blue-600"><span className="size-1.5 rounded-full bg-white" /></span> : <Circle className="size-4 text-slate-300" />}
+        {selected ? <span className="grid size-4 place-items-center rounded-full bg-zinc-900"><span className="size-1.5 rounded-full bg-white" /></span> : <Circle className="size-4 text-slate-300" />}
       </span>
     </button>
   );
@@ -585,7 +585,7 @@ export default function V2SettingsPage() {
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard title="V2 shell is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on V1." payload={payload} />;
 
   return (
-    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
+    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
       <V2ShellTopNav />
       <section className="mx-auto max-w-7xl px-4 pb-28 pt-6 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_320px]">

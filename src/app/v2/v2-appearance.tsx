@@ -17,8 +17,8 @@ export const V2_APPEARANCE_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  { key: "light", label: "Light", description: "Light background, dark text." },
-  { key: "dark", label: "Dark", description: "Dark background, light text." },
+  { key: "light", label: "Light", description: "Neutral light background, dark text." },
+  { key: "dark", label: "Dark", description: "True dark background, light text." },
   { key: "system", label: "System", description: "Follow your device or browser setting." },
 ];
 
