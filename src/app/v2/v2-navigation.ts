@@ -29,6 +29,7 @@ export type V2NavItem = {
   icon: LucideIcon;
   primary?: boolean;
   badge?: string;
+  adminOnly?: boolean;
 };
 
 export type V2MenuGroup = {
@@ -96,7 +97,7 @@ export const V2_MENU_GROUPS: V2MenuGroup[] = [
       { label: "Premium", href: "/premium", icon: WalletCards },
       { label: "Support", href: "/support", icon: Wrench },
       { label: "Privacy/Security", href: "/privacy-security", icon: LockKeyhole },
-      { label: "Admin", href: "/admin", icon: Shield },
+      { label: "Admin", href: "/admin", icon: Shield, adminOnly: true },
     ],
   },
 ];
