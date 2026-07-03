@@ -386,7 +386,7 @@ export default function DiscussionsPage() {
         if (userIds.length > 0) {
           const { data: profileData } = await supabase
             .from("profiles")
-            .select("*")
+            .select("id, full_name, username, avatar_url")
             .in("id", userIds);
 
           const profileMap: Record<string, Profile> = {};

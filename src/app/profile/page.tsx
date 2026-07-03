@@ -147,7 +147,9 @@ export default function ProfilePage() {
 
       const { data } = await supabase
         .from("profiles")
-        .select("*")
+        .select(
+          "full_name, username, bio, perspective_marker, avatar_url, creator_website_url, creator_support_url, creator_support_label, is_admin, identity_verification_status, identity_verification_provider, identity_verified_at, legal_name_verified"
+        )
         .eq("id", userData.user.id)
         .single();
 

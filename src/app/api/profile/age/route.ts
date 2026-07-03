@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     return jsonError("Loombus is not available to children under 13.", 403);
   }
 
-  const ageFields = {
+  const sensitiveFields = {
     date_of_birth: dateOfBirth,
     age_band: safetyFlags.ageBand,
     teen_safety_mode: safetyFlags.teenSafetyMode,
@@ -90,25 +90,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (existingProfile) {
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update(ageFields)
-      .eq("id", user.id);
-
-    if (updateError) {
-      return jsonError(updateError.message || "Unable to save age verification.", 400);
-    }
-  } else {
+  if (!existingProfile) {
     const { error: insertError } = await supabase.from("profiles").insert({
       id: user.id,
       username: getTemporaryUsername(user.id),
-      ...ageFields,
     });
 
     if (insertError) {
       return jsonError(insertError.message || "Unable to save age verification.", 400);
     }
+  }
+
+  const { error: sensitiveUpsertError } = await supabase
+    .from("profile_sensitive")
+    .upsert({ id: user.id, ...sensitiveFields });
+
+  if (sensitiveUpsertError) {
+    return jsonError(sensitiveUpsertError.message || "Unable to save age verification.", 400);
   }
 
   return NextResponse.json({

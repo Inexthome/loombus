@@ -55,7 +55,7 @@ async function getPostAuthRedirect(next: string, sessionOverride: Session | null
   }
 
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("profile_sensitive")
     .select("age_band")
     .eq("id", session.user.id)
     .maybeSingle();
