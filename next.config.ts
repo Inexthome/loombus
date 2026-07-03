@@ -77,6 +77,17 @@ const v2DefaultRedirects = [
   { source: "/premium", destination: "/v2/premium", permanent: false },
   { source: "/topics", destination: "/v2/topics", permanent: false },
   { source: "/privacy-security", destination: "/v2/privacy-security", permanent: false },
+  { source: "/home", destination: "/v2", permanent: false },
+  { source: "/rooms", destination: "/v2/rooms", permanent: false },
+  { source: "/labs", destination: "/v2/labs", permanent: false },
+  { source: "/stickies", destination: "/v2/stickies", permanent: false },
+  { source: "/reading-history", destination: "/v2/reading-history", permanent: false },
+  { source: "/my-discussions", destination: "/v2/my-discussions", permanent: false },
+  { source: "/my-replies", destination: "/v2/my-replies", permanent: false },
+  { source: "/search", destination: "/v2/search", permanent: false },
+  { source: "/onboarding", destination: "/v2/onboarding", permanent: false },
+  { source: "/admin", destination: "/v2/admin", permanent: false },
+  { source: "/rooms/:path*", destination: "/v2/rooms/:path*", permanent: false },
 ];
 
 const nextConfig: NextConfig = {
