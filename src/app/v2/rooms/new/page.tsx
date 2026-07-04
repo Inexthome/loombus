@@ -21,10 +21,10 @@ const ROOM_TEMPLATES = [
 ];
 
 const ROOM_PLANS = [
-  { id: "free", name: "Free Room", price: "$0", status: "active", memberLimit: "10 members" },
-  { id: "starter", name: "Room Starter", price: "$19/mo", status: "pending_checkout", memberLimit: "50 members" },
-  { id: "pro", name: "Room Pro", price: "$49/mo", status: "pending_checkout", memberLimit: "250 members" },
-  { id: "business", name: "Organization", price: "Custom", status: "pending_sales", memberLimit: "Multiple rooms" },
+  { id: "free", name: "Free Room", price: "$0", status: "active", memberLimit: "10 members", selfServe: true },
+  { id: "starter", name: "Room Starter", price: "$19/mo", status: "pending_checkout", memberLimit: "50 members", selfServe: true },
+  { id: "pro", name: "Room Pro", price: "$49/mo", status: "pending_checkout", memberLimit: "250 members", selfServe: true },
+  { id: "business", name: "Organization", price: "Custom", status: "pending_sales", memberLimit: "Multiple rooms", selfServe: false },
 ];
 
 function getDefaultRoomName(templateTitle: string) {
@@ -97,15 +97,19 @@ export default function V2CreateRoomPage() {
     const initialTemplateId = parseInitialValue("template", ROOM_TEMPLATES[0].id);
     const initialPlanId = parseInitialValue("plan", ROOM_PLANS[0].id);
     const initialTemplate = ROOM_TEMPLATES.find((template) => template.id === initialTemplateId) ?? ROOM_TEMPLATES[0];
+    const initialPlan = ROOM_PLANS.find((plan) => plan.id === initialPlanId) ?? ROOM_PLANS[0];
     setSelectedTemplateId(initialTemplate.id);
-    setSelectedPlanId(initialPlanId);
+    setSelectedPlanId(initialPlan.selfServe ? initialPlan.id : ROOM_PLANS[0].id);
     setRoomName(getDefaultRoomName(initialTemplate.title));
     setRoomDescription(initialTemplate.description);
+    if (!initialPlan.selfServe) {
+      setMessage("Organization rooms require support-assisted setup. Continue with a self-serve plan here or contact support for organization setup.");
+    }
   }, []);
 
   async function loadShell() {
     setLoading(true);
-    setMessage("");
+    setMessage((current) => current);
     try {
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
@@ -145,6 +149,10 @@ export default function V2CreateRoomPage() {
   async function handleCreateRoom(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userId || !roomName.trim()) return;
+    if (!selectedPlan.selfServe) {
+      router.push("/support?topic=organization-room");
+      return;
+    }
     setSaving(true);
     setMessage("");
 
@@ -193,10 +201,15 @@ export default function V2CreateRoomPage() {
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
       <V2ShellTopNav />
       <section className="mx-auto max-w-6xl px-4 pb-24 pt-7 sm:px-6 lg:px-8">
-        <Link href="/rooms" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-amber-700">
-          <ArrowLeft className="size-4" />
-          Back to Rooms
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/create-room" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-amber-700">
+            <ArrowLeft className="size-4" />
+            Back to Create Room
+          </Link>
+          <Link href="/rooms" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-amber-700">
+            Back to Rooms
+          </Link>
+        </div>
 
         {message && <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">{message}</p>}
 
@@ -232,6 +245,7 @@ export default function V2CreateRoomPage() {
 
               <section>
                 <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">2. Pick room plan</h2>
+                <p className="mt-2 text-xs font-semibold text-slate-500">Paid plan checkout is not enabled yet. Starter and Pro rooms are created with a pending checkout status for now.</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {ROOM_PLANS.map((plan) => {
                     const selected = selectedPlanId === plan.id;
@@ -241,6 +255,7 @@ export default function V2CreateRoomPage() {
                           <span>
                             <span className="block text-sm font-black text-slate-950">{plan.name}</span>
                             <span className="mt-1 block text-xs font-bold text-slate-500">{plan.memberLimit}</span>
+                            {!plan.selfServe && <span className="mt-2 block text-xs font-black text-amber-800">Support-assisted setup</span>}
                           </span>
                           <span className="text-sm font-black text-slate-950">{plan.price}</span>
                         </span>
@@ -292,7 +307,7 @@ export default function V2CreateRoomPage() {
                 <p className="mt-1 text-sm font-bold text-slate-500">{selectedPlan.memberLimit}</p>
                 <button type="submit" disabled={saving || !roomName.trim()} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
                   <Send className="size-4" />
-                  {saving ? "Creating room..." : "Create private room"}
+                  {saving ? "Creating room..." : selectedPlan.selfServe ? "Create private room" : "Contact support"}
                 </button>
               </section>
             </aside>
