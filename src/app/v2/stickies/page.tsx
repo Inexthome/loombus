@@ -1,5 +1,3 @@
-import { redirect } from "next/navigation";
+"use client";
 
-export default function V2StickiesPage() {
-  redirect("/stickies");
-}
+export { default } from "../../stickies/page";
