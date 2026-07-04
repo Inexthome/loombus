@@ -1,172 +1,174 @@
 /* Create Room page appearance repair.
-   Keeps the marketing page readable across Light, Dark, and System. */
+   Plain CSS file: use normal scoped selectors, not CSS-module :global(). */
 
 .createRoomAppearance {
   color: #020617;
 }
 
-.createRoomAppearance :global(.bg-white),
-.createRoomAppearance :global(article.bg-white),
-.createRoomAppearance :global(section.bg-white) {
+.createRoomAppearance .bg-white,
+.createRoomAppearance article.bg-white,
+.createRoomAppearance section.bg-white {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
 }
 
-.createRoomAppearance :global(.bg-slate-50) {
+.createRoomAppearance .bg-slate-50 {
   background-color: #f8fafc !important;
 }
 
-.createRoomAppearance :global(.text-slate-950) {
+.createRoomAppearance .text-slate-950 {
   color: #020617 !important;
   -webkit-text-fill-color: #020617 !important;
 }
 
-.createRoomAppearance :global(.text-slate-800) {
+.createRoomAppearance .text-slate-800 {
   color: #1e293b !important;
   -webkit-text-fill-color: #1e293b !important;
 }
 
-.createRoomAppearance :global(.text-slate-700) {
+.createRoomAppearance .text-slate-700 {
   color: #334155 !important;
   -webkit-text-fill-color: #334155 !important;
 }
 
-.createRoomAppearance :global(.text-slate-600) {
+.createRoomAppearance .text-slate-600 {
   color: #475569 !important;
   -webkit-text-fill-color: #475569 !important;
 }
 
-.createRoomAppearance :global(.text-slate-500) {
+.createRoomAppearance .text-slate-500 {
   color: #64748b !important;
   -webkit-text-fill-color: #64748b !important;
 }
 
-.createRoomAppearance :global(.text-amber-700) {
+.createRoomAppearance .text-amber-700 {
   color: #b45309 !important;
   -webkit-text-fill-color: #b45309 !important;
 }
 
-.createRoomAppearance :global(.text-emerald-600) {
+.createRoomAppearance .text-emerald-600 {
   color: #059669 !important;
   -webkit-text-fill-color: #059669 !important;
 }
 
-.createRoomAppearance :global(.bg-slate-950),
-.createRoomAppearance :global(.bg-slate-950) :global(*) {
+.createRoomAppearance .bg-slate-950,
+.createRoomAppearance .bg-slate-950 * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
 
-.createRoomAppearance :global(.bg-slate-950) :global(svg),
-.createRoomAppearance :global(a.bg-slate-950) :global(svg) {
+.createRoomAppearance .bg-slate-950 svg,
+.createRoomAppearance a.bg-slate-950 svg {
   color: currentColor !important;
   stroke: currentColor !important;
 }
 
-.createRoomAppearance :global(a.bg-white),
-.createRoomAppearance :global(a.bg-white) :global(*) {
+.createRoomAppearance a.bg-white,
+.createRoomAppearance a.bg-white * {
   color: #020617 !important;
   -webkit-text-fill-color: #020617 !important;
 }
 
 /* Hero and privacy panel must win over the generic card/text rules above. */
-.createRoomAppearance :global(.bg-gradient-to-br),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(*) {
+.createRoomAppearance .bg-gradient-to-br,
+.createRoomAppearance .bg-gradient-to-br * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
 
-.createRoomAppearance :global(.bg-gradient-to-br) :global(h1),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(h2),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(h3),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(p),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(span:not(.bg-white):not(.bg-white\/10)) {
+.createRoomAppearance .bg-gradient-to-br h1,
+.createRoomAppearance .bg-gradient-to-br h2,
+.createRoomAppearance .bg-gradient-to-br h3,
+.createRoomAppearance .bg-gradient-to-br p,
+.createRoomAppearance .bg-gradient-to-br span:not(.bg-white):not(.bg-white\/10) {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   opacity: 1 !important;
 }
 
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.text-amber-200) {
+.createRoomAppearance .bg-gradient-to-br .text-amber-200 {
   color: #fde68a !important;
   -webkit-text-fill-color: #fde68a !important;
 }
 
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.text-amber-50\/90) {
+.createRoomAppearance .bg-gradient-to-br .text-amber-50\/90 {
   color: rgba(255, 251, 235, 0.92) !important;
   -webkit-text-fill-color: rgba(255, 251, 235, 0.92) !important;
 }
 
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white) :global(*) {
+.createRoomAppearance .bg-gradient-to-br .bg-white,
+.createRoomAppearance .bg-gradient-to-br .bg-white * {
   background-color: #ffffff !important;
   color: #020617 !important;
   -webkit-text-fill-color: #020617 !important;
 }
 
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white\/10),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white\/10) :global(*) {
+.createRoomAppearance .bg-gradient-to-br .bg-white\/10,
+.createRoomAppearance .bg-gradient-to-br .bg-white\/10 * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
 
-.createRoomAppearance :global(.bg-gradient-to-br) :global(svg) {
+.createRoomAppearance .bg-gradient-to-br svg {
   color: currentColor !important;
   stroke: currentColor !important;
 }
 
-.createRoomAppearance :global(article .grid.size-12),
-.createRoomAppearance :global(article .grid.size-12 *) {
+.createRoomAppearance article .grid.size-12,
+.createRoomAppearance article .grid.size-12 *,
+.createRoomAppearance .grid.size-10,
+.createRoomAppearance .grid.size-10 * {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   stroke: currentColor !important;
 }
 
 @media (prefers-color-scheme: dark) {
-  html[data-loombus-theme="system"] .createRoomAppearance :global(.bg-white),
-  html[data-loombus-theme="system"] .createRoomAppearance :global(article.bg-white),
-  html[data-loombus-theme="system"] .createRoomAppearance :global(section.bg-white) {
+  html[data-loombus-theme="system"] .createRoomAppearance .bg-white,
+  html[data-loombus-theme="system"] .createRoomAppearance article.bg-white,
+  html[data-loombus-theme="system"] .createRoomAppearance section.bg-white {
     background-color: #111113 !important;
     border-color: #27272a !important;
   }
 
-  html[data-loombus-theme="system"] .createRoomAppearance :global(.bg-slate-50) {
+  html[data-loombus-theme="system"] .createRoomAppearance .bg-slate-50 {
     background-color: #18181b !important;
   }
 
-  html[data-loombus-theme="system"] .createRoomAppearance :global(.text-slate-950),
-  html[data-loombus-theme="system"] .createRoomAppearance :global(.text-slate-800),
-  html[data-loombus-theme="system"] .createRoomAppearance :global(.text-slate-700) {
+  html[data-loombus-theme="system"] .createRoomAppearance .text-slate-950,
+  html[data-loombus-theme="system"] .createRoomAppearance .text-slate-800,
+  html[data-loombus-theme="system"] .createRoomAppearance .text-slate-700 {
     color: #f8fafc !important;
     -webkit-text-fill-color: #f8fafc !important;
   }
 
-  html[data-loombus-theme="system"] .createRoomAppearance :global(.text-slate-600),
-  html[data-loombus-theme="system"] .createRoomAppearance :global(.text-slate-500) {
+  html[data-loombus-theme="system"] .createRoomAppearance .text-slate-600,
+  html[data-loombus-theme="system"] .createRoomAppearance .text-slate-500 {
     color: #cbd5e1 !important;
     -webkit-text-fill-color: #cbd5e1 !important;
   }
 }
 
-html[data-loombus-theme="dark"] .createRoomAppearance :global(.bg-white),
-html[data-loombus-theme="dark"] .createRoomAppearance :global(article.bg-white),
-html[data-loombus-theme="dark"] .createRoomAppearance :global(section.bg-white) {
+html[data-loombus-theme="dark"] .createRoomAppearance .bg-white,
+html[data-loombus-theme="dark"] .createRoomAppearance article.bg-white,
+html[data-loombus-theme="dark"] .createRoomAppearance section.bg-white {
   background-color: #111113 !important;
   border-color: #27272a !important;
 }
 
-html[data-loombus-theme="dark"] .createRoomAppearance :global(.bg-slate-50) {
+html[data-loombus-theme="dark"] .createRoomAppearance .bg-slate-50 {
   background-color: #18181b !important;
 }
 
-html[data-loombus-theme="dark"] .createRoomAppearance :global(.text-slate-950),
-html[data-loombus-theme="dark"] .createRoomAppearance :global(.text-slate-800),
-html[data-loombus-theme="dark"] .createRoomAppearance :global(.text-slate-700) {
+html[data-loombus-theme="dark"] .createRoomAppearance .text-slate-950,
+html[data-loombus-theme="dark"] .createRoomAppearance .text-slate-800,
+html[data-loombus-theme="dark"] .createRoomAppearance .text-slate-700 {
   color: #f8fafc !important;
   -webkit-text-fill-color: #f8fafc !important;
 }
 
-html[data-loombus-theme="dark"] .createRoomAppearance :global(.text-slate-600),
-html[data-loombus-theme="dark"] .createRoomAppearance :global(.text-slate-500) {
+html[data-loombus-theme="dark"] .createRoomAppearance .text-slate-600,
+html[data-loombus-theme="dark"] .createRoomAppearance .text-slate-500 {
   color: #cbd5e1 !important;
   -webkit-text-fill-color: #cbd5e1 !important;
 }
