@@ -22,6 +22,8 @@ type LiveRoom = {
   latestActivityTitle: string;
   latestActivityAt: string | null;
   updatedAt: string | null;
+  ownerId: string;
+  createdBy: string;
 };
 
 type LiveEvent = {
@@ -78,6 +80,8 @@ function normalizeRoom(row: RoomRow, index: number): LiveRoom {
     latestActivityTitle: "No recent private room activity yet",
     latestActivityAt: null,
     updatedAt,
+    ownerId: asString(row.owner_id),
+    createdBy: asString(row.created_by),
   };
 }
 
@@ -139,6 +143,13 @@ async function fetchLiveRooms(userId: string | null) {
   const roomMap = new Map(rooms.map((room) => [room.id, room]));
   const joinedRoomIds = new Set<string>();
 
+  for (const room of rooms) {
+    if (userId && (room.ownerId === userId || room.createdBy === userId)) {
+      joinedRoomIds.add(room.id);
+      room.memberCount = Math.max(room.memberCount, 1);
+    }
+  }
+
   if (roomIds.length > 0) {
     for (const table of MEMBER_TABLES) {
       const { data, error } = await supabase.from(table).select("room_id,user_id").in("room_id", roomIds).limit(1000);
@@ -152,7 +163,7 @@ async function fetchLiveRooms(userId: string | null) {
       }
       for (const [roomId, count] of counts) {
         const room = roomMap.get(roomId);
-        if (room) room.memberCount = count;
+        if (room) room.memberCount = Math.max(count, room.memberCount);
       }
       break;
     }
@@ -209,6 +220,7 @@ async function fetchLiveRooms(userId: string | null) {
 function RoomCardView({ room, joined }: { room: LiveRoom; joined: boolean }) {
   const Icon = getRoomIcon(room);
   const roomHref = getRoomHref(room.id);
+  const owned = joined && (room.ownerId || room.createdBy);
 
   return (
     <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -218,7 +230,7 @@ function RoomCardView({ room, joined }: { room: LiveRoom; joined: boolean }) {
           <div className="flex flex-wrap items-start justify-between gap-2">
             <Link href={roomHref} className="text-lg font-black text-slate-950 transition hover:text-amber-700">{room.name}</Link>
             <div className="flex flex-wrap gap-2">
-              {joined && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">Your room</span>}
+              {joined && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">{owned ? "Owner" : "Your room"}</span>}
               {room.isPrivate && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">Private</span>}
             </div>
           </div>
@@ -340,13 +352,13 @@ export default function V2RoomsPage() {
             <div className="mb-6 flex gap-2 overflow-x-auto pb-1">{FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-slate-950 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-amber-700"}`}>{filter}</button>)}</div>
             <div className="grid gap-4 md:grid-cols-2">
               {filteredRooms.map((room) => <RoomCardView key={room.id} room={room} joined={joinedRoomIds.has(room.id)} />)}
-              {filteredRooms.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm md:col-span-2">No rooms match this filter yet. Room subscriptions and room setup now live on <Link href="/create-room" className="font-black text-amber-800">/create-room</Link>.</div>}
+              {filteredRooms.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm md:col-span-2">No rooms match this filter yet. Start a private room from <Link href="/create-room" className="font-black text-amber-800">Create Room</Link>.</div>}
             </div>
           </div>
           <aside className="space-y-4">
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Room access</h2><Lock className="size-4 text-amber-700" /></div>
-              <ol className="mt-4 space-y-3 text-sm font-semibold text-slate-600"><li>Only your owned or joined rooms belong here.</li><li>Room plans and setup choices live on /create-room.</li><li>After subscription, available room choices should appear in this dashboard.</li></ol>
+              <ol className="mt-4 space-y-3 text-sm font-semibold text-slate-600"><li>Rooms you own or joined appear here.</li><li>Room plans and setup choices live on /create-room.</li><li>Created rooms return here after setup.</li></ol>
               <Link href="/create-room" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">View room plans<ChevronRight className="size-4" /></Link>
             </section>
             <RoomEventsCard events={events} />
