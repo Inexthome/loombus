@@ -2,34 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Building2,
-  CalendarDays,
-  CheckCircle2,
-  ChevronRight,
-  GraduationCap,
-  Home,
-  Lock,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Store,
-  Users,
-} from "lucide-react";
+import { CalendarDays, ChevronRight, GraduationCap, Home, Lock, Search, Sparkles, Store, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import {
-  getDefaultShellPayload,
-  V2ShellGateCard,
-  V2ShellMobileNav,
-  V2ShellTopNav,
-  type ShellPayload,
-} from "../v2-shell-components";
+import { getDefaultShellPayload, V2ShellGateCard, V2ShellMobileNav, V2ShellTopNav, type ShellPayload } from "../v2-shell-components";
 
 type RoomRow = Record<string, unknown>;
 type MemberRow = { room_id?: string | null; user_id?: string | null };
 type ActivityRow = Record<string, unknown>;
 type EventRow = Record<string, unknown>;
-type ProductPanel = "templates" | "plans" | null;
 
 type LiveRoom = {
   id: string;
@@ -58,48 +38,6 @@ const ROOM_TABLES = ["rooms", "loombus_rooms", "community_rooms"];
 const MEMBER_TABLES = ["room_members", "room_memberships", "loombus_room_members", "community_room_members"];
 const ACTIVITY_TABLES = ["room_posts", "room_messages", "room_discussions", "loombus_room_posts"];
 const EVENT_TABLES = ["room_events", "loombus_room_events", "community_room_events"];
-
-const ROOM_TEMPLATES = [
-  {
-    id: "business-team",
-    title: "Business Team Room",
-    eyebrow: "Teams & small businesses",
-    description: "A private operating room for updates, planning, decisions, resources, and internal discussion.",
-    icon: Building2,
-    features: ["Private discussion feed", "Announcements", "Resources", "Tasks", "Events", "Members"],
-  },
-  {
-    id: "residents",
-    title: "Resident / Condo Room",
-    eyebrow: "Condos, HOAs, neighborhoods",
-    description: "A private resident space for announcements, maintenance updates, board notes, questions, and documents.",
-    icon: Home,
-    features: ["Resident-only posts", "Maintenance updates", "Documents", "Events", "Issue reporting", "Guidelines"],
-  },
-  {
-    id: "customer-support",
-    title: "Customer Support Room",
-    eyebrow: "Customers & product support",
-    description: "A controlled room for help articles, known issues, feature requests, support updates, and customer questions.",
-    icon: Store,
-    features: ["Questions", "Known issues", "Help articles", "Product updates", "Feature requests", "Support contacts"],
-  },
-  {
-    id: "classroom",
-    title: "Classroom Room",
-    eyebrow: "Schools & learning groups",
-    description: "A private class discussion space for prompts, resources, assignments, events, and guided student participation.",
-    icon: GraduationCap,
-    features: ["Private class discussion", "Assignments", "Resources", "Events", "Member roles", "Moderated posts"],
-  },
-];
-
-const ROOM_PLANS = [
-  { id: "free", name: "Free Room", price: "$0", note: "For testing", limit: "Up to 10 members", features: ["1 private room", "Basic posts", "Basic resources", "Loombus branding"] },
-  { id: "starter", name: "Room Starter", price: "$19/mo", note: "Small groups", limit: "Up to 50 members", features: ["Private room", "Invite links", "Announcements", "Events"] },
-  { id: "pro", name: "Room Pro", price: "$49/mo", note: "Businesses & residents", limit: "Up to 250 members", features: ["Advanced permissions", "Pinned resources", "Room analytics", "AI summaries"] },
-  { id: "business", name: "Organization", price: "Custom", note: "Larger organizations", limit: "Multiple rooms", features: ["Admin dashboard", "Custom onboarding", "Multiple moderators", "Higher limits"] },
-];
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -145,14 +83,6 @@ function normalizeRoom(row: RoomRow, index: number): LiveRoom {
 
 function getRoomHref(roomId: string) {
   return `/rooms/${encodeURIComponent(roomId)}`;
-}
-
-function getCreateRoomHref(templateId?: string, planId?: string) {
-  const params = new URLSearchParams();
-  if (templateId) params.set("template", templateId);
-  if (planId) params.set("plan", planId);
-  const query = params.toString();
-  return `/rooms/new${query ? `?${query}` : ""}`;
 }
 
 function formatRelativeTime(value: string | null) {
@@ -201,12 +131,7 @@ async function fetchLiveRooms(userId: string | null) {
   const roomResult = await fetchFirstAvailableRows<RoomRow>(ROOM_TABLES, 100);
 
   if (!roomResult.table) {
-    return {
-      rooms: [] as LiveRoom[],
-      joinedRoomIds: [] as string[],
-      events: [] as LiveEvent[],
-      sourceMessage: "Room tables are not available yet. The marketing templates are ready for provisioning.",
-    };
+    return { rooms: [] as LiveRoom[], joinedRoomIds: [] as string[], events: [] as LiveEvent[], sourceMessage: "Room tables are not available yet." };
   }
 
   const rooms = roomResult.rows.map(normalizeRoom).filter((room) => !["quiet creek residents", "traverze culture"].includes(room.name.toLowerCase()));
@@ -281,73 +206,6 @@ async function fetchLiveRooms(userId: string | null) {
   };
 }
 
-function TemplateCard({ template }: { template: (typeof ROOM_TEMPLATES)[number] }) {
-  const Icon = template.icon;
-  return (
-    <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start gap-4">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white"><Icon className="size-6" /></span>
-        <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">{template.eyebrow}</p>
-          <h3 className="mt-1 text-lg font-black text-slate-950">{template.title}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{template.description}</p>
-        </div>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {template.features.slice(0, 4).map((feature) => <span key={feature} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{feature}</span>)}
-      </div>
-      <Link href={getCreateRoomHref(template.id)} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
-        Create this room
-        <ChevronRight className="size-4" />
-      </Link>
-    </article>
-  );
-}
-
-function PlanCard({ plan }: { plan: (typeof ROOM_PLANS)[number] }) {
-  return (
-    <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">{plan.note}</p>
-          <h3 className="mt-1 text-lg font-black text-slate-950">{plan.name}</h3>
-        </div>
-        <p className="text-xl font-black text-slate-950">{plan.price}</p>
-      </div>
-      <p className="mt-3 text-sm font-bold text-slate-600">{plan.limit}</p>
-      <ul className="mt-4 space-y-2">
-        {plan.features.map((feature) => (
-          <li key={feature} className="flex items-center gap-2 text-sm font-semibold text-slate-600"><CheckCircle2 className="size-4 text-emerald-600" />{feature}</li>
-        ))}
-      </ul>
-      <Link href={getCreateRoomHref(undefined, plan.id)} className="mt-5 inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-800 transition hover:bg-slate-50">
-        Pick {plan.name}
-      </Link>
-    </article>
-  );
-}
-
-function ProductOptionButton({ active, description, eyebrow, icon: Icon, title, onClick }: { active: boolean; description: string; eyebrow: string; icon: typeof Building2; title: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={active}
-      className={`group flex w-full items-start justify-between gap-4 rounded-[1.5rem] border p-5 text-left shadow-sm transition ${active ? "border-slate-950 bg-slate-950 text-white" : "border-slate-200 bg-white text-slate-950 hover:border-amber-300 hover:bg-amber-50/40"}`}
-    >
-      <span className="flex min-w-0 gap-4">
-        <span className={`grid size-12 shrink-0 place-items-center rounded-2xl ${active ? "bg-white/10 text-amber-200" : "bg-slate-100 text-slate-700"}`}><Icon className="size-6" /></span>
-        <span className="min-w-0">
-          <span className={`block text-xs font-black uppercase tracking-[0.16em] ${active ? "text-amber-200" : "text-amber-700"}`}>{eyebrow}</span>
-          <span className={`mt-1 block text-lg font-black ${active ? "text-white" : "text-slate-950"}`}>{title}</span>
-          <span className={`mt-2 block text-sm leading-6 ${active ? "text-slate-200" : "text-slate-600"}`}>{description}</span>
-        </span>
-      </span>
-      <ChevronRight className={`mt-1 size-5 shrink-0 transition ${active ? "rotate-90 text-amber-200" : "text-slate-400 group-hover:text-amber-700"}`} />
-    </button>
-  );
-}
-
 function RoomCardView({ room, joined }: { room: LiveRoom; joined: boolean }) {
   const Icon = getRoomIcon(room);
   const roomHref = getRoomHref(room.id);
@@ -355,9 +213,7 @@ function RoomCardView({ room, joined }: { room: LiveRoom; joined: boolean }) {
   return (
     <article className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start gap-4">
-        <Link href={roomHref} aria-label={`Open ${room.name}`} className="grid size-14 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white shadow-sm transition hover:scale-105">
-          <Icon className="size-7" />
-        </Link>
+        <Link href={roomHref} aria-label={`Open ${room.name}`} className="grid size-14 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white shadow-sm transition hover:scale-105"><Icon className="size-7" /></Link>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <Link href={roomHref} className="text-lg font-black text-slate-950 transition hover:text-amber-700">{room.name}</Link>
@@ -379,9 +235,7 @@ function RoomCardView({ room, joined }: { room: LiveRoom; joined: boolean }) {
           <p className="truncate font-black text-slate-700">{room.latestActivityTitle}</p>
           <p>{formatRelativeTime(room.latestActivityAt ?? room.updatedAt)}</p>
         </div>
-        <Link href={roomHref} className="rounded-2xl bg-amber-50 px-4 py-2 text-sm font-black text-amber-800 transition hover:bg-amber-100">
-          Open Room
-        </Link>
+        <Link href={roomHref} className="rounded-2xl bg-amber-50 px-4 py-2 text-sm font-black text-amber-800 transition hover:bg-amber-100">Open Room</Link>
       </div>
     </article>
   );
@@ -390,24 +244,14 @@ function RoomCardView({ room, joined }: { room: LiveRoom; joined: boolean }) {
 function RoomEventsCard({ events }: { events: LiveEvent[] }) {
   return (
     <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Upcoming Room Events</h2>
-        <CalendarDays className="size-4 text-amber-700" />
-      </div>
+      <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Upcoming Room Events</h2><CalendarDays className="size-4 text-amber-700" /></div>
       <div className="mt-4 space-y-4">
         {events.map((event) => {
           const eventDate = formatEventDate(event.startsAt);
           return (
             <Link key={event.id} href={getRoomHref(event.roomId)} className="grid grid-cols-[52px_minmax(0,1fr)] gap-3 border-b border-slate-100 pb-4 last:border-b-0 last:pb-0">
-              <div className="rounded-2xl bg-amber-50 px-2 py-2 text-center">
-                <p className="text-[10px] font-black text-slate-500">{eventDate.month}</p>
-                <p className="text-xl font-black text-slate-950">{eventDate.day}</p>
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-black text-slate-950">{event.title}</p>
-                <p className="mt-1 text-xs font-semibold text-slate-500">{event.roomName}</p>
-                <p className="mt-1 text-xs text-slate-500">{eventDate.time}</p>
-              </div>
+              <div className="rounded-2xl bg-amber-50 px-2 py-2 text-center"><p className="text-[10px] font-black text-slate-500">{eventDate.month}</p><p className="text-xl font-black text-slate-950">{eventDate.day}</p></div>
+              <div className="min-w-0"><p className="text-sm font-black text-slate-950">{event.title}</p><p className="mt-1 text-xs font-semibold text-slate-500">{event.roomName}</p><p className="mt-1 text-xs text-slate-500">{eventDate.time}</p></div>
             </Link>
           );
         })}
@@ -423,7 +267,6 @@ export default function V2RoomsPage() {
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("My Rooms");
-  const [openProductPanel, setOpenProductPanel] = useState<ProductPanel>("templates");
   const [rooms, setRooms] = useState<LiveRoom[]>([]);
   const [joinedRoomIdList, setJoinedRoomIdList] = useState<string[]>([]);
   const [events, setEvents] = useState<LiveEvent[]>([]);
@@ -436,14 +279,7 @@ export default function V2RoomsPage() {
       const searchable = `${room.name} ${room.description} ${room.type}`.toLowerCase();
       const matchesQuery = !cleanQuery || searchable.includes(cleanQuery);
       const type = `${room.type} ${room.name}`.toLowerCase();
-      const matchesFilter =
-        activeFilter === "All" ||
-        (activeFilter === "My Rooms" && joinedRoomIds.has(room.id)) ||
-        (activeFilter === "Business" && (type.includes("business") || type.includes("team"))) ||
-        (activeFilter === "Residents" && (type.includes("resident") || type.includes("condo") || type.includes("hoa"))) ||
-        (activeFilter === "Classroom" && (type.includes("class") || type.includes("school"))) ||
-        (activeFilter === "Customer" && (type.includes("customer") || type.includes("support"))) ||
-        (activeFilter === "Community" && (type.includes("community") || type.includes("club")));
+      const matchesFilter = activeFilter === "All" || (activeFilter === "My Rooms" && joinedRoomIds.has(room.id)) || (activeFilter === "Business" && (type.includes("business") || type.includes("team"))) || (activeFilter === "Residents" && (type.includes("resident") || type.includes("condo") || type.includes("hoa"))) || (activeFilter === "Classroom" && (type.includes("class") || type.includes("school"))) || (activeFilter === "Customer" && (type.includes("customer") || type.includes("support"))) || (activeFilter === "Community" && (type.includes("community") || type.includes("club")));
       return matchesQuery && matchesFilter;
     });
   }, [activeFilter, joinedRoomIds, query, rooms]);
@@ -451,14 +287,11 @@ export default function V2RoomsPage() {
   async function loadShellAndRooms() {
     setLoading(true);
     setMessage("");
-
     try {
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
       const userId = data.session?.user.id ?? null;
-      const response = await fetch("/api/v2/shell", {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-      });
+      const response = await fetch("/api/v2/shell", { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined });
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
       setPayload(nextPayload);
 
@@ -484,164 +317,37 @@ export default function V2RoomsPage() {
 
   useEffect(() => {
     loadShellAndRooms();
-    const { data } = supabase.auth.onAuthStateChange(() => {
-      loadShellAndRooms();
-    });
-    return () => {
-      data.subscription.unsubscribe();
-    };
+    const { data } = supabase.auth.onAuthStateChange(() => loadShellAndRooms());
+    return () => data.subscription.unsubscribe();
   }, []);
 
-  if (loading) return <V2ShellGateCard title="Checking V2 Rooms access" message="Loombus is verifying access before loading private room products." loading />;
+  if (loading) return <V2ShellGateCard title="Checking V2 Rooms access" message="Loombus is verifying access before loading your private room dashboard." loading />;
   if (message) return <V2ShellGateCard title="V2 Rooms check failed safely" message={message} payload={payload} />;
-  if (!payload?.authenticated) return <V2ShellGateCard title="Sign in required" message="Sign in first so Loombus can create and open private rooms for your account." payload={payload} />;
+  if (!payload?.authenticated) return <V2ShellGateCard title="Sign in required" message="Sign in first so Loombus can open your private room dashboard." payload={payload} />;
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard title="V2 Rooms is not enabled" message="This account is not currently allowed through the v2_shell flag. Public users remain on the current Loombus experience." payload={payload} />;
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
       <V2ShellTopNav />
       <section className="mx-auto max-w-7xl px-4 pb-24 pt-7 sm:px-6 lg:px-8">
-        <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          <div className="grid gap-6 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-800 p-6 text-white sm:p-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-200">Private Loombus Rooms</p>
-              <h1 className="mt-3 max-w-3xl text-3xl font-black tracking-tight sm:text-5xl">Create a private room that is ready to use immediately.</h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-amber-50/90 sm:text-base">
-                Businesses, residents, classrooms, customers, and communities can choose a room template, pick a plan, and start with a private discussion space that does not publish to public Loombus Discussions.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/rooms/new" className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-50">
-                  Create Room
-                  <ChevronRight className="size-4" />
-                </Link>
-                <a href="#my-rooms" className="inline-flex items-center gap-2 rounded-2xl bg-white/10 px-5 py-3 text-sm font-black text-white ring-1 ring-white/20 transition hover:bg-white/15">
-                  View My Rooms
-                </a>
-              </div>
-            </div>
-            <div className="rounded-[1.5rem] bg-white/10 p-5 ring-1 ring-white/15">
-              <div className="flex items-center gap-3">
-                <ShieldCheck className="size-6 text-amber-200" />
-                <h2 className="text-lg font-black">Privacy rule</h2>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-amber-50/90">Room discussions belong to the room only. They stay separate from public /discussions and are visible only to approved room members based on room permissions.</p>
-              <div className="mt-5 grid gap-3 text-sm font-bold">
-                <span className="rounded-2xl bg-white/10 px-4 py-3">Private discussion feed</span>
-                <span className="rounded-2xl bg-white/10 px-4 py-3">Invite or approval access</span>
-                <span className="rounded-2xl bg-white/10 px-4 py-3">Room resources, events, and members</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Room setup</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Choose what you want to configure</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Templates and subscriptions are organized into expandable menus so the Rooms page stays clean while still letting visitors create quickly.</p>
-            </div>
-            <Link href="/rooms/new" className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
-              Start with defaults
-              <ChevronRight className="size-4" />
-            </Link>
-          </div>
-
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            <ProductOptionButton
-              active={openProductPanel === "templates"}
-              description="Pick a ready-made room structure such as business, resident, support, or classroom."
-              eyebrow="Room templates"
-              icon={Building2}
-              title="Choose Room Template"
-              onClick={() => setOpenProductPanel(openProductPanel === "templates" ? null : "templates")}
-            />
-            <ProductOptionButton
-              active={openProductPanel === "plans"}
-              description="Review Free, Starter, Pro, and Organization room plans before creation."
-              eyebrow="Room subscriptions"
-              icon={Sparkles}
-              title="Choose Room Plan"
-              onClick={() => setOpenProductPanel(openProductPanel === "plans" ? null : "plans")}
-            />
-          </div>
-
-          {openProductPanel === "templates" && (
-            <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">Templates</p>
-                  <h3 className="mt-1 text-lg font-black text-slate-950">Ready-made rooms for marketing</h3>
-                </div>
-                <Link href="/rooms/new" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-800 transition hover:bg-slate-50">Create custom room</Link>
-              </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {ROOM_TEMPLATES.map((template) => <TemplateCard key={template.id} template={template} />)}
-              </div>
-            </div>
-          )}
-
-          {openProductPanel === "plans" && (
-            <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">Subscriptions</p>
-                  <h3 className="mt-1 text-lg font-black text-slate-950">Pick the room plan before creation</h3>
-                </div>
-                <Link href="/rooms/new" className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-800 transition hover:bg-slate-50">Create first, choose plan</Link>
-              </div>
-              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                {ROOM_PLANS.map((plan) => <PlanCard key={plan.id} plan={plan} />)}
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section id="my-rooms" className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <section id="my-rooms" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div>
             <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Private room dashboard</p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Your rooms</h2>
-                {sourceMessage && <p className="mt-2 text-xs font-semibold text-slate-500">{sourceMessage}</p>}
-              </div>
-              <Link href="/rooms/new" className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
-                <Sparkles className="size-4" />
-                Create Room
-              </Link>
+              <div><p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Private room dashboard</p><h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">Your rooms</h1>{sourceMessage && <p className="mt-2 text-xs font-semibold text-slate-500">{sourceMessage}</p>}</div>
+              <Link href="/create-room" className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800"><Sparkles className="size-4" />Create or subscribe to a room</Link>
             </div>
-
-            <div className="mb-4 flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-              <Search className="size-5 text-slate-400" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your private rooms" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
-            </div>
-
-            <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-              {FILTERS.map((filter) => (
-                <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-slate-950 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-amber-700"}`}>
-                  {filter}
-                </button>
-              ))}
-            </div>
-
+            <div className="mb-4 flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm"><Search className="size-5 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your private rooms" className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" /></div>
+            <div className="mb-6 flex gap-2 overflow-x-auto pb-1">{FILTERS.map((filter) => <button key={filter} type="button" onClick={() => setActiveFilter(filter)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${activeFilter === filter ? "bg-slate-950 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:text-amber-700"}`}>{filter}</button>)}</div>
             <div className="grid gap-4 md:grid-cols-2">
               {filteredRooms.map((room) => <RoomCardView key={room.id} room={room} joined={joinedRoomIds.has(room.id)} />)}
-              {filteredRooms.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm md:col-span-2">No rooms match this filter yet. Create a room from a template above.</div>}
+              {filteredRooms.length === 0 && <div className="rounded-3xl border border-slate-200 bg-white p-6 text-sm text-slate-600 shadow-sm md:col-span-2">No rooms match this filter yet. Room subscriptions and room setup now live on <Link href="/create-room" className="font-black text-amber-800">/create-room</Link>.</div>}
             </div>
           </div>
-
           <aside className="space-y-4">
             <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Room product flow</h2>
-                <Lock className="size-4 text-amber-700" />
-              </div>
-              <ol className="mt-4 space-y-3 text-sm font-semibold text-slate-600">
-                <li>1. Choose a room purpose.</li>
-                <li>2. Pick a subscription plan.</li>
-                <li>3. Create the private room.</li>
-                <li>4. Invite members and start the private discussion.</li>
-              </ol>
+              <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Room access</h2><Lock className="size-4 text-amber-700" /></div>
+              <ol className="mt-4 space-y-3 text-sm font-semibold text-slate-600"><li>Only your owned or joined rooms belong here.</li><li>Room plans and setup choices live on /create-room.</li><li>After subscription, available room choices should appear in this dashboard.</li></ol>
+              <Link href="/create-room" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">View room plans<ChevronRight className="size-4" /></Link>
             </section>
             <RoomEventsCard events={events} />
           </aside>

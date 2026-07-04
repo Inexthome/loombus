@@ -84,6 +84,7 @@ const v2CleanRouteRewrites = [
   { source: "/home", destination: "/v2" },
   { source: "/rooms", destination: "/v2/rooms" },
   { source: "/rooms/:path*", destination: "/v2/rooms/:path*" },
+  { source: "/create-room", destination: "/v2/create-room" },
   { source: "/labs", destination: "/v2/labs" },
   { source: "/labs/:path*", destination: "/v2/labs/:path*" },
   { source: "/stickies", destination: "/v2/stickies" },
