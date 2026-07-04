@@ -3,39 +3,6 @@
   color: #ffffff !important;
 }
 
-.roomsContrastScope :global(.from-slate-950.via-slate-900.to-amber-800) :global(.text-amber-200) {
-  color: #fde68a !important;
-}
-
-.roomsContrastScope :global(.from-slate-950.via-slate-900.to-amber-800) :global(.text-amber-50\/90) {
-  color: rgba(255, 251, 235, 0.9) !important;
-}
-
-.roomsContrastScope :global(.from-slate-950.via-slate-900.to-amber-800) :global(.bg-white) {
-  background-color: #ffffff !important;
-}
-
-.roomsContrastScope :global(.from-slate-950.via-slate-900.to-amber-800) :global(.bg-white),
-.roomsContrastScope :global(.from-slate-950.via-slate-900.to-amber-800) :global(.bg-white) :global(*) {
-  color: #020617 !important;
-}
-
-.roomsContrastScope :global(.from-slate-950.via-slate-900.to-amber-800) :global(.bg-white\/10),
-.roomsContrastScope :global(.from-slate-950.via-slate-900.to-amber-800) :global(.bg-white\/10) :global(*) {
-  color: #ffffff !important;
-}
-
-.roomsContrastScope :global(.bg-slate-950.text-white),
-.roomsContrastScope :global(.bg-slate-950.text-white) :global(*) {
-  color: #ffffff !important;
-}
-
-.roomsContrastScope :global(.bg-slate-950.text-white) :global(svg),
-.roomsContrastScope :global(.from-slate-950.via-slate-900.to-amber-800) :global(svg) {
-  color: currentColor !important;
-  stroke: currentColor !important;
-}
-
 .roomsContrastScope :global(.text-slate-950) {
   color: #020617 !important;
 }
@@ -76,23 +43,4 @@
 .roomsContrastScope :global(textarea),
 .roomsContrastScope :global(select) {
   color: #020617 !important;
-}
-
-/* /rooms should be the private room dashboard only.
-   The marketing banner and setup/subscription content now belongs on /create-room. */
-.roomsContrastScope :global(main > section:has(#my-rooms) > section:nth-of-type(1)),
-.roomsContrastScope :global(main > section:has(#my-rooms) > section:nth-of-type(2)) {
-  display: none !important;
-}
-
-.roomsContrastScope :global(main > section:has(#my-rooms) #my-rooms) {
-  margin-top: 0 !important;
-}
-
-.roomsContrastScope :global(main > section:has(#my-rooms) a[href="/rooms/new"]) {
-  display: none !important;
-}
-
-.roomsContrastScope :global(main > section:has(#my-rooms) a[href="/create-room"]) {
-  display: inline-flex !important;
 }
