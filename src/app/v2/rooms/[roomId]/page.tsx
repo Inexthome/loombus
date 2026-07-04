@@ -17,6 +17,7 @@ import styles from "../room-detail-contrast.module.css";
 type RoomRow = Record<string, unknown>;
 type PostRow = Record<string, unknown>;
 type MemberRow = Record<string, unknown>;
+type ApplicationRow = Record<string, unknown>;
 
 type ActiveRoom = {
   id: string;
@@ -44,6 +45,14 @@ type RoomMember = {
   id: string;
   userId: string;
   role: string;
+  createdAt: string | null;
+};
+
+type RoomApplication = {
+  id: string;
+  applicantId: string;
+  state: string;
+  note: string;
   createdAt: string | null;
 };
 
@@ -104,6 +113,16 @@ function normalizeMember(row: MemberRow, index: number): RoomMember {
   };
 }
 
+function normalizeApplication(row: ApplicationRow, index: number): RoomApplication {
+  return {
+    id: asString(row.id) || `application-${index}`,
+    applicantId: asString(row.applicant_id),
+    state: asString(row.state) || "pending",
+    note: asString(row.note),
+    createdAt: asString(row.created_at) || asString(row.updated_at) || null,
+  };
+}
+
 function formatRelativeTime(value: string | null) {
   if (!value) return "No recent activity";
   const timestamp = new Date(value).getTime();
@@ -133,6 +152,7 @@ export default function V2RoomDetailPage() {
   const [room, setRoom] = useState<ActiveRoom | null>(null);
   const [posts, setPosts] = useState<RoomPost[]>([]);
   const [members, setMembers] = useState<RoomMember[]>([]);
+  const [applications, setApplications] = useState<RoomApplication[]>([]);
   const [isJoined, setIsJoined] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -143,8 +163,11 @@ export default function V2RoomDetailPage() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [newMemberId, setNewMemberId] = useState("");
+  const [applicationNote, setApplicationNote] = useState("");
 
   const canPost = Boolean(room && userId && (isJoined || isOwner));
+  const currentUserApplication = applications.find((application) => application.applicantId === userId);
+  const pendingApplications = applications.filter((application) => application.state === "pending");
 
   async function loadRoom() {
     if (!roomId) return;
@@ -167,6 +190,7 @@ export default function V2RoomDetailPage() {
         setRoom(null);
         setPosts([]);
         setMembers([]);
+        setApplications([]);
         setIsJoined(false);
         setIsOwner(false);
         return;
@@ -178,6 +202,7 @@ export default function V2RoomDetailPage() {
         setRoom(null);
         setPosts([]);
         setMembers([]);
+        setApplications([]);
         setIsJoined(false);
         setIsOwner(false);
         return;
@@ -200,9 +225,16 @@ export default function V2RoomDetailPage() {
       const nextIsJoined = nextMembers.some((member) => member.userId === nextUserId) || nextIsOwner;
       setIsJoined(nextIsJoined);
 
+      const { data: applicationData } = await supabase
+        .from("room_applications")
+        .select("*")
+        .eq("room_id", roomId)
+        .order("created_at", { ascending: false });
+      setApplications(((applicationData ?? []) as ApplicationRow[]).map(normalizeApplication));
+
       if (nextRoom.isPrivate && !nextIsJoined) {
         setPosts([]);
-        setMessage("This private room is invite-only. Ask the room owner or admin for access.");
+        setMessage("This private room is invite-only. You can request access from the room owner.");
         return;
       }
 
@@ -302,6 +334,49 @@ export default function V2RoomDetailPage() {
     }
   }
 
+  async function handleCreateApplication(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!room || !userId || isJoined || isOwner) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const { error } = await supabase.from("room_applications").insert({ room_id: room.id, applicant_id: userId, note: applicationNote.trim() || null, state: "pending" });
+      if (error && error.code !== "23505") throw error;
+      setApplicationNote("");
+      setMessage("Access request sent to the room owner.");
+      await loadRoom();
+    } catch {
+      setMessage("Loombus could not send this access request yet.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleReviewApplication(application: RoomApplication, nextState: "approved" | "declined") {
+    if (!room || !isOwner) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const { error: updateError } = await supabase
+        .from("room_applications")
+        .update({ state: nextState, reviewed_by: userId, reviewed_at: new Date().toISOString() })
+        .eq("id", application.id);
+      if (updateError) throw updateError;
+
+      if (nextState === "approved") {
+        const { error: memberError } = await supabase.from("room_members").insert({ room_id: room.id, user_id: application.applicantId, role: "member" });
+        if (memberError && memberError.code !== "23505") throw memberError;
+      }
+
+      setMessage(nextState === "approved" ? "Access approved." : "Access request declined.");
+      await loadRoom();
+    } catch {
+      setMessage("Loombus could not update this access request yet.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleCreatePost(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!room || !userId || !postBody.trim() || !canPost) return;
@@ -393,163 +468,73 @@ export default function V2RoomDetailPage() {
                     <form onSubmit={handleUpdateRoom} className="mb-5 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
                       <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Owner settings</h2>
                       <p className="mt-2 text-sm leading-6 text-slate-600">Edit the room name and description shown to members.</p>
-                      <input
-                        value={editName}
-                        onChange={(event) => setEditName(event.target.value)}
-                        placeholder="Room name"
-                        className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
-                      />
-                      <textarea
-                        value={editDescription}
-                        onChange={(event) => setEditDescription(event.target.value)}
-                        placeholder="Room description"
-                        rows={3}
-                        className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
-                      />
-                      <div className="mt-3 flex justify-end">
-                        <button type="submit" disabled={saving || !editName.trim()} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
-                          <Save className="size-4" />
-                          Save room details
-                        </button>
-                      </div>
+                      <input value={editName} onChange={(event) => setEditName(event.target.value)} placeholder="Room name" className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100" />
+                      <textarea value={editDescription} onChange={(event) => setEditDescription(event.target.value)} placeholder="Room description" rows={3} className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100" />
+                      <div className="mt-3 flex justify-end"><button type="submit" disabled={saving || !editName.trim()} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"><Save className="size-4" />Save room details</button></div>
                     </form>
                   )}
 
                   {canPost ? (
                     <form onSubmit={handleCreatePost} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
                       <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Post to this room</h2>
-                      <input
-                        value={postTitle}
-                        onChange={(event) => setPostTitle(event.target.value)}
-                        placeholder="Optional title"
-                        className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
-                      />
-                      <textarea
-                        value={postBody}
-                        onChange={(event) => setPostBody(event.target.value)}
-                        placeholder="Share an update, question, or announcement..."
-                        rows={5}
-                        className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
-                      />
-                      <div className="mt-3 flex justify-end">
-                        <button type="submit" disabled={saving || !postBody.trim()} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
-                          <Send className="size-4" />
-                          Post update
-                        </button>
-                      </div>
+                      <input value={postTitle} onChange={(event) => setPostTitle(event.target.value)} placeholder="Optional title" className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100" />
+                      <textarea value={postBody} onChange={(event) => setPostBody(event.target.value)} placeholder="Share an update, question, or announcement..." rows={5} className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100" />
+                      <div className="mt-3 flex justify-end"><button type="submit" disabled={saving || !postBody.trim()} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"><Send className="size-4" />Post update</button></div>
+                    </form>
+                  ) : room.isPrivate ? (
+                    <form onSubmit={handleCreateApplication} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                      <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Request room access</h2>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">Ask the room owner to approve access before you can post or read private updates.</p>
+                      {currentUserApplication ? (
+                        <p className="mt-3 rounded-2xl bg-white p-3 text-sm font-black text-slate-700 ring-1 ring-slate-200">Current request: {currentUserApplication.state}</p>
+                      ) : (
+                        <>
+                          <textarea value={applicationNote} onChange={(event) => setApplicationNote(event.target.value)} placeholder="Optional note to the owner" rows={3} className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100" />
+                          <button type="submit" disabled={saving} className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"><UserPlus className="size-4" />Send access request</button>
+                        </>
+                      )}
                     </form>
                   ) : (
-                    <section className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                      <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Room access required</h2>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">Only room owners and approved members can post inside this room.</p>
-                    </section>
+                    <section className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5"><h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Room access required</h2><p className="mt-2 text-sm leading-6 text-slate-600">Only room owners and approved members can post inside this room.</p></section>
                   )}
 
                   <section className="mt-5 space-y-4">
                     {posts.map((post) => (
-                      <article key={post.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                        <div className="flex items-start gap-3">
-                          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-50 font-black text-amber-700">{room.name.slice(0, 1).toUpperCase()}</span>
-                          <div className="min-w-0 flex-1">
-                            {post.title && <h3 className="text-base font-black text-slate-950">{post.title}</h3>}
-                            <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{post.body}</p>
-                            <p className="mt-2 text-xs font-semibold text-slate-400">{formatRelativeTime(post.createdAt)}</p>
-                          </div>
-                        </div>
-                      </article>
+                      <article key={post.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-50 font-black text-amber-700">{room.name.slice(0, 1).toUpperCase()}</span><div className="min-w-0 flex-1">{post.title && <h3 className="text-base font-black text-slate-950">{post.title}</h3>}<p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{post.body}</p><p className="mt-2 text-xs font-semibold text-slate-400">{formatRelativeTime(post.createdAt)}</p></div></div></article>
                     ))}
-                    {posts.length === 0 && (
-                      <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-6 text-center">
-                        <MessageCircle className="mx-auto size-8 text-amber-700" />
-                        <h2 className="mt-3 text-lg font-black text-slate-950">No room activity yet</h2>
-                        <p className="mt-2 text-sm text-slate-600">Start this room with the first update, question, or announcement.</p>
-                      </div>
-                    )}
+                    {posts.length === 0 && <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-6 text-center"><MessageCircle className="mx-auto size-8 text-amber-700" /><h2 className="mt-3 text-lg font-black text-slate-950">No room activity yet</h2><p className="mt-2 text-sm text-slate-600">Start this room with the first update, question, or announcement.</p></div>}
                   </section>
                 </div>
 
                 <aside className="space-y-4">
-                  <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Membership</h2>
-                      <Users className="size-4 text-amber-700" />
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-slate-600">
-                      {isOwner ? "You own this room." : room.isPrivate ? "Private room membership is controlled by owner/admin invite." : "Join this room to keep it in Your Rooms."}
-                    </p>
-                    <div className="mt-4">
-                      {isOwner ? (
-                        <span className="inline-flex rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">Owner</span>
-                      ) : room.isPrivate ? (
-                        <span className="inline-flex rounded-2xl bg-slate-100 px-4 py-2 text-sm font-black text-slate-600">Invite only</span>
-                      ) : isJoined ? (
-                        <button type="button" onClick={handleLeaveRoom} disabled={saving} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
-                          Leave room
-                        </button>
-                      ) : (
-                        <button type="button" onClick={handleJoinRoom} disabled={saving} className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50">
-                          Join room
-                        </button>
-                      )}
-                    </div>
-                  </section>
+                  <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Membership</h2><Users className="size-4 text-amber-700" /></div><p className="mt-3 text-sm leading-6 text-slate-600">{isOwner ? "You own this room." : room.isPrivate ? "Private room membership is controlled by owner approval." : "Join this room to keep it in Your Rooms."}</p><div className="mt-4">{isOwner ? <span className="inline-flex rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">Owner</span> : room.isPrivate ? <span className="inline-flex rounded-2xl bg-slate-100 px-4 py-2 text-sm font-black text-slate-600">Invite only</span> : isJoined ? <button type="button" onClick={handleLeaveRoom} disabled={saving} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">Leave room</button> : <button type="button" onClick={handleJoinRoom} disabled={saving} className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50">Join room</button>}</div></section>
 
-                  <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between gap-3">
-                      <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Members</h2>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">{members.length}</span>
-                    </div>
-
-                    {isOwner && (
-                      <form onSubmit={handleAddMember} className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                        <label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500" htmlFor="room-member-id">Add member by user ID</label>
-                        <input
-                          id="room-member-id"
-                          value={newMemberId}
-                          onChange={(event) => setNewMemberId(event.target.value)}
-                          placeholder="Paste Loombus user ID"
-                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
-                        />
-                        <button type="submit" disabled={saving || !newMemberId.trim()} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
-                          <UserPlus className="size-4" />
-                          Add access
-                        </button>
-                      </form>
-                    )}
-
-                    <div className="mt-4 space-y-2">
-                      {members.map((member) => {
-                        const removable = isOwner && member.userId !== userId && member.role !== "owner";
-                        return (
-                          <div key={member.id} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="truncate font-black text-slate-800">{member.userId === userId ? "You" : getShortId(member.userId)}</span>
-                              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{member.role}</span>
-                            </div>
-                            <div className="mt-1 flex items-center justify-between gap-2">
-                              <p className="text-slate-400">Joined {formatRelativeTime(member.createdAt)}</p>
-                              {removable && (
-                                <button type="button" onClick={() => handleRemoveMember(member)} disabled={saving} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-black text-red-700 ring-1 ring-red-100 transition hover:bg-red-50 disabled:opacity-50">
-                                  <X className="size-3" />
-                                  Remove
-                                </button>
-                              )}
-                            </div>
+                  {isOwner && pendingApplications.length > 0 && (
+                    <section className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+                      <h2 className="text-sm font-black uppercase tracking-[0.16em] text-amber-800">Access requests</h2>
+                      <div className="mt-4 space-y-2">
+                        {pendingApplications.map((application) => (
+                          <div key={application.id} className="rounded-2xl bg-white p-3 text-xs font-semibold text-slate-600 ring-1 ring-amber-100">
+                            <p className="font-black text-slate-800">{getShortId(application.applicantId)}</p>
+                            {application.note && <p className="mt-1 text-slate-500">{application.note}</p>}
+                            <p className="mt-1 text-slate-400">Requested {formatRelativeTime(application.createdAt)}</p>
+                            <div className="mt-2 flex gap-2"><button type="button" onClick={() => handleReviewApplication(application, "approved")} disabled={saving} className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white disabled:opacity-50"><CheckCircle2 className="size-3" />Approve</button><button type="button" onClick={() => handleReviewApplication(application, "declined")} disabled={saving} className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl bg-white px-3 py-2 text-xs font-black text-red-700 ring-1 ring-red-100 disabled:opacity-50"><X className="size-3" />Decline</button></div>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Members</h2><span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">{members.length}</span></div>
+                    {isOwner && <form onSubmit={handleAddMember} className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200"><label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500" htmlFor="room-member-id">Add member by user ID</label><input id="room-member-id" value={newMemberId} onChange={(event) => setNewMemberId(event.target.value)} placeholder="Paste Loombus user ID" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100" /><button type="submit" disabled={saving || !newMemberId.trim()} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"><UserPlus className="size-4" />Add access</button></form>}
+                    <div className="mt-4 space-y-2">
+                      {members.map((member) => { const removable = isOwner && member.userId !== userId && member.role !== "owner"; return <div key={member.id} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600"><div className="flex items-center justify-between gap-2"><span className="truncate font-black text-slate-800">{member.userId === userId ? "You" : getShortId(member.userId)}</span><span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{member.role}</span></div><div className="mt-1 flex items-center justify-between gap-2"><p className="text-slate-400">Joined {formatRelativeTime(member.createdAt)}</p>{removable && <button type="button" onClick={() => handleRemoveMember(member)} disabled={saving} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-black text-red-700 ring-1 ring-red-100 transition hover:bg-red-50 disabled:opacity-50"><X className="size-3" />Remove</button>}</div></div>; })}
                       {members.length === 0 && <p className="rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-500">No member records found yet.</p>}
                     </div>
                   </section>
 
-                  <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-                    <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Room status</h2>
-                    <dl className="mt-4 space-y-3 text-sm">
-                      <div className="flex justify-between gap-3"><dt className="text-slate-500">Visibility</dt><dd className="font-black text-slate-900">{room.visibility}</dd></div>
-                      <div className="flex justify-between gap-3"><dt className="text-slate-500">Type</dt><dd className="font-black text-slate-900">{room.type}</dd></div>
-                      <div className="flex justify-between gap-3"><dt className="text-slate-500">Updated</dt><dd className="font-black text-slate-900">{formatRelativeTime(room.updatedAt)}</dd></div>
-                    </dl>
-                  </section>
+                  <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Room status</h2><dl className="mt-4 space-y-3 text-sm"><div className="flex justify-between gap-3"><dt className="text-slate-500">Visibility</dt><dd className="font-black text-slate-900">{room.visibility}</dd></div><div className="flex justify-between gap-3"><dt className="text-slate-500">Type</dt><dd className="font-black text-slate-900">{room.type}</dd></div><div className="flex justify-between gap-3"><dt className="text-slate-500">Updated</dt><dd className="font-black text-slate-900">{formatRelativeTime(room.updatedAt)}</dd></div></dl></section>
                 </aside>
               </div>
             </section>
