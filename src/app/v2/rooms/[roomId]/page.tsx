@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Building2, CheckCircle2, Lock, MessageCircle, Save, Send, Users } from "lucide-react";
+import { ArrowLeft, Building2, CheckCircle2, Lock, MessageCircle, Save, Send, UserPlus, Users, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import {
   getDefaultShellPayload,
@@ -142,6 +142,7 @@ export default function V2RoomDetailPage() {
   const [postBody, setPostBody] = useState("");
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [newMemberId, setNewMemberId] = useState("");
 
   const canPost = Boolean(room && userId && (isJoined || isOwner));
 
@@ -257,6 +258,45 @@ export default function V2RoomDetailPage() {
       await loadRoom();
     } catch {
       setMessage("Loombus could not leave this room yet.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleAddMember(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!room || !isOwner || !newMemberId.trim()) return;
+    const targetUserId = newMemberId.trim();
+    if (targetUserId === userId) {
+      setMessage("You are already the owner of this room.");
+      return;
+    }
+    setSaving(true);
+    setMessage("");
+    try {
+      const { error } = await supabase.from("room_members").insert({ room_id: room.id, user_id: targetUserId, role: "member" });
+      if (error && error.code !== "23505") throw error;
+      setNewMemberId("");
+      setMessage("Member access added.");
+      await loadRoom();
+    } catch {
+      setMessage("Loombus could not add this member yet. Confirm the user ID is valid and owner member policies are active.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleRemoveMember(member: RoomMember) {
+    if (!room || !isOwner || member.userId === userId || member.role === "owner") return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const { error } = await supabase.from("room_members").delete().eq("room_id", room.id).eq("user_id", member.userId);
+      if (error) throw error;
+      setMessage("Member access removed.");
+      await loadRoom();
+    } catch {
+      setMessage("Loombus could not remove this member yet. Confirm owner member policies are active.");
     } finally {
       setSaving(false);
     }
@@ -459,16 +499,45 @@ export default function V2RoomDetailPage() {
                       <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Members</h2>
                       <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">{members.length}</span>
                     </div>
+
+                    {isOwner && (
+                      <form onSubmit={handleAddMember} className="mt-4 rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
+                        <label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500" htmlFor="room-member-id">Add member by user ID</label>
+                        <input
+                          id="room-member-id"
+                          value={newMemberId}
+                          onChange={(event) => setNewMemberId(event.target.value)}
+                          placeholder="Paste Loombus user ID"
+                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
+                        />
+                        <button type="submit" disabled={saving || !newMemberId.trim()} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-xs font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
+                          <UserPlus className="size-4" />
+                          Add access
+                        </button>
+                      </form>
+                    )}
+
                     <div className="mt-4 space-y-2">
-                      {members.map((member) => (
-                        <div key={member.id} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="truncate font-black text-slate-800">{member.userId === userId ? "You" : getShortId(member.userId)}</span>
-                            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{member.role}</span>
+                      {members.map((member) => {
+                        const removable = isOwner && member.userId !== userId && member.role !== "owner";
+                        return (
+                          <div key={member.id} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate font-black text-slate-800">{member.userId === userId ? "You" : getShortId(member.userId)}</span>
+                              <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{member.role}</span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between gap-2">
+                              <p className="text-slate-400">Joined {formatRelativeTime(member.createdAt)}</p>
+                              {removable && (
+                                <button type="button" onClick={() => handleRemoveMember(member)} disabled={saving} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-1 text-[10px] font-black text-red-700 ring-1 ring-red-100 transition hover:bg-red-50 disabled:opacity-50">
+                                  <X className="size-3" />
+                                  Remove
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <p className="mt-1 text-slate-400">Joined {formatRelativeTime(member.createdAt)}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                       {members.length === 0 && <p className="rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-500">No member records found yet.</p>}
                     </div>
                   </section>
