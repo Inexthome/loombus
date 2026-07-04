@@ -12,6 +12,7 @@ import {
   MessageCircle,
   MessageSquareReply,
   Plus,
+  Rocket,
   Search,
   Settings,
   Shield,
@@ -93,6 +94,7 @@ export const V2_MENU_GROUPS: V2MenuGroup[] = [
     title: "Account",
     items: [
       { label: "Notifications", href: "/notifications", icon: Bell },
+      { label: "Onboarding", href: "/onboarding", icon: Rocket },
       { label: "Settings", href: "/settings", icon: Settings },
       { label: "Premium", href: "/premium", icon: WalletCards },
       { label: "Support", href: "/support", icon: Wrench },
