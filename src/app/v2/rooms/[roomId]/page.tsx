@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Building2, Lock, MessageCircle, Send, Users } from "lucide-react";
+import { ArrowLeft, Building2, CheckCircle2, Lock, MessageCircle, Save, Send, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import {
   getDefaultShellPayload,
@@ -16,6 +16,7 @@ import styles from "../room-detail-contrast.module.css";
 
 type RoomRow = Record<string, unknown>;
 type PostRow = Record<string, unknown>;
+type MemberRow = Record<string, unknown>;
 
 type ActiveRoom = {
   id: string;
@@ -36,6 +37,13 @@ type RoomPost = {
   title: string;
   body: string;
   authorId: string;
+  createdAt: string | null;
+};
+
+type RoomMember = {
+  id: string;
+  userId: string;
+  role: string;
   createdAt: string | null;
 };
 
@@ -87,6 +95,15 @@ function normalizePost(row: PostRow, index: number): RoomPost {
   };
 }
 
+function normalizeMember(row: MemberRow, index: number): RoomMember {
+  return {
+    id: asString(row.id) || `${asString(row.room_id)}-${asString(row.user_id)}` || `member-${index}`,
+    userId: asString(row.user_id),
+    role: asString(row.role) || "member",
+    createdAt: asString(row.created_at) || asString(row.updated_at) || null,
+  };
+}
+
 function formatRelativeTime(value: string | null) {
   if (!value) return "No recent activity";
   const timestamp = new Date(value).getTime();
@@ -101,6 +118,11 @@ function formatRelativeTime(value: string | null) {
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(new Date(value));
 }
 
+function getShortId(value: string) {
+  if (!value) return "Unknown member";
+  return value.length > 12 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
+}
+
 export default function V2RoomDetailPage() {
   const params = useParams();
   const rawRoomId = params?.roomId;
@@ -110,6 +132,7 @@ export default function V2RoomDetailPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [room, setRoom] = useState<ActiveRoom | null>(null);
   const [posts, setPosts] = useState<RoomPost[]>([]);
+  const [members, setMembers] = useState<RoomMember[]>([]);
   const [isJoined, setIsJoined] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -117,6 +140,8 @@ export default function V2RoomDetailPage() {
   const [saving, setSaving] = useState(false);
   const [postTitle, setPostTitle] = useState("");
   const [postBody, setPostBody] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   const canPost = Boolean(room && userId && (isJoined || isOwner));
 
@@ -140,6 +165,7 @@ export default function V2RoomDetailPage() {
       if (!nextUserId || !accessToken || !nextPayload.configured || !nextPayload.flags.v2_shell || nextPayload.version !== "v2") {
         setRoom(null);
         setPosts([]);
+        setMembers([]);
         setIsJoined(false);
         setIsOwner(false);
         return;
@@ -150,6 +176,7 @@ export default function V2RoomDetailPage() {
         setMessage("This room could not be loaded. It may not exist yet or your account may not have access.");
         setRoom(null);
         setPosts([]);
+        setMembers([]);
         setIsJoined(false);
         setIsOwner(false);
         return;
@@ -158,15 +185,18 @@ export default function V2RoomDetailPage() {
       const nextRoom = normalizeRoom(roomData as RoomRow);
       const nextIsOwner = nextRoom.ownerId === nextUserId || nextRoom.createdBy === nextUserId;
       setRoom(nextRoom);
+      setEditName(nextRoom.name);
+      setEditDescription(nextRoom.description);
       setIsOwner(nextIsOwner);
 
       const { data: membershipData } = await supabase
         .from("room_members")
-        .select("room_id,user_id")
+        .select("*")
         .eq("room_id", roomId)
-        .eq("user_id", nextUserId)
-        .maybeSingle();
-      const nextIsJoined = Boolean(membershipData) || nextIsOwner;
+        .order("created_at", { ascending: true });
+      const nextMembers = ((membershipData ?? []) as MemberRow[]).map(normalizeMember).filter((member) => member.userId);
+      setMembers(nextMembers);
+      const nextIsJoined = nextMembers.some((member) => member.userId === nextUserId) || nextIsOwner;
       setIsJoined(nextIsJoined);
 
       if (nextRoom.isPrivate && !nextIsJoined) {
@@ -255,6 +285,26 @@ export default function V2RoomDetailPage() {
     }
   }
 
+  async function handleUpdateRoom(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!room || !isOwner || !editName.trim()) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const { error } = await supabase
+        .from("rooms")
+        .update({ name: editName.trim(), description: editDescription.trim() })
+        .eq("id", room.id);
+      if (error) throw error;
+      setMessage("Room details updated.");
+      await loadRoom();
+    } catch {
+      setMessage("Loombus could not update this room yet. Confirm room owner update policies are active in Supabase.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (loading) return <V2ShellGateCard title="Opening room" message="Loombus is activating this room." loading />;
   if (!payload?.authenticated) return <V2ShellGateCard title="Sign in required" message="Sign in first so Loombus can open this room." payload={payload} />;
   if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard title="V2 Rooms is not enabled" message="This account is not currently allowed through the v2_shell flag." payload={payload} />;
@@ -292,13 +342,39 @@ export default function V2RoomDetailPage() {
                 <div className="mt-6 flex flex-wrap gap-3 text-xs font-black uppercase tracking-[0.12em]">
                   <span className={`${styles.detailPill} rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15`}>{room.type}</span>
                   <span className={`${styles.detailPill} rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15`}>{room.isPrivate ? "Private" : "Public"}</span>
-                  <span className={`${styles.detailPill} rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15`}>{room.memberCount} members</span>
+                  <span className={`${styles.detailPill} rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15`}>{Math.max(room.memberCount, members.length)} members</span>
                   <span className={`${styles.detailPill} rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15`}>{posts.length || room.activityCount} updates</span>
                 </div>
               </div>
 
               <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_280px]">
                 <div>
+                  {isOwner && (
+                    <form onSubmit={handleUpdateRoom} className="mb-5 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                      <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Owner settings</h2>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">Edit the room name and description shown to members.</p>
+                      <input
+                        value={editName}
+                        onChange={(event) => setEditName(event.target.value)}
+                        placeholder="Room name"
+                        className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
+                      />
+                      <textarea
+                        value={editDescription}
+                        onChange={(event) => setEditDescription(event.target.value)}
+                        placeholder="Room description"
+                        rows={3}
+                        className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
+                      />
+                      <div className="mt-3 flex justify-end">
+                        <button type="submit" disabled={saving || !editName.trim()} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
+                          <Save className="size-4" />
+                          Save room details
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
                   {canPost ? (
                     <form onSubmit={handleCreatePost} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
                       <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Post to this room</h2>
@@ -375,6 +451,25 @@ export default function V2RoomDetailPage() {
                           Join room
                         </button>
                       )}
+                    </div>
+                  </section>
+
+                  <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Members</h2>
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">{members.length}</span>
+                    </div>
+                    <div className="mt-4 space-y-2">
+                      {members.map((member) => (
+                        <div key={member.id} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate font-black text-slate-800">{member.userId === userId ? "You" : getShortId(member.userId)}</span>
+                            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{member.role}</span>
+                          </div>
+                          <p className="mt-1 text-slate-400">Joined {formatRelativeTime(member.createdAt)}</p>
+                        </div>
+                      ))}
+                      {members.length === 0 && <p className="rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-500">No member records found yet.</p>}
                     </div>
                   </section>
 
