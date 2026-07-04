@@ -5,41 +5,6 @@
   color: #020617;
 }
 
-.createRoomAppearance :global(.bg-gradient-to-br),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(*) {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
-}
-
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.text-amber-200) {
-  color: #fde68a !important;
-  -webkit-text-fill-color: #fde68a !important;
-}
-
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.text-amber-50\/90) {
-  color: rgba(255, 251, 235, 0.9) !important;
-  -webkit-text-fill-color: rgba(255, 251, 235, 0.9) !important;
-}
-
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white) :global(*) {
-  color: #020617 !important;
-  -webkit-text-fill-color: #020617 !important;
-}
-
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white\/10),
-.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white\/10) :global(*) {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
-}
-
-.createRoomAppearance :global(.bg-gradient-to-br) :global(svg),
-.createRoomAppearance :global(.bg-slate-950.text-white) :global(svg),
-.createRoomAppearance :global(a.bg-slate-950) :global(svg) {
-  color: currentColor !important;
-  stroke: currentColor !important;
-}
-
 .createRoomAppearance :global(.bg-white),
 .createRoomAppearance :global(article.bg-white),
 .createRoomAppearance :global(section.bg-white) {
@@ -92,10 +57,68 @@
   -webkit-text-fill-color: #ffffff !important;
 }
 
+.createRoomAppearance :global(.bg-slate-950) :global(svg),
+.createRoomAppearance :global(a.bg-slate-950) :global(svg) {
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+
 .createRoomAppearance :global(a.bg-white),
 .createRoomAppearance :global(a.bg-white) :global(*) {
   color: #020617 !important;
   -webkit-text-fill-color: #020617 !important;
+}
+
+/* Hero and privacy panel must win over the generic card/text rules above. */
+.createRoomAppearance :global(.bg-gradient-to-br),
+.createRoomAppearance :global(.bg-gradient-to-br) :global(*) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.createRoomAppearance :global(.bg-gradient-to-br) :global(h1),
+.createRoomAppearance :global(.bg-gradient-to-br) :global(h2),
+.createRoomAppearance :global(.bg-gradient-to-br) :global(h3),
+.createRoomAppearance :global(.bg-gradient-to-br) :global(p),
+.createRoomAppearance :global(.bg-gradient-to-br) :global(span:not(.bg-white):not(.bg-white\/10)) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.createRoomAppearance :global(.bg-gradient-to-br) :global(.text-amber-200) {
+  color: #fde68a !important;
+  -webkit-text-fill-color: #fde68a !important;
+}
+
+.createRoomAppearance :global(.bg-gradient-to-br) :global(.text-amber-50\/90) {
+  color: rgba(255, 251, 235, 0.92) !important;
+  -webkit-text-fill-color: rgba(255, 251, 235, 0.92) !important;
+}
+
+.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white),
+.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white) :global(*) {
+  background-color: #ffffff !important;
+  color: #020617 !important;
+  -webkit-text-fill-color: #020617 !important;
+}
+
+.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white\/10),
+.createRoomAppearance :global(.bg-gradient-to-br) :global(.bg-white\/10) :global(*) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+.createRoomAppearance :global(.bg-gradient-to-br) :global(svg) {
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+
+.createRoomAppearance :global(article .grid.size-12),
+.createRoomAppearance :global(article .grid.size-12 *) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  stroke: currentColor !important;
 }
 
 @media (prefers-color-scheme: dark) {
