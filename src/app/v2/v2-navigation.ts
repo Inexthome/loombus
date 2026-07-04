@@ -66,6 +66,13 @@ export const V2_MENU_GROUPS: V2MenuGroup[] = [
     ],
   },
   {
+    title: "Rooms",
+    items: [
+      { label: "My Rooms", href: "/rooms", icon: Users },
+      { label: "Create Room", href: "/create-room", icon: Plus },
+    ],
+  },
+  {
     title: "Discover",
     items: [
       { label: "Labs", href: "/labs", icon: FlaskConical },
@@ -109,6 +116,7 @@ export const V2_EXACT_ROUTE_MAP: Record<string, string> = {
   "/v2/discussions": "/discussions",
   "/v2/create": "/create",
   "/v2/rooms": "/rooms",
+  "/v2/create-room": "/create-room",
   "/v2/messages": "/messages",
   "/v2/people": "/people",
   "/v2/labs": "/labs",
