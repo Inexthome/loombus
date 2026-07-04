@@ -1,0 +1,39 @@
+/* Scoped Stickies contrast fixes.
+   Keeps the V2 Stickies hero/button text readable across Light, Dark, and System. */
+
+main[data-stickies-page] .stickies-hero-title,
+main[data-stickies-page] .stickies-hero-title * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+main[data-stickies-page] .stickies-hero-eyebrow,
+main[data-stickies-page] .stickies-hero-eyebrow * {
+  color: #fde68a !important;
+  -webkit-text-fill-color: #fde68a !important;
+}
+
+main[data-stickies-page] .stickies-back-link,
+main[data-stickies-page] .stickies-back-link * {
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  stroke: currentColor !important;
+}
+
+html[data-loombus-theme="dark"] main[data-stickies-page] .stickies-back-link,
+html[data-loombus-theme="dark"] main[data-stickies-page] .stickies-back-link *,
+html[data-loombus-theme="dark"] main[data-stickies-page] .stickies-back-link svg {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  stroke: currentColor !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] main[data-stickies-page] .stickies-back-link,
+  html[data-loombus-theme="system"] main[data-stickies-page] .stickies-back-link *,
+  html[data-loombus-theme="system"] main[data-stickies-page] .stickies-back-link svg {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    stroke: currentColor !important;
+  }
+}
