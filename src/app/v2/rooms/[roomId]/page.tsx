@@ -27,6 +27,8 @@ type ActiveRoom = {
   memberCount: number;
   activityCount: number;
   updatedAt: string | null;
+  ownerId: string;
+  createdBy: string;
 };
 
 type RoomPost = {
@@ -70,6 +72,8 @@ function normalizeRoom(row: RoomRow): ActiveRoom {
     memberCount: asNumber(row.member_count) || asNumber(row.members_count),
     activityCount: asNumber(row.activity_count) || asNumber(row.post_count),
     updatedAt: asString(row.last_activity_at) || asString(row.updated_at) || asString(row.created_at) || null,
+    ownerId: asString(row.owner_id),
+    createdBy: asString(row.created_by),
   };
 }
 
@@ -107,11 +111,14 @@ export default function V2RoomDetailPage() {
   const [room, setRoom] = useState<ActiveRoom | null>(null);
   const [posts, setPosts] = useState<RoomPost[]>([]);
   const [isJoined, setIsJoined] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [postTitle, setPostTitle] = useState("");
   const [postBody, setPostBody] = useState("");
+
+  const canPost = Boolean(room && userId && (isJoined || isOwner));
 
   async function loadRoom() {
     if (!roomId) return;
@@ -134,6 +141,7 @@ export default function V2RoomDetailPage() {
         setRoom(null);
         setPosts([]);
         setIsJoined(false);
+        setIsOwner(false);
         return;
       }
 
@@ -143,11 +151,14 @@ export default function V2RoomDetailPage() {
         setRoom(null);
         setPosts([]);
         setIsJoined(false);
+        setIsOwner(false);
         return;
       }
 
       const nextRoom = normalizeRoom(roomData as RoomRow);
+      const nextIsOwner = nextRoom.ownerId === nextUserId || nextRoom.createdBy === nextUserId;
       setRoom(nextRoom);
+      setIsOwner(nextIsOwner);
 
       const { data: membershipData } = await supabase
         .from("room_members")
@@ -155,7 +166,14 @@ export default function V2RoomDetailPage() {
         .eq("room_id", roomId)
         .eq("user_id", nextUserId)
         .maybeSingle();
-      setIsJoined(Boolean(membershipData));
+      const nextIsJoined = Boolean(membershipData) || nextIsOwner;
+      setIsJoined(nextIsJoined);
+
+      if (nextRoom.isPrivate && !nextIsJoined) {
+        setPosts([]);
+        setMessage("This private room is invite-only. Ask the room owner or admin for access.");
+        return;
+      }
 
       const { data: postData } = await supabase
         .from("room_posts")
@@ -199,7 +217,7 @@ export default function V2RoomDetailPage() {
   }
 
   async function handleLeaveRoom() {
-    if (!room || !userId) return;
+    if (!room || !userId || isOwner) return;
     setSaving(true);
     setMessage("");
     try {
@@ -216,7 +234,7 @@ export default function V2RoomDetailPage() {
 
   async function handleCreatePost(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!room || !userId || !postBody.trim()) return;
+    if (!room || !userId || !postBody.trim() || !canPost) return;
     setSaving(true);
     setMessage("");
     try {
@@ -245,7 +263,7 @@ export default function V2RoomDetailPage() {
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
       <V2ShellTopNav />
       <section className="mx-auto max-w-6xl px-4 pb-24 pt-7 sm:px-6 lg:px-8">
-        <Link href="/v2/rooms" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-blue-700">
+        <Link href="/rooms" className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:text-amber-700">
           <ArrowLeft className="size-4" />
           Back to Rooms
         </Link>
@@ -281,34 +299,41 @@ export default function V2RoomDetailPage() {
 
               <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_280px]">
                 <div>
-                  <form onSubmit={handleCreatePost} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
-                    <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Post to this room</h2>
-                    <input
-                      value={postTitle}
-                      onChange={(event) => setPostTitle(event.target.value)}
-                      placeholder="Optional title"
-                      className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-200 focus:ring-4 focus:ring-blue-100"
-                    />
-                    <textarea
-                      value={postBody}
-                      onChange={(event) => setPostBody(event.target.value)}
-                      placeholder="Share an update, question, or announcement..."
-                      rows={5}
-                      className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-blue-200 focus:ring-4 focus:ring-blue-100"
-                    />
-                    <div className="mt-3 flex justify-end">
-                      <button type="submit" disabled={saving || !postBody.trim()} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
-                        <Send className="size-4" />
-                        Post update
-                      </button>
-                    </div>
-                  </form>
+                  {canPost ? (
+                    <form onSubmit={handleCreatePost} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                      <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Post to this room</h2>
+                      <input
+                        value={postTitle}
+                        onChange={(event) => setPostTitle(event.target.value)}
+                        placeholder="Optional title"
+                        className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
+                      />
+                      <textarea
+                        value={postBody}
+                        onChange={(event) => setPostBody(event.target.value)}
+                        placeholder="Share an update, question, or announcement..."
+                        rows={5}
+                        className="mt-3 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 outline-none transition focus:border-amber-200 focus:ring-4 focus:ring-amber-100"
+                      />
+                      <div className="mt-3 flex justify-end">
+                        <button type="submit" disabled={saving || !postBody.trim()} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
+                          <Send className="size-4" />
+                          Post update
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <section className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                      <h2 className="text-sm font-black uppercase tracking-[0.18em] text-slate-500">Room access required</h2>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">Only room owners and approved members can post inside this room.</p>
+                    </section>
+                  )}
 
                   <section className="mt-5 space-y-4">
                     {posts.map((post) => (
                       <article key={post.id} className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
                         <div className="flex items-start gap-3">
-                          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blue-50 font-black text-blue-700">{room.name.slice(0, 1).toUpperCase()}</span>
+                          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-50 font-black text-amber-700">{room.name.slice(0, 1).toUpperCase()}</span>
                           <div className="min-w-0 flex-1">
                             {post.title && <h3 className="text-base font-black text-slate-950">{post.title}</h3>}
                             <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">{post.body}</p>
@@ -319,7 +344,7 @@ export default function V2RoomDetailPage() {
                     ))}
                     {posts.length === 0 && (
                       <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-6 text-center">
-                        <MessageCircle className="mx-auto size-8 text-blue-700" />
+                        <MessageCircle className="mx-auto size-8 text-amber-700" />
                         <h2 className="mt-3 text-lg font-black text-slate-950">No room activity yet</h2>
                         <p className="mt-2 text-sm text-slate-600">Start this room with the first update, question, or announcement.</p>
                       </div>
@@ -331,20 +356,22 @@ export default function V2RoomDetailPage() {
                   <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
                       <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">Membership</h2>
-                      <Users className="size-4 text-blue-700" />
+                      <Users className="size-4 text-amber-700" />
                     </div>
                     <p className="mt-3 text-sm leading-6 text-slate-600">
-                      {room.isPrivate ? "Private room membership is controlled by Loombus/admin invite." : "Join this room to keep it in Your Rooms."}
+                      {isOwner ? "You own this room." : room.isPrivate ? "Private room membership is controlled by owner/admin invite." : "Join this room to keep it in Your Rooms."}
                     </p>
                     <div className="mt-4">
-                      {room.isPrivate ? (
+                      {isOwner ? (
+                        <span className="inline-flex rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">Owner</span>
+                      ) : room.isPrivate ? (
                         <span className="inline-flex rounded-2xl bg-slate-100 px-4 py-2 text-sm font-black text-slate-600">Invite only</span>
                       ) : isJoined ? (
                         <button type="button" onClick={handleLeaveRoom} disabled={saving} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
                           Leave room
                         </button>
                       ) : (
-                        <button type="button" onClick={handleJoinRoom} disabled={saving} className="w-full rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50">
+                        <button type="button" onClick={handleJoinRoom} disabled={saving} className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-50">
                           Join room
                         </button>
                       )}
