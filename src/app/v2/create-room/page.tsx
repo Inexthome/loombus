@@ -8,11 +8,10 @@ import {
   GraduationCap,
   Home,
   ShieldCheck,
-  Sparkles,
   Store,
-  Users,
 } from "lucide-react";
 import { V2ShellMobileNav, V2ShellTopNav } from "../v2-shell-components";
+import "./create-room-appearance.css";
 
 const ROOM_TEMPLATES = [
   {
@@ -112,7 +111,7 @@ function PlanCard({ plan }: { plan: (typeof ROOM_PLANS)[number] }) {
 
 export default function CreateRoomPage() {
   return (
-    <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
+    <main className="createRoomAppearance fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
       <V2ShellTopNav />
       <section className="mx-auto max-w-7xl px-4 pb-24 pt-7 sm:px-6 lg:px-8">
         <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
