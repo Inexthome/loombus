@@ -14,6 +14,7 @@ type StickyItem = {
   updated_at: string;
 };
 
+// Deployment marker for the active Stickies controls refresh.
 function jsonError(message: string, status = 400, extras: Record<string, unknown> = {}) {
   return NextResponse.json({ error: message, ...extras }, { status });
 }
