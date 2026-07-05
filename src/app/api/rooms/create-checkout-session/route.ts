@@ -19,6 +19,13 @@ const ROOM_CHECKOUT_PLANS = {
     priceEnvVar: "STRIPE_ROOM_PRO_MONTHLY_PRICE_ID",
     memberLimit: "250 members",
   },
+  organization: {
+    label: "Loombus Organization Room",
+    plan: "organization",
+    mode: "subscription",
+    priceEnvVar: "STRIPE_ROOM_ORGANIZATION_MONTHLY_PRICE_ID",
+    memberLimit: "500 members + organization setup",
+  },
 } as const;
 
 type RoomCheckoutPlanKey = keyof typeof ROOM_CHECKOUT_PLANS;
