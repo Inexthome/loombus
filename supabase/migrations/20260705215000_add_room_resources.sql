@@ -84,9 +84,3 @@ create policy "Room owners and admins can update room resources"
   for update
   using (public.user_can_manage_room_resources(room_id))
   with check (public.user_can_manage_room_resources(room_id));
-
-drop policy if exists "Room owners and admins can delete room resources" on public.room_resources;
-create policy "Room owners and admins can delete room resources"
-  on public.room_resources
-  for delete
-  using (public.user_can_manage_room_resources(room_id));
