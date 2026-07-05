@@ -7,9 +7,21 @@ import { supabase } from "@/lib/supabase/client";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { isIosNativeApp } from "@/lib/native-app";
 
+const PENDING_ROOM_INVITE_KEY = "loombus:pending-room-invite";
+
+function isSafeRoomInvitePath(path: string) {
+  return path.startsWith("/rooms/") && path.includes("/invite?invite=") && !path.startsWith("//");
+}
+
+function getPendingRoomInvite() {
+  if (typeof window === "undefined") return "";
+  const pendingInvite = window.localStorage.getItem(PENDING_ROOM_INVITE_KEY) ?? "";
+  return isSafeRoomInvitePath(pendingInvite) ? pendingInvite : "";
+}
+
 function getSafeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/discussions";
+    return getPendingRoomInvite() || "/discussions";
   }
 
   return value;
