@@ -1,8 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+
+type EmptyRecord = Record<string, never>;
+
+type RoomCheckoutDatabase = {
+  public: {
+    Tables: {
+      rooms: {
+        Row: {
+          id: string;
+          subscription_plan: string | null;
+          subscription_status: string | null;
+        };
+        Insert: {
+          id?: string;
+          subscription_plan?: string | null;
+          subscription_status?: string | null;
+        };
+        Update: {
+          subscription_plan?: string | null;
+          subscription_status?: string | null;
+        };
+        Relationships: [];
+      };
+      room_members: {
+        Row: {
+          room_id: string;
+          user_id: string;
+          role: string | null;
+        };
+        Insert: {
+          room_id?: string;
+          user_id?: string;
+          role?: string | null;
+        };
+        Update: {
+          role?: string | null;
+        };
+        Relationships: [];
+      };
+    };
+    Views: EmptyRecord;
+    Functions: EmptyRecord;
+    Enums: EmptyRecord;
+    CompositeTypes: EmptyRecord;
+  };
+};
+
+type RoomCheckoutClient = SupabaseClient<RoomCheckoutDatabase>;
 
 function getSafeRoomId(value: unknown) {
   return typeof value === "string" && /^[0-9a-fA-F-]{20,80}$/.test(value) ? value : "";
@@ -13,16 +61,18 @@ function getSafeSessionId(value: unknown) {
 }
 
 async function updateRoomStatus(
-  supabase: ReturnType<typeof createClient>,
+  supabase: RoomCheckoutClient,
   roomId: string,
   planKey: string
 ) {
+  const roomUpdate = {
+    subscription_plan: planKey,
+    subscription_status: "active",
+  } satisfies RoomCheckoutDatabase["public"]["Tables"]["rooms"]["Update"];
+
   const { error } = await supabase
     .from("rooms")
-    .update({
-      subscription_plan: planKey,
-      subscription_status: "active",
-    })
+    .update(roomUpdate)
     .eq("id", roomId);
 
   if (error) throw error;
@@ -41,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const supabase = createClient(
+    const supabase = createClient<RoomCheckoutDatabase>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
