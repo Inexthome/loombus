@@ -31,7 +31,10 @@ function normalizeUrl(value: string) { const trimmed = value.trim(); if (!trimme
 export default function V2RoomResourcesPage() {
   const params = useParams();
   const rawRoomId = params?.roomId;
-  const roomId = useMemo(() => (Array.isArray(rawRoomId) ? rawRoomId[0] : rawRoomId ?? ""), [rawRoomId]);
+  const roomId = useMemo(() => {
+    if (Array.isArray(rawRoomId)) return rawRoomId[0] ?? "";
+    return rawRoomId ?? "";
+  }, [rawRoomId]);
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
@@ -50,19 +53,22 @@ export default function V2RoomResourcesPage() {
   const currentMember = members.find((member) => member.userId === userId);
   const isOwner = Boolean(room && userId && (room.ownerId === userId || room.createdBy === userId));
   const isAdmin = currentMember?.role === "owner" || currentMember?.role === "admin";
-  const canAccess = Boolean(room && userId && (isOwner || currentMember));
+  const isMember = Boolean(currentMember);
+  const canAccess = Boolean(room && userId && (isOwner || isMember));
   const canManage = Boolean(room && userId && (isOwner || isAdmin));
   const pinnedResources = resources.filter((resource) => resource.isPinned);
   const regularResources = resources.filter((resource) => !resource.isPinned);
 
   async function loadResources() {
-    if (!roomId) return;
-    const { data } = await supabase.from("room_resources").select("*").eq("room_id", roomId).order("is_pinned", { ascending: false }).order("created_at", { ascending: false });
+    const targetRoomId = roomId;
+    if (!targetRoomId) return;
+    const { data } = await supabase.from("room_resources").select("*").eq("room_id", targetRoomId).order("is_pinned", { ascending: false }).order("created_at", { ascending: false });
     setResources(((data ?? []) as Row[]).map(normalizeResource));
   }
 
   async function loadRoom() {
-    if (!roomId) return;
+    const targetRoomId = roomId;
+    if (!targetRoomId) return;
     setLoading(true); setMessage("");
     try {
       const { data } = await supabase.auth.getSession();
@@ -73,11 +79,11 @@ export default function V2RoomResourcesPage() {
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
       setPayload(nextPayload);
       if (!nextUserId || !accessToken || !nextPayload.configured || !nextPayload.flags.v2_shell || nextPayload.version !== "v2") { setRoom(null); setMembers([]); setResources([]); return; }
-      const { data: roomData, error: roomError } = await supabase.from("rooms").select("*").eq("id", roomId).maybeSingle();
+      const { data: roomData, error: roomError } = await supabase.from("rooms").select("*").eq("id", targetRoomId).maybeSingle();
       if (roomError || !roomData) { setRoom(null); setMembers([]); setResources([]); setMessage("Resources are only visible to approved room members."); return; }
       const nextRoom = normalizeRoom(roomData as Row);
       setRoom(nextRoom);
-      const { data: memberData } = await supabase.from("room_members").select("*").eq("room_id", roomId).order("created_at", { ascending: true });
+      const { data: memberData } = await supabase.from("room_members").select("*").eq("room_id", targetRoomId).order("created_at", { ascending: true });
       const nextMembers = ((memberData ?? []) as Row[]).map(normalizeMember).filter((member) => member.userId);
       setMembers(nextMembers);
       const nextIsOwner = nextRoom.ownerId === nextUserId || nextRoom.createdBy === nextUserId;
@@ -118,8 +124,11 @@ export default function V2RoomResourcesPage() {
 
   const gatePayload = payload ?? getDefaultShellPayload();
   if (loading) return <V2ShellGateCard payload={gatePayload} title="Loading room resources" description="Checking room access and resources." />;
-  if (!payload?.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard payload={gatePayload} title="V2 shell unavailable" description="Room resources are available inside the V2 shell." />;
-  if (!room || !canAccess) return <V2ShellGateCard payload={gatePayload} title="Resources are private" description={message || "Resources are only visible to approved room members."} />;
+  if (payload === null || !payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard payload={gatePayload} title="V2 shell unavailable" description="Room resources are available inside the V2 shell." />;
+  if (room === null || !canAccess) return <V2ShellGateCard payload={gatePayload} title="Resources are private" description={message || "Resources are only visible to approved room members."} />;
+
+  const activePayload = payload;
+  const activeRoom = room;
 
   function renderResource(resource: Resource) {
     return (
@@ -146,12 +155,12 @@ export default function V2RoomResourcesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
-      <V2ShellTopNav payload={payload} />
+      <V2ShellTopNav payload={activePayload} />
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-28 pt-24 sm:px-6 lg:px-8">
-        <Link href={`/rooms/${room.id}`} className="inline-flex w-fit items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"><ArrowLeft className="size-4" /> Back to room</Link>
+        <Link href={`/rooms/${activeRoom.id}`} className="inline-flex w-fit items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"><ArrowLeft className="size-4" /> Back to room</Link>
         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Room resources</p>
-          <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">{room.name} Resources</h1>
+          <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">{activeRoom.name} Resources</h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-600">Keep documents, links, rules, forms, and room notes in one private place.</p>
         </section>
         {message && <p className="rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-900 ring-1 ring-amber-100">{message}</p>}
@@ -176,7 +185,7 @@ export default function V2RoomResourcesPage() {
           <aside className="h-fit rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><FileText className="size-5 text-amber-700" /><h2 className="mt-3 text-sm font-black uppercase tracking-[0.16em] text-slate-500">Resource types</h2><div className="mt-4 space-y-2 text-sm font-bold text-slate-600">{RESOURCE_TYPES.map((type) => <p key={type} className="rounded-2xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200">{type}</p>)}</div><p className="mt-4 text-xs font-semibold leading-5 text-slate-500">Resources are visible only to approved room members and owners.</p></aside>
         </section>
       </main>
-      <V2ShellMobileNav payload={payload} />
+      <V2ShellMobileNav payload={activePayload} />
     </div>
   );
 }
