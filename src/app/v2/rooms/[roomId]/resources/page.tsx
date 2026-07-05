@@ -127,7 +127,6 @@ export default function V2RoomResourcesPage() {
   if (payload === null || !payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard payload={gatePayload} title="V2 shell unavailable" message="Room resources are available inside the V2 shell." />;
   if (room === null || !canAccess) return <V2ShellGateCard payload={gatePayload} title="Resources are private" message={message || "Resources are only visible to approved room members."} />;
 
-  const activePayload = payload;
   const activeRoom = room;
 
   function renderResource(resource: Resource) {
@@ -155,7 +154,7 @@ export default function V2RoomResourcesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
-      <V2ShellTopNav payload={activePayload} />
+      <V2ShellTopNav />
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-28 pt-24 sm:px-6 lg:px-8">
         <Link href={`/rooms/${activeRoom.id}`} className="inline-flex w-fit items-center gap-2 rounded-2xl bg-white px-4 py-2 text-sm font-black text-slate-700 ring-1 ring-slate-200 transition hover:bg-slate-50"><ArrowLeft className="size-4" /> Back to room</Link>
         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
@@ -185,7 +184,7 @@ export default function V2RoomResourcesPage() {
           <aside className="h-fit rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm"><FileText className="size-5 text-amber-700" /><h2 className="mt-3 text-sm font-black uppercase tracking-[0.16em] text-slate-500">Resource types</h2><div className="mt-4 space-y-2 text-sm font-bold text-slate-600">{RESOURCE_TYPES.map((type) => <p key={type} className="rounded-2xl bg-slate-50 px-3 py-2 ring-1 ring-slate-200">{type}</p>)}</div><p className="mt-4 text-xs font-semibold leading-5 text-slate-500">Resources are visible only to approved room members and owners.</p></aside>
         </section>
       </main>
-      <V2ShellMobileNav payload={activePayload} />
+      <V2ShellMobileNav />
     </div>
   );
 }
