@@ -103,11 +103,11 @@ export default function V2CreateRoomPage() {
     const initialTemplate = ROOM_TEMPLATES.find((template) => template.id === initialTemplateId) ?? ROOM_TEMPLATES[0];
     const initialPlan = ROOM_PLANS.find((plan) => plan.id === initialPlanId) ?? ROOM_PLANS[0];
     setSelectedTemplateId(initialTemplate.id);
-    setSelectedPlanId(initialPlan.selfServe ? initialPlan.id : ROOM_PLANS[0].id);
+    setSelectedPlanId(initialPlan.id);
     setRoomName(getDefaultRoomName(initialTemplate.title));
     setRoomDescription(initialTemplate.description);
     if (!initialPlan.selfServe) {
-      setMessage("Organization rooms require support-assisted setup. Continue with a self-serve plan here or contact support for organization setup.");
+      setMessage("Organization rooms use a custom setup request instead of instant Stripe checkout.");
     }
   }, []);
 
@@ -150,6 +150,15 @@ export default function V2CreateRoomPage() {
     });
   }
 
+  function startOrganizationRequest() {
+    const params = new URLSearchParams({
+      template: selectedTemplate.id,
+      roomName: roomName.trim() || getDefaultRoomName(selectedTemplate.title),
+      roomType: selectedTemplate.type,
+    });
+    router.push(`/v2/rooms/organization/request?${params.toString()}`);
+  }
+
   async function startRoomCheckout(roomId: string, planKey: string) {
     const { data: sessionData } = await supabase.auth.getSession();
 
@@ -188,7 +197,7 @@ export default function V2CreateRoomPage() {
     event.preventDefault();
     if (!userId || !roomName.trim()) return;
     if (!selectedPlan.selfServe) {
-      router.push("/support?topic=organization-room");
+      startOrganizationRequest();
       return;
     }
     setSaving(true);
@@ -258,9 +267,9 @@ export default function V2CreateRoomPage() {
 
         <section className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
           <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-800 p-6 text-white sm:p-8">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-200">Self-serve private room</p>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-200">Private rooms</p>
             <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Create a room and start privately.</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-amber-50/90 sm:text-base">Choose a template and plan. Loombus creates a private room, adds you as owner, and opens the room discussion without posting anything to public Loombus Discussions.</p>
+            <p className="mt-4 max-w-3xl text-sm leading-6 text-amber-50/90 sm:text-base">Choose a template and plan. Starter and Pro use Stripe checkout. Organization rooms start with a custom setup request before pricing is finalized.</p>
           </div>
 
           <form onSubmit={handleCreateRoom} className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -288,7 +297,7 @@ export default function V2CreateRoomPage() {
 
               <section>
                 <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">2. Pick room plan</h2>
-                <p className="mt-2 text-xs font-semibold text-slate-500">Starter and Pro open Stripe checkout after the private room is created. Free rooms open immediately. Organization rooms remain support-assisted.</p>
+                <p className="mt-2 text-xs font-semibold text-slate-500">Starter and Pro open Stripe checkout after the private room is created. Free rooms open immediately. Organization rooms open a custom setup request.</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {ROOM_PLANS.map((plan) => {
                     const selected = selectedPlanId === plan.id;
@@ -299,7 +308,7 @@ export default function V2CreateRoomPage() {
                             <span className="block text-sm font-black text-slate-950">{plan.name}</span>
                             <span className="mt-1 block text-xs font-bold text-slate-500">{plan.memberLimit}</span>
                             {isPaidRoomPlan(plan.id) && <span className="mt-2 block text-xs font-black text-emerald-700">Checkout required</span>}
-                            {!plan.selfServe && <span className="mt-2 block text-xs font-black text-amber-800">Support-assisted setup</span>}
+                            {!plan.selfServe && <span className="mt-2 block text-xs font-black text-amber-800">Custom setup request</span>}
                           </span>
                           <span className="text-sm font-black text-slate-950">{plan.price}</span>
                         </span>
@@ -351,7 +360,7 @@ export default function V2CreateRoomPage() {
                 <p className="mt-1 text-sm font-bold text-slate-500">{selectedPlan.memberLimit}</p>
                 <button type="submit" disabled={saving || !roomName.trim()} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
                   <Send className="size-4" />
-                  {saving ? "Creating room..." : isPaidRoomPlan(selectedPlan.id) ? "Create room and checkout" : selectedPlan.selfServe ? "Create private room" : "Contact support"}
+                  {saving ? "Creating room..." : isPaidRoomPlan(selectedPlan.id) ? "Create room and checkout" : selectedPlan.selfServe ? "Create private room" : "Request organization setup"}
                 </button>
               </section>
             </aside>
