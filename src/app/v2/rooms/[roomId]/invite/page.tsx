@@ -54,6 +54,11 @@ export default function V2RoomInvitePage() {
   const rawRoomId = params?.roomId;
   const roomId = useMemo(() => (Array.isArray(rawRoomId) ? rawRoomId[0] : rawRoomId ?? ""), [rawRoomId]);
   const inviteCode = searchParams.get("invite")?.trim() || "";
+  const invitePath = useMemo(() => {
+    const basePath = roomId ? `/rooms/${roomId}/invite` : "/rooms";
+    return inviteCode ? `${basePath}?invite=${encodeURIComponent(inviteCode)}` : basePath;
+  }, [inviteCode, roomId]);
+  const encodedInvitePath = encodeURIComponent(invitePath);
 
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -81,7 +86,7 @@ export default function V2RoomInvitePage() {
       const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
       setPayload(nextPayload);
 
-      if (!nextUserId || !accessToken || !nextPayload.configured || !nextPayload.flags.v2_shell || nextPayload.version !== "v2") {
+      if (!nextUserId || !accessToken) {
         setRoom(null);
         return;
       }
@@ -159,8 +164,41 @@ export default function V2RoomInvitePage() {
   }
 
   if (loading) return <V2ShellGateCard title="Opening invite" message="Loombus is checking this room invite." loading />;
-  if (!payload?.authenticated) return <V2ShellGateCard title="Sign in required" message="Sign in first so Loombus can verify this room invite." payload={payload} />;
-  if (!payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard title="V2 Rooms is not enabled" message="This account is not currently allowed through the v2_shell flag." payload={payload} />;
+  if (!payload?.authenticated) {
+    return (
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16">
+        <section className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-xl flex-col justify-center">
+          <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white">
+            ← Back to home
+          </Link>
+
+          <div className="rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-8">
+            <div className="mb-6 grid size-14 place-items-center rounded-2xl bg-white text-black">
+              <Lock className="size-7" />
+            </div>
+            <p className="mb-3 text-xs font-black uppercase tracking-[0.24em] text-zinc-500">Private Room Invite</p>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Join Loombus to accept this room invite.</h1>
+            <p className="mt-5 leading-7 text-zinc-400">
+              This private room invite is ready. Create a Loombus account or sign in, then Loombus will bring you back here to accept the invite.
+            </p>
+
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+              <Link href={`/signup?next=${encodedInvitePath}`} className="rounded-full bg-white px-6 py-3 text-center text-sm font-semibold text-black transition hover:bg-zinc-200">
+                Create account
+              </Link>
+              <Link href={`/login?next=${encodedInvitePath}`} className="rounded-full border border-zinc-700 px-6 py-3 text-center text-sm font-semibold text-zinc-200 transition hover:border-zinc-500 hover:text-white">
+                Sign in
+              </Link>
+            </div>
+
+            <p className="mt-5 rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-6 text-zinc-500">
+              Private posts and members stay hidden until your account accepts the invite.
+            </p>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
