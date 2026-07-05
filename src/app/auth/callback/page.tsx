@@ -15,7 +15,7 @@ function isSafeRoomInvitePath(path: string) {
 }
 
 function isSafeSubscriptionIntentPath(path: string) {
-  return path.startsWith("/premium?intent=checkout&plan=") && !path.startsWith("//");
+  return path.startsWith("/premium/checkout/") && !path.startsWith("//");
 }
 
 function getPendingRoomInvite() {
