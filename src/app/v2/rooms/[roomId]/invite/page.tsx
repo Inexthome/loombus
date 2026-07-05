@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Copy, Link2, Lock, RefreshCw, UserPlus } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Copy, Link2, Lock, RefreshCw, Trash2, UserPlus } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import {
   getDefaultShellPayload,
@@ -116,6 +116,22 @@ export default function V2RoomInvitePage() {
     }
   }
 
+  async function handleRevokeCode() {
+    if (!room || !isOwner || !room.joinCode) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const { error } = await supabase.rpc("room_revoke_join_code", { target_room_id: room.id });
+      if (error) throw error;
+      setRoom({ ...room, joinCode: "" });
+      setMessage("Invite link revoked. Older invite links will no longer work.");
+    } catch {
+      setMessage("Loombus could not revoke this invite link yet.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleCopyInvite() {
     if (!inviteUrl) return;
     await navigator.clipboard.writeText(inviteUrl).catch(() => undefined);
@@ -195,21 +211,25 @@ export default function V2RoomInvitePage() {
               </h2>
               {isOwner ? (
                 <>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">Generate or refresh the room invite link. Regenerating replaces the previous link.</p>
-                  {inviteUrl && <p className="mt-4 break-all rounded-2xl bg-slate-50 p-4 text-xs font-bold text-slate-700 ring-1 ring-slate-200">{inviteUrl}</p>}
-                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                    <button type="button" onClick={handleCreateCode} disabled={saving} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
+                  <p className="mt-3 text-sm leading-6 text-slate-600">Generate or refresh the room invite link. Regenerating replaces the previous link. Revoking disables the current link completely.</p>
+                  {inviteUrl ? <p className="mt-4 break-all rounded-2xl bg-slate-50 p-4 text-xs font-bold text-slate-700 ring-1 ring-slate-200">{inviteUrl}</p> : <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-600 ring-1 ring-slate-200">No active invite link.</p>}
+                  <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                    <button type="button" onClick={handleCreateCode} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
                       <RefreshCw className="size-4" />
                       {room?.joinCode ? "Regenerate" : "Generate"}
                     </button>
-                    <button type="button" onClick={handleCopyInvite} disabled={!inviteUrl} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                    <button type="button" onClick={handleCopyInvite} disabled={!inviteUrl || saving} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
                       <Copy className="size-4" />
                       Copy
+                    </button>
+                    <button type="button" onClick={handleRevokeCode} disabled={!room?.joinCode || saving} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 bg-white px-5 py-3 text-sm font-black text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
+                      <Trash2 className="size-4" />
+                      Revoke
                     </button>
                   </div>
                 </>
               ) : (
-                <p className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-600 ring-1 ring-slate-200">Only the room owner can create or refresh invite links.</p>
+                <p className="mt-3 rounded-2xl bg-slate-50 p-4 text-sm font-bold text-slate-600 ring-1 ring-slate-200">Only the room owner can create, copy, or revoke invite links.</p>
               )}
             </section>
           </div>
