@@ -4,11 +4,23 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { isIosNativeApp, purchaseApplePlan } from "@/lib/apple-purchases";
 
+const PENDING_SUBSCRIPTION_INTENT_KEY = "loombus:pending-subscription-intent";
+
 type PremiumPlanCheckoutButtonProps = {
   planKey: string;
   children: React.ReactNode;
   variant?: "primary" | "secondary";
 };
+
+function getPremiumIntentPath(planKey: string) {
+  return `/premium/checkout/${encodeURIComponent(planKey)}`;
+}
+
+function storePendingSubscriptionIntent(planKey: string) {
+  const intentPath = getPremiumIntentPath(planKey);
+  window.localStorage.setItem(PENDING_SUBSCRIPTION_INTENT_KEY, intentPath);
+  return intentPath;
+}
 
 export function PremiumPlanCheckoutButton({
   planKey,
@@ -29,7 +41,8 @@ export function PremiumPlanCheckoutButton({
       const { data: sessionData } = await supabase.auth.getSession();
 
       if (!sessionData.session) {
-        window.location.href = "/login";
+        const intentPath = storePendingSubscriptionIntent(planKey);
+        window.location.href = `/login?next=${encodeURIComponent(intentPath)}`;
         return;
       }
 
@@ -72,6 +85,7 @@ export function PremiumPlanCheckoutButton({
         return;
       }
 
+      window.localStorage.removeItem(PENDING_SUBSCRIPTION_INTENT_KEY);
       window.location.href = result.url;
     } catch (error) {
       const errorMessage =

@@ -8,9 +8,14 @@ import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { isIosNativeApp } from "@/lib/native-app";
 
 const PENDING_ROOM_INVITE_KEY = "loombus:pending-room-invite";
+const PENDING_SUBSCRIPTION_INTENT_KEY = "loombus:pending-subscription-intent";
 
 function isSafeRoomInvitePath(path: string) {
   return path.startsWith("/rooms/") && path.includes("/invite?invite=") && !path.startsWith("//");
+}
+
+function isSafeSubscriptionIntentPath(path: string) {
+  return path.startsWith("/premium/checkout/") && !path.startsWith("//");
 }
 
 function getPendingRoomInvite() {
@@ -19,9 +24,15 @@ function getPendingRoomInvite() {
   return isSafeRoomInvitePath(pendingInvite) ? pendingInvite : "";
 }
 
+function getPendingSubscriptionIntent() {
+  if (typeof window === "undefined") return "";
+  const pendingIntent = window.localStorage.getItem(PENDING_SUBSCRIPTION_INTENT_KEY) ?? "";
+  return isSafeSubscriptionIntentPath(pendingIntent) ? pendingIntent : "";
+}
+
 function getSafeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return getPendingRoomInvite() || "/discussions";
+    return getPendingRoomInvite() || getPendingSubscriptionIntent() || "/discussions";
   }
 
   return value;
