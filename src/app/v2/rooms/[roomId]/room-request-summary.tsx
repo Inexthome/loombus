@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ClipboardList } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -45,6 +46,23 @@ function formatRelativeTime(value: string | null) {
 export function RoomRequestSummary({ roomId }: { roomId: string }) {
   const [requests, setRequests] = useState<RequestSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [railHost, setRailHost] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const billingSection = document.getElementById("billing");
+    const rail = billingSection?.parentElement;
+    if (!rail) return;
+
+    const host = document.createElement("div");
+    host.setAttribute("data-room-request-summary", "true");
+    billingSection.insertAdjacentElement("afterend", host);
+    setRailHost(host);
+
+    return () => {
+      host.remove();
+      setRailHost(null);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,8 +100,8 @@ export function RoomRequestSummary({ roomId }: { roomId: string }) {
   const activeRequests = requests.filter((request) => request.status === "open" || request.status === "in_progress");
   const latestRequest = requests[0];
 
-  return (
-    <aside className="hidden xl:block fixed right-8 top-[34rem] z-[95] w-80 rounded-[1.25rem] border border-slate-200 bg-white p-4 text-slate-950 shadow-sm ring-1 ring-slate-200/60">
+  const card = (
+    <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 text-slate-950 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700 ring-1 ring-amber-100">
@@ -115,6 +133,9 @@ export function RoomRequestSummary({ roomId }: { roomId: string }) {
       <Link href={`/rooms/${roomId}/requests`} className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800">
         Open Request Center
       </Link>
-    </aside>
+    </section>
   );
+
+  if (!railHost) return null;
+  return createPortal(card, railHost);
 }
