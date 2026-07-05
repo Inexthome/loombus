@@ -1,12 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { DateOfBirthSelect } from "@/components/date-of-birth-select";
 import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
 import { isIosNativeApp } from "@/lib/native-app";
 import { supabase } from "@/lib/supabase/client";
 import { AppleLogoMark, GoogleLogoMark } from "@/components/auth-provider-icons";
+
+function getSafeNext(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/discussions";
+  }
+
+  return value;
+}
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -19,6 +27,14 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
   const [nativeIosApp, setNativeIosApp] = useState(false);
+
+  const getNextPath = useCallback(() => {
+    if (typeof window === "undefined") return "/discussions";
+    const params = new URLSearchParams(window.location.search);
+    return getSafeNext(params.get("next"));
+  }, []);
+
+  const getEncodedNextPath = useCallback(() => encodeURIComponent(getNextPath()), [getNextPath]);
 
   useEffect(() => {
     setNativeIosApp(isIosNativeApp());
@@ -53,11 +69,13 @@ export default function SignupPage() {
 
     setLoading(true);
 
+    const nextPath = getNextPath();
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/discussions`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
         data: {
           full_name: fullName.trim(),
           date_of_birth: dateOfBirth,
@@ -99,7 +117,7 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/discussions`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(getNextPath())}`,
         },
       });
 
@@ -133,7 +151,7 @@ export default function SignupPage() {
           <p className="mb-5 text-sm leading-relaxed text-zinc-500">
             Already have a Loombus account? Continue here.
           </p>
-          <Link href="/login" className="block w-full rounded-full bg-white px-6 py-3 text-center text-sm font-medium text-black transition hover:bg-zinc-200">
+          <Link href={`/login?next=${getEncodedNextPath()}`} className="block w-full rounded-full bg-white px-6 py-3 text-center text-sm font-medium text-black transition hover:bg-zinc-200">
             Sign in
           </Link>
         </div>
@@ -198,7 +216,7 @@ export default function SignupPage() {
               <p className="text-sm text-zinc-500">Next step</p>
               <p className="mt-2 text-zinc-300">Confirm your email, then log in and finish your profile setup.</p>
             </div>
-            <Link href="/login" className="inline-flex rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200">
+            <Link href={`/login?next=${getEncodedNextPath()}`} className="inline-flex rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200">
               Go to Log In
             </Link>
           </div>
@@ -249,7 +267,7 @@ export default function SignupPage() {
 
             <p className="pt-1 text-center text-sm text-zinc-400 loombus-mobile-visitor-existing">
               Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-white underline decoration-white/60 underline-offset-4 transition hover:decoration-white loombus-mobile-visitor-signin">
+              <Link href={`/login?next=${getEncodedNextPath()}`} className="font-semibold text-white underline decoration-white/60 underline-offset-4 transition hover:decoration-white loombus-mobile-visitor-signin">
                 Sign in
               </Link>
             </p>
