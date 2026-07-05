@@ -24,7 +24,21 @@ const ROOM_CHECKOUT_PLANS = {
     plan: "organization",
     mode: "subscription",
     priceEnvVar: "STRIPE_ROOM_ORGANIZATION_MONTHLY_PRICE_ID",
-    memberLimit: "500 members + organization setup",
+    memberLimit: "Up to 3 rooms, 500 members",
+  },
+  organization_plus: {
+    label: "Loombus Organization Plus",
+    plan: "organization_plus",
+    mode: "subscription",
+    priceEnvVar: "STRIPE_ROOM_ORGANIZATION_PLUS_MONTHLY_PRICE_ID",
+    memberLimit: "Up to 10 rooms, 2,000 members",
+  },
+  organization_enterprise: {
+    label: "Loombus Organization Enterprise",
+    plan: "organization_enterprise",
+    mode: "subscription",
+    priceEnvVar: "STRIPE_ROOM_ORGANIZATION_ENTERPRISE_MONTHLY_PRICE_ID",
+    memberLimit: "Unlimited/custom rooms, large membership, dedicated support",
   },
 } as const;
 
