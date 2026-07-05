@@ -83,7 +83,7 @@ export function RoomRequestSummary({ roomId }: { roomId: string }) {
   const latestRequest = requests[0];
 
   return (
-    <aside className="fixed bottom-24 right-5 z-[120] w-[min(92vw,360px)] rounded-[1.25rem] border border-slate-200 bg-white p-4 text-slate-950 shadow-2xl sm:bottom-8">
+    <aside className="hidden xl:block fixed right-8 top-[34rem] z-[95] w-80 rounded-[1.25rem] border border-slate-200 bg-white p-4 text-slate-950 shadow-sm ring-1 ring-slate-200/60">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700 ring-1 ring-amber-100">
