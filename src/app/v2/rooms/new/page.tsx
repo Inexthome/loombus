@@ -21,10 +21,21 @@ const ROOM_TEMPLATES = [
 ];
 
 const ROOM_PLANS = [
-  { id: "free", name: "Free Room", price: "$0", status: "active", memberLimit: "10 members", selfServe: true },
-  { id: "starter", name: "Room Starter", price: "$19/mo", status: "pending_checkout", memberLimit: "50 members", selfServe: true },
-  { id: "pro", name: "Room Pro", price: "$49/mo", status: "pending_checkout", memberLimit: "250 members", selfServe: true },
-  { id: "organization", name: "Organization", price: "$99/mo", status: "pending_checkout", memberLimit: "500 members + setup support", selfServe: true },
+  { id: "free", name: "Free Room", price: "$0", status: "active", memberLimit: "10 members", detail: "Small private starter space", selfServe: true },
+  { id: "starter", name: "Room Starter", price: "$19/mo", status: "pending_checkout", memberLimit: "50 members", detail: "One private room", selfServe: true },
+  { id: "pro", name: "Room Pro", price: "$49/mo", status: "pending_checkout", memberLimit: "250 members", detail: "Larger private room", selfServe: true },
+  { id: "organization", name: "Organization", price: "$99/mo", status: "pending_checkout", memberLimit: "Up to 3 rooms, 500 members", detail: "Organization admin controls and setup support", selfServe: true },
+  { id: "organization_plus", name: "Organization Plus", price: "$149/mo", status: "pending_checkout", memberLimit: "Up to 10 rooms, 2,000 members", detail: "More rooms, larger membership, and advanced setup", selfServe: true },
+  { id: "organization_enterprise", name: "Organization Enterprise", price: "$199/mo", status: "pending_checkout", memberLimit: "Unlimited/custom rooms, large membership", detail: "Dedicated support and custom organization structure", selfServe: true },
+];
+
+const CUSTOM_ADD_ONS = [
+  "More members",
+  "More rooms",
+  "White-label branding",
+  "Priority support",
+  "Data/export tools",
+  "Custom onboarding",
 ];
 
 function getDefaultRoomName(templateTitle: string) {
@@ -38,7 +49,7 @@ function parseInitialValue(paramName: string, fallback: string) {
 }
 
 function isPaidRoomPlan(planId: string) {
-  return planId === "starter" || planId === "pro" || planId === "organization";
+  return planId !== "free";
 }
 
 async function insertRoomWithFallback(payload: Record<string, unknown>) {
@@ -254,7 +265,7 @@ export default function V2CreateRoomPage() {
           <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-800 p-6 text-white sm:p-8">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-200">Private rooms</p>
             <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Create a room and start privately.</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-amber-50/90 sm:text-base">Choose a template and plan. Starter, Pro, and Organization plans use Stripe checkout after the private room is created.</p>
+            <p className="mt-4 max-w-3xl text-sm leading-6 text-amber-50/90 sm:text-base">Choose a template and plan. Starter, Pro, Organization, Organization Plus, and Organization Enterprise use Stripe checkout after the private room is created.</p>
           </div>
 
           <form onSubmit={handleCreateRoom} className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -282,7 +293,7 @@ export default function V2CreateRoomPage() {
 
               <section>
                 <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">2. Pick room plan</h2>
-                <p className="mt-2 text-xs font-semibold text-slate-500">Free rooms open immediately. Starter, Pro, and Organization open Stripe checkout after the private room is created.</p>
+                <p className="mt-2 text-xs font-semibold text-slate-500">Free rooms open immediately. Paid plans open Stripe checkout after the private room is created.</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {ROOM_PLANS.map((plan) => {
                     const selected = selectedPlanId === plan.id;
@@ -292,6 +303,7 @@ export default function V2CreateRoomPage() {
                           <span>
                             <span className="block text-sm font-black text-slate-950">{plan.name}</span>
                             <span className="mt-1 block text-xs font-bold text-slate-500">{plan.memberLimit}</span>
+                            <span className="mt-1 block text-xs leading-5 text-slate-500">{plan.detail}</span>
                             {isPaidRoomPlan(plan.id) && <span className="mt-2 block text-xs font-black text-emerald-700">Checkout required</span>}
                           </span>
                           <span className="text-sm font-black text-slate-950">{plan.price}</span>
@@ -346,6 +358,15 @@ export default function V2CreateRoomPage() {
                   <Send className="size-4" />
                   {saving ? "Creating room..." : isPaidRoomPlan(selectedPlan.id) ? "Create room and checkout" : "Create private room"}
                 </button>
+              </section>
+
+              <section className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-800">Custom add-ons</p>
+                <ul className="mt-4 space-y-2 text-sm font-semibold text-amber-900">
+                  {CUSTOM_ADD_ONS.map((addon) => (
+                    <li key={addon} className="flex gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0" />{addon}</li>
+                  ))}
+                </ul>
               </section>
             </aside>
           </form>
