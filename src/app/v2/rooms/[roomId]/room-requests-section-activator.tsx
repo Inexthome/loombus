@@ -5,57 +5,92 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ClipboardList } from "lucide-react";
 
-function replaceExactText(root: HTMLElement, before: string, after: string) {
+function replaceTextIncludes(root: HTMLElement, before: string, after: string) {
   root.querySelectorAll<HTMLElement>("*").forEach((element) => {
     if (element.childElementCount > 0) return;
-    if (element.textContent?.trim() === before) {
-      element.textContent = after;
+    const current = element.textContent ?? "";
+    if (current.includes(before)) {
+      element.textContent = current.replace(before, after);
     }
   });
+}
+
+function applyLiveCopy(section: HTMLElement) {
+  replaceTextIncludes(section, "PLANNED", "LIVE");
+  replaceTextIncludes(
+    section,
+    "Members will be able to submit structured requests with open, in progress, and resolved states.",
+    "Members can submit structured requests with open, in progress, resolved, and closed states."
+  );
+  replaceTextIncludes(
+    section,
+    "Owners and admins can triage member questions without mixing them into normal discussions.",
+    "Owners and admins can triage submitted requests without mixing them into normal discussions."
+  );
+  replaceTextIncludes(
+    section,
+    "Access requests are live now. Maintenance/help requests can use this structured area later.",
+    "Maintenance, help, service, and general room requests are live now."
+  );
+}
+
+function resolveRequestsSection() {
+  const directSection = document.getElementById("requests");
+  if (directSection) return directSection;
+
+  const headings = Array.from(document.querySelectorAll<HTMLElement>("h1,h2,h3,p,span"));
+  const heading = headings.find((element) => element.textContent?.trim().toLowerCase() === "requests");
+  return heading?.closest("section") as HTMLElement | null;
 }
 
 export function RoomRequestsSectionActivator({ roomId }: { roomId: string }) {
   const [sectionHost, setSectionHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    const section = document.getElementById("requests");
-    if (!section) return;
+    let activeHost: HTMLElement | null = null;
 
-    section.setAttribute("data-room-requests-live", "true");
+    function activate() {
+      const section = resolveRequestsSection();
+      if (!section) return;
 
-    replaceExactText(section, "PLANNED", "LIVE");
-    replaceExactText(
-      section,
-      "Members will be able to submit structured requests with open, in progress, and resolved states.",
-      "Members can submit structured requests with open, in progress, resolved, and closed states."
-    );
-    replaceExactText(
-      section,
-      "Owners and admins can triage member questions without mixing them into normal discussions.",
-      "Owners and admins can triage submitted requests without mixing them into normal discussions."
-    );
+      section.setAttribute("data-room-requests-live", "true");
+      applyLiveCopy(section);
 
-    const existingHost = section.querySelector<HTMLElement>('[data-room-requests-section-host="true"]');
-    if (existingHost) {
-      setSectionHost(existingHost);
-      return;
+      const existingHost = section.querySelector<HTMLElement>('[data-room-requests-section-host="true"]');
+      if (existingHost) {
+        activeHost = existingHost;
+        setSectionHost(existingHost);
+        return;
+      }
+
+      const host = document.createElement("div");
+      host.setAttribute("data-room-requests-section-host", "true");
+      host.className = "mt-5";
+
+      const firstGrid = Array.from(section.children).find((child) => child instanceof HTMLElement && child.className.includes("grid"));
+      if (firstGrid) {
+        section.insertBefore(host, firstGrid);
+      } else {
+        section.appendChild(host);
+      }
+
+      activeHost = host;
+      setSectionHost(host);
     }
 
-    const host = document.createElement("div");
-    host.setAttribute("data-room-requests-section-host", "true");
-    host.className = "mt-5";
+    activate();
 
-    const firstGrid = Array.from(section.children).find((child) => child instanceof HTMLElement && child.className.includes("grid"));
-    if (firstGrid) {
-      section.insertBefore(host, firstGrid);
-    } else {
-      section.appendChild(host);
-    }
+    const observer = new MutationObserver(() => activate());
+    observer.observe(document.body, { childList: true, subtree: true });
 
-    setSectionHost(host);
+    const intervalId = window.setInterval(activate, 500);
+    const timeoutId = window.setTimeout(() => window.clearInterval(intervalId), 8000);
 
     return () => {
-      host.remove();
+      observer.disconnect();
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+      activeHost?.remove();
       setSectionHost(null);
     };
   }, []);
