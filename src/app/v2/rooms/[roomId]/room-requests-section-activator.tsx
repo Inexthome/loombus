@@ -6,17 +6,34 @@ import { createPortal } from "react-dom";
 import { ClipboardList } from "lucide-react";
 
 function replaceTextIncludes(root: HTMLElement, before: string, after: string) {
+  const beforeLower = before.toLowerCase();
+
   root.querySelectorAll<HTMLElement>("*").forEach((element) => {
     if (element.childElementCount > 0) return;
     const current = element.textContent ?? "";
-    if (current.includes(before)) {
-      element.textContent = current.replace(before, after);
+    const currentLower = current.toLowerCase();
+
+    if (currentLower.includes(beforeLower)) {
+      element.textContent = current.replace(new RegExp(before, "gi"), after);
+    }
+  });
+}
+
+function replaceBadgeText(root: HTMLElement, before: string, after: string) {
+  const beforeLower = before.toLowerCase();
+
+  root.querySelectorAll<HTMLElement>("span,p,div").forEach((element) => {
+    const normalized = (element.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    if (normalized === beforeLower) {
+      element.textContent = after;
     }
   });
 }
 
 function applyLiveCopy(section: HTMLElement) {
+  replaceBadgeText(section, "planned", "LIVE");
   replaceTextIncludes(section, "PLANNED", "LIVE");
+  replaceTextIncludes(section, "Planned", "LIVE");
   replaceTextIncludes(
     section,
     "Members will be able to submit structured requests with open, in progress, and resolved states.",
@@ -81,7 +98,7 @@ export function RoomRequestsSectionActivator({ roomId }: { roomId: string }) {
     activate();
 
     const observer = new MutationObserver(() => activate());
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
     const intervalId = window.setInterval(activate, 500);
     const timeoutId = window.setTimeout(() => window.clearInterval(intervalId), 8000);
