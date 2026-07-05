@@ -13,7 +13,7 @@ type PremiumPlanCheckoutButtonProps = {
 };
 
 function getPremiumIntentPath(planKey: string) {
-  return `/premium?intent=checkout&plan=${encodeURIComponent(planKey)}`;
+  return `/premium/checkout/${encodeURIComponent(planKey)}`;
 }
 
 function storePendingSubscriptionIntent(planKey: string) {
