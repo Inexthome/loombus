@@ -37,6 +37,10 @@ function parseInitialValue(paramName: string, fallback: string) {
   return value || fallback;
 }
 
+function isPaidRoomPlan(planId: string) {
+  return planId === "starter" || planId === "pro";
+}
+
 async function insertRoomWithFallback(payload: Record<string, unknown>) {
   const attempts: Record<string, unknown>[] = [
     payload,
@@ -146,6 +150,40 @@ export default function V2CreateRoomPage() {
     });
   }
 
+  async function startRoomCheckout(roomId: string, planKey: string) {
+    const { data: sessionData } = await supabase.auth.getSession();
+
+    if (!sessionData.session) {
+      router.push(`/rooms/${encodeURIComponent(roomId)}`);
+      return;
+    }
+
+    const response = await fetch("/api/rooms/create-checkout-session", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ roomId, planKey }),
+    });
+
+    const result = await response.json().catch(() => ({
+      error: "Checkout returned an unreadable response.",
+    }));
+
+    if (!response.ok || !result.url) {
+      setMessage(
+        result.detail
+          ? `${result.error ?? "Room created, but checkout could not start."} ${result.detail}`
+          : result.error ?? "Room created, but checkout could not start."
+      );
+      router.push(`/rooms/${encodeURIComponent(roomId)}?room_checkout=pending`);
+      return;
+    }
+
+    window.location.href = result.url;
+  }
+
   async function handleCreateRoom(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userId || !roomName.trim()) return;
@@ -183,6 +221,11 @@ export default function V2CreateRoomPage() {
         body: "This room discussion is private to approved room members and does not appear on the public Loombus discussion page.",
       });
       if (welcomePostResult.error) throw welcomePostResult.error;
+
+      if (isPaidRoomPlan(selectedPlan.id)) {
+        await startRoomCheckout(roomId, selectedPlan.id);
+        return;
+      }
 
       router.push(`/rooms/${encodeURIComponent(roomId)}`);
     } catch {
@@ -245,7 +288,7 @@ export default function V2CreateRoomPage() {
 
               <section>
                 <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">2. Pick room plan</h2>
-                <p className="mt-2 text-xs font-semibold text-slate-500">Paid plan checkout is not enabled yet. Starter and Pro rooms are created with a pending checkout status for now.</p>
+                <p className="mt-2 text-xs font-semibold text-slate-500">Starter and Pro open Stripe checkout after the private room is created. Free rooms open immediately. Organization rooms remain support-assisted.</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {ROOM_PLANS.map((plan) => {
                     const selected = selectedPlanId === plan.id;
@@ -255,6 +298,7 @@ export default function V2CreateRoomPage() {
                           <span>
                             <span className="block text-sm font-black text-slate-950">{plan.name}</span>
                             <span className="mt-1 block text-xs font-bold text-slate-500">{plan.memberLimit}</span>
+                            {isPaidRoomPlan(plan.id) && <span className="mt-2 block text-xs font-black text-emerald-700">Checkout required</span>}
                             {!plan.selfServe && <span className="mt-2 block text-xs font-black text-amber-800">Support-assisted setup</span>}
                           </span>
                           <span className="text-sm font-black text-slate-950">{plan.price}</span>
@@ -307,7 +351,7 @@ export default function V2CreateRoomPage() {
                 <p className="mt-1 text-sm font-bold text-slate-500">{selectedPlan.memberLimit}</p>
                 <button type="submit" disabled={saving || !roomName.trim()} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50">
                   <Send className="size-4" />
-                  {saving ? "Creating room..." : selectedPlan.selfServe ? "Create private room" : "Contact support"}
+                  {saving ? "Creating room..." : isPaidRoomPlan(selectedPlan.id) ? "Create room and checkout" : selectedPlan.selfServe ? "Create private room" : "Contact support"}
                 </button>
               </section>
             </aside>
