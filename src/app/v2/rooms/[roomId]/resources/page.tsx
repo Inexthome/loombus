@@ -123,9 +123,9 @@ export default function V2RoomResourcesPage() {
   }
 
   const gatePayload = payload ?? getDefaultShellPayload();
-  if (loading) return <V2ShellGateCard payload={gatePayload} title="Loading room resources" description="Checking room access and resources." />;
-  if (payload === null || !payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard payload={gatePayload} title="V2 shell unavailable" description="Room resources are available inside the V2 shell." />;
-  if (room === null || !canAccess) return <V2ShellGateCard payload={gatePayload} title="Resources are private" description={message || "Resources are only visible to approved room members."} />;
+  if (loading) return <V2ShellGateCard payload={gatePayload} title="Loading room resources" message="Checking room access and resources." />;
+  if (payload === null || !payload.configured || !payload.flags.v2_shell || payload.version !== "v2") return <V2ShellGateCard payload={gatePayload} title="V2 shell unavailable" message="Room resources are available inside the V2 shell." />;
+  if (room === null || !canAccess) return <V2ShellGateCard payload={gatePayload} title="Resources are private" message={message || "Resources are only visible to approved room members."} />;
 
   const activePayload = payload;
   const activeRoom = room;
