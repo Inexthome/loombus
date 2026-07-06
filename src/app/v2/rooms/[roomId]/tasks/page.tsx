@@ -8,7 +8,6 @@ import { supabase } from "@/lib/supabase/client";
 import { V2ShellMobileNav, V2ShellTopNav } from "../../../v2-shell-components";
 
 type Row = Record<string, unknown>;
-
 type Room = { id: string; name: string; ownerId: string; createdBy: string };
 type Member = { userId: string; role: string };
 type RoomTask = { id: string; title: string; description: string; status: string; priority: string; dueAt: string | null; assignedUserId: string; createdBy: string };
@@ -47,6 +46,12 @@ function normalizeTask(row: Row): RoomTask {
     assignedUserId: asString(row.assigned_user_id),
     createdBy: asString(row.created_by),
   };
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error && "message" in error) return String((error as { message?: unknown }).message ?? "");
+  return "Unknown task loading error";
 }
 
 function formatDate(value: string | null) {
@@ -143,24 +148,37 @@ export default function V2RoomTasksPage() {
         return;
       }
 
-      const [{ data: roomData, error: roomError }, { data: memberData, error: memberError }] = await Promise.all([
-        withTimeout(supabase.from("rooms").select("id,name,title,owner_id,created_by").eq("id", roomId).maybeSingle(), "room lookup"),
-        withTimeout(supabase.from("room_members").select("user_id,role").eq("room_id", roomId), "member lookup"),
-      ]);
+      const { data: roomData, error: roomError } = await withTimeout(
+        supabase.from("rooms").select("*").eq("id", roomId).maybeSingle(),
+        "room lookup",
+      );
 
       if (roomError) throw roomError;
-      if (memberError) throw memberError;
 
       const nextRoom = normalizeRoom((roomData as Row | null) ?? null);
+      if (!nextRoom) {
+        setTasks([]);
+        setLoadState("blocked");
+        setMessage("Room Tasks / Action Items are only available to approved room members.");
+        return;
+      }
+
+      const { data: memberData, error: memberError } = await withTimeout(
+        supabase.from("room_members").select("*").eq("room_id", roomId),
+        "member lookup",
+      );
+
+      if (memberError) throw memberError;
+
       const nextMembers = ((memberData ?? []) as Row[]).map(normalizeMember).filter((member) => member.userId);
       const nextMember = nextMembers.find((member) => member.userId === nextUserId);
-      const nextIsOwner = Boolean(nextRoom && (nextRoom.ownerId === nextUserId || nextRoom.createdBy === nextUserId));
+      const nextIsOwner = nextRoom.ownerId === nextUserId || nextRoom.createdBy === nextUserId;
       const nextCanAccess = Boolean(nextIsOwner || nextMember);
 
       setRoom(nextRoom);
       setMembers(nextMembers);
 
-      if (!nextRoom || !nextCanAccess) {
+      if (!nextCanAccess) {
         setTasks([]);
         setLoadState("blocked");
         setMessage("Room Tasks / Action Items are only available to approved room members.");
@@ -168,7 +186,7 @@ export default function V2RoomTasksPage() {
       }
 
       const { data: taskData, error: taskError } = await withTimeout(
-        supabase.from("room_tasks").select("id,title,description,status,priority,due_at,assigned_user_id,created_by").eq("room_id", roomId).order("updated_at", { ascending: false }).limit(100),
+        supabase.from("room_tasks").select("*").eq("room_id", roomId).order("updated_at", { ascending: false }).limit(100),
         "task lookup",
       );
 
@@ -177,12 +195,12 @@ export default function V2RoomTasksPage() {
       setTasks(((taskData ?? []) as Row[]).map(normalizeTask).filter((task) => task.id));
       setLoadState("ready");
       setMessage("");
-    } catch {
+    } catch (error) {
       setRoom(null);
       setMembers([]);
       setTasks([]);
       setLoadState("error");
-      setMessage("Loombus could not load room tasks. Refresh once, then confirm the room_tasks table and policies are active if this continues.");
+      setMessage(`Loombus could not load room tasks. Details: ${getErrorMessage(error)}`);
     }
   }
 
@@ -217,8 +235,8 @@ export default function V2RoomTasksPage() {
       setAssignedUserId("");
       setMessage("Task created.");
       await loadTasks();
-    } catch {
-      setMessage("Loombus could not create this task yet. Confirm the task migration and owner/admin policies are active.");
+    } catch (error) {
+      setMessage(`Loombus could not create this task yet. Details: ${getErrorMessage(error)}`);
     } finally {
       setSaving(false);
     }
@@ -234,8 +252,8 @@ export default function V2RoomTasksPage() {
       const { error } = await supabase.from("room_tasks").update({ ...patch, completed_at: nextStatus === "done" ? new Date().toISOString() : null, updated_at: new Date().toISOString() }).eq("id", task.id);
       if (error) throw error;
       await loadTasks();
-    } catch {
-      setMessage("Loombus could not update this task yet.");
+    } catch (error) {
+      setMessage(`Loombus could not update this task yet. Details: ${getErrorMessage(error)}`);
     } finally {
       setSaving(false);
     }
@@ -251,12 +269,14 @@ export default function V2RoomTasksPage() {
       if (error) throw error;
       setMessage("Task removed.");
       await loadTasks();
-    } catch {
-      setMessage("Loombus could not remove this task yet.");
+    } catch (error) {
+      setMessage(`Loombus could not remove this task yet. Details: ${getErrorMessage(error)}`);
     } finally {
       setSaving(false);
     }
   }
+
+  const heroBadgeClass = "rounded-full bg-white/15 px-3 py-1 font-black text-white ring-1 ring-white/25";
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
@@ -270,14 +290,14 @@ export default function V2RoomTasksPage() {
 
         <section className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
           <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-700 p-6 text-white sm:p-8">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-200">Room Tasks / Action Items</p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">{room?.name ?? "Room task list"}</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-amber-50/90 sm:text-base">Turn room work into trackable action items with owners, status, priority, and due dates.</p>
-            <div className="mt-6 flex flex-wrap gap-3 text-xs font-black uppercase tracking-[0.12em]">
-              <span className="rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15">{openTasks.length} open</span>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15">{inProgressTasks.length} in progress</span>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15">{doneTasks.length} done</span>
-              <span className="rounded-full bg-white/10 px-3 py-1 text-amber-50 ring-1 ring-white/15">{urgentTasks.length} high priority</span>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-200" style={{ color: "#fde68a" }}>Room Tasks / Action Items</p>
+            <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-5xl" style={{ color: "#ffffff" }}>{room?.name ?? "Room task list"}</h1>
+            <p className="mt-4 max-w-3xl text-sm leading-6 text-amber-50 sm:text-base" style={{ color: "#fff7ed" }}>Turn room work into trackable action items with owners, status, priority, and due dates.</p>
+            <div className="mt-6 flex flex-wrap gap-3 text-xs uppercase tracking-[0.12em]">
+              <span className={heroBadgeClass} style={{ color: "#ffffff" }}>{openTasks.length} open</span>
+              <span className={heroBadgeClass} style={{ color: "#ffffff" }}>{inProgressTasks.length} in progress</span>
+              <span className={heroBadgeClass} style={{ color: "#ffffff" }}>{doneTasks.length} done</span>
+              <span className={heroBadgeClass} style={{ color: "#ffffff" }}>{urgentTasks.length} high priority</span>
             </div>
           </div>
 
