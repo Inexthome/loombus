@@ -4,6 +4,8 @@ import { RoomDirectorySummary } from "./room-directory-summary";
 import { RoomDirectorySectionActivator } from "./room-directory-section-activator";
 import { RoomEntrySummary } from "./room-entry-summary";
 import { RoomEntrySectionActivator } from "./room-entry-section-activator";
+import { RoomFaqSummary } from "./room-faq-summary";
+import { RoomFaqSectionActivator } from "./room-faq-section-activator";
 import { RoomMembersSummary } from "./room-members-summary";
 import { RoomMembersSectionActivator } from "./room-members-section-activator";
 import { RoomPollsSummary } from "./room-polls-summary";
@@ -31,6 +33,7 @@ export default async function V2RoomLayout({ children, params }: { children: Rea
       <RoomTasksSummary roomId={roomId} />
       <RoomPollsSummary roomId={roomId} />
       <RoomDirectorySummary roomId={roomId} />
+      <RoomFaqSummary roomId={roomId} />
       <RoomRequestSummary roomId={roomId} />
       <RoomResourceSummary roomId={roomId} />
       <RoomServicesSummary roomId={roomId} />
@@ -40,6 +43,7 @@ export default async function V2RoomLayout({ children, params }: { children: Rea
       <RoomTasksSectionActivator roomId={roomId} />
       <RoomPollsSectionActivator roomId={roomId} />
       <RoomDirectorySectionActivator roomId={roomId} />
+      <RoomFaqSectionActivator roomId={roomId} />
       <RoomRequestsSectionActivator roomId={roomId} />
       <RoomResourcesSectionActivator roomId={roomId} />
       <RoomServicesSectionActivator roomId={roomId} />
