@@ -100,24 +100,24 @@ export function RoomPollsSectionActivator({ roomId }: { roomId: string }) {
 
   return createPortal(
     <div>
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700 ring-1 ring-amber-100">
             <Vote className="size-5" />
           </span>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-amber-700">Room Polls / Decisions is live</p>
-            <h2 className="mt-1 text-xl font-black text-slate-950">Turn room questions into recorded decisions</h2>
-            <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
+            <h2 className="mt-1 max-w-2xl text-xl font-black leading-tight text-slate-950 sm:text-2xl">Turn room questions into recorded decisions</h2>
+            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-700">
               Create member polls, collect one vote per person, close decisions, and keep results visible to the room.
             </p>
           </div>
         </div>
-        <Link href={`/rooms/${roomId}/polls`} className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800">
+        <Link href={`/rooms/${roomId}/polls`} className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 sm:w-auto">
           Open Polls
         </Link>
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid gap-3 xl:grid-cols-3">
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Create</p>
           <p className="mt-2 text-sm font-bold leading-6 text-slate-700">Owners and admins can create polls with multiple options.</p>
