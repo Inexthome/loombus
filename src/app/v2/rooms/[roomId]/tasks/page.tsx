@@ -36,13 +36,11 @@ type RoomTask = {
   dueAt: string | null;
   assignedUserId: string;
   createdBy: string;
-  completedAt: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
 };
 
 const TASK_STATUSES = ["open", "in_progress", "done", "cancelled"] as const;
 const TASK_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+const LOAD_TIMEOUT_MS = 12000;
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -75,9 +73,6 @@ function normalizeTask(row: Row): RoomTask {
     dueAt: asString(row.due_at) || null,
     assignedUserId: asString(row.assigned_user_id),
     createdBy: asString(row.created_by),
-    completedAt: asString(row.completed_at) || null,
-    createdAt: asString(row.created_at) || null,
-    updatedAt: asString(row.updated_at) || null,
   };
 }
 
@@ -111,13 +106,25 @@ function getPriorityClass(value: string) {
   return "bg-amber-50 text-amber-700 ring-amber-100";
 }
 
+async function fetchShell(accessToken: string | undefined) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
+
+  try {
+    const response = await fetch("/api/v2/shell", {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      signal: controller.signal,
+    });
+    return (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 export default function V2RoomTasksPage() {
   const params = useParams();
   const rawRoomId = params?.roomId;
-  const roomId = useMemo(() => {
-    if (Array.isArray(rawRoomId)) return rawRoomId[0] ?? "";
-    return rawRoomId ?? "";
-  }, [rawRoomId]);
+  const roomId = useMemo(() => (Array.isArray(rawRoomId) ? rawRoomId[0] ?? "" : rawRoomId ?? ""), [rawRoomId]);
 
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -142,9 +149,14 @@ export default function V2RoomTasksPage() {
   const doneTasks = tasks.filter((task) => task.status === "done");
   const urgentTasks = tasks.filter((task) => task.priority === "urgent" || task.priority === "high");
 
-  async function loadTasks() {
-    if (!roomId) return;
-    setLoading(true);
+  async function loadTasks(showLoading = true) {
+    if (!roomId) {
+      setMessage("Loombus could not find the room ID for this task list.");
+      setLoading(false);
+      return;
+    }
+
+    if (showLoading) setLoading(true);
     setMessage("");
 
     try {
@@ -153,8 +165,7 @@ export default function V2RoomTasksPage() {
       const nextUserId = data.session?.user.id ?? null;
       setUserId(nextUserId);
 
-      const response = await fetch("/api/v2/shell", { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined });
-      const nextPayload = (await response.json().catch(() => getDefaultShellPayload())) as ShellPayload;
+      const nextPayload = await fetchShell(accessToken);
       setPayload(nextPayload);
 
       if (!nextUserId || !accessToken || !nextPayload.authenticated || !nextPayload.configured || !nextPayload.flags.v2_shell || nextPayload.version !== "v2") {
@@ -166,7 +177,7 @@ export default function V2RoomTasksPage() {
 
       const [{ data: roomData }, { data: memberData }] = await Promise.all([
         supabase.from("rooms").select("id,name,title,owner_id,created_by").eq("id", roomId).maybeSingle(),
-        supabase.from("room_members").select("user_id,role").eq("room_id", roomId).order("created_at", { ascending: true }),
+        supabase.from("room_members").select("user_id,role").eq("room_id", roomId),
       ]);
 
       const nextRoom = normalizeRoom((roomData as Row | null) ?? null);
@@ -186,36 +197,51 @@ export default function V2RoomTasksPage() {
 
       const { data: taskData, error } = await supabase
         .from("room_tasks")
-        .select("id,title,description,status,priority,due_at,assigned_user_id,created_by,completed_at,created_at,updated_at")
+        .select("id,title,description,status,priority,due_at,assigned_user_id,created_by")
         .eq("room_id", roomId)
-        .order("status", { ascending: true })
-        .order("priority", { ascending: false })
-        .order("due_at", { ascending: true, nullsFirst: false })
         .order("updated_at", { ascending: false })
         .limit(100);
 
       if (error) throw error;
       setTasks(((taskData ?? []) as Row[]).map(normalizeTask).filter((task) => task.id));
     } catch {
-      setPayload(getDefaultShellPayload());
-      setMessage("Loombus could not load room tasks yet. Confirm the room_tasks migration and RLS policies are active.");
+      setPayload((currentPayload) => currentPayload ?? getDefaultShellPayload());
+      setRoom(null);
+      setMembers([]);
+      setTasks([]);
+      setMessage("Loombus could not load room tasks yet. Confirm the room_tasks migration and RLS policies are active, then refresh.");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadTasks();
-    const { data } = supabase.auth.onAuthStateChange(() => loadTasks());
+    let cancelled = false;
+    let authTimeoutId: number | null = null;
 
-    const channel = supabase
-      .channel(`room-tasks-page-${roomId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "room_tasks", filter: `room_id=eq.${roomId}` }, loadTasks)
-      .subscribe();
+    async function safeLoad(showLoading = true) {
+      if (cancelled) return;
+      await loadTasks(showLoading);
+    }
+
+    void safeLoad();
+
+    const watchdogId = window.setTimeout(() => {
+      if (cancelled) return;
+      setLoading(false);
+      setMessage((currentMessage) => currentMessage || "Room tasks took too long to load. Refresh or try again after deployment finishes syncing.");
+    }, LOAD_TIMEOUT_MS + 3000);
+
+    const { data } = supabase.auth.onAuthStateChange(() => {
+      if (authTimeoutId) window.clearTimeout(authTimeoutId);
+      authTimeoutId = window.setTimeout(() => void safeLoad(false), 0);
+    });
 
     return () => {
+      cancelled = true;
+      window.clearTimeout(watchdogId);
+      if (authTimeoutId) window.clearTimeout(authTimeoutId);
       data.subscription.unsubscribe();
-      supabase.removeChannel(channel);
     };
   }, [roomId]);
 
@@ -245,7 +271,7 @@ export default function V2RoomTasksPage() {
       setTaskDueAt("");
       setAssignedUserId("");
       setMessage("Task created.");
-      await loadTasks();
+      await loadTasks(false);
     } catch {
       setMessage("Loombus could not create this task yet. Confirm the task migration and owner/admin policies are active.");
     } finally {
@@ -260,14 +286,12 @@ export default function V2RoomTasksPage() {
 
     try {
       const nextStatus = patch.status ?? task.status;
-      const nextPatch: Record<string, string | null> = {
-        ...patch,
-        completed_at: nextStatus === "done" ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      };
-      const { error } = await supabase.from("room_tasks").update(nextPatch).eq("id", task.id);
+      const { error } = await supabase
+        .from("room_tasks")
+        .update({ ...patch, completed_at: nextStatus === "done" ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
+        .eq("id", task.id);
       if (error) throw error;
-      await loadTasks();
+      await loadTasks(false);
     } catch {
       setMessage("Loombus could not update this task yet.");
     } finally {
@@ -284,7 +308,7 @@ export default function V2RoomTasksPage() {
       const { error } = await supabase.from("room_tasks").delete().eq("id", task.id);
       if (error) throw error;
       setMessage("Task removed.");
-      await loadTasks();
+      await loadTasks(false);
     } catch {
       setMessage("Loombus could not remove this task yet.");
     } finally {
@@ -359,7 +383,7 @@ export default function V2RoomTasksPage() {
                 <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center">
                   <ClipboardList className="mx-auto size-9 text-amber-700" />
                   <h2 className="mt-3 text-lg font-black text-slate-950">No tasks yet</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">Owners and admins can create action items for this room. Members will be able to view the task list.</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">Owners and admins can create action items for this room. Members can view the task list.</p>
                 </div>
               )}
             </div>
