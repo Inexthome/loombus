@@ -80,6 +80,32 @@ as $function$
     );
 $function$;
 
+create or replace function public.user_has_pending_room_invite(target_room_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = 'public'
+as $function$
+  select
+    auth.uid() is not null
+    and exists (
+      select 1
+      from public.room_invites invite
+      where invite.room_id = target_room_id
+        and invite.status = 'pending'
+        and (
+          invite.invited_user_id = auth.uid()
+          or lower(invite.invited_email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+        )
+    )
+    and not exists (
+      select 1
+      from public.room_members member
+      where member.room_id = target_room_id
+        and member.user_id = auth.uid()
+    );
+$function$;
+
 drop policy if exists "Room entry managers can view join requests" on public.room_join_requests;
 create policy "Room entry managers can view join requests"
   on public.room_join_requests
@@ -147,4 +173,14 @@ create policy "Room entry managers can update invites"
         or lower(invited_email) = lower(coalesce(auth.jwt() ->> 'email', ''))
       )
     )
+  );
+
+drop policy if exists "Invited users can join rooms" on public.room_members;
+create policy "Invited users can join rooms"
+  on public.room_members
+  for insert
+  with check (
+    user_id = auth.uid()
+    and role = 'member'
+    and public.user_has_pending_room_invite(room_id)
   );
