@@ -1,3 +1,5 @@
+import { RoomEntrySummary } from "./room-entry-summary";
+import { RoomEntrySectionActivator } from "./room-entry-section-activator";
 import { RoomMembersSummary } from "./room-members-summary";
 import { RoomMembersSectionActivator } from "./room-members-section-activator";
 import { RoomPreferencesEnforcer } from "./room-preferences-enforcer";
@@ -16,10 +18,12 @@ export default async function V2RoomLayout({ children, params }: { children: Rea
       {children}
       <RoomPreferencesEnforcer roomId={roomId} />
       <RoomMembersSummary roomId={roomId} />
+      <RoomEntrySummary roomId={roomId} />
       <RoomRequestSummary roomId={roomId} />
       <RoomResourceSummary roomId={roomId} />
       <RoomServicesSummary roomId={roomId} />
       <RoomMembersSectionActivator roomId={roomId} />
+      <RoomEntrySectionActivator roomId={roomId} />
       <RoomRequestsSectionActivator roomId={roomId} />
       <RoomResourcesSectionActivator roomId={roomId} />
       <RoomServicesSectionActivator roomId={roomId} />
