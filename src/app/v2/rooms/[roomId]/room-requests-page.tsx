@@ -3,15 +3,24 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ClipboardList, FileText, LayoutGrid, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ClipboardList, FileText, LayoutGrid, Send } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { V2ShellMobileNav, V2ShellTopNav } from "../../v2-shell-components";
 
 type Row = Record<string, unknown>;
 type LoadState = "checking" | "ready" | "signed_out" | "blocked" | "error";
+type RequestStatus = "submitted" | "in_review" | "in_progress" | "resolved" | "closed";
 type Room = { id: string; name: string; description: string; ownerId: string; createdBy: string; plan: string };
 type RequestForm = { title: string; details: string; category: string; priority: string };
-type RequestItem = { id: string; title: string; details: string; meta: string };
+type RequestItem = { id: string; title: string; details: string; status: RequestStatus; category: string; priority: string; createdAt: string };
+
+const REQUEST_STATUSES: { value: RequestStatus; label: string; badge: string }[] = [
+  { value: "submitted", label: "Submitted", badge: "bg-blue-50 text-blue-700 ring-blue-100" },
+  { value: "in_review", label: "In review", badge: "bg-violet-50 text-violet-700 ring-violet-100" },
+  { value: "in_progress", label: "In progress", badge: "bg-amber-50 text-amber-700 ring-amber-100" },
+  { value: "resolved", label: "Resolved", badge: "bg-emerald-50 text-emerald-700 ring-emerald-100" },
+  { value: "closed", label: "Closed", badge: "bg-slate-100 text-slate-500 ring-slate-200" },
+];
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -41,15 +50,29 @@ function isAdminRole(role: string) {
   return ["owner", "admin", "moderator"].includes(role.toLowerCase());
 }
 
+function normalizeStatus(value: unknown): RequestStatus {
+  const raw = asString(value).toLowerCase().replace(/\s+/g, "_");
+  if (raw === "open" || raw === "new") return "submitted";
+  if (raw === "review" || raw === "in_review") return "in_review";
+  if (raw === "active" || raw === "in_progress") return "in_progress";
+  if (raw === "resolved") return "resolved";
+  if (raw === "closed") return "closed";
+  return "submitted";
+}
+
+function getStatus(status: RequestStatus) {
+  return REQUEST_STATUSES.find((entry) => entry.value === status) ?? REQUEST_STATUSES[0];
+}
+
 function normalizeRequest(row: Row, index: number): RequestItem {
-  const state = asString(row.status) || asString(row.state) || "submitted";
-  const category = asString(row.category) || asString(row.type) || "general";
-  const priority = asString(row.priority) || "normal";
   return {
     id: asString(row.id) || `request-${index}`,
     title: asString(row.title) || "Untitled request",
     details: asString(row.details) || asString(row.body) || asString(row.message) || asString(row.content) || "Room request",
-    meta: [state, category, priority, formatDate(row.created_at)].join(" • "),
+    status: normalizeStatus(asString(row.status) || asString(row.state)),
+    category: asString(row.category) || asString(row.type) || "general",
+    priority: asString(row.priority) || "normal",
+    createdAt: formatDate(row.created_at),
   };
 }
 
@@ -60,14 +83,7 @@ async function fetchRequests(roomId: string) {
 }
 
 async function insertRequest(roomId: string, userId: string, form: RequestForm) {
-  const payload = {
-    room_id: roomId,
-    title: form.title.trim(),
-    details: form.details.trim(),
-    category: form.category,
-    priority: form.priority,
-  };
-
+  const payload = { room_id: roomId, title: form.title.trim(), details: form.details.trim(), category: form.category, priority: form.priority };
   const attempts = [
     { ...payload, status: "submitted", requester_id: userId, created_by: userId },
     { ...payload, status: "submitted", created_by: userId },
@@ -82,30 +98,37 @@ async function insertRequest(roomId: string, userId: string, form: RequestForm) 
     if (!error) return { ok: true, message: "Request submitted to this room." };
     lastMessage = error.message || lastMessage;
   }
-
   return { ok: false, message: lastMessage };
 }
 
-function RequestSubmitPanel({
-  form,
-  isSaving,
-  notice,
-  onChange,
-  onSubmit,
-}: {
-  form: RequestForm;
-  isSaving: boolean;
-  notice: string;
-  onChange: (field: keyof RequestForm, value: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-}) {
+async function updateRequestStatus(requestId: string, status: RequestStatus, userId: string) {
+  const updatedAt = new Date().toISOString();
+  const attempts = [
+    { status, updated_by: userId, updated_at: updatedAt },
+    { state: status, updated_by: userId, updated_at: updatedAt },
+    { status, updated_at: updatedAt },
+    { state: status, updated_at: updatedAt },
+    { status },
+    { state: status },
+  ];
+
+  let lastMessage = "Loombus could not update this request status yet.";
+  for (const attempt of attempts) {
+    const { error } = await supabase.from("room_requests").update(attempt).eq("id", requestId);
+    if (!error) return { ok: true, message: "Request status updated." };
+    lastMessage = error.message || lastMessage;
+  }
+  return { ok: false, message: lastMessage };
+}
+
+function RequestSubmitPanel({ form, isSaving, notice, onChange, onSubmit }: { form: RequestForm; isSaving: boolean; notice: string; onChange: (field: keyof RequestForm, value: string) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
   return (
     <form onSubmit={onSubmit} className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Member request</p>
           <h2 className="mt-1 text-lg font-black text-slate-950">Submit a request</h2>
-          <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">Send maintenance needs, HOA questions, access requests, service issues, or general room requests to the room owner/admin team.</p>
+          <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">Send maintenance needs, questions, service issues, or general room requests to the owner/admin team.</p>
         </div>
         <ClipboardList className="size-6 text-amber-700" />
       </div>
@@ -113,47 +136,25 @@ function RequestSubmitPanel({
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <label className="grid gap-1 text-sm font-bold text-slate-700 md:col-span-2">
           Request title
-          <input
-            required
-            value={form.title}
-            onChange={(event) => onChange("title", event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
-            placeholder="Leaking pipe, parking concern, gate issue, account question..."
-          />
+          <input required value={form.title} onChange={(event) => onChange("title", event.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400" placeholder="What do you need?" />
         </label>
         <label className="grid gap-1 text-sm font-bold text-slate-700 md:col-span-2">
           Details
-          <textarea
-            required
-            rows={4}
-            value={form.details}
-            onChange={(event) => onChange("details", event.target.value)}
-            className="resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
-            placeholder="Describe what happened, what is needed, and any useful context."
-          />
+          <textarea required rows={4} value={form.details} onChange={(event) => onChange("details", event.target.value)} className="resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400" placeholder="Describe the request." />
         </label>
         <label className="grid gap-1 text-sm font-bold text-slate-700">
           Category
-          <select
-            value={form.category}
-            onChange={(event) => onChange("category", event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
-          >
+          <select value={form.category} onChange={(event) => onChange("category", event.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400">
             <option value="general">General</option>
             <option value="maintenance">Maintenance</option>
             <option value="hoa">HOA / Board</option>
             <option value="access">Access</option>
             <option value="service">Service</option>
-            <option value="safety">Safety</option>
           </select>
         </label>
         <label className="grid gap-1 text-sm font-bold text-slate-700">
           Priority
-          <select
-            value={form.priority}
-            onChange={(event) => onChange("priority", event.target.value)}
-            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
-          >
+          <select value={form.priority} onChange={(event) => onChange("priority", event.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400">
             <option value="normal">Normal</option>
             <option value="important">Important</option>
             <option value="urgent">Urgent</option>
@@ -162,19 +163,14 @@ function RequestSubmitPanel({
       </div>
 
       {notice && <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-700 ring-1 ring-amber-100">{notice}</p>}
-
-      <button
-        type="submit"
-        disabled={isSaving}
-        className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
+      <button type="submit" disabled={isSaving} className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60">
         <Send className="size-4" /> {isSaving ? "Submitting request..." : "Submit request"}
       </button>
     </form>
   );
 }
 
-function RequestList({ items, canManage }: { items: RequestItem[]; canManage: boolean }) {
+function RequestList({ items, canManage, statusSavingId, onStatusChange }: { items: RequestItem[]; canManage: boolean; statusSavingId: string; onStatusChange: (request: RequestItem, status: RequestStatus) => void }) {
   if (items.length === 0) {
     return (
       <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center">
@@ -189,22 +185,42 @@ function RequestList({ items, canManage }: { items: RequestItem[]; canManage: bo
     <div className="grid gap-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">{canManage ? "Submitted requests" : "Your visible requests"}</p>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">{canManage ? "Submitted requests" : "Visible requests"}</p>
           <h2 className="mt-1 text-lg font-black text-slate-950">Room requests</h2>
         </div>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{items.length} listed</span>
       </div>
-      {items.map((item) => (
-        <article key={item.id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-base font-black text-slate-950">{item.title}</h2>
-              <p className="mt-2 line-clamp-4 text-sm font-semibold leading-6 text-slate-600">{item.details}</p>
+      {items.map((item) => {
+        const status = getStatus(item.status);
+        return (
+          <article key={item.id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ring-1 ${status.badge}`}>{status.label}</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{item.category}</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{item.priority}</span>
+                </div>
+                <h2 className="mt-3 text-base font-black text-slate-950">{item.title}</h2>
+                <p className="mt-2 line-clamp-4 text-sm font-semibold leading-6 text-slate-600">{item.details}</p>
+                <p className="mt-3 text-xs font-bold text-slate-400">Submitted {item.createdAt}</p>
+              </div>
             </div>
-            <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-amber-700 ring-1 ring-amber-100">{item.meta}</span>
-          </div>
-        </article>
-      ))}
+            {canManage && (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">Owner/Admin status</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {REQUEST_STATUSES.map((entry) => (
+                    <button key={entry.value} type="button" onClick={() => onStatusChange(item, entry.value)} disabled={item.status === entry.value || Boolean(statusSavingId)} className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45">
+                      <CheckCircle2 className="size-3" /> {statusSavingId === `${item.id}:${entry.value}` ? "Updating..." : entry.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -222,6 +238,7 @@ export function RoomRequestsPage() {
   const [currentUserId, setCurrentUserId] = useState("");
   const [form, setForm] = useState<RequestForm>({ title: "", details: "", category: "general", priority: "normal" });
   const [isSaving, setIsSaving] = useState(false);
+  const [statusSavingId, setStatusSavingId] = useState("");
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -296,7 +313,6 @@ export function RoomRequestsPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!roomId || !currentUserId) return;
-
     if (!form.title.trim() || !form.details.trim()) {
       setNotice("Add a title and details first.");
       return;
@@ -304,7 +320,6 @@ export function RoomRequestsPage() {
 
     setIsSaving(true);
     setNotice("");
-
     const result = await insertRequest(roomId, currentUserId, form);
     if (!result.ok) {
       setNotice(result.message);
@@ -312,11 +327,27 @@ export function RoomRequestsPage() {
       return;
     }
 
-    const nextItems = await fetchRequests(roomId);
-    setItems(nextItems);
+    setItems(await fetchRequests(roomId));
     setForm({ title: "", details: "", category: "general", priority: "normal" });
     setNotice(result.message);
     setIsSaving(false);
+  }
+
+  async function handleStatusChange(request: RequestItem, status: RequestStatus) {
+    if (!roomId || !currentUserId || !canManageRoom || request.status === status || statusSavingId) return;
+    setStatusSavingId(`${request.id}:${status}`);
+    setNotice("");
+
+    const result = await updateRequestStatus(request.id, status, currentUserId);
+    if (!result.ok) {
+      setNotice(result.message);
+      setStatusSavingId("");
+      return;
+    }
+
+    setItems(await fetchRequests(roomId));
+    setNotice(`${request.title} moved to ${getStatus(status).label}.`);
+    setStatusSavingId("");
   }
 
   return (
@@ -349,19 +380,14 @@ export function RoomRequestsPage() {
             <div className="mt-6 flex flex-wrap gap-3 text-xs font-black uppercase tracking-[0.12em]">
               <span className="rounded-full bg-white/15 px-3 py-1 text-white ring-1 ring-white/25" style={{ color: "#ffffff" }}>{room?.name ?? "Private room"}</span>
               <span className="rounded-full bg-white/15 px-3 py-1 text-white ring-1 ring-white/25" style={{ color: "#ffffff" }}>{canManageRoom ? "Owner/Admin view" : "Member view"}</span>
+              <span className="rounded-full bg-white/15 px-3 py-1 text-white ring-1 ring-white/25" style={{ color: "#ffffff" }}>{items.length} requests</span>
             </div>
           </div>
 
           {state === "ready" && (
             <div className="grid gap-5 p-5 sm:p-6">
-              <RequestSubmitPanel
-                form={form}
-                isSaving={isSaving}
-                notice={notice}
-                onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))}
-                onSubmit={handleSubmit}
-              />
-              <RequestList items={items} canManage={canManageRoom} />
+              <RequestSubmitPanel form={form} isSaving={isSaving} notice={notice} onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))} onSubmit={handleSubmit} />
+              <RequestList items={items} canManage={canManageRoom} statusSavingId={statusSavingId} onStatusChange={handleStatusChange} />
             </div>
           )}
 
