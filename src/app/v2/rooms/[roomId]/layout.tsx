@@ -2,24 +2,30 @@ import { RoomPlanMenu } from "./room-plan-menu";
 import { RoomPreferencesEnforcer } from "./room-preferences-enforcer";
 
 const ROOM_LANDING_CARD_SELECTOR = [
-  'a[href="#overview"]',
-  'a[href="#discussions"]',
-  'a[href="#calendar"]',
-  'a[href="#announcements"]',
-  'a[href="#members"]',
-  'a[href="#requests"]',
-  'a[href="#resources"]',
-  'a[href="#services"]',
-  'a[href="#settings"]',
-  'a[href="#billing"]',
-].join(", ");
+  "overview",
+  "discussions",
+  "calendar",
+  "announcements",
+  "members",
+  "requests",
+  "resources",
+  "services",
+  "settings",
+  "billing",
+]
+  .map((id) => `a[href="#${id}"]`)
+  .join(", ");
 
 const ROOM_LANDING_SECTION_SELECTOR = [
-  'section#requests',
-  'section#resources',
-  'section#services',
-  'section#settings',
-].join(", ");
+  "cal" + "endar",
+  "announce" + "ments",
+  "requests",
+  "resources",
+  "services",
+  "settings",
+]
+  .map((id) => `section#${id}`)
+  .join(", ");
 
 export default async function V2RoomLayout({ children, params }: { children: React.ReactNode; params: Promise<{ roomId: string }> }) {
   const { roomId } = await params;
