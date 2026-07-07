@@ -12,6 +12,7 @@ type LoadState = "checking" | "ready" | "signed_out" | "blocked" | "error";
 type RequestStatus = "submitted" | "in_review" | "in_progress" | "resolved" | "closed";
 type Room = { id: string; name: string; description: string; ownerId: string; createdBy: string; plan: string };
 type RequestForm = { title: string; details: string; category: string; priority: string };
+type RequestFilters = { status: "all" | RequestStatus; category: string; priority: string };
 type RequestItem = { id: string; title: string; details: string; status: RequestStatus; category: string; priority: string; createdAt: string };
 
 const REQUEST_STATUSES: { value: RequestStatus; label: string; badge: string }[] = [
@@ -21,6 +22,9 @@ const REQUEST_STATUSES: { value: RequestStatus; label: string; badge: string }[]
   { value: "resolved", label: "Resolved", badge: "bg-emerald-50 text-emerald-700 ring-emerald-100" },
   { value: "closed", label: "Closed", badge: "bg-slate-100 text-slate-500 ring-slate-200" },
 ];
+
+const REQUEST_CATEGORIES = ["general", "maintenance", "hoa", "access", "service"];
+const REQUEST_PRIORITIES = ["normal", "important", "urgent"];
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -44,6 +48,10 @@ function formatDate(value: unknown) {
   const date = new Date(raw);
   if (!Number.isFinite(date.getTime())) return raw;
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(date);
+}
+
+function formatLabel(value: string) {
+  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function isAdminRole(role: string) {
@@ -121,6 +129,80 @@ async function updateRequestStatus(requestId: string, status: RequestStatus, use
   return { ok: false, message: lastMessage };
 }
 
+function getCount(items: RequestItem[], status: RequestStatus) {
+  return items.filter((item) => item.status === status).length;
+}
+
+function applyFilters(items: RequestItem[], filters: RequestFilters) {
+  return items.filter((item) => {
+    const statusMatches = filters.status === "all" || item.status === filters.status;
+    const categoryMatches = filters.category === "all" || item.category === filters.category;
+    const priorityMatches = filters.priority === "all" || item.priority === filters.priority;
+    return statusMatches && categoryMatches && priorityMatches;
+  });
+}
+
+function RequestSummary({ items, filteredCount }: { items: RequestItem[]; filteredCount: number }) {
+  const resolvedClosed = getCount(items, "resolved") + getCount(items, "closed");
+  const cards = [
+    { label: "Total", value: items.length },
+    { label: "Submitted", value: getCount(items, "submitted") },
+    { label: "In progress", value: getCount(items, "in_progress") },
+    { label: "Resolved / Closed", value: resolvedClosed },
+    { label: "Showing", value: filteredCount },
+  ];
+
+  return (
+    <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      {cards.map((card) => (
+        <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">{card.label}</p>
+          <p className="mt-2 text-2xl font-black text-slate-950">{card.value}</p>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function RequestFilterBar({ filters, onChange, onReset }: { filters: RequestFilters; onChange: (filters: RequestFilters) => void; onReset: () => void }) {
+  return (
+    <section className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Request filters</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Find what needs attention</h2>
+        </div>
+        <button type="button" onClick={onReset} className="rounded-full bg-white px-4 py-2 text-xs font-black text-slate-700 ring-1 ring-slate-200 transition hover:text-amber-700">
+          Reset filters
+        </button>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        <label className="grid gap-1 text-sm font-bold text-slate-700">
+          Status
+          <select value={filters.status} onChange={(event) => onChange({ ...filters, status: event.target.value as RequestFilters["status"] })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400">
+            <option value="all">All statuses</option>
+            {REQUEST_STATUSES.map((entry) => <option key={entry.value} value={entry.value}>{entry.label}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm font-bold text-slate-700">
+          Category
+          <select value={filters.category} onChange={(event) => onChange({ ...filters, category: event.target.value })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400">
+            <option value="all">All categories</option>
+            {REQUEST_CATEGORIES.map((category) => <option key={category} value={category}>{formatLabel(category)}</option>)}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm font-bold text-slate-700">
+          Priority
+          <select value={filters.priority} onChange={(event) => onChange({ ...filters, priority: event.target.value })} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400">
+            <option value="all">All priorities</option>
+            {REQUEST_PRIORITIES.map((priority) => <option key={priority} value={priority}>{formatLabel(priority)}</option>)}
+          </select>
+        </label>
+      </div>
+    </section>
+  );
+}
+
 function RequestSubmitPanel({ form, isSaving, notice, onChange, onSubmit }: { form: RequestForm; isSaving: boolean; notice: string; onChange: (field: keyof RequestForm, value: string) => void; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) {
   return (
     <form onSubmit={onSubmit} className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
@@ -175,8 +257,8 @@ function RequestList({ items, canManage, statusSavingId, onStatusChange }: { ite
     return (
       <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center">
         <FileText className="mx-auto size-9 text-amber-700" />
-        <h2 className="mt-3 text-lg font-black text-slate-950">No requests yet</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-600">Submitted room requests will appear here once members start sending them.</p>
+        <h2 className="mt-3 text-lg font-black text-slate-950">No matching requests</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">Adjust the filters or submit a new room request.</p>
       </div>
     );
   }
@@ -188,7 +270,7 @@ function RequestList({ items, canManage, statusSavingId, onStatusChange }: { ite
           <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">{canManage ? "Submitted requests" : "Visible requests"}</p>
           <h2 className="mt-1 text-lg font-black text-slate-950">Room requests</h2>
         </div>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{items.length} listed</span>
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{items.length} shown</span>
       </div>
       {items.map((item) => {
         const status = getStatus(item.status);
@@ -198,8 +280,8 @@ function RequestList({ items, canManage, statusSavingId, onStatusChange }: { ite
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ring-1 ${status.badge}`}>{status.label}</span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{item.category}</span>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{item.priority}</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{formatLabel(item.category)}</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{formatLabel(item.priority)}</span>
                 </div>
                 <h2 className="mt-3 text-base font-black text-slate-950">{item.title}</h2>
                 <p className="mt-2 line-clamp-4 text-sm font-semibold leading-6 text-slate-600">{item.details}</p>
@@ -237,9 +319,12 @@ export function RoomRequestsPage() {
   const [canManageRoom, setCanManageRoom] = useState(false);
   const [currentUserId, setCurrentUserId] = useState("");
   const [form, setForm] = useState<RequestForm>({ title: "", details: "", category: "general", priority: "normal" });
+  const [filters, setFilters] = useState<RequestFilters>({ status: "all", category: "all", priority: "all" });
   const [isSaving, setIsSaving] = useState(false);
   const [statusSavingId, setStatusSavingId] = useState("");
   const [notice, setNotice] = useState("");
+
+  const filteredItems = useMemo(() => applyFilters(items, filters), [items, filters]);
 
   useEffect(() => {
     let cancelled = false;
@@ -329,6 +414,7 @@ export function RoomRequestsPage() {
 
     setItems(await fetchRequests(roomId));
     setForm({ title: "", details: "", category: "general", priority: "normal" });
+    setFilters({ status: "all", category: "all", priority: "all" });
     setNotice(result.message);
     setIsSaving(false);
   }
@@ -380,14 +466,16 @@ export function RoomRequestsPage() {
             <div className="mt-6 flex flex-wrap gap-3 text-xs font-black uppercase tracking-[0.12em]">
               <span className="rounded-full bg-white/15 px-3 py-1 text-white ring-1 ring-white/25" style={{ color: "#ffffff" }}>{room?.name ?? "Private room"}</span>
               <span className="rounded-full bg-white/15 px-3 py-1 text-white ring-1 ring-white/25" style={{ color: "#ffffff" }}>{canManageRoom ? "Owner/Admin view" : "Member view"}</span>
-              <span className="rounded-full bg-white/15 px-3 py-1 text-white ring-1 ring-white/25" style={{ color: "#ffffff" }}>{items.length} requests</span>
+              <span className="rounded-full bg-white/15 px-3 py-1 text-white ring-1 ring-white/25" style={{ color: "#ffffff" }}>{filteredItems.length} showing</span>
             </div>
           </div>
 
           {state === "ready" && (
             <div className="grid gap-5 p-5 sm:p-6">
+              <RequestSummary items={items} filteredCount={filteredItems.length} />
+              <RequestFilterBar filters={filters} onChange={setFilters} onReset={() => setFilters({ status: "all", category: "all", priority: "all" })} />
               <RequestSubmitPanel form={form} isSaving={isSaving} notice={notice} onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))} onSubmit={handleSubmit} />
-              <RequestList items={items} canManage={canManageRoom} statusSavingId={statusSavingId} onStatusChange={handleStatusChange} />
+              <RequestList items={filteredItems} canManage={canManageRoom} statusSavingId={statusSavingId} onStatusChange={handleStatusChange} />
             </div>
           )}
 
