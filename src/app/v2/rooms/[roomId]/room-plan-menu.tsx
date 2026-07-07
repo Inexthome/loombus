@@ -207,7 +207,7 @@ export function RoomPlanMenu({ roomId }: { roomId: string }) {
     };
   }, [open]);
 
-  const currentPlanTitle = useMemo(() => PLAN_GROUPS.find((group) => group.key === currentPlan)?.title ?? "Room plan", [currentPlan]);
+  const selectedPlanGroup = useMemo(() => PLAN_GROUPS.find((group) => group.key === (currentPlan ?? "starter")) ?? PLAN_GROUPS[0], [currentPlan]);
 
   if (!host || !canView || !shouldShow) return null;
 
@@ -225,38 +225,36 @@ export function RoomPlanMenu({ roomId }: { roomId: string }) {
       {open && (
         <div className="absolute right-0 top-full mt-3 w-[min(92vw,28rem)] overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-2xl ring-1 ring-slate-950/5" role="menu">
           <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Room plan map</p>
-            <p className="mt-1 text-sm font-bold text-slate-700">Current: {currentPlanTitle}</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Room Menu</p>
+            <p className="mt-1 text-sm font-bold text-slate-700">{selectedPlanGroup.title}</p>
           </div>
           <div className="max-h-[72vh] overflow-y-auto p-3">
-            {PLAN_GROUPS.map((group) => (
-              <section key={group.key} className="rounded-2xl p-2">
-                <div className="mb-2 flex items-center justify-between gap-2 px-2">
-                  <h3 className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">{group.title}</h3>
-                  {currentPlan === group.key && <span className="rounded-full bg-amber-50 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-amber-700 ring-1 ring-amber-100">Current Plan</span>}
-                </div>
-                <div className="grid gap-1">
-                  {group.features.map((feature) => {
-                    const Icon = feature.icon;
-                    return (
-                      <Link
-                        key={`${group.key}-${feature.label}`}
-                        href={feature.href(roomId)}
-                        onClick={() => setOpen(false)}
-                        className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-amber-50 hover:text-amber-800"
-                        role="menuitem"
-                      >
-                        <span className="flex min-w-0 items-center gap-2">
-                          <Icon className="size-4 shrink-0 text-amber-700" />
-                          <span className="truncate">{feature.label}</span>
-                        </span>
-                        {feature.future && <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">Roadmap</span>}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+            <section className="rounded-2xl p-2">
+              <div className="mb-2 flex items-center justify-between gap-2 px-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">{selectedPlanGroup.title}</h3>
+                <span className="rounded-full bg-amber-50 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-amber-700 ring-1 ring-amber-100">Current Plan</span>
+              </div>
+              <div className="grid gap-1">
+                {selectedPlanGroup.features.map((feature) => {
+                  const Icon = feature.icon;
+                  return (
+                    <Link
+                      key={`${selectedPlanGroup.key}-${feature.label}`}
+                      href={feature.href(roomId)}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-amber-50 hover:text-amber-800"
+                      role="menuitem"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <Icon className="size-4 shrink-0 text-amber-700" />
+                        <span className="truncate">{feature.label}</span>
+                      </span>
+                      {feature.future && <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">Roadmap</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
           </div>
         </div>
       )}
