@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Building2, CalendarDays, FileText, LayoutGrid, Megaphone, MessageCircle } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Building2, CalendarDays, FileText, LayoutGrid, Megaphone, MessageCircle, PlusCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { V2ShellMobileNav, V2ShellTopNav } from "../../v2-shell-components";
 import { RoomHomeOverview } from "./room-home-overview";
@@ -13,6 +13,7 @@ type CoreTool = "overview" | "discussions" | "calendar" | "announcements";
 type LoadState = "checking" | "ready" | "signed_out" | "blocked" | "error";
 type Room = { id: string; name: string; description: string; ownerId: string; createdBy: string; plan: string };
 type ListItem = { id: string; title: string; description: string; meta: string };
+type CalendarForm = { title: string; startsAt: string; location: string; description: string };
 
 type ToolConfig = {
   title: string;
@@ -45,7 +46,7 @@ const TOOL_CONFIG: Record<CoreTool, ToolConfig> = {
     eyebrow: "Room calendar",
     description: "Room events, meetings, maintenance windows, and important dates.",
     emptyTitle: "No room calendar events yet",
-    emptyBody: "Owners and admins can add events from the room hub today; this page keeps the schedule easy to find.",
+    emptyBody: "Owners and admins can add events here so members always know what is coming next.",
     icon: CalendarDays,
   },
   announcements: {
@@ -79,7 +80,11 @@ function formatDate(value: unknown) {
   if (!raw) return "Recently";
   const date = new Date(raw);
   if (!Number.isFinite(date.getTime())) return raw;
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(date);
+}
+
+function isAdminRole(role: string) {
+  return ["owner", "admin", "moderator"].includes(role.toLowerCase());
 }
 
 function normalizeItem(tool: CoreTool, row: Row, index: number): ListItem {
@@ -131,6 +136,124 @@ async function fetchToolItems(tool: CoreTool, roomId: string) {
   return ((data ?? []) as Row[]).map((row, index) => normalizeItem(tool, row, index));
 }
 
+function CalendarCreatePanel({
+  canManage,
+  form,
+  isSaving,
+  notice,
+  onChange,
+  onSubmit,
+}: {
+  canManage: boolean;
+  form: CalendarForm;
+  isSaving: boolean;
+  notice: string;
+  onChange: (field: keyof CalendarForm, value: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  if (!canManage) {
+    return (
+      <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Calendar access</p>
+        <h2 className="mt-2 text-lg font-black text-slate-950">Room members can view events</h2>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">Owners and admins manage the calendar so members have a clear source of truth for room dates.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Owner/Admin</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Add calendar event</h2>
+          <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">Post meetings, HOA updates, maintenance windows, deadlines, and community dates.</p>
+        </div>
+        <PlusCircle className="size-6 text-amber-700" />
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <label className="grid gap-1 text-sm font-bold text-slate-700">
+          Event title
+          <input
+            required
+            value={form.title}
+            onChange={(event) => onChange("title", event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
+            placeholder="Board meeting, maintenance window, community event..."
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-bold text-slate-700">
+          Date and time
+          <input
+            required
+            type="datetime-local"
+            value={form.startsAt}
+            onChange={(event) => onChange("startsAt", event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-bold text-slate-700 md:col-span-2">
+          Location
+          <input
+            value={form.location}
+            onChange={(event) => onChange("location", event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
+            placeholder="Clubhouse, Zoom, parking lot, unit area..."
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-bold text-slate-700 md:col-span-2">
+          Description
+          <textarea
+            rows={3}
+            value={form.description}
+            onChange={(event) => onChange("description", event.target.value)}
+            className="resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
+            placeholder="Add context members should know."
+          />
+        </label>
+      </div>
+
+      {notice && <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-700 ring-1 ring-amber-100">{notice}</p>}
+
+      <button
+        type="submit"
+        disabled={isSaving}
+        className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <PlusCircle className="size-4" /> {isSaving ? "Adding event..." : "Add event"}
+      </button>
+    </form>
+  );
+}
+
+function CalendarEventList({ items }: { items: ListItem[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Upcoming events</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Room calendar</h2>
+        </div>
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{items.length} listed</span>
+      </div>
+      {items.map((item) => (
+        <article key={item.id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-base font-black text-slate-950">{item.title}</h2>
+              <p className="mt-2 line-clamp-3 text-sm font-semibold leading-6 text-slate-600">{item.description}</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-amber-700 ring-1 ring-amber-100">{item.meta}</span>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 export function RoomCorePage({ tool }: { tool: CoreTool }) {
   const params = useParams();
   const rawRoomId = params?.roomId;
@@ -142,6 +265,11 @@ export function RoomCorePage({ tool }: { tool: CoreTool }) {
   const [message, setMessage] = useState("Loading room page...");
   const [room, setRoom] = useState<Room | null>(null);
   const [items, setItems] = useState<ListItem[]>([]);
+  const [canManageRoom, setCanManageRoom] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState("");
+  const [calendarForm, setCalendarForm] = useState<CalendarForm>({ title: "", startsAt: "", location: "", description: "" });
+  const [isSavingEvent, setIsSavingEvent] = useState(false);
+  const [calendarNotice, setCalendarNotice] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -175,9 +303,11 @@ export function RoomCorePage({ tool }: { tool: CoreTool }) {
         if (memberError) throw memberError;
 
         const nextRoom = normalizeRoom((roomData ?? null) as Row | null);
-        const members = ((memberData ?? []) as Row[]).map((member) => asString(member.user_id));
+        const members = ((memberData ?? []) as Row[]).map((member) => ({ userId: asString(member.user_id), role: asString(member.role) || "member" }));
+        const membership = members.find((member) => member.userId === userId);
         const isOwner = nextRoom?.ownerId === userId || nextRoom?.createdBy === userId;
-        const isMember = members.includes(userId);
+        const isMember = members.some((member) => member.userId === userId);
+        const canManage = Boolean(isOwner || (membership && isAdminRole(membership.role)));
 
         if (!nextRoom || (!isOwner && !isMember)) {
           if (!cancelled) {
@@ -189,6 +319,8 @@ export function RoomCorePage({ tool }: { tool: CoreTool }) {
 
         const nextItems = await fetchToolItems(tool, roomId);
         if (!cancelled) {
+          setCurrentUserId(userId);
+          setCanManageRoom(canManage);
           setRoom(nextRoom);
           setItems(nextItems);
           setState("ready");
@@ -207,6 +339,45 @@ export function RoomCorePage({ tool }: { tool: CoreTool }) {
       cancelled = true;
     };
   }, [roomId, tool]);
+
+  async function handleCreateCalendarEvent(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (tool !== "calendar" || !roomId || !canManageRoom || !currentUserId) return;
+
+    const title = calendarForm.title.trim();
+    const startsAt = calendarForm.startsAt ? new Date(calendarForm.startsAt) : null;
+    if (!title || !startsAt || !Number.isFinite(startsAt.getTime())) {
+      setCalendarNotice("Add a title and valid date/time first.");
+      return;
+    }
+
+    setIsSavingEvent(true);
+    setCalendarNotice("");
+
+    const basePayload = {
+      room_id: roomId,
+      title,
+      description: calendarForm.description.trim() || null,
+      location: calendarForm.location.trim() || null,
+      starts_at: startsAt.toISOString(),
+    };
+
+    const { error } = await supabase.from("room_events").insert({ ...basePayload, created_by: currentUserId });
+    if (error) {
+      const fallback = await supabase.from("room_events").insert(basePayload);
+      if (fallback.error) {
+        setCalendarNotice(fallback.error.message || "Loombus could not add this event yet.");
+        setIsSavingEvent(false);
+        return;
+      }
+    }
+
+    const nextItems = await fetchToolItems("calendar", roomId);
+    setItems(nextItems);
+    setCalendarForm({ title: "", startsAt: "", location: "", description: "" });
+    setCalendarNotice("Event added to this room calendar.");
+    setIsSavingEvent(false);
+  }
 
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
@@ -256,6 +427,26 @@ export function RoomCorePage({ tool }: { tool: CoreTool }) {
                       <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">Use the Room Menu or Module Directory to open each room tool as its own page instead of relying on the center hub and right rail.</p>
                     </div>
                   </div>
+                </div>
+              ) : tool === "calendar" ? (
+                <div className="grid gap-5">
+                  <CalendarCreatePanel
+                    canManage={canManageRoom}
+                    form={calendarForm}
+                    isSaving={isSavingEvent}
+                    notice={calendarNotice}
+                    onChange={(field, value) => setCalendarForm((current) => ({ ...current, [field]: value }))}
+                    onSubmit={handleCreateCalendarEvent}
+                  />
+                  {items.length > 0 ? (
+                    <CalendarEventList items={items} />
+                  ) : (
+                    <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center">
+                      <FileText className="mx-auto size-9 text-amber-700" />
+                      <h2 className="mt-3 text-lg font-black text-slate-950">{config.emptyTitle}</h2>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{config.emptyBody}</p>
+                    </div>
+                  )}
                 </div>
               ) : items.length > 0 ? (
                 <div className="grid gap-3">
