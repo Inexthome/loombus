@@ -55,7 +55,8 @@ function formatPlan(value: string) {
     organization_plus: "Organization Plus",
     organization_enterprise: "Organization Enterprise",
   };
-  return plans[value] ?? value.replace(/_/g, " ") || "Room Starter";
+  const fallbackPlan = value.replace(/_/g, " ").trim();
+  return plans[value] ?? (fallbackPlan || "Room Starter");
 }
 
 function formatDate(value: string) {
