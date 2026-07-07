@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-const CORE_TOOLS = new Set(["overview", "discussions", "calendar", "announcements"]);
+const CORE_TOOLS = new Set(["overview", "discussions", "calendar", "announcements", "requests"]);
 
 export default async function RoomToolRedirect({ params }: { params: Promise<{ roomId: string; roomTool: string }> }) {
   const { roomId, roomTool } = await params;
