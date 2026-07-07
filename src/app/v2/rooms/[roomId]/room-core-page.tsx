@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Building2, CalendarDays, FileText, LayoutGrid, Megaphone, MessageCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { V2ShellMobileNav, V2ShellTopNav } from "../../v2-shell-components";
+import { RoomHomeOverview } from "./room-home-overview";
 
 type Row = Record<string, unknown>;
 type CoreTool = "overview" | "discussions" | "calendar" | "announcements";
@@ -243,14 +244,17 @@ export function RoomCorePage({ tool }: { tool: CoreTool }) {
           {state === "ready" && (
             <div className="p-5 sm:p-6">
               {tool === "overview" ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                    <h2 className="text-lg font-black text-slate-950">{room?.name}</h2>
-                    <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{room?.description}</p>
-                  </div>
-                  <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                    <h2 className="text-lg font-black text-slate-950">Room navigation</h2>
-                    <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">Use the Room Menu or Module Directory to open each room tool as its own page instead of relying on the center hub and right rail.</p>
+                <div className="grid gap-4">
+                  <RoomHomeOverview roomId={roomId} />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                      <h2 className="text-lg font-black text-slate-950">{room?.name}</h2>
+                      <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">{room?.description}</p>
+                    </div>
+                    <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                      <h2 className="text-lg font-black text-slate-950">Room navigation</h2>
+                      <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">Use the Room Menu or Module Directory to open each room tool as its own page instead of relying on the center hub and right rail.</p>
+                    </div>
                   </div>
                 </div>
               ) : items.length > 0 ? (
