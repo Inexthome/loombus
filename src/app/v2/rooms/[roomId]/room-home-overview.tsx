@@ -1,8 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { Bell, CalendarDays, Clock3, FileText, Lock, ShieldCheck, Users } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -84,16 +82,6 @@ function isAdminRole(role: string) {
   return ["owner", "admin", "moderator"].includes(role.toLowerCase());
 }
 
-function isRoomHomePath(pathname: string | null, roomId: string) {
-  if (!pathname || !roomId) return false;
-  return pathname === `/rooms/${roomId}` || pathname === `/v2/rooms/${roomId}`;
-}
-
-function findBackToRoomsLink() {
-  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('a[href="/rooms"]'));
-  return links.find((link) => link.textContent?.toLowerCase().includes("back to rooms")) ?? null;
-}
-
 function buildRoomSnapshot(row: Row, memberCount: number): RoomSnapshot {
   const visibility = asString(row.visibility).toLowerCase() || "public";
   const isPrivate = asBoolean(row.is_private) || asBoolean(row.private) || asBoolean(row.invite_only) || visibility === "private";
@@ -110,52 +98,13 @@ function buildRoomSnapshot(row: Row, memberCount: number): RoomSnapshot {
 }
 
 export function RoomHomeOverview({ roomId }: { roomId: string }) {
-  const pathname = usePathname();
-  const [host, setHost] = useState<HTMLElement | null>(null);
   const [snapshot, setSnapshot] = useState<OverviewSnapshot | null>(null);
-  const shouldShow = isRoomHomePath(pathname, roomId);
-
-  useEffect(() => {
-    if (!shouldShow) {
-      setHost(null);
-      return;
-    }
-
-    let activeHost: HTMLElement | null = null;
-
-    function placeHost() {
-      const backLink = findBackToRoomsLink();
-      if (!backLink?.parentElement) return;
-      if (activeHost?.parentElement) return;
-
-      const nextHost = document.createElement("div");
-      nextHost.setAttribute("data-room-home-overview-host", "true");
-      nextHost.className = "mt-4";
-      backLink.insertAdjacentElement("afterend", nextHost);
-      activeHost = nextHost;
-      setHost(nextHost);
-    }
-
-    placeHost();
-    const observer = new MutationObserver(placeHost);
-    observer.observe(document.body, { childList: true, subtree: true });
-    const intervalId = window.setInterval(placeHost, 500);
-    const timeoutId = window.setTimeout(() => window.clearInterval(intervalId), 7000);
-
-    return () => {
-      observer.disconnect();
-      window.clearInterval(intervalId);
-      window.clearTimeout(timeoutId);
-      activeHost?.remove();
-      setHost(null);
-    };
-  }, [roomId, shouldShow]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadOverview() {
-      if (!roomId || !shouldShow) {
+      if (!roomId) {
         if (!cancelled) setSnapshot(null);
         return;
       }
@@ -221,7 +170,7 @@ export function RoomHomeOverview({ roomId }: { roomId: string }) {
       cancelled = true;
       data.subscription.unsubscribe();
     };
-  }, [roomId, shouldShow]);
+  }, [roomId]);
 
   const statusCards = useMemo(() => {
     if (!snapshot) return [];
@@ -241,9 +190,9 @@ export function RoomHomeOverview({ roomId }: { roomId: string }) {
     return cards;
   }, [snapshot]);
 
-  if (!host || !shouldShow || !snapshot) return null;
+  if (!snapshot) return null;
 
-  return createPortal(
+  return (
     <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-slate-950/5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -269,7 +218,6 @@ export function RoomHomeOverview({ roomId }: { roomId: string }) {
           );
         })}
       </div>
-    </section>,
-    host,
+    </section>
   );
 }
