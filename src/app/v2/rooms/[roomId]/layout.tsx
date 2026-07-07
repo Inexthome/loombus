@@ -28,8 +28,7 @@ export default async function V2RoomLayout({ children, params }: { children: Rea
     <>
       <style>{`
         main.loombus-v2-page-bg ${ROOM_LANDING_CARD_SELECTOR},
-        main.loombus-v2-page-bg ${ROOM_LANDING_SECTION_SELECTOR},
-        main.loombus-v2-page-bg .space-y-6 > section:nth-of-type(n + 3) {
+        main.loombus-v2-page-bg ${ROOM_LANDING_SECTION_SELECTOR} {
           display: none !important;
         }
       `}</style>
