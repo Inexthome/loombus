@@ -302,6 +302,23 @@ export default function V2RoomMembersPage() {
           <div className="grid gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="space-y-5">
               {canManage && (
+                <section className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <UserPlus className="size-5 shrink-0 text-amber-700" />
+                      <div>
+                        <h2 className="text-sm font-black uppercase tracking-[0.18em] text-amber-700">Invite members</h2>
+                        <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">Generate, copy, or revoke this room invite link from the invite page.</p>
+                      </div>
+                    </div>
+                    <Link href={`/rooms/${roomId}/invite`} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800">
+                      <UserPlus className="size-4" /> Open Invites
+                    </Link>
+                  </div>
+                </section>
+              )}
+
+              {canManage && (
                 <form onSubmit={handleAddMember} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
                   <div className="flex items-center gap-3">
                     <UserPlus className="size-5 text-amber-700" />
