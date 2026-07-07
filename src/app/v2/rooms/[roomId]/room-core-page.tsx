@@ -14,6 +14,7 @@ type LoadState = "checking" | "ready" | "signed_out" | "blocked" | "error";
 type Room = { id: string; name: string; description: string; ownerId: string; createdBy: string; plan: string };
 type ListItem = { id: string; title: string; description: string; meta: string };
 type CalendarForm = { title: string; startsAt: string; location: string; description: string };
+type AnnouncementForm = { title: string; body: string; priority: string; isPinned: boolean };
 
 type ToolConfig = {
   title: string;
@@ -54,7 +55,7 @@ const TOOL_CONFIG: Record<CoreTool, ToolConfig> = {
     eyebrow: "Room announcements",
     description: "Pinned updates and important notices from room owners and admins.",
     emptyTitle: "No announcements yet",
-    emptyBody: "Owners and admins can publish room announcements from the room hub today.",
+    emptyBody: "Owners and admins can publish announcements here so members have one clear source for important notices.",
     icon: Megaphone,
   },
 };
@@ -99,12 +100,13 @@ function normalizeItem(tool: CoreTool, row: Row, index: number): ListItem {
   }
 
   if (tool === "announcements") {
-    const priority = asString(row.priority);
+    const priority = asString(row.priority) || "normal";
+    const pinned = row.is_pinned === true ? "Pinned" : "Notice";
     return {
       id: asString(row.id) || `announcement-${index}`,
       title: asString(row.title) || "Untitled announcement",
-      description: asString(row.body) || "Room announcement",
-      meta: [priority || "normal", formatDate(row.created_at)].join(" • "),
+      description: asString(row.body) || asString(row.message) || "Room announcement",
+      meta: [pinned, priority, formatDate(row.created_at)].join(" • "),
     };
   }
 
@@ -254,6 +256,129 @@ function CalendarEventList({ items }: { items: ListItem[] }) {
   );
 }
 
+function AnnouncementCreatePanel({
+  canManage,
+  form,
+  isSaving,
+  notice,
+  onChange,
+  onPinnedChange,
+  onSubmit,
+}: {
+  canManage: boolean;
+  form: AnnouncementForm;
+  isSaving: boolean;
+  notice: string;
+  onChange: (field: Exclude<keyof AnnouncementForm, "isPinned">, value: string) => void;
+  onPinnedChange: (value: boolean) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  if (!canManage) {
+    return (
+      <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Announcement access</p>
+        <h2 className="mt-2 text-lg font-black text-slate-950">Room members can view announcements</h2>
+        <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">Owners and admins publish announcements so members can trust this page for official room updates.</p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Owner/Admin</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Post announcement</h2>
+          <p className="mt-1 text-sm font-semibold leading-6 text-slate-700">Publish official notices, HOA updates, reminders, and urgent room messages.</p>
+        </div>
+        <Megaphone className="size-6 text-amber-700" />
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <label className="grid gap-1 text-sm font-bold text-slate-700 md:col-span-2">
+          Announcement title
+          <input
+            required
+            value={form.title}
+            onChange={(event) => onChange("title", event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
+            placeholder="Important update, board notice, reminder..."
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-bold text-slate-700 md:col-span-2">
+          Message
+          <textarea
+            required
+            rows={4}
+            value={form.body}
+            onChange={(event) => onChange("body", event.target.value)}
+            className="resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
+            placeholder="Write the announcement members should see."
+          />
+        </label>
+        <label className="grid gap-1 text-sm font-bold text-slate-700">
+          Priority
+          <select
+            value={form.priority}
+            onChange={(event) => onChange("priority", event.target.value)}
+            className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-950 outline-none ring-0 transition focus:border-amber-400"
+          >
+            <option value="normal">Normal</option>
+            <option value="important">Important</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700">
+          <input
+            type="checkbox"
+            checked={form.isPinned}
+            onChange={(event) => onPinnedChange(event.target.checked)}
+            className="size-4 rounded border-slate-300 text-amber-700"
+          />
+          Pin announcement
+        </label>
+      </div>
+
+      {notice && <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-700 ring-1 ring-amber-100">{notice}</p>}
+
+      <button
+        type="submit"
+        disabled={isSaving}
+        className="mt-4 inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <Megaphone className="size-4" /> {isSaving ? "Posting announcement..." : "Post announcement"}
+      </button>
+    </form>
+  );
+}
+
+function AnnouncementList({ items }: { items: ListItem[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Official notices</p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">Room announcements</h2>
+        </div>
+        <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 ring-1 ring-slate-200">{items.length} listed</span>
+      </div>
+      {items.map((item) => (
+        <article key={item.id} className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-base font-black text-slate-950">{item.title}</h2>
+              <p className="mt-2 line-clamp-4 text-sm font-semibold leading-6 text-slate-600">{item.description}</p>
+            </div>
+            <span className="shrink-0 rounded-full bg-amber-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-amber-700 ring-1 ring-amber-100">{item.meta}</span>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 export function RoomCorePage({ tool }: { tool: CoreTool }) {
   const params = useParams();
   const rawRoomId = params?.roomId;
@@ -270,6 +395,9 @@ export function RoomCorePage({ tool }: { tool: CoreTool }) {
   const [calendarForm, setCalendarForm] = useState<CalendarForm>({ title: "", startsAt: "", location: "", description: "" });
   const [isSavingEvent, setIsSavingEvent] = useState(false);
   const [calendarNotice, setCalendarNotice] = useState("");
+  const [announcementForm, setAnnouncementForm] = useState<AnnouncementForm>({ title: "", body: "", priority: "normal", isPinned: false });
+  const [isSavingAnnouncement, setIsSavingAnnouncement] = useState(false);
+  const [announcementNotice, setAnnouncementNotice] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -379,6 +507,45 @@ export function RoomCorePage({ tool }: { tool: CoreTool }) {
     setIsSavingEvent(false);
   }
 
+  async function handleCreateAnnouncement(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (tool !== "announcements" || !roomId || !canManageRoom || !currentUserId) return;
+
+    const title = announcementForm.title.trim();
+    const body = announcementForm.body.trim();
+    if (!title || !body) {
+      setAnnouncementNotice("Add a title and message first.");
+      return;
+    }
+
+    setIsSavingAnnouncement(true);
+    setAnnouncementNotice("");
+
+    const basePayload = {
+      room_id: roomId,
+      title,
+      body,
+      priority: announcementForm.priority,
+      is_pinned: announcementForm.isPinned,
+    };
+
+    const { error } = await supabase.from("room_announcements").insert({ ...basePayload, created_by: currentUserId });
+    if (error) {
+      const fallback = await supabase.from("room_announcements").insert(basePayload);
+      if (fallback.error) {
+        setAnnouncementNotice(fallback.error.message || "Loombus could not post this announcement yet.");
+        setIsSavingAnnouncement(false);
+        return;
+      }
+    }
+
+    const nextItems = await fetchToolItems("announcements", roomId);
+    setItems(nextItems);
+    setAnnouncementForm({ title: "", body: "", priority: "normal", isPinned: false });
+    setAnnouncementNotice("Announcement posted to this room.");
+    setIsSavingAnnouncement(false);
+  }
+
   return (
     <main className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7f7f8] loombus-v2-page-bg text-slate-950">
       <V2ShellTopNav />
@@ -440,6 +607,27 @@ export function RoomCorePage({ tool }: { tool: CoreTool }) {
                   />
                   {items.length > 0 ? (
                     <CalendarEventList items={items} />
+                  ) : (
+                    <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center">
+                      <FileText className="mx-auto size-9 text-amber-700" />
+                      <h2 className="mt-3 text-lg font-black text-slate-950">{config.emptyTitle}</h2>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{config.emptyBody}</p>
+                    </div>
+                  )}
+                </div>
+              ) : tool === "announcements" ? (
+                <div className="grid gap-5">
+                  <AnnouncementCreatePanel
+                    canManage={canManageRoom}
+                    form={announcementForm}
+                    isSaving={isSavingAnnouncement}
+                    notice={announcementNotice}
+                    onChange={(field, value) => setAnnouncementForm((current) => ({ ...current, [field]: value }))}
+                    onPinnedChange={(value) => setAnnouncementForm((current) => ({ ...current, isPinned: value }))}
+                    onSubmit={handleCreateAnnouncement}
+                  />
+                  {items.length > 0 ? (
+                    <AnnouncementList items={items} />
                   ) : (
                     <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-white p-8 text-center">
                       <FileText className="mx-auto size-9 text-amber-700" />
