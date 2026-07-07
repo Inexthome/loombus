@@ -12,6 +12,7 @@ import { RoomFormsSummary } from "./room-forms-summary";
 import { RoomFormsSectionActivator } from "./room-forms-section-activator";
 import { RoomMembersSummary } from "./room-members-summary";
 import { RoomMembersSectionActivator } from "./room-members-section-activator";
+import { RoomModuleDirectorySectionActivator } from "./room-module-directory-section-activator";
 import { RoomPollsSummary } from "./room-polls-summary";
 import { RoomPollsSectionActivator } from "./room-polls-section-activator";
 import { RoomPreferencesEnforcer } from "./room-preferences-enforcer";
@@ -43,6 +44,7 @@ export default async function V2RoomLayout({ children, params }: { children: Rea
       <RoomRequestSummary roomId={roomId} />
       <RoomResourceSummary roomId={roomId} />
       <RoomServicesSummary roomId={roomId} />
+      <RoomModuleDirectorySectionActivator roomId={roomId} />
       <RoomMembersSectionActivator roomId={roomId} />
       <RoomEntrySectionActivator roomId={roomId} />
       <RoomActivitySectionActivator roomId={roomId} />
