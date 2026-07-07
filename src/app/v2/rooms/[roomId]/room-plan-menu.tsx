@@ -39,14 +39,14 @@ type PlanFeature = {
 type PlanGroup = { key: PlanKey; title: string; aliases: string[]; features: PlanFeature[] };
 
 const starterFeatures: PlanFeature[] = [
-  { label: "Overview", href: (roomId) => `/rooms/${roomId}#overview`, icon: Building2 },
-  { label: "Discussions", href: (roomId) => `/rooms/${roomId}#discussions`, icon: MessageCircle },
-  { label: "Calendar", href: (roomId) => `/rooms/${roomId}#calendar`, icon: CalendarDays },
-  { label: "Announcements", href: (roomId) => `/rooms/${roomId}#announcements`, icon: Megaphone },
-  { label: "Members / Roles", href: (roomId) => `/rooms/${roomId}#members`, icon: Users },
+  { label: "Overview", href: (roomId) => `/rooms/${roomId}/overview`, icon: Building2 },
+  { label: "Discussions", href: (roomId) => `/rooms/${roomId}/discussions`, icon: MessageCircle },
+  { label: "Calendar", href: (roomId) => `/rooms/${roomId}/calendar`, icon: CalendarDays },
+  { label: "Announcements", href: (roomId) => `/rooms/${roomId}/announcements`, icon: Megaphone },
+  { label: "Members / Roles", href: (roomId) => `/rooms/${roomId}/members`, icon: Users },
   { label: "Requests", href: (roomId) => `/rooms/${roomId}/requests`, icon: ClipboardList },
   { label: "Resources", href: (roomId) => `/rooms/${roomId}/resources`, icon: FileText },
-  { label: "Settings", href: (roomId) => `/rooms/${roomId}#settings`, icon: Settings },
+  { label: "Settings", href: (roomId) => `/rooms/${roomId}/settings`, icon: Settings },
 ];
 
 const proAdditions: PlanFeature[] = [
@@ -60,19 +60,19 @@ const proAdditions: PlanFeature[] = [
 
 const organizationAdditions: PlanFeature[] = [
   { label: "Services / Store", href: (roomId) => `/rooms/${roomId}/services`, icon: ShoppingBag },
-  { label: "Invites / Join Requests", href: (roomId) => `/rooms/${roomId}#members`, icon: UserPlus },
+  { label: "Invites / Join Requests", href: (roomId) => `/rooms/${roomId}/members`, icon: UserPlus },
   { label: "Activity / Audit Log", href: (roomId) => `/rooms/${roomId}/activity`, icon: Activity },
-  { label: "Advanced room controls", href: (roomId) => `/rooms/${roomId}#settings`, icon: ShieldCheck },
+  { label: "Advanced room controls", href: (roomId) => `/rooms/${roomId}/settings`, icon: ShieldCheck },
 ];
 
 const organizationPlusAdditions: PlanFeature[] = [
   { label: "More admin tools", href: (roomId) => `/rooms/${roomId}/modules`, icon: Sparkles, future: true },
   { label: "Larger room operations", href: (roomId) => `/rooms/${roomId}/modules`, icon: Building2, future: true },
-  { label: "Advanced member workflows", href: (roomId) => `/rooms/${roomId}#members`, icon: Users, future: true },
+  { label: "Advanced member workflows", href: (roomId) => `/rooms/${roomId}/members`, icon: Users, future: true },
 ];
 
 const enterpriseAdditions: PlanFeature[] = [
-  { label: "Enterprise controls", href: (roomId) => `/rooms/${roomId}#settings`, icon: ShieldCheck, future: true },
+  { label: "Enterprise controls", href: (roomId) => `/rooms/${roomId}/settings`, icon: ShieldCheck, future: true },
   { label: "High-capacity rooms", href: (roomId) => `/rooms/${roomId}/modules`, icon: Building2, future: true },
   { label: "Full private community operations", href: (roomId) => `/rooms/${roomId}/modules`, icon: LayoutGrid, future: true },
 ];
