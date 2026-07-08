@@ -2,9 +2,25 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronRight, GraduationCap, Home, Lock, Search, Sparkles, Store, Users } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  GraduationCap,
+  Home,
+  Lock,
+  Search,
+  Sparkles,
+  Store,
+  Users,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import { getDefaultShellPayload, V2ShellGateCard, V2ShellMobileNav, V2ShellTopNav, type ShellPayload } from "../v2-shell-components";
+import {
+  getDefaultShellPayload,
+  V2ShellGateCard,
+  V2ShellMobileNav,
+  V2ShellTopNav,
+  type ShellPayload,
+} from "../v2-shell-components";
 
 type RoomRow = Record<string, unknown>;
 type MemberRow = { room_id?: string | null; user_id?: string | null };
@@ -85,6 +101,19 @@ function normalizeRoom(row: RoomRow, index: number): LiveRoom {
   };
 }
 
+function normalizeEvent(row: EventRow, index: number, roomMap: Map<string, LiveRoom>): LiveEvent {
+  const roomId = asString(row.room_id);
+
+  return {
+    id: asString(row.id) || `event-${index}`,
+    roomId,
+    roomName: roomMap.get(roomId)?.name ?? "Room",
+    title: asString(row.title) || asString(row.name) || "Room event",
+    startsAt: asString(row.starts_at) || asString(row.start_at) || asString(row.event_time) || null,
+    interestedCount: asNumber(row.interested_count) || asNumber(row.rsvp_count),
+  };
+}
+
 function getRoomHref(roomId: string) {
   return `/rooms/${encodeURIComponent(roomId)}`;
 }
@@ -110,8 +139,25 @@ function formatEventDate(value: string | null) {
   return {
     day: new Intl.DateTimeFormat("en", { day: "2-digit" }).format(date),
     month: new Intl.DateTimeFormat("en", { month: "short" }).format(date).toUpperCase(),
-    time: new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(date),
+    time: new Intl.DateTimeFormat("en", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date),
   };
+}
+
+function getEventTimestamp(event: LiveEvent) {
+  if (!event.startsAt) return Number.POSITIVE_INFINITY;
+  const timestamp = new Date(event.startsAt).getTime();
+  return Number.isFinite(timestamp) ? timestamp : Number.POSITIVE_INFINITY;
+}
+
+function isUpcomingEvent(event: LiveEvent) {
+  const timestamp = getEventTimestamp(event);
+  return timestamp >= Date.now() - 60 * 60 * 1000;
 }
 
 function getRoomIcon(room: LiveRoom) {
@@ -129,6 +175,29 @@ async function fetchFirstAvailableRows<RowType>(tables: string[], limit: number)
     if (!error) return { table, rows: (data ?? []) as RowType[] };
   }
   return { table: "", rows: [] as RowType[] };
+}
+
+async function fetchUpcomingEvents(roomIds: string[], roomMap: Map<string, LiveRoom>) {
+  if (roomIds.length === 0) return [] as LiveEvent[];
+
+  for (const table of EVENT_TABLES) {
+    const { data, error } = await supabase
+      .from(table)
+      .select("*")
+      .in("room_id", roomIds)
+      .order("starts_at", { ascending: true })
+      .limit(50);
+
+    if (error) continue;
+
+    return ((data ?? []) as EventRow[])
+      .map((row, index) => normalizeEvent(row, index, roomMap))
+      .filter((event) => event.roomId && roomMap.has(event.roomId) && isUpcomingEvent(event))
+      .sort((a, b) => getEventTimestamp(a) - getEventTimestamp(b))
+      .slice(0, 5);
+  }
+
+  return [] as LiveEvent[];
 }
 
 async function fetchLiveRooms(userId: string | null) {
@@ -191,28 +260,12 @@ async function fetchLiveRooms(userId: string | null) {
     }
   }
 
-  let events: LiveEvent[] = [];
-  for (const table of EVENT_TABLES) {
-    const { data, error } = await supabase.from(table).select("*").limit(50);
-    if (error) continue;
-    events = ((data ?? []) as EventRow[]).map((row, index) => {
-      const roomId = asString(row.room_id);
-      return {
-        id: asString(row.id) || `event-${index}`,
-        roomId,
-        roomName: roomMap.get(roomId)?.name ?? "Room",
-        title: asString(row.title) || asString(row.name) || "Room event",
-        startsAt: asString(row.starts_at) || asString(row.start_at) || asString(row.event_time) || null,
-        interestedCount: asNumber(row.interested_count) || asNumber(row.rsvp_count),
-      };
-    }).filter((event) => event.roomId && roomMap.has(event.roomId));
-    break;
-  }
+  const events = await fetchUpcomingEvents(roomIds, roomMap);
 
   return {
     rooms: rooms.sort((a, b) => b.activityCount - a.activityCount || new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime()),
     joinedRoomIds: [...joinedRoomIds],
-    events: events.slice(0, 5),
+    events,
     sourceMessage: `Private rooms loaded from ${roomResult.table}.`,
   };
 }
@@ -267,7 +320,7 @@ function RoomEventsCard({ events }: { events: LiveEvent[] }) {
             </Link>
           );
         })}
-        {events.length === 0 && <p className="rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-500">No private room events found yet.</p>}
+        {events.length === 0 && <p className="rounded-2xl bg-slate-50 p-3 text-sm font-semibold text-slate-500">No upcoming private room events found yet.</p>}
       </div>
     </section>
   );
