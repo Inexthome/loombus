@@ -1,5 +1,6 @@
 import { RoomDiscussionCardActions } from "./room-discussion-card-actions";
 import { RoomPlanMenu } from "./room-plan-menu";
+import { RoomPostAttachments } from "./room-post-attachments";
 import { RoomPreferencesEnforcer } from "./room-preferences-enforcer";
 
 const ROOM_LANDING_CARD_SELECTOR = [
@@ -40,6 +41,7 @@ export default async function V2RoomLayout({ children, params }: { children: Rea
         }
       `}</style>
       {children}
+      <RoomPostAttachments roomId={roomId} />
       <RoomDiscussionCardActions />
       <RoomPlanMenu roomId={roomId} />
       <RoomPreferencesEnforcer roomId={roomId} />
