@@ -261,14 +261,35 @@ export default function V2CreateRoomPage() {
 
         {message && <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">{message}</p>}
 
-        <section className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-amber-800 p-6 text-white sm:p-8">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-200">Private rooms</p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Create a room and start privately.</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-6 text-amber-50/90 sm:text-base">Choose a template and plan. Starter, Pro, Organization, Organization Plus, and Organization Enterprise use Stripe checkout after the private room is created.</p>
+        <section className="mt-6 overflow-hidden rounded-[2.75rem] border border-slate-200/50 bg-white shadow-2xl shadow-slate-900/10 ring-1 ring-white/80">
+          <div className="grid gap-8 bg-gradient-to-br from-slate-950 via-slate-900 to-amber-800 p-6 text-white sm:p-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:p-10">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-amber-200">Private Loombus Rooms</p>
+              <h1 className="mt-5 max-w-4xl text-4xl font-black leading-[0.95] tracking-tight sm:text-5xl lg:text-6xl">
+                Create a private room for your business, residents, customers, classroom, or community.
+              </h1>
+              <p className="mt-6 max-w-3xl text-sm font-semibold leading-7 text-amber-50/90 sm:text-base">
+                Choose a room template, pick a plan, and start with a private discussion space that stays separate from public Loombus Discussions.
+              </p>
+            </div>
+
+            <aside className="rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl shadow-black/20 backdrop-blur-sm sm:p-6">
+              <div className="flex items-center gap-3">
+                <Lock className="size-6 text-white" />
+                <h2 className="text-xl font-black tracking-tight text-white">Privacy rule</h2>
+              </div>
+              <p className="mt-5 text-sm font-semibold leading-7 text-white/85">
+                Room discussions belong to the room only. They stay separate from public /discussions and are visible only to approved room members based on room permissions.
+              </p>
+              <div className="mt-6 space-y-3">
+                <p className="rounded-2xl bg-white/15 px-4 py-3 text-sm font-black text-white">Private discussion feed</p>
+                <p className="rounded-2xl bg-white/15 px-4 py-3 text-sm font-black text-white">Invite or approval access</p>
+                <p className="rounded-2xl bg-white/15 px-4 py-3 text-sm font-black text-white">Room resources, events, and members</p>
+              </div>
+            </aside>
           </div>
 
-          <form onSubmit={handleCreateRoom} className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <form onSubmit={handleCreateRoom} className="grid gap-6 bg-white p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
             <div className="space-y-6">
               <section>
                 <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">1. Choose room type</h2>
