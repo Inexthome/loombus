@@ -40,7 +40,7 @@ Prefer:
 features/create
 features/discussions
 components/shell
-components/navigation
+src/navigation
 ```
 
 ### 3.2 One canonical route per user destination
@@ -113,7 +113,6 @@ src/
 
   components/
     shell/
-    navigation/
     layout/
     ui/
 
@@ -130,6 +129,10 @@ src/
     settings/
     admin/
     billing/
+
+  navigation/
+    registry.ts
+    types.ts
 
   providers/
     auth-provider.tsx
@@ -330,17 +333,20 @@ export default function Page() {
 
 ## 9. Navigation architecture
 
-Navigation should be generated from one source of truth.
+Navigation is application configuration, not a visual component. It should be generated from one source of truth.
 
 Target:
 
 ```text
-src/components/navigation/nav-items.ts
+src/navigation/registry.ts
+src/navigation/types.ts
 ```
 
-That file should define stable destinations, labels, permissions, icons, and visibility rules.
+The registry should define stable destinations, labels, permissions, surfaces, and search keywords.
 
-Desktop and mobile can render differently, but they should read from the same nav item definitions.
+Navigation UI components should live separately under shell or navigation-rendering components and read from this registry.
+
+Desktop and mobile can render differently, but they should read from the same navigation item definitions.
 
 Do not hardcode separate navigation lists across the root layout, V2 shell, mobile shell, and individual pages.
 
@@ -405,8 +411,8 @@ Current `ClientLayout` has accumulated too many responsibilities. The safe strat
 
 Recommended order:
 
-1. Extract appearance logic.
-2. Extract navigation definitions.
+1. Extract navigation definitions.
+2. Extract appearance logic.
 3. Extract notification state.
 4. Extract messaging launcher state.
 5. Extract global search overlay.
