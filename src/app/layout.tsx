@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
+import { getAppearanceBootstrapScript } from "@/lib/appearance-mode";
 
 const siteUrl = "https://loombus.com";
 const siteTitle = "Loombus";
@@ -82,18 +83,7 @@ export default function RootLayout({
       <body className="bg-black text-white antialiased">
         <script
           dangerouslySetInnerHTML={{
-            __html: `
-              (() => {
-                try {
-                  const stored = window.localStorage.getItem("loombus:appearance");
-                  const allowed = ["system", "dark", "light"];
-                  const mode = allowed.includes(stored || "") ? stored : "system";
-                  document.documentElement.dataset.loombusTheme = mode || "system";
-                } catch {
-                  document.documentElement.dataset.loombusTheme = "system";
-                }
-              })();
-            `,
+            __html: getAppearanceBootstrapScript(),
           }}
         />
         <ClientLayout>{children}</ClientLayout>
