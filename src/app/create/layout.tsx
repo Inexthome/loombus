@@ -1,6 +1,3 @@
-import { CreateEditHydrator } from "@/components/create-edit-hydrator";
-import { CreateSignalGuide } from "@/components/create-signal-guide";
-
 export default function CreateLayout({
   children,
 }: Readonly<{
@@ -8,9 +5,18 @@ export default function CreateLayout({
 }>) {
   return (
     <>
-      {children}
-      <CreateSignalGuide />
-      <CreateEditHydrator />
+      <style>{`
+        body:has(.loombus-create-canonical-v2-route) .loombus-desktop-rail,
+        body:has(.loombus-create-canonical-v2-route) header,
+        body:has(.loombus-create-canonical-v2-route) .loombus-mobile-bottom-nav,
+        body:has(.loombus-create-canonical-v2-route) .loombus-bottom-nav,
+        body:has(.loombus-create-canonical-v2-route) .loombus-mobile-menu,
+        body:has(.loombus-create-canonical-v2-route) .loombus-floating-top-nav,
+        body:has(.loombus-create-canonical-v2-route) .loombus-floating-bottom-nav {
+          display: none !important;
+        }
+      `}</style>
+      <div className="loombus-create-canonical-v2-route">{children}</div>
     </>
   );
 }
