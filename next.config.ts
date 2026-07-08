@@ -61,28 +61,27 @@ const securityHeaders = [
   },
 ];
 
-const v2CanonicalRouteRedirects = [
-  { source: "/v2", destination: "/home", permanent: false },
-  { source: "/v2/create", destination: "/create", permanent: false },
-  { source: "/v2/create/review", destination: "/create", permanent: false },
-  { source: "/v2/discussions", destination: "/discussions", permanent: false },
+const v2LegacyCleanRedirects = [
   { source: "/v2/discussions/:path*", destination: "/discussions/:path*", permanent: false },
-  { source: "/v2/messages", destination: "/messages", permanent: false },
-  { source: "/v2/people", destination: "/people", permanent: false },
-  { source: "/v2/saved", destination: "/saved", permanent: false },
-  { source: "/v2/settings", destination: "/settings", permanent: false },
-  { source: "/v2/notifications", destination: "/notifications", permanent: false },
-  { source: "/v2/premium", destination: "/premium", permanent: false },
 ];
 
-const v2RemainingRouteRewrites = [
-  // Keep these V2-owned until their canonical pages are verified and restyled in follow-up PRs.
+const v2CleanRouteRewrites = [
+  { source: "/discussions", destination: "/v2/discussions" },
+  { source: "/discussions/:path*", destination: "/v2/discussions/:path*" },
+  { source: "/create", destination: "/v2/create" },
+  { source: "/messages", destination: "/v2/messages" },
+  { source: "/people", destination: "/v2/people" },
+  { source: "/saved", destination: "/v2/saved" },
   { source: "/following", destination: "/v2/following" },
   { source: "/profile", destination: "/v2/profile" },
   { source: "/my-activity", destination: "/v2/my-activity" },
+  { source: "/notifications", destination: "/v2/notifications" },
+  { source: "/settings", destination: "/v2/settings" },
   { source: "/support", destination: "/v2/support" },
+  { source: "/premium", destination: "/v2/premium" },
   { source: "/topics", destination: "/v2/topics" },
   { source: "/privacy-security", destination: "/v2/privacy-security" },
+  { source: "/home", destination: "/v2" },
   { source: "/rooms", destination: "/v2/rooms" },
   { source: "/rooms/:path*", destination: "/v2/rooms/:path*" },
   { source: "/create-room", destination: "/v2/create-room" },
@@ -101,11 +100,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
   async redirects() {
-    return v2CanonicalRouteRedirects;
+    return v2LegacyCleanRedirects;
   },
   async rewrites() {
     return {
-      beforeFiles: v2RemainingRouteRewrites,
+      beforeFiles: v2CleanRouteRewrites,
     };
   },
   async headers() {
