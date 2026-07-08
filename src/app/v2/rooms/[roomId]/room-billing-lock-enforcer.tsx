@@ -162,6 +162,27 @@ export function RoomBillingLockEnforcer({ roomId }: { roomId: string }) {
 
   return (
     <div className="fixed inset-0 z-[140] grid min-h-screen place-items-center bg-slate-950/75 px-4 backdrop-blur-sm">
+      <style>{`
+        [data-room-billing-checkout-button="true"],
+        [data-room-billing-checkout-button="true"] *,
+        [data-room-billing-checkout-button="true"] svg,
+        [data-room-billing-checkout-button="true"] span {
+          color: #ffffff !important;
+          -webkit-text-fill-color: #ffffff !important;
+          fill: none !important;
+          stroke: #ffffff !important;
+        }
+
+        [data-room-billing-checkout-button="true"] {
+          background: #020617 !important;
+          border-color: #020617 !important;
+        }
+
+        [data-room-billing-checkout-button="true"]:hover {
+          background: #1e293b !important;
+          border-color: #1e293b !important;
+        }
+      `}</style>
       <section className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-6 text-center text-slate-950 shadow-2xl">
         <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-amber-50 text-amber-700 ring-1 ring-amber-100">
           <LockKeyhole className="size-7" />
@@ -182,13 +203,13 @@ export function RoomBillingLockEnforcer({ roomId }: { roomId: string }) {
           {billing.isOwner ? (
             <button
               type="button"
+              data-room-billing-checkout-button="true"
               onClick={resumeCheckout}
               disabled={checkoutLoading}
-              style={{ color: "#ffffff" }}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl !bg-slate-950 px-5 py-3 text-sm font-black !text-white shadow-sm transition hover:!bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {checkoutLoading ? <Loader2 className="size-4 animate-spin text-white" /> : <CreditCard className="size-4 text-white" />}
-              <span className="text-white">Resume checkout</span>
+              {checkoutLoading ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
+              <span>Resume checkout</span>
             </button>
           ) : (
             <p className="rounded-2xl bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600 ring-1 ring-slate-200">Only the room owner can complete billing.</p>
