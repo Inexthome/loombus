@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { Plus, UploadCloud } from "lucide-react";
-import { createRoot } from "react-dom/client";
 import { supabase } from "@/lib/supabase/client";
 
 const BUCKET = "room-post-attachments";
@@ -35,19 +33,6 @@ function formatBytes(value: number | null) {
   if (!value) return "File";
   if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function RoomAttachmentButton({ onAttach }: { onAttach: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onAttach}
-      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm transition hover:border-amber-200 hover:text-amber-700"
-    >
-      <Plus className="size-4" />
-      Attach
-    </button>
-  );
 }
 
 async function getSignedUrl(path: string) {
@@ -145,8 +130,13 @@ function mountComposerEnhancer(roomId: string) {
   const preview = document.createElement("div");
   preview.className = "mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600";
 
-  const buttonMount = document.createElement("div");
-  buttonMount.className = "mt-3 flex items-center justify-between gap-3";
+  const controls = document.createElement("div");
+  controls.className = "mt-3 flex flex-wrap items-center justify-between gap-3";
+
+  const attachButton = document.createElement("button");
+  attachButton.type = "button";
+  attachButton.className = "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm transition hover:border-amber-200 hover:text-amber-700";
+  attachButton.innerHTML = '<span class="text-lg leading-none">+</span><span>Attach</span>';
 
   const status = document.createElement("p");
   status.className = "text-xs font-bold text-slate-500";
@@ -162,18 +152,19 @@ function mountComposerEnhancer(roomId: string) {
     status.textContent = selectedFiles.length ? `${selectedFiles.length} attachment${selectedFiles.length === 1 ? "" : "s"} selected` : "Images, videos, and files stay inside this room.";
   }
 
+  attachButton.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", () => {
-    const files = Array.from(fileInput.files ?? []).filter((file) => file.size <= MAX_FILE_SIZE).slice(0, MAX_FILES);
-    selectedFiles = files;
+    selectedFiles = Array.from(fileInput.files ?? [])
+      .filter((file) => file.size <= MAX_FILE_SIZE)
+      .slice(0, MAX_FILES);
     refreshPreview();
   });
 
+  controls.appendChild(attachButton);
+  controls.appendChild(status);
   form.appendChild(fileInput);
-  form.appendChild(buttonMount);
+  form.appendChild(controls);
   form.appendChild(preview);
-
-  createRoot(buttonMount).render(<RoomAttachmentButton onAttach={() => fileInput.click()} />);
-  buttonMount.appendChild(status);
   refreshPreview();
 
   form.addEventListener(
