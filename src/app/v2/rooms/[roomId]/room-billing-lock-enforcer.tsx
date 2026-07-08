@@ -184,10 +184,11 @@ export function RoomBillingLockEnforcer({ roomId }: { roomId: string }) {
               type="button"
               onClick={resumeCheckout}
               disabled={checkoutLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ color: "#ffffff" }}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl !bg-slate-950 px-5 py-3 text-sm font-black !text-white shadow-sm transition hover:!bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {checkoutLoading ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
-              Resume checkout
+              {checkoutLoading ? <Loader2 className="size-4 animate-spin text-white" /> : <CreditCard className="size-4 text-white" />}
+              <span className="text-white">Resume checkout</span>
             </button>
           ) : (
             <p className="rounded-2xl bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600 ring-1 ring-slate-200">Only the room owner can complete billing.</p>
