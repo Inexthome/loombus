@@ -1,3 +1,4 @@
+import { RoomDiscussionCardActions } from "./room-discussion-card-actions";
 import { RoomPlanMenu } from "./room-plan-menu";
 import { RoomPreferencesEnforcer } from "./room-preferences-enforcer";
 
@@ -39,6 +40,7 @@ export default async function V2RoomLayout({ children, params }: { children: Rea
         }
       `}</style>
       {children}
+      <RoomDiscussionCardActions />
       <RoomPlanMenu roomId={roomId} />
       <RoomPreferencesEnforcer roomId={roomId} />
     </>
