@@ -1,3 +1,4 @@
+import { RoomBillingLockEnforcer } from "./room-billing-lock-enforcer";
 import { RoomDiscussionCardActions } from "./room-discussion-card-actions";
 import { RoomPlanMenu } from "./room-plan-menu";
 import { RoomPostAttachments } from "./room-post-attachments";
@@ -45,6 +46,7 @@ export default async function V2RoomLayout({ children, params }: { children: Rea
       <RoomDiscussionCardActions />
       <RoomPlanMenu roomId={roomId} />
       <RoomPreferencesEnforcer roomId={roomId} />
+      <RoomBillingLockEnforcer roomId={roomId} />
     </>
   );
 }
