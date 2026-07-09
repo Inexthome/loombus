@@ -3,7 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Bell, ChevronDown, LogOut, Search, Settings, UserCircle } from "lucide-react";
+import {
+  Activity,
+  Bell,
+  Bookmark,
+  Bot,
+  ChevronDown,
+  Clock3,
+  Home,
+  LayoutDashboard,
+  LogOut,
+  MessageCircle,
+  MessageSquareReply,
+  Search,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  StickyNote,
+  UserCircle,
+  Users,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import {
   filterBlockedActorNotifications,
@@ -40,6 +59,62 @@ function getDisplayName(profile: DesktopTopNavProfile | null, email: string | nu
     profile?.username?.trim() ||
     email?.split("@")[0]?.trim() ||
     "Loombus member"
+  );
+}
+
+type DropdownItem = {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number; "aria-hidden"?: boolean }>;
+};
+
+const discoveryItems: DropdownItem[] = [
+  { href: "/home", label: "Home", icon: Home },
+  { href: "/dashboard", label: "Home Status", icon: LayoutDashboard },
+  { href: "/onboarding", label: "Onboarding", icon: Sparkles },
+  { href: "/people", label: "People", icon: Users },
+  { href: "/following", label: "Following", icon: Activity },
+  { href: "/messages", label: "Messages", icon: MessageCircle },
+  { href: "/saved", label: "Saved", icon: Bookmark },
+  { href: "/stickies", label: "Stickies", icon: StickyNote },
+];
+
+const activityItems: DropdownItem[] = [
+  { href: "/my-activity", label: "My Activity", icon: Activity },
+  { href: "/my-discussions", label: "My Discussions", icon: MessageCircle },
+  { href: "/my-replies", label: "My Replies", icon: MessageSquareReply },
+  { href: "/reading-history", label: "Reading History", icon: Clock3 },
+];
+
+const buildItems: DropdownItem[] = [
+  { href: "/labs", label: "Labs", icon: Sparkles },
+  { href: "/premium", label: "Premium", icon: Sparkles },
+  { href: "/ai-usage", label: "AI Usage", icon: Bot },
+];
+
+function DropdownLink({ item }: { item: DropdownItem }) {
+  const Icon = item.icon;
+
+  return (
+    <Link href={item.href} className="flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
+      <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+      {item.label}
+    </Link>
+  );
+}
+
+function DropdownSection({ title, items }: { title: string; items: DropdownItem[] }) {
+  return (
+    <section className="py-2">
+      <p className="px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
+        {title}
+      </p>
+      <div className="grid gap-0.5">
+        {items.map((item) => (
+          <DropdownLink key={`${item.href}-${item.label}`} item={item} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -186,6 +261,10 @@ export function DesktopTopNavbar() {
 
   const displayName = getDisplayName(profile, email);
   const profileHref = profile?.username ? `/u/${profile.username}` : "/profile";
+  const accountItems: DropdownItem[] = [
+    { href: profileHref, label: "Profile", icon: UserCircle },
+    { href: "/settings", label: "Settings", icon: Settings },
+  ];
 
   return (
     <header className="loombus-desktop-top-navbar fixed inset-x-0 top-0 z-[65] hidden h-[72px] border-b border-[var(--loombus-border)] bg-[var(--loombus-surface)]/92 text-[var(--loombus-text)] shadow-xl shadow-black/5 backdrop-blur-xl md:block">
@@ -269,31 +348,39 @@ export function DesktopTopNavbar() {
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-3 w-72 overflow-hidden rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-2 text-[var(--loombus-text)] shadow-2xl shadow-black/15">
-                <div className="border-b border-[var(--loombus-border)] px-4 py-3">
+              <div className="absolute right-0 mt-3 flex max-h-[calc(100vh-6rem)] w-80 flex-col overflow-hidden rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/15">
+                <div className="shrink-0 border-b border-[var(--loombus-border)] px-4 py-3">
                   <p className="truncate text-sm font-semibold">{displayName}</p>
                   <p className="mt-1 truncate text-xs text-[var(--loombus-text-muted)]">
                     {profile?.username ? `@${profile.username}` : email ?? "Loombus account"}
                   </p>
                 </div>
 
-                <div className="py-2">
-                  <Link href={profileHref} className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                    <UserCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
-                    Profile
-                  </Link>
-                  <Link href="/settings" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                    <Settings aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
-                    Settings
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm text-[var(--loombus-text-muted)] transition hover:bg-red-500/10 hover:text-red-500"
-                  >
-                    <LogOut aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
-                    Logout
-                  </button>
+                <div className="min-h-0 overflow-y-auto p-2">
+                  <DropdownSection title="Navigation" items={discoveryItems} />
+                  <DropdownSection title="Your Activity" items={activityItems} />
+                  <DropdownSection title="Tools" items={buildItems} />
+                  <DropdownSection title="Account" items={accountItems} />
+
+                  {profile?.is_admin && (
+                    <section className="border-t border-[var(--loombus-border)] py-2">
+                      <p className="px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
+                        Admin
+                      </p>
+                      <DropdownLink item={{ href: "/admin", label: "Admin", icon: ShieldCheck }} />
+                    </section>
+                  )}
+
+                  <div className="border-t border-[var(--loombus-border)] pt-2">
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-left text-sm text-[var(--loombus-text-muted)] transition hover:bg-red-500/10 hover:text-red-500"
+                    >
+                      <LogOut aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+                      Logout
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
