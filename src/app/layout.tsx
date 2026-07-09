@@ -10,9 +10,7 @@ import "./loombus-loading-standard.css";
 import "./v2-global-gold-accent.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import ClientLayout from "./client-layout";
-import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
-import { NativePushRegistration } from "@/components/native-push-registration";
+import { AppRuntime } from "./app-runtime";
 import { getAppearanceBootstrapScript } from "@/lib/appearance-mode";
 
 const siteUrl = "https://loombus.com";
@@ -86,9 +84,7 @@ export default function RootLayout({
             __html: getAppearanceBootstrapScript(),
           }}
         />
-        <ClientLayout>{children}</ClientLayout>
-        <NativeBiometricSessionGate />
-        <NativePushRegistration />
+        <AppRuntime>{children}</AppRuntime>
       </body>
     </html>
   );
