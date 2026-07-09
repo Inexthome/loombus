@@ -1,0 +1,167 @@
+/* Home V2 shell restoration.
+   Route-scoped to the authenticated /home canvas. Keeps the existing /home data
+   loading and auth/profile/age gates intact while restoring a wider dashboard
+   shell that respects Light / Dark / System theme variables. */
+
+.loombus-home-canvas {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% -12%, color-mix(in srgb, var(--loombus-primary-bg) 13%, transparent 87%), transparent 36rem),
+    radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--loombus-surface-strong) 44%, transparent 56%), transparent 32rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--loombus-page-bg) 94%, var(--loombus-surface) 6%), var(--loombus-page-bg));
+}
+
+.loombus-home-canvas > .mx-auto {
+  width: 100%;
+  max-width: 92rem !important;
+}
+
+.loombus-home-shell {
+  border-color: color-mix(in srgb, var(--loombus-border) 88%, transparent 12%) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 92%, var(--loombus-page-bg) 8%) !important;
+  box-shadow: 0 24px 72px rgb(15 23 42 / 0.1) !important;
+}
+
+.loombus-home-hero-shell {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--loombus-surface) 94%, var(--loombus-primary-bg) 6%), color-mix(in srgb, var(--loombus-surface) 88%, var(--loombus-page-bg) 12%)) !important;
+}
+
+.loombus-home-hero-shell::before {
+  content: "";
+  position: absolute;
+  inset: -35% auto auto 55%;
+  width: 32rem;
+  height: 32rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--loombus-primary-bg) 16%, transparent 84%), transparent 68%);
+  pointer-events: none;
+}
+
+.loombus-home-hero-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.loombus-home-hero-shell h1 {
+  letter-spacing: -0.055em !important;
+}
+
+.loombus-home-hero-shell h1 + p {
+  max-width: 42rem !important;
+}
+
+.loombus-home-hero-shell .rounded-\[1\.35rem\],
+.loombus-home-hero-shell .rounded-\[1\.5rem\] {
+  background: color-mix(in srgb, var(--loombus-surface) 84%, var(--loombus-page-bg) 16%) !important;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent 82%);
+}
+
+.loombus-home-status-card,
+.loombus-home-shell a.rounded-\[1\.35rem\],
+.loombus-home-shell a.rounded-\[1\.5rem\],
+.loombus-home-shell div.rounded-2xl,
+.loombus-home-shell div.rounded-\[1\.35rem\],
+.loombus-home-shell div.rounded-\[1\.5rem\] {
+  border-color: color-mix(in srgb, var(--loombus-border) 90%, transparent 10%) !important;
+  background-color: color-mix(in srgb, var(--loombus-surface) 88%, var(--loombus-page-bg) 12%) !important;
+}
+
+.loombus-home-status-card {
+  box-shadow: 0 18px 42px rgb(15 23 42 / 0.08);
+}
+
+.loombus-home-status-card:hover,
+.loombus-home-shell a.rounded-\[1\.35rem\]:hover,
+.loombus-home-shell a.rounded-\[1\.5rem\]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 20px 48px rgb(15 23 42 / 0.11);
+}
+
+.loombus-home-primary-tile {
+  border-color: color-mix(in srgb, var(--loombus-primary-bg) 35%, var(--loombus-border) 65%) !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--loombus-primary-bg) 12%, var(--loombus-surface) 88%), color-mix(in srgb, var(--loombus-surface) 88%, var(--loombus-page-bg) 12%)) !important;
+}
+
+@media (min-width: 1024px) {
+  .loombus-home-canvas {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+    padding-top: 1.25rem !important;
+  }
+
+  .loombus-home-canvas > .mx-auto {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    gap: 1.35rem;
+    align-items: start;
+  }
+
+  .loombus-home-hero-shell {
+    grid-column: 1 / -1;
+  }
+
+  .loombus-home-canvas .loombus-home-shell:not(.loombus-home-hero-shell) {
+    margin-top: 0 !important;
+  }
+
+  .loombus-home-canvas .loombus-home-shell:nth-of-type(2) {
+    grid-column: 1 / 2;
+  }
+
+  .loombus-home-canvas .loombus-home-shell:nth-of-type(3),
+  .loombus-home-canvas .loombus-home-shell:nth-of-type(4) {
+    grid-column: 2 / 3;
+  }
+
+  .loombus-home-canvas .loombus-home-shell:nth-of-type(5) {
+    grid-column: 1 / 2;
+  }
+
+  .loombus-home-canvas .loombus-home-shell:nth-of-type(6) {
+    grid-column: 2 / 3;
+  }
+
+  .loombus-home-canvas .loombus-home-shell:has(.grid.gap-3.lg\:grid-cols-5) {
+    grid-column: 1 / -1;
+  }
+
+  .loombus-home-canvas .loombus-home-shell:has(.grid.gap-3.md\:grid-cols-3) {
+    grid-column: 1 / -1;
+  }
+
+  .loombus-home-canvas .loombus-home-shell:has([id^="home-age-verification"]),
+  .loombus-home-canvas .loombus-home-shell.border-amber-500\/30 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1280px) {
+  .loombus-home-canvas > .mx-auto {
+    grid-template-columns: minmax(0, 1fr) 25rem;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .loombus-home-canvas {
+    padding-top: calc(env(safe-area-inset-top) + 1rem) !important;
+  }
+
+  .loombus-home-shell {
+    box-shadow: 0 16px 44px rgb(15 23 42 / 0.08) !important;
+  }
+}
+
+html[data-loombus-theme="dark"] .loombus-home-shell {
+  box-shadow: 0 24px 72px rgb(0 0 0 / 0.32) !important;
+}
+
+html[data-loombus-theme="dark"] .loombus-home-status-card:hover,
+html[data-loombus-theme="dark"] .loombus-home-shell a.rounded-\[1\.35rem\]:hover,
+html[data-loombus-theme="dark"] .loombus-home-shell a.rounded-\[1\.5rem\]:hover {
+  box-shadow: 0 22px 52px rgb(0 0 0 / 0.34);
+}
