@@ -1,0 +1,189 @@
+/* Discussion detail shell polish.
+   Scoped to /discussions/[id] by targeting the existing discussion-detail-right-rail.
+   Keeps replies, save folders, reports, pinned replies, attachments, AI tools,
+   and all detail-page logic intact while aligning the presentation with the
+   upgraded /discussions index and /create shell. */
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+  background: var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl {
+  max-width: 92rem !important;
+  width: 100% !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > a:first-child {
+  color: var(--loombus-text-muted) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > a:first-child:hover {
+  color: var(--loombus-text) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) h1,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) h2,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) h3 {
+  color: var(--loombus-text) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) h1 {
+  letter-spacing: -0.055em !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) p,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) span,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) label {
+  border-color: var(--loombus-border);
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .rounded-3xl,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .rounded-2xl,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .sm\:rounded-\[1\.5rem\] {
+  border-color: var(--loombus-border) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) section,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) form,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) article,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) #replies > div > div {
+  border-color: var(--loombus-border) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) textarea,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) select {
+  background: color-mix(in srgb, var(--loombus-surface) 74%, var(--loombus-page-bg) 26%) !important;
+  border-color: var(--loombus-border) !important;
+  color: var(--loombus-text) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) textarea::placeholder {
+  color: var(--loombus-text-subtle) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="bg-black"],
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="bg-zinc-950"],
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="bg-zinc-900"] {
+  background-color: color-mix(in srgb, var(--loombus-surface) 78%, var(--loombus-page-bg) 22%) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-300"],
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-400"] {
+  color: var(--loombus-text-muted) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-500"],
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-600"],
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-700"] {
+  color: var(--loombus-text-subtle) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .text-white {
+  color: var(--loombus-text) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) button.bg-white,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) a.bg-white {
+  background: var(--loombus-primary-bg) !important;
+  color: var(--loombus-primary-text) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-right-rail section,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) form,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) #replies > div > div,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-center-ai-panel section,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-center-related {
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 0.12) !important;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .sm\:mb-10,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-center-ai-panel,
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) #replies {
+  border-radius: 1.75rem;
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-surface);
+  padding: 1.25rem;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 0.12);
+}
+
+main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 > div:last-child {
+  color: var(--loombus-text-muted) !important;
+}
+
+@media (min-width: 1024px) {
+  main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 23rem !important;
+    align-items: start !important;
+    gap: 1.5rem !important;
+    padding: 1.25rem 2rem 5rem !important;
+  }
+
+  main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl {
+    grid-column: 1 !important;
+    margin: 0 !important;
+  }
+
+  main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > h1 {
+    max-width: 68rem !important;
+    font-size: clamp(2.4rem, 5vw, 4.5rem) !important;
+    line-height: 0.98 !important;
+  }
+
+  main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-right-rail {
+    position: sticky !important;
+    inset: auto !important;
+    top: 7rem !important;
+    z-index: 1 !important;
+    display: block !important;
+    grid-column: 2 !important;
+    width: auto !important;
+    max-height: calc(100vh - 8rem) !important;
+    overflow-y: auto !important;
+    border-left: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+
+  main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-right-rail > div {
+    display: grid !important;
+    gap: 1rem !important;
+  }
+
+  main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-desktop-center-actions {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+    grid-template-columns: minmax(0, 1fr) 24rem !important;
+    gap: 1.75rem !important;
+  }
+
+  main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+    padding: 1.5rem !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+    background: var(--loombus-page-bg) !important;
+  }
+}
+
+html[data-loombus-theme="dark"] main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-right-rail section,
+html[data-loombus-theme="dark"] main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) form,
+html[data-loombus-theme="dark"] main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) #replies > div > div,
+html[data-loombus-theme="dark"] main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-center-ai-panel section,
+html[data-loombus-theme="dark"] main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-center-related,
+html[data-loombus-theme="dark"] main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.35) !important;
+}
