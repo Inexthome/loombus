@@ -182,6 +182,16 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     requiresAuth: true,
   },
   {
+    id: "ai-usage",
+    label: "AI Usage",
+    href: "/ai-usage",
+    description: "Review AI usage, limits, and premium AI activity.",
+    audience: "authenticated",
+    surfaces: ["mobile", "utility"],
+    keywords: ["ai", "ai usage", "limits", "premium ai", "usage"],
+    requiresAuth: true,
+  },
+  {
     id: "settings",
     label: "Settings",
     href: "/settings",

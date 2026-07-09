@@ -26,6 +26,7 @@ export type NavigationItemId =
   | "my-replies"
   | "reading-history"
   | "premium"
+  | "ai-usage"
   | "settings"
   | "support"
   | "privacy-security"
