@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type ComponentType, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity,
   Bell,
@@ -12,6 +12,7 @@ import {
   Clock3,
   Home,
   LayoutDashboard,
+  type LucideIcon,
   LogOut,
   MessageCircle,
   MessageSquareReply,
@@ -65,7 +66,7 @@ function getDisplayName(profile: DesktopTopNavProfile | null, email: string | nu
 type DropdownItem = {
   href: string;
   label: string;
-  icon: ComponentType<{ className?: string; strokeWidth?: number; "aria-hidden"?: boolean }>;
+  icon: LucideIcon;
 };
 
 const discoveryItems: DropdownItem[] = [
