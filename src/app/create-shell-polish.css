@@ -1,0 +1,168 @@
+/* Create discussion shell polish.
+   Scoped to the existing /create composer by targeting its discussion-body editor.
+   This keeps create/edit/publish/draft/attachment logic intact while moving the
+   desktop presentation toward the newer rounded two-column create shell. */
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) {
+  background: var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto {
+  max-width: 92rem !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > a:first-child {
+  color: var(--loombus-text-muted) !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > p,
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > h1 {
+  color: var(--loombus-text) !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > h1 {
+  letter-spacing: -0.055em !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > h1 + p {
+  color: var(--loombus-text-muted) !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form {
+  border-radius: 2rem !important;
+  border-color: var(--loombus-border) !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 28px 80px rgb(15 23 42 / 0.12) !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form label,
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form p,
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form span,
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form h2,
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form h3 {
+  border-color: var(--loombus-border);
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) input,
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) textarea,
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) [contenteditable="true"] {
+  border-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 72%, var(--loombus-page-bg) 28%) !important;
+  color: var(--loombus-text) !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) input::placeholder,
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) textarea::placeholder {
+  color: var(--loombus-text-subtle) !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form > section:first-of-type > div.rounded-2xl {
+  border-radius: 1.7rem !important;
+  border-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 78%, var(--loombus-page-bg) 22%) !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form button {
+  font-weight: 700;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form button[type="submit"] {
+  background: #ddb14a !important;
+  color: rgb(15 23 42) !important;
+  box-shadow: 0 18px 42px rgb(180 83 9 / 0.18) !important;
+}
+
+main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form button[type="submit"]:hover {
+  opacity: 0.92;
+}
+
+@media (min-width: 1024px) {
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) {
+    padding: 1.25rem 2rem 5rem !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 22rem !important;
+    gap: 1.5rem !important;
+    align-items: start !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > a:first-child,
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > p,
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > h1,
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > h1 + p,
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > div:not(.space-y-4) {
+    grid-column: 1 / -1 !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > a:first-child {
+    margin-bottom: 0.25rem !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > p:first-of-type {
+    display: none !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > h1 {
+    margin: 0 !important;
+    font-size: clamp(2.2rem, 4vw, 3.4rem) !important;
+    line-height: 0.98 !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto > h1 + p {
+    margin: 0.8rem 0 0.35rem !important;
+    max-width: 64rem !important;
+    font-size: 1.05rem !important;
+    line-height: 1.65 !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form {
+    grid-column: 1 !important;
+    padding: 1.8rem !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) .loombus-right-rail {
+    position: sticky !important;
+    inset: auto !important;
+    top: 7rem !important;
+    z-index: 1 !important;
+    display: block !important;
+    grid-column: 2 !important;
+    width: auto !important;
+    max-height: calc(100vh - 8rem) !important;
+    overflow-y: auto !important;
+    border-left: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) .loombus-right-rail > div {
+    display: grid !important;
+    gap: 1rem !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) .loombus-right-rail section {
+    border-radius: 1.75rem !important;
+    border-color: var(--loombus-border) !important;
+    background: var(--loombus-surface) !important;
+    box-shadow: 0 24px 70px rgb(15 23 42 / 0.12) !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) > div.mx-auto {
+    grid-template-columns: minmax(0, 1fr) 23rem !important;
+  }
+
+  main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form {
+    padding: 2rem !important;
+  }
+}
+
+html[data-loombus-theme="dark"] main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form,
+html[data-loombus-theme="dark"] main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) .loombus-right-rail section {
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.35) !important;
+}
