@@ -54,6 +54,10 @@ function bridgeLegacyV2Appearance(theme: V2AppearanceTheme) {
   if (typeof window === "undefined") return;
 
   try {
+    if (window.localStorage.getItem(V2_APPEARANCE_STORAGE_KEY) === theme) {
+      return;
+    }
+
     window.localStorage.setItem(V2_APPEARANCE_STORAGE_KEY, theme);
   } catch {
     // Ignore storage failures so the canonical appearance owner can still apply.
@@ -130,7 +134,10 @@ export function V2AppearanceProvider({ children }: { children: React.ReactNode }
 
     function handleLegacyAppearanceEvent(event: Event) {
       const theme = (event as CustomEvent<{ theme?: unknown }>).detail?.theme;
-      if (isV2AppearanceTheme(theme)) setV2AppearancePreference(theme);
+      if (!isV2AppearanceTheme(theme)) return;
+      if (getCanonicalAppearanceRaw() === theme) return;
+
+      setV2AppearancePreference(theme);
     }
 
     function handleStorageEvent(event: StorageEvent) {
