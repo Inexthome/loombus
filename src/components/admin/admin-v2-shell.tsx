@@ -36,10 +36,10 @@ type NavItem = {
 };
 
 const TOP_NAV_ITEMS = [
-  { label: "Home", href: "/v2", icon: Home },
-  { label: "Discussions", href: "/v2/discussions", icon: MessageCircle },
-  { label: "Create", href: "/v2/create", icon: Plus, primary: true },
-  { label: "Messages", href: "/v2/messages", icon: Mail },
+  { label: "Home", href: "/home", icon: Home },
+  { label: "Discussions", href: "/discussions", icon: MessageCircle },
+  { label: "Create", href: "/create", icon: Plus, primary: true },
+  { label: "Messages", href: "/messages", icon: Mail },
 ];
 
 const ADMIN_NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
@@ -89,7 +89,7 @@ export function AdminV2Shell({ children }: { children: ReactNode }) {
     <main data-admin-v2-shell className="fixed inset-0 z-[80] min-h-screen overflow-y-auto bg-[#f7fbff] loombus-v2-page-bg text-slate-950">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#061942] loombus-v2-top-nav shadow-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/v2" className="flex items-center gap-3 font-bold text-white">
+          <Link href="/home" className="flex items-center gap-3 font-bold text-white">
             <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-9 object-contain" />
             <span className="text-xl">Loombus</span>
           </Link>
@@ -109,8 +109,8 @@ export function AdminV2Shell({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="flex items-center gap-2">
-            <Link href="/v2/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Search className="size-5" /></Link>
-            <Link href="/v2/notifications" aria-label="Notifications" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /></Link>
+            <Link href="/search" aria-label="Search" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Search className="size-5" /></Link>
+            <Link href="/notifications" aria-label="Notifications" className="grid size-10 place-items-center rounded-full text-blue-100 transition hover:bg-white/10 hover:text-white"><Bell className="size-5" /></Link>
           </div>
         </div>
       </header>
