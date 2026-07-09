@@ -227,15 +227,14 @@ export function DesktopTopNavbar() {
         </nav>
 
         <div className="flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => window.dispatchEvent(new Event("loombus:open-search"))}
+          <Link
+            href="/search"
             aria-label="Search Loombus"
             title="Search"
             className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
           >
-            <Search aria-hidden="true" className="h-4.5 w-4.5" strokeWidth={2.1} />
-          </button>
+            <Search aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+          </Link>
 
           <Link
             href="/notifications"
@@ -243,7 +242,7 @@ export function DesktopTopNavbar() {
             title="Notifications"
             className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
           >
-            <Bell aria-hidden="true" className="h-4.5 w-4.5" strokeWidth={2.1} />
+            <Bell aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
             {notificationCount > 0 && (
               <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[var(--loombus-primary-bg)] px-1 text-[10px] font-bold text-[var(--loombus-primary-text)] ring-2 ring-[var(--loombus-surface)]">
                 {notificationCount > 9 ? "9+" : notificationCount}
@@ -280,11 +279,11 @@ export function DesktopTopNavbar() {
 
                 <div className="py-2">
                   <Link href={profileHref} className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                    <UserCircle aria-hidden="true" className="h-4.5 w-4.5" strokeWidth={2.1} />
+                    <UserCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
                     Profile
                   </Link>
                   <Link href="/settings" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                    <Settings aria-hidden="true" className="h-4.5 w-4.5" strokeWidth={2.1} />
+                    <Settings aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
                     Settings
                   </Link>
                   <button
@@ -292,7 +291,7 @@ export function DesktopTopNavbar() {
                     onClick={handleLogout}
                     className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm text-[var(--loombus-text-muted)] transition hover:bg-red-500/10 hover:text-red-500"
                   >
-                    <LogOut aria-hidden="true" className="h-4.5 w-4.5" strokeWidth={2.1} />
+                    <LogOut aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
                     Logout
                   </button>
                 </div>
