@@ -65,35 +65,13 @@ const v2LegacyCleanRedirects = [
   { source: "/v2/discussions/:path*", destination: "/discussions/:path*", permanent: false },
 ];
 
-const v2CleanRouteRewrites = [
-  { source: "/discussions", destination: "/v2/discussions" },
-  { source: "/discussions/:path*", destination: "/v2/discussions/:path*" },
-  { source: "/create", destination: "/v2/create" },
-  { source: "/messages", destination: "/v2/messages" },
-  { source: "/people", destination: "/v2/people" },
-  { source: "/saved", destination: "/v2/saved" },
-  { source: "/following", destination: "/v2/following" },
-  { source: "/profile", destination: "/v2/profile" },
-  { source: "/my-activity", destination: "/v2/my-activity" },
-  { source: "/notifications", destination: "/v2/notifications" },
-  { source: "/settings", destination: "/v2/settings" },
-  { source: "/support", destination: "/v2/support" },
-  { source: "/premium", destination: "/v2/premium" },
-  { source: "/topics", destination: "/v2/topics" },
-  { source: "/privacy-security", destination: "/v2/privacy-security" },
-  { source: "/home", destination: "/v2" },
+const v2OnlyRouteRewrites = [
+  // Keep temporary rewrites only for surfaces that currently live exclusively under /v2.
+  // Core routes such as /discussions, /discussions/[id], and /create must resolve to
+  // their canonical implementations so the legacy shell does not flash before V2 loads.
   { source: "/rooms", destination: "/v2/rooms" },
   { source: "/rooms/:path*", destination: "/v2/rooms/:path*" },
   { source: "/create-room", destination: "/v2/create-room" },
-  { source: "/labs", destination: "/v2/labs" },
-  { source: "/labs/:path*", destination: "/v2/labs/:path*" },
-  { source: "/stickies", destination: "/v2/stickies" },
-  { source: "/reading-history", destination: "/v2/reading-history" },
-  { source: "/my-discussions", destination: "/v2/my-discussions" },
-  { source: "/my-replies", destination: "/v2/my-replies" },
-  { source: "/search", destination: "/v2/search" },
-  { source: "/onboarding", destination: "/v2/onboarding" },
-  { source: "/admin", destination: "/v2/admin" },
 ];
 
 const nextConfig: NextConfig = {
@@ -104,7 +82,7 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return {
-      beforeFiles: v2CleanRouteRewrites,
+      beforeFiles: v2OnlyRouteRewrites,
     };
   },
   async headers() {
