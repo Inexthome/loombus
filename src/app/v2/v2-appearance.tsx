@@ -3,12 +3,26 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import {
+  APPEARANCE_CHANGED_EVENT,
+  APPEARANCE_STORAGE_KEY,
+  type AppearanceMode,
+  applyAppearanceMode,
+  getStoredAppearanceMode,
+  isAppearanceMode,
+  setStoredAppearanceMode,
+  syncBrowserAppearanceMode,
+} from "@/lib/appearance-mode";
 import { V2AppearanceStyle } from "./v2-appearance-style";
 import { V2BadgeStyle } from "./v2-badge-style";
 import { V2NavigationConsistencyStyle } from "./v2-navigation-consistency-style";
 
-export type V2AppearanceTheme = "light" | "dark" | "system";
+export type V2AppearanceTheme = AppearanceMode;
 
+/**
+ * Legacy V2 key kept only as a read/write bridge while the remaining V2 islands
+ * migrate to the canonical Loombus appearance owner in `@/lib/appearance-mode`.
+ */
 export const V2_APPEARANCE_STORAGE_KEY = "loombus:v2:appearance";
 export const V2_DEFAULT_APPEARANCE: V2AppearanceTheme = "system";
 
@@ -23,7 +37,7 @@ export const V2_APPEARANCE_OPTIONS: Array<{
 ];
 
 export function isV2AppearanceTheme(value: unknown): value is V2AppearanceTheme {
-  return value === "light" || value === "dark" || value === "system";
+  return typeof value === "string" && isAppearanceMode(value);
 }
 
 function getStoredV2AppearanceRaw() {
@@ -31,14 +45,46 @@ function getStoredV2AppearanceRaw() {
   return window.localStorage.getItem(V2_APPEARANCE_STORAGE_KEY);
 }
 
+function getCanonicalAppearanceRaw() {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(APPEARANCE_STORAGE_KEY);
+}
+
+function bridgeLegacyV2Appearance(theme: V2AppearanceTheme) {
+  if (typeof window === "undefined") return;
+
+  try {
+    if (window.localStorage.getItem(V2_APPEARANCE_STORAGE_KEY) === theme) {
+      return;
+    }
+
+    window.localStorage.setItem(V2_APPEARANCE_STORAGE_KEY, theme);
+  } catch {
+    // Ignore storage failures so the canonical appearance owner can still apply.
+  }
+
+  window.dispatchEvent(
+    new CustomEvent("loombus:v2-appearance-changed", { detail: { theme } })
+  );
+}
+
 export function applyV2Appearance(theme: V2AppearanceTheme) {
-  if (typeof document === "undefined") return;
-  document.documentElement.setAttribute("data-loombus-theme", theme);
+  applyAppearanceMode(theme);
 }
 
 export function getStoredV2Appearance(): V2AppearanceTheme {
-  const stored = getStoredV2AppearanceRaw();
-  return isV2AppearanceTheme(stored) ? stored : V2_DEFAULT_APPEARANCE;
+  if (typeof window === "undefined") return V2_DEFAULT_APPEARANCE;
+
+  const canonical = getCanonicalAppearanceRaw();
+  if (isAppearanceMode(canonical)) return canonical;
+
+  const legacyV2 = getStoredV2AppearanceRaw();
+  if (isV2AppearanceTheme(legacyV2)) {
+    setStoredAppearanceMode(legacyV2, window.localStorage);
+    return legacyV2;
+  }
+
+  return getStoredAppearanceMode(window.localStorage);
 }
 
 async function persistSignedInV2Appearance(theme: V2AppearanceTheme) {
@@ -56,11 +102,8 @@ async function persistSignedInV2Appearance(theme: V2AppearanceTheme) {
 }
 
 export function setV2AppearancePreference(theme: V2AppearanceTheme) {
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(V2_APPEARANCE_STORAGE_KEY, theme);
-    window.dispatchEvent(new CustomEvent("loombus:v2-appearance-changed", { detail: { theme } }));
-  }
-  applyV2Appearance(theme);
+  syncBrowserAppearanceMode(theme);
+  bridgeLegacyV2Appearance(theme);
   void persistSignedInV2Appearance(theme);
 }
 
@@ -69,7 +112,9 @@ export function V2AppearanceProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     function applyStoredPreference() {
-      applyV2Appearance(getStoredV2Appearance());
+      const theme = getStoredV2Appearance();
+      applyV2Appearance(theme);
+      bridgeLegacyV2Appearance(theme);
     }
 
     applyStoredPreference();
@@ -79,24 +124,41 @@ export function V2AppearanceProvider({ children }: { children: React.ReactNode }
       if (getStoredV2Appearance() === "system") applyV2Appearance("system");
     }
 
-    function handleAppearanceEvent(event: Event) {
+    function handleCanonicalAppearanceEvent(event: Event) {
+      const mode = (event as CustomEvent<{ mode?: unknown }>).detail?.mode;
+      if (isV2AppearanceTheme(mode)) {
+        applyV2Appearance(mode);
+        bridgeLegacyV2Appearance(mode);
+      }
+    }
+
+    function handleLegacyAppearanceEvent(event: Event) {
       const theme = (event as CustomEvent<{ theme?: unknown }>).detail?.theme;
-      if (isV2AppearanceTheme(theme)) applyV2Appearance(theme);
+      if (!isV2AppearanceTheme(theme)) return;
+      if (getCanonicalAppearanceRaw() === theme) return;
+
+      setV2AppearancePreference(theme);
     }
 
     function handleStorageEvent(event: StorageEvent) {
-      if (event.key !== V2_APPEARANCE_STORAGE_KEY) return;
+      if (
+        event.key !== APPEARANCE_STORAGE_KEY &&
+        event.key !== V2_APPEARANCE_STORAGE_KEY
+      ) {
+        return;
+      }
       applyStoredPreference();
     }
 
     mediaQuery.addEventListener("change", handleSystemChange);
-    window.addEventListener("loombus:v2-appearance-changed", handleAppearanceEvent as EventListener);
+    window.addEventListener(APPEARANCE_CHANGED_EVENT, handleCanonicalAppearanceEvent as EventListener);
+    window.addEventListener("loombus:v2-appearance-changed", handleLegacyAppearanceEvent as EventListener);
     window.addEventListener("storage", handleStorageEvent);
 
     async function loadSignedInPreference() {
       // Settings writes the user's choice to localStorage immediately. Do not let a
       // stale /api/v2/shell response on the next route override that same-tab choice.
-      if (isV2AppearanceTheme(getStoredV2AppearanceRaw())) return;
+      if (isAppearanceMode(getCanonicalAppearanceRaw()) || isV2AppearanceTheme(getStoredV2AppearanceRaw())) return;
 
       const { data } = await supabase.auth.getSession();
       const accessToken = data.session?.access_token;
@@ -108,16 +170,15 @@ export function V2AppearanceProvider({ children }: { children: React.ReactNode }
       const payload = await response.json().catch(() => null);
       const nextTheme = payload?.preferences?.appearance_theme;
       if (isV2AppearanceTheme(nextTheme)) {
-        window.localStorage.setItem(V2_APPEARANCE_STORAGE_KEY, nextTheme);
-        applyV2Appearance(nextTheme);
-        window.dispatchEvent(new CustomEvent("loombus:v2-appearance-changed", { detail: { theme: nextTheme } }));
+        setV2AppearancePreference(nextTheme);
       }
     }
     void loadSignedInPreference();
 
     return () => {
       mediaQuery.removeEventListener("change", handleSystemChange);
-      window.removeEventListener("loombus:v2-appearance-changed", handleAppearanceEvent as EventListener);
+      window.removeEventListener(APPEARANCE_CHANGED_EVENT, handleCanonicalAppearanceEvent as EventListener);
+      window.removeEventListener("loombus:v2-appearance-changed", handleLegacyAppearanceEvent as EventListener);
       window.removeEventListener("storage", handleStorageEvent);
     };
   }, [pathname]);
