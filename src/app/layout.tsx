@@ -2,6 +2,7 @@ import "./globals.css";
 import "./desktop-nav-top.css";
 import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
+import "./home-v2-shell.css";
 import "./discussion-detail-shell-polish.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
@@ -39,61 +40,15 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  openGraph: {
-    title: siteTitle,
-    description: siteDescription,
-    url: siteUrl,
-    siteName: siteTitle,
-    images: [
-      {
-        url: "/opengraph-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Loombus",
-      },
-    ],
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: siteTitle,
-    description: siteDescription,
-    images: ["/opengraph-image.png"],
-  },
-  icons: {
-    icon: "/icon.png",
-    apple: "/apple-icon.png",
-    shortcut: "/favicon.ico",
-  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-black text-white antialiased">
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (() => {
-                try {
-                  const stored = window.localStorage.getItem("loombus:appearance");
-                  const allowed = ["system", "dark", "light"];
-                  const mode = allowed.includes(stored || "") ? stored : "system";
-                  document.documentElement.dataset.loombusTheme = mode || "system";
-                } catch {
-                  document.documentElement.dataset.loombusTheme = "system";
-                }
-              })();
-            `,
-          }}
-        />
-        <ClientLayout>{children}</ClientLayout>
+      <body>
         <NativeBiometricSessionGate />
         <NativePushRegistration />
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );
