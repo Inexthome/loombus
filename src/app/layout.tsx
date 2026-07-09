@@ -1,5 +1,6 @@
 import "./globals.css";
 import "./desktop-nav-top.css";
+import "./desktop-top-navbar.css";
 import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
 import "./home-v2-shell.css";
@@ -8,6 +9,7 @@ import "./discussion-detail-shell-polish.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
+import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
 
@@ -93,6 +95,7 @@ export default function RootLayout({
             `,
           }}
         />
+        <DesktopTopNavbar />
         <ClientLayout>{children}</ClientLayout>
         <NativeBiometricSessionGate />
         <NativePushRegistration />
