@@ -1,5 +1,6 @@
 import "./globals.css";
 import "./desktop-nav-top.css";
+import "./legacy-right-rail-cleanup.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";

@@ -1,0 +1,18 @@
+/* Legacy right-rail cleanup.
+   The old resizable right-rail handle is no longer part of the rebuilt
+   /discussions index layout. Keep any existing rail content intact, but
+   remove the leftover draggable divider line/handle. */
+@media (min-width: 1280px) {
+  .loombus-right-rail-resizer,
+  .loombus-right-rail-resizer-active {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  .loombus-right-rail-resizer::before,
+  .loombus-right-rail-resizer-active::before {
+    display: none !important;
+    background: transparent !important;
+    opacity: 0 !important;
+  }
+}
