@@ -707,7 +707,7 @@ export default function DiscussionPage() {
 
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, full_name, username, avatar_url")
+        .select("*")
         .eq("id", discussionData.user_id)
         .single();
 
@@ -784,7 +784,7 @@ export default function DiscussionPage() {
       if (replyUserIds.length > 0) {
         const { data: replyProfileData } = await supabase
           .from("profiles")
-          .select("id, full_name, username, avatar_url")
+          .select("*")
           .in("id", replyUserIds);
 
         for (const replyProfile of replyProfileData ?? []) {
@@ -1220,7 +1220,7 @@ export default function DiscussionPage() {
 
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("id, full_name, username, avatar_url")
+          .select("*")
           .eq("id", newReply.user_id)
           .single();
 

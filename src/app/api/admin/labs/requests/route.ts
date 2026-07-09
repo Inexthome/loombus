@@ -23,22 +23,6 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function getServiceRoleClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase service role configuration.");
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
@@ -68,84 +52,6 @@ async function requireAdmin(supabase: ReturnType<typeof getSupabaseForRequest>) 
   }
 
   return { user, error: null };
-}
-
-export async function GET(request: NextRequest) {
-  let supabase;
-
-  try {
-    supabase = getSupabaseForRequest(request);
-  } catch {
-    return jsonError("Server configuration error.", 500);
-  }
-
-  const { error: adminError } = await requireAdmin(supabase);
-
-  if (adminError) {
-    return adminError;
-  }
-
-  let admin;
-
-  try {
-    admin = getServiceRoleClient();
-  } catch {
-    return jsonError("Server configuration error.", 500);
-  }
-
-  const { data: requestRows, error: requestsError } = await admin
-    .from("labs_feature_requests")
-    .select(
-      "id, user_id, title, description, status, admin_note, reviewed_by, reviewed_at, created_at, updated_at"
-    )
-    .order("created_at", { ascending: false });
-
-  if (requestsError) {
-    return jsonError(requestsError.message || "Unable to load Labs requests.", 400);
-  }
-
-  const requests = requestRows ?? [];
-  const requestIds = requests.map((request) => request.id);
-
-  let votes: { request_id: string }[] = [];
-
-  if (requestIds.length > 0) {
-    const { data: voteRows, error: votesError } = await admin
-      .from("labs_feature_request_votes")
-      .select("request_id")
-      .in("request_id", requestIds);
-
-    if (votesError) {
-      return jsonError(votesError.message || "Unable to load Labs votes.", 400);
-    }
-
-    votes = voteRows ?? [];
-  }
-
-  const profileIds = [
-    ...new Set(
-      requests
-        .flatMap((request) => [request.user_id, request.reviewed_by])
-        .filter((id): id is string => Boolean(id))
-    ),
-  ];
-
-  let profiles: { id: string; username: string | null; full_name: string | null; avatar_url: string | null }[] = [];
-
-  if (profileIds.length > 0) {
-    const { data: profileRows, error: profilesError } = await admin
-      .from("profiles")
-      .select("id, username, full_name, avatar_url")
-      .in("id", profileIds);
-
-    if (profilesError) {
-      return jsonError(profilesError.message || "Unable to load profiles.", 400);
-    }
-
-    profiles = profileRows ?? [];
-  }
-
-  return NextResponse.json({ requests, votes, profiles });
 }
 
 export async function PATCH(request: NextRequest) {

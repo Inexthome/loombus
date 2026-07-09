@@ -198,38 +198,38 @@ export default function AdminAuditPage() {
 
       setAuthorized(true);
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
+      const { data } = await supabase
+        .from("audit_logs")
+        .select("id, action, target_type, target_id, metadata, created_at, actor_id")
+        .order("created_at", { ascending: false })
+        .limit(100);
 
-      if (!accessToken) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const response = await fetch("/api/admin/audit", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setLoading(false);
-        return;
-      }
-
-      const loadedLogs = (result.logs ?? []) as AuditLog[];
+      const loadedLogs = (data ?? []) as AuditLog[];
 
       setLogs(loadedLogs);
 
-      const profileMap: Record<string, Profile> = {};
+      const actorIds = [
+        ...new Set(
+          loadedLogs
+            .map((log) => log.actor_id)
+            .filter((id): id is string => Boolean(id))
+        ),
+      ];
 
-      for (const item of (result.profiles ?? []) as Profile[]) {
-        profileMap[item.id] = item;
+      if (actorIds.length > 0) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", actorIds);
+
+        const profileMap: Record<string, Profile> = {};
+
+        for (const item of profileData ?? []) {
+          profileMap[item.id] = item;
+        }
+
+        setProfiles(profileMap);
       }
-
-      setProfiles(profileMap);
 
       setLoading(false);
     }

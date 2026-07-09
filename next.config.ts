@@ -1,19 +1,5 @@
 import type { NextConfig } from "next";
 
-const permissionsPolicy = [
-  "camera=()",
-  "microphone=()",
-  "geolocation=()",
-  "payment=()",
-  "usb=()",
-  "bluetooth=()",
-  "accelerometer=()",
-  "gyroscope=()",
-  "magnetometer=()",
-  "clipboard-read=()",
-  "clipboard-write=()",
-].join(", ");
-
 const securityHeaders = [
   {
     key: "Strict-Transport-Security",
@@ -49,7 +35,7 @@ const securityHeaders = [
   },
   {
     key: "Permissions-Policy",
-    value: permissionsPolicy,
+    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), accelerometer=(), gyroscope=(), magnetometer=(), clipboard-read=(), clipboard-write=()",
   },
   {
     key: "Cross-Origin-Opener-Policy",
@@ -61,30 +47,9 @@ const securityHeaders = [
   },
 ];
 
-const v2LegacyCleanRedirects = [
-  { source: "/v2/discussions/:path*", destination: "/discussions/:path*", permanent: false },
-];
-
-const v2OnlyRouteRewrites = [
-  // Keep temporary rewrites only for surfaces that currently live exclusively under /v2.
-  // Core routes such as /discussions, /discussions/[id], and /create must resolve to
-  // their canonical implementations so the legacy shell does not flash before V2 loads.
-  { source: "/rooms", destination: "/v2/rooms" },
-  { source: "/rooms/:path*", destination: "/v2/rooms/:path*" },
-  { source: "/create-room", destination: "/v2/create-room" },
-];
-
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
-  async redirects() {
-    return v2LegacyCleanRedirects;
-  },
-  async rewrites() {
-    return {
-      beforeFiles: v2OnlyRouteRewrites,
-    };
-  },
   async headers() {
     return [
       {

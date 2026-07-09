@@ -12,14 +12,6 @@ function getStripe() {
   return new Stripe(STRIPE_SECRET_KEY);
 }
 
-function getSafeReturnUrl(origin: string, value: unknown) {
-  if (value === "/v2/premium") {
-    return `${origin}/v2/premium?billing=returned`;
-  }
-
-  return `${origin}/settings?billing=returned`;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -83,13 +75,9 @@ export async function POST(request: NextRequest) {
       request.headers.get("origin") ||
       "https://loombus.com";
 
-    const body = (await request.json().catch(() => ({}))) as {
-      returnPath?: string;
-    };
-
     const portalSession = await getStripe().billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: getSafeReturnUrl(origin, body.returnPath),
+      return_url: `${origin}/settings?billing=returned`,
     });
 
     if (!portalSession.url) {

@@ -202,34 +202,56 @@ export default function AdminTopicMemoryPage() {
 
       setAuthorized(true);
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
+      const [
+        discussionResult,
+        tagResult,
+        aiOutputResult,
+        replyResult,
+        viewResult,
+        bookmarkResult,
+      ] = await Promise.all([
+        supabase
+          .from("discussions")
+          .select("id, title, topic, reality_lens, created_at")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(500),
+        supabase
+          .from("discussion_tags")
+          .select("discussion_id, tag")
+          .limit(2000),
+        supabase
+          .from("discussion_ai_outputs")
+          .select("discussion_id, feature_key, generated_at")
+          .in("feature_key", ["conversation_map", "related_ideas"])
+          .limit(2000),
+        supabase
+          .from("replies")
+          .select("discussion_id, created_at")
+          .is("deleted_at", null)
+          .limit(5000),
+        supabase
+          .from("discussion_views")
+          .select("discussion_id")
+          .limit(5000),
+        supabase
+          .from("bookmarks")
+          .select("discussion_id")
+          .limit(5000),
+      ]);
 
-      if (!accessToken) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const response = await fetch("/api/admin/topic-memory", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setMessage(`Unable to load discussions: ${result.error ?? "Unknown error."}`);
+      if (discussionResult.error) {
+        setMessage(`Unable to load discussions: ${discussionResult.error.message}`);
         setLoading(false);
         return;
       }
 
-      setDiscussions((result.discussions ?? []) as Discussion[]);
-      setTags((result.tags ?? []) as DiscussionTag[]);
-      setAiOutputs((result.aiOutputs ?? []) as DiscussionAiOutput[]);
-      setReplies((result.replies ?? []) as ReplyRow[]);
-      setViews((result.views ?? []) as ViewRow[]);
-      setBookmarks((result.bookmarks ?? []) as BookmarkRow[]);
+      setDiscussions((discussionResult.data ?? []) as Discussion[]);
+      setTags((tagResult.data ?? []) as DiscussionTag[]);
+      setAiOutputs((aiOutputResult.data ?? []) as DiscussionAiOutput[]);
+      setReplies((replyResult.data ?? []) as ReplyRow[]);
+      setViews((viewResult.data ?? []) as ViewRow[]);
+      setBookmarks((bookmarkResult.data ?? []) as BookmarkRow[]);
       setLoading(false);
     }
 

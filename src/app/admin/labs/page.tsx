@@ -96,35 +96,34 @@ export default function AdminLabsPage() {
 
       setIsAdmin(true);
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
+      const { data: requestData, error: requestError } = await supabase
+        .from("labs_feature_requests")
+        .select("id, user_id, title, description, status, admin_note, reviewed_by, reviewed_at, created_at, updated_at")
+        .order("created_at", { ascending: false });
 
-      if (!accessToken) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const response = await fetch("/api/admin/labs/requests", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setMessage(`Unable to load Labs requests: ${result.error ?? "Unknown error."}`);
+      if (requestError) {
+        setMessage(`Unable to load Labs requests: ${requestError.message}`);
         setAuthChecked(true);
         setLoading(false);
         return;
       }
 
-      const baseRequests = (result.requests ?? []) as Omit<
+      const baseRequests = (requestData ?? []) as Omit<
         LabsFeatureRequestRow,
         "vote_count"
       >[];
 
-      const voteRows = (result.votes ?? []) as { request_id: string }[];
+      const requestIds = baseRequests.map((request) => request.id);
+      let voteRows: { request_id: string }[] = [];
+
+      if (requestIds.length > 0) {
+        const { data: votes } = await supabase
+          .from("labs_feature_request_votes")
+          .select("request_id")
+          .in("request_id", requestIds);
+
+        voteRows = (votes ?? []) as { request_id: string }[];
+      }
 
       const voteCounts = voteRows.reduce<Record<string, number>>(
         (counts, vote) => {
@@ -158,13 +157,28 @@ export default function AdminLabsPage() {
         }, {})
       );
 
-      const profileMap: Record<string, Profile> = {};
+      const profileIds = [
+        ...new Set(
+          loadedRequests
+            .flatMap((request) => [request.user_id, request.reviewed_by])
+            .filter((id): id is string => Boolean(id))
+        ),
+      ];
 
-      for (const profile of (result.profiles ?? []) as Profile[]) {
-        profileMap[profile.id] = profile;
+      if (profileIds.length > 0) {
+        const { data: profileRows } = await supabase
+          .from("profiles")
+          .select("id, username, full_name, avatar_url")
+          .in("id", profileIds);
+
+        const profileMap: Record<string, Profile> = {};
+
+        for (const profile of (profileRows ?? []) as Profile[]) {
+          profileMap[profile.id] = profile;
+        }
+
+        setProfiles(profileMap);
       }
-
-      setProfiles(profileMap);
 
       setAuthChecked(true);
       setLoading(false);

@@ -28,22 +28,6 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function getServiceRoleClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase service role configuration.");
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
-
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
@@ -78,41 +62,6 @@ async function requireAdmin(supabase: ReturnType<typeof getSupabaseForRequest>) 
   }
 
   return { user, error: null };
-}
-
-export async function GET(request: NextRequest) {
-  let supabase;
-
-  try {
-    supabase = getSupabaseForRequest(request);
-  } catch {
-    return jsonError("Server configuration error.", 500);
-  }
-
-  const { error: adminError } = await requireAdmin(supabase);
-
-  if (adminError) {
-    return adminError;
-  }
-
-  let admin;
-
-  try {
-    admin = getServiceRoleClient();
-  } catch {
-    return jsonError("Server configuration error.", 500);
-  }
-
-  const { data, error } = await admin
-    .from("support_requests")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return jsonError(error.message || "Unable to load support requests.", 400);
-  }
-
-  return NextResponse.json({ requests: data ?? [] });
 }
 
 export async function PATCH(request: NextRequest) {
