@@ -82,7 +82,7 @@ function isActivePath(pathname: string, item: NavItem) {
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
-export function AdminV2Shell({ children }: { children: ReactNode }) {
+export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
