@@ -47,6 +47,39 @@ function cleanText(value: unknown, maxLength: number) {
   return value.trim().slice(0, maxLength);
 }
 
+export async function GET(request: NextRequest) {
+  let supabase;
+
+  try {
+    supabase = getSupabaseForRequest(request);
+  } catch {
+    return jsonError("Server configuration error.", 500);
+  }
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return jsonError("Unauthorized.", 401);
+  }
+
+  const { data, error } = await supabase
+    .from("discussion_drafts")
+    .select("id, title, topic, reality_lens, purpose_lane, body, created_at, updated_at")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return jsonError(error.message || "Unable to load draft.", 400);
+  }
+
+  return NextResponse.json({ draft: data ?? null });
+}
+
 export async function POST(request: NextRequest) {
   let supabase;
 
