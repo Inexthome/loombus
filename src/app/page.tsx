@@ -77,13 +77,6 @@ export default function RootPage() {
                     →
                   </span>
                 </Link>
-
-                <Link
-                  href="/discussions"
-                  className="inline-flex items-center justify-center rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-7 py-4 text-base font-semibold text-[color:var(--loombus-text)] shadow-sm transition hover:border-[color:var(--loombus-text-muted)] hover:bg-[color:var(--loombus-surface-muted)]"
-                >
-                  Explore discussions
-                </Link>
               </div>
             </section>
 
