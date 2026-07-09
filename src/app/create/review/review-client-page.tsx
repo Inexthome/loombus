@@ -31,6 +31,7 @@ type ParsedDraft = {
 };
 
 const LOOMBUS_GOLD = "#d6a84f";
+const LOCAL_CREATE_DRAFT_KEY = "loombus:create:v2-local-draft";
 
 const MODE_LABELS: Record<string, string> = {
   open_discussion: "Open discussion",
@@ -38,6 +39,34 @@ const MODE_LABELS: Record<string, string> = {
   research_question: "Research question",
   problem_solving: "Problem solving",
 };
+
+function readLocalDraft(): DraftRow | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_CREATE_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DraftRow;
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      id: parsed.id || "local-create-draft",
+      title: parsed.title ?? "",
+      topic: parsed.topic ?? "",
+      reality_lens: parsed.reality_lens ?? "",
+      purpose_lane: parsed.purpose_lane ?? "",
+      body: parsed.body ?? "",
+      updated_at: parsed.updated_at ?? new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function clearLocalDraft() {
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem(LOCAL_CREATE_DRAFT_KEY);
+  }
+}
 
 function formatDraftTime(value: string | null) {
   if (!value) return "Not saved yet";
@@ -119,15 +148,24 @@ export default function CreateReviewClientPage() {
   const readiness = useMemo(() => getReadiness(draft, parsed, tags), [draft, parsed, tags]);
   const hasDraftContent = Boolean(draft?.title?.trim() || parsed.body.trim() || tags.length > 0);
   const publishPrepared = readiness.ready && acknowledged && hasDraftContent;
+  const isLocalDraft = draft?.id === "local-create-draft";
 
   useEffect(() => {
     async function loadDraft() {
       setLoading(true);
       setMessage("");
+      const localDraft = readLocalDraft();
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
+
       if (!accessToken) {
-        window.location.href = "/login";
+        if (localDraft) {
+          setDraft(localDraft);
+          setMessage("Using a local draft. Sign in again before publishing.");
+        } else {
+          window.location.href = "/login";
+        }
+        setLoading(false);
         return;
       }
 
@@ -136,14 +174,31 @@ export default function CreateReviewClientPage() {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         const result = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          setMessage(result.error ?? "Unable to load this draft.");
+
+        if (response.ok && result.draft) {
+          setDraft(result.draft as DraftRow);
+          setAcknowledged(false);
           return;
         }
-        setDraft((result.draft as DraftRow | null) ?? null);
-        setAcknowledged(false);
+
+        if (localDraft) {
+          setDraft(localDraft);
+          setMessage(response.ok ? "Using your local draft." : "Server draft storage is unavailable. Using your local draft.");
+          setAcknowledged(false);
+          return;
+        }
+
+        if (!response.ok) {
+          setMessage(result.error ?? "Unable to load this draft.");
+        }
+        setDraft(null);
       } catch {
-        setMessage("Unable to load the review page.");
+        if (localDraft) {
+          setDraft(localDraft);
+          setMessage("Server draft storage is unavailable. Using your local draft.");
+        } else {
+          setMessage("Unable to load the review page.");
+        }
       } finally {
         setLoading(false);
       }
@@ -210,11 +265,14 @@ export default function CreateReviewClientPage() {
         return;
       }
 
-      await fetch("/api/discussion-drafts", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ draftId: draft.id }),
-      });
+      clearLocalDraft();
+      if (!isLocalDraft) {
+        await fetch("/api/discussion-drafts", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ draftId: draft.id }),
+        }).catch(() => null);
+      }
 
       const discussionId = result.discussion?.id;
       window.location.href = discussionId ? `/discussions/${discussionId}` : "/discussions";
