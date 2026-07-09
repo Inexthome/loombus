@@ -274,394 +274,417 @@ export default function LoginPage() {
   const shouldShowManualLogin =
     !biometricLoginReady || showManualLogin || nativeApp !== true;
 
+  const panelClass =
+    "rounded-[2rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-6 shadow-2xl shadow-black/10 md:p-7";
+  const compactPanelClass =
+    "rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-6 shadow-2xl shadow-black/10";
+  const eyebrowClass =
+    "mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--loombus-text-subtle)]";
+  const mutedTextClass = "text-[color:var(--loombus-text-muted)]";
+  const primaryButtonClass =
+    "w-full rounded-full bg-[color:var(--loombus-primary-bg)] px-6 py-3 text-sm font-semibold text-[color:var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
+  const secondaryButtonClass =
+    "w-full rounded-full border border-[color:var(--loombus-border)] px-6 py-3 text-sm font-semibold text-[color:var(--loombus-text)] transition hover:border-[color:var(--loombus-text-subtle)] disabled:cursor-not-allowed disabled:opacity-50";
+  const labelClass =
+    "mb-2 block text-sm font-medium text-[color:var(--loombus-text-muted)]";
+  const inputClass =
+    "w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 py-3 text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-text-subtle)] focus:ring-4 focus:ring-black/5";
+  const legalLinkClass =
+    "text-[color:var(--loombus-text)] underline-offset-4 hover:underline";
+
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
-      <div className="mx-auto max-w-xl">
-        <Link
-          href="/"
-          className="mb-12 inline-block text-sm text-zinc-500 hover:text-white"
-        >
-          ← Back to home
-        </Link>
+    <main className="relative min-h-screen overflow-hidden bg-[color:var(--loombus-page-bg)] px-5 py-6 text-[color:var(--loombus-text)] sm:px-8 lg:px-12">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_8%,rgba(214,166,94,0.14),transparent_32%),radial-gradient(circle_at_88%_10%,rgba(148,163,184,0.18),transparent_34%)]"
+      />
 
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-          Loombus
-        </p>
+      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-7xl flex-col">
+        <header className="flex items-center justify-between gap-6 py-2">
+          <Link href="/" className="flex items-center gap-3 font-semibold tracking-tight">
+            <span className="flex h-8 w-8 items-center justify-center rounded-2xl border border-[color:var(--loombus-border)] text-sm text-[#c17a2b]">
+              L
+            </span>
+            <span>Loombus</span>
+          </Link>
 
-        <h1 className="mb-6 text-5xl font-semibold tracking-tight">
-          Log in.
-        </h1>
+          <Link
+            href="/signup"
+            className="rounded-full border border-[color:var(--loombus-border)] px-5 py-2.5 text-sm font-semibold text-[color:var(--loombus-text)] transition hover:border-[color:var(--loombus-text-subtle)]"
+          >
+            Join Loombus
+          </Link>
+        </header>
 
-        <p className="mb-10 leading-relaxed text-zinc-400">
-          Return to your high-signal discussion environment.
-        </p>
-
-        {checkingBiometricLogin ? (
-          <p className="mb-6 text-sm text-zinc-600">
-            Checking this device for saved biometric sign-in...
-          </p>
-        ) : null}
-
-        {biometricLoginReady ? (
-          <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-            <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-              Saved biometric sign-in
+        <section className="grid flex-1 items-center gap-12 py-12 lg:grid-cols-[minmax(0,0.92fr)_minmax(420px,520px)] lg:py-16">
+          <div className="max-w-2xl">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--loombus-text-subtle)]">
+              Loombus
             </p>
 
-            <h2 className="mb-3 text-xl font-medium">
-              Sign in with Face ID.
-            </h2>
+            <h1 className="max-w-3xl text-5xl font-semibold tracking-[-0.06em] text-[color:var(--loombus-text)] sm:text-6xl lg:text-7xl">
+              Log in.
+            </h1>
 
-            <p className="mb-5 text-sm leading-relaxed text-zinc-500">
-              Continue as{" "}
-              <span className="text-zinc-300">
-                {rememberedBiometricEmail || "the saved account"}
-              </span>
-              .
+            <p className="mt-6 max-w-xl text-lg leading-8 text-[color:var(--loombus-text-muted)]">
+              Return to your high-signal discussion environment with a cleaner,
+              quieter way back into the conversations that matter.
             </p>
 
-            <button
-              type="button"
-              onClick={() => void signInWithSavedBiometricLogin()}
-              disabled={loading || biometricSigningIn}
-              className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {biometricSigningIn ? "Signing in..." : "Sign in with Face ID"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                autoBiometricStarted.current = true;
-                setShowManualLogin(true);
-              }}
-              disabled={loading || biometricSigningIn}
-              className="mb-3 w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-400 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Use password instead
-            </button>
-
-            <button
-              type="button"
-              onClick={() => void handleForgetBiometricLogin()}
-              disabled={loading || biometricSigningIn}
-              className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Forget saved biometric sign-in
-            </button>
-
-            {message ? <p className="mt-4 text-sm text-zinc-400">{message}</p> : null}
-          </div>
-        ) : null}
-
-        {shouldShowManualLogin ? (
-          <>
-            <div className="space-y-4 md:hidden">
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-                  New to Loombus
+            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/5">
+                <p className={eyebrowClass}>Signal</p>
+                <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  Pick up where focused discussions left off.
                 </p>
-                <h2 className="mb-3 text-2xl font-semibold tracking-tight">
-                  Join the conversation.
-                </h2>
-                <p className="mb-5 text-sm leading-relaxed text-zinc-500">
-                  Join a calmer, higher-signal environment for thoughtful discussion.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setMobileAuthSheet("join")}
-                  className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
-                >
-                  Join the conversation
-                </button>
               </div>
-
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-                <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-                  Already a member
+              <div className="rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/5">
+                <p className={eyebrowClass}>Context</p>
+                <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  Return to saved ideas, replies, and topics.
                 </p>
-                <h2 className="mb-3 text-2xl font-semibold tracking-tight">
-                  Return to Loombus.
-                </h2>
-                <p className="mb-5 text-sm leading-relaxed text-zinc-500">
-                  Return to your high-signal discussion environment.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setMobileAuthSheet("return")}
-                  className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
-                >
-                  Return to Loombus
-                </button>
               </div>
-
-              {mobileEmailLoginVisible ? (
-                <form
-                  onSubmit={handleLogin}
-                  className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
-                >
-                  <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      value={email}
-                      autoComplete="email"
-                      required
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-sm text-zinc-400">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      value={password}
-                      autoComplete="current-password"
-                      required
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
-                  >
-                    {loading ? "Logging in..." : "Sign in with email"}
-                  </button>
-
-                  {message && <p className="text-sm text-zinc-400">{message}</p>}
-                </form>
-              ) : null}
+              <div className="rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/5">
+                <p className={eyebrowClass}>Clarity</p>
+                <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  Fewer distractions, stronger navigation.
+                </p>
+              </div>
             </div>
+          </div>
 
-            {mobileAuthSheet ? (
-              <div className="fixed inset-0 z-50 flex items-end bg-black/70 px-4 pb-4 md:hidden">
-                <div className="w-full rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/50">
-                  <div className="mb-5 flex items-start justify-between gap-4">
-                    <div>
-                      <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500">
-                        {mobileAuthSheet === "join" ? "Join Loombus" : "Return to Loombus"}
-                      </p>
-                      <h2 className="text-2xl font-semibold tracking-tight">
-                        {mobileAuthSheet === "join"
-                          ? "Join the conversation."
-                          : "Welcome back."}
-                      </h2>
-                      <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                        {mobileAuthSheet === "join"
-                          ? "Join a calmer, higher-signal environment for thoughtful discussion."
-                          : "Return to your high-signal discussion environment."}
-                      </p>
-                    </div>
+          <div className="w-full">
+            {checkingBiometricLogin ? (
+              <p className="mb-5 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-5 py-3 text-sm text-[color:var(--loombus-text-muted)] shadow-xl shadow-black/5">
+                Checking this device for saved biometric sign-in...
+              </p>
+            ) : null}
 
-                    <button
-                      type="button"
-                      onClick={() => setMobileAuthSheet(null)}
-                      className="rounded-full border border-zinc-800 px-3 py-1 text-sm text-zinc-500"
-                    >
-                      Close
-                    </button>
-                  </div>
+            {biometricLoginReady ? (
+              <div className={`mb-5 ${panelClass}`}>
+                <p className={eyebrowClass}>Saved biometric sign-in</p>
 
-                  <button
-                    type="button"
-                    onClick={() => handleOAuthLogin("google")}
-                    disabled={loading || Boolean(oauthLoading)}
-                    className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {oauthLoading === "google"
-                      ? "Opening Google..."
-                      : mobileAuthSheet === "join"
-                        ? "Sign up with Google"
-                        : "Continue with Google"}
-                  </button>
+                <h2 className="mb-3 text-2xl font-semibold tracking-tight text-[color:var(--loombus-text)]">
+                  Sign in with Face ID.
+                </h2>
 
-                  <button
-                    type="button"
-                    onClick={() => handleOAuthLogin("apple")}
-                    disabled={loading || Boolean(oauthLoading)}
-                    className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {oauthLoading === "apple"
-                      ? "Opening Apple..."
-                      : mobileAuthSheet === "join"
-                        ? "Sign up with Apple"
-                        : "Continue with Apple"}
-                  </button>
+                <p className="mb-5 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  Continue as{" "}
+                  <span className="font-medium text-[color:var(--loombus-text)]">
+                    {rememberedBiometricEmail || "the saved account"}
+                  </span>
+                  .
+                </p>
 
-                  {mobileAuthSheet === "join" ? (
-                    <Link
-                      href="/signup"
-                      className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-                    >
-                      Sign up with email
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMobileAuthSheet(null);
-                        setMobileEmailLoginVisible(true);
-                      }}
-                      className="w-full rounded-full border border-zinc-800 px-6 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-                    >
-                      Sign in with email
-                    </button>
-                  )}
+                <button
+                  type="button"
+                  onClick={() => void signInWithSavedBiometricLogin()}
+                  disabled={loading || biometricSigningIn}
+                  className={`mb-3 ${primaryButtonClass}`}
+                >
+                  {biometricSigningIn ? "Signing in..." : "Sign in with Face ID"}
+                </button>
 
-                  {message ? <p className="mt-4 text-sm text-zinc-400">{message}</p> : null}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    autoBiometricStarted.current = true;
+                    setShowManualLogin(true);
+                  }}
+                  disabled={loading || biometricSigningIn}
+                  className={`mb-3 ${secondaryButtonClass}`}
+                >
+                  Use password instead
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void handleForgetBiometricLogin()}
+                  disabled={loading || biometricSigningIn}
+                  className={secondaryButtonClass}
+                >
+                  Forget saved biometric sign-in
+                </button>
+
+                {message ? (
+                  <p className="mt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                    {message}
+                  </p>
+                ) : null}
               </div>
             ) : null}
 
-            <div className="hidden md:block">
-            <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">
-              <button
-                type="button"
-                onClick={() => handleOAuthLogin("apple")}
-                disabled={loading || Boolean(oauthLoading)}
-                className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {oauthLoading === "apple"
-                  ? "Opening Apple..."
-                  : "Continue with Apple"}
-              </button>
+            {shouldShowManualLogin ? (
+              <>
+                <div className="space-y-4 md:hidden">
+                  <div className={compactPanelClass}>
+                    <p className={eyebrowClass}>New to Loombus</p>
+                    <h2 className="mb-3 text-2xl font-semibold tracking-tight text-[color:var(--loombus-text)]">
+                      Join the conversation.
+                    </h2>
+                    <p className="mb-5 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                      Join a calmer, higher-signal environment for thoughtful discussion.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setMobileAuthSheet("join")}
+                      className={primaryButtonClass}
+                    >
+                      Join the conversation
+                    </button>
+                  </div>
 
-              <button
-                type="button"
-                onClick={() => handleOAuthLogin("google")}
-                disabled={loading || Boolean(oauthLoading)}
-                className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {oauthLoading === "google"
-                  ? "Opening Google..."
-                  : "Continue with Google"}
-              </button>
+                  <div className={compactPanelClass}>
+                    <p className={eyebrowClass}>Already a member</p>
+                    <h2 className="mb-3 text-2xl font-semibold tracking-tight text-[color:var(--loombus-text)]">
+                      Return to Loombus.
+                    </h2>
+                    <p className="mb-5 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                      Return to your high-signal discussion environment.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setMobileAuthSheet("return")}
+                      className={primaryButtonClass}
+                    >
+                      Return to Loombus
+                    </button>
+                  </div>
 
-              <div className="mt-5 flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-zinc-700">
-                <span className="h-px flex-1 bg-zinc-900" />
-                Or log in with email
-                <span className="h-px flex-1 bg-zinc-900" />
-              </div>
-            </div>
+                  {mobileEmailLoginVisible ? (
+                    <form onSubmit={handleLogin} className={`space-y-5 ${compactPanelClass}`}>
+                      <div>
+                        <label className={labelClass}>Email</label>
+                        <input
+                          type="email"
+                          value={email}
+                          autoComplete="email"
+                          required
+                          onChange={(e) => setEmail(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
 
-            <form
-              onSubmit={handleLogin}
-              className="space-y-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30"
-            >
-              <div>
-                <label className="mb-2 block text-sm text-zinc-400">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  autoComplete="email"
-                  required
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-                />
-              </div>
+                      <div>
+                        <label className={labelClass}>Password</label>
+                        <input
+                          type="password"
+                          value={password}
+                          autoComplete="current-password"
+                          required
+                          onChange={(e) => setPassword(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
 
-              <div>
-                <label className="mb-2 block text-sm text-zinc-400">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  autoComplete="current-password"
-                  required
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
-                />
-              </div>
+                      <button type="submit" disabled={loading} className={primaryButtonClass}>
+                        {loading ? "Logging in..." : "Sign in with email"}
+                      </button>
 
-              {nativeApp === true ? (
-                <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-relaxed text-zinc-500">
-                  After a successful email login, Loombus can ask whether you
-                  want to save this login with Face ID or device biometrics on
-                  this device.
-                </p>
-              ) : null}
+                      {message ? (
+                        <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                          {message}
+                        </p>
+                      ) : null}
+                    </form>
+                  ) : null}
+                </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:opacity-50"
-              >
-                {loading ? "Logging in..." : "Log In"}
-              </button>
+                {mobileAuthSheet ? (
+                  <div className="fixed inset-0 z-50 flex items-end bg-black/70 px-4 pb-4 md:hidden">
+                    <div className={`w-full ${panelClass}`}>
+                      <div className="mb-5 flex items-start justify-between gap-4">
+                        <div>
+                          <p className={eyebrowClass}>
+                            {mobileAuthSheet === "join" ? "Join Loombus" : "Return to Loombus"}
+                          </p>
+                          <h2 className="text-2xl font-semibold tracking-tight text-[color:var(--loombus-text)]">
+                            {mobileAuthSheet === "join"
+                              ? "Join the conversation."
+                              : "Welcome back."}
+                          </h2>
+                          <p className="mt-3 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                            {mobileAuthSheet === "join"
+                              ? "Join a calmer, higher-signal environment for thoughtful discussion."
+                              : "Return to your high-signal discussion environment."}
+                          </p>
+                        </div>
 
-              {message && <p className="text-sm text-zinc-400">{message}</p>}
+                        <button
+                          type="button"
+                          onClick={() => setMobileAuthSheet(null)}
+                          className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1 text-sm text-[color:var(--loombus-text-muted)]"
+                        >
+                          Close
+                        </button>
+                      </div>
 
-              <p className="text-xs leading-relaxed text-zinc-500">
-                By logging in or continuing with Apple, Google, or email, you
-                agree to the{" "}
-                <Link
-                  href="/terms"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Terms
-                </Link>
-                ,{" "}
-                <Link
-                  href="/privacy"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Privacy Policy
-                </Link>
-                ,{" "}
-                <Link
-                  href="/cookies"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Cookie Use
-                </Link>
-                ,{" "}
-                <Link
-                  href="/guidelines"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Community Guidelines
-                </Link>
-                ,{" "}
-                <Link
-                  href="/safety"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Safety
-                </Link>
-                , and{" "}
-                <Link
-                  href="/contact"
-                  className="text-zinc-400 underline-offset-4 hover:underline"
-                >
-                  Contact
-                </Link>
-                .
-              </p>
+                      <button
+                        type="button"
+                        onClick={() => handleOAuthLogin("google")}
+                        disabled={loading || Boolean(oauthLoading)}
+                        className={`mb-3 ${primaryButtonClass}`}
+                      >
+                        {oauthLoading === "google"
+                          ? "Opening Google..."
+                          : mobileAuthSheet === "join"
+                            ? "Sign up with Google"
+                            : "Continue with Google"}
+                      </button>
 
-              <p className="text-center text-sm text-zinc-500">
-                Don’t have an account?{" "}
-                <Link
-                  href="/signup"
-                  className="text-zinc-300 underline underline-offset-4 hover:text-white"
-                >
-                  Create one
-                </Link>
-              </p>
-            </form>
-            </div>
-          </>
-        ) : null}
+                      <button
+                        type="button"
+                        onClick={() => handleOAuthLogin("apple")}
+                        disabled={loading || Boolean(oauthLoading)}
+                        className={`mb-3 ${primaryButtonClass}`}
+                      >
+                        {oauthLoading === "apple"
+                          ? "Opening Apple..."
+                          : mobileAuthSheet === "join"
+                            ? "Sign up with Apple"
+                            : "Continue with Apple"}
+                      </button>
+
+                      {mobileAuthSheet === "join" ? (
+                        <Link href="/signup" className={`block text-center ${secondaryButtonClass}`}>
+                          Sign up with email
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMobileAuthSheet(null);
+                            setMobileEmailLoginVisible(true);
+                          }}
+                          className={secondaryButtonClass}
+                        >
+                          Sign in with email
+                        </button>
+                      )}
+
+                      {message ? (
+                        <p className="mt-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                          {message}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="hidden md:block">
+                  <div className={`mb-5 ${panelClass}`}>
+                    <button
+                      type="button"
+                      onClick={() => handleOAuthLogin("apple")}
+                      disabled={loading || Boolean(oauthLoading)}
+                      className={`mb-3 ${primaryButtonClass}`}
+                    >
+                      {oauthLoading === "apple" ? "Opening Apple..." : "Continue with Apple"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOAuthLogin("google")}
+                      disabled={loading || Boolean(oauthLoading)}
+                      className={primaryButtonClass}
+                    >
+                      {oauthLoading === "google" ? "Opening Google..." : "Continue with Google"}
+                    </button>
+
+                    <div className="mt-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--loombus-text-subtle)]">
+                      <span className="h-px flex-1 bg-[color:var(--loombus-border-muted)]" />
+                      Or log in with email
+                      <span className="h-px flex-1 bg-[color:var(--loombus-border-muted)]" />
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleLogin} className={`space-y-5 ${panelClass}`}>
+                    <div>
+                      <label className={labelClass}>Email</label>
+                      <input
+                        type="email"
+                        value={email}
+                        autoComplete="email"
+                        required
+                        onChange={(e) => setEmail(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Password</label>
+                      <input
+                        type="password"
+                        value={password}
+                        autoComplete="current-password"
+                        required
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+
+                    {nativeApp === true ? (
+                      <p className="rounded-2xl border border-[color:var(--loombus-border-muted)] bg-[color:var(--loombus-page-bg)] p-4 text-xs leading-6 text-[color:var(--loombus-text-muted)]">
+                        After a successful email login, Loombus can ask whether you
+                        want to save this login with Face ID or device biometrics on
+                        this device.
+                      </p>
+                    ) : null}
+
+                    <button type="submit" disabled={loading} className={primaryButtonClass}>
+                      {loading ? "Logging in..." : "Log In"}
+                    </button>
+
+                    {message ? (
+                      <p className="text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                        {message}
+                      </p>
+                    ) : null}
+
+                    <p className="text-xs leading-6 text-[color:var(--loombus-text-muted)]">
+                      By logging in or continuing with Apple, Google, or email, you
+                      agree to the{" "}
+                      <Link href="/terms" className={legalLinkClass}>
+                        Terms
+                      </Link>
+                      ,{" "}
+                      <Link href="/privacy" className={legalLinkClass}>
+                        Privacy Policy
+                      </Link>
+                      ,{" "}
+                      <Link href="/cookies" className={legalLinkClass}>
+                        Cookie Use
+                      </Link>
+                      ,{" "}
+                      <Link href="/guidelines" className={legalLinkClass}>
+                        Community Guidelines
+                      </Link>
+                      ,{" "}
+                      <Link href="/safety" className={legalLinkClass}>
+                        Safety
+                      </Link>
+                      , and{" "}
+                      <Link href="/contact" className={legalLinkClass}>
+                        Contact
+                      </Link>
+                      .
+                    </p>
+
+                    <p className={`text-center text-sm ${mutedTextClass}`}>
+                      Don’t have an account?{" "}
+                      <Link
+                        href="/signup"
+                        className="font-medium text-[color:var(--loombus-text)] underline underline-offset-4"
+                      >
+                        Create one
+                      </Link>
+                    </p>
+                  </form>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </section>
       </div>
     </main>
   );
