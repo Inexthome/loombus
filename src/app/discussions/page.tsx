@@ -1,20 +1,37 @@
 "use client";
 
 import { normalizePublicText } from "@/lib/public-text";
-import { ProgressiveGuide } from "@/components/progressive-guide";
-
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import {
+  Bookmark,
+  ChevronRight,
+  Eye,
+  Folder,
+  MessageCircle,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+  TrendingUp,
+  UserPlus,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
-import { PURPOSE_LANES } from "@/lib/purpose-lanes";
-import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
+import {
+  ProfileAvatar,
+  getProfileDisplayName,
+} from "@/components/profile-avatar";
+
+const MAX_SIDE_TOPICS = 7;
+const MAX_TRENDING_TOPICS = 5;
+const MAX_TOP_CONTRIBUTORS = 5;
+const MAX_SAVED_FOLDERS = 4;
 
 type Discussion = {
   id: string;
   user_id: string;
   title: string;
-  topic: string;
+  topic: string | null;
   reality_lens: string | null;
   purpose_lane: string | null;
   body: string;
@@ -35,39 +52,29 @@ type BlockRow = {
   blocked_id: string;
 };
 
-type AiEntitlement = {
-  tier: string | null;
-  ai_assisted_enabled: boolean | null;
-  monthly_summary_limit: number | null;
-} | null;
+type FeedMode = "all" | "following" | "research" | "debate" | "problem" | "saved";
 
-type AdvancedFilterMode =
-  | "All activity"
-  | "Has replies"
-  | "Has saves"
-  | "High signal"
-  | "Recently active";
+type TopicStat = {
+  topic: string;
+  count: number;
+  signals: number;
+};
 
-type FeedMode = "all" | "following" | "signal";
+type ContributorStat = {
+  userId: string;
+  profile: Profile | undefined;
+  discussions: number;
+  signals: number;
+};
 
-const ADVANCED_FILTERS: AdvancedFilterMode[] = [
-  "All activity",
-  "Has replies",
-  "Has saves",
-  "High signal",
-  "Recently active",
+const feedTabs: { key: FeedMode; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "following", label: "Following" },
+  { key: "research", label: "Research Questions" },
+  { key: "debate", label: "Debates" },
+  { key: "problem", label: "Problem Solving" },
+  { key: "saved", label: "Saved" },
 ];
-
-function hasAdvancedFilterAccess(entitlement: AiEntitlement, isAdmin: boolean) {
-  if (isAdmin) {
-    return true;
-  }
-
-  return (
-    entitlement?.ai_assisted_enabled === true &&
-    entitlement.tier === "premium"
-  );
-}
 
 function escapeLimitedHtml(value: string) {
   return value
@@ -131,14 +138,27 @@ function discussionBodyToSafeHtml(content: string) {
   return sanitizeLimitedDiscussionHtml(legacyMarkdownBodyToSafeHtml(content));
 }
 
-function getDiscussionStatusLabel(discussion: Discussion) {
-  return discussion.discussion_status === "resolved" ? "Resolved" : "Open";
+function getPlainDiscussionExcerpt(content: string) {
+  return normalizePublicText(content)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function getDiscussionStatusClassName(discussion: Discussion) {
-  return discussion.discussion_status === "resolved"
-    ? "border-emerald-800 bg-emerald-950/30 text-emerald-300"
-    : "border-zinc-800 bg-zinc-950 text-zinc-400";
+function getDiscussionTopic(discussion: Discussion) {
+  return discussion.topic?.trim() || "Other";
+}
+
+function getDiscussionModeLabel(discussion: Discussion) {
+  const label = discussion.purpose_lane?.trim() || discussion.reality_lens?.trim();
+
+  if (!label || label.toLowerCase() === "open discussion") {
+    return "Discussion";
+  }
+
+  return label;
 }
 
 function getSignalScore(
@@ -154,105 +174,62 @@ function getSignalScore(
   );
 }
 
-function matchesAdvancedFilter(
-  discussion: Discussion,
-  advancedFilter: AdvancedFilterMode,
-  replyCounts: Record<string, number>,
-  bookmarkCounts: Record<string, number>,
-  viewCounts: Record<string, number>,
-  latestReplyDates: Record<string, string>
-) {
-  if (advancedFilter === "All activity") {
+function getProfileHandle(profile: Profile | undefined) {
+  return profile?.username ? `@${profile.username}` : "@loombus";
+}
+
+function formatDiscussionDate(value: string) {
+  return new Date(value).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function matchesModeFilter(discussion: Discussion, feedMode: FeedMode) {
+  if (feedMode === "all" || feedMode === "following" || feedMode === "saved") {
     return true;
   }
 
-  if (advancedFilter === "Has replies") {
-    return (replyCounts[discussion.id] ?? 0) > 0;
+  const text = [discussion.purpose_lane, discussion.reality_lens, discussion.title]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (feedMode === "research") {
+    return text.includes("research") || text.includes("question");
   }
 
-  if (advancedFilter === "Has saves") {
-    return (bookmarkCounts[discussion.id] ?? 0) > 0;
+  if (feedMode === "debate") {
+    return text.includes("debate");
   }
 
-  if (advancedFilter === "High signal") {
-    return getSignalScore(
-      discussion.id,
-      replyCounts,
-      bookmarkCounts,
-      viewCounts
-    ) >= 5;
-  }
-
-  const latestActivity = latestReplyDates[discussion.id] ?? discussion.created_at;
-  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-
-  return new Date(latestActivity).getTime() >= sevenDaysAgo;
+  return text.includes("problem") || text.includes("solving");
 }
 
-function getTopicDiscoveryDescription(topic: string) {
-  const normalized = topic.toLowerCase();
-
-  if (normalized.includes("faith") || normalized.includes("values")) {
-    return "Belief, principle, ethics, purpose, and the values behind decisions.";
+function matchesSearchQuery(
+  discussion: Discussion,
+  profile: Profile | undefined,
+  query: string
+) {
+  if (!query) {
+    return true;
   }
 
-  if (normalized.includes("ai")) {
-    return "Artificial intelligence, platforms, automation, and how intelligence changes society.";
-  }
+  const searchable = [
+    discussion.title,
+    discussion.body,
+    discussion.topic,
+    discussion.purpose_lane,
+    discussion.reality_lens,
+    profile?.full_name,
+    profile?.username,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
 
-  if (normalized.includes("book") || normalized.includes("writing")) {
-    return "Books, authorship, publishing, reading, and long-form ideas worth developing.";
-  }
-
-  if (normalized.includes("entrepreneur")) {
-    return "Founders, building, risk, ownership, and turning ideas into durable ventures.";
-  }
-
-  if (normalized.includes("business")) {
-    return "Companies, ownership, markets, strategy, and practical business decisions.";
-  }
-
-  if (normalized.includes("culture")) {
-    return "Social behavior, media, values, identity, and how people make meaning.";
-  }
-
-  if (normalized.includes("education")) {
-    return "Learning, schools, skills, self-education, and intellectual development.";
-  }
-
-  if (normalized.includes("work")) {
-    return "Careers, labor, productivity, leadership, and the future of work.";
-  }
-
-  if (normalized.includes("politics") || normalized.includes("policy")) {
-    return "Policy, governance, institutions, civic tradeoffs, and public decision-making.";
-  }
-
-  if (normalized.includes("technology") || normalized.includes("systems")) {
-    return "Systems, tools, infrastructure, and technical change with real-world impact.";
-  }
-
-  if (normalized.includes("healthcare")) {
-    return "Health systems, care access, patient experience, medicine, and public health tradeoffs.";
-  }
-
-  if (normalized.includes("law") || normalized.includes("justice")) {
-    return "Rights, fairness, courts, accountability, and the systems that shape justice.";
-  }
-
-  if (normalized.includes("environment")) {
-    return "Climate, land, energy, stewardship, resilience, and environmental tradeoffs.";
-  }
-
-  if (normalized.includes("general")) {
-    return "Open-ended discussions that still aim for depth, context, and useful signal.";
-  }
-
-  return `Focused conversations about ${topic.toLowerCase()} with depth, context, and signal.`;
+  return searchable.includes(query);
 }
-
-
-const DISCUSSION_FILTER_DRAWER_STORAGE_KEY = "loombus-discussions-filter-drawer-v1";
 
 export default function DiscussionsPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
@@ -262,109 +239,57 @@ export default function DiscussionsPage() {
   const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   const [bookmarkCounts, setBookmarkCounts] = useState<Record<string, number>>({});
   const [discussionTags, setDiscussionTags] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [selectedTopic, setSelectedTopic] = useState("All");
-  const [selectedPurposeLane, setSelectedPurposeLane] = useState("All");
-  const [showAllTopicDiscovery, setShowAllTopicDiscovery] = useState(false);
-  const [showAllTopicFilters, setShowAllTopicFilters] = useState(false);
-  const [showExploreFilters, setShowExploreFilters] = useState(false);
-  const [activeDiscussionTool, setActiveDiscussionTool] =
-    useState<"none" | "guide" | "topics" | "purpose">("none");
-  const [sortMode, setSortMode] = useState("Newest");
-  const [feedMode, setFeedMode] = useState<FeedMode>("all");
   const [followingUserIds, setFollowingUserIds] = useState<string[]>([]);
-  const [advancedFilter, setAdvancedFilter] =
-    useState<AdvancedFilterMode>("All activity");
-  const [aiEntitlement, setAiEntitlement] = useState<AiEntitlement>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [stickiedDiscussionIds, setStickiedDiscussionIds] = useState<Set<string>>(() => new Set());
-  const [addingStickyDiscussionId, setAddingStickyDiscussionId] = useState<string | null>(null);
-  const [stickiesMessage, setStickiesMessage] = useState("");
-
-  const canUseAdvancedFilters = hasAdvancedFilterAccess(aiEntitlement, isAdmin);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const stored = window.localStorage.getItem(DISCUSSION_FILTER_DRAWER_STORAGE_KEY);
-
-    if (stored === "open") {
-      setShowExploreFilters(true);
-    }
-
-    if (stored === "closed") {
-      setShowExploreFilters(false);
-    }
-  }, []);
-
-
-  function toggleExploreFilters() {
-    setShowExploreFilters((current) => {
-      const next = !current;
-
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(
-          DISCUSSION_FILTER_DRAWER_STORAGE_KEY,
-          next ? "open" : "closed"
-        );
-      }
-
-      return next;
-    });
-  }
+  const [savedDiscussionIds, setSavedDiscussionIds] = useState<Set<string>>(() => new Set());
+  const [selectedTopic, setSelectedTopic] = useState("All");
+  const [feedMode, setFeedMode] = useState<FeedMode>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadDiscussions() {
+      setLoading(true);
+
       const { data, error } = await supabase
         .from("discussions")
-        .select("*")
+        .select(
+          "id, user_id, title, topic, reality_lens, purpose_lane, body, created_at, discussion_status, resolved_at"
+        )
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
-      if (!error && data) {
-        const { data: viewerData } = await supabase.auth.getUser();
-        const hiddenProfileIds = new Set<string>();
-        let viewerHasStickiesAccess = false;
-        let accessToken = "";
+      if (error || !data) {
+        if (isMounted) {
+          setLoading(false);
+        }
+        return;
+      }
 
-        if (viewerData.user) {
-          const [{ data: viewerProfile }, { data: entitlementData }] =
-            await Promise.all([
-              supabase
-                .from("profiles")
-                .select("is_admin")
-                .eq("id", viewerData.user.id)
-                .maybeSingle(),
-              supabase
-                .from("user_ai_entitlements")
-                .select("tier, ai_assisted_enabled, monthly_summary_limit")
-                .eq("user_id", viewerData.user.id)
-                .maybeSingle(),
-            ]);
+      const { data: viewerData } = await supabase.auth.getUser();
+      const viewerId = viewerData.user?.id ?? null;
+      const hiddenProfileIds = new Set<string>();
+      let viewerSavedDiscussionIds = new Set<string>();
 
-          setIsAdmin(Boolean(viewerProfile?.is_admin));
-          setAiEntitlement((entitlementData ?? null) as AiEntitlement);
+      if (viewerId) {
+        const { data: blockRows } = await supabase
+          .from("user_blocks")
+          .select("blocker_id, blocked_id")
+          .or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`);
 
-          const { data: blockRows } = await supabase
-            .from("user_blocks")
-            .select("blocker_id, blocked_id")
-            .or(`blocker_id.eq.${viewerData.user.id},blocked_id.eq.${viewerData.user.id}`);
+        for (const block of (blockRows ?? []) as BlockRow[]) {
+          hiddenProfileIds.add(
+            block.blocker_id === viewerId ? block.blocked_id : block.blocker_id
+          );
+        }
 
-          for (const block of (blockRows ?? []) as BlockRow[]) {
-            hiddenProfileIds.add(
-              block.blocker_id === viewerData.user.id ? block.blocked_id : block.blocker_id
-            );
-          }
+        const { data: followsData } = await supabase
+          .from("follows")
+          .select("following_id")
+          .eq("follower_id", viewerId);
 
-          const { data: followsData } = await supabase
-            .from("follows")
-            .select("following_id")
-            .eq("follower_id", viewerData.user.id);
-
+        if (isMounted) {
           setFollowingUserIds(
             (followsData ?? [])
               .map((follow) => follow.following_id)
@@ -374,131 +299,120 @@ export default function DiscussionsPage() {
               )
           );
         }
+      } else if (isMounted) {
+        setFollowingUserIds([]);
+      }
 
-        const visibleDiscussions = data.filter(
-          (item) => !hiddenProfileIds.has(item.user_id)
-        );
+      const visibleDiscussions = ((data ?? []) as Discussion[]).filter(
+        (discussion) => !hiddenProfileIds.has(discussion.user_id)
+      );
 
-        setDiscussions(visibleDiscussions);
+      const discussionIds = visibleDiscussions.map((discussion) => discussion.id);
+      const userIds = [...new Set(visibleDiscussions.map((discussion) => discussion.user_id))];
 
-        const userIds = [...new Set(visibleDiscussions.map((item) => item.user_id))];
+      if (userIds.length > 0) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("id, full_name, username, avatar_url")
+          .in("id", userIds);
 
-        if (userIds.length > 0) {
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("*")
-            .in("id", userIds);
-
+        if (isMounted) {
           const profileMap: Record<string, Profile> = {};
 
-          for (const profile of profileData ?? []) {
+          for (const profile of (profileData ?? []) as Profile[]) {
             profileMap[profile.id] = profile;
           }
 
           setProfiles(profileMap);
         }
+      } else if (isMounted) {
+        setProfiles({});
+      }
 
-        const discussionIds = visibleDiscussions.map((item) => item.id);
-
-        if (discussionIds.length > 0) {
-          const { data: replyData } = await supabase
+      if (discussionIds.length > 0) {
+        const [replyResponse, viewResponse, bookmarkResponse, tagResponse] = await Promise.all([
+          supabase
             .from("replies")
             .select("discussion_id, user_id, created_at")
             .in("discussion_id", discussionIds)
-            .is("deleted_at", null);
-
-          const counts: Record<string, number> = {};
-          const latestReplies: Record<string, string> = {};
-
-          for (const reply of replyData ?? []) {
-            if (hiddenProfileIds.has(reply.user_id)) {
-              continue;
-            }
-
-            counts[reply.discussion_id] =
-              (counts[reply.discussion_id] ?? 0) + 1;
-
-            const existingLatest = latestReplies[reply.discussion_id];
-
-            if (
-              !existingLatest ||
-              new Date(reply.created_at).getTime() > new Date(existingLatest).getTime()
-            ) {
-              latestReplies[reply.discussion_id] = reply.created_at;
-            }
-          }
-
-          setReplyCounts(counts);
-          setLatestReplyDates(latestReplies);
-
-          const { data: viewData } = await supabase
+            .is("deleted_at", null),
+          supabase
             .from("discussion_views")
             .select("discussion_id")
-            .in("discussion_id", discussionIds);
-
-          const views: Record<string, number> = {};
-
-          for (const view of viewData ?? []) {
-            views[view.discussion_id] =
-              (views[view.discussion_id] ?? 0) + 1;
-          }
-
-          setViewCounts(views);
-
-          const { data: bookmarkData } = await supabase
+            .in("discussion_id", discussionIds),
+          supabase
             .from("bookmarks")
-            .select("discussion_id")
-            .in("discussion_id", discussionIds);
-
-          const bookmarks: Record<string, number> = {};
-
-          for (const bookmark of bookmarkData ?? []) {
-            bookmarks[bookmark.discussion_id] =
-              (bookmarks[bookmark.discussion_id] ?? 0) + 1;
-          }
-
-          setBookmarkCounts(bookmarks);
-
-          if (viewerHasStickiesAccess && accessToken) {
-            const response = await fetch("/api/stickies", {
-              headers: { Authorization: `Bearer ${accessToken}` },
-              cache: "no-store",
-            });
-            const result = await response.json().catch(() => ({}));
-
-            if (response.ok && isMounted) {
-              setStickiedDiscussionIds(
-                new Set(
-                  (result.stickies ?? [])
-                    .map((sticky: { source_key?: string }) => sticky.source_key)
-                    .filter(
-                      (sourceKey: unknown): sourceKey is string =>
-                        typeof sourceKey === "string"
-                    )
-                )
-              );
-            }
-          }
-
-          const { data: tagData } = await supabase
+            .select("discussion_id, user_id")
+            .in("discussion_id", discussionIds),
+          supabase
             .from("discussion_tags")
             .select("discussion_id, tag")
-            .in("discussion_id", discussionIds);
+            .in("discussion_id", discussionIds),
+        ]);
 
-          const tagMap: Record<string, string[]> = {};
+        const counts: Record<string, number> = {};
+        const latestReplies: Record<string, string> = {};
 
-          for (const row of tagData ?? []) {
-            tagMap[row.discussion_id] = [
-              ...(tagMap[row.discussion_id] ?? []),
-              row.tag,
-            ];
+        for (const reply of replyResponse.data ?? []) {
+          if (hiddenProfileIds.has(reply.user_id)) {
+            continue;
           }
 
-          setDiscussionTags(tagMap);
+          counts[reply.discussion_id] = (counts[reply.discussion_id] ?? 0) + 1;
+
+          const existingLatest = latestReplies[reply.discussion_id];
+          if (
+            !existingLatest ||
+            new Date(reply.created_at).getTime() > new Date(existingLatest).getTime()
+          ) {
+            latestReplies[reply.discussion_id] = reply.created_at;
+          }
         }
+
+        const views: Record<string, number> = {};
+        for (const view of viewResponse.data ?? []) {
+          views[view.discussion_id] = (views[view.discussion_id] ?? 0) + 1;
+        }
+
+        const bookmarks: Record<string, number> = {};
+        for (const bookmark of bookmarkResponse.data ?? []) {
+          bookmarks[bookmark.discussion_id] =
+            (bookmarks[bookmark.discussion_id] ?? 0) + 1;
+
+          if (viewerId && bookmark.user_id === viewerId) {
+            viewerSavedDiscussionIds.add(bookmark.discussion_id);
+          }
+        }
+
+        const tagMap: Record<string, string[]> = {};
+        for (const row of tagResponse.data ?? []) {
+          tagMap[row.discussion_id] = [
+            ...(tagMap[row.discussion_id] ?? []),
+            row.tag,
+          ];
+        }
+
+        if (isMounted) {
+          setReplyCounts(counts);
+          setLatestReplyDates(latestReplies);
+          setViewCounts(views);
+          setBookmarkCounts(bookmarks);
+          setDiscussionTags(tagMap);
+          setSavedDiscussionIds(viewerSavedDiscussionIds);
+        }
+      } else if (isMounted) {
+        setReplyCounts({});
+        setLatestReplyDates({});
+        setViewCounts({});
+        setBookmarkCounts({});
+        setDiscussionTags({});
+        setSavedDiscussionIds(new Set());
       }
 
-      setLoading(false);
+      if (isMounted) {
+        setDiscussions(visibleDiscussions);
+        setLoading(false);
+      }
     }
 
     void loadDiscussions();
@@ -531,1088 +445,477 @@ export default function DiscussionsPage() {
     };
   }, []);
 
-  const activeTopics = useMemo(() => {
-    return [...new Set(discussions.map((discussion) => discussion.topic).filter(Boolean))];
-  }, [discussions]);
+  const topicStats = useMemo(() => {
+    const map = new Map<string, TopicStat>();
 
-  const topics = useMemo(() => {
-    if (!showAllTopicFilters) {
-      return ["All", ...activeTopics];
-    }
-
-    const officialTopics = [...DISCUSSION_TOPICS];
-    const legacyTopics = activeTopics.filter(
-      (topic) => !officialTopics.includes(topic as typeof DISCUSSION_TOPICS[number])
-    );
-
-    return ["All", ...officialTopics, ...legacyTopics];
-  }, [activeTopics, showAllTopicFilters]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const topicParam = params.get("topic");
-    const purposeParam = params.get("purpose");
-
-    if (purposeParam) {
-      const matchedPurposeLane = PURPOSE_LANES.find(
-        (lane) => lane.toLowerCase() === purposeParam.toLowerCase()
-      );
-
-      if (matchedPurposeLane) {
-        setSelectedPurposeLane(matchedPurposeLane);
-      }
-    }
-
-    if (!topicParam) {
-      return;
-    }
-
-    const officialTopic = DISCUSSION_TOPICS.find(
-      (topic) => topic.toLowerCase() === topicParam.toLowerCase()
-    );
-    const activeTopic = activeTopics.find(
-      (topic) => topic.toLowerCase() === topicParam.toLowerCase()
-    );
-    const matchedTopic = officialTopic ?? activeTopic;
-
-    if (!matchedTopic) {
-      return;
-    }
-
-    setSelectedTopic(matchedTopic);
-
-    if (!activeTopics.includes(matchedTopic)) {
-      setShowAllTopicFilters(true);
-    }
-  }, [activeTopics]);
-
-  function updateUrlParams(updates: Record<string, string | null>) {
-    const params = new URLSearchParams(window.location.search);
-
-    for (const [key, value] of Object.entries(updates)) {
-      if (!value) {
-        params.delete(key);
-      } else {
-        params.set(key, value);
-      }
-    }
-
-    const queryString = params.toString();
-    const nextUrl = queryString
-      ? `${window.location.pathname}?${queryString}`
-      : window.location.pathname;
-
-    window.history.replaceState(null, "", nextUrl);
-  }
-
-  function setTopicFilter(topic: string) {
-    setSelectedTopic(topic);
-    updateUrlParams({ topic: topic === "All" ? null : topic });
-  }
-
-  function setPurposeLaneFilter(purposeLane: string) {
-    setSelectedPurposeLane(purposeLane);
-    updateUrlParams({ purpose: purposeLane === "All" ? null : purposeLane });
-  }
-
-  const filteredDiscussions = useMemo(() => {
-    const activeAdvancedFilter = canUseAdvancedFilters
-      ? advancedFilter
-      : "All activity";
-
-    const followingUserIdSet = new Set(followingUserIds);
-
-    const filtered = discussions.filter((discussion) => {
-      const matchesFeedMode =
-        feedMode !== "following" || followingUserIdSet.has(discussion.user_id);
-
-      const matchesTopic =
-        selectedTopic === "All" || discussion.topic === selectedTopic;
-
-      const matchesPurposeLane =
-        selectedPurposeLane === "All" || discussion.purpose_lane === selectedPurposeLane;
-
-      const matchesAdvanced = matchesAdvancedFilter(
-        discussion,
-        activeAdvancedFilter,
+    for (const discussion of discussions) {
+      const topic = getDiscussionTopic(discussion);
+      const current = map.get(topic) ?? { topic, count: 0, signals: 0 };
+      current.count += 1;
+      current.signals += getSignalScore(
+        discussion.id,
         replyCounts,
         bookmarkCounts,
-        viewCounts,
-        latestReplyDates
+        viewCounts
       );
+      map.set(topic, current);
+    }
 
-      return matchesFeedMode && matchesTopic && matchesPurposeLane && matchesAdvanced;
+    return [...map.values()].sort((a, b) => {
+      if (b.count !== a.count) {
+        return b.count - a.count;
+      }
+
+      return b.signals - a.signals;
     });
+  }, [discussions, replyCounts, bookmarkCounts, viewCounts]);
 
-    if (sortMode === "Most replied") {
-      return [...filtered].sort((a, b) => {
-        const replyDifference =
-          (replyCounts[b.id] ?? 0) - (replyCounts[a.id] ?? 0);
+  const visibleTopics = topicStats.slice(0, MAX_SIDE_TOPICS);
+  const trendingTopics = [...topicStats]
+    .sort((a, b) => b.signals - a.signals || b.count - a.count)
+    .slice(0, MAX_TRENDING_TOPICS);
 
-        if (replyDifference !== 0) {
-          return replyDifference;
-        }
+  const contributorStats = useMemo(() => {
+    const map = new Map<string, ContributorStat>();
 
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
+    for (const discussion of discussions) {
+      const current = map.get(discussion.user_id) ?? {
+        userId: discussion.user_id,
+        profile: profiles[discussion.user_id],
+        discussions: 0,
+        signals: 0,
+      };
+
+      current.profile = profiles[discussion.user_id];
+      current.discussions += 1;
+      current.signals += getSignalScore(
+        discussion.id,
+        replyCounts,
+        bookmarkCounts,
+        viewCounts
+      );
+      map.set(discussion.user_id, current);
     }
 
-    if (sortMode === "Signal") {
-      return [...filtered].sort((a, b) => {
-        const scoreA =
-          (replyCounts[a.id] ?? 0) * 3 +
-          (bookmarkCounts[a.id] ?? 0) * 5 +
-          (viewCounts[a.id] ?? 0);
+    return [...map.values()]
+      .sort((a, b) => b.signals - a.signals || b.discussions - a.discussions)
+      .slice(0, MAX_TOP_CONTRIBUTORS);
+  }, [discussions, profiles, replyCounts, bookmarkCounts, viewCounts]);
 
-        const scoreB =
-          (replyCounts[b.id] ?? 0) * 3 +
-          (bookmarkCounts[b.id] ?? 0) * 5 +
-          (viewCounts[b.id] ?? 0);
+  const savedFolderStats = useMemo(() => {
+    const map = new Map<string, number>();
 
-        const scoreDifference = scoreB - scoreA;
+    for (const discussion of discussions) {
+      if (!savedDiscussionIds.has(discussion.id)) {
+        continue;
+      }
 
-        if (scoreDifference !== 0) {
-          return scoreDifference;
-        }
-
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
+      const topic = getDiscussionTopic(discussion);
+      map.set(topic, (map.get(topic) ?? 0) + 1);
     }
 
-    return filtered;
+    return [...map.entries()]
+      .map(([topic, count]) => ({ topic, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, MAX_SAVED_FOLDERS);
+  }, [discussions, savedDiscussionIds]);
+
+  const filteredDiscussions = useMemo(() => {
+    const followingUserIdSet = new Set(followingUserIds);
+    const cleanQuery = searchQuery.trim().toLowerCase();
+
+    return discussions.filter((discussion) => {
+      const topic = getDiscussionTopic(discussion);
+      const profile = profiles[discussion.user_id];
+      const matchesTopic = selectedTopic === "All" || topic === selectedTopic;
+      const matchesFollowing =
+        feedMode !== "following" || followingUserIdSet.has(discussion.user_id);
+      const matchesSaved =
+        feedMode !== "saved" || savedDiscussionIds.has(discussion.id);
+      const matchesMode = matchesModeFilter(discussion, feedMode);
+      const matchesQuery = matchesSearchQuery(discussion, profile, cleanQuery);
+
+      return matchesTopic && matchesFollowing && matchesSaved && matchesMode && matchesQuery;
+    });
   }, [
     discussions,
+    profiles,
     selectedTopic,
-    selectedPurposeLane,
-    sortMode,
     feedMode,
     followingUserIds,
-    advancedFilter,
-    canUseAdvancedFilters,
-    replyCounts,
-    bookmarkCounts,
-    viewCounts,
-    latestReplyDates,
+    savedDiscussionIds,
+    searchQuery,
   ]);
 
-  const activeFilterLabels = [
-    selectedTopic !== "All" ? `Topic: ${selectedTopic}` : "",
-    selectedPurposeLane !== "All" ? `Purpose: ${selectedPurposeLane}` : "",
-    sortMode !== "Newest" ? `Sort: ${sortMode}` : "",
-    advancedFilter !== "All activity" ? `Filter: ${advancedFilter}` : "",
-  ].filter(Boolean);
+  const hasActiveFilters =
+    selectedTopic !== "All" || feedMode !== "all" || searchQuery.trim().length > 0;
 
-  const hasActiveDiscussionFilters = activeFilterLabels.length > 0;
-  const filterSummary = hasActiveDiscussionFilters
-    ? activeFilterLabels.join(" · ")
-    : feedMode === "following" ? "Following discussions" : feedMode === "signal" ? "Active discussions" : "All discussions";
-
-  const topicDiscoveryItems = (
-    showAllTopicDiscovery ? DISCUSSION_TOPICS : []
-  ).map((topic) => ({
-    topic,
-    description: getTopicDiscoveryDescription(topic),
-  }));
-
-  const allFeedActive = feedMode === "all";
-  const followingFeedActive = feedMode === "following";
-  const signalFeedActive = feedMode === "signal";
-
-  function resetDiscussionFilters() {
+  function resetFilters() {
+    setSelectedTopic("All");
     setFeedMode("all");
-    setTopicFilter("All");
-    setPurposeLaneFilter("All");
-    setSortMode("Newest");
-    setAdvancedFilter("All activity");
-  }
-
-  async function addDiscussionToStickies(discussionId: string) {
-    setStickiesMessage("");
-
-    if (addingStickyDiscussionId || stickiedDiscussionIds.has(discussionId)) {
-      return;
-    }
-
-    if (!canUseAdvancedFilters) {
-      setStickiesMessage("Stickies requires Premium access.");
-      return;
-    }
-
-    setAddingStickyDiscussionId(discussionId);
-
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-
-      if (!accessToken) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const response = await fetch("/api/stickies", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          discussionId,
-        }),
-      });
-
-      const result = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        setStickiesMessage(result.error ?? "Unable to add to Stickies.");
-        return;
-      }
-
-      setStickiedDiscussionIds((current) => {
-        const next = new Set(current);
-        next.add(discussionId);
-        return next;
-      });
-      setStickiesMessage("Discussion added to Stickies.");
-    } finally {
-      setAddingStickyDiscussionId(null);
-    }
-  }
-
-  function getSafeFeedMode(value: string | null | undefined): FeedMode {
-    if (value === "following" || value === "signal") {
-      return value;
-    }
-
-    return "all";
-  }
-
-  function applyDiscussionFeedMode(nextFeedMode: FeedMode) {
-    setFeedMode(nextFeedMode);
-    setTopicFilter("All");
-    setPurposeLaneFilter("All");
-    setSortMode(nextFeedMode === "signal" ? "Signal" : "Newest");
-    setAdvancedFilter("All activity");
-    setActiveDiscussionTool("none");
-
-    updateUrlParams({
-      feed: nextFeedMode === "all" ? null : nextFeedMode,
-      topic: null,
-      purpose: null,
-    });
-  }
-
-  function openAllFeed() {
-    setShowExploreFilters(false);
-    applyDiscussionFeedMode("all");
-  }
-
-  function openFollowingFeed() {
-    setShowExploreFilters(false);
-    applyDiscussionFeedMode("following");
-  }
-
-  function openSignalFeed() {
-    applyDiscussionFeedMode("signal");
-  }
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const initialFeedMode = getSafeFeedMode(params.get("feed"));
-
-    if (initialFeedMode !== feedMode) {
-      applyDiscussionFeedMode(initialFeedMode);
-    }
-
-    function handleMobileDiscussionFeed(event: Event) {
-      const customEvent = event as CustomEvent<{ feed?: string }>;
-      applyDiscussionFeedMode(getSafeFeedMode(customEvent.detail?.feed));
-    }
-
-    window.addEventListener(
-      "loombus:discussion-feed",
-      handleMobileDiscussionFeed
-    );
-
-    return () => {
-      window.removeEventListener(
-        "loombus:discussion-feed",
-        handleMobileDiscussionFeed
-      );
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function persistExploreFiltersOpen() {
-    setShowExploreFilters(true);
-
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(DISCUSSION_FILTER_DRAWER_STORAGE_KEY, "open");
-    }
-  }
-
-  function openDiscussionGuide() {
-    setActiveDiscussionTool((current) => current === "guide" ? "none" : "guide");
-  }
-
-  function openDiscussionTopics() {
-    setActiveDiscussionTool((current) => current === "topics" ? "none" : "topics");
-  }
-
-  function openDiscussionPurpose() {
-    setActiveDiscussionTool((current) => current === "purpose" ? "none" : "purpose");
+    setSearchQuery("");
   }
 
   return (
-    <main className="loombus-discussions-canvas min-h-screen px-4 pb-24 pt-4 text-[var(--loombus-text)] sm:px-6 sm:py-10 lg:py-12 loombus-shell-with-right-rail">
-      <div className="mx-auto max-w-[46rem]">
-        <div className="discussion-shell-grid">
-          <div className="min-w-0">
-        <section className="loombus-discussions-tabs-shell sticky top-0 z-20 mb-5 hidden border-b border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 backdrop-blur-xl md:block">
-          <nav
-            aria-label="Discussion feed views"
-            className="loombus-discussions-tabs grid grid-cols-3 border-y border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 backdrop-blur-xl"
-          >
-            <button
-              type="button"
-              onClick={openAllFeed}
-              className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
-                allFeedActive
-                  ? "text-[var(--loombus-text)]"
-                  : "text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
-              }`}
-            >
-              All
-              <span
-                className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  allFeedActive ? "bg-[var(--loombus-text)]" : "bg-transparent"
-                }`}
-                aria-hidden="true"
-              />
-            </button>
-
-            <button
-              type="button"
-              onClick={openFollowingFeed}
-              className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
-                followingFeedActive
-                  ? "text-[var(--loombus-text)]"
-                  : "text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
-              }`}
-            >
-              Following
-              <span
-                className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  followingFeedActive ? "bg-[var(--loombus-text)]" : "bg-transparent"
-                }`}
-                aria-hidden="true"
-              />
-            </button>
-
-            <button
-              type="button"
-              onClick={openSignalFeed}
-              className={`relative flex h-14 items-center justify-center text-sm font-semibold transition ${
-                signalFeedActive
-                  ? "text-[var(--loombus-text)]"
-                  : "text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
-              }`}
-            >
-              Active
-              <span
-                className={`absolute bottom-0 h-1 w-24 rounded-full transition ${
-                  signalFeedActive ? "bg-[var(--loombus-text)]" : "bg-transparent"
-                }`}
-                aria-hidden="true"
-              />
-            </button>
-          </nav>
-        </section>
-
-        {activeDiscussionTool === "guide" && (
-          <section className="loombus-discussions-tool-panel mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
-            <p className="mb-2 text-xs uppercase tracking-[0.18em] text-zinc-500">
-              Guide
+    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-[88rem] gap-6 xl:grid-cols-[14.5rem_minmax(0,1fr)_20rem]">
+        <aside className="hidden xl:block">
+          <section className="sticky top-28 rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 shadow-2xl shadow-black/10">
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.34em] text-[color:var(--loombus-text)]">
+              Browse topics
             </p>
 
-            <h2 className="mb-2 text-base font-semibold">
-              Finding signal
-            </h2>
-
-            <p className="text-sm leading-relaxed text-zinc-500">
-              Use search, sort, topics, purpose lanes, and Signal to find discussions worth reading carefully.
-            </p>
-          </section>
-        )}
-
-        {activeDiscussionTool === "topics" && (
-          <section className="loombus-discussions-tool-panel mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
-                Topics
-              </p>
-
+            <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => {
-                  if (showAllTopicFilters && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
-                    setTopicFilter("All");
-                  }
-
-                  setShowAllTopicFilters((current) => !current);
-                }}
-                className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                onClick={() => setSelectedTopic("All")}
+                className={`flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold transition ${
+                  selectedTopic === "All"
+                    ? "bg-[color:var(--loombus-surface-muted)] text-[#b45309]"
+                    : "bg-[color:var(--loombus-page-bg)] text-[color:var(--loombus-text)] hover:bg-[color:var(--loombus-surface-muted)]"
+                }`}
               >
-                {showAllTopicFilters ? "Active only" : "All topics"}
-              </button>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {topics.map((topic) => (
-                <button
-                  key={topic}
-                  type="button"
-                  onClick={() => setTopicFilter(topic)}
-                  className={`rounded-full px-3.5 py-2 text-sm transition ${
-                    selectedTopic === topic
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                  }`}
-                >
-                  {topic}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {activeDiscussionTool === "purpose" && (
-          <section className="loombus-discussions-tool-panel mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-3.5 xl:hidden">
-            <p className="mb-3 text-xs font-medium uppercase tracking-[0.16em] text-zinc-600">
-              Purpose
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              {["All", ...PURPOSE_LANES].map((lane) => (
-                <button
-                  key={lane}
-                  type="button"
-                  onClick={() => setPurposeLaneFilter(lane)}
-                  className={`rounded-full px-3.5 py-2 text-sm transition ${
-                    selectedPurposeLane === lane
-                      ? "bg-white text-black"
-                      : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                  }`}
-                >
-                  {lane}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {hasActiveDiscussionFilters && (
-          <div className="mb-4 flex flex-wrap items-center gap-2 xl:hidden">
-            {activeFilterLabels.map((label) => (
-              <span
-                key={label}
-                className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400"
-              >
-                {label}
-              </span>
-            ))}
-
-            <button
-              type="button"
-              onClick={resetDiscussionFilters}
-              className="text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
-            >
-              Clear
-            </button>
-          </div>
-        )}
-
-        {!loading && (
-          <div className="mb-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <p className="text-sm text-zinc-600">
-              Showing {filteredDiscussions.length} of {discussions.length} discussions
-            </p>
-
-            {hasActiveDiscussionFilters && (
-              <button
-                type="button"
-                onClick={resetDiscussionFilters}
-                className="w-fit text-sm text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
-              >
-                Reset view
-              </button>
-            )}
-          </div>
-        )}
-
-        {loading && (
-          <p className="text-zinc-500">
-            Loading discussions...
-          </p>
-        )}
-
-        {!loading && filteredDiscussions.length === 0 && (
-          <div className="loombus-discussions-empty-state rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
-            <h2 className="mb-3 text-2xl font-medium">
-              No discussions found.
-            </h2>
-
-            <p className="max-w-2xl text-zinc-400">
-              No discussions match the current topic, purpose lane, sort, or advanced filter selection.
-              Try clearing the filters or starting a new discussion in this topic.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              {hasActiveDiscussionFilters && (
-                <button
-                  type="button"
-                  onClick={resetDiscussionFilters}
-                  className="rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
-                >
-                  Clear filters
-                </button>
-              )}
-
-              <Link
-                href="/create"
-                className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-              >
-                Start a discussion
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {stickiesMessage && (
-          <p className="loombus-discussions-message mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-zinc-500">
-            {stickiesMessage}
-          </p>
-        )}
-
-        <div className="space-y-3 sm:space-y-5">
-          {filteredDiscussions.map((discussion) => {
-            const profile = profiles[discussion.user_id];
-
-            return (
-              <article
-                key={discussion.id}
-                className="loombus-discussions-card group overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20 transition hover:border-zinc-700 sm:rounded-[1.75rem]"
-              >
-                <Link
-                  href={`/discussions/${discussion.id}`}
-                  className="block p-4 sm:p-6"
-                >
-                  <div className="mb-4 flex min-w-0 items-center gap-3">
-                    <ProfileAvatar profile={profile} size="md" />
-
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-zinc-300">
-                        {profile?.username ? getProfileDisplayName(profile) : "Loombus member"}
-                      </p>
-
-                      <p className="mt-1 truncate text-xs text-zinc-700">
-                        {new Date(discussion.created_at).toLocaleDateString()}
-                        {latestReplyDates[discussion.id] && (
-                          <>
-                            {" "}· Active{" "}
-                            {new Date(latestReplyDates[discussion.id]).toLocaleDateString()}
-                          </>
-                        )}
-                      </p>
-                    </div>
-
-                    <span
-                      className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-medium sm:px-3 sm:text-[11px] ${getDiscussionStatusClassName(discussion)}`}
-                    >
-                      {getDiscussionStatusLabel(discussion)}
-                    </span>
-                  </div>
-
-                  <div className="mb-3 flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
-                    <span className="shrink-0 rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500 sm:px-3 sm:text-[11px] sm:tracking-[0.18em]">
-                      {discussion.topic}
-                    </span>
-
-                    {discussion.reality_lens && (
-                      <span className="shrink-0 rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] font-medium text-zinc-400 sm:px-3 sm:text-[11px]">
-                        {discussion.reality_lens}
-                      </span>
-                    )}
-
-                    {discussion.purpose_lane && (
-                      <span className="shrink-0 rounded-full border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[10px] font-medium text-zinc-400 sm:px-3 sm:text-[11px]">
-                        {discussion.purpose_lane}
-                      </span>
-                    )}
-                  </div>
-
-                  <h2 className="mb-2 text-lg font-semibold leading-snug tracking-tight transition group-hover:text-white sm:mb-3 sm:text-2xl">
-                    {normalizePublicText(discussion.title)}
-                  </h2>
-
-                  <div
-                    className="mb-3 line-clamp-2 text-sm leading-relaxed text-zinc-400 sm:mb-4 sm:line-clamp-3 sm:text-base [&_em]:italic [&_strong]:font-semibold [&_strong]:text-zinc-200"
-                    dangerouslySetInnerHTML={{ __html: discussionBodyToSafeHtml(normalizePublicText(discussion.body)) }}
-                  />
-
-                  {discussionTags[discussion.id]?.length > 0 && (
-                    <div className="mb-4 flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
-                      {discussionTags[discussion.id].map((tag) => (
-                        <span
-                          key={`${discussion.id}-${tag}`}
-                          className="shrink-0 rounded-full border border-zinc-800 bg-black px-3 py-1 text-xs text-zinc-500"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                </Link>
-
-                <div className="loombus-discussion-card-footer flex flex-wrap items-center gap-2 border-t border-zinc-900 px-4 py-3 text-xs text-zinc-500 sm:px-6 sm:text-sm">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <span
-                      className="loombus-discussion-footer-metric"
-                      aria-label={`${replyCounts[discussion.id] ?? 0} replies`}
-                      title={`${replyCounts[discussion.id] ?? 0} replies`}
-                    >
-                      <span aria-hidden="true">💬</span>
-                      <span>{replyCounts[discussion.id] ?? 0}</span>
-                    </span>
-
-                    <span
-                      className="loombus-discussion-footer-metric"
-                      aria-label={`${bookmarkCounts[discussion.id] ?? 0} saves`}
-                      title={`${bookmarkCounts[discussion.id] ?? 0} saves`}
-                    >
-                      <span aria-hidden="true">🔖</span>
-                      <span>{bookmarkCounts[discussion.id] ?? 0}</span>
-                    </span>
-
-                    <span
-                      className="loombus-discussion-footer-metric"
-                      aria-label={`${viewCounts[discussion.id] ?? 0} views`}
-                      title={`${viewCounts[discussion.id] ?? 0} views`}
-                    >
-                      <span aria-hidden="true">👁</span>
-                      <span>{viewCounts[discussion.id] ?? 0}</span>
-                    </span>
-
-                    {canUseAdvancedFilters && (
-                      <button
-                        type="button"
-                        onClick={() => addDiscussionToStickies(discussion.id)}
-                        disabled={addingStickyDiscussionId === discussion.id || stickiedDiscussionIds.has(discussion.id)}
-                        className={`loombus-discussion-footer-sticky ${
-                          stickiedDiscussionIds.has(discussion.id)
-                            ? "loombus-discussion-footer-sticky-active"
-                            : ""
-                        }`}
-                        aria-label={
-                          addingStickyDiscussionId === discussion.id
-                            ? "Adding discussion to Stickies"
-                            : stickiedDiscussionIds.has(discussion.id)
-                              ? "Discussion added to Stickies"
-                              : "Add discussion to Stickies"
-                        }
-                        title={
-                          addingStickyDiscussionId === discussion.id
-                            ? "Adding..."
-                            : stickiedDiscussionIds.has(discussion.id)
-                              ? "Added to Stickies"
-                              : "Add to Stickies"
-                        }
-                      >
-                        <span aria-hidden="true">📌</span>
-                        <span className="hidden sm:inline">
-                          {addingStickyDiscussionId === discussion.id
-                            ? "Adding"
-                            : stickiedDiscussionIds.has(discussion.id)
-                              ? "Added"
-                              : "Add"}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-
-                  <span className="loombus-discussion-footer-signal ml-auto">
-                    Signal {getSignalScore(
-                      discussion.id,
-                      replyCounts,
-                      bookmarkCounts,
-                      viewCounts
-                    )}
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--loombus-surface)] text-[#b45309]">
+                    <Sparkles aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
                   </span>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-        </div>
+                  <span className="truncate">All topics</span>
+                </span>
+                <span className="text-xs text-[#b45309]">{discussions.length}</span>
+              </button>
 
-        <aside className="loombus-right-rail loombus-discussions-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
-          <div className="space-y-4">
-            <section className="loombus-discussions-rail-card rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <div className="mb-5 border-b border-zinc-900 pb-5">
-                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                  Discussions
-                </p>
+              {visibleTopics.map((item) => (
+                <button
+                  key={item.topic}
+                  type="button"
+                  onClick={() => setSelectedTopic(item.topic)}
+                  className={`flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-3 text-left text-sm font-semibold transition ${
+                    selectedTopic === item.topic
+                      ? "bg-[color:var(--loombus-surface-muted)] text-[#b45309]"
+                      : "bg-[color:var(--loombus-page-bg)] text-[color:var(--loombus-text)] hover:bg-[color:var(--loombus-surface-muted)]"
+                  }`}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--loombus-surface)] text-[color:var(--loombus-text-muted)]">
+                      <Sparkles aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+                    </span>
+                    <span className="truncate">{item.topic}</span>
+                  </span>
+                  <span className="text-xs text-[#b45309]">{item.count}</span>
+                </button>
+              ))}
+            </div>
 
-                <h2 className="text-2xl font-semibold tracking-tight text-white">
-                  Discussion feed
-                </h2>
+            <button
+              type="button"
+              onClick={() => setSelectedTopic("All")}
+              className="mt-5 flex w-full items-center justify-between rounded-2xl px-1 py-2 text-sm font-semibold text-[#b45309] transition hover:text-[color:var(--loombus-text)]"
+            >
+              View all topics
+              <ChevronRight aria-hidden="true" className="h-4 w-4" />
+            </button>
+          </section>
+        </aside>
 
-                <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                  Read everything, follow your circle, or jump into active conversations.
-                </p>
-              </div>
+        <section className="min-w-0">
+          <div className="mb-6">
+            <h1 className="text-4xl font-semibold tracking-[-0.055em] text-[color:var(--loombus-text)] sm:text-5xl">
+              Discussions
+            </h1>
+            <p className="mt-3 text-base leading-7 text-[color:var(--loombus-text-muted)]">
+              Explore signal-rich conversations. Browse by topic, mode, and relevance.
+            </p>
+          </div>
 
-              <div className="mb-5 flex items-start justify-between gap-3">
-                <div>
-                  <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                    Feed controls
-                  </p>
+          <div className="mb-4 flex gap-3">
+            <label className="relative flex-1">
+              <span className="sr-only">Search discussions, topics, and contributors</span>
+              <Search
+                aria-hidden="true"
+                className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[color:var(--loombus-text-subtle)]"
+                strokeWidth={2.1}
+              />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search discussions, topics, and contributors"
+                className="h-14 w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] pl-14 pr-5 text-base text-[color:var(--loombus-text)] outline-none shadow-sm transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-text-subtle)]"
+              />
+            </label>
 
-                  <h2 className="text-xl font-semibold tracking-tight">
-                    Refine the discussion feed.
-                  </h2>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] text-[color:var(--loombus-text)] shadow-sm transition hover:border-[color:var(--loombus-text-subtle)]"
+              aria-label="Reset discussion filters"
+              title="Reset filters"
+            >
+              <SlidersHorizontal aria-hidden="true" className="h-5 w-5" strokeWidth={2.1} />
+            </button>
+          </div>
 
-                  <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                    Filter and sort here. The center panel stays focused on discussion results.
-                  </p>
-                </div>
+          <div className="mb-7 flex gap-2 overflow-x-auto pb-1">
+            {feedTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setFeedMode(tab.key)}
+                className={`shrink-0 rounded-full border px-4 py-2.5 text-sm font-semibold shadow-sm transition ${
+                  feedMode === tab.key
+                    ? "border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] text-[color:var(--loombus-text)]"
+                    : "border-transparent bg-[color:var(--loombus-surface-muted)] text-[color:var(--loombus-text)] hover:border-[color:var(--loombus-border)]"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-                {hasActiveDiscussionFilters && (
+          {loading ? (
+            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-6 text-[color:var(--loombus-text-muted)] shadow-xl shadow-black/10">
+              Loading discussions...
+            </section>
+          ) : null}
+
+          {!loading && filteredDiscussions.length === 0 ? (
+            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-7 shadow-xl shadow-black/10">
+              <h2 className="text-2xl font-semibold tracking-tight text-[color:var(--loombus-text)]">
+                No discussions found.
+              </h2>
+              <p className="mt-3 max-w-2xl text-[color:var(--loombus-text-muted)]">
+                No discussions match the current topic, mode, saved view, or search.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {hasActiveFilters ? (
                   <button
                     type="button"
-                    onClick={resetDiscussionFilters}
-                    className="shrink-0 rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                    onClick={resetFilters}
+                    className="rounded-full bg-[color:var(--loombus-primary-bg)] px-5 py-3 text-sm font-semibold text-[color:var(--loombus-primary-text)] transition hover:opacity-90"
                   >
-                    Reset
+                    Clear filters
                   </button>
-                )}
+                ) : null}
+                <Link
+                  href="/create"
+                  className="rounded-full border border-[color:var(--loombus-border)] px-5 py-3 text-sm font-semibold text-[color:var(--loombus-text)] transition hover:border-[color:var(--loombus-text-subtle)]"
+                >
+                  Start a discussion
+                </Link>
               </div>
+            </section>
+          ) : null}
 
-              <button
-                type="button"
-                onClick={toggleExploreFilters}
-                className="mt-4 w-full rounded-full border border-zinc-700 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                aria-expanded={showExploreFilters}
-              >
-                {showExploreFilters ? "Hide filters" : hasActiveDiscussionFilters ? "Edit filters" : "Explore / Filters"}
-              </button>
+          <div className="space-y-5">
+            {filteredDiscussions.map((discussion) => {
+              const profile = profiles[discussion.user_id];
+              const signalScore = getSignalScore(
+                discussion.id,
+                replyCounts,
+                bookmarkCounts,
+                viewCounts
+              );
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {hasActiveDiscussionFilters ? (
-                  activeFilterLabels.map((label) => (
-                    <span
-                      key={label}
-                      className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-400"
-                    >
-                      {label}
-                    </span>
-                  ))
-                ) : (
-                  <span className="rounded-full border border-zinc-800 bg-black px-3 py-1.5 text-xs font-medium text-zinc-500">
-                    {filterSummary}
-                  </span>
-                )}
-              </div>
-
-              {showExploreFilters && (
-                <div className="mt-5 space-y-5">
-                  <div>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
-                      Sort by
-                    </p>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setSortMode("Newest")}
-                        className={`rounded-full px-3.5 py-2 text-sm transition ${
-                          sortMode === "Newest"
-                            ? "bg-white text-black"
-                            : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                        }`}
-                      >
-                        Newest
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setSortMode("Most replied")}
-                        className={`rounded-full px-3.5 py-2 text-sm transition ${
-                          sortMode === "Most replied"
-                            ? "bg-white text-black"
-                            : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                        }`}
-                      >
-                        Most replied
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setSortMode("Signal")}
-                        className={`rounded-full px-3.5 py-2 text-sm transition ${
-                          sortMode === "Signal"
-                            ? "bg-white text-black"
-                            : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                        }`}
-                      >
-                        Signal
-                      </button>
+              return (
+                <article
+                  key={discussion.id}
+                  className="overflow-hidden rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10 transition hover:border-[color:var(--loombus-text-subtle)]"
+                >
+                  <Link href={`/discussions/${discussion.id}`} className="block p-5 sm:p-6">
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#b45309] dark:bg-orange-400/10">
+                        {getDiscussionTopic(discussion)}
+                      </span>
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900 dark:bg-emerald-400/10 dark:text-emerald-200">
+                        {getDiscussionModeLabel(discussion)}
+                      </span>
                     </div>
-                  </div>
 
-                  <div>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
-                      Topics
-                    </p>
+                    <h2 className="text-2xl font-semibold leading-tight tracking-[-0.035em] text-[color:var(--loombus-text)] sm:text-3xl">
+                      {normalizePublicText(discussion.title)}
+                    </h2>
 
-                    <div className="flex flex-wrap gap-2">
-                      {topics.map((topic) => (
-                        <button
-                          key={topic}
-                          type="button"
-                          onClick={() => setTopicFilter(topic)}
-                          className={`rounded-full px-3.5 py-2 text-sm transition ${
-                            selectedTopic === topic
-                              ? "bg-white text-black"
-                              : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                          }`}
-                        >
-                          {topic}
-                        </button>
-                      ))}
+                    <div
+                      className="mt-4 line-clamp-2 text-base leading-7 text-[color:var(--loombus-text-muted)] [&_em]:italic [&_strong]:font-semibold [&_strong]:text-[color:var(--loombus-text)]"
+                      dangerouslySetInnerHTML={{
+                        __html: discussionBodyToSafeHtml(
+                          getPlainDiscussionExcerpt(discussion.body)
+                        ),
+                      }}
+                    />
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (showAllTopicFilters && !activeTopics.includes(selectedTopic) && selectedTopic !== "All") {
-                            setTopicFilter("All");
-                          }
-
-                          setShowAllTopicFilters((current) => !current);
-                        }}
-                        className="rounded-full border border-zinc-800 bg-black/20 px-3.5 py-2 text-sm text-zinc-500 transition hover:border-zinc-700 hover:text-white"
-                      >
-                        {showAllTopicFilters ? "Show active topics" : "Show all topics"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
-                      Purpose lanes
-                    </p>
-
-                    <div className="flex flex-wrap gap-2">
-                      {["All", ...PURPOSE_LANES].map((lane) => (
-                        <button
-                          key={lane}
-                          type="button"
-                          onClick={() => setPurposeLaneFilter(lane)}
-                          className={`rounded-full px-3.5 py-2 text-sm transition ${
-                            selectedPurposeLane === lane
-                              ? "bg-white text-black"
-                              : "border border-zinc-800 bg-black/30 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                          }`}
-                        >
-                          {lane}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
-                          Advanced filters
+                    <div className="mt-5 flex items-center gap-3">
+                      <ProfileAvatar profile={profile} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[color:var(--loombus-text)]">
+                          {getProfileDisplayName(profile)}
                         </p>
-
-                        {!canUseAdvancedFilters && (
-                          <Link
-                            href="/premium"
-                            className="text-xs text-zinc-500 underline decoration-zinc-800 underline-offset-4 transition hover:text-white hover:decoration-white"
-                          >
-                            Unlock with Premium
-                          </Link>
-                        )}
+                        <p className="truncate text-xs font-semibold text-[color:var(--loombus-text-muted)]">
+                          {getProfileHandle(profile)} · {formatDiscussionDate(discussion.created_at)}
+                          {latestReplyDates[discussion.id]
+                            ? ` · Active ${formatDiscussionDate(latestReplyDates[discussion.id])}`
+                            : ""}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {ADVANCED_FILTERS.map((filter) => (
-                        <button
-                          key={filter}
-                          type="button"
-                          onClick={() => setAdvancedFilter(filter)}
-                          disabled={!canUseAdvancedFilters && filter !== "All activity"}
-                          className={`rounded-full border px-3.5 py-2 text-sm transition ${
-                            advancedFilter === filter
-                              ? "border-zinc-400 text-white"
-                              : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
-                          } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
-                        >
-                          {filter}
-                        </button>
-                      ))}
-                    </div>
+                    {discussionTags[discussion.id]?.length > 0 ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {discussionTags[discussion.id].slice(0, 4).map((tag) => (
+                          <span
+                            key={`${discussion.id}-${tag}`}
+                            className="rounded-full border border-[color:var(--loombus-border)] px-3 py-1 text-xs font-semibold text-[color:var(--loombus-text-muted)]"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </Link>
+
+                  <div className="flex items-center gap-4 border-t border-[color:var(--loombus-border-muted)] px-5 py-4 text-sm font-semibold text-[color:var(--loombus-text)] sm:px-6">
+                    <span className="inline-flex items-center gap-2" title="Replies">
+                      <MessageCircle aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+                      {replyCounts[discussion.id] ?? 0}
+                    </span>
+                    <span className="inline-flex items-center gap-2" title="Views">
+                      <Eye aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+                      {viewCounts[discussion.id] ?? 0}
+                    </span>
+                    <span className="inline-flex items-center gap-2" title="Saves">
+                      <Bookmark aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+                      {bookmarkCounts[discussion.id] ?? 0}
+                    </span>
+                    <span className="ml-auto rounded-full border border-orange-200 px-4 py-2 text-sm font-bold text-[color:var(--loombus-text)] dark:border-orange-400/30">
+                      Signal {signalScore}
+                    </span>
                   </div>
-                </div>
-              )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <aside className="hidden xl:block">
+          <div className="sticky top-28 space-y-5">
+            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-[0.34em] text-[color:var(--loombus-text-muted)]">
+                  Trending topics
+                </p>
+                <TrendingUp aria-hidden="true" className="h-5 w-5 text-[color:var(--loombus-text-muted)]" />
+              </div>
+
+              <div className="space-y-4">
+                {trendingTopics.map((item, index) => (
+                  <button
+                    type="button"
+                    key={item.topic}
+                    onClick={() => setSelectedTopic(item.topic)}
+                    className="flex w-full items-center gap-4 text-left"
+                  >
+                    <span className="w-5 text-center text-sm font-bold text-[#b45309]">
+                      {index + 1}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold text-[color:var(--loombus-text)]">
+                      {item.topic}
+                    </span>
+                    <span className="text-xs font-bold text-[color:var(--loombus-text-subtle)]">
+                      {item.signals} signals
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedTopic("All")}
+                className="mt-7 flex w-full items-center justify-between text-sm font-bold text-[#b45309] transition hover:text-[color:var(--loombus-text)]"
+              >
+                View all topics
+                <ChevronRight aria-hidden="true" className="h-4 w-4" />
+              </button>
             </section>
 
-
-            <section className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950 shadow-2xl shadow-black/20">
-              <div className="border-b border-zinc-900 p-5">
-                <p className="mb-2 text-xs uppercase tracking-[0.25em] text-zinc-600">
-                  Loombus Signal Panel
+            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-[0.34em] text-[color:var(--loombus-text-muted)]">
+                  Top contributors
                 </p>
-
-                <h2 className="text-xl font-semibold tracking-tight">
-                  Signal discipline
-                </h2>
-
-                <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                  Read before reacting. Reply when you can add context, lived experience, evidence, a sharper question, or a clearer frame.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 border-b border-zinc-900">
-                <div className="border-r border-zinc-900 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
-                    Showing
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-zinc-200">
-                    {filteredDiscussions.length}
-                  </p>
-                </div>
-
-                <div className="border-r border-zinc-900 p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
-                    Total
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-zinc-200">
-                    {discussions.length}
-                  </p>
-                </div>
-
-                <div className="p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
-                    Sort
-                  </p>
-                  <p className="mt-2 truncate text-sm font-medium text-zinc-300">
-                    {sortMode}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-5">
-                <Link
-                  href="/create"
-                  className="inline-flex w-full justify-center rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
-                >
-                  Create a discussion
+                <Link href="/people" className="text-sm font-bold text-[#b45309]">
+                  View all
                 </Link>
               </div>
+
+              <div className="space-y-4">
+                {contributorStats.map((contributor) => (
+                  <div key={contributor.userId} className="flex items-center gap-3">
+                    <ProfileAvatar profile={contributor.profile} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-[color:var(--loombus-text)]">
+                        {getProfileDisplayName(contributor.profile)}
+                      </p>
+                      <p className="truncate text-xs font-bold text-[color:var(--loombus-text-muted)]">
+                        {getProfileHandle(contributor.profile)} · {contributor.signals} signals
+                      </p>
+                    </div>
+                    <Link
+                      href={contributor.profile?.username ? `/u/${contributor.profile.username}` : "/people"}
+                      className="rounded-full bg-[color:var(--loombus-surface-muted)] px-3 py-2 text-xs font-bold text-[#b45309] transition hover:text-[color:var(--loombus-text)]"
+                    >
+                      <UserPlus aria-hidden="true" className="h-4 w-4 sm:hidden" />
+                      <span className="hidden sm:inline">View</span>
+                    </Link>
+                  </div>
+                ))}
+              </div>
             </section>
 
-            <section className="loombus-discussions-rail-card rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                Current lens
+            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+              <p className="mb-5 text-xs font-bold uppercase tracking-[0.34em] text-[color:var(--loombus-text-muted)]">
+                Saved folders
               </p>
 
-              <div className="space-y-2">
-                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
-                    Topic
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-300">
-                    {selectedTopic}
-                  </p>
+              {savedFolderStats.length > 0 ? (
+                <div className="space-y-3">
+                  {savedFolderStats.map((item) => (
+                    <button
+                      key={item.topic}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTopic(item.topic);
+                        setFeedMode("saved");
+                      }}
+                      className="flex w-full items-center gap-3 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4 text-left transition hover:bg-[color:var(--loombus-surface-muted)]"
+                    >
+                      <Folder aria-hidden="true" className="h-5 w-5 text-[color:var(--loombus-text-muted)]" />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-bold text-[color:var(--loombus-text)]">
+                          {item.topic}
+                        </span>
+                        <span className="block text-xs font-bold text-[color:var(--loombus-text-muted)]">
+                          {item.count} saved discussion{item.count === 1 ? "" : "s"}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
                 </div>
-
-                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
-                    Purpose
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-300">
-                    {selectedPurposeLane}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
-                    View
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-300">
-                    {filterSummary}
-                  </p>
-                </div>
-              </div>
-
-              {hasActiveDiscussionFilters && (
-                <button
-                  type="button"
-                  onClick={resetDiscussionFilters}
-                  className="mt-4 w-full rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-                >
-                  Reset lens
-                </button>
+              ) : (
+                <p className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  Saved discussion folders will appear here after you save discussions.
+                </p>
               )}
-            </section>
-
-            <section className="loombus-discussions-rail-card rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                Reply standard
-              </p>
-
-              <div className="space-y-3 text-sm leading-relaxed text-zinc-500">
-                <p className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  Add context the original post did not have.
-                </p>
-
-                <p className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  Ask a question that moves the discussion forward.
-                </p>
-
-                <p className="rounded-2xl border border-zinc-900 bg-black p-3">
-                  Use experience, examples, evidence, or better framing.
-                </p>
-              </div>
-            </section>
-
-            <section className="loombus-discussions-rail-card rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20">
-              <p className="mb-3 text-xs uppercase tracking-[0.22em] text-zinc-600">
-                Save standard
-              </p>
-
-              <p className="text-sm leading-relaxed text-zinc-500">
-                Save a discussion when it is worth returning to, comparing, citing, or building on later. A saved thread should become part of your working knowledge shelf.
-              </p>
 
               <Link
                 href="/saved"
-                className="mt-4 inline-flex w-full justify-center rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                className="mt-5 flex items-center justify-between text-sm font-bold text-[#b45309] transition hover:text-[color:var(--loombus-text)]"
               >
-                Open saved
+                View all folders
+                <ChevronRight aria-hidden="true" className="h-4 w-4" />
               </Link>
             </section>
           </div>
         </aside>
-        </div>
       </div>
     </main>
   );
