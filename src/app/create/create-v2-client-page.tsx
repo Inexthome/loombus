@@ -78,6 +78,7 @@ type DraftRow = {
 const LOOMBUS_GOLD = "#d6a84f";
 const ATTACHMENT_BUCKET = "discussion-attachments";
 const AUTOSAVE_DELAY_MS = 1400;
+const LOCAL_CREATE_DRAFT_KEY = "loombus:create:v2-local-draft";
 
 const MODE_OPTIONS: ModeOption[] = [
   {
@@ -198,6 +199,52 @@ function parseDraftBody(value: string | null | undefined) {
     mode: isDiscussionMode(metadata.Mode) ? metadata.Mode : ("open_discussion" as DiscussionMode),
     tags: metadata.Tags ?? "",
   };
+}
+
+function readLocalDraft(): DraftRow | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(LOCAL_CREATE_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DraftRow;
+    if (!parsed || typeof parsed !== "object") return null;
+    return {
+      id: parsed.id || "local-create-draft",
+      title: parsed.title ?? "",
+      topic: parsed.topic ?? "",
+      reality_lens: parsed.reality_lens ?? "",
+      purpose_lane: parsed.purpose_lane ?? "",
+      body: parsed.body ?? "",
+      updated_at: parsed.updated_at ?? new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalDraft(draft: Omit<DraftRow, "id" | "updated_at"> & { id?: string | null; updated_at?: string | null }) {
+  const nextDraft: DraftRow = {
+    id: draft.id || "local-create-draft",
+    title: draft.title ?? "",
+    topic: draft.topic ?? "",
+    reality_lens: draft.reality_lens ?? "",
+    purpose_lane: draft.purpose_lane ?? "",
+    body: draft.body ?? "",
+    updated_at: draft.updated_at ?? new Date().toISOString(),
+  };
+
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(LOCAL_CREATE_DRAFT_KEY, JSON.stringify(nextDraft));
+  }
+
+  return nextDraft;
+}
+
+function clearLocalDraft() {
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem(LOCAL_CREATE_DRAFT_KEY);
+  }
 }
 
 function buildQualityFindings({
@@ -321,14 +368,46 @@ export default function CreateV2ClientPage() {
     return { checks, completed, total: checks.length, percent: Math.round((completed / checks.length) * 100) };
   }, [body, mode, purpose, purposeLane, title, topic]);
 
+  function hydrateDraft(draft: DraftRow, status: string) {
+    const parsed = parseDraftBody(draft.body);
+    setDraftId(draft.id === "local-create-draft" ? null : draft.id);
+    setDraftSavedAt(draft.updated_at);
+    setTitle(draft.title ?? "");
+    setTopic(draft.topic ?? "");
+    setRealityLens(draft.reality_lens ?? "");
+    setPurposeLane(draft.purpose_lane ?? "");
+    setPurpose(parsed.purpose);
+    setMode(parsed.mode);
+    setTags(parsed.tags);
+    setBody(parsed.body);
+    setAutosaveStatus(status);
+  }
+
+  function saveLocalSnapshot() {
+    return writeLocalDraft({
+      id: draftId ?? "local-create-draft",
+      title,
+      topic,
+      reality_lens: realityLens,
+      purpose_lane: purposeLane,
+      body: buildDraftBody({ body, purpose, mode, tags }),
+    });
+  }
+
   useEffect(() => {
     async function loadLatestDraft() {
       setDraftHydrated(false);
       setAutosaveStatus("Loading draft...");
+      const localDraft = readLocalDraft();
       const { data: sessionData } = await supabase.auth.getSession();
+
       if (!sessionData.session) {
+        if (localDraft) {
+          hydrateDraft(localDraft, "Local draft loaded");
+        } else {
+          setAutosaveStatus("Sign in required");
+        }
         setDraftHydrated(true);
-        setAutosaveStatus("Sign in required");
         return;
       }
 
@@ -337,34 +416,27 @@ export default function CreateV2ClientPage() {
           headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
         });
         const result = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          setAutosaveStatus("Draft storage unavailable");
+
+        if (response.ok && result.draft) {
+          hydrateDraft(result.draft as DraftRow, "Draft loaded");
           setDraftHydrated(true);
           return;
         }
 
-        const draft = result.draft as DraftRow | null;
-        if (!draft) {
+        if (localDraft) {
+          hydrateDraft(localDraft, "Local draft loaded");
           setDraftHydrated(true);
-          setAutosaveStatus("Ready to autosave");
           return;
         }
 
-        const parsed = parseDraftBody(draft.body);
-        setDraftId(draft.id);
-        setDraftSavedAt(draft.updated_at);
-        setTitle(draft.title ?? "");
-        setTopic(draft.topic ?? "");
-        setRealityLens(draft.reality_lens ?? "");
-        setPurposeLane(draft.purpose_lane ?? "");
-        setPurpose(parsed.purpose);
-        setMode(parsed.mode);
-        setTags(parsed.tags);
-        setBody(parsed.body);
-        setAutosaveStatus("Draft loaded");
+        setAutosaveStatus(response.ok ? "Ready to autosave" : "Server draft unavailable. Local autosave ready.");
         setDraftHydrated(true);
       } catch {
-        setAutosaveStatus("Autosave unavailable");
+        if (localDraft) {
+          hydrateDraft(localDraft, "Local draft loaded");
+        } else {
+          setAutosaveStatus("Server draft unavailable. Local autosave ready.");
+        }
         setDraftHydrated(true);
       }
     }
@@ -432,15 +504,20 @@ export default function CreateV2ClientPage() {
   }
 
   async function saveDraft({ manual = true }: { manual?: boolean } = {}) {
+    const localDraft = saveLocalSnapshot();
+    setDraftSavedAt(localDraft.updated_at);
     setDraftLoading(true);
     if (manual) setMessage("");
     setAutosaveStatus(manual ? "Saving draft..." : "Autosaving...");
 
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
+
     if (!accessToken) {
-      window.location.href = "/login";
-      return false;
+      setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
+      if (manual) setMessage("Draft saved locally. Sign in is required for server sync.");
+      setDraftLoading(false);
+      return true;
     }
 
     try {
@@ -460,23 +537,38 @@ export default function CreateV2ClientPage() {
         }),
       });
       const result = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        setAutosaveStatus(manual ? "Draft not saved" : "Autosave failed");
-        if (manual) setMessage(result.error ?? "Unable to save draft.");
-        return false;
+        setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
+        if (manual) setMessage("Draft saved locally. Server draft storage is unavailable.");
+        return true;
       }
+
       const savedDraft = result.draft as { id: string; updated_at: string };
       setDraftId(savedDraft.id);
       setDraftSavedAt(savedDraft.updated_at);
+      writeLocalDraft({
+        id: savedDraft.id,
+        title,
+        topic,
+        reality_lens: realityLens,
+        purpose_lane: purposeLane,
+        body: buildDraftBody({ body, purpose, mode, tags }),
+        updated_at: savedDraft.updated_at,
+      });
       setAutosaveStatus(manual ? "Draft saved" : "Autosaved");
       if (manual) setMessage("Draft saved.");
+      return true;
+    } catch {
+      setAutosaveStatus(manual ? "Draft saved locally" : "Autosaved locally");
+      if (manual) setMessage("Draft saved locally. Server draft storage is unavailable.");
       return true;
     } finally {
       setDraftLoading(false);
     }
   }
 
-  function clearDraft() {
+  async function clearDraft() {
     setTitle("");
     setTopic("");
     setRealityLens("");
@@ -488,10 +580,28 @@ export default function CreateV2ClientPage() {
     setContextItems([]);
     setFindings([]);
     setAiMessage("");
-    setDraftId(null);
-    setDraftSavedAt(null);
     setMessage("Draft cleared locally.");
     setAutosaveStatus("Ready to autosave");
+    clearLocalDraft();
+
+    if (!draftId) {
+      setDraftId(null);
+      setDraftSavedAt(null);
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (accessToken) {
+      await fetch("/api/discussion-drafts", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ draftId }),
+      }).catch(() => null);
+    }
+
+    setDraftId(null);
+    setDraftSavedAt(null);
   }
 
   async function reviewDraft() {
@@ -499,8 +609,10 @@ export default function CreateV2ClientPage() {
       setMessage("Add a title or body before reviewing a draft.");
       return;
     }
-    const saved = await saveDraft({ manual: false });
-    if (saved) window.location.href = "/create/review";
+
+    saveLocalSnapshot();
+    await saveDraft({ manual: false });
+    window.location.href = "/create/review";
   }
 
   async function copyDraft() {
@@ -640,12 +752,13 @@ export default function CreateV2ClientPage() {
       }
     }
 
+    clearLocalDraft();
     if (draftId) {
       await fetch("/api/discussion-drafts", {
         method: "DELETE",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ draftId }),
-      });
+      }).catch(() => null);
     }
 
     window.location.href = `/discussions/${discussionId}`;
