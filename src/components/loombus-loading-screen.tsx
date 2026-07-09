@@ -3,7 +3,6 @@ type LoombusLoadingScreenProps = {
   title?: string;
   message?: string;
   waitLabel?: string;
-  fixed?: boolean;
 };
 
 export function LoombusLoadingScreen({
@@ -11,26 +10,40 @@ export function LoombusLoadingScreen({
   title = "Loading Loombus...",
   message = "Preparing your Loombus experience.",
   waitLabel = "Please wait",
-  fixed = false,
 }: LoombusLoadingScreenProps) {
   return (
-    <main className={`${fixed ? "fixed inset-0 z-[90]" : "min-h-screen"} flex items-center justify-center overflow-hidden bg-[#111113] px-6 py-12 text-white`}>
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(255,255,255,0.08),transparent_17rem),linear-gradient(180deg,#202023_0%,#111113_44%,#070707_100%)]" />
-      <section className="relative mx-auto flex w-full max-w-lg flex-col items-center text-center" role="status" aria-live="polite" aria-label={title}>
-        <div className="relative grid size-32 place-items-center rounded-full bg-black shadow-2xl shadow-black/60 ring-1 ring-white/10 sm:size-40">
-          <span className="absolute inset-4 rounded-full border border-white/10" aria-hidden="true" />
-          <span className="absolute inset-4 animate-spin rounded-full border-[4px] border-transparent border-b-[#facc15] border-r-[#facc15] shadow-[0_0_22px_rgba(250,204,21,0.28)]" aria-hidden="true" />
-          <img src="/assets/brand/loombus-mark-transparent.png" alt="" className="size-14 object-contain sm:size-20" />
+    <main className="flex min-h-screen items-center justify-center bg-black px-6 py-16 text-white">
+      <div className="mx-auto w-full max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950 p-8 text-center shadow-2xl shadow-black/30">
+        <div className="mx-auto mb-7 flex h-24 w-24 items-center justify-center rounded-full border border-zinc-800 bg-black shadow-2xl shadow-black/40">
+          <div className="relative flex h-16 w-16 items-center justify-center">
+            <div className="absolute inset-0 rounded-full border border-zinc-800" />
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-r-amber-300 border-t-amber-300" />
+            <img
+              src="/assets/brand/loombus-mark-transparent.png"
+              alt=""
+              className="h-9 w-9 object-contain"
+            />
+          </div>
         </div>
-        <p className="mt-8 text-xl font-medium uppercase tracking-[0.34em] text-zinc-400 sm:text-2xl">{eyebrow}</p>
-        <h1 className="mt-7 text-4xl font-black tracking-tight text-white sm:text-5xl">{title}</h1>
-        <p className="mt-6 max-w-md text-xl leading-relaxed text-zinc-400 sm:text-2xl">{message}</p>
-        <div className="mt-8 flex w-full max-w-sm items-center gap-4 text-lg font-medium uppercase tracking-[0.32em] text-zinc-400 sm:text-xl">
-          <span className="h-px flex-1 bg-white/10" />
-          <span>{waitLabel}</span>
-          <span className="h-px flex-1 bg-white/10" />
+
+        <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
+          {eyebrow}
+        </p>
+
+        <h1 className="mb-4 text-3xl font-semibold tracking-tight">
+          {title}
+        </h1>
+
+        <p className="leading-relaxed text-zinc-400">
+          {message}
+        </p>
+
+        <div className="mx-auto mt-7 flex max-w-xs items-center justify-center gap-2 text-xs uppercase tracking-[0.24em] text-zinc-600">
+          <span className="h-px flex-1 bg-zinc-900" />
+          {waitLabel}
+          <span className="h-px flex-1 bg-zinc-900" />
         </div>
-      </section>
+      </div>
     </main>
   );
 }

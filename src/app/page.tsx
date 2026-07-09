@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { V2PublicLanding } from "./v2-public-landing";
+import Home from "./home/page";
 
 export const metadata: Metadata = {
   title: "Loombus | Signal over noise",
@@ -11,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootPage() {
-  return <V2PublicLanding />;
+  return <Home />;
 }

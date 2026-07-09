@@ -1,17 +1,9 @@
 import "./globals.css";
-import "./v2-mobile-theme-fixes.css";
-import "./v2-public-landing-theme.css";
-import "./v2-public-signed-out-theme.css";
-import "./v2-public-final-contrast.css";
-import "./v2-public-landing-login-readability.css";
-import "./v2-public-landing-cta-contrast.css";
-import "./v2-settings-gold-accent.css";
-import "./loombus-loading-standard.css";
-import "./v2-global-gold-accent.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { AppRuntime } from "./app-runtime";
-import { getAppearanceBootstrapScript } from "@/lib/appearance-mode";
+import ClientLayout from "./client-layout";
+import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
+import { NativePushRegistration } from "@/components/native-push-registration";
 
 const siteUrl = "https://loombus.com";
 const siteTitle = "Loombus";
@@ -81,10 +73,23 @@ export default function RootLayout({
       <body className="bg-black text-white antialiased">
         <script
           dangerouslySetInnerHTML={{
-            __html: getAppearanceBootstrapScript(),
+            __html: `
+              (() => {
+                try {
+                  const stored = window.localStorage.getItem("loombus:appearance");
+                  const allowed = ["system", "dark", "light"];
+                  const mode = allowed.includes(stored || "") ? stored : "system";
+                  document.documentElement.dataset.loombusTheme = mode || "system";
+                } catch {
+                  document.documentElement.dataset.loombusTheme = "system";
+                }
+              })();
+            `,
           }}
         />
-        <AppRuntime>{children}</AppRuntime>
+        <ClientLayout>{children}</ClientLayout>
+        <NativeBiometricSessionGate />
+        <NativePushRegistration />
       </body>
     </html>
   );

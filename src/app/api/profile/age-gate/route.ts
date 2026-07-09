@@ -85,14 +85,14 @@ export async function POST(request: NextRequest) {
   }
 
   const { error: updateError } = await serviceSupabase
-    .from("profile_sensitive")
-    .upsert({
-      id: user.id,
+    .from("profiles")
+    .update({
       date_of_birth: dateOfBirth,
       age_band: flags.ageBand,
       teen_safety_mode: flags.teenSafetyMode,
       guardian_required: flags.guardianRequired,
-    });
+    })
+    .eq("id", user.id);
 
   if (updateError) {
     return jsonError(updateError.message || "Unable to save age safety settings.", 500);

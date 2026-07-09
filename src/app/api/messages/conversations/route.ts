@@ -127,29 +127,15 @@ async function getCurrentUserAndProfile(supabase: any) {
     return { user: null, profile: null, error: jsonError("Unauthorized.", 401) };
   }
 
-  const [{ data: baseProfile }, { data: sensitiveProfile }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("account_status, enforcement_reason, suspended_until")
-      .eq("id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("profile_sensitive")
-      .select("age_band, teen_safety_mode, guardian_required")
-      .eq("id", user.id)
-      .maybeSingle(),
-  ]);
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("account_status, enforcement_reason, suspended_until, age_band, teen_safety_mode, guardian_required")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  const profile: ProfileAccess = {
-    account_status: baseProfile?.account_status ?? null,
-    enforcement_reason: baseProfile?.enforcement_reason ?? null,
-    suspended_until: baseProfile?.suspended_until ?? null,
-    age_band: sensitiveProfile?.age_band ?? null,
-    teen_safety_mode: sensitiveProfile?.teen_safety_mode ?? null,
-    guardian_required: sensitiveProfile?.guardian_required ?? null,
-  };
-
-  const enforcement = getAccountEnforcementResult(profile);
+  const enforcement = getAccountEnforcementResult(
+    (profile ?? null) as ProfileAccess | null
+  );
 
   if (!enforcement.allowed) {
     return {
@@ -493,39 +479,15 @@ export async function POST(request: NextRequest) {
     return jsonError("You cannot message yourself.", 400);
   }
 
-  let serviceSupabaseForSafety;
+  const { data: targetProfile } = await supabase
+    .from("profiles")
+    .select("id, account_status, enforcement_reason, suspended_until, age_band, teen_safety_mode, guardian_required")
+    .eq("id", targetUserId)
+    .maybeSingle();
 
-  try {
-    serviceSupabaseForSafety = getSupabaseServiceRole();
-  } catch {
-    return jsonError("Server configuration error.", 500);
-  }
-
-  const [{ data: targetBase }, { data: targetSensitive }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, account_status, enforcement_reason, suspended_until")
-      .eq("id", targetUserId)
-      .maybeSingle(),
-    serviceSupabaseForSafety
-      .from("profile_sensitive")
-      .select("age_band, teen_safety_mode, guardian_required")
-      .eq("id", targetUserId)
-      .maybeSingle(),
-  ]);
-
-  if (!targetBase) {
+  if (!targetProfile) {
     return jsonError("Member not found.", 404);
   }
-
-  const targetProfile: ProfileAccess = {
-    account_status: targetBase.account_status ?? null,
-    enforcement_reason: targetBase.enforcement_reason ?? null,
-    suspended_until: targetBase.suspended_until ?? null,
-    age_band: targetSensitive?.age_band ?? null,
-    teen_safety_mode: targetSensitive?.teen_safety_mode ?? null,
-    guardian_required: targetSensitive?.guardian_required ?? null,
-  };
 
   const targetEnforcement = getAccountEnforcementResult(
     targetProfile as ProfileAccess

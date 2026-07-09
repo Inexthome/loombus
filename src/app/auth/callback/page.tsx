@@ -7,43 +7,9 @@ import { supabase } from "@/lib/supabase/client";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { isIosNativeApp } from "@/lib/native-app";
 
-const PENDING_ROOM_INVITE_KEY = "loombus:pending-room-invite";
-const PENDING_ROOM_PLAN_KEY = "loombus:pending-room-plan";
-const PENDING_SUBSCRIPTION_INTENT_KEY = "loombus:pending-subscription-intent";
-
-function isSafeRoomInvitePath(path: string) {
-  return path.startsWith("/rooms/") && path.includes("/invite?invite=") && !path.startsWith("//");
-}
-
-function isSafeRoomPlanPath(path: string) {
-  return path.startsWith("/rooms/new?") && path.includes("plan=") && !path.startsWith("//");
-}
-
-function isSafeSubscriptionIntentPath(path: string) {
-  return path.startsWith("/premium/checkout/") && !path.startsWith("//");
-}
-
-function getPendingRoomInvite() {
-  if (typeof window === "undefined") return "";
-  const pendingInvite = window.localStorage.getItem(PENDING_ROOM_INVITE_KEY) ?? "";
-  return isSafeRoomInvitePath(pendingInvite) ? pendingInvite : "";
-}
-
-function getPendingRoomPlan() {
-  if (typeof window === "undefined") return "";
-  const pendingPlan = window.localStorage.getItem(PENDING_ROOM_PLAN_KEY) ?? "";
-  return isSafeRoomPlanPath(pendingPlan) ? pendingPlan : "";
-}
-
-function getPendingSubscriptionIntent() {
-  if (typeof window === "undefined") return "";
-  const pendingIntent = window.localStorage.getItem(PENDING_SUBSCRIPTION_INTENT_KEY) ?? "";
-  return isSafeSubscriptionIntentPath(pendingIntent) ? pendingIntent : "";
-}
-
 function getSafeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return getPendingRoomInvite() || getPendingRoomPlan() || getPendingSubscriptionIntent() || "/discussions";
+    return "/discussions";
   }
 
   return value;
@@ -89,7 +55,7 @@ async function getPostAuthRedirect(next: string, sessionOverride: Session | null
   }
 
   const { data: profile } = await supabase
-    .from("profile_sensitive")
+    .from("profiles")
     .select("age_band")
     .eq("id", session.user.id)
     .maybeSingle();

@@ -14,7 +14,6 @@ type StickyItem = {
   updated_at: string;
 };
 
-// Deployment marker for the active Stickies controls refresh.
 function jsonError(message: string, status = 400, extras: Record<string, unknown> = {}) {
   return NextResponse.json({ error: message, ...extras }, { status });
 }
@@ -237,80 +236,49 @@ export async function PATCH(request: NextRequest) {
       )
     : [];
 
-  if (orderedIds.length > 0) {
-    const { data: existingItems, error: existingError } = await context.supabase
-      .from("sticky_items")
-      .select("id")
-      .eq("user_id", context.user.id)
-      .eq("item_type", "discussion");
-
-    if (existingError) {
-      return jsonError(existingError.message, 500);
-    }
-
-    const ownedIds = new Set((existingItems ?? []).map((item: { id: string }) => item.id));
-    const hasUnknownId = orderedIds.some((id) => !ownedIds.has(id));
-
-    if (hasUnknownId) {
-      return jsonError("One or more stickies could not be reordered.", 403);
-    }
-
-    const updates = orderedIds.map((id, index) =>
-      context.supabase
-        .from("sticky_items")
-        .update({
-          position: index,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .eq("user_id", context.user.id)
-        .eq("item_type", "discussion")
-    );
-
-    const results = await Promise.all(updates);
-    const failed = results.find((result) => result.error);
-
-    if (failed?.error) {
-      return jsonError(failed.error.message, 500);
-    }
-
-    return NextResponse.json({ ok: true });
+  if (orderedIds.length === 0) {
+    return jsonError("Missing sticky order.");
   }
 
-  const stickyId = typeof body.stickyId === "string" ? body.stickyId.trim() : "";
-  const title = typeof body.title === "string" ? body.title.trim() : "";
-  const subtitle = typeof body.subtitle === "string" ? body.subtitle.trim() : "";
-
-  if (!stickyId) {
-    return jsonError("Missing sticky ID.");
-  }
-
-  if (!title) {
-    return jsonError("Sticky title is required.");
-  }
-
-  const { data: sticky, error } = await context.supabase
+  const { data: existingItems, error: existingError } = await context.supabase
     .from("sticky_items")
-    .update({
-      title,
-      subtitle: subtitle || null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", stickyId)
+    .select("id")
     .eq("user_id", context.user.id)
-    .eq("item_type", "discussion")
-    .select("id, user_id, item_type, source_key, title, subtitle, href, position, created_at, updated_at")
-    .maybeSingle();
+    .eq("item_type", "discussion");
 
-  if (error) {
-    return jsonError(error.message, 500);
+  if (existingError) {
+    return jsonError(existingError.message, 500);
   }
 
-  if (!sticky) {
-    return jsonError("Sticky not found.", 404);
+  const ownedIds = new Set((existingItems ?? []).map((item: { id: string }) => item.id));
+  const hasUnknownId = orderedIds.some((id) => !ownedIds.has(id));
+
+  if (hasUnknownId) {
+    return jsonError("One or more stickies could not be reordered.", 403);
   }
 
-  return NextResponse.json({ sticky });
+  const updates = orderedIds.map((id, index) =>
+    context.supabase
+      .from("sticky_items")
+      .update({
+        position: index,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("user_id", context.user.id)
+      .eq("item_type", "discussion")
+  );
+
+  const results = await Promise.all(updates);
+  const failed = results.find((result) => result.error);
+
+  if (failed?.error) {
+    return jsonError(failed.error.message, 500);
+  }
+
+  return NextResponse.json({
+    ok: true,
+  });
 }
 
 export async function DELETE(request: NextRequest) {

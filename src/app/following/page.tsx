@@ -213,7 +213,7 @@ export default function FollowingPage() {
       if (uniqueUserIds.length > 0) {
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("id, full_name, username, avatar_url")
+          .select("*")
           .in("id", uniqueUserIds);
 
         for (const profile of profileData ?? []) {
