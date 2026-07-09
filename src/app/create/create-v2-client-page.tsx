@@ -1,6 +1,6 @@
 "use client";
 
-import { type ChangeEvent, type FormEvent, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   Brain,
@@ -65,8 +65,19 @@ type ContextItem = {
   kind: ContextKind;
 };
 
+type DraftRow = {
+  id: string;
+  title: string | null;
+  topic: string | null;
+  reality_lens: string | null;
+  purpose_lane: string | null;
+  body: string | null;
+  updated_at: string | null;
+};
+
 const LOOMBUS_GOLD = "#d6a84f";
 const ATTACHMENT_BUCKET = "discussion-attachments";
+const AUTOSAVE_DELAY_MS = 1400;
 
 const MODE_OPTIONS: ModeOption[] = [
   {
@@ -98,6 +109,10 @@ const MODE_OPTIONS: ModeOption[] = [
     Icon: Puzzle,
   },
 ];
+
+function isDiscussionMode(value: string | null | undefined): value is DiscussionMode {
+  return MODE_OPTIONS.some((option) => option.key === value);
+}
 
 function getSelectableTopics() {
   return DISCUSSION_TOPICS.filter((topic) => topic.trim().toLowerCase() !== "other");
@@ -137,6 +152,52 @@ function getSafeFileName(fileName: string) {
       .replace(/-+/g, "-")
       .slice(0, 120) || "attachment"
   );
+}
+
+function buildDraftBody({
+  body,
+  purpose,
+  mode,
+  tags,
+}: {
+  body: string;
+  purpose: string;
+  mode: DiscussionMode;
+  tags: string;
+}) {
+  const metadataLines = [
+    purpose.trim() ? `Purpose: ${purpose.trim()}` : "",
+    mode ? `Mode: ${mode}` : "",
+    tags.trim() ? `Tags: ${tags.trim()}` : "",
+  ].filter(Boolean);
+
+  return metadataLines.length > 0 ? `${metadataLines.join("\n")}\n\n${body}` : body;
+}
+
+function parseDraftBody(value: string | null | undefined) {
+  const raw = value ?? "";
+  const parts = raw.split(/\n\n/);
+  const firstBlock = parts[0] ?? "";
+  const rest = parts.slice(1).join("\n\n");
+  const metadataLines = firstBlock.split("\n").filter((line) => line.trim().length > 0);
+  const hasMetadata = metadataLines.length > 0 && metadataLines.every((line) => /^(Purpose|Mode|Tags):\s*/.test(line));
+
+  if (!hasMetadata) {
+    return { body: raw, purpose: "", mode: "open_discussion" as DiscussionMode, tags: "" };
+  }
+
+  const metadata: Record<string, string> = {};
+  for (const line of metadataLines) {
+    const [key, ...valueParts] = line.split(":");
+    metadata[key.trim()] = valueParts.join(":").trim();
+  }
+
+  return {
+    body: rest,
+    purpose: metadata.Purpose ?? "",
+    mode: isDiscussionMode(metadata.Mode) ? metadata.Mode : ("open_discussion" as DiscussionMode),
+    tags: metadata.Tags ?? "",
+  };
 }
 
 function buildQualityFindings({
@@ -224,7 +285,8 @@ export default function CreateV2ClientPage() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const [draftLoading, setDraftLoading] = useState(false);
-  const [autosaveStatus, setAutosaveStatus] = useState("Autosave ready");
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [autosaveStatus, setAutosaveStatus] = useState("Loading draft...");
   const [publishing, setPublishing] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerPanel, setPickerPanel] = useState<PickerPanel>("topics");
@@ -239,6 +301,14 @@ export default function CreateV2ClientPage() {
   const selectedMode = MODE_OPTIONS.find((option) => option.key === mode) ?? MODE_OPTIONS[0];
   const tagCount = getTagCount(tags);
   const options = pickerPanel === "topics" ? getSelectableTopics() : pickerPanel === "reality" ? REALITY_LENSES : PURPOSE_LANES;
+  const draftFingerprint = useMemo(
+    () => JSON.stringify({ title, topic, realityLens, purposeLane, purpose, body, tags, mode }),
+    [body, mode, purpose, purposeLane, realityLens, tags, title, topic]
+  );
+  const hasDraftContent = useMemo(
+    () => Boolean(title.trim() || topic.trim() || realityLens.trim() || purposeLane.trim() || purpose.trim() || body.trim() || tags.trim() || mode !== "open_discussion"),
+    [body, mode, purpose, purposeLane, realityLens, tags, title, topic]
+  );
   const readiness = useMemo(() => {
     const checks = [
       { label: "Choose a clear title", done: title.trim().length >= 8 },
@@ -251,6 +321,66 @@ export default function CreateV2ClientPage() {
     return { checks, completed, total: checks.length, percent: Math.round((completed / checks.length) * 100) };
   }, [body, mode, purpose, purposeLane, title, topic]);
 
+  useEffect(() => {
+    async function loadLatestDraft() {
+      setDraftHydrated(false);
+      setAutosaveStatus("Loading draft...");
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        setDraftHydrated(true);
+        setAutosaveStatus("Sign in required");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/discussion-drafts", {
+          headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          setAutosaveStatus("Draft storage unavailable");
+          setDraftHydrated(true);
+          return;
+        }
+
+        const draft = result.draft as DraftRow | null;
+        if (!draft) {
+          setDraftHydrated(true);
+          setAutosaveStatus("Ready to autosave");
+          return;
+        }
+
+        const parsed = parseDraftBody(draft.body);
+        setDraftId(draft.id);
+        setDraftSavedAt(draft.updated_at);
+        setTitle(draft.title ?? "");
+        setTopic(draft.topic ?? "");
+        setRealityLens(draft.reality_lens ?? "");
+        setPurposeLane(draft.purpose_lane ?? "");
+        setPurpose(parsed.purpose);
+        setMode(parsed.mode);
+        setTags(parsed.tags);
+        setBody(parsed.body);
+        setAutosaveStatus("Draft loaded");
+        setDraftHydrated(true);
+      } catch {
+        setAutosaveStatus("Autosave unavailable");
+        setDraftHydrated(true);
+      }
+    }
+
+    void loadLatestDraft();
+  }, []);
+
+  useEffect(() => {
+    if (!draftHydrated || !hasDraftContent || publishing) return;
+    setAutosaveStatus("Autosave pending...");
+    const timer = window.setTimeout(() => {
+      void saveDraft({ manual: false });
+    }, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [draftFingerprint, draftHydrated, hasDraftContent, publishing]);
+
   function runQualityCheck() {
     const nextFindings = buildQualityFindings({ title, topic, purpose, body });
     setFindings(nextFindings);
@@ -261,21 +391,6 @@ export default function CreateV2ClientPage() {
     const suggestion = buildClaritySuggestion({ title, topic, purpose, body });
     setFindings(buildQualityFindings({ title, topic, purpose, body: suggestion }));
     setAiMessage(`Clarity suggestion:\n\n${suggestion}`);
-  }
-
-  function selectPickerOption(value: string) {
-    if (pickerPanel === "topics") {
-      setTopic(value);
-      setPickerOpen(false);
-      return;
-    }
-    if (pickerPanel === "reality") {
-      setRealityLens(value);
-      setPickerPanel("purpose");
-      return;
-    }
-    setPurposeLane(value);
-    setPickerOpen(false);
   }
 
   function addSupportingContext(event: ChangeEvent<HTMLInputElement>, kind: ContextKind) {
@@ -316,16 +431,16 @@ export default function CreateV2ClientPage() {
     event.target.value = "";
   }
 
-  async function saveDraft() {
+  async function saveDraft({ manual = true }: { manual?: boolean } = {}) {
     setDraftLoading(true);
-    setAutosaveStatus("Saving draft...");
-    setMessage("");
+    if (manual) setMessage("");
+    setAutosaveStatus(manual ? "Saving draft..." : "Autosaving...");
 
     const { data: sessionData } = await supabase.auth.getSession();
     const accessToken = sessionData.session?.access_token;
     if (!accessToken) {
       window.location.href = "/login";
-      return;
+      return false;
     }
 
     try {
@@ -341,20 +456,21 @@ export default function CreateV2ClientPage() {
           topic,
           realityLens,
           purposeLane,
-          body: purpose.trim() ? `Purpose: ${purpose.trim()}\n\n${body}` : body,
+          body: buildDraftBody({ body, purpose, mode, tags }),
         }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setAutosaveStatus("Draft not saved");
-        setMessage(result.error ?? "Unable to save draft.");
-        return;
+        setAutosaveStatus(manual ? "Draft not saved" : "Autosave failed");
+        if (manual) setMessage(result.error ?? "Unable to save draft.");
+        return false;
       }
       const savedDraft = result.draft as { id: string; updated_at: string };
       setDraftId(savedDraft.id);
       setDraftSavedAt(savedDraft.updated_at);
-      setAutosaveStatus("Autosaved");
-      setMessage("Draft saved.");
+      setAutosaveStatus(manual ? "Draft saved" : "Autosaved");
+      if (manual) setMessage("Draft saved.");
+      return true;
     } finally {
       setDraftLoading(false);
     }
@@ -372,17 +488,32 @@ export default function CreateV2ClientPage() {
     setContextItems([]);
     setFindings([]);
     setAiMessage("");
+    setDraftId(null);
+    setDraftSavedAt(null);
     setMessage("Draft cleared locally.");
+    setAutosaveStatus("Ready to autosave");
+  }
+
+  async function reviewDraft() {
+    if (!hasDraftContent) {
+      setMessage("Add a title or body before reviewing a draft.");
+      return;
+    }
+    const saved = await saveDraft({ manual: false });
+    if (saved) window.location.href = "/create/review";
   }
 
   async function copyDraft() {
     const draftText = [
       title.trim() ? `Title: ${title.trim()}` : "Title: Untitled discussion",
       topic.trim() ? `Topic: ${topic.trim()}` : "Topic: Not selected",
-      purpose.trim() ? `Purpose: ${purpose.trim()}` : "",
+      realityLens.trim() ? `Reality Lens: ${realityLens.trim()}` : null,
+      purposeLane.trim() ? `Purpose Lane: ${purposeLane.trim()}` : null,
+      `Mode: ${selectedMode.label}`,
+      purpose.trim() ? `Purpose: ${purpose.trim()}` : null,
+      tags.trim() ? `Tags: ${tags.trim()}` : null,
       "",
       body.trim(),
-      tags.trim() ? `\nTags: ${tags.trim()}` : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -581,10 +712,10 @@ export default function CreateV2ClientPage() {
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-6"><p className="text-sm font-black text-[var(--loombus-text)]">Attach supporting context <span className="font-medium text-[var(--loombus-text-muted)]">(optional)</span></p><p className="mt-1 text-xs font-medium text-[var(--loombus-text-muted)]">Attach files or video context to support the draft setup.</p><input ref={fileInputRef} type="file" multiple accept={DISCUSSION_ATTACHMENT_ACCEPT} className="hidden" onChange={(event) => addSupportingContext(event, "file")} /><input ref={videoInputRef} type="file" multiple accept="video/*" className="hidden" onChange={(event) => addSupportingContext(event, "video")} /><div className="mt-4 grid gap-3 sm:grid-cols-2"><button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-left transition hover:border-amber-300 hover:bg-amber-50/50"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-700"><Paperclip className="size-5" /></span><div><p className="text-sm font-black text-[var(--loombus-text)]">Attach Files</p><p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">Images, PDFs, text, or documents.</p></div></div></button><button type="button" onClick={() => videoInputRef.current?.click()} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-left transition hover:border-amber-300 hover:bg-amber-50/50"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-700"><Mic className="size-5" /></span><div><p className="text-sm font-black text-[var(--loombus-text)]">Video Context</p><p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">Select a video file to stage with the draft.</p></div></div></button></div>{contextItems.length > 0 && <div className="mt-4 space-y-2">{contextItems.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-sm"><div className="min-w-0"><p className="truncate font-black text-[var(--loombus-text)]">{item.file.name}</p><p className="text-xs font-semibold text-[var(--loombus-text-subtle)]">{item.kind === "video" || isVideoContextMimeType(item.file.type) ? "Video" : "File"} · {formatFileSize(item.file.size)}</p></div><button type="button" onClick={() => setContextItems((items) => items.filter((candidate) => candidate.id !== item.id))} className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--loombus-text-muted)] transition hover:bg-red-50 hover:text-red-600" aria-label={`Remove ${item.file.name}`}><X className="size-4" /></button></div>)}</div>}{(attachmentMessage || message) && <p className="mt-4 text-sm font-semibold text-[var(--loombus-text-muted)]">{attachmentMessage || message}</p>}<div className="mt-5 flex flex-col gap-3 border-t border-[var(--loombus-border)] pt-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex flex-wrap gap-3"><button type="button" onClick={saveDraft} disabled={draftLoading} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-2 text-sm font-bold text-amber-800 shadow-sm"><Save className="size-4" />{draftLoading ? "Saving..." : "Save Draft"}</button><button type="button" onClick={clearDraft} disabled={draftLoading || publishing} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-2 text-sm font-bold text-[var(--loombus-text-muted)] shadow-sm"><Trash2 className="size-4" />Clear</button></div><div className="flex flex-wrap gap-3"><button type="button" onClick={runQualityCheck} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-2 text-sm font-bold text-[var(--loombus-text)] shadow-sm"><Send className="size-4" />Review draft</button><button type="submit" disabled={publishing} className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-2 text-sm font-black text-slate-950 shadow-sm disabled:opacity-60" style={{ backgroundColor: LOOMBUS_GOLD }}><Send className="size-4" />{publishing ? "Publishing..." : "Publish"}</button></div></div></section>
+            <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-6"><p className="text-sm font-black text-[var(--loombus-text)]">Attach supporting context <span className="font-medium text-[var(--loombus-text-muted)]">(optional)</span></p><p className="mt-1 text-xs font-medium text-[var(--loombus-text-muted)]">Attach files or video context to support the draft setup.</p><input ref={fileInputRef} type="file" multiple accept={DISCUSSION_ATTACHMENT_ACCEPT} className="hidden" onChange={(event) => addSupportingContext(event, "file")} /><input ref={videoInputRef} type="file" multiple accept="video/*" className="hidden" onChange={(event) => addSupportingContext(event, "video")} /><div className="mt-4 grid gap-3 sm:grid-cols-2"><button type="button" onClick={() => fileInputRef.current?.click()} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-left transition hover:border-amber-300 hover:bg-amber-50/50"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-700"><Paperclip className="size-5" /></span><div><p className="text-sm font-black text-[var(--loombus-text)]">Attach Files</p><p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">Images, PDFs, text, or documents.</p></div></div></button><button type="button" onClick={() => videoInputRef.current?.click()} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-left transition hover:border-amber-300 hover:bg-amber-50/50"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-2xl bg-amber-50 text-amber-700"><Mic className="size-5" /></span><div><p className="text-sm font-black text-[var(--loombus-text)]">Video Context</p><p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">Select a video file to stage with the draft.</p></div></div></button></div>{contextItems.length > 0 && <div className="mt-4 space-y-2">{contextItems.map((item) => <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-sm"><div className="min-w-0"><p className="truncate font-black text-[var(--loombus-text)]">{item.file.name}</p><p className="text-xs font-semibold text-[var(--loombus-text-subtle)]">{item.kind === "video" || isVideoContextMimeType(item.file.type) ? "Video" : "File"} · {formatFileSize(item.file.size)}</p></div><button type="button" onClick={() => setContextItems((items) => items.filter((candidate) => candidate.id !== item.id))} className="grid size-8 shrink-0 place-items-center rounded-full text-[var(--loombus-text-muted)] transition hover:bg-red-50 hover:text-red-600" aria-label={`Remove ${item.file.name}`}><X className="size-4" /></button></div>)}</div>}{(attachmentMessage || message) && <p className="mt-4 text-sm font-semibold text-[var(--loombus-text-muted)]">{attachmentMessage || message}</p>}<div className="mt-5 flex flex-col gap-3 border-t border-[var(--loombus-border)] pt-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex flex-wrap gap-3"><button type="button" onClick={() => saveDraft({ manual: true })} disabled={draftLoading} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-2 text-sm font-bold text-amber-800 shadow-sm"><Save className="size-4" />{draftLoading ? "Saving..." : "Save Draft"}</button><button type="button" onClick={clearDraft} disabled={draftLoading || publishing} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-2 text-sm font-bold text-[var(--loombus-text-muted)] shadow-sm"><Trash2 className="size-4" />Clear</button></div><div className="flex flex-wrap gap-3"><button type="button" onClick={reviewDraft} disabled={draftLoading || publishing} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-2 text-sm font-bold text-[var(--loombus-text)] shadow-sm"><Send className="size-4" />Review draft</button><button type="submit" disabled={publishing} className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-2 text-sm font-black text-slate-950 shadow-sm disabled:opacity-60" style={{ backgroundColor: LOOMBUS_GOLD }}><Send className="size-4" />{publishing ? "Publishing..." : "Publish"}</button></div></div></section>
           </div>
 
-          <aside className="space-y-4"><section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm"><h2 className="text-lg font-black text-[var(--loombus-text)]">Create with clarity</h2><p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">A great discussion starts with a clear setup.</p><div className="mt-5 space-y-5">{readiness.checks.map((check, index) => <div key={check.label} className="flex gap-3"><span className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${check.done ? "text-slate-950" : "bg-amber-50 text-amber-800"}`} style={check.done ? { backgroundColor: LOOMBUS_GOLD } : undefined}>{index + 1}</span><div><p className="text-sm font-black text-[var(--loombus-text)]">{check.label}</p><p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">{check.done ? "Ready" : "Needs attention before review"}</p></div></div>)}</div><div className="mt-5 h-2 overflow-hidden rounded-full bg-[var(--loombus-surface-muted)]"><div className="h-full rounded-full" style={{ width: `${readiness.percent}%`, backgroundColor: LOOMBUS_GOLD }} /></div><p className="mt-3 text-xs font-semibold text-[var(--loombus-text-muted)]">{readiness.completed} of {readiness.total} checks complete.</p></section><section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm"><div className="flex items-center gap-3"><Save className="size-5 text-amber-700" /><h2 className="font-black text-[var(--loombus-text)]">Private draft</h2></div><p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">{autosaveStatus}</p><p className="mt-2 text-xs font-semibold text-[var(--loombus-text-subtle)]">Last saved: {formatDraftTime(draftSavedAt)}</p></section><section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm"><ShieldCheck className="mb-4 size-5 text-amber-700" /><div className="flex flex-col gap-3"><button type="button" onClick={copyDraft} className="rounded-2xl border border-[var(--loombus-border)] px-4 py-2 text-sm font-black text-amber-800 transition hover:border-amber-300 hover:bg-amber-50">Copy draft</button><button type="button" onClick={runQualityCheck} className="rounded-2xl border border-[var(--loombus-border)] px-4 py-2 text-sm font-black text-[var(--loombus-text)] transition hover:border-amber-300 hover:bg-amber-50">Review draft</button><button type="submit" disabled={publishing} className="rounded-2xl px-4 py-2 text-center text-sm font-black text-slate-950 disabled:opacity-60" style={{ backgroundColor: LOOMBUS_GOLD }}>{publishing ? "Publishing..." : "Publish"}</button></div>{copyMessage && <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">{copyMessage}</p>}</section><section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm"><div className="flex items-center gap-3"><FileText className="size-5 text-amber-700" /><h2 className="font-black text-[var(--loombus-text)]">Selected framing</h2></div><p className="mt-3 text-sm font-bold text-[var(--loombus-text)]">{selectedMode.label}</p><p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">{selectedMode.description}</p><div className="mt-4 space-y-2 text-xs font-semibold text-[var(--loombus-text-muted)]"><p>Topic: {topic || "Not selected"}</p><p>Reality Lens: {realityLens || "Not selected"}</p><p>Purpose Lane: {purposeLane || "Not selected"}</p><p>Supporting context: {contextItems.length > 0 ? `${contextItems.length} staged` : "None staged"}</p></div></section></aside>
+          <aside className="space-y-4"><section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm"><h2 className="text-lg font-black text-[var(--loombus-text)]">Create with clarity</h2><p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">A great discussion starts with a clear setup.</p><div className="mt-5 space-y-5">{readiness.checks.map((check, index) => <div key={check.label} className="flex gap-3"><span className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${check.done ? "text-slate-950" : "bg-amber-50 text-amber-800"}`} style={check.done ? { backgroundColor: LOOMBUS_GOLD } : undefined}>{index + 1}</span><div><p className="text-sm font-black text-[var(--loombus-text)]">{check.label}</p><p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">{check.done ? "Ready" : "Needs attention before review"}</p></div></div>)}</div><div className="mt-5 h-2 overflow-hidden rounded-full bg-[var(--loombus-surface-muted)]"><div className="h-full rounded-full" style={{ width: `${readiness.percent}%`, backgroundColor: LOOMBUS_GOLD }} /></div><p className="mt-3 text-xs font-semibold text-[var(--loombus-text-muted)]">{readiness.completed} of {readiness.total} checks complete.</p></section><section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm"><div className="flex items-center gap-3"><Save className="size-5 text-amber-700" /><h2 className="font-black text-[var(--loombus-text)]">Private draft</h2></div><p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">{autosaveStatus}</p><p className="mt-2 text-xs font-semibold text-[var(--loombus-text-subtle)]">Last saved: {formatDraftTime(draftSavedAt)}</p></section><section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm"><ShieldCheck className="mb-4 size-5 text-amber-700" /><div className="flex flex-col gap-3"><button type="button" onClick={copyDraft} className="rounded-2xl border border-[var(--loombus-border)] px-4 py-2 text-sm font-black text-amber-800 transition hover:border-amber-300 hover:bg-amber-50">Copy draft</button><button type="button" onClick={reviewDraft} disabled={draftLoading || publishing} className="rounded-2xl border border-[var(--loombus-border)] px-4 py-2 text-sm font-black text-[var(--loombus-text)] transition hover:border-amber-300 hover:bg-amber-50 disabled:opacity-60">Review draft</button><button type="submit" disabled={publishing} className="rounded-2xl px-4 py-2 text-center text-sm font-black text-slate-950 disabled:opacity-60" style={{ backgroundColor: LOOMBUS_GOLD }}>{publishing ? "Publishing..." : "Publish"}</button></div>{copyMessage && <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">{copyMessage}</p>}</section><section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm"><div className="flex items-center gap-3"><FileText className="size-5 text-amber-700" /><h2 className="font-black text-[var(--loombus-text)]">Selected framing</h2></div><p className="mt-3 text-sm font-bold text-[var(--loombus-text)]">{selectedMode.label}</p><p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">{selectedMode.description}</p><div className="mt-4 space-y-2 text-xs font-semibold text-[var(--loombus-text-muted)]"><p>Topic: {topic || "Not selected"}</p><p>Reality Lens: {realityLens || "Not selected"}</p><p>Purpose Lane: {purposeLane || "Not selected"}</p><p>Supporting context: {contextItems.length > 0 ? `${contextItems.length} staged` : "None staged"}</p></div></section></aside>
         </form>
       </section>
     </main>
