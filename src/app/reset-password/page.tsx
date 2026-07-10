@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { supabase } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
   const [checkingSession, setCheckingSession] = useState(true);
@@ -22,7 +22,7 @@ export default function ResetPasswordPage() {
       setCheckingSession(false);
     }
 
-    checkSession();
+    void checkSession();
   }, []);
 
   async function handleResetPassword(event: React.FormEvent<HTMLFormElement>) {
@@ -60,7 +60,7 @@ export default function ResetPasswordPage() {
     setPassword("");
     setConfirmPassword("");
     setSuccess(true);
-    setMessage("Password updated. You can now continue to Loombus.");
+    setMessage("Password updated. You can now return to Loombus and sign in.");
     setSaving(false);
   }
 
@@ -75,47 +75,45 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--loombus-bg)] px-6 py-16 text-[var(--loombus-text)]">
+    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16">
       <div className="mx-auto max-w-xl">
         <Link
-          href="/"
-          className="mb-10 inline-block text-sm text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]"
+          href="/login"
+          className="mb-10 inline-block text-sm text-zinc-500 transition hover:text-white sm:mb-12"
         >
-          ← Back to home
+          ← Back to login
         </Link>
 
-        <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-7 shadow-2xl shadow-black/10">
-          <p className="mb-3 text-sm uppercase tracking-[0.3em] text-[var(--loombus-text-muted)]">
+        <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-7">
+          <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
             Loombus password reset
           </p>
 
-          <h1 className="mb-4 text-3xl font-semibold tracking-tight">
+          <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-4xl">
             Set a new password.
           </h1>
 
           {!hasSession ? (
-            <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-5">
-              <p className="text-sm leading-relaxed text-[var(--loombus-text-muted)]">
-                This reset link is missing or expired. Return to Loombus and request a new password reset email.
+            <div className="rounded-2xl border border-zinc-800 bg-black p-5">
+              <p className="text-sm leading-relaxed text-zinc-400">
+                This reset link is missing or expired. Request a new password reset email and use the newest link.
               </p>
 
               <Link
-                href="/"
-                className="mt-5 inline-flex rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-semibold text-[var(--loombus-primary-text)] transition hover:opacity-90"
+                href="/forgot-password"
+                className="mt-5 inline-flex rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
               >
                 Request a new reset link
               </Link>
             </div>
           ) : (
             <form onSubmit={handleResetPassword} className="space-y-5">
-              <p className="leading-relaxed text-[var(--loombus-text-muted)]">
+              <p className="leading-relaxed text-zinc-400">
                 Enter a new password for your Loombus account.
               </p>
 
               <div>
-                <label className="mb-2 block text-sm text-[var(--loombus-text-muted)]">
-                  New password
-                </label>
+                <label className="mb-2 block text-sm text-zinc-400">New password</label>
                 <input
                   type="password"
                   value={password}
@@ -123,12 +121,12 @@ export default function ResetPasswordPage() {
                   required
                   minLength={6}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-[var(--loombus-text)] outline-none focus:border-[var(--loombus-text-muted)]"
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm text-[var(--loombus-text-muted)]">
+                <label className="mb-2 block text-sm text-zinc-400">
                   Confirm new password
                 </label>
                 <input
@@ -138,20 +136,20 @@ export default function ResetPasswordPage() {
                   required
                   minLength={6}
                   onChange={(event) => setConfirmPassword(event.target.value)}
-                  className="w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-4 py-3 text-[var(--loombus-text)] outline-none focus:border-[var(--loombus-text-muted)]"
+                  className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={saving || success}
-                className="w-full rounded-full bg-[var(--loombus-primary-bg)] px-6 py-3 text-sm font-semibold text-[var(--loombus-primary-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? "Updating password..." : success ? "Password updated" : "Update password"}
               </button>
 
               {message ? (
-                <p className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-sm leading-relaxed text-[var(--loombus-text-muted)]">
+                <p className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm leading-relaxed text-zinc-400">
                   {message}
                 </p>
               ) : null}
@@ -159,7 +157,7 @@ export default function ResetPasswordPage() {
               {success ? (
                 <Link
                   href="/login"
-                  className="block w-full rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-6 py-3 text-center text-sm font-semibold text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-muted)]"
+                  className="block w-full rounded-full border border-zinc-800 px-6 py-3 text-center text-sm font-semibold text-zinc-300 transition hover:border-zinc-600 hover:text-white"
                 >
                   Return to login
                 </Link>
