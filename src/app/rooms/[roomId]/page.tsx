@@ -4,24 +4,28 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 const modules = [
-  "Overview",
-  "Discussions",
-  "Calendar",
-  "Announcements",
-  "Requests",
-  "Resources",
-  "Services / Store",
-  "Members / Roles",
-  "Tasks",
-  "Polls / Decisions",
-  "FAQ",
-  "Files",
-  "Settings",
+  { label: "Overview", slug: "overview" },
+  { label: "Discussions", slug: "discussions" },
+  { label: "Calendar", slug: "calendar" },
+  { label: "Announcements", slug: "announcements" },
+  { label: "Requests", slug: "requests" },
+  { label: "Resources", slug: "resources" },
+  { label: "Services / Store", slug: "services" },
+  { label: "Members / Roles", slug: "members" },
+  { label: "Tasks", slug: "tasks" },
+  { label: "Polls / Decisions", slug: "polls" },
+  { label: "FAQ", slug: "faq" },
+  { label: "Files", slug: "files" },
+  { label: "Documents", slug: "documents" },
+  { label: "Forms", slug: "forms" },
+  { label: "Directory", slug: "directory" },
+  { label: "Settings", slug: "settings" },
 ];
 
 export default function RoomHubPage() {
   const params = useParams();
   const roomId = Array.isArray(params?.roomId) ? params.roomId[0] : params?.roomId ?? "";
+  const encodedRoomId = encodeURIComponent(roomId);
 
   return (
     <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-24 pt-6 text-[var(--loombus-text)] sm:px-6 lg:px-8">
@@ -47,15 +51,16 @@ export default function RoomHubPage() {
 
         <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {modules.map((module) => (
-            <article
-              key={module}
-              className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/5"
+            <Link
+              key={module.slug}
+              href={`/rooms/${encodedRoomId}/${module.slug}`}
+              className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/5 transition hover:-translate-y-0.5 hover:border-[var(--loombus-text-subtle)]"
             >
-              <h2 className="font-black text-[var(--loombus-text)]">{module}</h2>
+              <h2 className="font-black text-[var(--loombus-text)]">{module.label}</h2>
               <p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">
-                {module} is part of the private room hub structure and will continue to use the current Loombus appearance system.
+                Open the {module.label} area for this private room.
               </p>
-            </article>
+            </Link>
           ))}
         </section>
       </section>
