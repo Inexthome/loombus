@@ -25,8 +25,15 @@ const footerLinks = [
 
 export default function LoginLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-[color:var(--loombus-page-bg)] text-[color:var(--loombus-text)]">
+    <div className="relative bg-[color:var(--loombus-page-bg)] pb-20 text-[color:var(--loombus-text)]">
       {children}
+
+      <Link
+        href="/forgot-password"
+        className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 whitespace-nowrap rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-5 py-3 text-sm font-semibold text-[color:var(--loombus-text)] shadow-2xl shadow-black/20 transition hover:border-[color:var(--loombus-text-muted)] hover:bg-[color:var(--loombus-surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--loombus-text-muted)]"
+      >
+        Forgot password?
+      </Link>
 
       <footer className="border-t border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-6 py-8 text-sm text-[color:var(--loombus-text-muted)] sm:px-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 md:flex-row">
