@@ -1,3 +1,4 @@
+-- Refresh deployment checks for PR #462.
 alter table public.rooms
   add column if not exists owner_id uuid references auth.users(id) on delete set null,
   add column if not exists template_key text,
