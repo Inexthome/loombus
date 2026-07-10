@@ -12,6 +12,7 @@ import ClientLayout from "./client-layout";
 import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
+import { SessionLifecycleGuard } from "@/components/session-lifecycle-guard";
 
 const siteUrl = "https://loombus.com";
 const siteTitle = "Loombus";
@@ -97,6 +98,7 @@ export default function RootLayout({
         />
         <DesktopTopNavbar />
         <ClientLayout>{children}</ClientLayout>
+        <SessionLifecycleGuard />
         <NativeBiometricSessionGate />
         <NativePushRegistration />
       </body>
