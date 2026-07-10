@@ -9,6 +9,7 @@ import "./discussion-detail-shell-polish.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
+import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
@@ -98,6 +99,7 @@ export default function RootLayout({
         />
         <DesktopTopNavbar />
         <ClientLayout>{children}</ClientLayout>
+        <AuthSessionCleanup />
         <SessionLifecycleGuard />
         <NativeBiometricSessionGate />
         <NativePushRegistration />
