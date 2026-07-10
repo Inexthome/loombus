@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   ArrowLeft,
-  Building2,
+  Building,
   CheckCircle2,
   GraduationCap,
   Home,
@@ -19,7 +19,7 @@ const roomTypes = [
     title: "Business Team Room",
     shortTitle: "Business Team",
     description: "Private team planning, announcements, decisions, resources, tasks, and events.",
-    icon: Building2,
+    icon: Building,
   },
   {
     id: "residents",
