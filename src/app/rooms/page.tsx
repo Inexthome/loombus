@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Search, Sparkles } from "lucide-react";
 
@@ -35,14 +36,14 @@ export default function RoomsPage() {
             </p>
           </div>
 
-          <button
-            type="button"
+          <Link
+            href="/rooms/new"
             aria-label="Create or subscribe to a room"
             className="inline-flex w-full items-center justify-center gap-3 rounded-[1.4rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-6 py-4 text-base font-black shadow-xl shadow-black/5 transition hover:bg-[var(--loombus-surface-muted)] lg:w-auto lg:min-w-[320px]"
           >
             <Sparkles className="h-5 w-5" aria-hidden="true" />
             Create or subscribe to a room
-          </button>
+          </Link>
         </header>
 
         <section className="mt-8">
