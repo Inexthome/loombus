@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Building2, CheckCircle2, GraduationCap, Home, Lock, Send, Store } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -140,7 +140,7 @@ export default function NewRoomPage() {
     window.location.href = result.url;
   }
 
-  async function handleCreateRoom(event: React.FormEvent<HTMLFormElement>) {
+  async function handleCreateRoom(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!userId || !roomName.trim()) return;
     setSaving(true);
