@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { supabase } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
@@ -16,10 +17,22 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     async function checkSession() {
-      const { data } = await supabase.auth.getSession();
+      try {
+        const { data, error } = await supabase.auth.getSession();
 
-      setHasSession(Boolean(data.session));
-      setCheckingSession(false);
+        if (error) {
+          setMessage(getAuthErrorMessage(error, "reset"));
+          setHasSession(false);
+          return;
+        }
+
+        setHasSession(Boolean(data.session));
+      } catch (error) {
+        setMessage(getAuthErrorMessage(error, "reset"));
+        setHasSession(false);
+      } finally {
+        setCheckingSession(false);
+      }
     }
 
     void checkSession();
@@ -47,21 +60,25 @@ export default function ResetPasswordPage() {
 
     setSaving(true);
 
-    const { error } = await supabase.auth.updateUser({
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password,
+      });
 
-    if (error) {
-      setMessage(`Password reset error: ${error.message}`);
+      if (error) {
+        setMessage(getAuthErrorMessage(error, "reset"));
+        return;
+      }
+
+      setPassword("");
+      setConfirmPassword("");
+      setSuccess(true);
+      setMessage("Password updated. You can now return to Loombus and sign in.");
+    } catch (error) {
+      setMessage(getAuthErrorMessage(error, "reset"));
+    } finally {
       setSaving(false);
-      return;
     }
-
-    setPassword("");
-    setConfirmPassword("");
-    setSuccess(true);
-    setMessage("Password updated. You can now return to Loombus and sign in.");
-    setSaving(false);
   }
 
   if (checkingSession) {
@@ -95,8 +112,8 @@ export default function ResetPasswordPage() {
 
           {!hasSession ? (
             <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-              <p className="text-sm leading-relaxed text-zinc-400">
-                This reset link is missing or expired. Request a new password reset email and use the newest link.
+              <p role="status" aria-live="polite" className="text-sm leading-relaxed text-zinc-400">
+                {message || "This reset link is missing or expired. Request a new password reset email and use the newest link."}
               </p>
 
               <Link
@@ -149,7 +166,11 @@ export default function ResetPasswordPage() {
               </button>
 
               {message ? (
-                <p className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm leading-relaxed text-zinc-400">
+                <p
+                  role="status"
+                  aria-live="polite"
+                  className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm leading-relaxed text-zinc-400"
+                >
                   {message}
                 </p>
               ) : null}

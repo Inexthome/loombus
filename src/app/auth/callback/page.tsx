@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { isIosNativeApp } from "@/lib/native-app";
+import { supabase } from "@/lib/supabase/client";
 
 function getSafeNext(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -108,7 +110,9 @@ async function getPostAuthRedirect(next: string, sessionOverride: Session | null
 }
 
 export default function AuthCallbackPage() {
+  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState("");
+  const [retryHref, setRetryHref] = useState("/login");
 
   useEffect(() => {
     async function completeAuthCallback() {
@@ -118,51 +122,69 @@ export default function AuthCallbackPage() {
           ? window.location.hash.slice(1)
           : window.location.hash
       );
-
-      if (shouldBounceNativeOAuthCallback(params)) {
-        bounceNativeOAuthCallbackToApp();
-        return;
-      }
-
-      const code = params.get("code");
       const next = getSafeNext(params.get("next"));
+      setRetryHref(`/login?next=${encodeURIComponent(next)}`);
 
-      if (code) {
-        const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code);
-
-        if (error) {
-          setErrorMessage(error.message);
+      try {
+        if (shouldBounceNativeOAuthCallback(params)) {
+          bounceNativeOAuthCallbackToApp();
           return;
         }
 
-        window.location.replace(await getPostAuthRedirect(next, exchangeData.session ?? null));
-        return;
+        const providerError =
+          params.get("error_description") ||
+          params.get("error") ||
+          hashParams.get("error_description") ||
+          hashParams.get("error");
+
+        if (providerError) {
+          setErrorMessage(getAuthErrorMessage(providerError, "oauth"));
+          return;
+        }
+
+        const code = params.get("code");
+
+        if (code) {
+          const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code);
+
+          if (error) {
+            setErrorMessage(getAuthErrorMessage(error, "callback"));
+            return;
+          }
+
+          const destination = await getPostAuthRedirect(next, exchangeData.session ?? null);
+          router.replace(destination);
+          return;
+        }
+
+        const hashHasSession =
+          hashParams.has("access_token") ||
+          hashParams.has("refresh_token") ||
+          hashParams.has("provider_token");
+
+        const existingSession = await waitForSession(hashHasSession ? 30 : 12);
+
+        if (existingSession) {
+          const destination = await getPostAuthRedirect(next, existingSession);
+          router.replace(destination);
+          return;
+        }
+
+        setErrorMessage(
+          "Loombus could not finish the sign-in session. Return to login and try again."
+        );
+      } catch (error) {
+        setErrorMessage(getAuthErrorMessage(error, "callback"));
       }
-
-      const hashHasSession =
-        hashParams.has("access_token") ||
-        hashParams.has("refresh_token") ||
-        hashParams.has("provider_token");
-
-      const existingSession = await waitForSession(hashHasSession ? 30 : 12);
-
-      if (existingSession) {
-        window.location.replace(await getPostAuthRedirect(next, existingSession));
-        return;
-      }
-
-      setErrorMessage(
-        "Loombus could not finish the sign-in session. Please return to login and try again."
-      );
     }
 
-    completeAuthCallback();
-  }, []);
+    void completeAuthCallback();
+  }, [router]);
 
   if (errorMessage) {
     return (
-      <main className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
+      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16">
+        <div className="mx-auto max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-7">
           <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
             Loombus sign-in
           </p>
@@ -171,16 +193,24 @@ export default function AuthCallbackPage() {
             Sign-in could not finish.
           </h1>
 
-          <p className="mb-6 leading-relaxed text-zinc-400">
+          <p role="alert" className="mb-6 leading-relaxed text-zinc-400">
             {errorMessage}
           </p>
 
-          <Link
-            href="/login"
-            className="inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-          >
-            Return to login
-          </Link>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              href={retryHref}
+              className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
+            >
+              Try signing in again
+            </Link>
+            <Link
+              href="/forgot-password"
+              className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+            >
+              Reset password
+            </Link>
+          </div>
         </div>
       </main>
     );
