@@ -11,7 +11,6 @@ import {
   Library,
   Lock,
   MemoryStick,
-  MessageCircle,
   ShieldCheck,
   Users,
 } from "lucide-react";
@@ -43,8 +42,6 @@ export default function RoomPage() {
     );
   }
 
-  const tabs = typeof window !== "undefined" && window.innerWidth < 768 ? mobileTabs : desktopTabs;
-
   return (
     <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-24 pt-8 text-[var(--loombus-text)] sm:px-6 lg:px-8">
       <section className="mx-auto max-w-7xl">
@@ -66,7 +63,7 @@ export default function RoomPage() {
           {mobileTabs.map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-black ${activeTab === tab ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)]" : "bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] ring-1 ring-[var(--loombus-border)]"}`}>{tab}</button>)}
         </nav>
         <nav className="mt-5 hidden gap-2 overflow-x-auto pb-2 md:flex">
-          {tabs.map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-black ${activeTab === tab ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)]" : "bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] ring-1 ring-[var(--loombus-border)]"}`}>{tab}</button>)}
+          {desktopTabs.map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-black ${activeTab === tab ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)]" : "bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)] ring-1 ring-[var(--loombus-border)]"}`}>{tab}</button>)}
         </nav>
 
         <section className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
