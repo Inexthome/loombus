@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 const footerLinks = [
+  { href: "/forgot-password", label: "Forgot password" },
   { href: "/about", label: "About" },
   { href: "/guidelines", label: "Guidelines" },
   { href: "/safety", label: "Safety" },
