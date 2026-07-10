@@ -384,6 +384,15 @@ export default function LoginPage() {
                 />
               </div>
 
+              <div className="text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-zinc-400 underline decoration-zinc-600 underline-offset-4 transition hover:text-white"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
               {nativeApp === true ? (
                 <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-relaxed text-zinc-500">
                   After a successful email login, Loombus can ask whether you want to save this login with Face ID or device biometrics on this device.
