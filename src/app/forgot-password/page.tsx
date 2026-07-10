@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
+import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { supabase } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
@@ -20,21 +21,25 @@ export default function ForgotPasswordPage() {
     setMessage("");
     setSending(true);
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-    });
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      });
 
-    if (error) {
-      setMessage(`Password reset error: ${error.message}`);
+      if (error) {
+        setMessage(getAuthErrorMessage(error, "recovery"));
+        return;
+      }
+
+      setSent(true);
+      setMessage(
+        "If an account exists for that email, a password reset link has been sent. Check your inbox and spam folder."
+      );
+    } catch (error) {
+      setMessage(getAuthErrorMessage(error, "recovery"));
+    } finally {
       setSending(false);
-      return;
     }
-
-    setSent(true);
-    setMessage(
-      "If an account exists for that email, a password reset link has been sent. Check your inbox and spam folder."
-    );
-    setSending(false);
   }
 
   return (
@@ -85,7 +90,11 @@ export default function ForgotPasswordPage() {
           </button>
 
           {message ? (
-            <p className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm leading-relaxed text-zinc-400">
+            <p
+              role="status"
+              aria-live="polite"
+              className="rounded-2xl border border-zinc-800 bg-black p-4 text-sm leading-relaxed text-zinc-400"
+            >
               {message}
             </p>
           ) : null}
