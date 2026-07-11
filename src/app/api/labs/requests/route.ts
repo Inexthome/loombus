@@ -25,17 +25,15 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+function jsonError(message: string, status: number, code?: string) {
+  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
 }
 
 type LabsProfileRow = {
   is_admin: boolean | null;
-};
-
-type LabsEntitlementRow = {
-  tier: string | null;
-  ai_assisted_enabled: boolean | null;
+  account_status: string | null;
+  enforcement_reason: string | null;
+  suspended_until: string | null;
 };
 
 export async function POST(request: NextRequest) {
@@ -78,13 +76,25 @@ export async function POST(request: NextRequest) {
     return jsonError("Feature request description is too long.", 400);
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("is_admin, account_status, enforcement_reason, suspended_until")
     .eq("id", user.id)
     .maybeSingle<LabsProfileRow>();
 
-  // Labs submissions are available to all signed-in Loombus members.
+  if (profileError) {
+    return jsonError("Unable to verify account access.", 503);
+  }
+
+  const enforcement = getAccountEnforcementResult(profile ?? null);
+
+  if (!enforcement.allowed) {
+    return jsonError(
+      enforcement.errorMessage ?? "Account restricted.",
+      403,
+      enforcement.code
+    );
+  }
 
   const cooldownCutoff = new Date(
     Date.now() - LABS_SUBMISSION_COOLDOWN_MS
