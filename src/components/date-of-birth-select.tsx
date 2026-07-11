@@ -19,12 +19,11 @@ const MONTH_OPTIONS = [
 
 function getYearOptions() {
   const currentYear = new Date().getFullYear();
-  const latestBirthYear = currentYear - 13;
   const earliestBirthYear = currentYear - 120;
 
   return Array.from(
-    { length: latestBirthYear - earliestBirthYear + 1 },
-    (_, index) => String(latestBirthYear - index)
+    { length: currentYear - earliestBirthYear + 1 },
+    (_, index) => String(currentYear - index)
   );
 }
 
