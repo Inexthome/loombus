@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { logAuditEvent } from "@/lib/audit-log";
+
+type ProfileAccess = {
+  is_admin: boolean | null;
+  account_status: string | null;
+  enforcement_reason: string | null;
+  suspended_until: string | null;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,12 +71,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: reply, error: replyError } = await supabase
-      .from("replies")
-      .select("id, user_id, discussion_id")
-      .eq("id", replyId)
-      .is("deleted_at", null)
-      .single();
+    const [{ data: reply, error: replyError }, { data: profile, error: profileError }] =
+      await Promise.all([
+        supabase
+          .from("replies")
+          .select("id, user_id, discussion_id")
+          .eq("id", replyId)
+          .is("deleted_at", null)
+          .single(),
+        supabase
+          .from("profiles")
+          .select("is_admin, account_status, enforcement_reason, suspended_until")
+          .eq("id", user.id)
+          .maybeSingle(),
+      ]);
+
+    if (profileError) {
+      return NextResponse.json(
+        { error: "Unable to verify account access." },
+        { status: 503 }
+      );
+    }
+
+    const profileAccess = (profile ?? null) as ProfileAccess | null;
+    const enforcement = getAccountEnforcementResult(profileAccess);
+
+    if (!enforcement.allowed) {
+      return NextResponse.json(
+        {
+          error: enforcement.errorMessage,
+          code: enforcement.code,
+        },
+        { status: 403 }
+      );
+    }
 
     if (replyError || !reply) {
       return NextResponse.json(
@@ -77,14 +113,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
-
     const isOwner = reply.user_id === user.id;
-    const isAdmin = Boolean(profile?.is_admin);
+    const isAdmin = Boolean(profileAccess?.is_admin);
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json(
