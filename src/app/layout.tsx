@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./loombus-brand-accent.css";
 import "./desktop-nav-top.css";
 import "./desktop-top-navbar.css";
 import "./legacy-right-rail-cleanup.css";
