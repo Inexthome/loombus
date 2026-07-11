@@ -47,7 +47,7 @@ export default function SignupPage() {
     }
 
     if (ageBand === "under_13") {
-      setMessage("Loombus is not available to members under 13.");
+      setMessage("This account is not eligible to use Loombus.");
       return;
     }
 
@@ -244,7 +244,7 @@ export default function SignupPage() {
               <label className="mb-2 block text-sm text-zinc-400">Date of birth</label>
               <DateOfBirthSelect value={dateOfBirth} onChange={setDateOfBirth} idPrefix="signup-date-of-birth" />
               <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                Choose your month, day, and year directly. Members under 13 cannot create Loombus accounts. Ages 13–17 receive Teen Safety Mode protections.
+                Enter your actual date of birth.
               </p>
             </div>
 
@@ -285,7 +285,7 @@ export default function SignupPage() {
             {message ? <p className="text-sm text-zinc-400">{message}</p> : null}
 
             <p className="text-xs leading-relaxed text-zinc-500">
-              By creating an account or continuing with Apple, Google, or email, you confirm that you are at least 13 years old and agree to the{" "}
+              By creating an account or continuing with Apple, Google, or email, you confirm that you meet Loombus eligibility requirements and agree to the{" "}
               <Link href="/terms" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Terms</Link>,{" "}
               <Link href="/privacy" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Privacy Policy</Link>,{" "}
               <Link href="/cookies" className="font-semibold text-zinc-200 underline decoration-zinc-500 underline-offset-4 transition hover:text-white hover:decoration-white">Cookie Policy</Link>,{" "}

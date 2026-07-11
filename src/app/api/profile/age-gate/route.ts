@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return jsonError("Invalid age safety payload.", 400);
+    return jsonError("Invalid age verification payload.", 400);
   }
 
   const dateOfBirth = String(
@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
 
   if (flags.ageBand === "under_13") {
     return jsonError(
-      "Loombus is not available to children under 13.",
+      "This account is not eligible to use Loombus.",
       403,
-      "under_13_not_allowed"
+      "account_not_eligible"
     );
   }
 
@@ -84,24 +84,19 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const { error: updateError } = await serviceSupabase
-    .from("profiles")
-    .update({
+  const { error: upsertError } = await serviceSupabase
+    .from("profile_sensitive")
+    .upsert({
+      id: user.id,
       date_of_birth: dateOfBirth,
       age_band: flags.ageBand,
       teen_safety_mode: flags.teenSafetyMode,
       guardian_required: flags.guardianRequired,
-    })
-    .eq("id", user.id);
+    });
 
-  if (updateError) {
-    return jsonError(updateError.message || "Unable to save age safety settings.", 500);
+  if (upsertError) {
+    return jsonError("Unable to save age verification.", 500);
   }
 
-  return NextResponse.json({
-    ok: true,
-    ageBand: flags.ageBand,
-    teenSafetyMode: flags.teenSafetyMode,
-    guardianRequired: flags.guardianRequired,
-  });
+  return NextResponse.json({ ok: true });
 }

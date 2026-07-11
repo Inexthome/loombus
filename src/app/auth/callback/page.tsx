@@ -57,7 +57,7 @@ async function getPostAuthRedirect(next: string, sessionOverride: Session | null
   }
 
   const { data: profile } = await supabase
-    .from("profiles")
+    .from("profile_sensitive")
     .select("age_band")
     .eq("id", session.user.id)
     .maybeSingle();
@@ -100,9 +100,12 @@ async function getPostAuthRedirect(next: string, sessionOverride: Session | null
 
     const payload = await response.json().catch(() => ({}));
 
-    if (payload.code === "under_13_not_allowed") {
+    if (
+      payload.code === "account_not_eligible" ||
+      payload.code === "under_13_not_allowed"
+    ) {
       await supabase.auth.signOut();
-      return "/signup?under13=1";
+      return "/signup?ineligible=1";
     }
   }
 

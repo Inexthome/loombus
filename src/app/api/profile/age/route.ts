@@ -23,8 +23,8 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+function jsonError(message: string, status: number, code?: string) {
+  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
 }
 
 function getTemporaryUsername(userId: string) {
@@ -63,19 +63,16 @@ export async function POST(request: NextRequest) {
   const safetyFlags = getTeenSafetyFlags(dateOfBirth);
 
   if (!safetyFlags) {
-    return jsonError("Enter a valid date of birth.", 400);
+    return jsonError("Enter a valid date of birth.", 400, "invalid_date_of_birth");
   }
 
   if (safetyFlags.ageBand === "under_13") {
-    return jsonError("Loombus is not available to children under 13.", 403);
+    return jsonError(
+      "This account is not eligible to use Loombus.",
+      403,
+      "account_not_eligible"
+    );
   }
-
-  const ageFields = {
-    date_of_birth: dateOfBirth,
-    age_band: safetyFlags.ageBand,
-    teen_safety_mode: safetyFlags.teenSafetyMode,
-    guardian_required: safetyFlags.guardianRequired,
-  };
 
   const { data: existingProfile, error: profileLookupError } = await supabase
     .from("profiles")
@@ -84,37 +81,36 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (profileLookupError) {
-    return jsonError(
-      profileLookupError.message || "Unable to check profile before saving age verification.",
-      400
-    );
+    return jsonError("Unable to verify your profile.", 503);
   }
 
-  if (existingProfile) {
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update(ageFields)
-      .eq("id", user.id);
-
-    if (updateError) {
-      return jsonError(updateError.message || "Unable to save age verification.", 400);
-    }
-  } else {
+  if (!existingProfile) {
     const { error: insertError } = await supabase.from("profiles").insert({
       id: user.id,
       username: getTemporaryUsername(user.id),
-      ...ageFields,
     });
 
     if (insertError) {
-      return jsonError(insertError.message || "Unable to save age verification.", 400);
+      return jsonError("Unable to prepare your profile.", 500);
     }
+  }
+
+  const { error: sensitiveUpsertError } = await supabase
+    .from("profile_sensitive")
+    .upsert({
+      id: user.id,
+      date_of_birth: dateOfBirth,
+      age_band: safetyFlags.ageBand,
+      teen_safety_mode: safetyFlags.teenSafetyMode,
+      guardian_required: safetyFlags.guardianRequired,
+    });
+
+  if (sensitiveUpsertError) {
+    return jsonError("Unable to save age verification.", 500);
   }
 
   return NextResponse.json({
     ok: true,
     dateOfBirth,
-    ageBand: safetyFlags.ageBand,
-    teenSafetyMode: safetyFlags.teenSafetyMode,
   });
 }
