@@ -28,6 +28,13 @@ const PROTECTED_PATH_PREFIXES = [
   "/age-gate",
 ];
 
+const BLOCKED_ACCOUNT_STATUSES = new Set([
+  "suspended",
+  "banned",
+  "deactivated",
+  "deletion_requested",
+]);
+
 function isProtectedPath(pathname: string) {
   return PROTECTED_PATH_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -44,6 +51,10 @@ function getCurrentDestination(pathname: string) {
 
 function getLoginHref(pathname: string) {
   return `/login?next=${encodeURIComponent(getCurrentDestination(pathname))}`;
+}
+
+function getAccountAccessHref(status: string) {
+  return `/account-access?status=${encodeURIComponent(status)}`;
 }
 
 export function SessionLifecycleGuard() {
@@ -68,11 +79,29 @@ export function SessionLifecycleGuard() {
         return false;
       }
 
-      const { data: userData, error } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
 
-      if (error || !userData.user) {
+      if (userError || !userData.user) {
         await supabase.auth.signOut({ scope: "local" });
         router.replace(getLoginHref(pathname));
+        return false;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("account_status")
+        .eq("id", userData.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const accountStatus = profile?.account_status || "active";
+
+      if (BLOCKED_ACCOUNT_STATUSES.has(accountStatus)) {
+        await supabase.auth.signOut({ scope: "local" });
+        router.replace(getAccountAccessHref(accountStatus));
         return false;
       }
 
@@ -107,7 +136,7 @@ export function SessionLifecycleGuard() {
       }
 
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        setChecking(false);
+        void validateSession();
       }
     });
 
