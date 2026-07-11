@@ -1,5 +1,5 @@
 .home-v2-page {
-  --home-accent: #2563eb;
+  --home-accent: var(--loombus-gold);
   background:
     radial-gradient(
       circle at 10% -10%,
@@ -33,8 +33,8 @@
   color: var(--loombus-text-muted);
 }
 .home-v2-primary {
-  background: var(--loombus-primary-bg);
-  color: var(--loombus-primary-text);
+  background: var(--loombus-gold-strong);
+  color: var(--loombus-gold-contrast);
   transition:
     opacity 0.2s,
     transform 0.2s;
@@ -153,8 +153,13 @@
   min-height: 13rem;
   place-items: center;
   border-radius: 1.4rem;
-  color: white;
-  background: linear-gradient(135deg, #061942, #2563eb, #22d3ee);
+  color: var(--loombus-gold-contrast);
+  background: linear-gradient(
+    135deg,
+    var(--loombus-gold-deep),
+    var(--loombus-gold-strong),
+    var(--loombus-gold)
+  );
 }
 .home-v2-pill {
   display: inline-flex;
@@ -231,16 +236,8 @@
     padding: 1.25rem;
   }
 }
-html[data-loombus-theme="dark"] .home-v2-page {
-  --home-accent: #60a5fa;
-}
 html[data-loombus-theme="dark"] .home-v2-section,
 html[data-loombus-theme="dark"] .home-v2-side,
 html[data-loombus-theme="dark"] .home-v2-gate {
   box-shadow: 0 20px 52px rgb(0 0 0 / 0.32);
-}
-@media (prefers-color-scheme: dark) {
-  html[data-loombus-theme="system"] .home-v2-page {
-    --home-accent: #60a5fa;
-  }
 }
