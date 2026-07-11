@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
-import { getAgeBandFromDateOfBirth, getDateYearsAgo } from "@/lib/age-safety";
+import { DateOfBirthSelect } from "@/components/date-of-birth-select";
+import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
 import { supabase } from "@/lib/supabase/client";
 
 function getSafeNext(value: string | null) {
@@ -31,7 +32,7 @@ export default function AgeGatePage() {
       }
     }
 
-    checkSession();
+    void checkSession();
   }, []);
 
   async function submitAgeGate(event: FormEvent<HTMLFormElement>) {
@@ -51,7 +52,7 @@ export default function AgeGatePage() {
     }
 
     if (ageBand === "under_13") {
-      setMessage("Loombus is not available to children under 13.");
+      setMessage("This account is not eligible to use Loombus.");
       await supabase.auth.signOut();
       return;
     }
@@ -81,9 +82,12 @@ export default function AgeGatePage() {
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setMessage(payload.error ?? "Unable to save age safety settings.");
+        setMessage(payload.error ?? "Unable to save date-of-birth verification.");
 
-        if (payload.code === "under_13_not_allowed") {
+        if (
+          payload.code === "account_not_eligible" ||
+          payload.code === "under_13_not_allowed"
+        ) {
           await supabase.auth.signOut();
         }
 
@@ -93,7 +97,7 @@ export default function AgeGatePage() {
 
       window.location.replace(next);
     } catch {
-      setMessage("Unable to save age safety settings.");
+      setMessage("Unable to save date-of-birth verification.");
       setSaving(false);
     }
   }
@@ -107,15 +111,15 @@ export default function AgeGatePage() {
 
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-7 shadow-2xl shadow-black/30">
           <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
-            Teen Safety Mode
+            Account verification
           </p>
 
           <h1 className="mb-4 text-4xl font-semibold tracking-tight">
-            Confirm your age.
+            Confirm your date of birth.
           </h1>
 
           <p className="mb-6 leading-relaxed text-zinc-400">
-            Loombus requires date of birth so we can block under-13 accounts and apply teen safety protections for members ages 13–17.
+            Enter your actual date of birth to continue.
           </p>
 
           <form onSubmit={submitAgeGate} className="space-y-5">
@@ -124,17 +128,15 @@ export default function AgeGatePage() {
                 Date of birth
               </label>
 
-              <input
-                type="date"
+              <DateOfBirthSelect
                 value={dateOfBirth}
-                required
-                max={getDateYearsAgo(13)}
-                onChange={(event) => setDateOfBirth(event.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
+                onChange={setDateOfBirth}
+                idPrefix="account-date-of-birth"
+                disabled={saving}
               />
 
               <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-                Members under 13 cannot use Loombus. Ages 13–17 receive additional safety protections.
+                Use the date shown on your official records.
               </p>
             </div>
 
