@@ -1,167 +1,243 @@
-/* Home V2 shell restoration.
-   Route-scoped to the authenticated /home canvas. Keeps the existing /home data
-   loading and auth/profile/age gates intact while restoring a wider dashboard
-   shell that respects Light / Dark / System theme variables. */
-
-.loombus-home-canvas {
-  min-height: 100vh;
+.home-v2-page {
+  --home-accent: var(--loombus-gold);
   background:
-    radial-gradient(circle at 8% -12%, color-mix(in srgb, var(--loombus-primary-bg) 13%, transparent 87%), transparent 36rem),
-    radial-gradient(circle at 90% 0%, color-mix(in srgb, var(--loombus-surface-strong) 44%, transparent 56%), transparent 32rem),
-    linear-gradient(180deg, color-mix(in srgb, var(--loombus-page-bg) 94%, var(--loombus-surface) 6%), var(--loombus-page-bg));
+    radial-gradient(
+      circle at 10% -10%,
+      color-mix(in srgb, var(--home-accent) 12%, transparent),
+      transparent 32rem
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--loombus-page-bg) 94%, var(--loombus-surface) 6%),
+      var(--loombus-page-bg)
+    );
 }
-
-.loombus-home-canvas > .mx-auto {
-  width: 100%;
-  max-width: 92rem !important;
+.home-v2-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  align-items: flex-start;
+  justify-content: space-between;
 }
-
-.loombus-home-shell {
-  border-color: color-mix(in srgb, var(--loombus-border) 88%, transparent 12%) !important;
-  background: color-mix(in srgb, var(--loombus-surface) 92%, var(--loombus-page-bg) 8%) !important;
-  box-shadow: 0 24px 72px rgb(15 23 42 / 0.1) !important;
+.home-v2-header h1 span,
+.home-v2-accent,
+.home-v2-link {
+  color: var(--home-accent);
 }
-
-.loombus-home-hero-shell {
-  position: relative;
-  overflow: hidden;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--loombus-surface) 94%, var(--loombus-primary-bg) 6%), color-mix(in srgb, var(--loombus-surface) 88%, var(--loombus-page-bg) 12%)) !important;
+.home-v2-eyebrow,
+.home-v2-side-title {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--loombus-text-muted);
 }
-
-.loombus-home-hero-shell::before {
-  content: "";
-  position: absolute;
-  inset: -35% auto auto 55%;
-  width: 32rem;
-  height: 32rem;
-  border-radius: 999px;
-  background: radial-gradient(circle, color-mix(in srgb, var(--loombus-primary-bg) 16%, transparent 84%), transparent 68%);
-  pointer-events: none;
+.home-v2-primary {
+  background: var(--loombus-gold-strong);
+  color: var(--loombus-gold-contrast);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
 }
-
-.loombus-home-hero-shell > * {
-  position: relative;
-  z-index: 1;
-}
-
-.loombus-home-hero-shell h1 {
-  letter-spacing: -0.055em !important;
-}
-
-.loombus-home-hero-shell h1 + p {
-  max-width: 42rem !important;
-}
-
-.loombus-home-hero-shell .rounded-\[1\.35rem\],
-.loombus-home-hero-shell .rounded-\[1\.5rem\] {
-  background: color-mix(in srgb, var(--loombus-surface) 84%, var(--loombus-page-bg) 16%) !important;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent 82%);
-}
-
-.loombus-home-status-card,
-.loombus-home-shell a.rounded-\[1\.35rem\],
-.loombus-home-shell a.rounded-\[1\.5rem\],
-.loombus-home-shell div.rounded-2xl,
-.loombus-home-shell div.rounded-\[1\.35rem\],
-.loombus-home-shell div.rounded-\[1\.5rem\] {
-  border-color: color-mix(in srgb, var(--loombus-border) 90%, transparent 10%) !important;
-  background-color: color-mix(in srgb, var(--loombus-surface) 88%, var(--loombus-page-bg) 12%) !important;
-}
-
-.loombus-home-status-card {
-  box-shadow: 0 18px 42px rgb(15 23 42 / 0.08);
-}
-
-.loombus-home-status-card:hover,
-.loombus-home-shell a.rounded-\[1\.35rem\]:hover,
-.loombus-home-shell a.rounded-\[1\.5rem\]:hover {
+.home-v2-primary:hover {
+  opacity: 0.88;
   transform: translateY(-1px);
-  box-shadow: 0 20px 48px rgb(15 23 42 / 0.11);
 }
-
-.loombus-home-primary-tile {
-  border-color: color-mix(in srgb, var(--loombus-primary-bg) 35%, var(--loombus-border) 65%) !important;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--loombus-primary-bg) 12%, var(--loombus-surface) 88%), color-mix(in srgb, var(--loombus-surface) 88%, var(--loombus-page-bg) 12%)) !important;
+.home-v2-secondary {
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-surface-muted);
+  color: var(--loombus-text);
 }
-
-@media (min-width: 1024px) {
-  .loombus-home-canvas {
-    padding-left: 2rem !important;
-    padding-right: 2rem !important;
-    padding-top: 1.25rem !important;
+.home-v2-notice {
+  margin-top: 1rem;
+  border: 1px solid
+    color-mix(in srgb, var(--home-accent) 25%, var(--loombus-border));
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--home-accent) 8%, var(--loombus-surface));
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+}
+.home-v2-section,
+.home-v2-side,
+.home-v2-gate {
+  border: 1px solid var(--loombus-border);
+  background: color-mix(
+    in srgb,
+    var(--loombus-surface) 94%,
+    var(--loombus-page-bg) 6%
+  );
+  box-shadow: 0 18px 48px rgb(15 23 42 / 0.09);
+}
+.home-v2-section {
+  border-radius: 2rem;
+  padding: 1.25rem;
+}
+.home-v2-side {
+  border-radius: 1.5rem;
+  padding: 1.2rem;
+}
+.home-v2-gate {
+  margin-top: 1rem;
+  border-radius: 1.5rem;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.home-v2-attention {
+  display: block;
+  min-width: 0;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.5rem;
+  background: var(--loombus-surface);
+  padding: 1.15rem;
+  transition:
+    transform 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.home-v2-attention:hover,
+.home-v2-row:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(
+    in srgb,
+    var(--home-accent) 35%,
+    var(--loombus-border)
+  );
+  box-shadow: 0 18px 38px rgb(15 23 42 / 0.12);
+}
+.home-v2-attention.is-urgent {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--home-accent) 10%, var(--loombus-surface)),
+    var(--loombus-surface)
+  );
+}
+.home-v2-icon,
+.home-v2-count,
+.home-v2-rank {
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  background: color-mix(
+    in srgb,
+    var(--home-accent) 12%,
+    var(--loombus-surface-muted)
+  );
+  color: var(--home-accent);
+}
+.home-v2-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+.home-v2-count {
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+.home-v2-featured {
+  display: grid;
+  gap: 1.25rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.75rem;
+  background: var(--loombus-surface);
+  padding: 1rem;
+}
+.home-v2-featured-art {
+  display: grid;
+  min-height: 13rem;
+  place-items: center;
+  border-radius: 1.4rem;
+  color: var(--loombus-gold-contrast);
+  background: linear-gradient(
+    135deg,
+    var(--loombus-gold-deep),
+    var(--loombus-gold-strong),
+    var(--loombus-gold)
+  );
+}
+.home-v2-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--home-accent) 12%,
+    var(--loombus-surface-muted)
+  );
+  color: var(--home-accent);
+  padding: 0.38rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+.home-v2-row,
+.home-v2-side-action,
+.home-v2-step,
+.home-v2-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.15rem;
+  background: var(--loombus-surface-muted);
+  padding: 0.9rem 1rem;
+  transition:
+    transform 0.2s,
+    border-color 0.2s;
+}
+.home-v2-row,
+.home-v2-side-action,
+.home-v2-step {
+  justify-content: space-between;
+}
+.home-v2-side-action,
+.home-v2-step {
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+.home-v2-dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  flex: none;
+  border: 2px solid var(--loombus-text-subtle);
+  border-radius: 999px;
+}
+.home-v2-dot.is-done {
+  border-color: var(--home-accent);
+  background: var(--home-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--home-accent) 14%, transparent);
+}
+.home-v2-select {
+  width: 100%;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1rem;
+  background: var(--loombus-surface-muted);
+  padding: 0.85rem 1rem;
+  color: var(--loombus-text);
+  outline: none;
+}
+@media (min-width: 640px) {
+  .home-v2-header,
+  .home-v2-gate:not(.block) {
+    flex-direction: row;
+    align-items: center;
   }
-
-  .loombus-home-canvas > .mx-auto {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 24rem;
-    gap: 1.35rem;
-    align-items: start;
-  }
-
-  .loombus-home-hero-shell {
-    grid-column: 1 / -1;
-  }
-
-  .loombus-home-canvas .loombus-home-shell:not(.loombus-home-hero-shell) {
-    margin-top: 0 !important;
-  }
-
-  .loombus-home-canvas .loombus-home-shell:nth-of-type(2) {
-    grid-column: 1 / 2;
-  }
-
-  .loombus-home-canvas .loombus-home-shell:nth-of-type(3),
-  .loombus-home-canvas .loombus-home-shell:nth-of-type(4) {
-    grid-column: 2 / 3;
-  }
-
-  .loombus-home-canvas .loombus-home-shell:nth-of-type(5) {
-    grid-column: 1 / 2;
-  }
-
-  .loombus-home-canvas .loombus-home-shell:nth-of-type(6) {
-    grid-column: 2 / 3;
-  }
-
-  .loombus-home-canvas .loombus-home-shell:has(.grid.gap-3.lg\:grid-cols-5) {
-    grid-column: 1 / -1;
-  }
-
-  .loombus-home-canvas .loombus-home-shell:has(.grid.gap-3.md\:grid-cols-3) {
-    grid-column: 1 / -1;
-  }
-
-  .loombus-home-canvas .loombus-home-shell:has([id^="home-age-verification"]),
-  .loombus-home-canvas .loombus-home-shell.border-amber-500\/30 {
-    grid-column: 1 / -1;
+  .home-v2-section {
+    padding: 1.5rem;
   }
 }
-
-@media (min-width: 1280px) {
-  .loombus-home-canvas > .mx-auto {
-    grid-template-columns: minmax(0, 1fr) 25rem;
-    gap: 1.5rem;
+@media (min-width: 768px) {
+  .home-v2-featured {
+    grid-template-columns: 220px minmax(0, 1fr);
+    padding: 1.25rem;
   }
 }
-
-@media (max-width: 767px) {
-  .loombus-home-canvas {
-    padding-top: calc(env(safe-area-inset-top) + 1rem) !important;
-  }
-
-  .loombus-home-shell {
-    box-shadow: 0 16px 44px rgb(15 23 42 / 0.08) !important;
-  }
-}
-
-html[data-loombus-theme="dark"] .loombus-home-shell {
-  box-shadow: 0 24px 72px rgb(0 0 0 / 0.32) !important;
-}
-
-html[data-loombus-theme="dark"] .loombus-home-status-card:hover,
-html[data-loombus-theme="dark"] .loombus-home-shell a.rounded-\[1\.35rem\]:hover,
-html[data-loombus-theme="dark"] .loombus-home-shell a.rounded-\[1\.5rem\]:hover {
-  box-shadow: 0 22px 52px rgb(0 0 0 / 0.34);
+html[data-loombus-theme="dark"] .home-v2-section,
+html[data-loombus-theme="dark"] .home-v2-side,
+html[data-loombus-theme="dark"] .home-v2-gate {
+  box-shadow: 0 20px 52px rgb(0 0 0 / 0.32);
 }

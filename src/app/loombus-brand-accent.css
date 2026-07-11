@@ -1,0 +1,131 @@
+/* Canonical Loombus brand accent.
+   Product emphasis should use these tokens instead of page-specific blue values.
+   Semantic success, warning, and danger colors remain independent. */
+:root,
+html[data-loombus-theme="dark"],
+html[data-loombus-theme="system"] {
+  --loombus-gold: #f59e0b;
+  --loombus-gold-strong: #d97706;
+  --loombus-gold-deep: #92400e;
+  --loombus-gold-soft: color-mix(in srgb, var(--loombus-gold) 14%, transparent);
+  --loombus-gold-surface: color-mix(
+    in srgb,
+    var(--loombus-gold) 10%,
+    var(--loombus-surface)
+  );
+  --loombus-gold-contrast: #1c1204;
+  --loombus-accent: var(--loombus-gold);
+}
+
+html[data-loombus-theme="light"] {
+  --loombus-gold: #b45309;
+  --loombus-gold-strong: #92400e;
+  --loombus-gold-deep: #78350f;
+  --loombus-gold-soft: color-mix(in srgb, var(--loombus-gold) 12%, transparent);
+  --loombus-gold-surface: color-mix(
+    in srgb,
+    var(--loombus-gold) 8%,
+    var(--loombus-surface)
+  );
+  --loombus-gold-contrast: #ffffff;
+  --loombus-accent: var(--loombus-gold);
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] {
+    --loombus-gold: #b45309;
+    --loombus-gold-strong: #92400e;
+    --loombus-gold-deep: #78350f;
+    --loombus-gold-soft: color-mix(in srgb, var(--loombus-gold) 12%, transparent);
+    --loombus-gold-surface: color-mix(
+      in srgb,
+      var(--loombus-gold) 8%,
+      var(--loombus-surface)
+    );
+    --loombus-gold-contrast: #ffffff;
+    --loombus-accent: var(--loombus-gold);
+  }
+}
+
+/* Compatibility bridge for older V2 surfaces that still carry Tailwind blue/cyan
+   brand utilities. This keeps the visual system gold while those pages are
+   migrated to var(--loombus-gold) directly. */
+html[data-loombus-theme] :where(
+  .text-blue-400,
+  .text-blue-500,
+  .text-blue-600,
+  .text-blue-700,
+  .text-blue-800,
+  .text-blue-900,
+  .text-cyan-400,
+  .text-cyan-500,
+  .text-cyan-600,
+  .text-cyan-700
+) {
+  color: var(--loombus-gold) !important;
+}
+
+html[data-loombus-theme] :where(
+  .bg-blue-500,
+  .bg-blue-600,
+  .bg-blue-700,
+  .bg-cyan-500,
+  .bg-cyan-600
+) {
+  background-color: var(--loombus-gold-strong) !important;
+  color: var(--loombus-gold-contrast) !important;
+}
+
+html[data-loombus-theme] :where(
+  .bg-blue-50,
+  .bg-blue-100,
+  .bg-cyan-50,
+  .bg-cyan-100
+) {
+  background-color: var(--loombus-gold-surface) !important;
+}
+
+html[data-loombus-theme] :where(
+  .border-blue-200,
+  .border-blue-300,
+  .border-blue-400,
+  .border-blue-500,
+  .border-blue-600,
+  .border-cyan-300,
+  .border-cyan-400,
+  .border-cyan-500
+) {
+  border-color: color-mix(
+    in srgb,
+    var(--loombus-gold) 45%,
+    var(--loombus-border)
+  ) !important;
+}
+
+html[data-loombus-theme] .hover\:text-blue-700:hover,
+html[data-loombus-theme] .hover\:text-blue-900:hover,
+html[data-loombus-theme] .hover\:text-cyan-700:hover {
+  color: var(--loombus-gold-strong) !important;
+}
+
+html[data-loombus-theme] .hover\:bg-blue-50:hover,
+html[data-loombus-theme] .hover\:bg-blue-100:hover,
+html[data-loombus-theme] .hover\:bg-cyan-50:hover {
+  background-color: var(--loombus-gold-surface) !important;
+}
+
+html[data-loombus-theme] .hover\:bg-blue-700:hover,
+html[data-loombus-theme] .hover\:bg-cyan-700:hover {
+  background-color: var(--loombus-gold-deep) !important;
+}
+
+html[data-loombus-theme] :where(
+  .ring-blue-200,
+  .ring-blue-300,
+  .ring-blue-400,
+  .ring-blue-500,
+  .ring-cyan-300,
+  .ring-cyan-400
+) {
+  --tw-ring-color: color-mix(in srgb, var(--loombus-gold) 45%, transparent) !important;
+}
