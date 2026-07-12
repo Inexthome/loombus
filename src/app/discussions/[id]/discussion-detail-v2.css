@@ -1,0 +1,519 @@
+.discussion-detail-route {
+  --discussion-gold: #cbab5b;
+  --discussion-cream: #fefbec;
+  --discussion-gold-soft: color-mix(in srgb, var(--discussion-gold) 14%, transparent);
+  --discussion-gold-border: color-mix(in srgb, var(--discussion-gold) 46%, var(--loombus-border));
+  position: relative;
+  min-height: 100vh;
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text);
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+  --loombus-muted-surface: var(--loombus-surface-muted);
+  --loombus-muted-text: var(--loombus-text-muted);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 92% 0%, var(--discussion-gold-soft), transparent 28rem),
+    radial-gradient(circle at 8% 22%, color-mix(in srgb, var(--discussion-gold) 7%, transparent), transparent 24rem),
+    var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
+  padding: 1rem 1rem 7rem !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl {
+  width: 100% !important;
+  max-width: 88rem !important;
+  margin-inline: auto !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > a:first-child {
+  display: inline-flex !important;
+  align-items: center;
+  min-height: 2.5rem;
+  margin-bottom: 1rem !important;
+  border: 1px solid var(--loombus-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--loombus-surface) 82%, transparent);
+  padding: 0.55rem 0.9rem;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 650;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.06);
+  transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > a:first-child:hover {
+  border-color: var(--discussion-gold-border);
+  color: var(--loombus-text) !important;
+  transform: translateY(-1px);
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap {
+  scrollbar-width: none;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap::-webkit-scrollbar {
+  display: none;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap > :first-child {
+  border-color: var(--discussion-gold-border) !important;
+  background: var(--discussion-gold-soft) !important;
+  color: var(--discussion-gold) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap > span {
+  border-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 86%, transparent) !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) h1,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) h2,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) h3 {
+  color: var(--loombus-text) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > h1 {
+  max-width: 66rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.85rem !important;
+  font-size: clamp(2rem, 6vw, 4.8rem) !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.057em !important;
+  text-wrap: balance;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-4.flex.flex-col {
+  max-width: 68rem;
+  margin-bottom: 1.25rem !important;
+  border-bottom: 1px solid var(--loombus-border);
+  padding-bottom: 1.1rem;
+  color: var(--loombus-text-subtle) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-4.flex.flex-col a {
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-4.flex.flex-col a:hover {
+  color: var(--discussion-gold) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) :where(.rounded-3xl, .rounded-2xl, .sm\:rounded-\[1\.5rem\]) {
+  border-color: var(--loombus-border) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) :where(section, article, form) {
+  border-color: var(--loombus-border) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="bg-black"],
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="bg-zinc-950"],
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="bg-zinc-900"] {
+  background-color: color-mix(in srgb, var(--loombus-surface) 82%, var(--loombus-page-bg) 18%) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-300"],
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-400"] {
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-500"],
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-600"],
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) [class*="text-zinc-700"] {
+  color: var(--loombus-text-subtle) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .text-white {
+  color: var(--loombus-text) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) button.bg-white,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) a.bg-white,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .bg-white.text-black {
+  border-color: var(--discussion-gold) !important;
+  background: var(--discussion-gold) !important;
+  color: #17140b !important;
+  font-weight: 700;
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--discussion-gold) 18%, transparent);
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) button.bg-white:hover,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) a.bg-white:hover {
+  filter: brightness(1.06);
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) textarea,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) select,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) input {
+  border-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-surface-muted) 54%, var(--loombus-surface) 46%) !important;
+  color: var(--loombus-text) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) textarea::placeholder,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) input::placeholder {
+  color: var(--loombus-text-subtle) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) textarea:focus,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) select:focus,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) input:focus {
+  border-color: var(--discussion-gold-border) !important;
+  box-shadow: 0 0 0 3px var(--discussion-gold-soft);
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.25rem !important;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.65rem;
+  background: var(--loombus-surface) !important;
+  padding: 1.1rem;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 0.1);
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--discussion-gold), transparent 88%);
+  content: "";
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 > section {
+  background: color-mix(in srgb, var(--loombus-surface-muted) 42%, var(--loombus-surface) 58%) !important;
+  box-shadow: none !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 > div:last-child {
+  max-width: 76ch;
+  color: var(--loombus-text-muted) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 > div:last-child p {
+  margin-block: 0 1rem;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > section,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-center-ai-panel section,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) .discussion-detail-center-related,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) #reply-form,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) #replies > div > div {
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 20px 55px rgb(15 23 42 / 0.09) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > section:has(video),
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > section:has(img),
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > section:has(a[href$=".pdf"]) {
+  border-color: var(--discussion-gold-border) !important;
+}
+
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) video,
+.discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) img {
+  border-radius: 1rem;
+}
+
+.discussion-detail-route [aria-label="Discussion detail tools rail"] {
+  position: sticky;
+  bottom: 5.25rem;
+  z-index: 25;
+  margin-inline: -0.25rem !important;
+  border: 1px solid color-mix(in srgb, var(--loombus-border) 78%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--loombus-surface) 88%, transparent) !important;
+  padding: 0.35rem !important;
+  box-shadow: 0 16px 45px rgb(0 0 0 / 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.discussion-detail-route [aria-label="Discussion detail tools rail"] button {
+  min-height: 2.55rem;
+}
+
+.discussion-detail-route #intelligence-layer {
+  scroll-margin-top: 7rem;
+}
+
+.discussion-detail-route .discussion-detail-center-ai-panel section {
+  overflow: hidden;
+  border-color: var(--discussion-gold-border) !important;
+}
+
+.discussion-detail-route .discussion-detail-center-ai-panel section::before {
+  display: block;
+  height: 3px;
+  margin: -1rem -1rem 1rem;
+  background: linear-gradient(90deg, var(--discussion-gold), transparent 74%);
+  content: "";
+}
+
+.discussion-detail-route .discussion-detail-center-ai-panel button[class*="border-zinc-500"],
+.discussion-detail-route .discussion-detail-right-rail button[class*="loombus-text-subtle"] {
+  border-color: var(--discussion-gold-border) !important;
+  background: var(--discussion-gold-soft) !important;
+  color: var(--discussion-gold) !important;
+}
+
+.discussion-detail-route #replies {
+  border-radius: 1.65rem;
+  scroll-margin-top: 7rem;
+}
+
+.discussion-detail-route #replies > div:first-child {
+  margin-bottom: 1rem !important;
+  border-bottom: 1px solid var(--loombus-border);
+  padding-bottom: 0.75rem;
+}
+
+.discussion-detail-route #reply-form {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--discussion-gold-border) !important;
+}
+
+.discussion-detail-route #reply-form::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--discussion-gold), transparent 72%);
+  content: "";
+}
+
+.discussion-detail-route #reply-form > label:first-child {
+  color: var(--loombus-text) !important;
+  font-size: 1rem !important;
+  font-weight: 750;
+}
+
+.discussion-detail-route #replies > div:last-child > div,
+.discussion-detail-route #replies article {
+  border-left: 3px solid color-mix(in srgb, var(--discussion-gold) 28%, var(--loombus-border)) !important;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.discussion-detail-route #replies > div:last-child > div:hover,
+.discussion-detail-route #replies article:hover {
+  border-left-color: var(--discussion-gold) !important;
+  transform: translateY(-1px);
+}
+
+.discussion-detail-route #replies section[class*="amber"] {
+  border-color: var(--discussion-gold-border) !important;
+  background: color-mix(in srgb, var(--discussion-gold) 9%, var(--loombus-surface)) !important;
+}
+
+.discussion-detail-route .discussion-detail-right-rail {
+  scrollbar-width: thin;
+  scrollbar-color: var(--discussion-gold-border) transparent;
+}
+
+.discussion-detail-route .discussion-detail-right-rail section {
+  border-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 92%, transparent) !important;
+  box-shadow: 0 20px 55px rgb(15 23 42 / 0.1) !important;
+}
+
+.discussion-detail-route .discussion-detail-right-rail section:first-child {
+  border-color: var(--discussion-gold-border) !important;
+}
+
+.discussion-detail-route .discussion-detail-right-rail section:first-child::before {
+  display: block;
+  height: 3px;
+  margin: -1.25rem -1.25rem 1rem;
+  background: linear-gradient(90deg, var(--discussion-gold), transparent 76%);
+  content: "";
+}
+
+.discussion-detail-route .discussion-detail-right-rail a,
+.discussion-detail-route .discussion-detail-right-rail button {
+  text-decoration: none;
+}
+
+.discussion-detail-route .discussion-detail-share-control {
+  position: fixed;
+  left: 1rem;
+  bottom: 5.5rem;
+  z-index: 35;
+}
+
+.discussion-detail-route .discussion-detail-share-control button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--discussion-gold-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--loombus-surface) 92%, transparent);
+  padding: 0.65rem 0.9rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: 0 16px 45px rgb(0 0 0 / 0.18);
+  backdrop-filter: blur(18px);
+  transition: transform 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.discussion-detail-route .discussion-detail-share-control button:hover {
+  border-color: var(--discussion-gold);
+  color: var(--discussion-gold);
+  transform: translateY(-1px);
+}
+
+.discussion-detail-route .discussion-detail-share-control svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.discussion-detail-route > aside.fixed {
+  border-color: var(--discussion-gold-border) !important;
+}
+
+.discussion-detail-route > aside.fixed li > span:first-child {
+  background: var(--discussion-gold) !important;
+}
+
+html[data-loombus-theme="light"] .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail),
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+    box-shadow: none;
+  }
+}
+
+html[data-loombus-theme="light"] .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5,
+html[data-loombus-theme="light"] .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > section,
+html[data-loombus-theme="light"] .discussion-detail-route .discussion-detail-right-rail section,
+html[data-loombus-theme="light"] .discussion-detail-route #reply-form {
+  box-shadow: 0 18px 48px rgb(15 23 42 / 0.08) !important;
+}
+
+html[data-loombus-theme="dark"] .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5,
+html[data-loombus-theme="dark"] .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > section,
+html[data-loombus-theme="dark"] .discussion-detail-route .discussion-detail-right-rail section,
+html[data-loombus-theme="dark"] .discussion-detail-route #reply-form {
+  box-shadow: 0 22px 60px rgb(0 0 0 / 0.28) !important;
+}
+
+@media (min-width: 640px) {
+  .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+    padding: 1.5rem 1.5rem 7rem !important;
+  }
+
+  .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+    padding: 1.4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 22rem !important;
+    align-items: start !important;
+    gap: 1.5rem !important;
+    padding: 1.4rem 2rem 5rem !important;
+  }
+
+  .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl {
+    grid-column: 1 !important;
+    margin: 0 !important;
+  }
+
+  .discussion-detail-route .discussion-detail-right-rail {
+    position: sticky !important;
+    inset: auto !important;
+    top: 6.75rem !important;
+    z-index: 2 !important;
+    display: block !important;
+    grid-column: 2 !important;
+    width: auto !important;
+    max-height: calc(100vh - 7.75rem) !important;
+    overflow-y: auto !important;
+    border-left: 0 !important;
+    padding: 0 0.25rem 1rem 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+
+  .discussion-detail-route .discussion-detail-right-rail > div {
+    display: grid !important;
+    gap: 1rem !important;
+  }
+
+  .discussion-detail-route .discussion-detail-desktop-center-actions {
+    display: none !important;
+  }
+
+  .discussion-detail-route .discussion-detail-share-control {
+    left: 1.5rem;
+    bottom: 1.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+    grid-template-columns: minmax(0, 1fr) 23.5rem !important;
+    gap: 1.75rem !important;
+    padding-inline: 2.5rem !important;
+  }
+
+  .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+    padding: 1.6rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > h1 {
+    font-size: clamp(2rem, 10.5vw, 3.15rem) !important;
+  }
+
+  .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+    border-radius: 1.35rem;
+    padding: 1rem;
+  }
+
+  .discussion-detail-route [aria-label="Discussion detail tools rail"] {
+    max-width: calc(100vw - 1rem);
+  }
+
+  .discussion-detail-route .discussion-detail-share-control button span {
+    display: none;
+  }
+
+  .discussion-detail-route .discussion-detail-share-control button {
+    width: 2.75rem;
+    justify-content: center;
+    padding-inline: 0;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .discussion-detail-route [aria-label="Discussion detail tools rail"] {
+    position: static;
+  }
+
+  .discussion-detail-route .discussion-detail-share-control {
+    bottom: 1rem;
+  }
+}
+
+@media print {
+  .discussion-detail-route .discussion-detail-right-rail,
+  .discussion-detail-route .discussion-detail-share-control,
+  .discussion-detail-route [aria-label="Discussion detail tools rail"],
+  .discussion-detail-route > aside.fixed {
+    display: none !important;
+  }
+
+  .discussion-detail-route main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
+    display: block !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+  }
+}
