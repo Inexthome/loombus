@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 
 export default function DiscussionDetailShare() {
   const [state, setState] = useState<"idle" | "copied" | "shared" | "error">("idle");
+  const [canNativeShare, setCanNativeShare] = useState(false);
+
+  useEffect(() => {
+    setCanNativeShare(typeof navigator.share === "function");
+  }, []);
 
   useEffect(() => {
     if (state === "idle") return;
@@ -38,8 +43,6 @@ export default function DiscussionDetailShare() {
   }
 
   const completed = state === "copied" || state === "shared";
-  const canNativeShare =
-    typeof navigator !== "undefined" && typeof navigator.share === "function";
 
   return (
     <div className="discussion-detail-share-control" aria-live="polite">
