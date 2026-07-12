@@ -266,6 +266,7 @@ export function DesktopTopNavbar() {
   const profileHref = profile?.username ? `/u/${profile.username}` : "/profile";
   const accountItems: DropdownItem[] = [
     { href: profileHref, label: "Profile", icon: UserCircle },
+    { href: "/privacy-security", label: "Privacy & Security", icon: ShieldCheck },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 
