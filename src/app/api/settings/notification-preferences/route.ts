@@ -110,7 +110,7 @@ function readBoolean(
   return typeof source[key] === "boolean" ? (source[key] as boolean) : fallback;
 }
 
-async function getCurrentUserContext(supabase: ReturnType<typeof createClient>) {
+async function getCurrentUserContext(supabase: any) {
   const {
     data: { user },
     error: userError,
@@ -129,18 +129,21 @@ async function getCurrentUserContext(supabase: ReturnType<typeof createClient>) 
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
-      .maybeSingle<ProfileRow>(),
+      .maybeSingle(),
     supabase
       .from("user_ai_entitlements")
       .select("tier, ai_assisted_enabled")
       .eq("user_id", user.id)
-      .maybeSingle<EntitlementRow>(),
+      .maybeSingle(),
   ]);
+
+  const profileRow = (profile ?? null) as ProfileRow | null;
+  const entitlementRow = (entitlement ?? null) as EntitlementRow | null;
 
   return {
     user,
-    isAdmin: Boolean(profile?.is_admin),
-    entitlement: entitlement ?? null,
+    isAdmin: Boolean(profileRow?.is_admin),
+    entitlement: entitlementRow,
   };
 }
 
@@ -165,14 +168,17 @@ export async function GET(request: NextRequest) {
       "replies_enabled, follows_enabled, mentions_enabled, followed_discussions_enabled, followed_replies_enabled, email_digest_enabled, email_digest_frequency, push_messages_enabled, push_replies_enabled, push_follows_enabled, push_admin_reports_enabled"
     )
     .eq("user_id", user.id)
-    .maybeSingle<PreferenceRow>();
+    .maybeSingle();
 
   if (error) {
     return jsonError("Unable to load Signal preferences.", 400);
   }
 
   return NextResponse.json({
-    preferences: normalizeStoredPreferences(data ?? null, isAdmin),
+    preferences: normalizeStoredPreferences(
+      (data ?? null) as PreferenceRow | null,
+      isAdmin
+    ),
     canUseEmailDigest: hasPremiumDigestAccess(entitlement, isAdmin),
     isAdmin,
   });
