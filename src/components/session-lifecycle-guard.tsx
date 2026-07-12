@@ -20,6 +20,7 @@ const PROTECTED_PATH_PREFIXES = [
   "/stickies",
   "/following",
   "/settings",
+  "/privacy-security",
   "/ai-usage",
   "/blocked-users",
   "/admin",
