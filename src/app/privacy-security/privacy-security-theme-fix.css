@@ -1,0 +1,9 @@
+.privacy-security-v2-page {
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      color-mix(in srgb, #cbab5b 10%, transparent),
+      transparent 28rem
+    ),
+    var(--loombus-page-bg, #000000) !important;
+}
