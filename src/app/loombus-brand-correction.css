@@ -1,0 +1,92 @@
+/* Platform brand correction for upgraded pages that still carry hard-coded
+   amber/orange utility classes. Keep semantic red, green, warning, and danger
+   treatments independent from the Loombus product palette. */
+
+/* Canonical /create V2 composer. */
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) [style*="#d6a84f"],
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) [class~="bg-[#d6a84f]"] {
+  background-color: var(--loombus-gold) !important;
+  color: var(--loombus-gold-contrast) !important;
+}
+
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) :where(
+  [class~="bg-amber-50"],
+  [class~="bg-amber-50/50"],
+  [class~="bg-amber-50/70"]
+) {
+  background-color: var(--loombus-cream) !important;
+}
+
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) :where(
+  [class~="text-amber-700"],
+  [class~="text-amber-800"],
+  [class~="text-amber-900"],
+  [class~="text-amber-950"]
+) {
+  color: var(--loombus-gold-deep) !important;
+}
+
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) :where(
+  [class~="border-amber-200"],
+  [class~="border-amber-300"],
+  [class~="border-amber-400"]
+) {
+  border-color: color-mix(
+    in srgb,
+    var(--loombus-gold) 58%,
+    var(--loombus-border)
+  ) !important;
+}
+
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) [class~="ring-amber-100"] {
+  --tw-ring-color: color-mix(in srgb, var(--loombus-gold) 30%, transparent) !important;
+}
+
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) [class~="focus:border-amber-400"]:focus {
+  border-color: var(--loombus-gold) !important;
+}
+
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) [class~="focus:ring-amber-100/50"]:focus {
+  --tw-ring-color: color-mix(in srgb, var(--loombus-gold) 28%, transparent) !important;
+}
+
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) [class~="hover:border-amber-200"]:hover,
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) [class~="hover:border-amber-300"]:hover {
+  border-color: var(--loombus-gold) !important;
+}
+
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) [class~="hover:bg-amber-50"]:hover,
+main:has(input[placeholder^="e.g., The future of decentralized identity"]) [class~="hover:bg-amber-50/50"]:hover {
+  background-color: var(--loombus-cream) !important;
+}
+
+/* Canonical /discussions index. The 88rem three-rail container is unique to
+   the current Discussions discovery layout. */
+main:has(> div[class*="max-w-[88rem]"]) [class~="text-[#b45309]"] {
+  color: var(--loombus-gold) !important;
+}
+
+main:has(> div[class*="max-w-[88rem]"]) [class~="bg-orange-50"] {
+  background-color: var(--loombus-cream) !important;
+}
+
+main:has(> div[class*="max-w-[88rem]"]) [class~="dark:bg-orange-400/10"] {
+  background-color: var(--loombus-gold-soft) !important;
+}
+
+main:has(> div[class*="max-w-[88rem]"]) :where(
+  [class~="border-orange-200"],
+  [class~="dark:border-orange-400/30"]
+) {
+  border-color: color-mix(
+    in srgb,
+    var(--loombus-gold) 52%,
+    var(--loombus-border)
+  ) !important;
+}
+
+/* Cream is the approved pale companion to Loombus Gold. */
+.loombus-cream-surface {
+  background-color: var(--loombus-cream) !important;
+  color: var(--loombus-cream-contrast) !important;
+}
