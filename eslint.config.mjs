@@ -18,6 +18,14 @@ const eslintConfig = defineConfig([
       "react/no-unescaped-entities": "warn",
     },
   },
+  {
+    files: ["src/app/u/[username]/public-profile-v2-client.js"],
+    rules: {
+      // This compact generated client intentionally uses comma and conditional expressions
+      // for side-effectful state updates. Keep the exception local to this file.
+      "no-unused-expressions": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
