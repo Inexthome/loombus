@@ -7,6 +7,7 @@ import "./create-v2-shell.css";
 import "./home-v2-shell.css";
 import "./people-v2-shell.css";
 import "./discussion-detail-shell-polish.css";
+import "./loombus-brand-correction.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
