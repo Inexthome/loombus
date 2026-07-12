@@ -5,7 +5,7 @@
 html[data-loombus-theme="dark"],
 html[data-loombus-theme="system"] {
   --loombus-gold: #cbab5b;
-  --loombus-gold-strong: color-mix(in srgb, var(--loombus-gold) 86%, #000000);
+  --loombus-gold-strong: var(--loombus-gold);
   --loombus-gold-deep: color-mix(in srgb, var(--loombus-gold) 64%, #000000);
   --loombus-gold-soft: color-mix(in srgb, var(--loombus-gold) 16%, transparent);
   --loombus-gold-surface: color-mix(
@@ -27,7 +27,7 @@ html[data-loombus-theme="system"] {
 
 html[data-loombus-theme="light"] {
   --loombus-gold: #cbab5b;
-  --loombus-gold-strong: color-mix(in srgb, var(--loombus-gold) 82%, #000000);
+  --loombus-gold-strong: var(--loombus-gold);
   --loombus-gold-deep: color-mix(in srgb, var(--loombus-gold) 58%, #000000);
   --loombus-gold-soft: color-mix(in srgb, var(--loombus-gold) 14%, transparent);
   --loombus-gold-surface: color-mix(
@@ -46,7 +46,7 @@ html[data-loombus-theme="light"] {
 @media (prefers-color-scheme: light) {
   html[data-loombus-theme="system"] {
     --loombus-gold: #cbab5b;
-    --loombus-gold-strong: color-mix(in srgb, var(--loombus-gold) 82%, #000000);
+    --loombus-gold-strong: var(--loombus-gold);
     --loombus-gold-deep: color-mix(in srgb, var(--loombus-gold) 58%, #000000);
     --loombus-gold-soft: color-mix(in srgb, var(--loombus-gold) 14%, transparent);
     --loombus-gold-surface: color-mix(
