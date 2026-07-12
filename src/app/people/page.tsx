@@ -1,9 +1,8 @@
-import PeopleClientPage from "./client-page";
-import "./people-v2-shell.css";
+import PeopleV2Client from "./people-v2-client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default function PeoplePage() {
-  return <PeopleClientPage />;
+  return <PeopleV2Client />;
 }
