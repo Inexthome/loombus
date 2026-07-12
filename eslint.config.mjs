@@ -19,7 +19,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/app/u/[username]/public-profile-v2-client.js"],
+    files: ["src/app/u/**/public-profile-v2-client.js"],
     rules: {
       // This compact generated client intentionally uses comma and conditional expressions
       // for side-effectful state updates. Keep the exception local to this file.
