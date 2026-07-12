@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Sparkles,
   StickyNote,
+  Tags,
   UserCircle,
   Users,
 } from "lucide-react";
@@ -73,11 +74,12 @@ const discoveryItems: DropdownItem[] = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/dashboard", label: "Home Status", icon: LayoutDashboard },
   { href: "/onboarding", label: "Onboarding", icon: Sparkles },
+  { href: "/topics", label: "Signal Topics", icon: Tags },
   { href: "/people", label: "People", icon: Users },
   { href: "/following", label: "Following", icon: Activity },
   { href: "/messages", label: "Messages", icon: MessageCircle },
   { href: "/saved", label: "Saved", icon: Bookmark },
-  { href: "/stickies", label: "Stickies", icon: StickyNote },
+  { href: "/stickies", label: "Signal Board", icon: StickyNote },
 ];
 
 const activityItems: DropdownItem[] = [
@@ -359,7 +361,7 @@ export function DesktopTopNavbar() {
 
                 <div className="min-h-0 overflow-y-auto p-2">
                   <DropdownSection title="Navigation" items={discoveryItems} />
-                  <DropdownSection title="Your Activity" items={activityItems} />
+                  <DropdownSection title="Your Signal" items={activityItems} />
                   <DropdownSection title="Tools" items={buildItems} />
                   <DropdownSection title="Account" items={accountItems} />
 
