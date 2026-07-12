@@ -18,6 +18,16 @@ const eslintConfig = defineConfig([
       "react/no-unescaped-entities": "warn",
     },
   },
+  {
+    files: ["src/app/u/**/public-profile-v2-client.js"],
+    rules: {
+      // This compact generated client intentionally uses expression-based state updates
+      // and manual memoization. Keep these exceptions local to this generated file.
+      "no-unused-expressions": "off",
+      "@typescript-eslint/no-unused-expressions": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
