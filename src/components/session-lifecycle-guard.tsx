@@ -36,6 +36,10 @@ function isProtectedPath(pathname: string) {
   );
 }
 
+function isAccountBootstrapPath(pathname: string) {
+  return pathname === "/age-gate";
+}
+
 function getCurrentDestination(pathname: string) {
   if (typeof window === "undefined") {
     return pathname;
@@ -94,6 +98,11 @@ export function SessionLifecycleGuard() {
       }
 
       if (!profile) {
+        if (isAccountBootstrapPath(pathname)) {
+          setChecking(false);
+          return true;
+        }
+
         router.replace(getAccountAccessHref("profile_unavailable"));
         return false;
       }
