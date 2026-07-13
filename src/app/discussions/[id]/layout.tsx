@@ -7,7 +7,7 @@ export default function DiscussionDetailLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="discussion-detail-canonical">
+    <div className="discussion-detail-canonical" data-discussion-detail-canonical>
       {children}
       <ReplySignalGuide />
     </div>
