@@ -11,8 +11,10 @@
 }
 
 /*
-  The discussion route stays inside ClientLayout. It must not create a second
-  navigation shell, cover the desktop Signal Rail, or replace the mobile bars.
+  Canonical shell contract:
+  - ClientLayout owns the desktop Signal Rail and mobile navigation.
+  - The original discussion page owns its production content and operations rail.
+  - This route only supplies scoped presentation; it never becomes a second app shell.
 */
 .discussion-detail-canonical > main.loombus-shell-with-right-rail {
   min-height: 100vh;
