@@ -1,256 +1,467 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowLeft, CheckCircle2, Lock } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Clipboard,
+  LifeBuoy,
+  Lock,
+  RotateCcw,
+  ShieldCheck,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  RoomModelCard,
+  RoomWorkspaceBlueprint,
+  RoomsSectionHeading,
+} from "../rooms-v2-components";
+import {
+  type RoomModel,
+  type RoomModelId,
+  type RoomPlanId,
+  ROOM_MODELS,
+  ROOM_PLANS,
+  buildRoomSetupSummary,
+  getRoomModel,
+  getRoomPlan,
+} from "../rooms-v2-model";
 
-type RoomType = {
-  id: string;
-  title: string;
-  shortTitle: string;
+const ROOM_BUILDER_DRAFT_KEY = "loombus:room-builder-draft-v2";
+
+type RoomBuilderDraft = {
+  modelId: RoomModelId;
+  planId: RoomPlanId;
+  roomName: string;
   description: string;
 };
 
-type RoomPlan = {
-  id: string;
-  name: string;
-  price: string;
-  members: string;
-  detail: string;
+const DEFAULT_DRAFT: RoomBuilderDraft = {
+  modelId: "business-team",
+  planId: "free",
+  roomName: "Business Team",
+  description: ROOM_MODELS[0].description,
 };
 
-const roomTypes: RoomType[] = [
-  { id: "business-team", title: "Business Team Room", shortTitle: "Business Team", description: "Private team planning, decisions, resources, tasks, announcements, and events." },
-  { id: "residents", title: "Resident / Condo Room", shortTitle: "Resident / Condo", description: "Private resident notices, maintenance updates, documents, questions, and events." },
-  { id: "customer-support", title: "Customer Support Room", shortTitle: "Customer Support", description: "Private support questions, known issues, help resources, requests, and product updates." },
-  { id: "classroom", title: "Classroom Room", shortTitle: "Classroom", description: "Private class prompts, resources, assignments, moderated discussion, and events." },
-];
+function isRoomModelId(value: unknown): value is RoomModelId {
+  return typeof value === "string" && ROOM_MODELS.some((model) => model.id === value);
+}
 
-const roomPlans: RoomPlan[] = [
-  { id: "free", name: "Free Room", price: "$0", members: "10 members", detail: "Small private starter space" },
-  { id: "starter", name: "Room Starter", price: "$19/mo", members: "50 members", detail: "One private room" },
-  { id: "pro", name: "Room Pro", price: "$49/mo", members: "250 members", detail: "Larger private room" },
-  { id: "organization", name: "Organization", price: "$99/mo", members: "Up to 3 rooms · 500 members", detail: "Organization controls and setup support" },
-  { id: "organization-plus", name: "Organization Plus", price: "$149/mo", members: "Up to 10 rooms · 2,000 members", detail: "More rooms, larger membership, and advanced setup" },
-  { id: "enterprise", name: "Organization Enterprise", price: "$199/mo", members: "Custom rooms · Large membership", detail: "Dedicated support and custom organization structure" },
-];
-
-const privateDefaults = [
-  "Not posted to public Discussions",
-  "Owner added automatically",
-  "Starter welcome post prepared",
-  "Invite-only member access",
-];
+function isRoomPlanId(value: unknown): value is RoomPlanId {
+  return typeof value === "string" && ROOM_PLANS.some((plan) => plan.id === value);
+}
 
 export default function NewRoomPage() {
-  const [selectedTypeId, setSelectedTypeId] = useState("business-team");
-  const [selectedPlanId, setSelectedPlanId] = useState("free");
-  const [roomName, setRoomName] = useState("Business Team");
-  const [description, setDescription] = useState(roomTypes[0].description);
+  const [draft, setDraft] = useState<RoomBuilderDraft>(DEFAULT_DRAFT);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
 
-  const selectedType = roomTypes.find((roomType) => roomType.id === selectedTypeId) ?? roomTypes[0];
-  const selectedPlan = roomPlans.find((plan) => plan.id === selectedPlanId) ?? roomPlans[0];
-  const trimmedName = roomName.trim();
-  const trimmedDescription = description.trim();
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(ROOM_BUILDER_DRAFT_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as Partial<RoomBuilderDraft>;
+        if (
+          isRoomModelId(parsed.modelId) &&
+          isRoomPlanId(parsed.planId) &&
+          typeof parsed.roomName === "string" &&
+          typeof parsed.description === "string"
+        ) {
+          setDraft({
+            modelId: parsed.modelId,
+            planId: parsed.planId,
+            roomName: parsed.roomName,
+            description: parsed.description,
+          });
+        }
+      }
+    } catch {
+      window.localStorage.removeItem(ROOM_BUILDER_DRAFT_KEY);
+    } finally {
+      setDraftLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    window.localStorage.setItem(ROOM_BUILDER_DRAFT_KEY, JSON.stringify(draft));
+  }, [draft, draftLoaded]);
+
+  const selectedModel = useMemo(() => getRoomModel(draft.modelId), [draft.modelId]);
+  const selectedPlan = useMemo(() => getRoomPlan(draft.planId), [draft.planId]);
+  const trimmedName = draft.roomName.trim();
+  const trimmedDescription = draft.description.trim();
   const nameIsValid = trimmedName.length >= 3;
   const descriptionIsValid = trimmedDescription.length >= 10;
   const formIsValid = nameIsValid && descriptionIsValid;
 
-  function selectRoomType(roomType: RoomType) {
-    setSelectedTypeId(roomType.id);
-    setRoomName(roomType.shortTitle);
-    setDescription(roomType.description);
+  function selectRoomModel(model: RoomModel) {
+    setDraft((current) => ({
+      ...current,
+      modelId: model.id,
+      roomName: model.shortTitle,
+      description: model.description,
+    }));
     setShowErrors(false);
+    setStatusMessage("");
   }
 
   function continueToReview() {
     if (!formIsValid) {
       setShowErrors(true);
+      setStatusMessage("Complete the room name and purpose before reviewing the setup.");
       return;
     }
 
     setShowErrors(false);
+    setStatusMessage("");
     setIsReviewing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function copySetupSummary() {
+    const summary = buildRoomSetupSummary({
+      model: selectedModel,
+      plan: selectedPlan,
+      roomName: trimmedName,
+      description: trimmedDescription,
+    });
+
+    try {
+      await navigator.clipboard.writeText(summary);
+      setStatusMessage("Room setup summary copied.");
+    } catch {
+      setStatusMessage("The setup summary could not be copied on this device.");
+    }
+  }
+
+  function clearDraft() {
+    const confirmed = window.confirm("Clear this room setup draft and start again?");
+    if (!confirmed) return;
+
+    setDraft(DEFAULT_DRAFT);
+    setIsReviewing(false);
+    setShowErrors(false);
+    setStatusMessage("Room setup draft cleared.");
+    window.localStorage.removeItem(ROOM_BUILDER_DRAFT_KEY);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   if (isReviewing) {
     return (
-      <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-24 pt-8 text-[var(--loombus-text)] sm:px-6 lg:px-8">
-        <section className="mx-auto max-w-4xl">
-          <button
-            type="button"
-            onClick={() => setIsReviewing(false)}
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-sm font-black text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Edit room setup
-          </button>
+      <main className="rooms-v2-page rooms-v2-builder-page">
+        <div className="rooms-v2-shell rooms-v2-review-shell">
+          <div className="rooms-v2-builder-topbar">
+            <button
+              type="button"
+              onClick={() => setIsReviewing(false)}
+              className="rooms-v2-back-button"
+            >
+              <ArrowLeft aria-hidden="true" size={16} />
+              Edit room setup
+            </button>
+            <button type="button" onClick={clearDraft} className="rooms-v2-clear-button">
+              <RotateCcw aria-hidden="true" size={15} />
+              Clear draft
+            </button>
+          </div>
 
-          <header className="mt-6">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-700 dark:text-amber-500">Review room</p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Confirm your room setup</h1>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--loombus-text-muted)] sm:text-base">
-              Review the details carried forward from the builder. Nothing is created or charged in this step.
-            </p>
-          </header>
+          <section className="rooms-v2-builder-hero rooms-v2-review-hero">
+            <div>
+              <p className="rooms-v2-eyebrow">Review room setup</p>
+              <h1>Confirm the blueprint before any future provisioning step.</h1>
+              <p>
+                This review is a planning artifact. It does not create a room, membership,
+                subscription, checkout session, calendar, invitation, or database record.
+              </p>
+            </div>
+            <span className="rooms-v2-draft-badge">
+              <Lock aria-hidden="true" size={15} />
+              Saved on this device
+            </span>
+          </section>
 
-          <section className="mt-8 grid gap-5 md:grid-cols-2">
-            <article className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 shadow-xl shadow-black/5 md:col-span-2">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">Room identity</p>
-              <h2 className="mt-3 text-3xl font-black">{trimmedName}</h2>
-              <p className="mt-4 leading-7 text-[var(--loombus-text-muted)]">{trimmedDescription}</p>
-            </article>
-
-            <article className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 shadow-xl shadow-black/5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">Room type</p>
-              <h2 className="mt-3 text-xl font-black">{selectedType.title}</h2>
-            </article>
-
-            <article className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 shadow-xl shadow-black/5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">Plan</p>
-              <div className="mt-3 flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-black">{selectedPlan.name}</h2>
-                  <p className="mt-2 text-sm font-bold text-[var(--loombus-text-muted)]">{selectedPlan.members}</p>
-                </div>
-                <span className="font-black">{selectedPlan.price}</span>
+          <section className="rooms-v2-review-grid">
+            <article className="rooms-v2-review-identity">
+              <p className="rooms-v2-eyebrow">Room identity</p>
+              <h2>{trimmedName}</h2>
+              <p>{trimmedDescription}</p>
+              <div className="rooms-v2-review-tags">
+                <span>{selectedModel.title}</span>
+                <span>{selectedPlan.name}</span>
+                <span>{selectedPlan.members}</span>
               </div>
+            </article>
+
+            <article className="rooms-v2-review-card">
+              <p className="rooms-v2-eyebrow">Planning tier</p>
+              <div className="rooms-v2-plan-heading">
+                <div>
+                  <h2>{selectedPlan.name}</h2>
+                  <p>{selectedPlan.detail}</p>
+                </div>
+                <strong>{selectedPlan.price}</strong>
+              </div>
+              <p className="rooms-v2-plan-boundary">
+                {selectedPlan.paid
+                  ? "Displayed for product planning only. No checkout is connected."
+                  : "The free planning tier also does not provision a room yet."}
+              </p>
             </article>
           </section>
 
-          <section className="mt-5 rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 shadow-xl shadow-black/5">
-            <div className="flex items-center gap-3">
-              <Lock className="h-5 w-5 text-amber-700 dark:text-amber-500" aria-hidden="true" />
-              <h2 className="text-sm font-black uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">Private by default</h2>
+          <section className="rooms-v2-section rooms-v2-review-blueprint">
+            <RoomsSectionHeading
+              eyebrow="Workspace blueprint"
+              title="The private room is designed around five connected operating surfaces."
+              description="These modules describe the intended room structure; they are not represented as live account data."
+            />
+            <RoomWorkspaceBlueprint />
+          </section>
+
+          <section className="rooms-v2-boundary-review">
+            <div>
+              <span><ShieldCheck aria-hidden="true" size={22} /></span>
+              <div>
+                <p className="rooms-v2-eyebrow">Current production boundary</p>
+                <h2>Nothing has been created or charged.</h2>
+              </div>
             </div>
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {privateDefaults.map((item) => (
-                <p key={item} className="flex items-start gap-3 text-sm font-bold text-[var(--loombus-text-muted)]">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+            <div className="rooms-v2-boundary-review-list">
+              {[
+                "No room record or owner membership",
+                "No invitations, members, or role assignments",
+                "No announcements, discussions, files, or events",
+                "No subscription, Stripe checkout, or payment",
+              ].map((item) => (
+                <p key={item}>
+                  <CheckCircle2 aria-hidden="true" size={16} />
                   {item}
                 </p>
               ))}
             </div>
           </section>
 
-          <button
-            type="button"
-            disabled
-            className="mt-6 inline-flex w-full cursor-not-allowed items-center justify-center rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-5 py-4 text-sm font-black text-[var(--loombus-text-subtle)]"
-          >
-            Room creation coming next
+          <div className="rooms-v2-review-actions">
+            <button type="button" onClick={copySetupSummary} className="rooms-v2-button rooms-v2-button-primary">
+              <Clipboard aria-hidden="true" size={16} />
+              Copy setup summary
+            </button>
+            <button type="button" onClick={() => setIsReviewing(false)} className="rooms-v2-button rooms-v2-button-quiet">
+              Edit setup
+            </button>
+            <Link href="/support" className="rooms-v2-button rooms-v2-button-quiet">
+              <LifeBuoy aria-hidden="true" size={16} />
+              Contact support
+            </Link>
+          </div>
+          {statusMessage ? <p className="rooms-v2-status-message" role="status">{statusMessage}</p> : null}
+
+          <button type="button" disabled className="rooms-v2-provision-button">
+            Room provisioning is not connected yet
           </button>
-          <p className="mt-3 text-center text-xs leading-5 text-[var(--loombus-text-subtle)]">
-            No room, subscription, checkout, or database record is created in this PR.
-          </p>
-        </section>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-24 pt-8 text-[var(--loombus-text)] sm:px-6 lg:px-8">
-      <section className="mx-auto max-w-7xl">
-        <Link href="/rooms" className="inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-sm font-black text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]">
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to Rooms
-        </Link>
+    <main className="rooms-v2-page rooms-v2-builder-page">
+      <div className="rooms-v2-shell">
+        <div className="rooms-v2-builder-topbar">
+          <Link href="/rooms" className="rooms-v2-back-button">
+            <ArrowLeft aria-hidden="true" size={16} />
+            Back to Rooms
+          </Link>
+          <button type="button" onClick={clearDraft} className="rooms-v2-clear-button">
+            <RotateCcw aria-hidden="true" size={15} />
+            Clear draft
+          </button>
+        </div>
 
-        <header className="mt-6">
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-amber-700 dark:text-amber-500">Room subscriptions</p>
-          <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">Create a private room</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--loombus-text-muted)] sm:text-base">
-            Choose the room purpose, select a plan, define the room identity, and continue to review.
-          </p>
-        </header>
+        <section className="rooms-v2-builder-hero">
+          <div>
+            <p className="rooms-v2-eyebrow">Room setup planner</p>
+            <h1>Define the private space before connecting its backend.</h1>
+            <p>
+              Choose the room model, review a planning tier, and define its identity. Your draft is
+              saved on this device so the setup can be reviewed without pretending the room already exists.
+            </p>
+          </div>
+          <span className="rooms-v2-draft-badge">
+            <Lock aria-hidden="true" size={15} />
+            Device-only draft
+          </span>
+        </section>
 
-        <section className="mt-8 grid gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="space-y-8">
-            <section>
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">1. Choose room type</h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                {roomTypes.map((roomType) => {
-                  const selected = roomType.id === selectedTypeId;
-                  return (
-                    <button key={roomType.id} type="button" onClick={() => selectRoomType(roomType)} aria-pressed={selected} className={`rounded-[1.5rem] border p-5 text-left shadow-xl shadow-black/5 transition ${selected ? "border-amber-600 bg-amber-50/70 dark:bg-amber-500/10" : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] hover:bg-[var(--loombus-surface-muted)]"}`}>
-                      <span className="block text-base font-black">{roomType.title}</span>
-                      <span className="mt-2 block text-sm leading-6 text-[var(--loombus-text-muted)]">{roomType.description}</span>
-                    </button>
-                  );
-                })}
+        <section className="rooms-v2-builder-grid">
+          <div className="rooms-v2-builder-main">
+            <section className="rooms-v2-builder-step">
+              <div className="rooms-v2-step-heading">
+                <span>01</span>
+                <div>
+                  <p className="rooms-v2-eyebrow">Room model</p>
+                  <h2>What kind of group will use this room?</h2>
+                </div>
+              </div>
+              <div className="rooms-v2-model-grid rooms-v2-builder-model-grid">
+                {ROOM_MODELS.map((model) => (
+                  <RoomModelCard
+                    key={model.id}
+                    model={model}
+                    selected={model.id === draft.modelId}
+                    onSelect={selectRoomModel}
+                  />
+                ))}
               </div>
             </section>
 
-            <section>
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">2. Pick room plan</h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                {roomPlans.map((plan) => {
-                  const selected = plan.id === selectedPlanId;
+            <section className="rooms-v2-builder-step">
+              <div className="rooms-v2-step-heading">
+                <span>02</span>
+                <div>
+                  <p className="rooms-v2-eyebrow">Planning tier</p>
+                  <h2>Estimate the room size and operating scope.</h2>
+                  <p>Prices are preserved from the existing room planner; no billing flow is connected.</p>
+                </div>
+              </div>
+              <div className="rooms-v2-plan-grid">
+                {ROOM_PLANS.map((plan) => {
+                  const selected = plan.id === draft.planId;
                   return (
-                    <button key={plan.id} type="button" onClick={() => setSelectedPlanId(plan.id)} aria-pressed={selected} className={`rounded-[1.5rem] border p-5 text-left shadow-xl shadow-black/5 transition ${selected ? "border-amber-600 bg-amber-50/70 dark:bg-amber-500/10" : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] hover:bg-[var(--loombus-surface-muted)]"}`}>
-                      <span className="flex items-start justify-between gap-4">
-                        <span>
-                          <span className="block text-base font-black">{plan.name}</span>
-                          <span className="mt-2 block text-sm font-bold text-[var(--loombus-text-muted)]">{plan.members}</span>
-                          <span className="mt-2 block text-sm leading-6 text-[var(--loombus-text-muted)]">{plan.detail}</span>
-                        </span>
-                        <span className="shrink-0 text-base font-black">{plan.price}</span>
+                    <button
+                      key={plan.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => {
+                        setDraft((current) => ({ ...current, planId: plan.id }));
+                        setStatusMessage("");
+                      }}
+                      className={`rooms-v2-plan-card${selected ? " is-selected" : ""}`}
+                    >
+                      <div className="rooms-v2-plan-heading">
+                        <div>
+                          <strong>{plan.name}</strong>
+                          <span>{plan.members}</span>
+                        </div>
+                        <b>{plan.price}</b>
+                      </div>
+                      <p>{plan.detail}</p>
+                      <span className="rooms-v2-plan-note">
+                        {plan.paid ? "Checkout not connected" : "Provisioning not connected"}
                       </span>
+                      {selected ? (
+                        <span className="rooms-v2-selected-mark">
+                          <Check aria-hidden="true" size={13} />
+                          Selected
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
               </div>
             </section>
 
-            <section>
-              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">3. Name the room</h2>
-              <div className="mt-4 space-y-4">
-                <label className="block">
-                  <span className="sr-only">Room name</span>
-                  <input value={roomName} onChange={(event) => setRoomName(event.target.value)} placeholder="Room name" aria-invalid={showErrors && !nameIsValid} className="w-full rounded-[1.25rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-5 py-4 text-base font-bold outline-none shadow-xl shadow-black/5" />
-                  {showErrors && !nameIsValid && <span className="mt-2 block text-sm font-bold text-red-600">Enter a room name with at least 3 characters.</span>}
+            <section className="rooms-v2-builder-step">
+              <div className="rooms-v2-step-heading">
+                <span>03</span>
+                <div>
+                  <p className="rooms-v2-eyebrow">Room identity</p>
+                  <h2>Name the room and state its purpose clearly.</h2>
+                </div>
+              </div>
+              <div className="rooms-v2-identity-form">
+                <label>
+                  <span>Room name</span>
+                  <input
+                    type="text"
+                    value={draft.roomName}
+                    maxLength={80}
+                    aria-invalid={showErrors && !nameIsValid}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, roomName: event.target.value }));
+                      setStatusMessage("");
+                    }}
+                    placeholder="Room name"
+                  />
+                  {showErrors && !nameIsValid ? (
+                    <small>Enter a room name with at least 3 characters.</small>
+                  ) : null}
                 </label>
-                <label className="block">
-                  <span className="sr-only">Room description</span>
-                  <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={5} placeholder="What is this room for?" aria-invalid={showErrors && !descriptionIsValid} className="w-full resize-none rounded-[1.25rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-5 py-4 text-base leading-7 outline-none shadow-xl shadow-black/5" />
-                  {showErrors && !descriptionIsValid && <span className="mt-2 block text-sm font-bold text-red-600">Enter a description with at least 10 characters.</span>}
+                <label>
+                  <span>Room purpose</span>
+                  <textarea
+                    value={draft.description}
+                    maxLength={600}
+                    rows={6}
+                    aria-invalid={showErrors && !descriptionIsValid}
+                    onChange={(event) => {
+                      setDraft((current) => ({ ...current, description: event.target.value }));
+                      setStatusMessage("");
+                    }}
+                    placeholder="What is this private room for?"
+                  />
+                  <div className="rooms-v2-field-meta">
+                    {showErrors && !descriptionIsValid ? (
+                      <small>Enter a purpose with at least 10 characters.</small>
+                    ) : <span />}
+                    <span>{draft.description.length}/600</span>
+                  </div>
                 </label>
               </div>
             </section>
           </div>
 
-          <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-            <section className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 shadow-xl shadow-black/5">
-              <div className="flex items-center gap-3">
-                <Lock className="h-5 w-5 text-amber-700 dark:text-amber-500" aria-hidden="true" />
-                <h2 className="text-sm font-black uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">Private by default</h2>
-              </div>
-              <div className="mt-5 space-y-4">
-                {privateDefaults.map((item) => (
-                  <p key={item} className="flex items-start gap-3 text-sm font-bold text-[var(--loombus-text-muted)]">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
-                    {item}
-                  </p>
-                ))}
-              </div>
+          <aside className="rooms-v2-builder-sidebar">
+            <section className="rooms-v2-builder-summary">
+              <p className="rooms-v2-eyebrow">Current setup</p>
+              <h2>{trimmedName || selectedModel.shortTitle}</h2>
+              <p>{selectedModel.title}</p>
+              <dl>
+                <div>
+                  <dt>Planning tier</dt>
+                  <dd>{selectedPlan.name}</dd>
+                </div>
+                <div>
+                  <dt>Capacity</dt>
+                  <dd>{selectedPlan.members}</dd>
+                </div>
+                <div>
+                  <dt>Preview price</dt>
+                  <dd>{selectedPlan.price}</dd>
+                </div>
+                <div>
+                  <dt>Calendar use</dt>
+                  <dd>{selectedModel.calendarUse}</dd>
+                </div>
+              </dl>
+              <button type="button" onClick={continueToReview} className="rooms-v2-button rooms-v2-button-primary">
+                Review setup
+                <ArrowRight aria-hidden="true" size={17} />
+              </button>
+              {statusMessage ? <p className="rooms-v2-status-message" role="status">{statusMessage}</p> : null}
             </section>
 
-            <section className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 shadow-xl shadow-black/5">
-              <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">Selected</p>
-              <h2 className="mt-3 text-2xl font-black">{roomName || selectedType.shortTitle}</h2>
-              <p className="mt-3 text-base text-[var(--loombus-text-muted)]">{selectedType.title} · {selectedPlan.name}</p>
-              <p className="mt-2 text-sm font-black text-[var(--loombus-text-muted)]">{selectedPlan.members}</p>
-              <button type="button" onClick={continueToReview} className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-[var(--loombus-primary-bg)] px-5 py-4 text-sm font-black text-[var(--loombus-primary-text)] transition hover:opacity-90">
-                Continue to review
-              </button>
-              <p className="mt-3 text-center text-xs leading-5 text-[var(--loombus-text-subtle)]">This only opens a review step. No room or checkout is created.</p>
+            <section className="rooms-v2-builder-boundary">
+              <div>
+                <Lock aria-hidden="true" size={20} />
+                <h2>Private by default</h2>
+              </div>
+              <p>Room content is intended to remain inside its membership and role boundary.</p>
+              <ul>
+                <li>No public Discussion is created</li>
+                <li>No owner or member record is created</li>
+                <li>No calendar event or invitation is created</li>
+                <li>No subscription or payment is started</li>
+              </ul>
             </section>
           </aside>
         </section>
-      </section>
+      </div>
     </main>
   );
 }

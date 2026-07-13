@@ -1,0 +1,78 @@
+.rooms-v2-room-unavailable-page {
+  display: grid;
+  align-items: start;
+}
+
+.rooms-v2-unavailable-shell {
+  width: min(100%, 58rem);
+}
+
+.rooms-v2-unavailable-card {
+  margin-top: 0.35rem;
+  border: 1px solid var(--rooms-accent-border);
+  border-radius: 2rem;
+  padding: clamp(1.35rem, 4vw, 2.6rem);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(203, 171, 91, 0.16), transparent 24rem),
+    var(--loombus-surface);
+  box-shadow: 0 24px 75px rgba(0, 0, 0, 0.1);
+}
+
+.rooms-v2-unavailable-icon {
+  width: 3.2rem;
+  height: 3.2rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--rooms-accent-border);
+  border-radius: 1.05rem;
+  display: grid;
+  place-items: center;
+  background: var(--rooms-accent-surface);
+  color: var(--rooms-accent-text);
+}
+
+.rooms-v2-unavailable-card h1 {
+  margin: 0.7rem 0 0;
+  max-width: 16ch;
+  color: var(--loombus-text);
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 690;
+  letter-spacing: -0.055em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.rooms-v2-unavailable-card > p:not(.rooms-v2-eyebrow) {
+  margin: 1rem 0 0;
+  max-width: 46rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.7;
+}
+
+.rooms-v2-unavailable-boundary {
+  margin-top: 1.2rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.15rem;
+  padding: 0.9rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background: var(--loombus-page-bg);
+  color: var(--rooms-accent-text);
+}
+
+.rooms-v2-unavailable-boundary div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.rooms-v2-unavailable-boundary strong {
+  color: var(--loombus-text);
+  font-size: 0.76rem;
+}
+
+.rooms-v2-unavailable-boundary span {
+  color: var(--loombus-text-muted);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
