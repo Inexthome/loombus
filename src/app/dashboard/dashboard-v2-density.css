@@ -1,0 +1,79 @@
+/* Desktop density pass for the Dashboard V2 review.
+   Keeps the full-width contribution metrics while tightening section rhythm
+   and matching low-card-count sections to the content they actually contain. */
+
+@media (min-width: 64rem) {
+  .dashboard-v2-shell {
+    gap: 0.75rem;
+  }
+
+  .dashboard-v2-section {
+    padding: 1.125rem 0;
+    gap: 1.25rem;
+  }
+
+  .dashboard-v2-workspace-grid {
+    margin: 0.75rem 0;
+  }
+
+  /* A small attention queue should read as one focused unit rather than
+     a narrow card separated from its section action by the entire canvas. */
+  .dashboard-v2-section:has(> .dashboard-v2-attention-grid) {
+    width: min(100%, 62rem);
+    justify-self: start;
+  }
+
+  .dashboard-v2-attention-grid {
+    grid-template-columns: repeat(auto-fit, minmax(22rem, 30rem));
+    justify-content: start;
+    gap: 1rem;
+  }
+
+  .dashboard-v2-attention-card {
+    min-height: 10.25rem;
+    padding: 1.2rem;
+  }
+
+  /* Preserve the strong four-card contribution row exactly across the
+     available dashboard width. */
+  .dashboard-v2-section:has(> .dashboard-v2-metric-grid) {
+    width: 100%;
+  }
+
+  /* Topic cards should expand when only one or two topics have signal,
+     while still supporting a balanced three-column row as activity grows. */
+  .dashboard-v2-section:has(> .dashboard-v2-topic-grid),
+  .dashboard-v2-section:has(> .dashboard-v2-discussion-grid) {
+    width: min(100%, 70rem);
+    justify-self: start;
+  }
+
+  .dashboard-v2-topic-grid {
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: 1rem;
+  }
+
+  /* Recent threads use a deliberate two-column return path instead of
+     leaving two small cards stranded at the left edge of a four-column grid. */
+  .dashboard-v2-discussion-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .dashboard-v2-topic-card,
+  .dashboard-v2-discussion-card {
+    padding: 1.15rem;
+  }
+}
+
+@media (min-width: 42rem) and (max-width: 63.999rem) {
+  .dashboard-v2-section {
+    padding: 1rem 0;
+    gap: 1.15rem;
+  }
+
+  .dashboard-v2-topic-grid,
+  .dashboard-v2-discussion-grid {
+    gap: 0.9rem;
+  }
+}

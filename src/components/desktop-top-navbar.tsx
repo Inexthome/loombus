@@ -72,7 +72,7 @@ type DropdownItem = {
 
 const discoveryItems: DropdownItem[] = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/dashboard", label: "Home Status", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/onboarding", label: "Onboarding", icon: Sparkles },
   { href: "/topics", label: "Signal Topics", icon: Tags },
   { href: "/people", label: "People", icon: Users },
