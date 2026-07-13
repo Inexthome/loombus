@@ -2,6 +2,7 @@ import "./globals.css";
 import "./loombus-brand-accent.css";
 import "./desktop-nav-top.css";
 import "./desktop-top-navbar.css";
+import "./mobile-navigation-shell.css";
 import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
 import "./home-v2-shell.css";
@@ -13,6 +14,7 @@ import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
+import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
 import { SessionLifecycleGuard } from "@/components/session-lifecycle-guard";
@@ -100,6 +102,7 @@ export default function RootLayout({
           }}
         />
         <DesktopTopNavbar />
+        <MobileNavigationShell />
         <ClientLayout>{children}</ClientLayout>
         <AuthSessionCleanup />
         <SessionLifecycleGuard />
