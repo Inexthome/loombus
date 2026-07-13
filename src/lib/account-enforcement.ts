@@ -6,8 +6,6 @@ export type AccountStatus =
   | "deactivated"
   | "deletion_requested";
 
-export type AccountEnforcementStatus = AccountStatus | "unknown";
-
 export type AccountEnforcementCode =
   | "account_suspended"
   | "account_banned"
@@ -23,14 +21,14 @@ type AccountEnforcementProfile = {
 
 export type AccountEnforcementResult = {
   allowed: boolean;
-  status: AccountEnforcementStatus;
+  status: AccountStatus;
   errorMessage?: string;
   code?: AccountEnforcementCode;
 };
 
 function normalizeAccountStatus(
   status: string | null | undefined
-): AccountEnforcementStatus {
+): AccountStatus | null {
   if (status === null || status === undefined || status === "") {
     return "active";
   }
@@ -46,7 +44,7 @@ function normalizeAccountStatus(
     return status;
   }
 
-  return "unknown";
+  return null;
 }
 
 function formatSuspensionMessage(profile: AccountEnforcementProfile) {
@@ -97,7 +95,7 @@ function formatDeletionRequestedMessage() {
 function getUnverifiedAccountResult(): AccountEnforcementResult {
   return {
     allowed: false,
-    status: "unknown",
+    status: "active",
     code: "account_access_unverified",
     errorMessage: "Account access could not be verified.",
   };
@@ -112,7 +110,7 @@ export function getAccountEnforcementResult(
 
   const status = normalizeAccountStatus(profile.account_status);
 
-  if (status === "unknown") {
+  if (!status) {
     return getUnverifiedAccountResult();
   }
 
