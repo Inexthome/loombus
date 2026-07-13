@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { supabase } from "@/lib/supabase/client";
 
 const PROTECTED_PATH_PREFIXES = [
@@ -28,13 +29,6 @@ const PROTECTED_PATH_PREFIXES = [
   "/onboarding",
   "/age-gate",
 ];
-
-const BLOCKED_ACCOUNT_STATUSES = new Set([
-  "suspended",
-  "banned",
-  "deactivated",
-  "deletion_requested",
-]);
 
 function isProtectedPath(pathname: string) {
   return PROTECTED_PATH_PREFIXES.some(
@@ -90,34 +84,42 @@ export function SessionLifecycleGuard() {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("account_status")
+        .select("account_status, enforcement_reason, suspended_until")
         .eq("id", userData.user.id)
         .maybeSingle();
 
       if (profileError) {
-        throw profileError;
+        router.replace(getAccountAccessHref("verification_unavailable"));
+        return false;
       }
 
-      const accountStatus = profile?.account_status || "active";
+      if (!profile) {
+        router.replace(getAccountAccessHref("profile_unavailable"));
+        return false;
+      }
 
-      if (BLOCKED_ACCOUNT_STATUSES.has(accountStatus)) {
-        await supabase.auth.signOut({ scope: "local" });
-        router.replace(getAccountAccessHref(accountStatus));
+      const enforcement = getAccountEnforcementResult(profile);
+
+      if (!enforcement.allowed) {
+        if (enforcement.status !== "unknown") {
+          await supabase.auth.signOut({ scope: "local" });
+        }
+
+        router.replace(
+          getAccountAccessHref(
+            enforcement.status === "unknown"
+              ? "account_access_unverified"
+              : enforcement.status
+          )
+        );
         return false;
       }
 
       setChecking(false);
       return true;
     } catch {
-      const { data } = await supabase.auth.getSession();
-
-      if (!data.session) {
-        router.replace(getLoginHref(pathname));
-        return false;
-      }
-
-      setChecking(false);
-      return true;
+      router.replace(getAccountAccessHref("verification_unavailable"));
+      return false;
     }
   }, [pathname, protectedPath, router]);
 
