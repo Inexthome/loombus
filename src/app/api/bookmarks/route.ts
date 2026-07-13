@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -22,8 +23,8 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+function jsonError(message: string, status: number, code?: string) {
+  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
 }
 
 function isValidUuid(value: unknown): value is string {
@@ -44,13 +45,14 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const accountAccess = await verifyRequestAccountAccess(supabase);
 
-  if (userError || !user) {
-    return jsonError("Unauthorized.", 401);
+  if (!accountAccess.ok) {
+    return jsonError(
+      accountAccess.error,
+      accountAccess.status,
+      accountAccess.code
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
   const { data: bookmark, error } = await supabase
     .from("bookmarks")
     .insert({
-      user_id: user.id,
+      user_id: accountAccess.user.id,
       discussion_id: discussionId,
     })
     .select("id")
@@ -85,20 +87,24 @@ export async function DELETE(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const accountAccess = await verifyRequestAccountAccess(supabase);
 
-  if (userError || !user) {
-    return jsonError("Unauthorized.", 401);
+  if (!accountAccess.ok) {
+    return jsonError(
+      accountAccess.error,
+      accountAccess.status,
+      accountAccess.code
+    );
   }
 
   const body = await request.json().catch(() => null);
   const bookmarkId = body?.bookmarkId;
   const discussionId = body?.discussionId;
 
-  let query = supabase.from("bookmarks").delete().eq("user_id", user.id);
+  let query = supabase
+    .from("bookmarks")
+    .delete()
+    .eq("user_id", accountAccess.user.id);
 
   if (isValidUuid(bookmarkId)) {
     query = query.eq("id", bookmarkId);

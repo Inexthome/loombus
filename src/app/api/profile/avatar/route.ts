@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -22,8 +23,8 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+function jsonError(message: string, status: number, code?: string) {
+  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
 }
 
 export async function POST(request: NextRequest) {
@@ -35,13 +36,14 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const accountAccess = await verifyRequestAccountAccess(supabase);
 
-  if (userError || !user) {
-    return jsonError("Unauthorized.", 401);
+  if (!accountAccess.ok) {
+    return jsonError(
+      accountAccess.error,
+      accountAccess.status,
+      accountAccess.code
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest) {
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-  const expectedPrefix = `${supabaseUrl}/storage/v1/object/public/avatars/${user.id}/`;
+  const expectedPrefix = `${supabaseUrl}/storage/v1/object/public/avatars/${accountAccess.user.id}/`;
 
   if (!avatarUrl.startsWith(expectedPrefix)) {
     return jsonError("Invalid avatar URL.", 400);
@@ -62,10 +64,13 @@ export async function POST(request: NextRequest) {
   const { error } = await supabase
     .from("profiles")
     .update({ avatar_url: avatarUrl })
-    .eq("id", user.id);
+    .eq("id", accountAccess.user.id);
 
   if (error) {
-    return jsonError(error.message || "Avatar uploaded, but profile update failed.", 400);
+    return jsonError(
+      error.message || "Avatar uploaded, but profile update failed.",
+      400
+    );
   }
 
   return NextResponse.json({ avatarUrl });

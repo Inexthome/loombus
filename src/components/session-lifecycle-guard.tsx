@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { supabase } from "@/lib/supabase/client";
 
 const PROTECTED_PATH_PREFIXES = [
@@ -29,17 +30,14 @@ const PROTECTED_PATH_PREFIXES = [
   "/age-gate",
 ];
 
-const BLOCKED_ACCOUNT_STATUSES = new Set([
-  "suspended",
-  "banned",
-  "deactivated",
-  "deletion_requested",
-]);
-
 function isProtectedPath(pathname: string) {
   return PROTECTED_PATH_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
+}
+
+function isAccountBootstrapPath(pathname: string) {
+  return pathname === "/age-gate";
 }
 
 function getCurrentDestination(pathname: string) {
@@ -90,34 +88,48 @@ export function SessionLifecycleGuard() {
 
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("account_status")
+        .select("account_status, enforcement_reason, suspended_until")
         .eq("id", userData.user.id)
         .maybeSingle();
 
       if (profileError) {
-        throw profileError;
+        router.replace(getAccountAccessHref("verification_unavailable"));
+        return false;
       }
 
-      const accountStatus = profile?.account_status || "active";
+      if (!profile) {
+        if (isAccountBootstrapPath(pathname)) {
+          setChecking(false);
+          return true;
+        }
 
-      if (BLOCKED_ACCOUNT_STATUSES.has(accountStatus)) {
-        await supabase.auth.signOut({ scope: "local" });
-        router.replace(getAccountAccessHref(accountStatus));
+        router.replace(getAccountAccessHref("profile_unavailable"));
+        return false;
+      }
+
+      const enforcement = getAccountEnforcementResult(profile);
+
+      if (!enforcement.allowed) {
+        const unverified =
+          enforcement.code === "account_access_unverified";
+
+        if (!unverified) {
+          await supabase.auth.signOut({ scope: "local" });
+        }
+
+        router.replace(
+          getAccountAccessHref(
+            unverified ? "account_access_unverified" : enforcement.status
+          )
+        );
         return false;
       }
 
       setChecking(false);
       return true;
     } catch {
-      const { data } = await supabase.auth.getSession();
-
-      if (!data.session) {
-        router.replace(getLoginHref(pathname));
-        return false;
-      }
-
-      setChecking(false);
-      return true;
+      router.replace(getAccountAccessHref("verification_unavailable"));
+      return false;
     }
   }, [pathname, protectedPath, router]);
 

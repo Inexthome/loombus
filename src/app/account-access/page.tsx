@@ -24,6 +24,21 @@ const STATUS_COPY: Record<string, { title: string; message: string }> = {
     message:
       "Authenticated account actions are restricted while your deletion request is being reviewed.",
   },
+  verification_unavailable: {
+    title: "We could not verify account access.",
+    message:
+      "Loombus could not confirm the current account status. Protected pages remain closed until verification succeeds. Return later or contact support if the problem continues.",
+  },
+  profile_unavailable: {
+    title: "Your account profile could not be verified.",
+    message:
+      "Protected Loombus features require a verified account profile. Contact support so the account record can be reviewed safely.",
+  },
+  account_access_unverified: {
+    title: "Your account status needs review.",
+    message:
+      "Loombus could not recognize the current account-access state. Protected pages and account mutations remain closed until the status is reviewed.",
+  },
 };
 
 export default function AccountAccessPage() {
@@ -52,7 +67,7 @@ export default function AccountAccessPage() {
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link
-            href="/contact"
+            href="/support"
             className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
           >
             Contact support
