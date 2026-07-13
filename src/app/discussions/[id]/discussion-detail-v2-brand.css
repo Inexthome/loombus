@@ -1,0 +1,151 @@
+.discussion-v2-page {
+  --discussion-v2-gold: #CBAB5B;
+  --discussion-v2-cream: #FEFBEC;
+  --discussion-v2-gold-rgb: 203, 171, 91;
+  --discussion-v2-accent-text: #CBAB5B;
+  --discussion-v2-accent-surface: rgba(203, 171, 91, 0.12);
+  --discussion-v2-accent-surface-strong: rgba(203, 171, 91, 0.18);
+  --discussion-v2-accent-border: rgba(203, 171, 91, 0.46);
+  --discussion-v2-primary-bg: #FEFBEC;
+  --discussion-v2-primary-text: #17140B;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(203, 171, 91, 0.12), transparent 34rem),
+    var(--loombus-page-bg);
+}
+
+/* Brand accent: Loombus Gold */
+.discussion-v2-section-nav button span,
+.discussion-v2-mention,
+.discussion-v2-file-icon,
+.discussion-v2-composer-reference span,
+.discussion-v2-reply-suggestions > div:first-child,
+.discussion-v2-pinned-label,
+.discussion-v2-reference-label,
+.discussion-v2-side-link,
+.discussion-v2-side-card-heading a,
+.discussion-v2-related-list span {
+  color: var(--discussion-v2-accent-text);
+}
+
+.discussion-v2-topic-row .discussion-v2-topic-pill,
+.discussion-v2-ai-tabs button[aria-selected="true"],
+.discussion-v2-ai-lock > span,
+.discussion-v2-reaction-row button[aria-pressed="true"],
+.discussion-v2-composer-reference,
+.discussion-v2-reference-card {
+  border-color: var(--discussion-v2-accent-border);
+  background: var(--discussion-v2-accent-surface);
+}
+
+.discussion-v2-topic-row .discussion-v2-topic-pill,
+.discussion-v2-ai-tabs button[aria-selected="true"],
+.discussion-v2-ai-lock > span,
+.discussion-v2-reaction-row button[aria-pressed="true"],
+.discussion-v2-ai-rating button[aria-pressed="true"] {
+  color: var(--discussion-v2-accent-text);
+}
+
+.discussion-v2-tags a:hover,
+.discussion-v2-helper-group button:hover,
+.discussion-v2-ai-rating button[aria-pressed="true"] {
+  border-color: var(--discussion-v2-gold);
+  color: var(--discussion-v2-accent-text);
+}
+
+.discussion-v2-helper-group button:hover {
+  background: var(--discussion-v2-accent-surface);
+}
+
+.discussion-v2-composer-card textarea:focus,
+.discussion-v2-reply-edit textarea:focus,
+.discussion-v2-modal select:focus {
+  border-color: var(--discussion-v2-gold);
+  box-shadow: 0 0 0 4px rgba(203, 171, 91, 0.14);
+}
+
+.discussion-v2-reply-card.is-pinned {
+  border-color: var(--discussion-v2-accent-border);
+  box-shadow: 0 22px 70px rgba(203, 171, 91, 0.11);
+}
+
+.discussion-v2-button-primary,
+.discussion-v2-mobile-bar button:first-child {
+  border-color: var(--discussion-v2-gold);
+  background: var(--discussion-v2-primary-bg);
+  color: var(--discussion-v2-primary-text);
+}
+
+.discussion-v2-button-primary:hover:not(:disabled),
+.discussion-v2-mobile-bar button:first-child:hover:not(:disabled) {
+  border-color: var(--discussion-v2-gold);
+  background: var(--discussion-v2-gold);
+  color: #17140B;
+}
+
+.discussion-v2-button:focus-visible,
+.discussion-v2-icon-button:focus-visible,
+.discussion-v2-section-nav button:focus-visible,
+.discussion-v2-ai-tabs button:focus-visible,
+.discussion-v2-reaction-row button:focus-visible,
+.discussion-v2-reply-footer button:focus-visible,
+.discussion-v2-side-actions button:focus-visible,
+.discussion-v2-mobile-bar button:focus-visible,
+.discussion-v2-tags a:focus-visible,
+.discussion-v2-related-list a:focus-visible {
+  outline: 3px solid rgba(203, 171, 91, 0.58);
+  outline-offset: 3px;
+}
+
+/* Cream-highlighted brand surfaces */
+.discussion-v2-plan-chip,
+.discussion-v2-shortcut {
+  border-color: var(--discussion-v2-accent-border);
+}
+
+:root[data-loombus-theme="light"] .discussion-v2-page {
+  --discussion-v2-accent-text: #5B4A1E;
+  --discussion-v2-accent-surface: #FEFBEC;
+  --discussion-v2-accent-surface-strong: #F8F0D2;
+  --discussion-v2-accent-border: #CBAB5B;
+  --discussion-v2-primary-bg: #CBAB5B;
+  --discussion-v2-primary-text: #17140B;
+}
+
+:root[data-loombus-theme="light"] .discussion-v2-topic-row .discussion-v2-topic-pill,
+:root[data-loombus-theme="light"] .discussion-v2-ai-tabs button[aria-selected="true"],
+:root[data-loombus-theme="light"] .discussion-v2-reaction-row button[aria-pressed="true"],
+:root[data-loombus-theme="light"] .discussion-v2-composer-reference,
+:root[data-loombus-theme="light"] .discussion-v2-reference-card,
+:root[data-loombus-theme="light"] .discussion-v2-helper-group button:hover {
+  background: #FEFBEC;
+}
+
+:root[data-loombus-theme="light"] .discussion-v2-ai-lock > span,
+:root[data-loombus-theme="light"] .discussion-v2-plan-chip,
+:root[data-loombus-theme="light"] .discussion-v2-shortcut {
+  background: #FEFBEC;
+  color: #5B4A1E;
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-loombus-theme="system"] .discussion-v2-page {
+    --discussion-v2-accent-text: #5B4A1E;
+    --discussion-v2-accent-surface: #FEFBEC;
+    --discussion-v2-accent-surface-strong: #F8F0D2;
+    --discussion-v2-accent-border: #CBAB5B;
+    --discussion-v2-primary-bg: #CBAB5B;
+    --discussion-v2-primary-text: #17140B;
+  }
+
+  :root[data-loombus-theme="system"] .discussion-v2-topic-row .discussion-v2-topic-pill,
+  :root[data-loombus-theme="system"] .discussion-v2-ai-tabs button[aria-selected="true"],
+  :root[data-loombus-theme="system"] .discussion-v2-reaction-row button[aria-pressed="true"],
+  :root[data-loombus-theme="system"] .discussion-v2-composer-reference,
+  :root[data-loombus-theme="system"] .discussion-v2-reference-card,
+  :root[data-loombus-theme="system"] .discussion-v2-helper-group button:hover,
+  :root[data-loombus-theme="system"] .discussion-v2-ai-lock > span,
+  :root[data-loombus-theme="system"] .discussion-v2-plan-chip,
+  :root[data-loombus-theme="system"] .discussion-v2-shortcut {
+    background: #FEFBEC;
+  }
+}
