@@ -110,15 +110,16 @@ export function SessionLifecycleGuard() {
       const enforcement = getAccountEnforcementResult(profile);
 
       if (!enforcement.allowed) {
-        if (enforcement.status !== "unknown") {
+        const unverified =
+          enforcement.code === "account_access_unverified";
+
+        if (!unverified) {
           await supabase.auth.signOut({ scope: "local" });
         }
 
         router.replace(
           getAccountAccessHref(
-            enforcement.status === "unknown"
-              ? "account_access_unverified"
-              : enforcement.status
+            unverified ? "account_access_unverified" : enforcement.status
           )
         );
         return false;
