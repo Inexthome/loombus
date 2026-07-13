@@ -1,4 +1,19 @@
-type AccountStatus = "active" | "warned" | "suspended" | "banned" | "deactivated" | "deletion_requested";
+export type AccountStatus =
+  | "active"
+  | "warned"
+  | "suspended"
+  | "banned"
+  | "deactivated"
+  | "deletion_requested";
+
+export type AccountEnforcementStatus = AccountStatus | "unknown";
+
+export type AccountEnforcementCode =
+  | "account_suspended"
+  | "account_banned"
+  | "account_deactivated"
+  | "account_deletion_requested"
+  | "account_access_unverified";
 
 type AccountEnforcementProfile = {
   account_status: string | null;
@@ -8,12 +23,18 @@ type AccountEnforcementProfile = {
 
 export type AccountEnforcementResult = {
   allowed: boolean;
-  status: AccountStatus;
+  status: AccountEnforcementStatus;
   errorMessage?: string;
-  code?: "account_suspended" | "account_banned" | "account_deactivated" | "account_deletion_requested";
+  code?: AccountEnforcementCode;
 };
 
-function normalizeAccountStatus(status: string | null | undefined): AccountStatus {
+function normalizeAccountStatus(
+  status: string | null | undefined
+): AccountEnforcementStatus {
+  if (status === null || status === undefined || status === "") {
+    return "active";
+  }
+
   if (
     status === "active" ||
     status === "warned" ||
@@ -25,7 +46,7 @@ function normalizeAccountStatus(status: string | null | undefined): AccountStatu
     return status;
   }
 
-  return "active";
+  return "unknown";
 }
 
 function formatSuspensionMessage(profile: AccountEnforcementProfile) {
@@ -73,12 +94,29 @@ function formatDeletionRequestedMessage() {
   return "Your Loombus account has an open deletion request. Account actions are restricted while the request is pending.";
 }
 
+function getUnverifiedAccountResult(): AccountEnforcementResult {
+  return {
+    allowed: false,
+    status: "unknown",
+    code: "account_access_unverified",
+    errorMessage: "Account access could not be verified.",
+  };
+}
+
 export function getAccountEnforcementResult(
   profile: AccountEnforcementProfile | null
 ): AccountEnforcementResult {
-  const status = normalizeAccountStatus(profile?.account_status);
+  if (!profile) {
+    return getUnverifiedAccountResult();
+  }
 
-  if (!profile || status === "active" || status === "warned") {
+  const status = normalizeAccountStatus(profile.account_status);
+
+  if (status === "unknown") {
+    return getUnverifiedAccountResult();
+  }
+
+  if (status === "active" || status === "warned") {
     return {
       allowed: true,
       status,
@@ -90,7 +128,11 @@ export function getAccountEnforcementResult(
       ? new Date(profile.suspended_until).getTime()
       : null;
 
-    if (suspendedUntil && Number.isFinite(suspendedUntil) && suspendedUntil <= Date.now()) {
+    if (
+      suspendedUntil &&
+      Number.isFinite(suspendedUntil) &&
+      suspendedUntil <= Date.now()
+    ) {
       return {
         allowed: true,
         status,
