@@ -1,0 +1,10 @@
+@media (min-width: 64rem) {
+  .search-v2-right-rail {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 30;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-left: 1px solid var(--loombus-border);
+  }
+}
