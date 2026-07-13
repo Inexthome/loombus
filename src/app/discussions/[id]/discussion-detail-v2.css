@@ -1,509 +1,140 @@
-.discussion-detail-v2-shell {
+.discussion-detail-canonical {
   --discussion-gold: #cbab5b;
   --discussion-cream: #fefbec;
-  --discussion-gold-soft: color-mix(in srgb, var(--discussion-gold) 13%, transparent);
-  --discussion-gold-border: color-mix(in srgb, var(--discussion-gold) 48%, var(--loombus-border));
+  --discussion-gold-soft: color-mix(in srgb, var(--discussion-gold) 12%, transparent);
+  --discussion-gold-border: color-mix(in srgb, var(--discussion-gold) 42%, var(--loombus-border));
   --loombus-muted-surface: var(--loombus-surface-muted);
   --loombus-muted-text: var(--loombus-text-muted);
-  position: fixed;
-  inset: 0;
-  z-index: 80;
   min-height: 100vh;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text);
+}
+
+/*
+  The discussion route stays inside ClientLayout. It must not create a second
+  navigation shell, cover the desktop Signal Rail, or replace the mobile bars.
+*/
+.discussion-detail-canonical > main.loombus-shell-with-right-rail {
+  min-height: 100vh;
   background:
-    radial-gradient(circle at 90% -8rem, var(--discussion-gold-soft), transparent 30rem),
-    var(--loombus-page-bg);
-  color: var(--loombus-text);
-  isolation: isolate;
+    radial-gradient(circle at 74% -10rem, var(--discussion-gold-soft), transparent 31rem),
+    var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
 }
 
-.discussion-detail-v2-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 70;
-  min-height: 4.5rem;
-  border-bottom: 1px solid var(--loombus-border);
-  background: color-mix(in srgb, var(--loombus-surface) 94%, transparent);
-  box-shadow: 0 10px 35px rgb(0 0 0 / 0.07);
-  backdrop-filter: blur(22px);
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl {
+  width: 100%;
+  max-width: 48rem !important;
 }
 
-.discussion-detail-v2-topbar-inner {
-  display: grid;
-  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
-  align-items: center;
-  gap: 1.25rem;
-  width: min(100%, 96rem);
-  min-height: 4.5rem;
-  margin-inline: auto;
-  padding-inline: 1.5rem;
-}
-
-.discussion-detail-v2-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: fit-content;
-  min-width: 0;
-  color: var(--loombus-text);
-  text-decoration: none;
-  transition: opacity 160ms ease;
-}
-
-.discussion-detail-v2-brand:hover {
-  opacity: 0.84;
-}
-
-.discussion-detail-v2-brand-mark {
-  display: grid;
-  width: 2.6rem;
-  height: 2.6rem;
-  flex: 0 0 auto;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid var(--discussion-gold-border);
-  border-radius: 0.95rem;
-  background: color-mix(in srgb, var(--discussion-cream) 70%, var(--loombus-surface) 30%);
-  box-shadow: 0 10px 26px color-mix(in srgb, var(--discussion-gold) 14%, transparent);
-}
-
-.discussion-detail-v2-brand-mark img {
-  width: 1.85rem;
-  height: 1.85rem;
-  object-fit: contain;
-}
-
-.discussion-detail-v2-brand-copy {
-  display: grid;
-  min-width: 0;
-  line-height: 1.08;
-}
-
-.discussion-detail-v2-brand-copy strong {
-  font-size: 1rem;
-  font-weight: 760;
-  letter-spacing: -0.025em;
-}
-
-.discussion-detail-v2-brand-copy small {
-  margin-top: 0.25rem;
-  color: var(--loombus-text-subtle);
-  font-size: 0.67rem;
-  font-weight: 650;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.discussion-detail-v2-primary-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  min-width: 0;
-  border: 1px solid var(--loombus-border);
-  border-radius: 999px;
-  background: var(--loombus-surface-muted);
-  padding: 0.28rem;
-}
-
-.discussion-detail-v2-primary-nav a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 2.4rem;
-  border-radius: 999px;
-  padding: 0.55rem 0.88rem;
-  color: var(--loombus-text-muted);
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
-}
-
-.discussion-detail-v2-primary-nav a:hover {
-  background: var(--loombus-surface-strong);
-  color: var(--loombus-text);
-}
-
-.discussion-detail-v2-primary-nav a.is-active {
-  background: var(--discussion-gold);
-  color: #17140b;
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--discussion-gold) 22%, transparent);
-}
-
-.discussion-detail-v2-primary-nav svg {
-  width: 0.95rem;
-  height: 0.95rem;
-  flex: 0 0 auto;
-  stroke-width: 2.2;
-}
-
-.discussion-detail-v2-tools {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.discussion-detail-v2-tools > a,
-.discussion-detail-v2-tools .discussion-detail-share-control button {
-  display: inline-flex;
-  min-width: 2.55rem;
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > a:first-child {
+  display: inline-flex !important;
   min-height: 2.55rem;
   align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
+  margin-bottom: 1.25rem !important;
   border: 1px solid var(--loombus-border);
   border-radius: 999px;
-  background: var(--loombus-surface-muted);
-  color: var(--loombus-text-muted);
+  background: color-mix(in srgb, var(--loombus-surface) 92%, transparent);
+  padding: 0.55rem 0.9rem;
+  color: var(--loombus-text-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 680;
   text-decoration: none;
-  transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 160ms ease;
-}
-
-.discussion-detail-v2-tools > a:hover,
-.discussion-detail-v2-tools .discussion-detail-share-control button:hover {
-  border-color: var(--discussion-gold-border);
-  background: var(--loombus-surface-strong);
-  color: var(--discussion-gold);
-  transform: translateY(-1px);
-}
-
-.discussion-detail-v2-tools > a svg,
-.discussion-detail-v2-tools .discussion-detail-share-control svg {
-  width: 1rem;
-  height: 1rem;
-  stroke-width: 2.2;
-}
-
-.discussion-detail-v2-tools .discussion-detail-share-control {
-  position: static;
-}
-
-.discussion-detail-v2-tools .discussion-detail-share-control button {
-  min-width: 0;
-  padding: 0.55rem 0.82rem;
-  font-size: 0.75rem;
-  font-weight: 720;
-}
-
-.discussion-detail-v2-tools .discussion-detail-share-control button:disabled {
-  cursor: wait;
-  opacity: 0.68;
-  transform: none;
-}
-
-.discussion-detail-v2-stage {
-  display: grid;
-  grid-template-columns: 14rem minmax(0, 1fr);
-  align-items: start;
-  gap: 1.25rem;
-  width: min(100%, 96rem);
-  margin-inline: auto;
-  padding: 1.25rem 1.5rem 6rem;
-}
-
-.discussion-detail-v2-left-rail {
-  position: sticky;
-  top: 5.75rem;
-  display: grid;
-  gap: 1rem;
-  min-width: 0;
-}
-
-.discussion-detail-v2-back-link {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-height: 2.75rem;
-  border: 1px solid var(--loombus-border);
-  border-radius: 1rem;
-  background: var(--loombus-surface);
-  padding: 0.65rem 0.8rem;
-  color: var(--loombus-text-muted);
-  font-size: 0.78rem;
-  font-weight: 720;
-  text-decoration: none;
-  box-shadow: 0 12px 30px rgb(0 0 0 / 0.06);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.06);
   transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
 
-.discussion-detail-v2-back-link:hover {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > a:first-child:hover {
   border-color: var(--discussion-gold-border);
-  color: var(--loombus-text);
+  color: var(--discussion-gold) !important;
   transform: translateY(-1px);
 }
 
-.discussion-detail-v2-back-link svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.discussion-detail-v2-left-rail section {
-  overflow: hidden;
-  border: 1px solid var(--loombus-border);
-  border-radius: 1.35rem;
-  background: var(--loombus-surface);
-  padding: 0.85rem;
-  box-shadow: 0 18px 45px rgb(0 0 0 / 0.07);
-}
-
-.discussion-detail-v2-left-rail section::before {
-  display: block;
-  height: 3px;
-  margin: -0.85rem -0.85rem 0.85rem;
-  background: linear-gradient(90deg, var(--discussion-gold), transparent 78%);
-  content: "";
-}
-
-.discussion-detail-v2-left-rail section > p {
-  margin: 0 0 0.55rem;
-  padding-inline: 0.45rem;
-  color: var(--loombus-text-subtle);
-  font-size: 0.64rem;
-  font-weight: 760;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.discussion-detail-v2-left-rail nav {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.discussion-detail-v2-left-rail nav a {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 2.7rem;
-  border-radius: 0.9rem;
-  padding: 0.6rem 0.7rem;
-  color: var(--loombus-text-muted);
-  font-size: 0.78rem;
-  font-weight: 680;
-  text-decoration: none;
-  transition: background 160ms ease, color 160ms ease;
-}
-
-.discussion-detail-v2-left-rail nav a:hover {
-  background: var(--loombus-surface-muted);
-  color: var(--loombus-text);
-}
-
-.discussion-detail-v2-left-rail nav a.is-current {
-  background: var(--discussion-gold-soft);
-  color: var(--discussion-gold);
-}
-
-.discussion-detail-v2-left-rail nav svg {
-  width: 1rem;
-  height: 1rem;
-  flex: 0 0 auto;
-  stroke-width: 2.1;
-}
-
-.discussion-detail-v2-left-note {
-  border: 1px solid var(--discussion-gold-border);
-  border-radius: 1.25rem;
-  background: color-mix(in srgb, var(--discussion-gold) 7%, var(--loombus-surface));
-  padding: 1rem;
-}
-
-.discussion-detail-v2-left-note span {
-  color: var(--discussion-gold);
-  font-size: 0.66rem;
-  font-weight: 780;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.discussion-detail-v2-left-note p {
-  margin: 0.55rem 0 0;
-  color: var(--loombus-text-muted);
-  font-size: 0.76rem;
-  line-height: 1.55;
-}
-
-.discussion-detail-v2-content {
-  min-width: 0;
-}
-
-.discussion-detail-v2-content > main {
-  min-height: calc(100vh - 7rem) !important;
-  background: transparent !important;
-  color: var(--loombus-text) !important;
-  padding: 0 0 5rem !important;
-}
-
-.discussion-detail-v2-content > main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 22rem !important;
-  align-items: start !important;
-  gap: 1.25rem !important;
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-}
-
-.discussion-detail-v2-content > main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) > .mx-auto.max-w-3xl {
-  grid-column: 1 !important;
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-}
-
-.discussion-detail-v2-content > main > .mx-auto {
-  color: var(--loombus-text);
-}
-
-.discussion-detail-v2-content main h1,
-.discussion-detail-v2-content main h2,
-.discussion-detail-v2-content main h3 {
-  color: var(--loombus-text) !important;
-}
-
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > h1 {
-  max-width: 58rem;
-  margin-top: 0.45rem;
-  margin-bottom: 0.8rem !important;
-  font-size: clamp(2.15rem, 5vw, 4.25rem) !important;
-  line-height: 0.99 !important;
-  letter-spacing: -0.052em !important;
-  text-wrap: balance;
-}
-
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > a:first-child {
-  display: inline-flex !important;
-  min-height: 2.5rem;
-  align-items: center;
-  margin-bottom: 0.9rem !important;
-  border: 1px solid var(--loombus-border);
-  border-radius: 999px;
-  background: var(--loombus-surface);
-  padding: 0.5rem 0.85rem;
-  color: var(--loombus-text-muted) !important;
-  font-size: 0.76rem !important;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > a:first-child:hover {
-  border-color: var(--discussion-gold-border);
-  color: var(--discussion-gold) !important;
-}
-
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap {
   scrollbar-width: none;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap::-webkit-scrollbar {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap::-webkit-scrollbar {
   display: none;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap > :first-child {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap > :first-child {
   border-color: var(--discussion-gold-border) !important;
   background: var(--discussion-gold-soft) !important;
   color: var(--discussion-gold) !important;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap > span {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-2.flex.flex-nowrap > span {
   border-color: var(--loombus-border) !important;
-  background: var(--loombus-surface-muted) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 88%, transparent) !important;
   color: var(--loombus-text-muted) !important;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-4.flex.flex-col {
-  max-width: 62rem;
-  margin-bottom: 1.1rem !important;
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > h1 {
+  max-width: 44rem;
+  margin-bottom: 0.85rem !important;
+  color: var(--loombus-text) !important;
+  font-size: clamp(2rem, 4.4vw, 3.75rem) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.048em !important;
+  text-wrap: balance;
+}
+
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-4.flex.flex-col {
+  margin-bottom: 1.25rem !important;
   border-bottom: 1px solid var(--loombus-border);
   padding-bottom: 1rem;
   color: var(--loombus-text-subtle) !important;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-4.flex.flex-col a {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-4.flex.flex-col a {
   color: var(--loombus-text-muted) !important;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-4.flex.flex-col a:hover {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-4.flex.flex-col a:hover {
   color: var(--discussion-gold) !important;
 }
 
-.discussion-detail-v2-content main :where(section, article, form, .rounded-3xl, .rounded-2xl, .sm\:rounded-\[1\.5rem\]) {
-  border-color: var(--loombus-border) !important;
+.discussion-detail-canonical main h1,
+.discussion-detail-canonical main h2,
+.discussion-detail-canonical main h3 {
+  color: var(--loombus-text) !important;
 }
 
-.discussion-detail-v2-content main [class*="bg-black"],
-.discussion-detail-v2-content main [class*="bg-zinc-950"],
-.discussion-detail-v2-content main [class*="bg-zinc-900"] {
-  background-color: color-mix(in srgb, var(--loombus-surface) 82%, var(--loombus-page-bg) 18%) !important;
-}
-
-.discussion-detail-v2-content main [class*="text-zinc-300"],
-.discussion-detail-v2-content main [class*="text-zinc-400"] {
+.discussion-detail-canonical main [class*="text-zinc-300"],
+.discussion-detail-canonical main [class*="text-zinc-400"] {
   color: var(--loombus-text-muted) !important;
 }
 
-.discussion-detail-v2-content main [class*="text-zinc-500"],
-.discussion-detail-v2-content main [class*="text-zinc-600"],
-.discussion-detail-v2-content main [class*="text-zinc-700"] {
+.discussion-detail-canonical main [class*="text-zinc-500"],
+.discussion-detail-canonical main [class*="text-zinc-600"],
+.discussion-detail-canonical main [class*="text-zinc-700"] {
   color: var(--loombus-text-subtle) !important;
 }
 
-.discussion-detail-v2-content main .text-white {
-  color: var(--loombus-text) !important;
+.discussion-detail-canonical main [class*="bg-black"],
+.discussion-detail-canonical main [class*="bg-zinc-950"],
+.discussion-detail-canonical main [class*="bg-zinc-900"] {
+  background-color: color-mix(in srgb, var(--loombus-surface) 86%, var(--loombus-page-bg) 14%) !important;
 }
 
-.discussion-detail-v2-content main button.bg-white,
-.discussion-detail-v2-content main a.bg-white,
-.discussion-detail-v2-content main .bg-white.text-black {
-  border-color: var(--discussion-gold) !important;
-  background: var(--discussion-gold) !important;
-  color: #17140b !important;
-  font-weight: 720;
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--discussion-gold) 17%, transparent);
-}
-
-.discussion-detail-v2-content main button.bg-white:hover,
-.discussion-detail-v2-content main a.bg-white:hover {
-  filter: brightness(1.055);
-}
-
-.discussion-detail-v2-content main textarea,
-.discussion-detail-v2-content main select,
-.discussion-detail-v2-content main input {
+.discussion-detail-canonical main :where(section, article, form, .rounded-3xl, .rounded-2xl, .sm\:rounded-\[1\.5rem\]) {
   border-color: var(--loombus-border) !important;
-  background: color-mix(in srgb, var(--loombus-surface-muted) 58%, var(--loombus-surface) 42%) !important;
-  color: var(--loombus-text) !important;
 }
 
-.discussion-detail-v2-content main textarea::placeholder,
-.discussion-detail-v2-content main input::placeholder {
-  color: var(--loombus-text-subtle) !important;
-}
-
-.discussion-detail-v2-content main textarea:focus,
-.discussion-detail-v2-content main select:focus,
-.discussion-detail-v2-content main input:focus {
-  border-color: var(--discussion-gold-border) !important;
-  box-shadow: 0 0 0 3px var(--discussion-gold-soft);
-}
-
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+/* Original discussion content remains the primary reading surface. */
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
   position: relative;
   overflow: hidden;
-  margin-bottom: 1.25rem !important;
+  margin-bottom: 1.5rem !important;
   border: 1px solid var(--discussion-gold-border);
-  border-radius: 1.6rem;
+  border-radius: 1.65rem;
   background: var(--loombus-surface) !important;
   padding: 1.25rem;
-  box-shadow: 0 22px 58px rgb(15 23 42 / 0.1);
+  box-shadow: 0 20px 58px rgb(15 23 42 / 0.09);
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5::before {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5::before {
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
@@ -511,397 +142,239 @@
   content: "";
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 > section {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 > section {
+  border-color: var(--loombus-border) !important;
   background: var(--loombus-surface-muted) !important;
   box-shadow: none !important;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 > div:last-child {
-  max-width: 76ch;
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 > div:last-child {
   color: var(--loombus-text-muted) !important;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 > div:last-child p {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 > div:last-child p {
   margin-block: 0 1rem;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section,
-.discussion-detail-v2-content .discussion-detail-center-ai-panel section,
-.discussion-detail-v2-content .discussion-detail-center-related,
-.discussion-detail-v2-content #reply-form,
-.discussion-detail-v2-content #replies > div > div {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section,
+.discussion-detail-canonical .discussion-detail-center-ai-panel section,
+.discussion-detail-canonical .discussion-detail-center-related,
+.discussion-detail-canonical #reply-form,
+.discussion-detail-canonical #replies > div > div {
   background: var(--loombus-surface) !important;
-  box-shadow: 0 18px 46px rgb(15 23 42 / 0.08) !important;
+  box-shadow: 0 18px 48px rgb(15 23 42 / 0.08) !important;
 }
 
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section:has(video),
-.discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section:has(img) {
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section:has(video),
+.discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section:has(img) {
   border-color: var(--discussion-gold-border) !important;
 }
 
-.discussion-detail-v2-content main video,
-.discussion-detail-v2-content main img {
+.discussion-detail-canonical main video,
+.discussion-detail-canonical main img {
   border-radius: 1rem;
 }
 
-.discussion-detail-v2-content [aria-label="Discussion detail tools rail"] {
-  position: sticky;
-  bottom: 1rem;
-  z-index: 25;
-  margin-inline: 0 !important;
-  border: 1px solid color-mix(in srgb, var(--loombus-border) 82%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--loombus-surface) 91%, transparent) !important;
-  padding: 0.35rem !important;
-  box-shadow: 0 16px 42px rgb(0 0 0 / 0.16);
-  backdrop-filter: blur(18px);
+.discussion-detail-canonical main button.bg-white,
+.discussion-detail-canonical main a.bg-white,
+.discussion-detail-canonical main .bg-white.text-black {
+  border-color: var(--discussion-gold) !important;
+  background: var(--discussion-gold) !important;
+  color: #17140b !important;
+  font-weight: 700;
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--discussion-gold) 17%, transparent);
 }
 
-.discussion-detail-v2-content [aria-label="Discussion detail tools rail"] button {
-  min-height: 2.55rem;
+.discussion-detail-canonical main button.bg-white:hover,
+.discussion-detail-canonical main a.bg-white:hover {
+  filter: brightness(1.055);
 }
 
-.discussion-detail-v2-content #intelligence-layer,
-.discussion-detail-v2-content #replies,
-.discussion-detail-v2-content #reply-form,
-#discussion-detail-content {
-  scroll-margin-top: 6.5rem;
+.discussion-detail-canonical main textarea,
+.discussion-detail-canonical main select,
+.discussion-detail-canonical main input {
+  border-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-surface-muted) 58%, var(--loombus-surface) 42%) !important;
+  color: var(--loombus-text) !important;
 }
 
-.discussion-detail-v2-content .discussion-detail-center-ai-panel section,
-.discussion-detail-v2-content #reply-form {
+.discussion-detail-canonical main textarea::placeholder,
+.discussion-detail-canonical main input::placeholder {
+  color: var(--loombus-text-subtle) !important;
+}
+
+.discussion-detail-canonical main textarea:focus,
+.discussion-detail-canonical main select:focus,
+.discussion-detail-canonical main input:focus {
+  border-color: var(--discussion-gold-border) !important;
+  box-shadow: 0 0 0 3px var(--discussion-gold-soft);
+}
+
+.discussion-detail-canonical [aria-label="Discussion detail tools rail"] {
+  border-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-surface) 92%, transparent) !important;
+}
+
+.discussion-detail-canonical #intelligence-layer,
+.discussion-detail-canonical #replies,
+.discussion-detail-canonical #reply-form {
+  scroll-margin-top: 5.5rem;
+}
+
+.discussion-detail-canonical .discussion-detail-center-ai-panel section,
+.discussion-detail-canonical #reply-form {
   position: relative;
   overflow: hidden;
   border-color: var(--discussion-gold-border) !important;
 }
 
-.discussion-detail-v2-content .discussion-detail-center-ai-panel section::before,
-.discussion-detail-v2-content #reply-form::before {
+.discussion-detail-canonical .discussion-detail-center-ai-panel section::before,
+.discussion-detail-canonical #reply-form::before {
   display: block;
   height: 3px;
   margin: -1rem -1rem 1rem;
-  background: linear-gradient(90deg, var(--discussion-gold), transparent 74%);
+  background: linear-gradient(90deg, var(--discussion-gold), transparent 75%);
   content: "";
 }
 
-.discussion-detail-v2-content #reply-form > label:first-child {
+.discussion-detail-canonical #reply-form > label:first-child {
   color: var(--loombus-text) !important;
-  font-size: 1rem !important;
-  font-weight: 750;
+  font-weight: 740;
 }
 
-.discussion-detail-v2-content #replies {
-  border-radius: 1.6rem;
+.discussion-detail-canonical #replies {
+  border-radius: 1.65rem;
 }
 
-.discussion-detail-v2-content #replies > div:first-child {
+.discussion-detail-canonical #replies > div:first-child {
   margin-bottom: 1rem !important;
   border-bottom: 1px solid var(--loombus-border);
   padding-bottom: 0.75rem;
 }
 
-.discussion-detail-v2-content #replies > div:last-child > div,
-.discussion-detail-v2-content #replies article {
-  border-left: 3px solid color-mix(in srgb, var(--discussion-gold) 30%, var(--loombus-border)) !important;
+.discussion-detail-canonical #replies > div:last-child > div,
+.discussion-detail-canonical #replies article {
+  border-left: 3px solid color-mix(in srgb, var(--discussion-gold) 27%, var(--loombus-border)) !important;
   transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
-.discussion-detail-v2-content #replies > div:last-child > div:hover,
-.discussion-detail-v2-content #replies article:hover {
+.discussion-detail-canonical #replies > div:last-child > div:hover,
+.discussion-detail-canonical #replies article:hover {
   border-left-color: var(--discussion-gold) !important;
   transform: translateY(-1px);
 }
 
-.discussion-detail-v2-content #replies section[class*="amber"] {
+.discussion-detail-canonical #replies section[class*="amber"] {
   border-color: var(--discussion-gold-border) !important;
   background: color-mix(in srgb, var(--discussion-gold) 9%, var(--loombus-surface)) !important;
 }
 
-.discussion-detail-v2-content .discussion-detail-right-rail {
-  position: sticky !important;
-  inset: auto !important;
-  top: 5.75rem !important;
-  z-index: 2 !important;
-  display: block !important;
-  grid-column: 2 !important;
-  width: auto !important;
-  max-height: calc(100vh - 7rem) !important;
-  overflow-y: auto !important;
-  border-left: 0 !important;
-  padding: 0 0.2rem 1rem 0 !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  scrollbar-width: thin;
-  scrollbar-color: var(--discussion-gold-border) transparent;
+/* Preserve the original resizable operational rail supplied by the app shell. */
+.discussion-detail-canonical .discussion-detail-right-rail {
+  border-left-color: var(--loombus-border) !important;
+  background: color-mix(in srgb, var(--loombus-page-bg) 94%, transparent) !important;
+  color: var(--loombus-text) !important;
 }
 
-.discussion-detail-v2-content .discussion-detail-right-rail > div {
-  display: grid !important;
-  gap: 1rem !important;
+.discussion-detail-canonical .discussion-detail-right-rail > div {
+  padding-bottom: 5rem;
 }
 
-.discussion-detail-v2-content .discussion-detail-right-rail section {
+.discussion-detail-canonical .discussion-detail-right-rail section {
   overflow: hidden;
   border-color: var(--loombus-border) !important;
   background: color-mix(in srgb, var(--loombus-surface) 94%, transparent) !important;
-  box-shadow: 0 18px 44px rgb(15 23 42 / 0.09) !important;
+  box-shadow: 0 18px 48px rgb(15 23 42 / 0.09) !important;
 }
 
-.discussion-detail-v2-content .discussion-detail-right-rail section:first-child {
+.discussion-detail-canonical .discussion-detail-right-rail section:first-child {
   border-color: var(--discussion-gold-border) !important;
 }
 
-.discussion-detail-v2-content .discussion-detail-right-rail section:first-child::before {
+.discussion-detail-canonical .discussion-detail-right-rail section:first-child::before {
   display: block;
   height: 3px;
   margin: -1.25rem -1.25rem 1rem;
-  background: linear-gradient(90deg, var(--discussion-gold), transparent 76%);
+  background: linear-gradient(90deg, var(--discussion-gold), transparent 78%);
   content: "";
 }
 
-.discussion-detail-v2-content .discussion-detail-right-rail a,
-.discussion-detail-v2-content .discussion-detail-right-rail button {
+.discussion-detail-canonical .discussion-detail-right-rail a,
+.discussion-detail-canonical .discussion-detail-right-rail button {
   text-decoration: none;
 }
 
-.discussion-detail-v2-content .discussion-detail-desktop-center-actions {
-  display: none !important;
+.discussion-detail-canonical .discussion-detail-right-rail a:hover,
+.discussion-detail-canonical .discussion-detail-right-rail button:hover {
+  border-color: var(--discussion-gold-border);
 }
 
-.discussion-detail-v2-shell > aside.fixed {
-  z-index: 90;
-  border-color: var(--discussion-gold-border) !important;
+html[data-loombus-theme="light"] .discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5,
+html[data-loombus-theme="light"] .discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section,
+html[data-loombus-theme="light"] .discussion-detail-canonical .discussion-detail-right-rail section,
+html[data-loombus-theme="light"] .discussion-detail-canonical #reply-form {
+  box-shadow: 0 16px 42px rgb(15 23 42 / 0.07) !important;
 }
 
-.discussion-detail-v2-shell > aside.fixed li > span:first-child {
-  background: var(--discussion-gold) !important;
-}
-
-html[data-loombus-theme="light"] .discussion-detail-v2-shell,
-html[data-loombus-theme="light"] .discussion-detail-v2-topbar {
-  color-scheme: light;
-}
-
-html[data-loombus-theme="dark"] .discussion-detail-v2-shell,
-html[data-loombus-theme="dark"] .discussion-detail-v2-topbar {
-  color-scheme: dark;
-}
-
-html[data-loombus-theme="dark"] .discussion-detail-v2-topbar,
-html[data-loombus-theme="dark"] .discussion-detail-v2-left-rail section,
-html[data-loombus-theme="dark"] .discussion-detail-v2-back-link,
-html[data-loombus-theme="dark"] .discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5,
-html[data-loombus-theme="dark"] .discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section,
-html[data-loombus-theme="dark"] .discussion-detail-v2-content .discussion-detail-right-rail section,
-html[data-loombus-theme="dark"] .discussion-detail-v2-content #reply-form {
-  box-shadow: 0 20px 54px rgb(0 0 0 / 0.3) !important;
+html[data-loombus-theme="dark"] .discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5,
+html[data-loombus-theme="dark"] .discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section,
+html[data-loombus-theme="dark"] .discussion-detail-canonical .discussion-detail-right-rail section,
+html[data-loombus-theme="dark"] .discussion-detail-canonical #reply-form {
+  box-shadow: 0 20px 54px rgb(0 0 0 / 0.28) !important;
 }
 
 @media (prefers-color-scheme: dark) {
-  html[data-loombus-theme="system"] .discussion-detail-v2-shell,
-  html[data-loombus-theme="system"] .discussion-detail-v2-topbar {
-    color-scheme: dark;
-  }
-
-  html[data-loombus-theme="system"] .discussion-detail-v2-topbar,
-  html[data-loombus-theme="system"] .discussion-detail-v2-left-rail section,
-  html[data-loombus-theme="system"] .discussion-detail-v2-back-link,
-  html[data-loombus-theme="system"] .discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5,
-  html[data-loombus-theme="system"] .discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section,
-  html[data-loombus-theme="system"] .discussion-detail-v2-content .discussion-detail-right-rail section,
-  html[data-loombus-theme="system"] .discussion-detail-v2-content #reply-form {
-    box-shadow: 0 20px 54px rgb(0 0 0 / 0.3) !important;
+  html[data-loombus-theme="system"] .discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5,
+  html[data-loombus-theme="system"] .discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > section,
+  html[data-loombus-theme="system"] .discussion-detail-canonical .discussion-detail-right-rail section,
+  html[data-loombus-theme="system"] .discussion-detail-canonical #reply-form {
+    box-shadow: 0 20px 54px rgb(0 0 0 / 0.28) !important;
   }
 }
 
-@media (max-width: 1279px) {
-  .discussion-detail-v2-stage {
-    display: block;
-    width: min(100%, 92rem);
-  }
-
-  .discussion-detail-v2-left-rail {
-    display: none;
-  }
-}
-
-@media (max-width: 1099px) {
-  .discussion-detail-v2-topbar-inner {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 0.75rem;
-    padding-inline: 1rem;
-  }
-
-  .discussion-detail-v2-brand-copy small {
-    display: none;
-  }
-
-  .discussion-detail-v2-primary-nav a {
-    padding-inline: 0.68rem;
-  }
-
-  .discussion-detail-v2-primary-nav a span {
-    display: none;
+@media (min-width: 640px) {
+  .discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+    padding: 1.5rem;
   }
 }
 
 @media (max-width: 1023px) {
-  .discussion-detail-v2-content > main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
-    display: block !important;
-  }
-
-  .discussion-detail-v2-content .discussion-detail-right-rail {
+  .discussion-detail-canonical .discussion-detail-right-rail {
     display: none !important;
   }
-
-  .discussion-detail-v2-content .discussion-detail-desktop-center-actions {
-    display: block !important;
-  }
 }
 
-@media (max-width: 759px) {
-  .discussion-detail-v2-topbar-inner {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "brand tools"
-      "nav nav";
-    gap: 0.55rem 0.75rem;
-    padding: 0.6rem 0.75rem;
+@media (max-width: 767px) {
+  .discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > h1 {
+    font-size: clamp(2rem, 10vw, 3rem) !important;
   }
 
-  .discussion-detail-v2-brand {
-    grid-area: brand;
-  }
-
-  .discussion-detail-v2-brand-mark {
-    width: 2.35rem;
-    height: 2.35rem;
-    border-radius: 0.82rem;
-  }
-
-  .discussion-detail-v2-brand-mark img {
-    width: 1.65rem;
-    height: 1.65rem;
-  }
-
-  .discussion-detail-v2-brand-copy strong {
-    font-size: 0.92rem;
-  }
-
-  .discussion-detail-v2-primary-nav {
-    grid-area: nav;
-    justify-content: flex-start;
-    overflow-x: auto;
-    border-radius: 1rem;
-    scrollbar-width: none;
-  }
-
-  .discussion-detail-v2-primary-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .discussion-detail-v2-primary-nav a {
-    min-height: 2.2rem;
-    padding: 0.45rem 0.68rem;
-    font-size: 0.72rem;
-  }
-
-  .discussion-detail-v2-primary-nav a span {
-    display: inline;
-  }
-
-  .discussion-detail-v2-tools {
-    grid-area: tools;
-  }
-
-  .discussion-detail-v2-tools > a {
-    min-width: 2.35rem;
-    min-height: 2.35rem;
-  }
-
-  .discussion-detail-v2-stage {
-    padding: 1rem 0.85rem 6rem;
-  }
-
-  .discussion-detail-v2-content > main {
-    padding-bottom: 4.5rem !important;
-  }
-
-  .discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > h1 {
-    font-size: clamp(2rem, 10vw, 3.2rem) !important;
-  }
-}
-
-@media (max-width: 559px) {
-  .discussion-detail-v2-brand-copy {
-    display: none;
-  }
-
-  .discussion-detail-v2-tools .discussion-detail-share-control button span {
-    display: none;
-  }
-
-  .discussion-detail-v2-tools .discussion-detail-share-control button {
-    width: 2.35rem;
-    min-width: 2.35rem;
-    min-height: 2.35rem;
-    padding: 0;
-  }
-
-  .discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
-    border-radius: 1.3rem;
+  .discussion-detail-canonical > main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > .mb-5.space-y-5 {
+    border-radius: 1.25rem;
     padding: 1rem;
   }
 
-  .discussion-detail-v2-content [aria-label="Discussion detail tools rail"] {
-    max-width: calc(100vw - 1.7rem);
-  }
-}
-
-@media (max-height: 520px) and (orientation: landscape) {
-  .discussion-detail-v2-topbar {
-    position: relative;
-  }
-
-  .discussion-detail-v2-content [aria-label="Discussion detail tools rail"] {
-    position: static;
-  }
-}
-
-@media (min-width: 1280px) {
-  .discussion-detail-v2-content main.loombus-shell-with-right-rail > .mx-auto.max-w-3xl > a:first-child {
-    display: none !important;
-  }
-}
-
-@media (min-width: 1500px) {
-  .discussion-detail-v2-content > main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
-    grid-template-columns: minmax(0, 1fr) 23rem !important;
-    gap: 1.5rem !important;
+  .discussion-detail-canonical [aria-label="Discussion detail tools rail"] {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 0 !important;
+    background: transparent !important;
   }
 }
 
 @media print {
-  .discussion-detail-v2-shell {
-    position: static;
-    overflow: visible;
+  .discussion-detail-canonical .discussion-detail-right-rail,
+  .discussion-detail-canonical [aria-label="Discussion detail tools rail"] {
+    display: none !important;
+  }
+
+  .discussion-detail-canonical,
+  .discussion-detail-canonical > main.loombus-shell-with-right-rail {
     background: #ffffff !important;
     color: #000000 !important;
   }
 
-  .discussion-detail-v2-topbar,
-  .discussion-detail-v2-left-rail,
-  .discussion-detail-v2-content .discussion-detail-right-rail,
-  .discussion-detail-v2-content [aria-label="Discussion detail tools rail"],
-  .discussion-detail-v2-shell > aside.fixed {
-    display: none !important;
-  }
-
-  .discussion-detail-v2-stage,
-  .discussion-detail-v2-content > main.loombus-shell-with-right-rail:has(.discussion-detail-right-rail) {
-    display: block !important;
-    width: 100% !important;
-    max-width: none !important;
+  .discussion-detail-canonical > main.loombus-shell-with-right-rail {
     padding: 0 !important;
   }
 }
