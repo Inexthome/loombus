@@ -1,0 +1,454 @@
+.loombus-mobile-v2-topbar,
+.loombus-mobile-v2-bottom-nav,
+.loombus-mobile-v2-menu-backdrop {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  /* Replace the legacy mobile shell without changing the desktop navbar. */
+  .loombus-mobile-topbar,
+  .loombus-mobile-bottom-nav {
+    display: none !important;
+  }
+
+  .loombus-mobile-v2-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 64;
+    display: block;
+    padding: calc(env(safe-area-inset-top) + 0.6rem) 1rem 0.65rem;
+    border-bottom: 1px solid var(--loombus-border);
+    background: color-mix(in srgb, var(--loombus-surface) 92%, transparent);
+    color: var(--loombus-text);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: transform 220ms ease;
+  }
+
+  .loombus-mobile-v2-topbar.is-hidden {
+    transform: translateY(-105%);
+  }
+
+  .loombus-mobile-v2-topbar-inner {
+    width: min(100%, 32rem);
+    min-height: 3rem;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .loombus-mobile-v2-brand {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: var(--loombus-text);
+    text-decoration: none;
+  }
+
+  .loombus-mobile-v2-brand > span {
+    width: 2.45rem;
+    height: 2.45rem;
+    flex: 0 0 auto;
+    border: 1px solid var(--loombus-border);
+    border-radius: 0.9rem;
+    display: grid;
+    place-items: center;
+    background: var(--loombus-surface-strong);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  }
+
+  .loombus-mobile-v2-brand img {
+    width: 1.72rem;
+    height: 1.72rem;
+    object-fit: contain;
+  }
+
+  .loombus-mobile-v2-brand strong {
+    overflow: hidden;
+    color: var(--loombus-text);
+    font-size: 1.02rem;
+    font-weight: 760;
+    letter-spacing: -0.025em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .loombus-mobile-v2-top-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .loombus-mobile-v2-top-actions > button {
+    width: 2.72rem;
+    height: 2.72rem;
+    flex: 0 0 auto;
+    border: 1px solid var(--loombus-border);
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: var(--loombus-surface-strong);
+    color: var(--loombus-text-muted);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: border-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+
+  .loombus-mobile-v2-top-actions > button:active {
+    transform: scale(0.96);
+  }
+
+  .loombus-mobile-v2-top-actions > button:hover,
+  .loombus-mobile-v2-top-actions > button[aria-expanded="true"] {
+    border-color: rgba(203, 171, 91, 0.65);
+    color: var(--loombus-text);
+  }
+
+  .loombus-mobile-v2-avatar-button {
+    overflow: hidden;
+    padding: 0 !important;
+    background: var(--loombus-surface) !important;
+  }
+
+  .loombus-mobile-v2-avatar-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .loombus-mobile-v2-avatar-button > span {
+    font-size: 0.82rem;
+    font-weight: 820;
+    color: var(--loombus-text);
+  }
+
+  .loombus-mobile-v2-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    justify-content: flex-end;
+    padding: calc(env(safe-area-inset-top) + 0.65rem) 0.7rem calc(env(safe-area-inset-bottom) + 0.7rem);
+    background: rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+  }
+
+  .loombus-mobile-v2-menu-panel {
+    width: min(93vw, 25rem);
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.35rem);
+    align-self: flex-start;
+    border: 1px solid var(--loombus-border);
+    border-radius: 1.65rem;
+    overflow: hidden;
+    background: var(--loombus-surface);
+    color: var(--loombus-text);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3);
+    animation: loombus-mobile-v2-menu-enter 170ms ease-out;
+  }
+
+  .loombus-mobile-v2-menu-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--loombus-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    background: var(--loombus-surface-strong);
+  }
+
+  .loombus-mobile-v2-menu-profile {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .loombus-mobile-v2-menu-avatar {
+    width: 2.8rem;
+    height: 2.8rem;
+    flex: 0 0 auto;
+    border: 1px solid var(--loombus-border);
+    border-radius: 999px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: var(--loombus-surface);
+    color: var(--loombus-text);
+    font-size: 0.85rem;
+    font-weight: 820;
+  }
+
+  .loombus-mobile-v2-menu-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .loombus-mobile-v2-menu-profile > div {
+    min-width: 0;
+    display: grid;
+    gap: 0.18rem;
+  }
+
+  .loombus-mobile-v2-menu-profile strong,
+  .loombus-mobile-v2-menu-profile span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .loombus-mobile-v2-menu-profile strong {
+    font-size: 0.88rem;
+    font-weight: 780;
+  }
+
+  .loombus-mobile-v2-menu-profile span {
+    color: var(--loombus-text-muted);
+    font-size: 0.7rem;
+  }
+
+  .loombus-mobile-v2-menu-header > button {
+    width: 2.35rem;
+    height: 2.35rem;
+    flex: 0 0 auto;
+    border: 1px solid var(--loombus-border);
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: var(--loombus-surface);
+    color: var(--loombus-text-muted);
+    cursor: pointer;
+  }
+
+  .loombus-mobile-v2-menu-scroll {
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 6.2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.65rem;
+  }
+
+  .loombus-mobile-v2-menu-section {
+    padding: 0.45rem 0;
+  }
+
+  .loombus-mobile-v2-menu-section + .loombus-mobile-v2-menu-section {
+    border-top: 1px solid var(--loombus-border-muted);
+  }
+
+  .loombus-mobile-v2-menu-section > p {
+    margin: 0;
+    padding: 0.45rem 0.65rem 0.35rem;
+    color: #8a6f2d;
+    font-size: 0.62rem;
+    font-weight: 850;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .loombus-mobile-v2-menu-section > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.2rem;
+  }
+
+  .loombus-mobile-v2-menu-section a,
+  .loombus-mobile-v2-logout {
+    min-width: 0;
+    min-height: 2.75rem;
+    border: 1px solid transparent;
+    border-radius: 0.9rem;
+    padding: 0.65rem 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    background: transparent;
+    color: var(--loombus-text-muted);
+    font-size: 0.73rem;
+    font-weight: 700;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+  }
+
+  .loombus-mobile-v2-menu-section a:hover,
+  .loombus-mobile-v2-menu-section a:focus-visible {
+    border-color: rgba(203, 171, 91, 0.38);
+    background: rgba(203, 171, 91, 0.1);
+    color: var(--loombus-text);
+  }
+
+  .loombus-mobile-v2-menu-section a span,
+  .loombus-mobile-v2-logout span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .loombus-mobile-v2-logout {
+    width: 100%;
+    margin-top: 0.45rem;
+    border-color: rgba(239, 68, 68, 0.24);
+    color: #ef4444;
+  }
+
+  .loombus-mobile-v2-logout:hover {
+    background: rgba(239, 68, 68, 0.08);
+  }
+
+  .loombus-mobile-v2-bottom-nav {
+    position: fixed;
+    inset-inline: 0.75rem;
+    bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+    z-index: 66;
+    display: block;
+    border: 1px solid var(--loombus-border);
+    border-radius: 1.75rem;
+    padding: 0.45rem;
+    background: color-mix(in srgb, var(--loombus-surface) 93%, transparent);
+    color: var(--loombus-text);
+    box-shadow: 0 18px 55px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: transform 220ms ease;
+  }
+
+  .loombus-mobile-v2-bottom-nav.is-hidden {
+    transform: translateY(calc(100% + 1rem));
+  }
+
+  .loombus-mobile-v2-bottom-nav > div {
+    width: min(100%, 32rem);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem;
+  }
+
+  .loombus-mobile-v2-bottom-nav a {
+    min-height: 3.65rem;
+    border: 1px solid transparent;
+    border-radius: 1.35rem;
+    display: grid;
+    place-items: center;
+    color: var(--loombus-text-subtle);
+    text-decoration: none;
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+  }
+
+  .loombus-mobile-v2-bottom-nav a:active {
+    transform: scale(0.96);
+  }
+
+  .loombus-mobile-v2-bottom-nav a[data-active="true"] {
+    border-color: rgba(203, 171, 91, 0.42);
+    background: var(--loombus-primary-bg);
+    color: var(--loombus-primary-text);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  }
+
+  .loombus-mobile-v2-bottom-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+
+  .loombus-mobile-v2-notification-badge {
+    position: absolute;
+    right: -0.7rem;
+    top: -0.7rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    border: 2px solid var(--loombus-surface);
+    border-radius: 999px;
+    padding: 0 0.18rem;
+    display: grid;
+    place-items: center;
+    background: #09090b;
+    color: #ffffff;
+    font-size: 0.58rem;
+    font-weight: 850;
+    line-height: 1;
+  }
+
+  /* Slightly reduce the floating Help, Appearance, Stickies, and Messages controls. */
+  .loombus-floating-utility-stack {
+    right: 0.75rem !important;
+    gap: 0.38rem !important;
+  }
+
+  .loombus-floating-utility-button {
+    width: 2.88rem !important;
+    height: 2.88rem !important;
+  }
+
+  .loombus-floating-utility-button svg {
+    width: 1.18rem !important;
+    height: 1.18rem !important;
+  }
+
+  .loombus-floating-utility-stack + button {
+    right: 0.75rem !important;
+    bottom: calc(env(safe-area-inset-bottom) + 5.35rem) !important;
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+
+  .loombus-floating-utility-stack + button svg {
+    width: 1.3rem !important;
+    height: 1.3rem !important;
+  }
+
+  body[data-loombus-mobile-menu-open="true"] .loombus-floating-utility-stack,
+  body[data-loombus-mobile-menu-open="true"] .loombus-floating-utility-stack + button,
+  body[data-loombus-mobile-menu-open="true"] .loombus-mobile-v2-bottom-nav {
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .loombus-mobile-v2-topbar a:focus-visible,
+  .loombus-mobile-v2-topbar button:focus-visible,
+  .loombus-mobile-v2-menu-panel a:focus-visible,
+  .loombus-mobile-v2-menu-panel button:focus-visible,
+  .loombus-mobile-v2-bottom-nav a:focus-visible {
+    outline: 3px solid rgba(203, 171, 91, 0.58);
+    outline-offset: 2px;
+  }
+
+  @keyframes loombus-mobile-v2-menu-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-0.35rem) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+}
+
+@media (max-width: 390px) {
+  .loombus-mobile-v2-menu-section > div {
+    grid-template-columns: 1fr;
+  }
+
+  .loombus-mobile-v2-brand strong {
+    font-size: 0.95rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loombus-mobile-v2-topbar,
+  .loombus-mobile-v2-bottom-nav,
+  .loombus-mobile-v2-menu-panel,
+  .loombus-mobile-v2-topbar *,
+  .loombus-mobile-v2-bottom-nav *,
+  .loombus-mobile-v2-menu-panel * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
