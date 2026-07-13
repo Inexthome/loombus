@@ -4,6 +4,7 @@ import { DEFAULT_DISCUSSION_TOPIC, DISCUSSION_TOPICS } from "@/lib/discussion-to
 import { normalizeRealityLens } from "@/lib/reality-lenses";
 import { normalizePurposeLane } from "@/lib/purpose-lanes";
 import { normalizePublicText } from "@/lib/public-text";
+import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -26,8 +27,8 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+function jsonError(message: string, status: number, code?: string) {
+  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
 }
 
 function isValidUuid(value: unknown): value is string {
@@ -56,19 +57,20 @@ export async function GET(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const accountAccess = await verifyRequestAccountAccess(supabase);
 
-  if (userError || !user) {
-    return jsonError("Unauthorized.", 401);
+  if (!accountAccess.ok) {
+    return jsonError(
+      accountAccess.error,
+      accountAccess.status,
+      accountAccess.code
+    );
   }
 
   const { data, error } = await supabase
     .from("discussion_drafts")
     .select("id, title, topic, reality_lens, purpose_lane, body, created_at, updated_at")
-    .eq("user_id", user.id)
+    .eq("user_id", accountAccess.user.id)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -89,13 +91,14 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const accountAccess = await verifyRequestAccountAccess(supabase);
 
-  if (userError || !user) {
-    return jsonError("Unauthorized.", 401);
+  if (!accountAccess.ok) {
+    return jsonError(
+      accountAccess.error,
+      accountAccess.status,
+      accountAccess.code
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -120,7 +123,7 @@ export async function POST(request: NextRequest) {
   }
 
   const payload = {
-    user_id: user.id,
+    user_id: accountAccess.user.id,
     title,
     topic,
     reality_lens,
@@ -133,7 +136,7 @@ export async function POST(request: NextRequest) {
         .from("discussion_drafts")
         .update(payload)
         .eq("id", draftId)
-        .eq("user_id", user.id)
+        .eq("user_id", accountAccess.user.id)
         .select("id, updated_at")
         .single()
     : supabase
@@ -160,13 +163,14 @@ export async function DELETE(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const accountAccess = await verifyRequestAccountAccess(supabase);
 
-  if (userError || !user) {
-    return jsonError("Unauthorized.", 401);
+  if (!accountAccess.ok) {
+    return jsonError(
+      accountAccess.error,
+      accountAccess.status,
+      accountAccess.code
+    );
   }
 
   const body = await request.json().catch(() => null);
@@ -180,7 +184,7 @@ export async function DELETE(request: NextRequest) {
     .from("discussion_drafts")
     .delete()
     .eq("id", draftId)
-    .eq("user_id", user.id);
+    .eq("user_id", accountAccess.user.id);
 
   if (error) {
     return jsonError(error.message || "Unable to delete draft.", 400);
