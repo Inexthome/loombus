@@ -1,12 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
+import {
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  BrainCircuit,
+  CheckCircle2,
+  Clock3,
+  Compass,
+  Crown,
+  Database,
+  Gauge,
+  PenLine,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   getAiUsageLabel,
   getSubscriptionDisplay,
 } from "@/lib/subscription-plans";
+import { supabase } from "@/lib/supabase/client";
 
 type AiEntitlement = {
   tier: string;
@@ -67,6 +84,8 @@ type AiUsageResponse = {
   recentEvents: RecentAiEvent[];
 };
 
+type EventStatus = "generated" | "cached" | "failed";
+
 const featureLabels: Record<string, string> = {
   thread_summary: "Thread summaries",
   key_takeaways: "Key takeaways",
@@ -92,11 +111,14 @@ function formatFeatureKey(value: string) {
 }
 
 function formatDateTime(value: string | null) {
-  if (!value) {
-    return "—";
-  }
+  if (!value) return "Not used this month";
 
-  return new Date(value).toLocaleString();
+  return new Date(value).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function formatMonth(value: string) {
@@ -106,28 +128,80 @@ function formatMonth(value: string) {
   });
 }
 
-function getEventStatus(event: RecentAiEvent) {
-  if (!event.success) {
-    return "Failed";
-  }
+function getEventStatus(event: RecentAiEvent): EventStatus {
+  if (!event.success) return "failed";
+  if (event.cached) return "cached";
+  return "generated";
+}
 
-  if (event.cached) {
-    return "Cached";
-  }
-
+function getEventStatusLabel(status: EventStatus) {
+  if (status === "failed") return "Failed";
+  if (status === "cached") return "Cached";
   return "Generated";
 }
 
-function getEventStatusClass(event: RecentAiEvent) {
-  if (!event.success) {
-    return "border-red-900 text-red-300";
+function getBucketIcon(bucket: string) {
+  const normalized = bucket.toLowerCase();
+
+  if (normalized.includes("writing")) {
+    return <PenLine aria-hidden="true" size={19} />;
   }
 
-  if (event.cached) {
-    return "border-sky-900 text-sky-300";
+  if (normalized.includes("research")) {
+    return <Search aria-hidden="true" size={19} />;
   }
 
-  return "border-emerald-900 text-emerald-300";
+  if (normalized.includes("discovery")) {
+    return <Compass aria-hidden="true" size={19} />;
+  }
+
+  return <BrainCircuit aria-hidden="true" size={19} />;
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  description,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string | number;
+  description: string;
+}) {
+  return (
+    <article className="ai-usage-v2-stat-card">
+      <div className="ai-usage-v2-stat-topline">
+        <span className="ai-usage-v2-stat-icon">{icon}</span>
+        <span className="ai-usage-v2-stat-label">{label}</span>
+      </div>
+      <strong className="ai-usage-v2-stat-value">{value}</strong>
+      <p>{description}</p>
+    </article>
+  );
+}
+
+function StateCard({
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  action?: ReactNode;
+}) {
+  return (
+    <main className="ai-usage-v2-page">
+      <section className="ai-usage-v2-state-card">
+        {icon}
+        <h1>{title}</h1>
+        <p>{description}</p>
+        {action ? <div className="ai-usage-v2-hero-actions">{action}</div> : null}
+      </section>
+    </main>
+  );
 }
 
 export default function AiUsagePage() {
@@ -136,6 +210,8 @@ export default function AiUsagePage() {
   const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadUsage() {
       setLoadError("");
 
@@ -144,7 +220,7 @@ export default function AiUsagePage() {
         const session = sessionData.session;
 
         if (!session) {
-          window.location.href = "/login";
+          window.location.replace("/login?next=%2Fai-usage");
           return;
         }
 
@@ -161,17 +237,25 @@ export default function AiUsagePage() {
           throw new Error(result.error ?? "Unable to load AI usage.");
         }
 
-        setUsage(result as AiUsageResponse);
+        if (mounted) {
+          setUsage(result as AiUsageResponse);
+        }
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Unable to load AI usage.";
-        setLoadError(message);
+        if (mounted) {
+          setLoadError(
+            error instanceof Error ? error.message : "Unable to load AI usage."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     }
 
     loadUsage();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const subscriptionDisplay = getSubscriptionDisplay(usage?.entitlement ?? null);
@@ -192,346 +276,351 @@ export default function AiUsagePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-zinc-400">Loading AI usage...</p>
-        </div>
-      </main>
+      <StateCard
+        icon={<RefreshCw aria-hidden="true" size={28} />}
+        title="Loading AI usage"
+        description="Preparing your current plan, monthly meter, feature activity, and recent AI-assisted actions."
+      />
     );
   }
 
   if (loadError) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
-        <div className="mx-auto max-w-6xl">
-          <div className="rounded-2xl border border-red-900 bg-red-950/20 p-5 text-red-200">
-            {loadError}
-          </div>
-        </div>
-      </main>
+      <StateCard
+        icon={<AlertTriangle aria-hidden="true" size={28} />}
+        title="AI usage could not be loaded"
+        description={loadError}
+        action={
+          <button
+            type="button"
+            className="ai-usage-v2-button ai-usage-v2-button-primary"
+            onClick={() => window.location.reload()}
+          >
+            Try again
+            <RefreshCw aria-hidden="true" size={16} />
+          </button>
+        }
+      />
     );
   }
 
   if (!usage) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-zinc-400">No AI usage data is available.</p>
-        </div>
-      </main>
+      <StateCard
+        icon={<BrainCircuit aria-hidden="true" size={28} />}
+        title="No AI usage data is available"
+        description="Your account is connected, but no AI usage summary was returned."
+        action={
+          <Link href="/dashboard" className="ai-usage-v2-button ai-usage-v2-button-primary">
+            Return to Dashboard
+            <ArrowRight aria-hidden="true" size={16} />
+          </Link>
+        }
+      />
     );
   }
 
   const month = usage.currentMonth;
+  const isUncapped = month.limit === null;
+  const showUpgrade =
+    !usage.entitlement.ai_assisted_enabled ||
+    (month.remaining !== null && month.remaining === 0);
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-12 lg:py-16">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="mb-3 text-sm uppercase tracking-[0.25em] text-zinc-500">
-              AI-Assisted Layer
+    <main className="ai-usage-v2-page">
+      <div className="ai-usage-v2-shell">
+        <section className="ai-usage-v2-hero">
+          <div className="ai-usage-v2-hero-copy">
+            <p className="ai-usage-v2-eyebrow">AI-assisted layer</p>
+            <h1>Understand every AI action on your account.</h1>
+            <p>
+              Review what Loombus generated, what came from cache, what counted
+              against your monthly meter, and which tools you used during {formatMonth(month.start)}.
             </p>
-
-            <h1 className="mb-4 text-3xl font-semibold tracking-tight sm:text-5xl">
-              AI usage dashboard
-            </h1>
-
-            <p className="max-w-3xl leading-relaxed text-zinc-400">
-              Review how Loombus AI is being used on your account this month:
-              generated actions, cached results, failed attempts, and recent
-              feature activity.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/dashboard"
-              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              Dashboard
-            </Link>
-
-            <Link
-              href="/premium"
-              className="rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-            >
-              Premium
-            </Link>
-          </div>
-        </div>
-
-        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:p-7">
-          <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.22em] text-zinc-500 sm:text-sm">
-                Current plan
-              </p>
-
-              <h2 className="text-xl font-medium sm:text-2xl">
-                {subscriptionDisplay.label}
-              </h2>
+            <div className="ai-usage-v2-hero-actions">
+              <Link href="/dashboard" className="ai-usage-v2-button ai-usage-v2-button-primary">
+                Dashboard
+                <ArrowRight aria-hidden="true" size={16} />
+              </Link>
+              {showUpgrade ? (
+                <Link href="/premium" className="ai-usage-v2-button ai-usage-v2-button-quiet">
+                  Review Premium
+                  <Crown aria-hidden="true" size={16} />
+                </Link>
+              ) : null}
             </div>
+          </div>
 
-            <span className="rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300">
-              {subscriptionDisplay.badge}
+          <aside className="ai-usage-v2-plan-card" aria-label="Current AI plan">
+            <div className="ai-usage-v2-plan-topline">
+              <span className="ai-usage-v2-plan-icon">
+                <Crown aria-hidden="true" size={21} />
+              </span>
+              <div>
+                {usage.isAdmin ? (
+                  <span className="ai-usage-v2-admin-badge">Admin account</span>
+                ) : (
+                  <span className="ai-usage-v2-plan-badge">{subscriptionDisplay.badge}</span>
+                )}
+              </div>
+            </div>
+            <h2>{subscriptionDisplay.label}</h2>
+            <p className="ai-usage-v2-plan-description">
+              {subscriptionDisplay.description}
+            </p>
+            <dl className="ai-usage-v2-plan-facts">
+              <div>
+                <dt>AI access</dt>
+                <dd>{usage.entitlement.ai_assisted_enabled ? "Enabled" : "Not enabled"}</dd>
+              </div>
+              <div>
+                <dt>Included usage</dt>
+                <dd>{aiUsageLabel}</dd>
+              </div>
+              <div>
+                <dt>Monthly cap</dt>
+                <dd>{isUncapped ? "Uncapped" : month.limit}</dd>
+              </div>
+            </dl>
+          </aside>
+        </section>
+
+        <section className="ai-usage-v2-overview-grid" aria-label="Monthly AI usage overview">
+          <article className="ai-usage-v2-progress-card">
+            <div className="ai-usage-v2-progress-heading">
+              <div>
+                <p>{formatMonth(month.start)} usage</p>
+                <strong>{month.meteredUsage}</strong>
+              </div>
+              <span>{isUncapped ? "No monthly cap" : `${usagePercent ?? 0}% used`}</span>
+            </div>
+            {usagePercent !== null ? (
+              <div
+                className="ai-usage-v2-progress-track"
+                role="progressbar"
+                aria-label="Monthly AI usage"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={usagePercent}
+              >
+                <span style={{ width: `${usagePercent}%` }} />
+              </div>
+            ) : null}
+            <p className="ai-usage-v2-progress-caption">
+              {isUncapped
+                ? "This account is not restricted by the normal monthly AI meter."
+                : `${month.remaining ?? 0} of ${month.limit} included metered actions remain.`}
+            </p>
+          </article>
+
+          <div className="ai-usage-v2-stats-grid">
+            <StatCard
+              icon={<Gauge aria-hidden="true" size={19} />}
+              label="Metered"
+              value={month.meteredUsage}
+              description="Generated and failed non-cached attempts."
+            />
+            <StatCard
+              icon={<Zap aria-hidden="true" size={19} />}
+              label="Generated"
+              value={month.generatedUsage}
+              description="Successful new AI outputs."
+            />
+            <StatCard
+              icon={<Database aria-hidden="true" size={19} />}
+              label="Cached"
+              value={month.cachedUsage}
+              description="Reused results with no new generation."
+            />
+            <StatCard
+              icon={<AlertTriangle aria-hidden="true" size={19} />}
+              label="Failed"
+              value={month.failedUsage}
+              description="Non-cached attempts that did not complete."
+            />
+            <StatCard
+              icon={<CheckCircle2 aria-hidden="true" size={19} />}
+              label="Remaining"
+              value={month.remaining === null ? "∞" : month.remaining}
+              description={isUncapped ? "Normal monthly caps do not apply." : "Included metered actions still available."}
+            />
+          </div>
+        </section>
+
+        <section className="ai-usage-v2-section" aria-labelledby="buckets-heading">
+          <div className="ai-usage-v2-section-heading">
+            <div>
+              <p className="ai-usage-v2-eyebrow">Limit buckets</p>
+              <h2 id="buckets-heading">Separate limits for different kinds of help.</h2>
+            </div>
+            <span className="ai-usage-v2-section-icon">
+              <BarChart3 aria-hidden="true" size={21} />
             </span>
           </div>
-
-          <p className="mb-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
-            {subscriptionDisplay.description}
+          <p className="ai-usage-v2-section-description">
+            Thread understanding, writing, research, and discovery are tracked independently so one type of work does not obscure another.
           </p>
 
-          <p className="text-sm text-zinc-500">
-            Included AI usage: {aiUsageLabel}
-          </p>
-        </section>
-
-        <section className="mb-6 grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-            <p className="mb-2 text-sm text-zinc-500">
-              Metered this month
-            </p>
-
-            <p className="text-3xl font-semibold">
-              {month.meteredUsage}
-            </p>
-
-            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              Generated and failed non-cached AI attempts.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-            <p className="mb-2 text-sm text-zinc-500">
-              Generated
-            </p>
-
-            <p className="text-3xl font-semibold">
-              {month.generatedUsage}
-            </p>
-
-            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              Successful non-cached AI outputs.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-            <p className="mb-2 text-sm text-zinc-500">
-              Cached shown
-            </p>
-
-            <p className="text-3xl font-semibold">
-              {month.cachedUsage}
-            </p>
-
-            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              Reused outputs that did not spend new generation.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-            <p className="mb-2 text-sm text-zinc-500">
-              Remaining
-            </p>
-
-            <p className="text-3xl font-semibold">
-              {month.remaining === null ? "∞" : month.remaining}
-            </p>
-
-            <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-              {month.limit === null
-                ? "This account is not capped by the normal monthly meter."
-                : `${month.limit} included actions for ${formatMonth(month.start)}.`}
-            </p>
-          </div>
-        </section>
-
-        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-7">
-          <div className="mb-5">
-            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-              AI limit buckets
-            </p>
-
-            <h2 className="text-xl font-medium sm:text-2xl">
-              Per-feature monthly limits
-            </h2>
-
-            <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-500">
-              Loombus separates AI usage into clearer buckets so thread
-              understanding, writing assistance, research, and discovery can be
-              controlled independently.
-            </p>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="ai-usage-v2-bucket-grid">
             {month.limitBuckets.map((bucket) => (
-              <div
-                key={bucket.bucket}
-                className="rounded-2xl border border-zinc-900 bg-black p-5"
-              >
-                <p className="mb-2 text-sm text-zinc-500">
-                  {bucket.label}
-                </p>
-
-                <p className="text-2xl font-semibold">
-                  {bucket.usage}
-                  <span className="text-sm font-normal text-zinc-600">
-                    {" "}of {bucket.limit === null ? "∞" : bucket.limit}
-                  </span>
-                </p>
-
-                <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+              <article key={bucket.bucket} className="ai-usage-v2-bucket-card">
+                <span className="ai-usage-v2-bucket-icon">
+                  {getBucketIcon(bucket.bucket)}
+                </span>
+                <h3>{bucket.label}</h3>
+                <div className="ai-usage-v2-bucket-usage">
+                  <strong>{bucket.usage}</strong>
+                  <span>of {bucket.limit === null ? "∞" : bucket.limit}</span>
+                </div>
+                <p>
                   Remaining: {bucket.remaining === null ? "∞" : bucket.remaining}
                 </p>
-              </div>
+              </article>
             ))}
           </div>
         </section>
 
-        {usagePercent !== null && (
-          <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
-            <div className="mb-3 flex items-center justify-between gap-4">
-              <p className="text-sm text-zinc-400">
-                Monthly usage progress
-              </p>
-
-              <p className="text-sm text-zinc-500">
-                {usagePercent}%
-              </p>
+        <section className="ai-usage-v2-section" aria-labelledby="feature-heading">
+          <div className="ai-usage-v2-section-heading">
+            <div>
+              <p className="ai-usage-v2-eyebrow">Feature usage</p>
+              <h2 id="feature-heading">See which tools are doing the work.</h2>
             </div>
-
-            <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
-              <div
-                className="h-full rounded-full bg-white transition-all"
-                style={{ width: `${usagePercent}%` }}
-              />
-            </div>
-          </section>
-        )}
-
-        <section className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-7">
-          <div className="mb-5">
-            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-              Feature usage
-            </p>
-
-            <h2 className="text-xl font-medium sm:text-2xl">
-              AI actions by feature
-            </h2>
+            <span className="ai-usage-v2-section-icon">
+              <Sparkles aria-hidden="true" size={21} />
+            </span>
           </div>
 
           {month.featureUsage.length === 0 ? (
-            <div className="rounded-2xl border border-zinc-900 bg-black p-5 text-sm leading-relaxed text-zinc-500">
+            <div className="ai-usage-v2-empty">
               You have not used any AI-assisted features this month yet.
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="ai-usage-v2-feature-grid">
               {month.featureUsage.map((feature) => (
-                <div
-                  key={feature.featureKey}
-                  className="rounded-2xl border border-zinc-900 bg-black p-5"
-                >
-                  <div className="mb-4 flex items-start justify-between gap-4">
+                <article key={feature.featureKey} className="ai-usage-v2-feature-card">
+                  <div className="ai-usage-v2-feature-heading">
                     <div>
-                      <h3 className="mb-1 text-lg font-medium">
-                        {feature.label || formatFeatureKey(feature.featureKey)}
-                      </h3>
-
-                      <p className="text-xs text-zinc-600">
-                        {feature.bucket} bucket · Last used: {formatDateTime(feature.lastUsedAt)}
+                      <h3>{feature.label || formatFeatureKey(feature.featureKey)}</h3>
+                      <p className="ai-usage-v2-feature-meta">
+                        {feature.bucket} bucket · Last used {formatDateTime(feature.lastUsedAt)}
                       </p>
                     </div>
-
-                    <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs text-zinc-400">
-                      {feature.total} total
-                    </span>
+                    <span className="ai-usage-v2-total-badge">{feature.total} total</span>
                   </div>
-
-                  <div className="grid grid-cols-4 gap-2 text-center text-sm">
-                    <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-3">
-                      <p className="text-lg font-semibold">{feature.metered}</p>
-                      <p className="text-xs text-zinc-600">Metered</p>
+                  <div className="ai-usage-v2-feature-metrics">
+                    <div>
+                      <strong>{feature.metered}</strong>
+                      <span>Metered</span>
                     </div>
-
-                    <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-3">
-                      <p className="text-lg font-semibold">{feature.generated}</p>
-                      <p className="text-xs text-zinc-600">Generated</p>
+                    <div>
+                      <strong>{feature.generated}</strong>
+                      <span>Generated</span>
                     </div>
-
-                    <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-3">
-                      <p className="text-lg font-semibold">{feature.cached}</p>
-                      <p className="text-xs text-zinc-600">Cached</p>
+                    <div>
+                      <strong>{feature.cached}</strong>
+                      <span>Cached</span>
                     </div>
-
-                    <div className="rounded-xl border border-zinc-900 bg-zinc-950 p-3">
-                      <p className="text-lg font-semibold">{feature.failed}</p>
-                      <p className="text-xs text-zinc-600">Failed</p>
+                    <div>
+                      <strong>{feature.failed}</strong>
+                      <span>Failed</span>
                     </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           )}
         </section>
 
-        <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-7">
-          <div className="mb-5">
-            <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-              Recent activity
-            </p>
-
-            <h2 className="text-xl font-medium sm:text-2xl">
-              Latest AI-assisted actions
-            </h2>
+        <section className="ai-usage-v2-section" aria-labelledby="activity-heading">
+          <div className="ai-usage-v2-section-heading">
+            <div>
+              <p className="ai-usage-v2-eyebrow">Recent activity</p>
+              <h2 id="activity-heading">Latest AI-assisted actions.</h2>
+            </div>
+            <span className="ai-usage-v2-section-icon">
+              <Clock3 aria-hidden="true" size={21} />
+            </span>
           </div>
 
           {usage.recentEvents.length === 0 ? (
-            <div className="rounded-2xl border border-zinc-900 bg-black p-5 text-sm leading-relaxed text-zinc-500">
+            <div className="ai-usage-v2-empty">
               No AI-assisted activity has been recorded yet.
             </div>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-zinc-900">
-              <div className="divide-y divide-zinc-900">
-                {usage.recentEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="grid gap-3 bg-black p-4 sm:grid-cols-[1.5fr_1fr_1fr_auto] sm:items-center"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {formatFeatureKey(event.feature_key)}
-                      </p>
+            <div className="ai-usage-v2-event-list">
+              {usage.recentEvents.map((event) => {
+                const status = getEventStatus(event);
 
-                      <p className="text-xs text-zinc-600">
-                        {formatDateTime(event.created_at)}
-                      </p>
+                return (
+                  <article key={event.id} className="ai-usage-v2-event-card">
+                    <div className="ai-usage-v2-event-heading">
+                      <div>
+                        <strong>{formatFeatureKey(event.feature_key)}</strong>
+                        <span>{formatDateTime(event.created_at)}</span>
+                      </div>
                     </div>
-
-                    <p className="text-sm text-zinc-500">
-                      {event.provider ?? "No provider"}
-                      {event.model_name ? ` · ${event.model_name}` : ""}
-                    </p>
-
-                    <p className="text-sm text-zinc-500">
-                      {event.target_type ?? "No target"}
-                    </p>
-
-                    <span
-                      className={`w-fit rounded-full border px-3 py-1 text-xs ${getEventStatusClass(event)}`}
-                    >
-                      {getEventStatus(event)}
+                    <div className="ai-usage-v2-event-meta">
+                      <span>
+                        {event.provider ?? "No provider"}
+                        {event.model_name ? ` · ${event.model_name}` : ""}
+                      </span>
+                      <span>{event.target_type ?? "No target"}</span>
+                    </div>
+                    <span className="ai-usage-v2-status" data-status={status}>
+                      {getEventStatusLabel(status)}
                     </span>
-                  </div>
-                ))}
-              </div>
+                  </article>
+                );
+              })}
             </div>
           )}
 
-          <p className="mt-5 text-xs leading-relaxed text-zinc-600">
-            Normal members can see status, feature, provider, model, and timing.
-            Raw provider error details stay out of the member dashboard.
+          <p className="ai-usage-v2-section-description">
+            Members can see feature, provider, model, target type, status, and timing. Raw provider error details remain private.
           </p>
+        </section>
+
+        <section className="ai-usage-v2-section" aria-labelledby="counts-heading">
+          <div className="ai-usage-v2-section-heading">
+            <div>
+              <p className="ai-usage-v2-eyebrow">How counting works</p>
+              <h2 id="counts-heading">Know what spends usage and what does not.</h2>
+            </div>
+            <span className="ai-usage-v2-section-icon">
+              <BrainCircuit aria-hidden="true" size={21} />
+            </span>
+          </div>
+
+          <div className="ai-usage-v2-explainer-grid">
+            <article className="ai-usage-v2-explainer-card">
+              <span className="ai-usage-v2-explainer-icon">
+                <Zap aria-hidden="true" size={19} />
+              </span>
+              <div>
+                <h3>Generated</h3>
+                <p>A new successful AI output. It counts as a metered action.</p>
+              </div>
+            </article>
+            <article className="ai-usage-v2-explainer-card">
+              <span className="ai-usage-v2-explainer-icon">
+                <Database aria-hidden="true" size={19} />
+              </span>
+              <div>
+                <h3>Cached</h3>
+                <p>An existing result shown again. It does not spend another generation.</p>
+              </div>
+            </article>
+            <article className="ai-usage-v2-explainer-card">
+              <span className="ai-usage-v2-explainer-icon">
+                <AlertTriangle aria-hidden="true" size={19} />
+              </span>
+              <div>
+                <h3>Failed</h3>
+                <p>A non-cached attempt that started but did not complete. It is included in metered usage.</p>
+              </div>
+            </article>
+          </div>
         </section>
       </div>
     </main>
