@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import AdminBillingV2Client from "./billing-v2-client";
 import "./billing-v2.css";
+import "./billing-v2-appearance.css";
 
 export const metadata: Metadata = {
   title: "Billing Operations | Loombus Admin",
