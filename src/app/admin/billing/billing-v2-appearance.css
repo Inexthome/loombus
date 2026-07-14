@@ -1,0 +1,43 @@
+.billing-v2-page {
+  --billing-bg: var(--loombus-page-bg);
+  --billing-surface: var(--loombus-surface);
+  --billing-surface-strong: var(--loombus-surface-strong);
+  --billing-surface-muted: var(--loombus-surface-muted);
+  --billing-text: var(--loombus-text);
+  --billing-muted: var(--loombus-text-muted);
+  --billing-faint: var(--loombus-text-subtle);
+  --billing-border: var(--loombus-border);
+  --billing-border-strong: color-mix(in srgb, var(--loombus-border) 72%, var(--loombus-text) 28%);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(203, 171, 91, 0.14), transparent 30rem),
+    var(--billing-bg);
+  color: var(--billing-text);
+}
+
+html[data-loombus-theme="light"] .billing-v2-page {
+  --billing-shadow: 0 18px 60px rgba(48, 41, 24, 0.08);
+  --billing-good: #176b48;
+  --billing-good-bg: rgba(42, 143, 93, 0.11);
+  --billing-warning: #8a5a0f;
+  --billing-warning-bg: rgba(203, 139, 35, 0.13);
+  --billing-danger: #a23838;
+  --billing-danger-bg: rgba(185, 57, 57, 0.11);
+}
+
+html[data-loombus-theme="dark"] .billing-v2-page {
+  --billing-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+  --billing-good: #7fd1a8;
+  --billing-good-bg: rgba(55, 154, 105, 0.12);
+  --billing-warning: #e6bc67;
+  --billing-warning-bg: rgba(203, 139, 35, 0.11);
+  --billing-danger: #ef9292;
+  --billing-danger-bg: rgba(185, 57, 57, 0.12);
+}
+
+html[data-loombus-theme="light"] .billing-v2-badge.is-admin {
+  color: #315e9e;
+}
+
+html[data-loombus-theme="dark"] .billing-v2-badge.is-admin {
+  color: #8eb6ef;
+}
