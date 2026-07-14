@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHeader, PageShell, Panel } from "@/components/ui";
+
+export const metadata: Metadata = {
+  title: "Loombus Guide | Loombus",
+  description:
+    "A practical guide to Loombus discussions, Signal, profiles, saved knowledge, messages, settings, Premium tools, and safety controls.",
+  alternates: { canonical: "https://loombus.com/settings/guide" },
+};
 
 const guideSections = [
   {
@@ -8,7 +17,7 @@ const guideSections = [
     body: "Loombus is built for focused discussions, clearer thinking, and quieter community interaction. Start by completing your profile, choosing your appearance, reading discussions, saving useful threads, and creating one thoughtful post when you are ready.",
     bullets: [
       "Complete your profile so people know who they are reading.",
-      "Use Home as your personal signal hub.",
+      "Use Home as your personal Signal hub.",
       "Use Discussions to read, filter, and join public conversations.",
       "Use Create when you have a clear question, claim, problem, or idea.",
     ],
@@ -70,7 +79,7 @@ const guideSections = [
       "Reply to the strongest part of the discussion.",
       "Add context instead of noise.",
       "Disagree by naming the assumption or tradeoff.",
-      "Avoid replies that only react without adding signal.",
+      "Avoid replies that only react without adding Signal.",
     ],
   },
   {
@@ -119,23 +128,23 @@ const guideSections = [
   },
   {
     id: "alerts",
-    eyebrow: "Alerts",
+    eyebrow: "Signal Inbox",
     title: "Notifications and alerts",
-    body: "Alerts help you return to meaningful activity such as replies, mentions, follows, messages, and discussion updates.",
+    body: "The Signal Inbox helps you return to meaningful activity such as replies, mentions, follows, messages, and discussion updates.",
     bullets: [
       "Use alerts to return to conversations.",
       "Filter alert types when the inbox gets busy.",
-      "Adjust notification preferences from Profile or Settings when needed.",
+      "Adjust delivery preferences from Settings.",
     ],
   },
   {
     id: "appearance",
     eyebrow: "Appearance",
     title: "Light, System, and Dark",
-    body: "Appearance controls the visual mode of Loombus. Use the floating Appearance button or Settings to switch between Light, System, and Dark without changing your account data.",
+    body: "Appearance controls the visual mode of Loombus. Use Settings to switch between Light, System, and Dark without changing your account data.",
     bullets: [
-      "Light uses a brighter interface.",
-      "Dark uses the original Loombus dark style.",
+      "Light uses the Loombus Cream workspace.",
+      "Dark uses the low-light workspace.",
       "System follows your device setting.",
     ],
   },
@@ -147,7 +156,7 @@ const guideSections = [
     bullets: [
       "Use AI summaries to understand long discussions faster.",
       "Use quality checks before posting.",
-      "Use folders, notes, and Stickies to organize saved knowledge.",
+      "Review AI Usage to understand metered and cached actions.",
     ],
   },
   {
@@ -163,81 +172,63 @@ const guideSections = [
   },
 ];
 
+const referenceLinks = [
+  ["/support", "Support", "Search help or submit a structured request."],
+  ["/guidelines", "Guidelines", "Community standards and enforcement expectations."],
+  ["/safety", "Safety", "Reporting, blocking, and member protections."],
+  ["/ai-usage", "AI Usage", "Review account-level AI limits and activity."],
+  ["/about", "About Loombus", "Purpose, values, and Signal-first direction."],
+  ["/accessibility", "Accessibility", "Accessibility approach and support contact."],
+] as const;
+
 export default function LoombusGuidePage() {
   return (
-    <main className="min-h-screen bg-black px-4 py-10 text-white sm:px-6 lg:py-14">
-      <div className="mx-auto max-w-6xl">
-        <Link
-          href="/settings"
-          className="mb-8 inline-flex rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-        >
-          ← Back to Settings
-        </Link>
+    <PageShell width="xl">
+      <Link href="/settings" className="loombus-reference-back">
+        ← Back to Settings
+      </Link>
 
-        <section className="mb-8 rounded-[2rem] border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-8">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-zinc-500">
-            Loombus Guide
-          </p>
+      <PageHeader
+        eyebrow="Loombus Guide"
+        title="Understand the platform without guessing."
+        description="A central guide to the main workspaces, Signal concepts, account controls, and safety tools across Loombus. Use the section index to jump directly to the area you need."
+      />
 
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            How to use Loombus.
-          </h1>
+      <div className="loombus-reference-grid" aria-label="Related Loombus references">
+        {referenceLinks.map(([href, title, description]) => (
+          <Link key={href} href={href} className="loombus-reference-link">
+            <strong>{title}</strong>
+            <span>{description}</span>
+          </Link>
+        ))}
+      </div>
 
-          <p className="mt-5 max-w-3xl text-base leading-relaxed text-zinc-400 sm:text-lg">
-            A central guide for what each area does, where to go, and how the main Loombus concepts work. Page Help buttons can link directly to the matching section here.
-          </p>
-        </section>
-
-        <nav
-          aria-label="Loombus guide sections"
-          className="mb-8 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20"
-        >
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {guideSections.map((section) => (
-              <a
-                key={section.id}
-                href={`#${section.id}`}
-                className="rounded-2xl border border-zinc-800 bg-black/40 px-4 py-3 text-sm font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-white"
-              >
-                {section.title}
-              </a>
-            ))}
-          </div>
-        </nav>
-
-        <div className="grid gap-5">
+      <nav className="loombus-guide-v2-nav" aria-label="Loombus guide sections">
+        <div>
           {guideSections.map((section) => (
-            <section
-              key={section.id}
-              id={section.id}
-              className="scroll-mt-24 rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/20 sm:p-7"
-            >
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.24em] text-zinc-600">
-                {section.eyebrow}
-              </p>
+            <a key={section.id} href={`#${section.id}`}>
+              {section.title}
+            </a>
+          ))}
+        </div>
+      </nav>
 
-              <h2 className="text-2xl font-semibold tracking-tight text-white">
-                {section.title}
-              </h2>
-
-              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:text-base">
-                {section.body}
-              </p>
-
-              <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="loombus-guide-v2-sections">
+        {guideSections.map((section) => (
+          <Panel key={section.id} className="loombus-guide-v2-section">
+            <section id={section.id}>
+              <p className="loombus-page-header-eyebrow">{section.eyebrow}</p>
+              <h2>{section.title}</h2>
+              <p>{section.body}</p>
+              <ul>
                 {section.bullets.map((bullet) => (
-                  <li
-                    key={bullet}
-                    className="rounded-2xl border border-zinc-800 bg-black/40 p-4 text-sm leading-relaxed text-zinc-400"
-                  >
-                    {bullet}
-                  </li>
+                  <li key={bullet}>{bullet}</li>
                 ))}
               </ul>
             </section>
-          ))}
-        </div>
+          </Panel>
+        ))}
       </div>
-    </main>
+    </PageShell>
   );
 }
