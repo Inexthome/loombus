@@ -1,0 +1,72 @@
+.health-v2-page {
+  --health-bg: var(--loombus-page-bg);
+  --health-surface: var(--loombus-surface);
+  --health-surface-strong: var(--loombus-surface-strong);
+  --health-surface-muted: var(--loombus-surface-muted);
+  --health-text: var(--loombus-text);
+  --health-muted: var(--loombus-text-muted);
+  --health-border: var(--loombus-border);
+  --health-border-strong: color-mix(in srgb, var(--loombus-border) 72%, var(--loombus-text) 28%);
+  background:
+    radial-gradient(circle at top right, rgba(203, 171, 91, 0.14), transparent 34rem),
+    var(--health-bg);
+  color: var(--health-text);
+}
+
+html[data-loombus-theme="light"] .health-v2-page {
+  --health-good: #1f7a54;
+  --health-good-soft: rgba(31, 122, 84, 0.12);
+  --health-attention: #a66408;
+  --health-attention-soft: rgba(166, 100, 8, 0.13);
+  --health-danger: #b93f36;
+  --health-danger-soft: rgba(185, 63, 54, 0.12);
+}
+
+html[data-loombus-theme="dark"] .health-v2-page {
+  --health-good: #72c69d;
+  --health-good-soft: rgba(114, 198, 157, 0.12);
+  --health-attention: #e0ab58;
+  --health-attention-soft: rgba(224, 171, 88, 0.12);
+  --health-danger: #ef8a81;
+  --health-danger-soft: rgba(239, 138, 129, 0.11);
+}
+
+html[data-loombus-theme="light"] .health-v2-hero {
+  box-shadow: 0 24px 70px rgba(33, 29, 18, 0.08);
+}
+
+html[data-loombus-theme="dark"] .health-v2-hero {
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.25);
+}
+
+html[data-loombus-theme="light"] .health-v2-primary-action {
+  background: var(--loombus-primary-bg);
+  color: var(--loombus-primary-text) !important;
+}
+
+html[data-loombus-theme="dark"] .health-v2-primary-action {
+  background: #fefbec;
+  color: #171713 !important;
+}
+
+html[data-loombus-theme="light"] .health-v2-eyebrow,
+html[data-loombus-theme="light"] .health-v2-section-heading p,
+html[data-loombus-theme="light"] .health-v2-panel-heading p,
+html[data-loombus-theme="light"] .health-v2-detail-heading p,
+html[data-loombus-theme="light"] .health-v2-healthy-detail p,
+html[data-loombus-theme="light"] .health-v2-state p,
+html[data-loombus-theme="light"] .health-v2-service-card > a,
+html[data-loombus-theme="light"] .health-v2-config-group-heading > span {
+  color: #8a7338;
+}
+
+html[data-loombus-theme="dark"] .health-v2-eyebrow,
+html[data-loombus-theme="dark"] .health-v2-section-heading p,
+html[data-loombus-theme="dark"] .health-v2-panel-heading p,
+html[data-loombus-theme="dark"] .health-v2-detail-heading p,
+html[data-loombus-theme="dark"] .health-v2-healthy-detail p,
+html[data-loombus-theme="dark"] .health-v2-state p,
+html[data-loombus-theme="dark"] .health-v2-service-card > a,
+html[data-loombus-theme="dark"] .health-v2-config-group-heading > span {
+  color: #cbab5b;
+}
