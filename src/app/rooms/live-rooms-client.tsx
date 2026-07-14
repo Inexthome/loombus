@@ -1,0 +1,489 @@
+"use client";
+
+import Link from "next/link";
+import {
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  LockKeyhole,
+  MessageSquareText,
+  Plus,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  Users,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
+import { RoomModelCard, RoomsSectionHeading } from "./rooms-v2-components";
+import { ROOM_MODELS } from "./rooms-v2-model";
+
+type RoomRole = "owner" | "administrator" | "moderator" | "member";
+type RoomFilter = "all" | "owned" | "joined";
+
+type RoomEventSummary = {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string | null;
+  location: string | null;
+};
+
+type LiveRoomSummary = {
+  id: string;
+  name: string;
+  description: string;
+  roomType: string;
+  visibility: string;
+  inviteOnly: boolean;
+  status: string;
+  ownerId: string;
+  createdBy: string;
+  templateKey: string;
+  subscriptionPlan: string;
+  subscriptionStatus: string;
+  memberLimit: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  role: RoomRole;
+  memberCount: number;
+  postCount: number;
+  eventCount: number;
+  announcementCount: number;
+  latestActivityAt: string | null;
+  nextEvent: RoomEventSummary | null;
+};
+
+type RoomsResponse = {
+  generatedAt?: string;
+  currentUserId?: string;
+  rooms?: LiveRoomSummary[];
+  summary?: {
+    total: number;
+    owned: number;
+    joined: number;
+    upcomingEvents: number;
+  };
+  error?: string;
+  code?: string;
+};
+
+const FILTERS: Array<{ value: RoomFilter; label: string }> = [
+  { value: "all", label: "All rooms" },
+  { value: "owned", label: "Owned" },
+  { value: "joined", label: "Joined" },
+];
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return "No date";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "No date";
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatRelativeTime(value: string | null | undefined) {
+  if (!value) return "No recent activity";
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "No recent activity";
+
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return formatDateTime(value);
+}
+
+function roleLabel(role: RoomRole) {
+  if (role === "owner") return "Owner";
+  if (role === "administrator") return "Administrator";
+  if (role === "moderator") return "Moderator";
+  return "Member";
+}
+
+export default function LiveRoomsClient() {
+  const [rooms, setRooms] = useState<LiveRoomSummary[]>([]);
+  const [summary, setSummary] = useState<RoomsResponse["summary"]>({
+    total: 0,
+    owned: 0,
+    joined: 0,
+    upcomingEvents: 0,
+  });
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<RoomFilter>("all");
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [message, setMessage] = useState("");
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+
+  const loadRooms = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    setMessage("");
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = "/login?next=/rooms";
+        return;
+      }
+
+      const response = await fetch("/api/rooms", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: "no-store",
+      });
+      const result = (await response.json().catch(() => ({}))) as RoomsResponse;
+
+      if (response.status === 401) {
+        window.location.href = "/login?next=/rooms";
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Unable to load your rooms.");
+      }
+
+      const nextRooms = Array.isArray(result.rooms) ? result.rooms : [];
+      setRooms(nextRooms);
+      setSummary(
+        result.summary ?? {
+          total: nextRooms.length,
+          owned: nextRooms.filter((room) => room.role === "owner").length,
+          joined: nextRooms.filter((room) => room.role !== "owner").length,
+          upcomingEvents: nextRooms.filter((room) => Boolean(room.nextEvent)).length,
+        }
+      );
+      setGeneratedAt(result.generatedAt ?? null);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Unable to load your rooms."
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRooms(false);
+  }, [loadRooms]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("live-rooms-dashboard")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "rooms" },
+        () => void loadRooms(true)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "room_members" },
+        () => void loadRooms(true)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "room_posts" },
+        () => void loadRooms(true)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "room_events" },
+        () => void loadRooms(true)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "room_announcements" },
+        () => void loadRooms(true)
+      )
+      .subscribe((status) => {
+        setRealtimeConnected(status === "SUBSCRIBED");
+      });
+
+    const fallback = window.setInterval(() => void loadRooms(true), 45_000);
+
+    return () => {
+      window.clearInterval(fallback);
+      void supabase.removeChannel(channel);
+    };
+  }, [loadRooms]);
+
+  const visibleRooms = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+
+    return rooms.filter((room) => {
+      if (filter === "owned" && room.role !== "owner") return false;
+      if (filter === "joined" && room.role === "owner") return false;
+      if (!normalized) return true;
+
+      return [
+        room.name,
+        room.description,
+        room.roomType,
+        room.templateKey,
+        roleLabel(room.role),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalized);
+    });
+  }, [filter, query, rooms]);
+
+  if (loading) {
+    return (
+      <main className="rooms-live-page">
+        <section className="rooms-live-state-card">
+          <p className="rooms-live-eyebrow">Private Rooms</p>
+          <h1>Opening your rooms…</h1>
+          <p>Verifying your active memberships and private room access.</p>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="rooms-live-page">
+      <div className="rooms-live-shell">
+        <header className="rooms-live-hero">
+          <div>
+            <p className="rooms-live-eyebrow">Live Private Rooms</p>
+            <h1>Discussion, coordination, and shared dates in one private place.</h1>
+            <p>
+              Rooms connect structured private conversations with announcements,
+              members, access requests, and a shared calendar. Content stays visible
+              only to verified room members.
+            </p>
+          </div>
+
+          <div className="rooms-live-hero-actions">
+            <Link href="/rooms/new" className="rooms-live-primary-action">
+              <Plus aria-hidden="true" />
+              Plan a room
+            </Link>
+            <button
+              type="button"
+              onClick={() => void loadRooms(true)}
+              disabled={refreshing}
+              className="rooms-live-secondary-action"
+            >
+              <RefreshCw
+                aria-hidden="true"
+                className={refreshing ? "is-spinning" : undefined}
+              />
+              {refreshing ? "Refreshing" : "Refresh"}
+            </button>
+          </div>
+        </header>
+
+        <div className="rooms-live-status-row">
+          <span className={realtimeConnected ? "is-live" : "is-fallback"}>
+            {realtimeConnected ? (
+              <Wifi aria-hidden="true" />
+            ) : (
+              <WifiOff aria-hidden="true" />
+            )}
+            {realtimeConnected ? "Live updates connected" : "Refresh fallback active"}
+          </span>
+          <span>
+            <LockKeyhole aria-hidden="true" />
+            Membership verified server-side
+          </span>
+          {generatedAt && (
+            <span>
+              <Clock3 aria-hidden="true" />
+              Updated {formatRelativeTime(generatedAt)}
+            </span>
+          )}
+        </div>
+
+        {message && <div className="rooms-live-notice is-error">{message}</div>}
+
+        <section className="rooms-live-metrics" aria-label="Room summary">
+          <article>
+            <span>Active rooms</span>
+            <strong>{summary?.total ?? rooms.length}</strong>
+          </article>
+          <article>
+            <span>Owned</span>
+            <strong>{summary?.owned ?? 0}</strong>
+          </article>
+          <article>
+            <span>Joined</span>
+            <strong>{summary?.joined ?? 0}</strong>
+          </article>
+          <article>
+            <span>Rooms with upcoming dates</span>
+            <strong>{summary?.upcomingEvents ?? 0}</strong>
+          </article>
+        </section>
+
+        <section className="rooms-live-directory">
+          <div className="rooms-live-directory-heading">
+            <div>
+              <p className="rooms-live-eyebrow">Your rooms</p>
+              <h2>Private spaces you can enter now.</h2>
+              <p>
+                Each card reflects a verified owner or membership record. No sample
+                members, posts, events, or activity are shown as live account data.
+              </p>
+            </div>
+          </div>
+
+          <div className="rooms-live-toolbar">
+            <label className="rooms-live-search">
+              <Search aria-hidden="true" />
+              <span className="sr-only">Search your rooms</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search room name, purpose, type, or role"
+              />
+            </label>
+
+            <div className="rooms-live-filter-row" aria-label="Filter rooms">
+              {FILTERS.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  aria-pressed={filter === item.value}
+                  onClick={() => setFilter(item.value)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {visibleRooms.length > 0 ? (
+            <div className="rooms-live-grid">
+              {visibleRooms.map((room) => (
+                <article key={room.id} className="rooms-live-card">
+                  <div className="rooms-live-card-topline">
+                    <span className="rooms-live-role-badge">
+                      <ShieldCheck aria-hidden="true" />
+                      {roleLabel(room.role)}
+                    </span>
+                    <span className="rooms-live-private-badge">
+                      <LockKeyhole aria-hidden="true" />
+                      Private
+                    </span>
+                  </div>
+
+                  <div className="rooms-live-card-copy">
+                    <p>{room.roomType.replaceAll("_", " ")}</p>
+                    <h3>{room.name}</h3>
+                    <span>{room.description}</span>
+                  </div>
+
+                  <div className="rooms-live-card-stats">
+                    <span>
+                      <Users aria-hidden="true" />
+                      {room.memberCount} members
+                    </span>
+                    <span>
+                      <MessageSquareText aria-hidden="true" />
+                      {room.postCount} posts
+                    </span>
+                    <span>
+                      <CalendarDays aria-hidden="true" />
+                      {room.eventCount} events
+                    </span>
+                  </div>
+
+                  {room.nextEvent ? (
+                    <div className="rooms-live-next-event">
+                      <CalendarDays aria-hidden="true" />
+                      <div>
+                        <strong>{room.nextEvent.title}</strong>
+                        <span>{formatDateTime(room.nextEvent.startsAt)}</span>
+                        {room.nextEvent.location && (
+                          <small>{room.nextEvent.location}</small>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rooms-live-next-event is-empty">
+                      <CheckCircle2 aria-hidden="true" />
+                      <span>No upcoming room event.</span>
+                    </div>
+                  )}
+
+                  <div className="rooms-live-card-footer">
+                    <span>Activity {formatRelativeTime(room.latestActivityAt)}</span>
+                    <Link href={`/rooms/${encodeURIComponent(room.id)}`}>
+                      Open room
+                      <ArrowRight aria-hidden="true" />
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : rooms.length > 0 ? (
+            <div className="rooms-live-empty">
+              <Search aria-hidden="true" />
+              <h3>No room matches those filters.</h3>
+              <p>Clear the search or select another room group.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setQuery("");
+                  setFilter("all");
+                }}
+              >
+                Clear filters
+              </button>
+            </div>
+          ) : (
+            <div className="rooms-live-empty is-primary">
+              <LockKeyhole aria-hidden="true" />
+              <h3>No active room membership was found.</h3>
+              <p>
+                This dashboard stays empty until you own a room or an owner approves
+                your membership. The setup planner remains available without claiming
+                to provision or charge for a room.
+              </p>
+              <Link href="/rooms/new" className="rooms-live-primary-action">
+                Plan your first room
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+        </section>
+
+        {rooms.length === 0 && (
+          <section className="rooms-live-models">
+            <RoomsSectionHeading
+              eyebrow="Room models"
+              title="Start with a structure that matches the group."
+              description="These blueprints support the existing room planner. They are not live room records and do not create a subscription."
+              action={{ href: "/rooms/new", label: "Open room planner" }}
+            />
+            <div className="rooms-v2-model-grid">
+              {ROOM_MODELS.slice(0, 4).map((model) => (
+                <RoomModelCard key={model.id} model={model} />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
+  );
+}
