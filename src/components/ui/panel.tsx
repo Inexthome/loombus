@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import styles from "./reference-v2.module.css";
 
 type PanelProps = {
   children: ReactNode;
@@ -7,9 +8,9 @@ type PanelProps = {
 };
 
 const toneClass = {
-  default: "border-zinc-800 bg-zinc-950",
-  warning: "border-amber-900/60 bg-amber-950/20 text-amber-200",
-  danger: "border-red-900/60 bg-red-950/20",
+  default: styles.panelDefault,
+  warning: styles.panelWarning,
+  danger: styles.panelDanger,
 };
 
 export function Panel({
@@ -18,7 +19,7 @@ export function Panel({
   tone = "default",
 }: PanelProps) {
   return (
-    <section className={`rounded-3xl border p-7 ${toneClass[tone]} ${className}`}>
+    <section className={`${styles.panel} ${toneClass[tone]} ${className}`}>
       {children}
     </section>
   );
