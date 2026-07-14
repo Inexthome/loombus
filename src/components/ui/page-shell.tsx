@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "./public-reference.css";
 
 type PageShellProps = {
   children: ReactNode;
@@ -19,8 +20,8 @@ export function PageShell({
   className = "",
 }: PageShellProps) {
   return (
-    <main className={`min-h-screen bg-black px-6 py-16 text-white ${className}`}>
-      <div className={`mx-auto ${widthClass[width]}`}>
+    <main className={`loombus-page-shell-v2 ${className}`}>
+      <div className={`loombus-page-shell-v2-inner ${widthClass[width]}`}>
         {children}
       </div>
     </main>

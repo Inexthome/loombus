@@ -1,0 +1,295 @@
+.loombus-page-shell-v2 {
+  --reference-bg: var(--loombus-page-bg);
+  --reference-surface: var(--loombus-surface);
+  --reference-surface-strong: var(--loombus-surface-strong);
+  --reference-surface-muted: var(--loombus-surface-muted);
+  --reference-text: var(--loombus-text);
+  --reference-muted: var(--loombus-text-muted);
+  --reference-subtle: var(--loombus-text-subtle);
+  --reference-border: var(--loombus-border);
+  --reference-gold: #cbab5b;
+  --reference-cream: #fefbec;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 94% 0%, rgba(203, 171, 91, 0.16), transparent 30rem),
+    var(--reference-bg);
+  color: var(--reference-text);
+  padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 4vw, 2.25rem) 5rem;
+}
+
+.loombus-page-shell-v2 *,
+.loombus-page-shell-v2 *::before,
+.loombus-page-shell-v2 *::after {
+  box-sizing: border-box;
+}
+
+.loombus-page-shell-v2-inner {
+  width: 100%;
+  margin-inline: auto;
+}
+
+.loombus-page-shell-v2 .loombus-reference-back,
+.loombus-page-shell-v2 > div > a:first-child {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1.4rem !important;
+  border: 1px solid var(--reference-border);
+  border-radius: 999px;
+  background: var(--reference-surface-muted);
+  color: var(--reference-muted) !important;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 720;
+  text-decoration: none;
+  transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.loombus-page-shell-v2 .loombus-reference-back:hover,
+.loombus-page-shell-v2 > div > a:first-child:hover {
+  border-color: color-mix(in srgb, var(--reference-gold) 45%, var(--reference-border));
+  color: var(--reference-text) !important;
+  transform: translateY(-1px);
+}
+
+.loombus-page-header-v2 {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--reference-border);
+  border-radius: 2rem;
+  background: color-mix(in srgb, var(--reference-surface) 96%, transparent);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--reference-text) 8%, transparent);
+  padding: clamp(1.6rem, 4vw, 3.2rem);
+}
+
+.loombus-page-header-v2 .loombus-page-header-eyebrow {
+  margin: 0 0 0.75rem;
+  color: color-mix(in srgb, var(--reference-gold) 82%, var(--reference-text));
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.loombus-page-header-v2 h1 {
+  margin: 0;
+  color: var(--reference-text);
+  font-size: clamp(2.35rem, 6vw, 5.1rem);
+  font-weight: 560;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.loombus-page-header-v2 .loombus-page-header-description {
+  max-width: 52rem;
+  margin-top: 1.2rem;
+  color: var(--reference-muted);
+  font-size: clamp(0.98rem, 1.5vw, 1.1rem);
+  line-height: 1.68;
+}
+
+.loombus-panel-v2 {
+  border: 1px solid var(--reference-border) !important;
+  border-radius: 1.5rem !important;
+  background: color-mix(in srgb, var(--reference-surface) 97%, transparent) !important;
+  color: var(--reference-muted);
+  box-shadow: 0 16px 44px color-mix(in srgb, var(--reference-text) 5%, transparent);
+  padding: clamp(1.25rem, 3vw, 2rem) !important;
+}
+
+.loombus-panel-v2 + .loombus-panel-v2 {
+  margin-top: 0;
+}
+
+.loombus-panel-v2 h2,
+.loombus-panel-v2 h3,
+.loombus-panel-v2 strong {
+  color: var(--reference-text) !important;
+}
+
+.loombus-panel-v2 h2 {
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem) !important;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.loombus-panel-v2 p,
+.loombus-panel-v2 li,
+.loombus-panel-v2 div {
+  color: inherit;
+}
+
+.loombus-page-shell-v2 .text-white,
+.loombus-page-shell-v2 .text-zinc-200,
+.loombus-page-shell-v2 .text-zinc-300 {
+  color: var(--reference-text) !important;
+}
+
+.loombus-page-shell-v2 .text-zinc-400,
+.loombus-page-shell-v2 .text-zinc-500 {
+  color: var(--reference-muted) !important;
+}
+
+.loombus-page-shell-v2 .text-zinc-600,
+.loombus-page-shell-v2 .text-zinc-700 {
+  color: var(--reference-subtle) !important;
+}
+
+.loombus-page-shell-v2 .border-zinc-700,
+.loombus-page-shell-v2 .border-zinc-800,
+.loombus-page-shell-v2 .border-zinc-900 {
+  border-color: var(--reference-border) !important;
+}
+
+.loombus-page-shell-v2 .bg-black,
+.loombus-page-shell-v2 .bg-black\/40,
+.loombus-page-shell-v2 .bg-zinc-950 {
+  background: var(--reference-surface) !important;
+}
+
+.loombus-page-shell-v2 a:not(.loombus-reference-back) {
+  text-underline-offset: 0.2em;
+}
+
+.loombus-page-shell-v2 a:not(.loombus-reference-back):focus-visible,
+.loombus-page-shell-v2 button:focus-visible,
+.loombus-page-shell-v2 input:focus-visible,
+.loombus-page-shell-v2 textarea:focus-visible,
+.loombus-page-shell-v2 select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--reference-gold) 70%, transparent);
+  outline-offset: 3px;
+}
+
+.loombus-reference-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.loombus-reference-link {
+  display: flex;
+  min-height: 5rem;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid var(--reference-border);
+  border-radius: 1rem;
+  background: var(--reference-surface-muted);
+  color: var(--reference-text);
+  padding: 1rem;
+  text-decoration: none;
+  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.loombus-reference-link:hover {
+  border-color: color-mix(in srgb, var(--reference-gold) 48%, var(--reference-border));
+  background: color-mix(in srgb, var(--reference-gold) 8%, var(--reference-surface-muted));
+  transform: translateY(-1px);
+}
+
+.loombus-reference-link strong {
+  font-size: 0.92rem;
+}
+
+.loombus-reference-link span {
+  color: var(--reference-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.loombus-guide-v2-nav {
+  position: sticky;
+  top: 5.2rem;
+  z-index: 2;
+  margin-bottom: 1rem;
+  border: 1px solid var(--reference-border);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--reference-surface) 94%, transparent);
+  backdrop-filter: blur(18px);
+  padding: 0.75rem;
+}
+
+.loombus-guide-v2-nav > div {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.loombus-guide-v2-nav a {
+  flex: 0 0 auto;
+  border: 1px solid var(--reference-border);
+  border-radius: 999px;
+  background: var(--reference-surface-muted);
+  color: var(--reference-muted);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.76rem;
+  font-weight: 740;
+  text-decoration: none;
+}
+
+.loombus-guide-v2-sections {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.loombus-guide-v2-section {
+  scroll-margin-top: 9rem;
+}
+
+.loombus-guide-v2-section ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.loombus-guide-v2-section li {
+  border: 1px solid var(--reference-border);
+  border-radius: 0.9rem;
+  background: var(--reference-surface-muted);
+  padding: 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .loombus-reference-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .loombus-page-shell-v2 {
+    padding-inline: 0.75rem;
+    padding-bottom: 4rem;
+  }
+
+  .loombus-page-header-v2,
+  .loombus-panel-v2 {
+    border-radius: 1.2rem !important;
+  }
+
+  .loombus-reference-grid,
+  .loombus-guide-v2-section ul {
+    grid-template-columns: 1fr;
+  }
+
+  .loombus-guide-v2-nav {
+    top: 4.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loombus-page-shell-v2 *,
+  .loombus-page-shell-v2 *::before,
+  .loombus-page-shell-v2 *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

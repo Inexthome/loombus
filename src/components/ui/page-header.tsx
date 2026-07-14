@@ -16,24 +16,18 @@ export function PageHeader({
   className = "",
 }: PageHeaderProps) {
   return (
-    <div className={`mb-12 ${className}`}>
+    <header className={`loombus-page-header-v2 ${className}`}>
       {eyebrow && (
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-          {eyebrow}
-        </p>
+        <p className="loombus-page-header-eyebrow">{eyebrow}</p>
       )}
 
-      <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
-        {title}
-      </h1>
+      <h1>{title}</h1>
 
       {description && (
-        <div className="mt-5 max-w-3xl leading-relaxed text-zinc-400">
-          {description}
-        </div>
+        <div className="loombus-page-header-description">{description}</div>
       )}
 
       {children}
-    </div>
+    </header>
   );
 }
