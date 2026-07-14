@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
-type AdminProfileRow = {
-  is_admin: boolean | null;
-};
+type HealthSeverity = "notice" | "attention" | "warning";
+type HealthStatus = "healthy" | "attention" | "degraded";
+type ServiceStatus = HealthStatus | "not_configured";
 
 type CountResult = {
   key: string;
@@ -13,14 +14,32 @@ type CountResult = {
   error: string | null;
 };
 
+type HealthWarning = {
+  key: string;
+  severity: HealthSeverity;
+  message: string;
+  detail: string | null;
+  destination: string | null;
+};
+
+type ServiceCheck = {
+  key: string;
+  label: string;
+  status: ServiceStatus;
+  summary: string;
+  detail: string;
+  destination: string | null;
+};
+
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const authorization = request.headers.get("authorization") ?? "";
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Missing Supabase environment configuration.");
   }
+
+  const authorization = request.headers.get("authorization") ?? "";
 
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
@@ -33,31 +52,27 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+function getAdminSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return null;
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
 
-async function requireAdmin(supabase: ReturnType<typeof getSupabaseForRequest>) {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return { user: null, error: jsonError("Unauthorized.", 401) };
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle<AdminProfileRow>();
-
-  if (profileError || !profile?.is_admin) {
-    return { user: null, error: jsonError("Admin access required.", 403) };
-  }
-
-  return { user, error: null };
+function jsonError(message: string, status: number, code?: string) {
+  return NextResponse.json(code ? { error: message, code } : { error: message }, {
+    status,
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }
 
 function present(value: string | undefined) {
@@ -85,6 +100,7 @@ function getConfigStatus() {
     stripeSecretKey: present(process.env.STRIPE_SECRET_KEY),
     stripeWebhookSecret: present(process.env.STRIPE_WEBHOOK_SECRET),
     premiumMonthlyPrice: present(process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID),
+    premiumMonthlyFallbackPrice: present(process.env.STRIPE_PREMIUM_PRICE_ID),
     premiumAnnualPrice: present(process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID),
     premiumPlusMonthlyPrice: present(process.env.STRIPE_PREMIUM_PLUS_MONTHLY_PRICE_ID),
     premiumPlusAnnualPrice: present(process.env.STRIPE_PREMIUM_PLUS_ANNUAL_PRICE_ID),
@@ -97,7 +113,9 @@ function getConfigStatus() {
 
     apnsTeamId: present(process.env.APNS_TEAM_ID),
     apnsKeyId: present(process.env.APNS_KEY_ID),
-    apnsPrivateKey: present(process.env.APNS_PRIVATE_KEY) || present(process.env.APNS_PRIVATE_KEY_BASE64),
+    apnsPrivateKey:
+      present(process.env.APNS_PRIVATE_KEY) ||
+      present(process.env.APNS_PRIVATE_KEY_BASE64),
     apnsBundleId: present(process.env.APNS_BUNDLE_ID),
     apnsEnvironment: present(process.env.APNS_ENVIRONMENT),
 
@@ -112,13 +130,25 @@ function getConfigStatus() {
   };
 }
 
+type ConfigStatus = ReturnType<typeof getConfigStatus>;
+
+function unavailableCount(key: string, label: string, error: string): CountResult {
+  return {
+    key,
+    label,
+    count: null,
+    ok: false,
+    error,
+  };
+}
+
 async function countTable(
-  supabase: ReturnType<typeof getSupabaseForRequest>,
+  supabase: any,
   key: string,
   label: string,
   tableName: string
 ): Promise<CountResult> {
-  const { count, error } = await (supabase.from(tableName) as any).select("*", {
+  const { count, error } = await supabase.from(tableName).select("*", {
     count: "exact",
     head: true,
   });
@@ -133,17 +163,16 @@ async function countTable(
 }
 
 async function countFiltered(
-  supabase: ReturnType<typeof getSupabaseForRequest>,
+  supabase: any,
   key: string,
   label: string,
   tableName: string,
   applyFilter: (query: any) => any
 ): Promise<CountResult> {
-  const query = (supabase.from(tableName) as any).select("*", {
+  const query = supabase.from(tableName).select("*", {
     count: "exact",
     head: true,
   });
-
   const { count, error } = await applyFilter(query);
 
   return {
@@ -155,6 +184,166 @@ async function countFiltered(
   };
 }
 
+function findCount(items: CountResult[], key: string) {
+  return items.find((item) => item.key === key)?.count ?? 0;
+}
+
+function getServiceChecks(
+  config: ConfigStatus,
+  databaseCounts: CountResult[],
+  operationalSignals: CountResult[]
+): ServiceCheck[] {
+  const failedDatabaseChecks = databaseCounts.filter((item) => !item.ok).length;
+  const failedOperationalChecks = operationalSignals.filter((item) => !item.ok).length;
+  const failedAi24h = findCount(operationalSignals, "failed_ai_24h");
+  const unlinkedPremium = findCount(
+    operationalSignals,
+    "unlinked_premium_entitlements"
+  );
+  const failedWelcomeEmails = findCount(
+    operationalSignals,
+    "failed_welcome_emails"
+  );
+
+  const coreConfigured = [
+    config.supabaseUrl,
+    config.supabaseAnonKey,
+    config.supabaseServiceRole,
+    config.siteUrl,
+  ].filter(Boolean).length;
+  const aiModelsConfigured = [
+    config.openAiSummaryModel,
+    config.openAiTakeawaysModel,
+    config.openAiWhatChangedModel,
+    config.openAiDisagreementModel,
+    config.openAiQualityCheckModel,
+    config.openAiRewriteModel,
+    config.openAiReplySuggestionsModel,
+  ].filter(Boolean).length;
+  const billingPricesConfigured = [
+    config.premiumMonthlyPrice || config.premiumMonthlyFallbackPrice,
+    config.premiumAnnualPrice,
+    config.premiumPlusMonthlyPrice,
+    config.premiumPlusAnnualPrice,
+    config.extraAiPackPrice,
+  ].filter(Boolean).length;
+  const emailConfigured = [
+    config.resendApiKey,
+    config.digestFromEmail,
+    config.digestCronSecret,
+  ].filter(Boolean).length;
+  const apnsConfigured = [
+    config.apnsTeamId,
+    config.apnsKeyId,
+    config.apnsPrivateKey,
+    config.apnsBundleId,
+    config.apnsEnvironment,
+  ].every(Boolean);
+  const firebaseConfigured =
+    config.firebaseServiceAccount ||
+    [
+      config.firebaseProjectId,
+      config.firebaseClientEmail,
+      config.firebasePrivateKey,
+    ].every(Boolean);
+
+  return [
+    {
+      key: "core",
+      label: "Core platform",
+      status: coreConfigured === 4 ? "healthy" : "degraded",
+      summary: `${coreConfigured}/4 core settings configured`,
+      detail:
+        coreConfigured === 4
+          ? "Application URL and Supabase server configuration are present."
+          : "One or more core runtime settings are missing.",
+      destination: null,
+    },
+    {
+      key: "database",
+      label: "Database visibility",
+      status:
+        failedDatabaseChecks > 0 || failedOperationalChecks > 0
+          ? "degraded"
+          : "healthy",
+      summary:
+        failedDatabaseChecks + failedOperationalChecks === 0
+          ? "All read checks completed"
+          : `${failedDatabaseChecks + failedOperationalChecks} checks failed`,
+      detail:
+        failedDatabaseChecks + failedOperationalChecks === 0
+          ? "Admin operational tables and filtered signals are readable."
+          : "At least one Admin health query could not complete.",
+      destination: "/admin/audit",
+    },
+    {
+      key: "ai",
+      label: "AI operations",
+      status: !config.openAiApiKey
+        ? "degraded"
+        : failedAi24h > 0
+          ? "attention"
+          : "healthy",
+      summary: !config.openAiApiKey
+        ? "OpenAI key missing"
+        : `${aiModelsConfigured}/7 model settings configured`,
+      detail:
+        failedAi24h > 0
+          ? `${failedAi24h} AI events failed during the last 24 hours.`
+          : "No recent AI failures require attention.",
+      destination: "/admin/ai-access",
+    },
+    {
+      key: "billing",
+      label: "Billing sync",
+      status: !config.stripeSecretKey
+        ? "not_configured"
+        : !config.stripeWebhookSecret || unlinkedPremium > 0
+          ? "attention"
+          : "healthy",
+      summary: `${billingPricesConfigured}/5 billing prices configured`,
+      detail:
+        unlinkedPremium > 0
+          ? `${unlinkedPremium} enabled Premium or Admin entitlements have no Stripe customer.`
+          : "No current entitlement-linkage warning was detected.",
+      destination: "/admin/billing",
+    },
+    {
+      key: "email",
+      label: "Email delivery",
+      status: emailConfigured === 0
+        ? "not_configured"
+        : emailConfigured < 3 || failedWelcomeEmails > 0
+          ? "attention"
+          : "healthy",
+      summary: `${emailConfigured}/3 email settings configured`,
+      detail:
+        failedWelcomeEmails > 0
+          ? `${failedWelcomeEmails} welcome email events are marked failed.`
+          : "No welcome-email failures require attention.",
+      destination: "/admin/audit?search=welcome_email",
+    },
+    {
+      key: "push",
+      label: "Push delivery",
+      status:
+        apnsConfigured && firebaseConfigured
+          ? "healthy"
+          : apnsConfigured || firebaseConfigured
+            ? "attention"
+            : "not_configured",
+      summary: `${apnsConfigured ? "APNs ready" : "APNs incomplete"} · ${
+        firebaseConfigured ? "Firebase ready" : "Firebase incomplete"
+      }`,
+      detail:
+        apnsConfigured && firebaseConfigured
+          ? "Both iOS and Android push-provider settings are present."
+          : "Push configuration is incomplete for one or both mobile platforms.",
+      destination: null,
+    },
+  ];
+}
+
 export async function GET(request: NextRequest) {
   let supabase;
 
@@ -164,250 +353,386 @@ export async function GET(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const { error: adminError } = await requireAdmin(supabase);
+  const accountAccess = await verifyRequestAccountAccess(supabase);
 
-  if (adminError) {
-    return adminError;
+  if (!accountAccess.ok) {
+    return jsonError(
+      accountAccess.error,
+      accountAccess.status,
+      accountAccess.code
+    );
+  }
+
+  if (!accountAccess.profile.is_admin) {
+    return jsonError("Admin access required.", 403);
   }
 
   const now = new Date();
   const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-  const [
-    profileCount,
-    discussionCount,
-    replyCount,
-    reportCount,
-    notificationCount,
-    auditLogCount,
-    aiUsageCount,
-    entitlementCount,
-    labsRequestCount,
-    extraCreditPackCount,
-    topicAlertCount,
-    accountDeletionRequestCount,
-    supportRequestCount,
-    welcomeEmailEventCount,
-    openReports,
-    failedAi24h,
-    newDiscussions24h,
-    newReplies24h,
-    digestOptIns,
-    unlinkedPremiumEntitlements,
-    openSupportRequests,
-    failedWelcomeEmails,
-  ] = await Promise.all([
-    countTable(supabase, "profiles", "Profiles", "profiles"),
-    countTable(supabase, "discussions", "Discussions", "discussions"),
-    countTable(supabase, "replies", "Replies", "replies"),
-    countTable(supabase, "reports", "Reports", "reports"),
-    countTable(supabase, "notifications", "Notifications", "notifications"),
-    countTable(supabase, "audit_logs", "Audit logs", "audit_logs"),
-    countTable(supabase, "ai_usage_events", "AI usage events", "ai_usage_events"),
-    countTable(supabase, "user_ai_entitlements", "AI entitlements", "user_ai_entitlements"),
-    countTable(supabase, "labs_feature_requests", "Labs requests", "labs_feature_requests"),
-    countTable(supabase, "ai_extra_credit_packs", "Extra AI packs", "ai_extra_credit_packs"),
-    countTable(supabase, "user_topic_alerts", "Topic alerts", "user_topic_alerts"),
-    countTable(
-      supabase,
-      "account_deletion_requests",
-      "Account deletion requests",
-      "account_deletion_requests"
-    ),
-    countTable(supabase, "support_requests", "Support requests", "support_requests"),
-    countTable(supabase, "welcome_email_events", "Welcome email events", "welcome_email_events"),
-    countFiltered(supabase, "open_reports", "Open reports", "reports", (query) =>
-      query.in("status", ["new", "reviewing"])
-    ),
-    countFiltered(supabase, "failed_ai_24h", "Failed AI events, 24h", "ai_usage_events", (query) =>
-      query.eq("success", false).gte("created_at", dayAgo)
-    ),
-    countFiltered(supabase, "new_discussions_24h", "New discussions, 24h", "discussions", (query) =>
-      query.gte("created_at", dayAgo)
-    ),
-    countFiltered(supabase, "new_replies_24h", "New replies, 24h", "replies", (query) =>
-      query.gte("created_at", dayAgo)
-    ),
-    countFiltered(
-      supabase,
-      "digest_opt_ins",
-      "Email digest opt-ins",
-      "notification_preferences",
-      (query) => query.eq("email_digest_enabled", true)
-    ),
-    countFiltered(
-      supabase,
-      "unlinked_premium_entitlements",
-      "Premium entitlements missing Stripe customer",
-      "user_ai_entitlements",
-      (query) =>
-        query
-          .eq("ai_assisted_enabled", true)
-          .in("tier", ["premium", "admin"])
-          .is("stripe_customer_id", null)
-    ),
-    countFiltered(
-      supabase,
-      "open_support_requests",
-      "Open support requests",
-      "support_requests",
-      (query) => query.in("status", ["new", "reviewing"])
-    ),
-    countFiltered(
-      supabase,
-      "failed_welcome_emails",
-      "Failed welcome emails",
-      "welcome_email_events",
-      (query) => query.eq("status", "failed")
-    ),
-  ]);
-
-  const databaseCounts = [
-    profileCount,
-    discussionCount,
-    replyCount,
-    reportCount,
-    notificationCount,
-    auditLogCount,
-    aiUsageCount,
-    entitlementCount,
-    labsRequestCount,
-    extraCreditPackCount,
-    topicAlertCount,
-    accountDeletionRequestCount,
-    supportRequestCount,
-    welcomeEmailEventCount,
-  ];
-
-  const operationalSignals = [
-    openReports,
-    failedAi24h,
-    newDiscussions24h,
-    newReplies24h,
-    digestOptIns,
-    unlinkedPremiumEntitlements,
-    openSupportRequests,
-    failedWelcomeEmails,
-  ];
-
   const config = getConfigStatus();
+  const adminSupabase = getAdminSupabase();
+  const unavailableMessage =
+    "Admin service-role configuration is unavailable; this check was not executed.";
+
+  let databaseCounts: CountResult[];
+  let operationalSignals: CountResult[];
+
+  if (!adminSupabase) {
+    databaseCounts = [
+      unavailableCount("profiles", "Profiles", unavailableMessage),
+      unavailableCount("discussions", "Discussions", unavailableMessage),
+      unavailableCount("replies", "Replies", unavailableMessage),
+      unavailableCount("reports", "Reports", unavailableMessage),
+      unavailableCount("notifications", "Notifications", unavailableMessage),
+      unavailableCount("audit_logs", "Audit logs", unavailableMessage),
+      unavailableCount("ai_usage_events", "AI usage events", unavailableMessage),
+      unavailableCount("user_ai_entitlements", "AI entitlements", unavailableMessage),
+      unavailableCount("labs_feature_requests", "Labs requests", unavailableMessage),
+      unavailableCount("ai_extra_credit_packs", "Extra AI packs", unavailableMessage),
+      unavailableCount("user_topic_alerts", "Topic alerts", unavailableMessage),
+      unavailableCount(
+        "account_deletion_requests",
+        "Account deletion requests",
+        unavailableMessage
+      ),
+      unavailableCount("support_requests", "Support requests", unavailableMessage),
+      unavailableCount(
+        "welcome_email_events",
+        "Welcome email events",
+        unavailableMessage
+      ),
+    ];
+    operationalSignals = [
+      unavailableCount("open_reports", "Open reports", unavailableMessage),
+      unavailableCount("failed_ai_24h", "Failed AI events, 24h", unavailableMessage),
+      unavailableCount("failed_ai_7d", "Failed AI events, 7d", unavailableMessage),
+      unavailableCount("new_discussions_24h", "New discussions, 24h", unavailableMessage),
+      unavailableCount("new_replies_24h", "New replies, 24h", unavailableMessage),
+      unavailableCount("new_notifications_24h", "New notifications, 24h", unavailableMessage),
+      unavailableCount("audit_events_24h", "Audit events, 24h", unavailableMessage),
+      unavailableCount("digest_opt_ins", "Email digest opt-ins", unavailableMessage),
+      unavailableCount(
+        "unlinked_premium_entitlements",
+        "Premium entitlements missing Stripe customer",
+        unavailableMessage
+      ),
+      unavailableCount(
+        "open_support_requests",
+        "Open support requests",
+        unavailableMessage
+      ),
+      unavailableCount(
+        "failed_welcome_emails",
+        "Failed welcome emails",
+        unavailableMessage
+      ),
+    ];
+  } else {
+    const results = await Promise.all([
+      countTable(adminSupabase, "profiles", "Profiles", "profiles"),
+      countTable(adminSupabase, "discussions", "Discussions", "discussions"),
+      countTable(adminSupabase, "replies", "Replies", "replies"),
+      countTable(adminSupabase, "reports", "Reports", "reports"),
+      countTable(adminSupabase, "notifications", "Notifications", "notifications"),
+      countTable(adminSupabase, "audit_logs", "Audit logs", "audit_logs"),
+      countTable(adminSupabase, "ai_usage_events", "AI usage events", "ai_usage_events"),
+      countTable(
+        adminSupabase,
+        "user_ai_entitlements",
+        "AI entitlements",
+        "user_ai_entitlements"
+      ),
+      countTable(
+        adminSupabase,
+        "labs_feature_requests",
+        "Labs requests",
+        "labs_feature_requests"
+      ),
+      countTable(
+        adminSupabase,
+        "ai_extra_credit_packs",
+        "Extra AI packs",
+        "ai_extra_credit_packs"
+      ),
+      countTable(adminSupabase, "user_topic_alerts", "Topic alerts", "user_topic_alerts"),
+      countTable(
+        adminSupabase,
+        "account_deletion_requests",
+        "Account deletion requests",
+        "account_deletion_requests"
+      ),
+      countTable(adminSupabase, "support_requests", "Support requests", "support_requests"),
+      countTable(
+        adminSupabase,
+        "welcome_email_events",
+        "Welcome email events",
+        "welcome_email_events"
+      ),
+      countFiltered(adminSupabase, "open_reports", "Open reports", "reports", (query) =>
+        query.in("status", ["new", "reviewing"])
+      ),
+      countFiltered(
+        adminSupabase,
+        "failed_ai_24h",
+        "Failed AI events, 24h",
+        "ai_usage_events",
+        (query) => query.eq("success", false).gte("created_at", dayAgo)
+      ),
+      countFiltered(
+        adminSupabase,
+        "failed_ai_7d",
+        "Failed AI events, 7d",
+        "ai_usage_events",
+        (query) => query.eq("success", false).gte("created_at", weekAgo)
+      ),
+      countFiltered(
+        adminSupabase,
+        "new_discussions_24h",
+        "New discussions, 24h",
+        "discussions",
+        (query) => query.gte("created_at", dayAgo)
+      ),
+      countFiltered(
+        adminSupabase,
+        "new_replies_24h",
+        "New replies, 24h",
+        "replies",
+        (query) => query.gte("created_at", dayAgo)
+      ),
+      countFiltered(
+        adminSupabase,
+        "new_notifications_24h",
+        "New notifications, 24h",
+        "notifications",
+        (query) => query.gte("created_at", dayAgo)
+      ),
+      countFiltered(
+        adminSupabase,
+        "audit_events_24h",
+        "Audit events, 24h",
+        "audit_logs",
+        (query) => query.gte("created_at", dayAgo)
+      ),
+      countFiltered(
+        adminSupabase,
+        "digest_opt_ins",
+        "Email digest opt-ins",
+        "notification_preferences",
+        (query) => query.eq("email_digest_enabled", true)
+      ),
+      countFiltered(
+        adminSupabase,
+        "unlinked_premium_entitlements",
+        "Premium entitlements missing Stripe customer",
+        "user_ai_entitlements",
+        (query) =>
+          query
+            .eq("ai_assisted_enabled", true)
+            .in("tier", ["premium", "admin"])
+            .is("stripe_customer_id", null)
+      ),
+      countFiltered(
+        adminSupabase,
+        "open_support_requests",
+        "Open support requests",
+        "support_requests",
+        (query) => query.in("status", ["new", "reviewing"])
+      ),
+      countFiltered(
+        adminSupabase,
+        "failed_welcome_emails",
+        "Failed welcome emails",
+        "welcome_email_events",
+        (query) => query.eq("status", "failed")
+      ),
+    ]);
+
+    databaseCounts = results.slice(0, 14);
+    operationalSignals = results.slice(14);
+  }
+
   const missingConfig = Object.entries(config)
     .filter(([, isPresent]) => !isPresent)
     .map(([key]) => key);
-
   const failedCounts = [...databaseCounts, ...operationalSignals].filter(
     (item) => !item.ok
   );
+  const openReports = findCount(operationalSignals, "open_reports");
+  const failedAi24h = findCount(operationalSignals, "failed_ai_24h");
+  const openSupportRequests = findCount(
+    operationalSignals,
+    "open_support_requests"
+  );
+  const failedWelcomeEmails = findCount(
+    operationalSignals,
+    "failed_welcome_emails"
+  );
+  const unlinkedPremiumEntitlements = findCount(
+    operationalSignals,
+    "unlinked_premium_entitlements"
+  );
 
-  const warnings = [
+  const warnings: HealthWarning[] = [
     ...failedCounts.map((item) => ({
       key: `count_${item.key}`,
-      severity: "warning",
+      severity: "warning" as const,
       message: `${item.label} could not be counted.`,
       detail: item.error,
+      destination: "/admin/audit",
     })),
-    ...(failedWelcomeEmails.count && failedWelcomeEmails.count > 0
+    ...(failedWelcomeEmails > 0
       ? [
           {
             key: "failed_welcome_email_count",
-            severity: "notice",
-            message: `${failedWelcomeEmails.count} welcome emails failed.`,
-            detail: "Review welcome_email_events and Resend configuration.",
+            severity: "notice" as const,
+            message: `${failedWelcomeEmails} welcome emails failed.`,
+            detail: "Review welcome-email events and Resend configuration.",
+            destination: "/admin/audit?search=welcome_email",
           },
         ]
       : []),
-    ...(openSupportRequests.count && openSupportRequests.count > 0
+    ...(openSupportRequests > 0
       ? [
           {
             key: "support_request_count",
-            severity: "attention",
-            message: `${openSupportRequests.count} support requests need review.`,
+            severity: "attention" as const,
+            message: `${openSupportRequests} support requests need review.`,
             detail: "Support requests with status new or reviewing are open.",
+            destination: "/admin/support",
           },
         ]
       : []),
-    ...(openReports.count && openReports.count > 0
+    ...(openReports > 0
       ? [
           {
             key: "open_reports",
-            severity: "attention",
-            message: `${openReports.count} reports need review.`,
+            severity: "attention" as const,
+            message: `${openReports} reports need review.`,
             detail: "Reports with status new or reviewing are open.",
+            destination: "/admin/reports",
           },
         ]
       : []),
-    ...(failedAi24h.count && failedAi24h.count > 0
+    ...(failedAi24h > 0
       ? [
           {
             key: "failed_ai_24h",
-            severity: "attention",
-            message: `${failedAi24h.count} AI events failed in the last 24 hours.`,
-            detail: "Review Admin AI Access diagnostics.",
+            severity: "attention" as const,
+            message: `${failedAi24h} AI events failed in the last 24 hours.`,
+            detail: "Review AI usage diagnostics and provider errors.",
+            destination: "/admin/ai-access",
           },
         ]
       : []),
-    ...(unlinkedPremiumEntitlements.count && unlinkedPremiumEntitlements.count > 0
+    ...(unlinkedPremiumEntitlements > 0
       ? [
           {
             key: "unlinked_premium_entitlements",
-            severity: "notice",
-            message: `${unlinkedPremiumEntitlements.count} enabled Premium/Admin entitlements have no Stripe customer id.`,
+            severity: "notice" as const,
+            message: `${unlinkedPremiumEntitlements} enabled Premium or Admin entitlements have no Stripe customer ID.`,
             detail:
-              "This may be normal for admin-granted access, but paid members should sync after Stripe checkout/webhook.",
+              "This may be normal for Admin-granted access, but paid members should synchronize after Stripe checkout and webhook processing.",
+            destination: "/admin/billing?link=attention",
           },
         ]
       : []),
-    ...(missingConfig.includes("supabaseServiceRole")
+    ...(!config.supabaseServiceRole
       ? [
           {
             key: "missing_service_role",
-            severity: "warning",
+            severity: "warning" as const,
             message: "SUPABASE_SERVICE_ROLE_KEY is missing.",
-            detail: "Server-side writes for audit logs, notifications, and AI usage may fail.",
+            detail:
+              "Admin operational reads and server-side writes may fail. Health counts were not executed.",
+            destination: null,
           },
         ]
       : []),
-    ...(missingConfig.includes("openAiApiKey")
+    ...(!config.openAiApiKey
       ? [
           {
             key: "missing_openai",
-            severity: "warning",
+            severity: "warning" as const,
             message: "OPENAI_API_KEY is missing.",
             detail: "Premium AI generation routes will be unavailable.",
+            destination: "/admin/ai-access",
           },
         ]
       : []),
-    ...(missingConfig.includes("stripeSecretKey")
+    ...(!config.stripeSecretKey
       ? [
           {
             key: "missing_stripe",
-            severity: "notice",
+            severity: "notice" as const,
             message: "STRIPE_SECRET_KEY is missing.",
-            detail: "Premium checkout and billing portal will not create Stripe sessions.",
+            detail:
+              "Premium checkout and billing-portal routes cannot create Stripe sessions.",
+            destination: "/admin/billing",
+          },
+        ]
+      : []),
+    ...(config.stripeSecretKey && !config.stripeWebhookSecret
+      ? [
+          {
+            key: "missing_stripe_webhook",
+            severity: "attention" as const,
+            message: "STRIPE_WEBHOOK_SECRET is missing.",
+            detail:
+              "Checkout can start, but subscription and Extra AI Pack fulfillment cannot be verified through Stripe webhooks.",
+            destination: "/admin/billing",
+          },
+        ]
+      : []),
+    ...(!config.resendApiKey
+      ? [
+          {
+            key: "missing_resend",
+            severity: "notice" as const,
+            message: "RESEND_API_KEY is missing.",
+            detail: "Transactional email and digest delivery will be unavailable.",
+            destination: null,
           },
         ]
       : []),
   ];
 
-  const status =
-    failedCounts.length > 0 || missingConfig.includes("supabaseUrl") || missingConfig.includes("supabaseAnonKey")
+  const status: HealthStatus =
+    failedCounts.length > 0 ||
+    !config.supabaseUrl ||
+    !config.supabaseAnonKey ||
+    !config.supabaseServiceRole
       ? "degraded"
-      : warnings.some((warning) => warning.severity === "warning")
+      : warnings.some((warning) =>
+            ["warning", "attention"].includes(warning.severity)
+          )
         ? "attention"
         : "healthy";
-
-  return NextResponse.json({
-    generatedAt: now.toISOString(),
-    lookback: {
-      dayAgo,
-      weekAgo,
-    },
-    status,
+  const serviceChecks = getServiceChecks(
     config,
-    missingConfig,
     databaseCounts,
-    operationalSignals,
-    warnings,
-  });
+    operationalSignals
+  );
+
+  return NextResponse.json(
+    {
+      currentAdminId: accountAccess.user.id,
+      generatedAt: now.toISOString(),
+      lookback: {
+        dayAgo,
+        weekAgo,
+      },
+      status,
+      dataAccessMode: adminSupabase ? "service_role" : "unavailable",
+      config,
+      missingConfig,
+      databaseCounts,
+      operationalSignals,
+      warnings,
+      serviceChecks,
+    },
+    {
+      headers: { "Cache-Control": "private, no-store" },
+    }
+  );
 }
