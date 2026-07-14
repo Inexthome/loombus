@@ -18,11 +18,22 @@ const EVENT_LIMIT = 100;
 const ANNOUNCEMENT_LIMIT = 50;
 const MEMBER_LIMIT = 250;
 const APPLICATION_LIMIT = 100;
-const VALID_ROLES = ["administrator", "moderator", "member"] as const;
+const VALID_ROLES = new Set(["administrator", "moderator", "member"]);
 
 type RouteContext = {
   params: Promise<{ roomId: string }>;
 };
+
+type AuthorizedContext =
+  | {
+      ok: true;
+      userId: string;
+      serviceSupabase: ReturnType<typeof createRoomServiceSupabase>;
+    }
+  | {
+      ok: false;
+      response: NextResponse;
+    };
 
 function jsonError(message: string, status: number, code?: string) {
   return NextResponse.json(code ? { error: message, code } : { error: message }, {
@@ -40,6 +51,35 @@ function validUuid(value: unknown): value is string {
   );
 }
 
+async function authorize(request: NextRequest): Promise<AuthorizedContext> {
+  try {
+    const requestSupabase = createRequestSupabase(request);
+    const accountAccess = await verifyRequestAccountAccess(requestSupabase);
+
+    if (!accountAccess.ok) {
+      return {
+        ok: false,
+        response: jsonError(
+          accountAccess.error,
+          accountAccess.status,
+          accountAccess.code
+        ),
+      };
+    }
+
+    return {
+      ok: true,
+      userId: accountAccess.user.id,
+      serviceSupabase: createRoomServiceSupabase(),
+    };
+  } catch {
+    return {
+      ok: false,
+      response: jsonError("Rooms service is not configured.", 500),
+    };
+  }
+}
+
 function formatMember(row: RoomRow, isOwner: boolean) {
   const userId = asString(row.user_id);
   return {
@@ -55,37 +95,14 @@ function formatMember(row: RoomRow, isOwner: boolean) {
   };
 }
 
-async function authenticate(request: NextRequest) {
-  const requestSupabase = createRequestSupabase(request);
-  const accountAccess = await verifyRequestAccountAccess(requestSupabase);
-
-  if (!accountAccess.ok) return { accountAccess, serviceSupabase: null };
-
-  return {
-    accountAccess,
-    serviceSupabase: createRoomServiceSupabase(),
-  };
-}
-
 export async function GET(request: NextRequest, context: RouteContext) {
-  let authenticated;
-
-  try {
-    authenticated = await authenticate(request);
-  } catch {
-    return jsonError("Rooms service is not configured.", 500);
-  }
-
-  if (!authenticated.accountAccess.ok || !authenticated.serviceSupabase) {
-    const failure = authenticated.accountAccess;
-    return jsonError(failure.error, failure.status, failure.code);
-  }
+  const authorized = await authorize(request);
+  if (!authorized.ok) return authorized.response;
 
   const { roomId } = await context.params;
   if (!validUuid(roomId)) return jsonError("Invalid room id.", 400);
 
-  const userId = authenticated.accountAccess.user.id;
-  const serviceSupabase = authenticated.serviceSupabase;
+  const { userId, serviceSupabase } = authorized;
   let access;
 
   try {
@@ -213,19 +230,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const events = (eventsResult.data ?? []) as RoomRow[];
   const announcements = (announcementsResult.data ?? []) as RoomRow[];
   const memberRows = (membersResult.data ?? []) as RoomRow[];
-  const memberIds = memberRows.map((row) => asString(row.user_id));
-  const authorIds = posts.map((row) => asString(row.author_id));
-  const eventCreatorIds = events.map((row) => asString(row.created_by));
-  const announcementCreatorIds = announcements.map((row) =>
-    asString(row.created_by)
-  );
-  const applicantIds = applications.map((row) => asString(row.applicant_id));
   const profiles = await loadProfiles(serviceSupabase, [
-    ...memberIds,
-    ...authorIds,
-    ...eventCreatorIds,
-    ...announcementCreatorIds,
-    ...applicantIds,
+    ...memberRows.map((row) => asString(row.user_id)),
+    ...posts.map((row) => asString(row.author_id)),
+    ...events.map((row) => asString(row.created_by)),
+    ...announcements.map((row) => asString(row.created_by)),
+    ...applications.map((row) => asString(row.applicant_id)),
     access.room.ownerId,
     access.room.createdBy,
   ]);
@@ -342,26 +352,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  let authenticated;
-
-  try {
-    authenticated = await authenticate(request);
-  } catch {
-    return jsonError("Rooms service is not configured.", 500);
-  }
-
-  if (!authenticated.accountAccess.ok || !authenticated.serviceSupabase) {
-    const failure = authenticated.accountAccess;
-    return jsonError(failure.error, failure.status, failure.code);
-  }
+  const authorized = await authorize(request);
+  if (!authorized.ok) return authorized.response;
 
   const { roomId } = await context.params;
   if (!validUuid(roomId)) return jsonError("Invalid room id.", 400);
 
   const body = await request.json().catch(() => null);
   const action = typeof body?.action === "string" ? body.action : "";
-  const userId = authenticated.accountAccess.user.id;
-  const serviceSupabase = authenticated.serviceSupabase;
+  const { userId, serviceSupabase } = authorized;
   let access;
 
   try {
@@ -380,11 +379,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (access.allowed) return jsonError("You already have room access.", 409);
 
     const note = typeof body?.note === "string" ? body.note.trim() : "";
-    if (note.length > 1000) return jsonError("Access request note is too long.", 400);
+    if (note.length > 1000) {
+      return jsonError("Access request note is too long.", 400);
+    }
 
     const existingResult = await serviceSupabase
       .from("room_applications")
-      .select("id, state")
+      .select("id")
       .eq("room_id", roomId)
       .eq("applicant_id", userId)
       .maybeSingle();
@@ -396,42 +397,32 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    if (existingResult.data) {
-      const updateResult = await serviceSupabase
-        .from("room_applications")
-        .update({
-          state: "pending",
-          note: note || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", asString((existingResult.data as RoomRow).id));
+    const requestValues = {
+      state: "pending",
+      note: note || null,
+      updated_at: new Date().toISOString(),
+    };
 
-      if (updateResult.error) {
-        return jsonError(
-          updateResult.error.message || "Unable to update access request.",
-          400
-        );
-      }
-    } else {
-      const insertResult = await serviceSupabase
-        .from("room_applications")
-        .insert({
+    const requestResult = existingResult.data
+      ? await serviceSupabase
+          .from("room_applications")
+          .update(requestValues)
+          .eq("id", asString((existingResult.data as RoomRow).id))
+      : await serviceSupabase.from("room_applications").insert({
           room_id: roomId,
           applicant_id: userId,
-          state: "pending",
-          note: note || null,
+          ...requestValues,
         });
 
-      if (insertResult.error) {
-        return jsonError(
-          insertResult.error.message || "Unable to send access request.",
-          400
-        );
-      }
+    if (requestResult.error) {
+      return jsonError(
+        requestResult.error.message || "Unable to send access request.",
+        400
+      );
     }
 
     return NextResponse.json(
-      { ok: true, message: "Access request sent." },
+      { ok: true },
       { headers: { "Cache-Control": "private, no-store" } }
     );
   }
@@ -479,7 +470,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   if (action === "create_event") {
-    if (!access.canManage) return jsonError("Room management access required.", 403);
+    if (!access.canManage) {
+      return jsonError("Room management access required.", 403);
+    }
 
     const title = typeof body?.title === "string" ? body.title.trim() : "";
     const description =
@@ -525,22 +518,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
+    const eventId = asString((insertResult.data as RoomRow).id);
     await logAuditEvent({
       actor_id: userId,
       action: "room.event_created",
       target_type: "room_event",
-      target_id: asString((insertResult.data as RoomRow).id),
+      target_id: eventId,
       metadata: { room_id: roomId },
     });
 
     return NextResponse.json(
-      { ok: true, id: asString((insertResult.data as RoomRow).id) },
+      { ok: true, id: eventId },
       { headers: { "Cache-Control": "private, no-store" } }
     );
   }
 
   if (action === "create_announcement") {
-    if (!access.canManage) return jsonError("Room management access required.", 403);
+    if (!access.canManage) {
+      return jsonError("Room management access required.", 403);
+    }
 
     const title = typeof body?.title === "string" ? body.title.trim() : "";
     const announcementBody =
@@ -552,9 +548,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         : "normal";
     const isPinned = Boolean(body?.isPinned);
 
-    if (title.length < 1 || title.length > 180) {
+    if (title.length < 1 || title.length > 160) {
       return jsonError(
-        "Announcement title must be between 1 and 180 characters.",
+        "Announcement title must be between 1 and 160 characters.",
         400
       );
     }
@@ -585,22 +581,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
+    const announcementId = asString((insertResult.data as RoomRow).id);
     await logAuditEvent({
       actor_id: userId,
       action: "room.announcement_created",
       target_type: "room_announcement",
-      target_id: asString((insertResult.data as RoomRow).id),
+      target_id: announcementId,
       metadata: { room_id: roomId, priority, pinned: isPinned },
     });
 
     return NextResponse.json(
-      { ok: true, id: asString((insertResult.data as RoomRow).id) },
+      { ok: true, id: announcementId },
       { headers: { "Cache-Control": "private, no-store" } }
     );
   }
 
   if (action === "review_application") {
-    if (!access.canManage) return jsonError("Room management access required.", 403);
+    if (!access.canManage) {
+      return jsonError("Room management access required.", 403);
+    }
 
     const applicationId = body?.applicationId;
     const state = typeof body?.state === "string" ? body.state : "";
@@ -679,7 +678,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (action === "update_member_role") {
     const memberId = body?.memberId;
     const nextRole = typeof body?.role === "string" ? body.role : "";
-    if (!validUuid(memberId) || !VALID_ROLES.includes(nextRole)) {
+    if (!validUuid(memberId) || !VALID_ROLES.has(nextRole)) {
       return jsonError("Invalid member role update.", 400);
     }
 
@@ -715,9 +714,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return jsonError("Only the room owner can manage administrators.", 403);
     }
 
+    const storedRole = nextRole === "administrator" ? "admin" : nextRole;
     const updateResult = await serviceSupabase
       .from("room_members")
-      .update({ role: nextRole, updated_at: new Date().toISOString() })
+      .update({ role: storedRole, updated_at: new Date().toISOString() })
       .eq("id", memberId)
       .eq("room_id", roomId);
 
@@ -748,7 +748,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   if (action === "remove_member") {
-    if (!access.canManage) return jsonError("Room management access required.", 403);
+    if (!access.canManage) {
+      return jsonError("Room management access required.", 403);
+    }
 
     const memberId = body?.memberId;
     if (!validUuid(memberId)) return jsonError("Invalid room member.", 400);
@@ -808,12 +810,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   if (action === "moderate_post") {
-    if (!access.canModerate) return jsonError("Room moderation access required.", 403);
+    if (!access.canModerate) {
+      return jsonError("Room moderation access required.", 403);
+    }
 
     const postId = body?.postId;
     const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
     if (!validUuid(postId)) return jsonError("Invalid room post.", 400);
-    if (reason.length > 500) return jsonError("Moderation reason is too long.", 400);
+    if (reason.length > 500) {
+      return jsonError("Moderation reason is too long.", 400);
+    }
 
     const updateResult = await serviceSupabase
       .from("room_posts")
