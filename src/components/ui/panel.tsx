@@ -7,9 +7,9 @@ type PanelProps = {
 };
 
 const toneClass = {
-  default: "border-zinc-800 bg-zinc-950",
-  warning: "border-amber-900/60 bg-amber-950/20 text-amber-200",
-  danger: "border-red-900/60 bg-red-950/20",
+  default: "",
+  warning: "text-amber-700 dark:text-amber-200",
+  danger: "text-red-700 dark:text-red-200",
 };
 
 export function Panel({
@@ -18,7 +18,7 @@ export function Panel({
   tone = "default",
 }: PanelProps) {
   return (
-    <section className={`rounded-3xl border p-7 ${toneClass[tone]} ${className}`}>
+    <section className={`loombus-panel-v2 ${toneClass[tone]} ${className}`}>
       {children}
     </section>
   );
