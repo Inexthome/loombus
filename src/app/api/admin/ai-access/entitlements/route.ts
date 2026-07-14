@@ -1,10 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { logAuditEvent } from "@/lib/audit-log";
-
-type AdminProfileRow = {
-  is_admin: boolean | null;
-};
+import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
 type AiEntitlementRow = {
   user_id: string;
@@ -23,6 +20,10 @@ type ProfileRow = {
   username: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  is_admin: boolean | null;
+  account_status: string | null;
+  enforcement_reason: string | null;
+  suspended_until: string | null;
 };
 
 type EntitlementUpdates = Partial<
@@ -38,17 +39,10 @@ type EntitlementUpdates = Partial<
   >
 >;
 
-const ENTITLEMENT_SELECT = `
-  user_id,
-  tier,
-  ai_assisted_enabled,
-  monthly_summary_limit,
-  monthly_writing_limit,
-  monthly_research_limit,
-  monthly_discovery_limit,
-  notes,
-  updated_at
-`;
+const ENTITLEMENT_SELECT =
+  "user_id, tier, ai_assisted_enabled, monthly_summary_limit, monthly_writing_limit, monthly_research_limit, monthly_discovery_limit, notes, updated_at";
+const PROFILE_SELECT =
+  "id, username, full_name, avatar_url, is_admin, account_status, enforcement_reason, suspended_until";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -71,8 +65,27 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+function getAdminSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Admin Supabase configuration.");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
+function jsonError(message: string, status: number, code?: string) {
+  return NextResponse.json(code ? { error: message, code } : { error: message }, {
+    status,
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }
 
 function isValidUuid(value: unknown): value is string {
@@ -82,29 +95,6 @@ function isValidUuid(value: unknown): value is string {
       value
     )
   );
-}
-
-async function requireAdmin(supabase: ReturnType<typeof getSupabaseForRequest>) {
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return { user: null, error: jsonError("Unauthorized.", 401) };
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single<AdminProfileRow>();
-
-  if (profileError || !profile?.is_admin) {
-    return { user: null, error: jsonError("Admin access required.", 403) };
-  }
-
-  return { user, error: null };
 }
 
 function cleanEntitlementUpdates(value: unknown): EntitlementUpdates | null {
@@ -143,22 +133,20 @@ function cleanEntitlementUpdates(value: unknown): EntitlementUpdates | null {
   ] as const;
 
   for (const field of numericFields) {
-    if (!(field in source)) {
-      continue;
-    }
+    if (!(field in source)) continue;
 
-    const valueForField = source[field];
+    const fieldValue = source[field];
 
     if (
-      typeof valueForField !== "number" ||
-      !Number.isInteger(valueForField) ||
-      valueForField < 0 ||
-      valueForField > 999999
+      typeof fieldValue !== "number" ||
+      !Number.isInteger(fieldValue) ||
+      fieldValue < 0 ||
+      fieldValue > 999999
     ) {
       return null;
     }
 
-    updates[field] = valueForField;
+    updates[field] = fieldValue;
   }
 
   if ("notes" in source) {
@@ -179,20 +167,51 @@ function cleanEntitlementUpdates(value: unknown): EntitlementUpdates | null {
   return updates;
 }
 
-export async function PATCH(request: NextRequest) {
+async function authorizeAdmin(request: NextRequest) {
   let supabase;
+  let adminSupabase;
 
   try {
     supabase = getSupabaseForRequest(request);
+    adminSupabase = getAdminSupabase();
   } catch {
-    return jsonError("Server configuration error.", 500);
+    return {
+      ok: false as const,
+      error: jsonError("Server configuration error.", 500),
+    };
   }
 
-  const { user, error: adminError } = await requireAdmin(supabase);
+  const accountAccess = await verifyRequestAccountAccess(supabase);
 
-  if (adminError || !user) {
-    return adminError;
+  if (!accountAccess.ok) {
+    return {
+      ok: false as const,
+      error: jsonError(
+        accountAccess.error,
+        accountAccess.status,
+        accountAccess.code
+      ),
+    };
   }
+
+  if (!accountAccess.profile.is_admin) {
+    return {
+      ok: false as const,
+      error: jsonError("Admin access required.", 403),
+    };
+  }
+
+  return {
+    ok: true as const,
+    user: accountAccess.user,
+    adminSupabase,
+  };
+}
+
+export async function PATCH(request: NextRequest) {
+  const authorization = await authorizeAdmin(request);
+
+  if (!authorization.ok) return authorization.error;
 
   const body = await request.json().catch(() => null);
   const userId = body?.userId;
@@ -206,9 +225,25 @@ export async function PATCH(request: NextRequest) {
     return jsonError("No valid entitlement updates provided.", 400);
   }
 
-  const updatedAt = new Date().toISOString();
+  const existingResult = await authorization.adminSupabase
+    .from("user_ai_entitlements")
+    .select(ENTITLEMENT_SELECT)
+    .eq("user_id", userId)
+    .maybeSingle<AiEntitlementRow>();
 
-  const { data: entitlement, error } = await supabase
+  if (existingResult.error) {
+    return jsonError(
+      existingResult.error.message || "Unable to load AI access.",
+      400
+    );
+  }
+
+  if (!existingResult.data) {
+    return jsonError("AI entitlement not found.", 404);
+  }
+
+  const updatedAt = new Date().toISOString();
+  const updateResult = await authorization.adminSupabase
     .from("user_ai_entitlements")
     .update({
       ...updates,
@@ -218,39 +253,38 @@ export async function PATCH(request: NextRequest) {
     .select(ENTITLEMENT_SELECT)
     .single<AiEntitlementRow>();
 
-  if (error) {
-    return jsonError(error.message || "Unable to update AI access.", 400);
+  if (updateResult.error) {
+    return jsonError(
+      updateResult.error.message || "Unable to update AI access.",
+      400
+    );
   }
 
   await logAuditEvent({
-    actor_id: user.id,
+    actor_id: authorization.user.id,
     action: "ai_entitlement.updated",
     target_type: "user_ai_entitlement",
     target_id: userId,
     metadata: {
       updated_fields: Object.keys(updates),
-      tier: entitlement.tier,
-      ai_assisted_enabled: entitlement.ai_assisted_enabled,
+      previous_tier: existingResult.data.tier,
+      tier: updateResult.data.tier,
+      previous_ai_assisted_enabled:
+        existingResult.data.ai_assisted_enabled,
+      ai_assisted_enabled: updateResult.data.ai_assisted_enabled,
     },
   });
 
-  return NextResponse.json({ entitlement });
+  return NextResponse.json(
+    { entitlement: updateResult.data },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
 }
 
 export async function POST(request: NextRequest) {
-  let supabase;
+  const authorization = await authorizeAdmin(request);
 
-  try {
-    supabase = getSupabaseForRequest(request);
-  } catch {
-    return jsonError("Server configuration error.", 500);
-  }
-
-  const { user, error: adminError } = await requireAdmin(supabase);
-
-  if (adminError || !user) {
-    return adminError;
-  }
+  if (!authorization.ok) return authorization.error;
 
   const body = await request.json().catch(() => null);
   const cleanUsername =
@@ -266,27 +300,29 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid username.", 400);
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const profileResult = await authorization.adminSupabase
     .from("profiles")
-    .select("id, username, full_name, avatar_url")
+    .select(PROFILE_SELECT)
     .eq("username", cleanUsername)
     .maybeSingle<ProfileRow>();
 
-  if (profileError) {
-    return jsonError(profileError.message || "Unable to find user.", 400);
+  if (profileResult.error) {
+    return jsonError(
+      profileResult.error.message || "Unable to find user.",
+      400
+    );
   }
 
-  if (!profile) {
+  if (!profileResult.data) {
     return jsonError(`No Loombus profile found for @${cleanUsername}.`, 404);
   }
 
   const updatedAt = new Date().toISOString();
-
-  const { data: entitlement, error: entitlementError } = await supabase
+  const entitlementResult = await authorization.adminSupabase
     .from("user_ai_entitlements")
     .upsert(
       {
-        user_id: profile.id,
+        user_id: profileResult.data.id,
         tier: "premium",
         ai_assisted_enabled: true,
         monthly_summary_limit: 50,
@@ -296,31 +332,35 @@ export async function POST(request: NextRequest) {
         notes: `Premium AI-Assisted Layer granted by admin for @${cleanUsername}.`,
         updated_at: updatedAt,
       },
-      {
-        onConflict: "user_id",
-      }
+      { onConflict: "user_id" }
     )
     .select(ENTITLEMENT_SELECT)
     .single<AiEntitlementRow>();
 
-  if (entitlementError) {
+  if (entitlementResult.error) {
     return jsonError(
-      entitlementError.message || "Unable to grant Premium AI access.",
+      entitlementResult.error.message || "Unable to grant Premium AI access.",
       400
     );
   }
 
   await logAuditEvent({
-    actor_id: user.id,
+    actor_id: authorization.user.id,
     action: "ai_entitlement.granted",
     target_type: "user_ai_entitlement",
-    target_id: profile.id,
+    target_id: profileResult.data.id,
     metadata: {
-      username: profile.username ?? cleanUsername,
-      tier: entitlement.tier,
-      ai_assisted_enabled: entitlement.ai_assisted_enabled,
+      username: profileResult.data.username ?? cleanUsername,
+      tier: entitlementResult.data.tier,
+      ai_assisted_enabled: entitlementResult.data.ai_assisted_enabled,
     },
   });
 
-  return NextResponse.json({ entitlement, profile });
+  return NextResponse.json(
+    {
+      entitlement: entitlementResult.data,
+      profile: profileResult.data,
+    },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
 }
