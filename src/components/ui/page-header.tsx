@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import styles from "./reference-v2.module.css";
 
 type PageHeaderProps = {
   eyebrow?: string;
@@ -16,24 +17,11 @@ export function PageHeader({
   className = "",
 }: PageHeaderProps) {
   return (
-    <div className={`mb-12 ${className}`}>
-      {eyebrow && (
-        <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
-          {eyebrow}
-        </p>
-      )}
-
-      <h1 className="text-5xl font-semibold tracking-tight md:text-6xl">
-        {title}
-      </h1>
-
-      {description && (
-        <div className="mt-5 max-w-3xl leading-relaxed text-zinc-400">
-          {description}
-        </div>
-      )}
-
-      {children}
-    </div>
+    <header className={`${styles.header} ${className}`}>
+      {eyebrow && <p className={styles.eyebrow}>{eyebrow}</p>}
+      <h1 className={styles.title}>{title}</h1>
+      {description && <div className={styles.description}>{description}</div>}
+      {children ? <div className={styles.headerChildren}>{children}</div> : null}
+    </header>
   );
 }
