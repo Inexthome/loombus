@@ -31,6 +31,61 @@ type ServiceCheck = {
   destination: string | null;
 };
 
+const DATABASE_COUNT_DEFINITIONS = [
+  { key: "profiles", label: "Profiles", table: "profiles" },
+  { key: "discussions", label: "Discussions", table: "discussions" },
+  { key: "replies", label: "Replies", table: "replies" },
+  { key: "reports", label: "Reports", table: "reports" },
+  { key: "notifications", label: "Notifications", table: "notifications" },
+  { key: "audit_logs", label: "Audit logs", table: "audit_logs" },
+  { key: "ai_usage_events", label: "AI usage events", table: "ai_usage_events" },
+  {
+    key: "user_ai_entitlements",
+    label: "AI entitlements",
+    table: "user_ai_entitlements",
+  },
+  {
+    key: "labs_feature_requests",
+    label: "Labs requests",
+    table: "labs_feature_requests",
+  },
+  {
+    key: "ai_extra_credit_packs",
+    label: "Extra AI packs",
+    table: "ai_extra_credit_packs",
+  },
+  { key: "user_topic_alerts", label: "Topic alerts", table: "user_topic_alerts" },
+  {
+    key: "account_deletion_requests",
+    label: "Account deletion requests",
+    table: "account_deletion_requests",
+  },
+  { key: "support_requests", label: "Support requests", table: "support_requests" },
+  {
+    key: "welcome_email_events",
+    label: "Welcome email events",
+    table: "welcome_email_events",
+  },
+] as const;
+
+const OPERATIONAL_SIGNAL_DEFINITIONS = [
+  { key: "open_reports", label: "Open reports" },
+  { key: "failed_ai_24h", label: "Failed AI events, 24h" },
+  { key: "failed_ai_7d", label: "Failed AI events, 7d" },
+  { key: "new_discussions_24h", label: "New discussions, 24h" },
+  { key: "new_replies_24h", label: "New replies, 24h" },
+  { key: "new_notifications_24h", label: "New notifications, 24h" },
+  { key: "audit_events_24h", label: "Audit events, 24h" },
+  { key: "digest_opt_ins", label: "Email digest opt-ins" },
+  {
+    key: "unlinked_premium_entitlements",
+    label: "Active paid Premium subscriptions missing Stripe customer",
+  },
+  { key: "open_support_requests", label: "Open support requests" },
+  { key: "failed_welcome_emails", label: "Failed welcome emails, all time" },
+  { key: "failed_welcome_emails_7d", label: "Failed welcome emails, 7d" },
+] as const;
+
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -196,13 +251,17 @@ function getServiceChecks(
   const failedDatabaseChecks = databaseCounts.filter((item) => !item.ok).length;
   const failedOperationalChecks = operationalSignals.filter((item) => !item.ok).length;
   const failedAi24h = findCount(operationalSignals, "failed_ai_24h");
-  const unlinkedPremium = findCount(
+  const unlinkedPaidPremium = findCount(
     operationalSignals,
     "unlinked_premium_entitlements"
   );
-  const failedWelcomeEmails = findCount(
+  const failedWelcomeEmailsAllTime = findCount(
     operationalSignals,
     "failed_welcome_emails"
+  );
+  const failedWelcomeEmails7d = findCount(
+    operationalSignals,
+    "failed_welcome_emails_7d"
   );
 
   const coreConfigured = [
@@ -298,14 +357,14 @@ function getServiceChecks(
       label: "Billing sync",
       status: !config.stripeSecretKey
         ? "not_configured"
-        : !config.stripeWebhookSecret || unlinkedPremium > 0
+        : !config.stripeWebhookSecret || unlinkedPaidPremium > 0
           ? "attention"
           : "healthy",
       summary: `${billingPricesConfigured}/5 billing prices configured`,
       detail:
-        unlinkedPremium > 0
-          ? `${unlinkedPremium} enabled Premium or Admin entitlements have no Stripe customer.`
-          : "No current entitlement-linkage warning was detected.",
+        unlinkedPaidPremium > 0
+          ? `${unlinkedPaidPremium} active paid Premium subscriptions have no Stripe customer.`
+          : "No current active paid entitlement-linkage warning was detected.",
       destination: "/admin/billing",
     },
     {
@@ -313,14 +372,16 @@ function getServiceChecks(
       label: "Email delivery",
       status: emailConfigured === 0
         ? "not_configured"
-        : emailConfigured < 3 || failedWelcomeEmails > 0
+        : emailConfigured < 3 || failedWelcomeEmails7d > 0
           ? "attention"
           : "healthy",
       summary: `${emailConfigured}/3 email settings configured`,
       detail:
-        failedWelcomeEmails > 0
-          ? `${failedWelcomeEmails} welcome email events are marked failed.`
-          : "No welcome-email failures require attention.",
+        failedWelcomeEmails7d > 0
+          ? `${failedWelcomeEmails7d} welcome email events were updated as failed during the last 7 days.`
+          : failedWelcomeEmailsAllTime > 0
+            ? `No recent welcome-email failures require attention. ${failedWelcomeEmailsAllTime} historical failed records remain visible in diagnostics.`
+            : "No welcome-email failures require attention.",
       destination: "/admin/audit?search=welcome_email",
     },
     {
@@ -379,96 +440,25 @@ export async function GET(request: NextRequest) {
   let operationalSignals: CountResult[];
 
   if (!adminSupabase) {
-    databaseCounts = [
-      unavailableCount("profiles", "Profiles", unavailableMessage),
-      unavailableCount("discussions", "Discussions", unavailableMessage),
-      unavailableCount("replies", "Replies", unavailableMessage),
-      unavailableCount("reports", "Reports", unavailableMessage),
-      unavailableCount("notifications", "Notifications", unavailableMessage),
-      unavailableCount("audit_logs", "Audit logs", unavailableMessage),
-      unavailableCount("ai_usage_events", "AI usage events", unavailableMessage),
-      unavailableCount("user_ai_entitlements", "AI entitlements", unavailableMessage),
-      unavailableCount("labs_feature_requests", "Labs requests", unavailableMessage),
-      unavailableCount("ai_extra_credit_packs", "Extra AI packs", unavailableMessage),
-      unavailableCount("user_topic_alerts", "Topic alerts", unavailableMessage),
-      unavailableCount(
-        "account_deletion_requests",
-        "Account deletion requests",
-        unavailableMessage
-      ),
-      unavailableCount("support_requests", "Support requests", unavailableMessage),
-      unavailableCount(
-        "welcome_email_events",
-        "Welcome email events",
-        unavailableMessage
-      ),
-    ];
-    operationalSignals = [
-      unavailableCount("open_reports", "Open reports", unavailableMessage),
-      unavailableCount("failed_ai_24h", "Failed AI events, 24h", unavailableMessage),
-      unavailableCount("failed_ai_7d", "Failed AI events, 7d", unavailableMessage),
-      unavailableCount("new_discussions_24h", "New discussions, 24h", unavailableMessage),
-      unavailableCount("new_replies_24h", "New replies, 24h", unavailableMessage),
-      unavailableCount("new_notifications_24h", "New notifications, 24h", unavailableMessage),
-      unavailableCount("audit_events_24h", "Audit events, 24h", unavailableMessage),
-      unavailableCount("digest_opt_ins", "Email digest opt-ins", unavailableMessage),
-      unavailableCount(
-        "unlinked_premium_entitlements",
-        "Premium entitlements missing Stripe customer",
-        unavailableMessage
-      ),
-      unavailableCount(
-        "open_support_requests",
-        "Open support requests",
-        unavailableMessage
-      ),
-      unavailableCount(
-        "failed_welcome_emails",
-        "Failed welcome emails",
-        unavailableMessage
-      ),
-    ];
+    databaseCounts = DATABASE_COUNT_DEFINITIONS.map((definition) =>
+      unavailableCount(definition.key, definition.label, unavailableMessage)
+    );
+    operationalSignals = OPERATIONAL_SIGNAL_DEFINITIONS.map((definition) =>
+      unavailableCount(definition.key, definition.label, unavailableMessage)
+    );
   } else {
-    const results = await Promise.all([
-      countTable(adminSupabase, "profiles", "Profiles", "profiles"),
-      countTable(adminSupabase, "discussions", "Discussions", "discussions"),
-      countTable(adminSupabase, "replies", "Replies", "replies"),
-      countTable(adminSupabase, "reports", "Reports", "reports"),
-      countTable(adminSupabase, "notifications", "Notifications", "notifications"),
-      countTable(adminSupabase, "audit_logs", "Audit logs", "audit_logs"),
-      countTable(adminSupabase, "ai_usage_events", "AI usage events", "ai_usage_events"),
-      countTable(
-        adminSupabase,
-        "user_ai_entitlements",
-        "AI entitlements",
-        "user_ai_entitlements"
-      ),
-      countTable(
-        adminSupabase,
-        "labs_feature_requests",
-        "Labs requests",
-        "labs_feature_requests"
-      ),
-      countTable(
-        adminSupabase,
-        "ai_extra_credit_packs",
-        "Extra AI packs",
-        "ai_extra_credit_packs"
-      ),
-      countTable(adminSupabase, "user_topic_alerts", "Topic alerts", "user_topic_alerts"),
-      countTable(
-        adminSupabase,
-        "account_deletion_requests",
-        "Account deletion requests",
-        "account_deletion_requests"
-      ),
-      countTable(adminSupabase, "support_requests", "Support requests", "support_requests"),
-      countTable(
-        adminSupabase,
-        "welcome_email_events",
-        "Welcome email events",
-        "welcome_email_events"
-      ),
+    databaseCounts = await Promise.all(
+      DATABASE_COUNT_DEFINITIONS.map((definition) =>
+        countTable(
+          adminSupabase,
+          definition.key,
+          definition.label,
+          definition.table
+        )
+      )
+    );
+
+    operationalSignals = await Promise.all([
       countFiltered(adminSupabase, "open_reports", "Open reports", "reports", (query) =>
         query.in("status", ["new", "reviewing"])
       ),
@@ -524,12 +514,13 @@ export async function GET(request: NextRequest) {
       countFiltered(
         adminSupabase,
         "unlinked_premium_entitlements",
-        "Premium entitlements missing Stripe customer",
+        "Active paid Premium subscriptions missing Stripe customer",
         "user_ai_entitlements",
         (query) =>
           query
             .eq("ai_assisted_enabled", true)
-            .in("tier", ["premium", "admin"])
+            .eq("tier", "premium")
+            .in("stripe_subscription_status", ["active", "trialing"])
             .is("stripe_customer_id", null)
       ),
       countFiltered(
@@ -542,14 +533,19 @@ export async function GET(request: NextRequest) {
       countFiltered(
         adminSupabase,
         "failed_welcome_emails",
-        "Failed welcome emails",
+        "Failed welcome emails, all time",
         "welcome_email_events",
         (query) => query.eq("status", "failed")
       ),
+      countFiltered(
+        adminSupabase,
+        "failed_welcome_emails_7d",
+        "Failed welcome emails, 7d",
+        "welcome_email_events",
+        (query) =>
+          query.eq("status", "failed").gte("updated_at", weekAgo)
+      ),
     ]);
-
-    databaseCounts = results.slice(0, 14);
-    operationalSignals = results.slice(14);
   }
 
   const missingConfig = Object.entries(config)
@@ -564,9 +560,9 @@ export async function GET(request: NextRequest) {
     operationalSignals,
     "open_support_requests"
   );
-  const failedWelcomeEmails = findCount(
+  const failedWelcomeEmails7d = findCount(
     operationalSignals,
-    "failed_welcome_emails"
+    "failed_welcome_emails_7d"
   );
   const unlinkedPremiumEntitlements = findCount(
     operationalSignals,
@@ -581,13 +577,14 @@ export async function GET(request: NextRequest) {
       detail: item.error,
       destination: "/admin/audit",
     })),
-    ...(failedWelcomeEmails > 0
+    ...(failedWelcomeEmails7d > 0
       ? [
           {
-            key: "failed_welcome_email_count",
-            severity: "notice" as const,
-            message: `${failedWelcomeEmails} welcome emails failed.`,
-            detail: "Review welcome-email events and Resend configuration.",
+            key: "failed_welcome_email_count_7d",
+            severity: "attention" as const,
+            message: `${failedWelcomeEmails7d} welcome emails failed in the last 7 days.`,
+            detail:
+              "Review recent welcome-email events and current Resend delivery status.",
             destination: "/admin/audit?search=welcome_email",
           },
         ]
@@ -629,10 +626,10 @@ export async function GET(request: NextRequest) {
       ? [
           {
             key: "unlinked_premium_entitlements",
-            severity: "notice" as const,
-            message: `${unlinkedPremiumEntitlements} enabled Premium or Admin entitlements have no Stripe customer ID.`,
+            severity: "attention" as const,
+            message: `${unlinkedPremiumEntitlements} active paid Premium subscriptions have no Stripe customer ID.`,
             detail:
-              "This may be normal for Admin-granted access, but paid members should synchronize after Stripe checkout and webhook processing.",
+              "Admin and manually granted Premium access are excluded. Review active or trialing paid subscriptions only.",
             destination: "/admin/billing?link=attention",
           },
         ]
