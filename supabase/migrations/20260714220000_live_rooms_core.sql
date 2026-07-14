@@ -186,12 +186,6 @@ begin
 end;
 $$;
 
-select public.touch_live_room_updated_at();
-
--- The preceding function is trigger-only. Remove the direct-call artifact if a database
--- version rejects trigger functions when called directly.
-
--- Recreate updated-at triggers idempotently.
 drop trigger if exists touch_rooms_updated_at on public.rooms;
 create trigger touch_rooms_updated_at
 before update on public.rooms
@@ -292,8 +286,6 @@ alter table public.room_events enable row level security;
 alter table public.room_announcements enable row level security;
 alter table public.room_applications enable row level security;
 
--- Canonical clients read only records for rooms they can enter. All mutations are routed
--- through authenticated server endpoints after account and role verification.
 drop policy if exists "Live room records are visible to active members" on public.rooms;
 create policy "Live room records are visible to active members"
 on public.rooms for select to authenticated
