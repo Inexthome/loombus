@@ -103,7 +103,10 @@ export default function AgeGatePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main
+      data-loombus-auth-shell
+      className="min-h-screen bg-black px-6 py-16 text-white"
+    >
       <div className="mx-auto max-w-xl">
         <Link href="/" className="mb-12 inline-block text-sm text-zinc-500 hover:text-white">
           ← Back to Loombus
@@ -148,11 +151,7 @@ export default function AgeGatePage() {
               {saving ? "Saving..." : "Continue"}
             </button>
 
-            {message && (
-              <p className="text-sm text-zinc-400">
-                {message}
-              </p>
-            )}
+            {message && <p className="text-sm text-zinc-400">{message}</p>}
           </form>
         </div>
       </div>
