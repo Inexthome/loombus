@@ -3,9 +3,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "Login to Loombus | Loombus",
+  title: "Sign in to Loombus | Loombus",
   description:
-    "Login to Loombus to continue your discussions, replies, saved ideas, and community activity.",
+    "Sign in to Loombus to continue your discussions, replies, saved ideas, and community activity.",
   alternates: {
     canonical: "https://loombus.com/login",
   },
@@ -20,7 +20,7 @@ const footerLinks = [
   { href: "/privacy", label: "Privacy" },
   { href: "/cookies", label: "Cookies" },
   { href: "/accessibility", label: "Accessibility" },
-  { href: "/contact", label: "Contact" },
+  { href: "/support", label: "Support" },
 ];
 
 export default function LoginLayout({ children }: { children: ReactNode }) {
