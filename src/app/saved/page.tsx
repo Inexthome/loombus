@@ -179,7 +179,7 @@ export default function SavedPage() {
       </section>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[260px_minmax(0,1fr)_300px]">
-        <aside className="space-y-4">
+        <aside id="folders" className="scroll-mt-28 space-y-4">
           <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4"><h2 className="flex items-center gap-2 font-black"><Library className="h-5 w-5 text-[var(--loombus-gold)]" />Library views</h2><div className="mt-4 space-y-2">
             <button onClick={() => setSelectedFolder("all")} className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm font-bold ${selectedFolder === "all" ? "bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]" : "hover:bg-[var(--loombus-surface-muted)]"}`}><span>All saved</span><span>{folderCounts.all}</span></button>
             <button onClick={() => setSelectedFolder("unfiled")} className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left text-sm font-bold ${selectedFolder === "unfiled" ? "bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]" : "hover:bg-[var(--loombus-surface-muted)]"}`}><span>Unfiled</span><span>{folderCounts.unfiled}</span></button>

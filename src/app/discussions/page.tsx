@@ -606,14 +606,13 @@ export default function DiscussionsPage() {
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setSelectedTopic("All")}
+            <Link
+              href="/topics"
               className="mt-5 flex w-full items-center justify-between rounded-2xl px-1 py-2 text-sm font-semibold text-[#b45309] transition hover:text-[color:var(--loombus-text)]"
             >
               View all topics
               <ChevronRight aria-hidden="true" className="h-4 w-4" />
-            </button>
+            </Link>
           </section>
         </aside>
 
@@ -827,14 +826,13 @@ export default function DiscussionsPage() {
                 ))}
               </div>
 
-              <button
-                type="button"
-                onClick={() => setSelectedTopic("All")}
+              <Link
+                href="/topics"
                 className="mt-7 flex w-full items-center justify-between text-sm font-bold text-[#b45309] transition hover:text-[color:var(--loombus-text)]"
               >
                 View all topics
                 <ChevronRight aria-hidden="true" className="h-4 w-4" />
-              </button>
+              </Link>
             </section>
 
             <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
@@ -907,7 +905,7 @@ export default function DiscussionsPage() {
               )}
 
               <Link
-                href="/saved"
+                href="/saved#folders"
                 className="mt-5 flex items-center justify-between text-sm font-bold text-[#b45309] transition hover:text-[color:var(--loombus-text)]"
               >
                 View all folders
