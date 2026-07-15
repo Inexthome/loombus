@@ -15,7 +15,7 @@ const widthClass = {
   xl: styles.widthXl,
 };
 
-// Shared navigation for the Guide, trust pages, safety references, and legal family.
+// Shared navigation across the Guide, trust pages, safety references, and legal family.
 const referenceLinks = [
   { href: "/settings/guide", label: "Guide" },
   { href: "/support", label: "Support" },
