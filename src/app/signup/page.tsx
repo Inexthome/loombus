@@ -117,7 +117,10 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16">
+    <main
+      data-loombus-auth-shell
+      className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16"
+    >
       <div className="mx-auto max-w-xl">
         <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white sm:mb-12">
           ← Back to home
