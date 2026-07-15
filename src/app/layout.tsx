@@ -10,6 +10,7 @@ import "./home-mobile-viewport-fix.css";
 import "./people-v2-shell.css";
 import "./discussion-detail-shell-polish.css";
 import "./loombus-brand-correction.css";
+import "./auth-account-v2.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
@@ -85,7 +86,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-black text-white antialiased">
+      <body className="bg-[color:var(--loombus-page-bg)] text-[color:var(--loombus-text)] antialiased">
         <script
           dangerouslySetInnerHTML={{
             __html: `

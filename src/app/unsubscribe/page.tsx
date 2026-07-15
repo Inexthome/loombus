@@ -49,7 +49,10 @@ export default function UnsubscribePage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-black px-6 py-16 text-white">
+    <main
+      data-loombus-auth-shell
+      className="min-h-screen bg-black px-6 py-16 text-white"
+    >
       <div className="mx-auto max-w-3xl">
         <section className="rounded-3xl border border-zinc-800 bg-zinc-950 p-8">
           <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">
@@ -68,7 +71,7 @@ export default function UnsubscribePage() {
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/profile"
+              href="/settings#signal"
               className="rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
             >
               Manage notification settings

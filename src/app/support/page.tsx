@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Help & Support",
   description:
     "Search Loombus help, open platform guidance, and submit a structured support request.",
+  alternates: {
+    canonical: "https://loombus.com/support",
+  },
 };
 
 export default function SupportPage() {

@@ -53,7 +53,10 @@ export default function AccountAccessPage() {
     } satisfies { title: string; message: string });
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black px-4 py-12 text-white sm:px-6">
+    <main
+      data-loombus-auth-shell
+      className="flex min-h-screen items-center justify-center bg-black px-4 py-12 text-white sm:px-6"
+    >
       <section className="w-full max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-8">
         <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">
           Loombus account access

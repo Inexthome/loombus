@@ -262,7 +262,10 @@ export default function LoginPage() {
     !biometricLoginReady || showManualLogin || nativeApp !== true;
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16">
+    <main
+      data-loombus-auth-shell
+      className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16"
+    >
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-xl flex-col justify-center sm:min-h-0 sm:block">
         <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white sm:mb-12">
           ← Back to home
@@ -421,7 +424,7 @@ export default function LoginPage() {
                 ,{" "}
                 <Link href="/safety" className="text-zinc-400 underline-offset-4 hover:underline">Safety</Link>
                 , and{" "}
-                <Link href="/contact" className="text-zinc-400 underline-offset-4 hover:underline">Contact</Link>.
+                <Link href="/support" className="text-zinc-400 underline-offset-4 hover:underline">Support</Link>.
               </p>
 
               <p className="text-center text-sm text-zinc-500">
