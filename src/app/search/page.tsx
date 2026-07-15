@@ -18,6 +18,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
 import { normalizePublicText } from "@/lib/public-text";
 import { supabase } from "@/lib/supabase/client";
+import { PLATFORM_ROUTE_REGISTRY, type PlatformRouteEntry } from "@/lib/platform-route-registry";
 
 type SearchTab = "all" | "discussions" | "people" | "saved" | "pages";
 
@@ -60,158 +61,11 @@ type SavedResult = {
   } | null;
 };
 
-type PlatformSearchResult = {
-  title: string;
-  description: string;
-  href: string;
-  category: string;
-  keywords: string[];
-};
+type PlatformSearchResult = PlatformRouteEntry;
 
 const SEARCH_HISTORY_KEY = "loombus:search-history";
 
-const PLATFORM_SEARCH_RESULTS: PlatformSearchResult[] = [
-  {
-    title: "Discussions",
-    description: "Browse the main Loombus discussion feed.",
-    href: "/discussions",
-    category: "Core",
-    keywords: ["discussions", "threads", "feed", "signal", "conversation"],
-  },
-  {
-    title: "Create discussion",
-    description: "Start a focused discussion with a topic, context, and purpose.",
-    href: "/create",
-    category: "Create",
-    keywords: ["create", "post", "write", "draft", "composer", "publish"],
-  },
-  {
-    title: "Rooms",
-    description: "Open private spaces for teams, residents, classrooms, support, and communities.",
-    href: "/rooms",
-    category: "Spaces",
-    keywords: ["rooms", "private rooms", "hoa", "classroom", "teams", "community"],
-  },
-  {
-    title: "People",
-    description: "Find contributors, profiles, followers, and people you follow.",
-    href: "/people",
-    category: "Network",
-    keywords: ["people", "members", "profiles", "contributors", "followers", "following"],
-  },
-  {
-    title: "Messages",
-    description: "Open private conversations with mutual followers.",
-    href: "/messages",
-    category: "Communication",
-    keywords: ["messages", "chat", "inbox", "dm", "private conversations"],
-  },
-  {
-    title: "Notifications",
-    description: "Review replies, follows, alerts, and platform activity.",
-    href: "/notifications",
-    category: "Activity",
-    keywords: ["notifications", "alerts", "replies", "follows", "activity"],
-  },
-  {
-    title: "Saved",
-    description: "Return to saved discussions, private notes, folders, and bookmarks.",
-    href: "/saved",
-    category: "Library",
-    keywords: ["saved", "bookmarks", "folders", "notes", "private notes", "library"],
-  },
-  {
-    title: "Stickies",
-    description: "Open pinned notes, topics, people, and working ideas.",
-    href: "/stickies",
-    category: "Workspace",
-    keywords: ["stickies", "pins", "pinned", "notes", "workspace"],
-  },
-  {
-    title: "Dashboard",
-    description: "Open your private Loombus command center and contribution snapshot.",
-    href: "/dashboard",
-    category: "Account",
-    keywords: ["dashboard", "account home", "goals", "contributions", "status"],
-  },
-  {
-    title: "Profile",
-    description: "Review or edit your public identity, bio, avatar, and profile details.",
-    href: "/profile",
-    category: "Account",
-    keywords: ["profile", "bio", "avatar", "identity", "public profile"],
-  },
-  {
-    title: "My Activity",
-    description: "Review your discussions, replies, saves, and recent activity.",
-    href: "/my-activity",
-    category: "Activity",
-    keywords: ["my activity", "history", "recent activity", "my contributions"],
-  },
-  {
-    title: "My Discussions",
-    description: "Open your published discussions and drafts.",
-    href: "/my-discussions",
-    category: "Activity",
-    keywords: ["my discussions", "my posts", "drafts", "published discussions"],
-  },
-  {
-    title: "My Replies",
-    description: "Review replies you have written across Loombus.",
-    href: "/my-replies",
-    category: "Activity",
-    keywords: ["my replies", "comments", "responses", "replies i wrote"],
-  },
-  {
-    title: "Reading History",
-    description: "Return to discussions you recently viewed.",
-    href: "/reading-history",
-    category: "Library",
-    keywords: ["reading history", "recently viewed", "history", "read"],
-  },
-  {
-    title: "Following",
-    description: "See discussions and activity from contributors you follow.",
-    href: "/following",
-    category: "Network",
-    keywords: ["following", "following feed", "people i follow", "network"],
-  },
-  {
-    title: "Onboarding",
-    description: "Resume your Loombus setup and starting journey.",
-    href: "/onboarding",
-    category: "Account",
-    keywords: ["onboarding", "setup", "getting started", "start"],
-  },
-  {
-    title: "AI Usage",
-    description: "Review AI usage, limits, feature buckets, and recent AI activity.",
-    href: "/ai-usage",
-    category: "AI",
-    keywords: ["ai", "ai usage", "limits", "meter", "cached", "premium ai"],
-  },
-  {
-    title: "Premium",
-    description: "Review subscription options and premium platform access.",
-    href: "/premium",
-    category: "Subscription",
-    keywords: ["premium", "subscription", "upgrade", "plans", "premium plus"],
-  },
-  {
-    title: "Labs",
-    description: "Request, vote on, and review experimental Loombus features.",
-    href: "/labs",
-    category: "Build",
-    keywords: ["labs", "features", "requests", "vote", "experimental"],
-  },
-  {
-    title: "Settings",
-    description: "Manage appearance, account access, privacy, and platform preferences.",
-    href: "/settings",
-    category: "Account",
-    keywords: ["settings", "appearance", "privacy", "account", "preferences", "security"],
-  },
-];
+const PLATFORM_SEARCH_RESULTS: PlatformSearchResult[] = PLATFORM_ROUTE_REGISTRY;
 
 function normalizeSearchValue(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase();

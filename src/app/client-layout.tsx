@@ -32,6 +32,7 @@ import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
+import { PLATFORM_ROUTE_REGISTRY, type PlatformRouteEntry } from "@/lib/platform-route-registry";
 
 type NavProfile = {
   username: string | null;
@@ -86,13 +87,7 @@ type FloatingPeopleSearchResult = {
   bio: string | null;
 };
 
-type GlobalSearchResult = {
-  title: string;
-  description: string;
-  href: string;
-  category: string;
-  keywords: string[];
-};
+type GlobalSearchResult = PlatformRouteEntry;
 
 type GlobalSearchProfileResult = {
   id: string;
@@ -130,120 +125,7 @@ type GlobalSearchSavedResult = {
   } | null;
 };
 
-const GLOBAL_SEARCH_RESULTS: GlobalSearchResult[] = [
-  {
-    title: "Discussions",
-    description: "Open the main Loombus discussion feed.",
-    href: "/discussions",
-    category: "Core",
-    keywords: ["discussions", "feed", "threads", "signal", "conversation", "home feed"],
-  },
-  {
-    title: "Create discussion",
-    description: "Start a focused discussion with topic, lens, and purpose.",
-    href: "/create",
-    category: "Create",
-    keywords: ["create", "post", "discussion", "write", "composer", "publish", "draft"],
-  },
-  {
-    title: "People",
-    description: "Find contributors, profiles, followers, and people you follow.",
-    href: "/people",
-    category: "Network",
-    keywords: ["people", "members", "profiles", "contributors", "followers", "following"],
-  },
-  {
-    title: "Saved",
-    description: "Return to saved discussions, notes, folders, and bookmarks.",
-    href: "/saved",
-    category: "Library",
-    keywords: ["saved", "bookmarks", "folders", "notes", "private notes", "library"],
-  },
-  {
-    title: "Messages",
-    description: "Open private conversations with mutual followers.",
-    href: "/messages",
-    category: "Communication",
-    keywords: ["messages", "chat", "dm", "inbox", "private conversations"],
-  },
-  {
-    title: "Notifications",
-    description: "Review replies, follows, alerts, and platform activity.",
-    href: "/notifications",
-    category: "Activity",
-    keywords: ["notifications", "alerts", "replies", "follows", "activity"],
-  },
-  {
-    title: "My Activity",
-    description: "Review your discussions, replies, saves, and recent activity.",
-    href: "/my-activity",
-    category: "Activity",
-    keywords: ["my activity", "activity", "history", "recent activity"],
-  },
-  {
-    title: "My Discussions",
-    description: "Open the discussions you started or manage your drafts.",
-    href: "/my-discussions",
-    category: "Activity",
-    keywords: ["my discussions", "my posts", "my threads", "drafts", "published discussions"],
-  },
-  {
-    title: "My Replies",
-    description: "Open the replies you have written across Loombus discussions.",
-    href: "/my-replies",
-    category: "Activity",
-    keywords: ["my replies", "my comments", "responses", "replies i wrote"],
-  },
-  {
-    title: "Reading History",
-    description: "Return to discussions you recently viewed.",
-    href: "/reading-history",
-    category: "Library",
-    keywords: ["reading history", "recently viewed", "history", "read"],
-  },
-  {
-    title: "Stickies",
-    description: "Open pinned notes, topics, people, and saved ideas.",
-    href: "/stickies",
-    category: "Workspace",
-    keywords: ["stickies", "pins", "pinned", "notes", "workspace"],
-  },
-  {
-    title: "Loombus Labs",
-    description: "Request, vote on, and review experimental platform features.",
-    href: "/labs",
-    category: "Build",
-    keywords: ["labs", "features", "requests", "vote", "experimental"],
-  },
-  {
-    title: "Settings",
-    description: "Manage appearance, account access, legal links, and platform references.",
-    href: "/settings",
-    category: "Account",
-    keywords: ["settings", "appearance", "account", "privacy", "terms", "preferences"],
-  },
-  {
-    title: "Loombus Guide",
-    description: "Learn how Loombus works and how to move with signal.",
-    href: "/settings/guide",
-    category: "Help",
-    keywords: ["guide", "help", "how to use", "instructions", "signal"],
-  },
-  {
-    title: "AI Usage",
-    description: "Review AI usage, limits, and premium AI activity.",
-    href: "/ai-usage",
-    category: "AI",
-    keywords: ["ai", "ai usage", "limits", "premium ai", "usage"],
-  },
-  {
-    title: "Premium",
-    description: "Review subscription options and premium platform access.",
-    href: "/premium",
-    category: "Subscription",
-    keywords: ["premium", "subscription", "upgrade", "premium plus", "plans"],
-  },
-];
+const GLOBAL_SEARCH_RESULTS: GlobalSearchResult[] = PLATFORM_ROUTE_REGISTRY;
 
 function matchesGlobalSearchResult(result: GlobalSearchResult, query: string) {
   if (!query) {
