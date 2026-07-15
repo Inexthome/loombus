@@ -60,6 +60,7 @@ export default function robots(): MetadataRoute.Robots {
           "/onboarding",
           "/age-gate",
           "/account-access",
+          "/forgot-password",
           "/reset-password",
           "/unsubscribe",
           "/u/",
