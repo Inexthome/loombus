@@ -691,6 +691,11 @@ export default function CreateV2ClientPage() {
       setPublishing(false);
       return;
     }
+    if (topic === "Other" && realityLens && purposeLane) {
+      setMessage("Choose either a Reality Lens or a Purpose Lane, not both, when Topic is Other.");
+      setPublishing(false);
+      return;
+    }
     if (!body.trim()) {
       setMessage("Please enter discussion content.");
       setPublishing(false);
@@ -796,14 +801,14 @@ export default function CreateV2ClientPage() {
                         <button type="button" onClick={() => setPickerPanel("reality")} className={`rounded-full px-3 py-2 text-xs font-black ${pickerPanel === "reality" ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)]" : "bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)]"}`}>Reality Lens</button>
                         <button type="button" onClick={() => setPickerPanel("purpose")} className={`rounded-full px-3 py-2 text-xs font-black ${pickerPanel === "purpose" ? "bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)]" : "bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)]"}`}>Purpose Lane</button>
                       </div>
-                      {pickerPanel === "topics" && <button type="button" onClick={() => { setTopic("Other"); setPickerPanel("reality"); }} className="mb-3 w-full rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm font-black text-amber-900">Other — choose a Reality Lens and Purpose Lane instead</button>}
+                      {pickerPanel === "topics" && <button type="button" onClick={() => { setTopic("Other"); setRealityLens(""); setPurposeLane(""); setPickerPanel("reality"); }} className="mb-3 w-full rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm font-black text-amber-900">Other — choose a Reality Lens or Purpose Lane instead</button>}
                       <div className="grid max-h-64 gap-2 overflow-y-auto sm:grid-cols-2">
-                        {options.map((option) => <button key={option} type="button" onClick={() => { if (pickerPanel === "topics") { setTopic(option); setPickerOpen(false); } else if (pickerPanel === "reality") { setRealityLens(option); setPickerPanel("purpose"); } else { setPurposeLane(option); setPickerOpen(false); } }} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-left text-sm font-bold text-[var(--loombus-text-muted)] transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900">{option}</button>)}
+                        {options.map((option) => <button key={option} type="button" onClick={() => { if (pickerPanel === "topics") { setTopic(option); setPickerOpen(false); } else if (pickerPanel === "reality") { setRealityLens(option); if (topic === "Other") { setPurposeLane(""); setPickerOpen(false); } else { setPickerPanel("purpose"); } } else { setPurposeLane(option); if (topic === "Other") setRealityLens(""); setPickerOpen(false); } }} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-left text-sm font-bold text-[var(--loombus-text-muted)] transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900">{option}</button>)}
                       </div>
                     </div>
                   )}
                   <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">{realityLens && <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700">Reality Lens: {realityLens}</span>}{purposeLane && <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">Purpose Lane: {purposeLane}</span>}</div>
-                  <p className="mt-2 text-xs font-medium text-[var(--loombus-text-muted)]">Use the plus menu to choose a topic. Use Other only to choose Reality Lens and Purpose Lane.</p>
+                  <p className="mt-2 text-xs font-medium text-[var(--loombus-text-muted)]">Use the plus menu to choose a topic. With Other selected, choose either one Reality Lens or one Purpose Lane.</p>
                 </div>
 
                 <div>

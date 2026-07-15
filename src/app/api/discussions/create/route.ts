@@ -217,6 +217,20 @@ export async function POST(request: NextRequest) {
 
     const topic = requestedTopic as DiscussionTopic;
 
+    if (topic === "Other" && !reality_lens && !purpose_lane) {
+      return NextResponse.json(
+        { error: "Choose a Reality Lens or Purpose Lane when Topic is Other." },
+        { status: 400 }
+      );
+    }
+
+    if (topic === "Other" && reality_lens && purpose_lane) {
+      return NextResponse.json(
+        { error: "Choose either a Reality Lens or a Purpose Lane, not both, when Topic is Other." },
+        { status: 400 }
+      );
+    }
+
     const content = normalizePublicText(body.body).trim();
     const pastedCharacterCount = normalizePastedCharacterCount(body.pastedCharacterCount);
     const tagResult = normalizeDiscussionTags(body.tags);
