@@ -1,23 +1,40 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, PageShell, Panel } from "@/components/ui";
+import styles from "@/components/ui/reference-v2.module.css";
 
 export const metadata: Metadata = {
   title: "Loombus Guide | Loombus",
   description:
-    "A practical guide to Loombus discussions, Signal, profiles, saved knowledge, messages, settings, Premium tools, and safety controls.",
-  alternates: { canonical: "https://loombus.com/settings/guide" },
+    "Learn how Loombus discussions, Signal, Rooms, saved knowledge, AI tools, settings, and safety controls work.",
+  alternates: {
+    canonical: "https://loombus.com/settings/guide",
+  },
 };
 
-const guideSections = [
+type GuideSection = {
+  id: string;
+  eyebrow: string;
+  title: string;
+  body: string;
+  bullets: string[];
+  callout?: {
+    title: string;
+    body: string;
+    href?: string;
+    label?: string;
+  };
+};
+
+const guideSections: GuideSection[] = [
   {
     id: "getting-started",
     eyebrow: "Start here",
     title: "Getting started",
-    body: "Loombus is built for focused discussions, clearer thinking, and quieter community interaction. Start by completing your profile, choosing your appearance, reading discussions, saving useful threads, and creating one thoughtful post when you are ready.",
+    body: "Loombus is built for focused discussions, clearer thinking, and quieter community interaction. Begin by completing your profile, choosing your appearance, reading a few discussions, saving useful threads, and creating one thoughtful post when you are ready.",
     bullets: [
-      "Complete your profile so people know who they are reading.",
-      "Use Home as your personal Signal hub.",
+      "Complete your profile so people understand who they are reading.",
+      "Use Home as the entry point to your personal Signal workspace.",
       "Use Discussions to read, filter, and join public conversations.",
       "Use Create when you have a clear question, claim, problem, or idea.",
     ],
@@ -25,207 +42,275 @@ const guideSections = [
   {
     id: "home",
     eyebrow: "Home",
-    title: "Home and Signal Hub",
-    body: "Home is the fast entry point into your Loombus workspace. It brings together creating, reading, saved items, activity, Stickies, Labs, and account areas.",
+    title: "Home and your Signal hub",
+    body: "Home brings the most useful Loombus workspaces together. It is designed to help you move between creating, reading, saved items, activity, Stickies, Rooms, Labs, and account tools without relying on an endless feed.",
     bullets: [
-      "Create starts a new discussion.",
-      "Saved returns you to threads worth keeping.",
-      "Stickies keeps private working notes and pinned ideas.",
-      "My Activity shows your own discussions, replies, saves, and alerts.",
+      "Create starts a new public discussion.",
+      "Saved returns you to discussions worth keeping.",
+      "Stickies holds private working notes and pinned ideas.",
+      "My Activity collects your discussions, replies, saves, and alerts.",
     ],
   },
   {
     id: "discussions",
     eyebrow: "Discussions",
-    title: "Reading discussions",
-    body: "The discussion feed is where members read and join public conversations. Use All, Following, and Active views to control what kind of conversation you are seeing.",
+    title: "Reading public discussions",
+    body: "The Discussions workspace is where members read and join public conversations. Search, topic filters, purpose lanes, Reality Lenses, and Signal sorting help narrow the page to the conversation you need.",
     bullets: [
-      "All shows the full public feed.",
-      "Following narrows the feed to people you follow.",
-      "Active highlights discussions with stronger recent engagement.",
-      "Use topics, purpose lanes, search, and Signal sorting when you need a narrower view.",
+      "All shows the broader public discussion directory.",
+      "Following narrows activity to people you follow.",
+      "Active emphasizes stronger recent discussion activity.",
+      "Saved and reading history help you return without searching again.",
     ],
   },
   {
     id: "signal",
     eyebrow: "Signal",
     title: "What Signal means",
-    body: "Signal is Loombus’s shorthand for useful activity. It is not a popularity score. It helps surface discussions that have replies, saves, views, and meaningful interaction.",
+    body: "Signal is Loombus shorthand for useful activity. It is not a popularity score or a guarantee of quality. It helps organize discussions using observable activity such as replies, saves, views, and meaningful participation.",
     bullets: [
-      "Replies show conversation activity.",
-      "Saves show that members found a thread worth returning to.",
-      "Views show reading attention.",
-      "Signal combines activity into a simple visibility cue.",
+      "Replies show that a discussion is developing.",
+      "Saves show that members found a discussion worth returning to.",
+      "Views show reading attention, not agreement.",
+      "Signal helps with discovery but does not replace judgment.",
     ],
   },
   {
     id: "create",
     eyebrow: "Create",
-    title: "Creating a discussion",
-    body: "Create is for starting a focused public discussion. A strong post has a clear title, enough context, and a reason for people to respond thoughtfully.",
+    title: "Creating a focused discussion",
+    body: "A strong discussion gives readers a clear title, enough context, and a reason to respond thoughtfully. Use the available structure to explain what the discussion is about and what kind of contribution would move it forward.",
     bullets: [
-      "Choose a Topic first.",
-      "Use Reality Lens when the issue is rooted in lived experience or real-world conditions.",
-      "Use Purpose Lane when the discussion has a direction, such as learning, contribution, mastery, or community.",
-      "Use tags sparingly to make the discussion easier to find.",
+      "Choose the closest Topic before publishing.",
+      "Use a Reality Lens when lived conditions or real-world context matter.",
+      "Use a Purpose Lane when the discussion has a clear direction.",
+      "Use tags sparingly so they improve discovery instead of adding noise.",
     ],
   },
   {
     id: "replies",
     eyebrow: "Replies",
     title: "Replying well",
-    body: "Replies should add context, ask better questions, clarify disagreement, or bring useful experience. Loombus works best when replies move the conversation forward.",
+    body: "Replies should add context, ask a better question, clarify disagreement, contribute relevant experience, or identify a tradeoff. Loombus works best when replies move the discussion rather than merely react to it.",
     bullets: [
       "Reply to the strongest part of the discussion.",
-      "Add context instead of noise.",
-      "Disagree by naming the assumption or tradeoff.",
-      "Avoid replies that only react without adding Signal.",
+      "Name the assumption or tradeoff when disagreeing.",
+      "Add evidence or experience when it is relevant.",
+      "Avoid replies that only repeat, provoke, or reward noise.",
     ],
+  },
+  {
+    id: "rooms",
+    eyebrow: "Private Rooms",
+    title: "Working inside Live Rooms",
+    body: "Rooms are private member workspaces for structured discussion and coordination. Room content is separate from the public Discussions feed and is returned only after ownership or active membership is verified.",
+    bullets: [
+      "Members can create private room discussion posts.",
+      "Owners and administrators can publish announcements and calendar events.",
+      "Owners and administrators review access requests and member roles.",
+      "Moderators can remove room posts that require moderation.",
+    ],
+    callout: {
+      title: "Current Rooms boundary",
+      body: "Private file uploads, discussion attachments, forms, and inline video are not connected yet. The Resources area identifies that boundary instead of presenting unavailable storage as active.",
+      href: "/rooms",
+      label: "Open Rooms",
+    },
   },
   {
     id: "stickies",
     eyebrow: "Stickies",
-    title: "Stickies",
-    body: "Stickies are private notes and working memory. Use them to hold ideas, reminders, useful threads, or thoughts you may return to later.",
+    title: "Private working memory",
+    body: "Stickies are private notes and working memory. Use them to hold ideas, reminders, useful discussions, or thoughts that may become part of later research or writing.",
     bullets: [
-      "Pin a discussion to Stickies when it may become useful later.",
-      "Use Stickies for private thinking, not public posting.",
-      "Return to Stickies when you are collecting ideas across the platform.",
+      "Pin useful discussions when they may matter later.",
+      "Use private notes for unfinished thinking.",
+      "Return to Stickies when collecting ideas across Loombus.",
+      "Do not treat Stickies as public posts or shared room resources.",
     ],
   },
   {
     id: "saved",
     eyebrow: "Saved",
-    title: "Saved discussions",
-    body: "Saved is your library of useful threads. Save discussions that contain strong framing, useful replies, research value, or ideas you may build on later.",
+    title: "Saved discussions and reading history",
+    body: "Saved is your working library of useful discussions. Reading History records discussions you opened so you can return even when you did not save them.",
     bullets: [
-      "Save threads you want to revisit.",
-      "Use collections or notes when available.",
-      "Treat Saved as a working shelf for ideas, research, and future replies.",
+      "Save discussions with strong framing, replies, or research value.",
+      "Use Saved as an intentional shelf, not a second feed.",
+      "Use Reading History to recover a discussion you recently opened.",
+      "Your own discussions and replies remain available in My Activity.",
     ],
   },
   {
     id: "messages",
     eyebrow: "Messages",
-    title: "Messages",
-    body: "Messages are for private conversations with people connected to your Loombus activity. Use the floating message button to open conversations without leaving the current page.",
+    title: "Private messages",
+    body: "Messages support direct conversations connected to Loombus activity. Use them for relevant follow-up that does not belong in a public discussion or shared Room.",
     bullets: [
-      "Use messages for direct follow-up.",
       "Keep private conversations respectful and relevant.",
-      "Report or mute conversations when needed.",
+      "Do not send passwords, verification codes, or sensitive payment data.",
+      "Use blocking when interaction needs to stop.",
+      "Use reporting or Support when a message raises a safety concern.",
     ],
   },
   {
     id: "people",
     eyebrow: "People",
     title: "People and following",
-    body: "People helps you find contributors. Following lets you build a smaller reading circle around people whose discussions and replies add value.",
+    body: "People helps you find contributors. Following builds a smaller reading circle around members whose discussions and replies consistently add context or value.",
     bullets: [
-      "Follow people who consistently add context.",
+      "Follow people for contribution, not popularity.",
       "Use Following to reduce feed noise.",
-      "Profile details help others understand your perspective.",
+      "Profile details help readers understand perspective and experience.",
+      "Blocking removes unwanted interaction from supported areas.",
     ],
   },
   {
     id: "alerts",
     eyebrow: "Signal Inbox",
     title: "Notifications and alerts",
-    body: "The Signal Inbox helps you return to meaningful activity such as replies, mentions, follows, messages, and discussion updates.",
+    body: "The Signal Inbox helps you return to meaningful activity such as replies, mentions, follows, messages, discussion updates, and supported system notices.",
     bullets: [
-      "Use alerts to return to conversations.",
-      "Filter alert types when the inbox gets busy.",
-      "Adjust delivery preferences from Settings.",
+      "Use the inbox to return to active conversations.",
+      "Mark or filter notifications when the inbox becomes busy.",
+      "Manage in-app, device, and supported email preferences in Settings.",
+      "Premium topic alerts notify you when discussions enter selected topics.",
     ],
+  },
+  {
+    id: "ai-usage",
+    eyebrow: "AI-assisted layer",
+    title: "AI tools and AI Usage",
+    body: "Loombus AI tools can summarize, clarify, map, or improve discussion material. They are optional assistance and may be inaccurate. AI Usage shows the current plan, monthly metered activity, generated results, cached results, failures, usage buckets, and recent AI-assisted events.",
+    bullets: [
+      "Review AI output before relying on it or publishing it.",
+      "Cached outputs may not count the same way as newly generated outputs.",
+      "Monthly limits depend on the account entitlement and feature bucket.",
+      "AI tools support member judgment rather than replacing it.",
+    ],
+    callout: {
+      title: "See the account-level meter",
+      body: "AI Usage is a signed-in workspace because it contains plan and activity information for the current account.",
+      href: "/ai-usage",
+      label: "Open AI Usage",
+    },
   },
   {
     id: "appearance",
     eyebrow: "Appearance",
-    title: "Light, System, and Dark",
-    body: "Appearance controls the visual mode of Loombus. Use Settings to switch between Light, System, and Dark without changing your account data.",
+    title: "Light, Dark, and System",
+    body: "Appearance changes the Loombus visual mode on the current device. It does not change account data, discussions, membership, or privacy settings.",
     bullets: [
-      "Light uses the Loombus Cream workspace.",
+      "Light uses the brighter Loombus workspace.",
       "Dark uses the low-light workspace.",
-      "System follows your device setting.",
+      "System follows the device appearance setting.",
+      "Use Settings to change the saved appearance for this device.",
     ],
   },
   {
     id: "premium",
     eyebrow: "Premium",
-    title: "Premium and AI tools",
-    body: "Premium features support deeper reading, better organization, and AI-assisted understanding. AI tools are designed to summarize, clarify, map, and improve discussions without replacing the member’s judgment.",
+    title: "Plans and paid features",
+    body: "Premium and Premium Plus can provide additional AI-assisted usage and supported account tools. Available features, limits, billing intervals, and prices are controlled by the plan shown in Loombus and at checkout.",
     bullets: [
-      "Use AI summaries to understand long discussions faster.",
-      "Use quality checks before posting.",
-      "Review AI Usage to understand metered and cached actions.",
+      "Review the plan page before starting a paid subscription.",
+      "Use AI Usage to understand current metered activity.",
+      "Use the billing portal when available for subscription management.",
+      "Use the Refund Policy for cancellation and refund rules.",
     ],
   },
   {
     id: "safety",
     eyebrow: "Safety",
-    title: "Safety, blocking, and reporting",
-    body: "Loombus includes reporting, blocking, moderation, and account protections to keep discussions useful and accountable.",
+    title: "Blocking, reporting, and support",
+    body: "Loombus includes blocking, reporting, moderation, account restrictions, and support workflows to protect members and platform integrity.",
     bullets: [
-      "Report discussions, replies, profiles, or messages when they violate expectations.",
-      "Block people when you need to limit interaction.",
-      "Use Guidelines and Safety pages for policy details.",
+      "Use in-platform reporting for a specific discussion, reply, profile, or message when available.",
+      "Block a member when interaction needs to stop.",
+      "Review Community Guidelines and Safety for platform expectations.",
+      "Use Support for account, billing, accessibility, rights, or unresolved safety concerns.",
     ],
+    callout: {
+      title: "Need a direct answer?",
+      body: "The Support center searches Loombus guidance and accepts structured requests without requiring you to locate the correct internal team first.",
+      href: "/support",
+      label: "Open Support",
+    },
   },
 ];
-
-const referenceLinks = [
-  ["/support", "Support", "Search help or submit a structured request."],
-  ["/guidelines", "Guidelines", "Community standards and enforcement expectations."],
-  ["/safety", "Safety", "Reporting, blocking, and member protections."],
-  ["/ai-usage", "AI Usage", "Review account-level AI limits and activity."],
-  ["/about", "About Loombus", "Purpose, values, and Signal-first direction."],
-  ["/accessibility", "Accessibility", "Accessibility approach and support contact."],
-] as const;
 
 export default function LoombusGuidePage() {
   return (
     <PageShell width="xl">
-      <Link href="/settings" className="loombus-reference-back">
-        ← Back to Settings
-      </Link>
-
       <PageHeader
         eyebrow="Loombus Guide"
-        title="Understand the platform without guessing."
-        description="A central guide to the main workspaces, Signal concepts, account controls, and safety tools across Loombus. Use the section index to jump directly to the area you need."
-      />
+        title="How the Loombus workspaces fit together."
+        description={
+          <>
+            Use this guide to understand public discussions, Signal, private Rooms,
+            saved knowledge, AI-assisted tools, account controls, and safety
+            boundaries. Each section points to the current product behavior rather
+            than a future feature concept.
+          </>
+        }
+      >
+        <Link href="/support" className={styles.footerAction}>
+          Search Support
+        </Link>
+      </PageHeader>
 
-      <div className="loombus-reference-grid" aria-label="Related Loombus references">
-        {referenceLinks.map(([href, title, description]) => (
-          <Link key={href} href={href} className="loombus-reference-link">
-            <strong>{title}</strong>
-            <span>{description}</span>
-          </Link>
-        ))}
-      </div>
-
-      <nav className="loombus-guide-v2-nav" aria-label="Loombus guide sections">
-        <div>
+      <nav className={styles.guideJumpPanel} aria-label="Loombus guide sections">
+        <div className={styles.guideJumpHeading}>
+          <strong>Jump to a workspace</strong>
+          <span>{guideSections.length} guide sections</span>
+        </div>
+        <div className={styles.guideJumpGrid}>
           {guideSections.map((section) => (
-            <a key={section.id} href={`#${section.id}`}>
+            <a key={section.id} href={`#${section.id}`} className={styles.guideJumpLink}>
               {section.title}
             </a>
           ))}
         </div>
       </nav>
 
-      <div className="loombus-guide-v2-sections">
-        {guideSections.map((section) => (
-          <Panel key={section.id} className="loombus-guide-v2-section">
-            <section id={section.id}>
-              <p className="loombus-page-header-eyebrow">{section.eyebrow}</p>
-              <h2>{section.title}</h2>
-              <p>{section.body}</p>
-              <ul>
-                {section.bullets.map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
-                ))}
-              </ul>
-            </section>
+      <div className={styles.guideSections}>
+        {guideSections.map((section, index) => (
+          <Panel key={section.id} className={styles.guideSection}>
+            <div className={styles.guideSectionTopline}>
+              <div>
+                <p className={styles.guideSectionKicker}>{section.eyebrow}</p>
+                <h2 id={section.id} className={styles.guideSectionTitle}>
+                  {section.title}
+                </h2>
+              </div>
+              <span className={styles.guideSectionNumber} aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+            </div>
+
+            <p className={styles.guideSectionBody}>{section.body}</p>
+
+            <ul className={styles.guideBulletGrid}>
+              {section.bullets.map((bullet) => (
+                <li key={bullet} className={styles.guideBullet}>
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+
+            {section.callout ? (
+              <div className={styles.guideCallout}>
+                <div>
+                  <strong>{section.callout.title}</strong>
+                  <span>{section.callout.body}</span>
+                  {section.callout.href && section.callout.label ? (
+                    <Link href={section.callout.href} className={styles.footerAction}>
+                      {section.callout.label}
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </Panel>
         ))}
       </div>
