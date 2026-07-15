@@ -1,146 +1,186 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { NextResponse, type NextRequest } from "next/server";
+import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
 const ACTION_COOLDOWN_SECONDS = 5;
-
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+function getSupabaseForRequest(request: NextRequest) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Missing Supabase environment configuration.");
+  }
+
+  const authorization = request.headers.get("authorization") ?? "";
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      headers: authorization ? { Authorization: authorization } : {},
+    },
+  });
+}
+
+function jsonError(message: string, status: number, code?: string) {
+  return NextResponse.json(code ? { error: message, code } : { error: message }, {
+    status,
+    headers: { "Cache-Control": "private, no-store" },
+  });
+}
+
+function jsonResult(blocked: boolean, unchanged = false) {
+  return NextResponse.json(
+    { blocked, unchanged },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
+}
+
 export async function POST(request: NextRequest) {
+  let supabase;
+
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: request.headers.get("Authorization") ?? "",
-          },
-        },
-      }
+    supabase = getSupabaseForRequest(request);
+  } catch {
+    return jsonError("Block service is not configured.", 500);
+  }
+
+  const accountAccess = await verifyRequestAccountAccess(supabase);
+
+  if (!accountAccess.ok) {
+    return jsonError(
+      accountAccess.error,
+      accountAccess.status,
+      accountAccess.code
     );
+  }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const body = await request.json().catch(() => null);
+  const targetUserId = String(body?.targetUserId ?? "").trim();
+  const desiredState =
+    typeof body?.desiredState === "boolean" ? body.desiredState : null;
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized." },
-        { status: 401 }
-      );
-    }
+  if (!targetUserId) {
+    return jsonError("Missing target user id.", 400);
+  }
 
-    const body = await request.json();
-    const targetUserId = String(body.targetUserId ?? "").trim();
+  if (!UUID_PATTERN.test(targetUserId)) {
+    return jsonError("Invalid target user id.", 400);
+  }
 
-    if (!targetUserId) {
-      return NextResponse.json(
-        { error: "Missing target user id." },
-        { status: 400 }
-      );
-    }
+  if (accountAccess.user.id === targetUserId) {
+    return jsonError("You cannot block yourself.", 400);
+  }
 
-    if (!UUID_PATTERN.test(targetUserId)) {
-      return NextResponse.json(
-        { error: "Invalid target user id." },
-        { status: 400 }
-      );
-    }
+  const { data: existingBlock, error: existingBlockError } = await supabase
+    .from("user_blocks")
+    .select("id")
+    .eq("blocker_id", accountAccess.user.id)
+    .eq("blocked_id", targetUserId)
+    .maybeSingle();
 
-    if (user.id === targetUserId) {
-      return NextResponse.json(
-        { error: "You cannot block yourself." },
-        { status: 400 }
-      );
-    }
+  if (existingBlockError) {
+    return jsonError(
+      "Unable to verify the current block status.",
+      503,
+      "block_status_unavailable"
+    );
+  }
 
-    const cooldownSince = new Date(
-      Date.now() - ACTION_COOLDOWN_SECONDS * 1000
-    ).toISOString();
+  const isCurrentlyBlocked = Boolean(existingBlock);
 
-    const { data: recentAction } = await supabase
-      .from("action_rate_events")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("action_key", "block_toggle")
-      .gte("created_at", cooldownSince)
-      .limit(1)
-      .maybeSingle();
+  if (desiredState !== null && desiredState === isCurrentlyBlocked) {
+    return jsonResult(isCurrentlyBlocked, true);
+  }
 
-    if (recentAction) {
-      return NextResponse.json(
-        { error: "Please wait before changing block status again." },
-        { status: 429 }
-      );
-    }
+  const cooldownSince = new Date(
+    Date.now() - ACTION_COOLDOWN_SECONDS * 1000
+  ).toISOString();
 
-    await supabase.from("action_rate_events").insert({
-      user_id: user.id,
+  const { data: recentAction, error: cooldownError } = await supabase
+    .from("action_rate_events")
+    .select("id")
+    .eq("user_id", accountAccess.user.id)
+    .eq("action_key", "block_toggle")
+    .gte("created_at", cooldownSince)
+    .limit(1)
+    .maybeSingle();
+
+  if (cooldownError) {
+    return jsonError(
+      "Unable to verify the block-action cooldown.",
+      503,
+      "block_rate_limit_unavailable"
+    );
+  }
+
+  if (recentAction) {
+    return jsonError("Please wait before changing block status again.", 429);
+  }
+
+  const { error: rateEventError } = await supabase
+    .from("action_rate_events")
+    .insert({
+      user_id: accountAccess.user.id,
       action_key: "block_toggle",
       target_id: targetUserId,
     });
 
+  if (rateEventError) {
+    return jsonError(
+      "Unable to record the block action.",
+      503,
+      "block_rate_limit_unavailable"
+    );
+  }
 
-    const { data: existingBlock } = await supabase
+  if (isCurrentlyBlocked) {
+    const { error: deleteError } = await supabase
       .from("user_blocks")
-      .select("id")
-      .eq("blocker_id", user.id)
-      .eq("blocked_id", targetUserId)
-      .maybeSingle();
+      .delete()
+      .eq("blocker_id", accountAccess.user.id)
+      .eq("blocked_id", targetUserId);
 
-    if (existingBlock) {
-      const { error: deleteError } = await supabase
-        .from("user_blocks")
-        .delete()
-        .eq("blocker_id", user.id)
-        .eq("blocked_id", targetUserId);
-
-      if (deleteError) {
-        return NextResponse.json(
-          { error: deleteError.message },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        blocked: false,
-      });
+    if (deleteError) {
+      return jsonError("Unable to unblock this member.", 500);
     }
 
-    const { error: blockError } = await supabase.from("user_blocks").insert({
-      blocker_id: user.id,
-      blocked_id: targetUserId,
-    });
+    return jsonResult(false);
+  }
 
-    if (blockError) {
-      return NextResponse.json(
-        { error: blockError.message },
-        { status: 500 }
-      );
-    }
+  const { error: blockError } = await supabase.from("user_blocks").insert({
+    blocker_id: accountAccess.user.id,
+    blocked_id: targetUserId,
+  });
 
-    await supabase
+  if (blockError) {
+    return jsonError("Unable to block this member.", 500);
+  }
+
+  const [outgoingFollowDelete, incomingFollowDelete] = await Promise.all([
+    supabase
       .from("follows")
       .delete()
-      .eq("follower_id", user.id)
-      .eq("following_id", targetUserId);
-
-    await supabase
+      .eq("follower_id", accountAccess.user.id)
+      .eq("following_id", targetUserId),
+    supabase
       .from("follows")
       .delete()
       .eq("follower_id", targetUserId)
-      .eq("following_id", user.id);
+      .eq("following_id", accountAccess.user.id),
+  ]);
 
-    return NextResponse.json({
-      blocked: true,
+  if (outgoingFollowDelete.error || incomingFollowDelete.error) {
+    console.error("Block follow cleanup failed", {
+      outgoing: outgoingFollowDelete.error?.message,
+      incoming: incomingFollowDelete.error?.message,
     });
-  } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      { error: "Unexpected server error." },
-      { status: 500 }
-    );
   }
+
+  return jsonResult(true);
 }
