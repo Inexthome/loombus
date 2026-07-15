@@ -1,0 +1,216 @@
+/* Shared presentation for authentication, account verification, recovery, and
+   account-status routes. Existing route logic remains the source of truth. */
+
+[data-loombus-auth-shell] {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 8% 18%,
+      color-mix(in srgb, var(--loombus-gold) 17%, transparent),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 92% 82%,
+      color-mix(in srgb, var(--loombus-cream) 10%, transparent),
+      transparent 38%
+    ),
+    var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
+}
+
+[data-loombus-auth-shell]::before {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--loombus-border) 32%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--loombus-border) 32%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 72px 72px;
+  content: "";
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.28), transparent 78%);
+  pointer-events: none;
+}
+
+[data-loombus-auth-shell]::after {
+  position: absolute;
+  top: clamp(1.5rem, 5vw, 4rem);
+  left: 50%;
+  z-index: -1;
+  width: min(58rem, 92vw);
+  height: min(58rem, 92vw);
+  border: 1px solid color-mix(in srgb, var(--loombus-gold) 14%, transparent);
+  border-radius: 999px;
+  content: "";
+  opacity: 0.5;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+[data-loombus-auth-shell] > * {
+  position: relative;
+  z-index: 1;
+}
+
+[data-loombus-auth-shell] :where(.bg-zinc-950, .bg-black) {
+  background-color: color-mix(
+    in srgb,
+    var(--loombus-surface) 94%,
+    var(--loombus-gold) 6%
+  ) !important;
+}
+
+[data-loombus-auth-shell] :where(.border-zinc-900, .border-zinc-800, .border-zinc-700, .border-zinc-600) {
+  border-color: color-mix(
+    in srgb,
+    var(--loombus-border) 78%,
+    var(--loombus-gold) 22%
+  ) !important;
+}
+
+[data-loombus-auth-shell] :where(.rounded-3xl) {
+  border-radius: 1.75rem;
+}
+
+[data-loombus-auth-shell] :where(form, section.rounded-3xl, div.rounded-3xl) {
+  box-shadow:
+    0 26px 70px color-mix(in srgb, #000 24%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--loombus-cream) 7%, transparent) !important;
+  backdrop-filter: blur(18px);
+}
+
+[data-loombus-auth-shell] :where(h1, h2) {
+  color: var(--loombus-text-strong) !important;
+  text-wrap: balance;
+}
+
+[data-loombus-auth-shell] :where(p.uppercase, .uppercase) {
+  color: var(--loombus-gold) !important;
+}
+
+[data-loombus-auth-shell] :where(input, select, textarea) {
+  min-height: 3rem;
+  border-color: var(--loombus-border) !important;
+  background-color: var(--loombus-surface-strong) !important;
+  color: var(--loombus-text) !important;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--loombus-cream) 5%, transparent);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+[data-loombus-auth-shell] :where(input, select, textarea):focus-visible {
+  border-color: var(--loombus-gold) !important;
+  outline: none;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--loombus-gold) 20%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--loombus-cream) 7%, transparent);
+}
+
+[data-loombus-auth-shell] :where(a, button) {
+  outline-offset: 3px;
+}
+
+[data-loombus-auth-shell] :where(a, button):focus-visible {
+  outline: 2px solid var(--loombus-gold);
+}
+
+[data-loombus-auth-shell] :where(a, button).bg-white {
+  border-color: color-mix(in srgb, var(--loombus-gold) 76%, #000 24%) !important;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--loombus-gold) 90%, var(--loombus-cream) 10%),
+    var(--loombus-gold)
+  ) !important;
+  color: var(--loombus-gold-contrast) !important;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--loombus-gold) 22%, transparent);
+}
+
+[data-loombus-auth-shell] :where(a, button).bg-white:hover {
+  background: var(--loombus-gold-deep) !important;
+  color: var(--loombus-cream) !important;
+}
+
+[data-loombus-auth-shell] :where(a, button).border:not(.bg-white) {
+  background-color: color-mix(
+    in srgb,
+    var(--loombus-surface-strong) 88%,
+    transparent
+  );
+}
+
+[data-loombus-auth-shell] :where(a, button).border:not(.bg-white):hover {
+  border-color: color-mix(
+    in srgb,
+    var(--loombus-gold) 54%,
+    var(--loombus-border)
+  ) !important;
+  background-color: var(--loombus-gold-surface);
+  color: var(--loombus-text) !important;
+}
+
+[data-loombus-auth-shell] a:not(.bg-white):not(.border):hover {
+  color: var(--loombus-gold) !important;
+}
+
+[data-loombus-auth-shell] :where(.h-px.bg-zinc-900) {
+  background-color: color-mix(
+    in srgb,
+    var(--loombus-border) 76%,
+    var(--loombus-gold) 24%
+  ) !important;
+}
+
+[data-loombus-auth-shell] [role="status"],
+[data-loombus-auth-shell] [role="alert"] {
+  border-color: color-mix(
+    in srgb,
+    var(--loombus-border) 68%,
+    var(--loombus-gold) 32%
+  ) !important;
+  background-color: var(--loombus-gold-surface) !important;
+  color: var(--loombus-text-muted) !important;
+}
+
+[data-loombus-auth-shell] img[src*="loombus-mark"] {
+  filter: drop-shadow(0 10px 20px color-mix(in srgb, var(--loombus-gold) 18%, transparent));
+}
+
+@media (max-width: 639px) {
+  [data-loombus-auth-shell] {
+    padding-inline: 1rem !important;
+    padding-top: max(1.25rem, env(safe-area-inset-top)) !important;
+    padding-bottom: max(2rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  [data-loombus-auth-shell] :where(form, section.rounded-3xl, div.rounded-3xl) {
+    border-radius: 1.4rem;
+    padding: 1.25rem !important;
+  }
+
+  [data-loombus-auth-shell] h1 {
+    font-size: clamp(2rem, 10vw, 2.75rem) !important;
+    line-height: 1.04;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-loombus-auth-shell] *,
+  [data-loombus-auth-shell] *::before,
+  [data-loombus-auth-shell] *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
