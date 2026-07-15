@@ -186,7 +186,10 @@ export default function AuthCallbackPage() {
 
   if (errorMessage) {
     return (
-      <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16">
+      <main
+        data-loombus-auth-shell
+        className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16"
+      >
         <div className="mx-auto max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-7">
           <p className="mb-3 text-sm uppercase tracking-[0.3em] text-zinc-500">
             Loombus sign-in
