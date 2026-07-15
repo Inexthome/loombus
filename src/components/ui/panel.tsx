@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import styles from "./reference-v2.module.css";
 
 type PanelProps = {
   children: ReactNode;
@@ -7,9 +8,9 @@ type PanelProps = {
 };
 
 const toneClass = {
-  default: "",
-  warning: "text-amber-700 dark:text-amber-200",
-  danger: "text-red-700 dark:text-red-200",
+  default: styles.panelDefault,
+  warning: styles.panelWarning,
+  danger: styles.panelDanger,
 };
 
 export function Panel({
@@ -18,7 +19,7 @@ export function Panel({
   tone = "default",
 }: PanelProps) {
   return (
-    <section className={`loombus-panel-v2 ${toneClass[tone]} ${className}`}>
+    <section className={`${styles.panel} ${toneClass[tone]} ${className}`}>
       {children}
     </section>
   );
