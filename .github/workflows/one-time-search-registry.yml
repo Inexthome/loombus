@@ -1,0 +1,359 @@
+name: One-time search registry alignment
+
+on:
+  push:
+    branches:
+      - agent/search-registry-preview-recovery
+    paths:
+      - .github/workflows/one-time-search-registry.yml
+
+permissions:
+  contents: write
+
+jobs:
+  align-search-registries:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/search-registry-preview-recovery
+          fetch-depth: 0
+
+      - name: Align global and advanced search registries
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          registry = '''export type PlatformRouteEntry = {
+            title: string;
+            description: string;
+            href: string;
+            category: string;
+            keywords: string[];
+          };
+
+          export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
+            {
+              title: "Home",
+              description: "Open your personal Loombus Signal hub and workspace shortcuts.",
+              href: "/home",
+              category: "Core",
+              keywords: ["home", "signal hub", "workspace", "start", "shortcuts"],
+            },
+            {
+              title: "Dashboard",
+              description: "Review your private account snapshot, goals, and contribution activity.",
+              href: "/dashboard",
+              category: "Account",
+              keywords: ["dashboard", "account home", "goals", "contributions", "status"],
+            },
+            {
+              title: "Discussions",
+              description: "Browse the main Loombus public discussion directory.",
+              href: "/discussions",
+              category: "Core",
+              keywords: ["discussions", "threads", "feed", "signal", "conversation"],
+            },
+            {
+              title: "Create discussion",
+              description: "Start a focused discussion with a topic, context, lens, and purpose.",
+              href: "/create",
+              category: "Create",
+              keywords: ["create", "post", "write", "draft", "composer", "publish"],
+            },
+            {
+              title: "Topics",
+              description: "Browse discussion topics and open a focused Topic Signal page.",
+              href: "/topics",
+              category: "Explore",
+              keywords: ["topics", "topic signal", "categories", "browse", "discover"],
+            },
+            {
+              title: "Advanced search",
+              description: "Search discussions, people, saved items, and Loombus destinations.",
+              href: "/search",
+              category: "Explore",
+              keywords: ["search", "advanced search", "find", "lookup", "discover"],
+            },
+            {
+              title: "Rooms",
+              description: "Open private member workspaces for discussion, announcements, and events.",
+              href: "/rooms",
+              category: "Spaces",
+              keywords: ["rooms", "private rooms", "hoa", "classroom", "teams", "community"],
+            },
+            {
+              title: "People",
+              description: "Find Loombus members, profiles, followers, and accounts you follow.",
+              href: "/people",
+              category: "Network",
+              keywords: ["people", "members", "profiles", "followers", "following"],
+            },
+            {
+              title: "Following",
+              description: "See discussions and activity from Loombus members you follow.",
+              href: "/following",
+              category: "Network",
+              keywords: ["following", "following feed", "people i follow", "network"],
+            },
+            {
+              title: "Messages",
+              description: "Open private conversations with supported Loombus connections.",
+              href: "/messages",
+              category: "Communication",
+              keywords: ["messages", "chat", "inbox", "dm", "private conversations"],
+            },
+            {
+              title: "Notifications",
+              description: "Review replies, follows, alerts, messages, and platform activity.",
+              href: "/notifications",
+              category: "Activity",
+              keywords: ["notifications", "alerts", "replies", "follows", "activity", "signal inbox"],
+            },
+            {
+              title: "Saved",
+              description: "Return to saved discussions, private notes, folders, and bookmarks.",
+              href: "/saved",
+              category: "Library",
+              keywords: ["saved", "bookmarks", "folders", "notes", "private notes", "library"],
+            },
+            {
+              title: "Stickies",
+              description: "Open your private Signal Board of pinned discussion cards.",
+              href: "/stickies",
+              category: "Workspace",
+              keywords: ["stickies", "signal board", "pins", "pinned discussions", "workspace"],
+            },
+            {
+              title: "Profile",
+              description: "Review or edit your public identity, bio, avatar, and profile details.",
+              href: "/profile",
+              category: "Account",
+              keywords: ["profile", "bio", "avatar", "identity", "public profile"],
+            },
+            {
+              title: "My Activity",
+              description: "Review your discussions, replies, saves, and recent activity.",
+              href: "/my-activity",
+              category: "Activity",
+              keywords: ["my activity", "history", "recent activity", "my contributions"],
+            },
+            {
+              title: "My Discussions",
+              description: "Open your published discussions and saved drafts.",
+              href: "/my-discussions",
+              category: "Activity",
+              keywords: ["my discussions", "my posts", "drafts", "published discussions"],
+            },
+            {
+              title: "My Replies",
+              description: "Review replies you have written across Loombus.",
+              href: "/my-replies",
+              category: "Activity",
+              keywords: ["my replies", "comments", "responses", "replies i wrote"],
+            },
+            {
+              title: "Reading History",
+              description: "Return to discussions you recently opened.",
+              href: "/reading-history",
+              category: "Library",
+              keywords: ["reading history", "recently viewed", "history", "read"],
+            },
+            {
+              title: "Onboarding",
+              description: "Resume your Loombus setup and account-starting checklist.",
+              href: "/onboarding",
+              category: "Account",
+              keywords: ["onboarding", "setup", "getting started", "start", "checklist"],
+            },
+            {
+              title: "Settings",
+              description: "Manage appearance, account access, privacy, notifications, and preferences.",
+              href: "/settings",
+              category: "Account",
+              keywords: ["settings", "appearance", "privacy", "account", "preferences", "notifications"],
+            },
+            {
+              title: "Privacy & Security",
+              description: "Review account privacy, security controls, blocking, and data choices.",
+              href: "/privacy-security",
+              category: "Account",
+              keywords: ["privacy security", "security", "privacy controls", "account protection", "data"],
+            },
+            {
+              title: "Blocked Users",
+              description: "Review and manage the members you have blocked.",
+              href: "/blocked-users",
+              category: "Safety",
+              keywords: ["blocked users", "blocks", "unblock", "safety", "privacy"],
+            },
+            {
+              title: "Loombus Guide",
+              description: "Learn how current Loombus workspaces, Signal, Rooms, and safety tools work.",
+              href: "/settings/guide",
+              category: "Help",
+              keywords: ["guide", "help", "how to use", "instructions", "signal", "rooms"],
+            },
+            {
+              title: "AI Usage",
+              description: "Review AI usage, limits, feature buckets, and recent AI-assisted activity.",
+              href: "/ai-usage",
+              category: "AI",
+              keywords: ["ai", "ai usage", "limits", "meter", "cached", "premium ai"],
+            },
+            {
+              title: "Premium",
+              description: "Review subscription options and supported Premium access.",
+              href: "/premium",
+              category: "Subscription",
+              keywords: ["premium", "subscription", "upgrade", "plans", "premium plus"],
+            },
+            {
+              title: "Loombus Labs",
+              description: "Request, vote on, and review experimental Loombus features.",
+              href: "/labs",
+              category: "Build",
+              keywords: ["labs", "features", "requests", "vote", "experimental"],
+            },
+            {
+              title: "Support",
+              description: "Search Loombus help and submit a structured support request.",
+              href: "/support",
+              category: "Help",
+              keywords: ["support", "help", "contact", "problem", "request"],
+            },
+            {
+              title: "About Loombus",
+              description: "Read about Loombus, its purpose, and its Signal-first direction.",
+              href: "/about",
+              category: "Reference",
+              keywords: ["about", "about loombus", "purpose", "mission", "signal over noise"],
+            },
+            {
+              title: "Community Guidelines",
+              description: "Review discussion-quality standards and platform expectations.",
+              href: "/guidelines",
+              category: "Safety",
+              keywords: ["guidelines", "community guidelines", "rules", "standards", "conduct"],
+            },
+            {
+              title: "Safety",
+              description: "Review reporting, blocking, moderation, and member protections.",
+              href: "/safety",
+              category: "Safety",
+              keywords: ["safety", "reporting", "blocking", "moderation", "protection"],
+            },
+            {
+              title: "Privacy Policy",
+              description: "Review how information connected to Loombus is handled.",
+              href: "/privacy",
+              category: "Legal",
+              keywords: ["privacy", "privacy policy", "data", "information", "rights"],
+            },
+            {
+              title: "Cookie Use",
+              description: "Review cookies, browser storage, session tokens, and related technologies.",
+              href: "/cookies",
+              category: "Legal",
+              keywords: ["cookies", "cookie use", "browser storage", "session", "tokens"],
+            },
+            {
+              title: "Terms of Service",
+              description: "Review the terms that govern access to and use of Loombus.",
+              href: "/terms",
+              category: "Legal",
+              keywords: ["terms", "terms of service", "agreement", "legal", "conditions"],
+            },
+            {
+              title: "Refund Policy",
+              description: "Review cancellation and refund rules for supported purchases.",
+              href: "/refunds",
+              category: "Legal",
+              keywords: ["refund", "refund policy", "return policy", "cancellation", "billing"],
+            },
+            {
+              title: "Copyright / DMCA",
+              description: "Review copyright reporting and DMCA procedures.",
+              href: "/dmca",
+              category: "Legal",
+              keywords: ["copyright", "dmca", "infringement", "takedown", "rights"],
+            },
+            {
+              title: "Accessibility",
+              description: "Review the Loombus accessibility approach and support channel.",
+              href: "/accessibility",
+              category: "Reference",
+              keywords: ["accessibility", "accessible", "disability", "support", "accommodation"],
+            },
+            {
+              title: "Download Loombus",
+              description: "Open the Loombus app download page.",
+              href: "/download",
+              category: "Reference",
+              keywords: ["download", "app", "ios", "android", "app store", "google play"],
+            },
+          ];
+          '''
+
+          module_path = Path("src/lib/platform-route-registry.ts")
+          module_path.write_text(registry, encoding="utf-8")
+
+          client_path = Path("src/app/client-layout.tsx")
+          client = client_path.read_text(encoding="utf-8")
+          import_line = 'import { PLATFORM_ROUTE_REGISTRY, type PlatformRouteEntry } from "@/lib/platform-route-registry";\n'
+          anchor = 'import {\n  filterBlockedActorNotifications,\n  getBlockedRelationshipUserIds,\n} from "@/lib/notification-block-filter";\n'
+          if import_line not in client:
+              client = client.replace(anchor, anchor + import_line, 1)
+          client, type_count = re.subn(
+              r'type GlobalSearchResult = \{\n.*?\n\};\n\n',
+              'type GlobalSearchResult = PlatformRouteEntry;\n\n',
+              client,
+              count=1,
+              flags=re.S,
+          )
+          client, registry_count = re.subn(
+              r'const GLOBAL_SEARCH_RESULTS: GlobalSearchResult\[\] = \[\n.*?\n\];',
+              'const GLOBAL_SEARCH_RESULTS: GlobalSearchResult[] = PLATFORM_ROUTE_REGISTRY;',
+              client,
+              count=1,
+              flags=re.S,
+          )
+          if type_count != 1 or registry_count != 1:
+              raise SystemExit(f"Unable to update client registry: type={type_count}, registry={registry_count}")
+          client_path.write_text(client, encoding="utf-8")
+
+          search_path = Path("src/app/search/page.tsx")
+          search = search_path.read_text(encoding="utf-8")
+          search_import = 'import { PLATFORM_ROUTE_REGISTRY, type PlatformRouteEntry } from "@/lib/platform-route-registry";\n'
+          search_anchor = 'import { supabase } from "@/lib/supabase/client";\n'
+          if search_import not in search:
+              search = search.replace(search_anchor, search_anchor + search_import, 1)
+          search, search_type_count = re.subn(
+              r'type PlatformSearchResult = \{\n.*?\n\};\n\n',
+              'type PlatformSearchResult = PlatformRouteEntry;\n\n',
+              search,
+              count=1,
+              flags=re.S,
+          )
+          search, search_registry_count = re.subn(
+              r'const PLATFORM_SEARCH_RESULTS: PlatformSearchResult\[\] = \[\n.*?\n\];',
+              'const PLATFORM_SEARCH_RESULTS: PlatformSearchResult[] = PLATFORM_ROUTE_REGISTRY;',
+              search,
+              count=1,
+              flags=re.S,
+          )
+          if search_type_count != 1 or search_registry_count != 1:
+              raise SystemExit(
+                  f"Unable to update advanced registry: type={search_type_count}, registry={search_registry_count}"
+              )
+          search_path.write_text(search, encoding="utf-8")
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/platform-route-registry.ts src/app/client-layout.tsx src/app/search/page.tsx
+          git commit -m "Align platform search registries"
+          git push origin HEAD:agent/search-registry-preview-recovery
