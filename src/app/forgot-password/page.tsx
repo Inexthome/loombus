@@ -43,7 +43,10 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16">
+    <main
+      data-loombus-auth-shell
+      className="min-h-screen bg-black px-4 py-8 text-white sm:px-6 sm:py-16"
+    >
       <div className="mx-auto max-w-xl">
         <Link
           href="/login"
