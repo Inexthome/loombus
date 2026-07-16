@@ -28,6 +28,22 @@ function getNextResponse(request: NextRequest) {
   });
 }
 
+function copyResponseCookies(source: NextResponse, target: NextResponse) {
+  for (const cookie of source.cookies.getAll()) {
+    target.cookies.set(cookie);
+  }
+
+  return target;
+}
+
+function redirectToAppHome(request: NextRequest, response: NextResponse) {
+  const homeUrl = request.nextUrl.clone();
+  homeUrl.pathname = "/home";
+  homeUrl.search = "";
+
+  return copyResponseCookies(response, NextResponse.redirect(homeUrl));
+}
+
 function redirectToLogin(request: NextRequest) {
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = "/login";
@@ -77,16 +93,18 @@ export async function updateSession(request: NextRequest) {
   });
 
   const pathname = request.nextUrl.pathname;
-
-  if (!isProtectedPath(pathname)) {
-    await supabase.auth.getUser();
-    return response;
-  }
-
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
+
+  if (pathname === "/") {
+    return !error && user ? redirectToAppHome(request, response) : response;
+  }
+
+  if (!isProtectedPath(pathname)) {
+    return response;
+  }
 
   if (error || !user) {
     return redirectToLogin(request);
