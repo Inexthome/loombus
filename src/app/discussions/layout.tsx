@@ -1,7 +1,9 @@
+import "./discussion-feed-media.css";
+
 export default function DiscussionsLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <>{children}</>;
+  return <div className="discussion-feed-route">{children}</div>;
 }
