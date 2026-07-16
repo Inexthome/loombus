@@ -1,5 +1,5 @@
 .discussion-feed-route
-  article
+  article:has(> div:last-child span[title="Replies"])
   > div:has(> section[aria-label="Discussion attachments"])
   > a:first-child
   > div:first-child
@@ -7,29 +7,46 @@
   display: none;
 }
 
-.discussion-feed-route section[aria-label="Discussion attachments"] {
+.discussion-feed-route
+  article:has(> div:last-child span[title="Replies"])
+  > div
+  > section[aria-label="Discussion attachments"] {
   margin-top: 1.25rem;
 }
 
 .discussion-feed-route
-  section[aria-label="Discussion attachments"]
+  article:has(> div:last-child span[title="Replies"])
+  > div
+  > section[aria-label="Discussion attachments"]
   > :not(:first-child) {
   display: none !important;
 }
 
 .discussion-feed-route
-  section[aria-label="Discussion attachments"]
+  article:has(> div:last-child span[title="Replies"])
+  > div
+  > section[aria-label="Discussion attachments"]
   > a:first-child:has(> img)
   > span,
 .discussion-feed-route
-  section[aria-label="Discussion attachments"]
+  article:has(> div:last-child span[title="Replies"])
+  > div
+  > section[aria-label="Discussion attachments"]
   > div:first-child:has(> video)
   > a {
   display: none;
 }
 
-.discussion-feed-route section[aria-label="Discussion attachments"] img,
-.discussion-feed-route section[aria-label="Discussion attachments"] video {
+.discussion-feed-route
+  article:has(> div:last-child span[title="Replies"])
+  > div
+  > section[aria-label="Discussion attachments"]
+  img,
+.discussion-feed-route
+  article:has(> div:last-child span[title="Replies"])
+  > div
+  > section[aria-label="Discussion attachments"]
+  video {
   width: 100% !important;
   height: 100% !important;
   aspect-ratio: auto !important;
@@ -38,7 +55,7 @@
 
 @media (min-width: 640px) {
   .discussion-feed-route
-    article
+    article:has(> div:last-child span[title="Replies"])
     > div:has(> section[aria-label="Discussion attachments"]) {
     display: grid;
     grid-template-columns: 12.5rem minmax(0, 1fr);
@@ -47,7 +64,7 @@
   }
 
   .discussion-feed-route
-    article
+    article:has(> div:last-child span[title="Replies"])
     > div:has(> section[aria-label="Discussion attachments"])
     > section[aria-label="Discussion attachments"] {
     grid-column: 1;
@@ -57,7 +74,7 @@
   }
 
   .discussion-feed-route
-    article
+    article:has(> div:last-child span[title="Replies"])
     > div:has(> section[aria-label="Discussion attachments"])
     > :not(section[aria-label="Discussion attachments"]) {
     grid-column: 2;
@@ -65,7 +82,9 @@
   }
 
   .discussion-feed-route
-    section[aria-label="Discussion attachments"]
+    article:has(> div:last-child span[title="Replies"])
+    > div
+    > section[aria-label="Discussion attachments"]
     > :first-child {
     display: flex;
     width: 100%;
@@ -74,10 +93,14 @@
   }
 
   .discussion-feed-route
-    section[aria-label="Discussion attachments"]
+    article:has(> div:last-child span[title="Replies"])
+    > div
+    > section[aria-label="Discussion attachments"]
     > a:first-child:has(> img),
   .discussion-feed-route
-    section[aria-label="Discussion attachments"]
+    article:has(> div:last-child span[title="Replies"])
+    > div
+    > section[aria-label="Discussion attachments"]
     > div:first-child:has(> video) {
     display: block;
   }
