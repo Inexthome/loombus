@@ -68,16 +68,37 @@
   article:has(> div:last-child span[title="Replies"])
   > div
   > section[aria-label="Discussion attachments"]
-  img,
+  img {
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: cover !important;
+}
+
+.discussion-feed-route
+  article:has(> div:last-child span[title="Replies"])
+  > div
+  > section[aria-label="Discussion attachments"]
+  > div:first-child:has(> video) {
+  display: block;
+  width: 100%;
+  height: clamp(12rem, 56vw, 15rem);
+  min-height: 0;
+  overflow: hidden;
+  background: #09090b;
+}
+
 .discussion-feed-route
   article:has(> div:last-child span[title="Replies"])
   > div
   > section[aria-label="Discussion attachments"]
   video {
+  display: block;
   width: 100% !important;
   height: 100% !important;
   aspect-ratio: auto !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
+  background: #09090b;
 }
 
 @media (min-width: 640px) {
@@ -130,5 +151,25 @@
     > section[aria-label="Discussion attachments"]
     > div:first-child:has(> video) {
     display: block;
+  }
+
+  .discussion-feed-route
+    article:has(> div:last-child span[title="Replies"])
+    > div
+    > section[aria-label="Discussion attachments"]:has(
+      > div:first-child > video
+    ) {
+    min-height: 11rem;
+    height: 11rem;
+  }
+
+  .discussion-feed-route
+    article:has(> div:last-child span[title="Replies"])
+    > div
+    > section[aria-label="Discussion attachments"]
+    > div:first-child:has(> video) {
+    height: 11rem;
+    min-height: 11rem;
+    max-height: 11rem;
   }
 }
