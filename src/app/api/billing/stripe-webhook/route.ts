@@ -9,10 +9,8 @@ import {
   getBillingPlanLabel,
   getBillingSupabaseAdmin,
 } from "@/lib/billing-entitlements";
-import {
-  fulfillRoomCheckoutSession,
-  handleRoomSubscriptionChanged,
-} from "@/lib/room-billing";
+import { fulfillRoomCheckoutSession } from "@/lib/room-billing";
+import { syncRoomSubscriptionEvent } from "@/lib/room-subscription-events";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -214,7 +212,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
 async function handleSubscriptionChanged(subscription: Stripe.Subscription) {
   if (subscription.metadata?.product === "loombus_room") {
-    await handleRoomSubscriptionChanged(subscription);
+    await syncRoomSubscriptionEvent(subscription);
     return;
   }
 
