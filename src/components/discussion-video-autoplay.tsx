@@ -9,8 +9,11 @@ const BLOCKED_HINT = "Tap to play with sound";
 
 type DecoratedVideo = {
   host: HTMLElement;
+  originalControls: boolean;
+  originalTabIndex: string | null;
   handleClick: (event: MouseEvent) => void;
   handleEnded: () => void;
+  handleKeyDown: (event: KeyboardEvent) => void;
   handlePause: () => void;
   handlePlay: () => void;
   handleVolumeChange: () => void;
@@ -48,6 +51,7 @@ export function DiscussionVideoAutoplay() {
       video.pause();
       video.muted = true;
       video.defaultMuted = true;
+      video.controls = false;
       setVideoHint(decorated.host, MUTED_HINT);
 
       if (activeVideo === video) {
@@ -78,6 +82,7 @@ export function DiscussionVideoAutoplay() {
       claimActiveVideo(video);
       video.muted = true;
       video.defaultMuted = true;
+      video.controls = false;
       setVideoHint(decorated.host, MUTED_HINT);
 
       try {
@@ -87,6 +92,29 @@ export function DiscussionVideoAutoplay() {
           activeVideo = null;
         }
         setVideoHint(decorated.host, BLOCKED_HINT);
+      }
+    }
+
+    async function enableSound(video: HTMLVideoElement) {
+      const decorated = decoratedVideos.get(video);
+      if (!decorated) return;
+
+      claimActiveVideo(video);
+      video.muted = false;
+      video.defaultMuted = false;
+      video.controls = true;
+      setVideoHint(decorated.host, null);
+
+      try {
+        await video.play();
+      } catch {
+        video.muted = true;
+        video.defaultMuted = true;
+        video.controls = false;
+        setVideoHint(decorated.host, BLOCKED_HINT);
+        if (activeVideo === video) {
+          activeVideo = null;
+        }
       }
     }
 
@@ -122,12 +150,17 @@ export function DiscussionVideoAutoplay() {
       const host = video.parentElement;
       if (!host) return;
 
+      const originalControls = video.controls;
+      const originalTabIndex = video.getAttribute("tabindex");
+
       host.classList.add(VIDEO_HOST_CLASS);
       setVideoHint(host, MUTED_HINT);
 
       video.muted = true;
       video.defaultMuted = true;
+      video.controls = false;
       video.playsInline = true;
+      video.tabIndex = 0;
       video.setAttribute("playsinline", "");
       video.setAttribute("webkit-playsinline", "");
 
@@ -137,28 +170,27 @@ export function DiscussionVideoAutoplay() {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
+        void enableSound(video);
+      };
 
-        claimActiveVideo(video);
-        video.muted = false;
-        video.defaultMuted = false;
-        setVideoHint(host, null);
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (
+          (!video.muted && video.volume > 0) ||
+          (event.key !== "Enter" && event.key !== " ")
+        ) {
+          return;
+        }
 
-        void video.play().catch(() => {
-          video.muted = true;
-          video.defaultMuted = true;
-          setVideoHint(host, BLOCKED_HINT);
-          if (activeVideo === video) {
-            activeVideo = null;
-          }
-        });
+        event.preventDefault();
+        event.stopPropagation();
+        void enableSound(video);
       };
 
       const handlePlay = () => {
         claimActiveVideo(video);
-        setVideoHint(
-          host,
-          video.muted || video.volume === 0 ? MUTED_HINT : null
-        );
+        const isMuted = video.muted || video.volume === 0;
+        video.controls = !isMuted;
+        setVideoHint(host, isMuted ? MUTED_HINT : null);
       };
 
       const handlePause = () => {
@@ -173,17 +205,18 @@ export function DiscussionVideoAutoplay() {
         }
         video.muted = true;
         video.defaultMuted = true;
+        video.controls = false;
         setVideoHint(host, MUTED_HINT);
       };
 
       const handleVolumeChange = () => {
-        setVideoHint(
-          host,
-          video.muted || video.volume === 0 ? MUTED_HINT : null
-        );
+        const isMuted = video.muted || video.volume === 0;
+        video.controls = !isMuted;
+        setVideoHint(host, isMuted ? MUTED_HINT : null);
       };
 
       video.addEventListener("click", handleClick, true);
+      video.addEventListener("keydown", handleKeyDown);
       video.addEventListener("play", handlePlay);
       video.addEventListener("pause", handlePause);
       video.addEventListener("ended", handleEnded);
@@ -191,8 +224,11 @@ export function DiscussionVideoAutoplay() {
 
       decoratedVideos.set(video, {
         host,
+        originalControls,
+        originalTabIndex,
         handleClick,
         handleEnded,
+        handleKeyDown,
         handlePause,
         handlePlay,
         handleVolumeChange,
@@ -207,6 +243,7 @@ export function DiscussionVideoAutoplay() {
 
       visibilityObserver.unobserve(video);
       video.removeEventListener("click", decorated.handleClick, true);
+      video.removeEventListener("keydown", decorated.handleKeyDown);
       video.removeEventListener("play", decorated.handlePlay);
       video.removeEventListener("pause", decorated.handlePause);
       video.removeEventListener("ended", decorated.handleEnded);
@@ -214,6 +251,13 @@ export function DiscussionVideoAutoplay() {
         "volumechange",
         decorated.handleVolumeChange
       );
+
+      video.controls = decorated.originalControls;
+      if (decorated.originalTabIndex === null) {
+        video.removeAttribute("tabindex");
+      } else {
+        video.setAttribute("tabindex", decorated.originalTabIndex);
+      }
 
       decorated.host.classList.remove(VIDEO_HOST_CLASS);
       decorated.host.removeAttribute("data-loombus-video-hint");
