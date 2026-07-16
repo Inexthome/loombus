@@ -155,12 +155,25 @@
 
   .discussion-feed-route
     article:has(> div:last-child span[title="Replies"])
+    > div:has(
+      > section[aria-label="Discussion attachments"]:has(
+        > div:first-child > video
+      )
+    ) {
+    display: block;
+  }
+
+  .discussion-feed-route
+    article:has(> div:last-child span[title="Replies"])
     > div
     > section[aria-label="Discussion attachments"]:has(
       > div:first-child > video
     ) {
-    min-height: 11rem;
-    height: 11rem;
+    display: block;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin-top: 1.25rem;
   }
 
   .discussion-feed-route
@@ -168,8 +181,9 @@
     > div
     > section[aria-label="Discussion attachments"]
     > div:first-child:has(> video) {
-    height: 11rem;
-    min-height: 11rem;
-    max-height: 11rem;
+    width: 100%;
+    height: clamp(20rem, 34vw, 26rem);
+    min-height: 20rem;
+    max-height: 26rem;
   }
 }
