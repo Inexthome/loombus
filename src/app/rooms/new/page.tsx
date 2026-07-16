@@ -1,18 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
   Check,
   CheckCircle2,
   Clipboard,
+  CreditCard,
   LifeBuoy,
+  Loader2,
   Lock,
   RotateCcw,
   ShieldCheck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
 import {
   RoomModelCard,
   RoomWorkspaceBlueprint,
@@ -38,6 +42,25 @@ type RoomBuilderDraft = {
   description: string;
 };
 
+type CheckoutConfig = {
+  coreReady: boolean;
+  monthlyOnly: boolean;
+  plans: Partial<Record<RoomPlanId, boolean>>;
+  checks: {
+    stripeSecretKey: boolean;
+    stripeWebhookSecret: boolean;
+    siteUrl: boolean;
+    supabaseServiceRole: boolean;
+  };
+};
+
+type ProvisionResponse = {
+  roomId?: string;
+  checkoutUrl?: string;
+  error?: string;
+  code?: string;
+};
+
 const DEFAULT_DRAFT: RoomBuilderDraft = {
   modelId: "business-team",
   planId: "free",
@@ -54,11 +77,15 @@ function isRoomPlanId(value: unknown): value is RoomPlanId {
 }
 
 export default function NewRoomPage() {
+  const searchParams = useSearchParams();
   const [draft, setDraft] = useState<RoomBuilderDraft>(DEFAULT_DRAFT);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [checkoutConfig, setCheckoutConfig] = useState<CheckoutConfig | null>(null);
+  const [checkingCheckout, setCheckingCheckout] = useState(true);
+  const [provisioning, setProvisioning] = useState(false);
 
   useEffect(() => {
     try {
@@ -91,6 +118,43 @@ export default function NewRoomPage() {
     window.localStorage.setItem(ROOM_BUILDER_DRAFT_KEY, JSON.stringify(draft));
   }, [draft, draftLoaded]);
 
+  useEffect(() => {
+    if (searchParams.get("checkout") === "cancelled") {
+      setStatusMessage("Room checkout was canceled. Your setup is still saved on this device.");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCheckoutConfig() {
+      setCheckingCheckout(true);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        if (!cancelled) setCheckingCheckout(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/rooms/checkout-config", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          cache: "no-store",
+        });
+        const result = (await response.json().catch(() => ({}))) as CheckoutConfig;
+        if (!cancelled && response.ok) setCheckoutConfig(result);
+      } finally {
+        if (!cancelled) setCheckingCheckout(false);
+      }
+    }
+
+    void loadCheckoutConfig();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const selectedModel = useMemo(() => getRoomModel(draft.modelId), [draft.modelId]);
   const selectedPlan = useMemo(() => getRoomPlan(draft.planId), [draft.planId]);
   const trimmedName = draft.roomName.trim();
@@ -98,6 +162,9 @@ export default function NewRoomPage() {
   const nameIsValid = trimmedName.length >= 3;
   const descriptionIsValid = trimmedDescription.length >= 10;
   const formIsValid = nameIsValid && descriptionIsValid;
+  const paidPlanReady =
+    !selectedPlan.paid ||
+    Boolean(checkoutConfig?.coreReady && checkoutConfig.plans[selectedPlan.id]);
 
   function selectRoomModel(model: RoomModel) {
     setDraft((current) => ({
@@ -113,7 +180,7 @@ export default function NewRoomPage() {
   function continueToReview() {
     if (!formIsValid) {
       setShowErrors(true);
-      setStatusMessage("Complete the room name and purpose before reviewing the setup.");
+      setStatusMessage("Complete the Room name and purpose before reviewing the setup.");
       return;
     }
 
@@ -140,7 +207,7 @@ export default function NewRoomPage() {
   }
 
   function clearDraft() {
-    const confirmed = window.confirm("Clear this room setup draft and start again?");
+    const confirmed = window.confirm("Clear this Room setup draft and start again?");
     if (!confirmed) return;
 
     setDraft(DEFAULT_DRAFT);
@@ -149,6 +216,70 @@ export default function NewRoomPage() {
     setStatusMessage("Room setup draft cleared.");
     window.localStorage.removeItem(ROOM_BUILDER_DRAFT_KEY);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function provisionRoom() {
+    if (provisioning || !formIsValid) return;
+
+    if (selectedPlan.paid && !paidPlanReady) {
+      setStatusMessage(
+        "This monthly Room plan is missing one or more Stripe or server settings. Review the Vercel environment configuration before checkout."
+      );
+      return;
+    }
+
+    setProvisioning(true);
+    setStatusMessage("");
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        window.location.href = `/login?next=${encodeURIComponent("/rooms/new")}`;
+        return;
+      }
+
+      const response = await fetch("/api/rooms/provision", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          modelId: draft.modelId,
+          planId: draft.planId,
+          roomName: trimmedName,
+          description: trimmedDescription,
+        }),
+      });
+      const result = (await response.json().catch(() => ({}))) as ProvisionResponse;
+
+      if (!response.ok) {
+        setStatusMessage(result.error ?? "Loombus could not create this Room.");
+        return;
+      }
+
+      window.localStorage.removeItem(ROOM_BUILDER_DRAFT_KEY);
+
+      if (result.checkoutUrl) {
+        window.location.assign(result.checkoutUrl);
+        return;
+      }
+
+      if (result.roomId) {
+        window.location.assign(`/rooms/${encodeURIComponent(result.roomId)}?created=1`);
+        return;
+      }
+
+      setStatusMessage("Room provisioning completed without a destination.");
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : "Loombus could not create this Room."
+      );
+    } finally {
+      setProvisioning(false);
+    }
   }
 
   if (isReviewing) {
@@ -160,11 +291,17 @@ export default function NewRoomPage() {
               type="button"
               onClick={() => setIsReviewing(false)}
               className="rooms-v2-back-button"
+              disabled={provisioning}
             >
               <ArrowLeft aria-hidden="true" size={16} />
-              Edit room setup
+              Edit Room setup
             </button>
-            <button type="button" onClick={clearDraft} className="rooms-v2-clear-button">
+            <button
+              type="button"
+              onClick={clearDraft}
+              className="rooms-v2-clear-button"
+              disabled={provisioning}
+            >
               <RotateCcw aria-hidden="true" size={15} />
               Clear draft
             </button>
@@ -172,16 +309,16 @@ export default function NewRoomPage() {
 
           <section className="rooms-v2-builder-hero rooms-v2-review-hero">
             <div>
-              <p className="rooms-v2-eyebrow">Review room setup</p>
-              <h1>Confirm the blueprint before any future provisioning step.</h1>
+              <p className="rooms-v2-eyebrow">Review Room setup</p>
+              <h1>Confirm the private workspace before creation.</h1>
               <p>
-                This review is a planning artifact. It does not create a room, membership,
-                subscription, checkout session, calendar, invitation, or database record.
+                Free Rooms are created immediately. Paid monthly plans open Stripe Checkout,
+                and the Room is provisioned only after Stripe confirms an active subscription.
               </p>
             </div>
             <span className="rooms-v2-draft-badge">
               <Lock aria-hidden="true" size={15} />
-              Saved on this device
+              Private by default
             </span>
           </section>
 
@@ -198,7 +335,7 @@ export default function NewRoomPage() {
             </article>
 
             <article className="rooms-v2-review-card">
-              <p className="rooms-v2-eyebrow">Planning tier</p>
+              <p className="rooms-v2-eyebrow">Monthly plan</p>
               <div className="rooms-v2-plan-heading">
                 <div>
                   <h2>{selectedPlan.name}</h2>
@@ -208,8 +345,10 @@ export default function NewRoomPage() {
               </div>
               <p className="rooms-v2-plan-boundary">
                 {selectedPlan.paid
-                  ? "Displayed for product planning only. No checkout is connected."
-                  : "The free planning tier also does not provision a room yet."}
+                  ? paidPlanReady
+                    ? "Monthly Stripe checkout is configured for this plan. Annual Room billing is not offered yet."
+                    : "This plan is missing required Stripe or server configuration."
+                  : "No payment is required. The private Room opens after creation."}
               </p>
             </article>
           </section>
@@ -217,8 +356,8 @@ export default function NewRoomPage() {
           <section className="rooms-v2-section rooms-v2-review-blueprint">
             <RoomsSectionHeading
               eyebrow="Workspace blueprint"
-              title="The private room is designed around five connected operating surfaces."
-              description="These modules describe the intended room structure; they are not represented as live account data."
+              title="The private Room opens with five connected operating surfaces."
+              description="Discussions, announcements, calendar, resources, and members remain inside the verified Room boundary."
             />
             <RoomWorkspaceBlueprint />
           </section>
@@ -227,32 +366,46 @@ export default function NewRoomPage() {
             <div>
               <span><ShieldCheck aria-hidden="true" size={22} /></span>
               <div>
-                <p className="rooms-v2-eyebrow">Current production boundary</p>
-                <h2>Nothing has been created or charged.</h2>
+                <p className="rooms-v2-eyebrow">Provisioning boundary</p>
+                <h2>{selectedPlan.paid ? "Payment must complete before the paid Room exists." : "The free Room will be created now."}</h2>
               </div>
             </div>
             <div className="rooms-v2-boundary-review-list">
-              {[
-                "No room record or owner membership",
-                "No invitations, members, or role assignments",
-                "No announcements, discussions, files, or events",
-                "No subscription, Stripe checkout, or payment",
-              ].map((item) => (
-                <p key={item}>
-                  <CheckCircle2 aria-hidden="true" size={16} />
-                  {item}
-                </p>
-              ))}
+              <p><CheckCircle2 aria-hidden="true" size={16} />Private Room record and owner membership</p>
+              <p><CheckCircle2 aria-hidden="true" size={16} />No public Discussions publishing</p>
+              <p><CheckCircle2 aria-hidden="true" size={16} />Server-verified ownership and billing metadata</p>
+              <p><CheckCircle2 aria-hidden="true" size={16} />Monthly billing only in this release</p>
             </div>
           </section>
 
           <div className="rooms-v2-review-actions">
-            <button type="button" onClick={copySetupSummary} className="rooms-v2-button rooms-v2-button-primary">
+            <button
+              type="button"
+              onClick={() => void provisionRoom()}
+              disabled={provisioning || (selectedPlan.paid && (!paidPlanReady || checkingCheckout))}
+              className="rooms-v2-button rooms-v2-button-primary"
+            >
+              {provisioning ? (
+                <Loader2 aria-hidden="true" size={16} className="is-spinning" />
+              ) : selectedPlan.paid ? (
+                <CreditCard aria-hidden="true" size={16} />
+              ) : (
+                <CheckCircle2 aria-hidden="true" size={16} />
+              )}
+              {provisioning
+                ? "Preparing Room…"
+                : selectedPlan.paid
+                  ? "Continue to monthly checkout"
+                  : "Create free Room"}
+            </button>
+            <button
+              type="button"
+              onClick={copySetupSummary}
+              className="rooms-v2-button rooms-v2-button-quiet"
+              disabled={provisioning}
+            >
               <Clipboard aria-hidden="true" size={16} />
               Copy setup summary
-            </button>
-            <button type="button" onClick={() => setIsReviewing(false)} className="rooms-v2-button rooms-v2-button-quiet">
-              Edit setup
             </button>
             <Link href="/support" className="rooms-v2-button rooms-v2-button-quiet">
               <LifeBuoy aria-hidden="true" size={16} />
@@ -260,10 +413,6 @@ export default function NewRoomPage() {
             </Link>
           </div>
           {statusMessage ? <p className="rooms-v2-status-message" role="status">{statusMessage}</p> : null}
-
-          <button type="button" disabled className="rooms-v2-provision-button">
-            Room provisioning is not connected yet
-          </button>
         </div>
       </main>
     );
@@ -285,16 +434,16 @@ export default function NewRoomPage() {
 
         <section className="rooms-v2-builder-hero">
           <div>
-            <p className="rooms-v2-eyebrow">Room setup planner</p>
-            <h1>Define the private space before connecting its backend.</h1>
+            <p className="rooms-v2-eyebrow">Create a private Room</p>
+            <h1>Choose the group model, monthly plan, and private identity.</h1>
             <p>
-              Choose the room model, review a planning tier, and define its identity. Your draft is
-              saved on this device so the setup can be reviewed without pretending the room already exists.
+              Your setup draft stays on this device until you create the Room. Free opens
+              immediately. Paid monthly plans continue through Stripe Checkout.
             </p>
           </div>
           <span className="rooms-v2-draft-badge">
             <Lock aria-hidden="true" size={15} />
-            Device-only draft
+            Device-saved draft
           </span>
         </section>
 
@@ -305,7 +454,7 @@ export default function NewRoomPage() {
                 <span>01</span>
                 <div>
                   <p className="rooms-v2-eyebrow">Room model</p>
-                  <h2>What kind of group will use this room?</h2>
+                  <h2>What kind of group will use this Room?</h2>
                 </div>
               </div>
               <div className="rooms-v2-model-grid rooms-v2-builder-model-grid">
@@ -324,14 +473,18 @@ export default function NewRoomPage() {
               <div className="rooms-v2-step-heading">
                 <span>02</span>
                 <div>
-                  <p className="rooms-v2-eyebrow">Planning tier</p>
-                  <h2>Estimate the room size and operating scope.</h2>
-                  <p>Prices are preserved from the existing room planner; no billing flow is connected.</p>
+                  <p className="rooms-v2-eyebrow">Monthly plan</p>
+                  <h2>Choose the Room size and operating scope.</h2>
+                  <p>Annual Room subscriptions can be added later. This release uses monthly Stripe prices only.</p>
                 </div>
               </div>
               <div className="rooms-v2-plan-grid">
                 {ROOM_PLANS.map((plan) => {
                   const selected = plan.id === draft.planId;
+                  const configured =
+                    !plan.paid ||
+                    Boolean(checkoutConfig?.coreReady && checkoutConfig.plans[plan.id]);
+
                   return (
                     <button
                       key={plan.id}
@@ -352,7 +505,13 @@ export default function NewRoomPage() {
                       </div>
                       <p>{plan.detail}</p>
                       <span className="rooms-v2-plan-note">
-                        {plan.paid ? "Checkout not connected" : "Provisioning not connected"}
+                        {plan.paid
+                          ? checkingCheckout
+                            ? "Checking monthly checkout"
+                            : configured
+                              ? "Monthly Stripe checkout ready"
+                              : "Checkout configuration incomplete"
+                          : "No payment required"}
                       </span>
                       {selected ? (
                         <span className="rooms-v2-selected-mark">
@@ -371,7 +530,7 @@ export default function NewRoomPage() {
                 <span>03</span>
                 <div>
                   <p className="rooms-v2-eyebrow">Room identity</p>
-                  <h2>Name the room and state its purpose clearly.</h2>
+                  <h2>Name the private space and explain its purpose.</h2>
                 </div>
               </div>
               <div className="rooms-v2-identity-form">
@@ -389,7 +548,7 @@ export default function NewRoomPage() {
                     placeholder="Room name"
                   />
                   {showErrors && !nameIsValid ? (
-                    <small>Enter a room name with at least 3 characters.</small>
+                    <small>Enter a Room name with at least 3 characters.</small>
                   ) : null}
                 </label>
                 <label>
@@ -403,7 +562,7 @@ export default function NewRoomPage() {
                       setDraft((current) => ({ ...current, description: event.target.value }));
                       setStatusMessage("");
                     }}
-                    placeholder="What is this private room for?"
+                    placeholder="What is this private Room for?"
                   />
                   <div className="rooms-v2-field-meta">
                     {showErrors && !descriptionIsValid ? (
@@ -423,7 +582,7 @@ export default function NewRoomPage() {
               <p>{selectedModel.title}</p>
               <dl>
                 <div>
-                  <dt>Planning tier</dt>
+                  <dt>Plan</dt>
                   <dd>{selectedPlan.name}</dd>
                 </div>
                 <div>
@@ -431,7 +590,7 @@ export default function NewRoomPage() {
                   <dd>{selectedPlan.members}</dd>
                 </div>
                 <div>
-                  <dt>Preview price</dt>
+                  <dt>Monthly price</dt>
                   <dd>{selectedPlan.price}</dd>
                 </div>
                 <div>
@@ -451,12 +610,12 @@ export default function NewRoomPage() {
                 <Lock aria-hidden="true" size={20} />
                 <h2>Private by default</h2>
               </div>
-              <p>Room content is intended to remain inside its membership and role boundary.</p>
+              <p>Room content remains inside verified membership and role boundaries.</p>
               <ul>
                 <li>No public Discussion is created</li>
-                <li>No owner or member record is created</li>
-                <li>No calendar event or invitation is created</li>
-                <li>No subscription or payment is started</li>
+                <li>Free Rooms create the owner membership immediately</li>
+                <li>Paid Rooms are created only after Stripe confirms payment</li>
+                <li>Monthly billing only in this release</li>
               </ul>
             </section>
           </aside>
