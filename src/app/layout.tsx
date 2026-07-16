@@ -15,6 +15,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
+import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
 import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
 import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
@@ -106,6 +107,7 @@ export default function RootLayout({
         <DesktopTopNavbar />
         <MobileNavigationShell />
         <ClientLayout>{children}</ClientLayout>
+        <CanonicalAppHomeLinks />
         <AuthSessionCleanup />
         <SessionLifecycleGuard />
         <NativeBiometricSessionGate />
