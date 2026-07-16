@@ -71,26 +71,51 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
     );
   }
 
-  const { error } = await serviceSupabase
-    .from("rooms")
-    .update({
-      subscription_plan: planKey,
-      subscription_status: subscription.status,
-      stripe_customer_id: getCustomerId(subscription),
-      stripe_subscription_id: subscription.id,
-      stripe_price_id: getPriceId(subscription),
-      stripe_current_period_end: getCurrentPeriodEnd(subscription),
-      billing_updated_at: new Date().toISOString(),
-    })
-    .eq("id", roomId);
+  const billingUpdate = {
+    subscription_plan: planKey,
+    subscription_status: subscription.status,
+    stripe_customer_id: getCustomerId(subscription),
+    stripe_subscription_id: subscription.id,
+    stripe_price_id: getPriceId(subscription),
+    stripe_current_period_end: getCurrentPeriodEnd(subscription),
+    billing_updated_at: new Date().toISOString(),
+  };
 
-  if (error) {
+  const anchorUpdate = await serviceSupabase
+    .from("rooms")
+    .update(billingUpdate)
+    .eq("id", roomId)
+    .or(`owner_id.eq.${userId},created_by.eq.${userId}`)
+    .select("id");
+
+  if (anchorUpdate.error) {
     throw new RoomBillingError(
       "The Room subscription status could not be synchronized.",
       503,
       "room_subscription_sync_failed"
     );
   }
+
+  const includedUpdate = await serviceSupabase
+    .from("rooms")
+    .update(billingUpdate)
+    .eq("stripe_subscription_id", subscription.id)
+    .neq("id", roomId)
+    .or(`owner_id.eq.${userId},created_by.eq.${userId}`)
+    .select("id");
+
+  if (includedUpdate.error) {
+    throw new RoomBillingError(
+      "The included Rooms could not be synchronized with the subscription.",
+      503,
+      "included_room_subscription_sync_failed"
+    );
+  }
+
+  const synchronizedRoomIds = [
+    ...(anchorUpdate.data ?? []).map((entry) => entry.id),
+    ...(includedUpdate.data ?? []).map((entry) => entry.id),
+  ];
 
   await logAuditEvent({
     actor_id: userId,
@@ -101,6 +126,8 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
       room_plan: planKey,
       stripe_subscription_id: subscription.id,
       stripe_subscription_status: subscription.status,
+      synchronized_room_count: synchronizedRoomIds.length,
+      synchronized_room_ids: synchronizedRoomIds,
     },
   });
 
