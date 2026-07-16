@@ -1,0 +1,16 @@
+.discussion-feed-route button[data-loombus-exact-tab="active"] {
+  border-color: var(--loombus-border) !important;
+  background: var(--loombus-surface) !important;
+  color: var(--loombus-text) !important;
+}
+
+.discussion-feed-route button[data-loombus-exact-tab="inactive"] {
+  border-color: transparent !important;
+  background: var(--loombus-surface-muted) !important;
+  color: var(--loombus-text) !important;
+}
+
+.discussion-feed-route article[hidden],
+.discussion-feed-route [data-loombus-exact-mode-empty="true"][hidden] {
+  display: none !important;
+}
