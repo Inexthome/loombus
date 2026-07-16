@@ -7,6 +7,10 @@ import {
   provisionFreeRoom,
   startPaidRoomCheckout,
 } from "@/lib/room-billing";
+import {
+  getRoomCheckoutStorageMessage,
+  getRoomCheckoutStorageReadiness,
+} from "@/lib/room-checkout-readiness";
 import { ROOM_MODELS, ROOM_PLANS } from "@/app/rooms/rooms-v2-model";
 
 function jsonError(message: string, status: number, code?: string) {
@@ -81,6 +85,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const paidPlan = isPaidRoomPlanKey(planId);
+
+    if (paidPlan) {
+      const storage = await getRoomCheckoutStorageReadiness();
+      if (!storage.ready) {
+        return jsonError(
+          getRoomCheckoutStorageMessage(storage.issue),
+          503,
+          `room_checkout_${storage.issue}`
+        );
+      }
+    }
+
     const input = {
       userId: accountAccess.user.id,
       email: accountAccess.user.email ?? null,
@@ -94,7 +111,7 @@ export async function POST(request: NextRequest) {
     const result =
       planId === "free"
         ? await provisionFreeRoom(input)
-        : isPaidRoomPlanKey(planId)
+        : paidPlan
           ? await startPaidRoomCheckout(input)
           : null;
 
@@ -107,6 +124,14 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof RoomBillingError) {
+      if (error.code === "room_checkout_intent_failed") {
+        return jsonError(
+          "Room checkout storage rejected the setup. Apply the latest Room billing repair migration in Supabase, then retry.",
+          503,
+          "room_checkout_storage_rejected"
+        );
+      }
+
       return jsonError(error.message, error.status, error.code);
     }
 
