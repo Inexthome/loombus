@@ -24,6 +24,13 @@
   font-weight: 900;
 }
 
+.rooms-v2-plan-feature-list li.is-included-capacity {
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, #25885d 12%, transparent);
+  padding: 0.55rem 0.65rem;
+  color: color-mix(in srgb, #25885d 78%, var(--loombus-text));
+}
+
 .room-resources-connected {
   display: grid;
   gap: 1rem;
@@ -145,6 +152,22 @@
 .room-resources-message.is-error {
   background: color-mix(in srgb, #b74646 12%, transparent);
   color: color-mix(in srgb, #b74646 78%, var(--rooms-live-text, var(--loombus-text)));
+}
+
+.room-resources-usage-track {
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--rooms-live-surface-muted, var(--loombus-surface-muted));
+}
+
+.room-resources-usage-track > span {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: var(--loombus-primary-bg);
+  transition: width 180ms ease;
 }
 
 .room-resources-grid {
