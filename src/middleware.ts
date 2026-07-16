@@ -7,6 +7,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
     "/create/:path*",
     "/following/:path*",
     "/saved/:path*",
