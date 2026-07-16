@@ -7,7 +7,10 @@ import {
   provisionFreeRoom,
   startPaidRoomCheckout,
 } from "@/lib/room-billing";
-import { provisionIncludedRoom } from "@/lib/room-plan-capacity";
+import {
+  freeRoomIsAvailable,
+  provisionIncludedRoom,
+} from "@/lib/room-plan-capacity";
 import { normalizeRoomPlanKey } from "@/lib/room-plan-entitlements";
 import {
   getRoomCheckoutStorageMessage,
@@ -97,6 +100,17 @@ export async function POST(request: NextRequest) {
       planKey: planId,
       origin: getOrigin(request),
     };
+
+    if (planId === "free") {
+      const available = await freeRoomIsAvailable(input.userId);
+      if (!available) {
+        return jsonError(
+          "The Free plan includes one active Room. Choose a paid plan for another Room.",
+          409,
+          "free_room_limit_reached"
+        );
+      }
+    }
 
     if (paidPlan) {
       const includedRoom = await provisionIncludedRoom({
