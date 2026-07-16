@@ -68,16 +68,37 @@
   article:has(> div:last-child span[title="Replies"])
   > div
   > section[aria-label="Discussion attachments"]
-  img,
+  img {
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  object-fit: cover !important;
+}
+
+.discussion-feed-route
+  article:has(> div:last-child span[title="Replies"])
+  > div
+  > section[aria-label="Discussion attachments"]
+  > div:first-child:has(> video) {
+  display: block;
+  width: 100%;
+  height: clamp(12rem, 56vw, 15rem);
+  min-height: 0;
+  overflow: hidden;
+  background: #09090b;
+}
+
 .discussion-feed-route
   article:has(> div:last-child span[title="Replies"])
   > div
   > section[aria-label="Discussion attachments"]
   video {
+  display: block;
   width: 100% !important;
   height: 100% !important;
   aspect-ratio: auto !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
+  background: #09090b;
 }
 
 @media (min-width: 640px) {
@@ -87,7 +108,7 @@
     display: grid;
     grid-template-columns: 12.5rem minmax(0, 1fr);
     column-gap: 1.5rem;
-    align-items: stretch;
+    align-items: start;
   }
 
   .discussion-feed-route
@@ -96,8 +117,9 @@
     > section[aria-label="Discussion attachments"] {
     grid-column: 1;
     grid-row: 1 / span 4;
+    align-self: start;
     margin-top: 0;
-    min-height: 12rem;
+    min-height: 0;
   }
 
   .discussion-feed-route
@@ -115,8 +137,8 @@
     > :first-child {
     display: flex;
     width: 100%;
-    height: 100%;
-    min-height: 12rem;
+    height: 11rem;
+    min-height: 0;
   }
 
   .discussion-feed-route
@@ -130,5 +152,6 @@
     > section[aria-label="Discussion attachments"]
     > div:first-child:has(> video) {
     display: block;
+    height: 11rem;
   }
 }
