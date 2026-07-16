@@ -1,3 +1,30 @@
+.loombus-autoplay-video-host {
+  position: relative;
+}
+
+.loombus-autoplay-video-host[data-loombus-video-hint]::after {
+  content: attr(data-loombus-video-hint);
+  position: absolute;
+  z-index: 10;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 1.5rem);
+  padding: 0.5rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  font-size: 0.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+}
+
 .discussion-feed-route
   article:has(> div:last-child span[title="Replies"])
   > div:has(> section[aria-label="Discussion attachments"])
