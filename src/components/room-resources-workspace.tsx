@@ -268,7 +268,7 @@ export function RoomResourcesWorkspace() {
       const uploaded = await supabase.storage
         .from(BUCKET)
         .uploadToSignedUrl(prepared.storagePath, prepared.token, selectedFile, {
-          contentType: selectedFile.type,
+          contentType: prepared.mimeType ?? selectedFile.type,
         });
       if (uploaded.error) throw new Error(uploaded.error.message);
 
@@ -352,6 +352,9 @@ export function RoomResourcesWorkspace() {
   const accept = entitlements?.inlineVideo
     ? "image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,application/pdf,text/plain,text/csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
     : "image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
+  const usagePercentage = entitlements?.storageBytes
+    ? Math.min(100, (usedBytes / entitlements.storageBytes) * 100)
+    : 0;
 
   return createPortal(
     <div className="room-resources-connected">
@@ -430,6 +433,18 @@ export function RoomResourcesWorkspace() {
           {entitlements?.storageBytes ? ` of ${entitlements.storageLabel}` : " used"}
         </span>
       </div>
+      {entitlements?.storageBytes ? (
+        <div
+          className="room-resources-usage-track"
+          role="progressbar"
+          aria-label="Room resource storage used"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(usagePercentage)}
+        >
+          <span style={{ width: `${usagePercentage}%` }} />
+        </div>
+      ) : null}
 
       {loading && resources.length === 0 ? (
         <section className="room-resources-empty">
