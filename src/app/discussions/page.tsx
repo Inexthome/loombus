@@ -7,8 +7,12 @@ import {
   Bookmark,
   ChevronRight,
   Eye,
+  FileText,
   Folder,
+  Image as ImageIcon,
   MessageCircle,
+  Paperclip,
+  PlayCircle,
   Search,
   SlidersHorizontal,
   Sparkles,
@@ -45,6 +49,18 @@ type Profile = {
   full_name: string | null;
   username: string | null;
   avatar_url: string | null;
+};
+
+type DiscussionAttachment = {
+  id: string;
+  discussion_id: string;
+  public_url: string;
+  file_name: string;
+  mime_type: string;
+  file_size_bytes: number;
+  attachment_kind: "image" | "pdf" | "video";
+  video_duration_seconds: number | null;
+  sort_order: number;
 };
 
 type BlockRow = {
@@ -185,6 +201,113 @@ function formatDiscussionDate(value: string) {
   });
 }
 
+function formatAttachmentSize(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return "File";
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+function formatVideoDuration(value: number | null) {
+  if (!value || value <= 0) return null;
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.round(value % 60);
+  return minutes > 0 ? `${minutes}:${String(seconds).padStart(2, "0")}` : `${seconds}s`;
+}
+
+function DiscussionAttachmentGrid({
+  attachments,
+}: {
+  attachments: DiscussionAttachment[];
+}) {
+  if (attachments.length === 0) return null;
+
+  return (
+    <section
+      className={`mt-5 grid gap-3 ${attachments.length > 1 ? "sm:grid-cols-2" : ""}`}
+      aria-label="Discussion attachments"
+    >
+      {attachments.slice(0, 3).map((attachment) => {
+        if (attachment.attachment_kind === "image") {
+          return (
+            <a
+              key={attachment.id}
+              href={attachment.public_url}
+              target="_blank"
+              rel="noreferrer"
+              className="group overflow-hidden rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)]"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={attachment.public_url}
+                alt={attachment.file_name}
+                loading="lazy"
+                className="aspect-video w-full object-cover transition duration-200 group-hover:scale-[1.01]"
+              />
+              <span className="flex items-center gap-2 border-t border-[color:var(--loombus-border-muted)] px-3 py-2 text-xs font-semibold text-[color:var(--loombus-text-muted)]">
+                <ImageIcon aria-hidden="true" className="h-4 w-4" />
+                <span className="min-w-0 flex-1 truncate">{attachment.file_name}</span>
+                <span>{formatAttachmentSize(attachment.file_size_bytes)}</span>
+              </span>
+            </a>
+          );
+        }
+
+        if (attachment.attachment_kind === "video") {
+          const duration = formatVideoDuration(attachment.video_duration_seconds);
+          return (
+            <div
+              key={attachment.id}
+              className="overflow-hidden rounded-2xl border border-[color:var(--loombus-border)] bg-black"
+            >
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                src={attachment.public_url}
+                className="aspect-video w-full bg-black object-contain"
+              >
+                Your browser does not support this video.
+              </video>
+              <a
+                href={attachment.public_url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 border-t border-white/10 bg-[color:var(--loombus-page-bg)] px-3 py-2 text-xs font-semibold text-[color:var(--loombus-text-muted)]"
+              >
+                <PlayCircle aria-hidden="true" className="h-4 w-4" />
+                <span className="min-w-0 flex-1 truncate">{attachment.file_name}</span>
+                {duration ? <span>{duration}</span> : null}
+              </a>
+            </div>
+          );
+        }
+
+        return (
+          <a
+            key={attachment.id}
+            href={attachment.public_url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex min-h-28 items-center gap-4 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 transition hover:bg-[color:var(--loombus-surface-muted)]"
+          >
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--loombus-surface)] text-[#b45309]">
+              <FileText aria-hidden="true" className="h-6 w-6" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <strong className="block truncate text-sm text-[color:var(--loombus-text)]">
+                {attachment.file_name}
+              </strong>
+              <span className="mt-1 block text-xs font-semibold text-[color:var(--loombus-text-muted)]">
+                PDF · {formatAttachmentSize(attachment.file_size_bytes)}
+              </span>
+            </span>
+          </a>
+        );
+      })}
+    </section>
+  );
+}
+
 function matchesModeFilter(discussion: Discussion, feedMode: FeedMode) {
   if (feedMode === "all" || feedMode === "following" || feedMode === "saved") {
     return true;
@@ -239,6 +362,9 @@ export default function DiscussionsPage() {
   const [viewCounts, setViewCounts] = useState<Record<string, number>>({});
   const [bookmarkCounts, setBookmarkCounts] = useState<Record<string, number>>({});
   const [discussionTags, setDiscussionTags] = useState<Record<string, string[]>>({});
+  const [discussionAttachments, setDiscussionAttachments] = useState<
+    Record<string, DiscussionAttachment[]>
+  >({});
   const [followingUserIds, setFollowingUserIds] = useState<string[]>([]);
   const [savedDiscussionIds, setSavedDiscussionIds] = useState<Set<string>>(() => new Set());
   const [selectedTopic, setSelectedTopic] = useState("All");
@@ -330,7 +456,13 @@ export default function DiscussionsPage() {
       }
 
       if (discussionIds.length > 0) {
-        const [replyResponse, viewResponse, bookmarkResponse, tagResponse] = await Promise.all([
+        const [
+          replyResponse,
+          viewResponse,
+          bookmarkResponse,
+          tagResponse,
+          attachmentResponse,
+        ] = await Promise.all([
           supabase
             .from("replies")
             .select("discussion_id, user_id, created_at")
@@ -348,6 +480,13 @@ export default function DiscussionsPage() {
             .from("discussion_tags")
             .select("discussion_id, tag")
             .in("discussion_id", discussionIds),
+          supabase
+            .from("discussion_attachments")
+            .select(
+              "id, discussion_id, public_url, file_name, mime_type, file_size_bytes, attachment_kind, video_duration_seconds, sort_order"
+            )
+            .in("discussion_id", discussionIds)
+            .order("sort_order", { ascending: true }),
         ]);
 
         const counts: Record<string, number> = {};
@@ -392,12 +531,22 @@ export default function DiscussionsPage() {
           ];
         }
 
+        const attachmentMap: Record<string, DiscussionAttachment[]> = {};
+        for (const row of (attachmentResponse.data ?? []) as DiscussionAttachment[]) {
+          if (!row.public_url) continue;
+          attachmentMap[row.discussion_id] = [
+            ...(attachmentMap[row.discussion_id] ?? []),
+            row,
+          ];
+        }
+
         if (isMounted) {
           setReplyCounts(counts);
           setLatestReplyDates(latestReplies);
           setViewCounts(views);
           setBookmarkCounts(bookmarks);
           setDiscussionTags(tagMap);
+          setDiscussionAttachments(attachmentMap);
           setSavedDiscussionIds(viewerSavedDiscussionIds);
         }
       } else if (isMounted) {
@@ -406,6 +555,7 @@ export default function DiscussionsPage() {
         setViewCounts({});
         setBookmarkCounts({});
         setDiscussionTags({});
+        setDiscussionAttachments({});
         setSavedDiscussionIds(new Set());
       }
 
@@ -708,6 +858,7 @@ export default function DiscussionsPage() {
           <div className="space-y-5">
             {filteredDiscussions.map((discussion) => {
               const profile = profiles[discussion.user_id];
+              const attachments = discussionAttachments[discussion.id] ?? [];
               const signalScore = getSignalScore(
                 discussion.id,
                 replyCounts,
@@ -720,30 +871,43 @@ export default function DiscussionsPage() {
                   key={discussion.id}
                   className="overflow-hidden rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10 transition hover:border-[color:var(--loombus-text-subtle)]"
                 >
-                  <Link href={`/discussions/${discussion.id}`} className="block p-5 sm:p-6">
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#b45309] dark:bg-orange-400/10">
-                        {getDiscussionTopic(discussion)}
-                      </span>
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900 dark:bg-emerald-400/10 dark:text-emerald-200">
-                        {getDiscussionModeLabel(discussion)}
-                      </span>
-                    </div>
+                  <div className="p-5 sm:p-6">
+                    <Link href={`/discussions/${discussion.id}`} className="block">
+                      <div className="mb-4 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-[#b45309] dark:bg-orange-400/10">
+                          {getDiscussionTopic(discussion)}
+                        </span>
+                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900 dark:bg-emerald-400/10 dark:text-emerald-200">
+                          {getDiscussionModeLabel(discussion)}
+                        </span>
+                        {attachments.length > 0 ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--loombus-border)] px-3 py-1 text-xs font-bold text-[color:var(--loombus-text-muted)]">
+                            <Paperclip aria-hidden="true" className="h-3.5 w-3.5" />
+                            {attachments.length} attachment{attachments.length === 1 ? "" : "s"}
+                          </span>
+                        ) : null}
+                      </div>
 
-                    <h2 className="text-2xl font-semibold leading-tight tracking-[-0.035em] text-[color:var(--loombus-text)] sm:text-3xl">
-                      {normalizePublicText(discussion.title)}
-                    </h2>
+                      <h2 className="text-2xl font-semibold leading-tight tracking-[-0.035em] text-[color:var(--loombus-text)] sm:text-3xl">
+                        {normalizePublicText(discussion.title)}
+                      </h2>
 
-                    <div
-                      className="mt-4 line-clamp-2 text-base leading-7 text-[color:var(--loombus-text-muted)] [&_em]:italic [&_strong]:font-semibold [&_strong]:text-[color:var(--loombus-text)]"
-                      dangerouslySetInnerHTML={{
-                        __html: discussionBodyToSafeHtml(
-                          getPlainDiscussionExcerpt(discussion.body)
-                        ),
-                      }}
-                    />
+                      <div
+                        className="mt-4 line-clamp-2 text-base leading-7 text-[color:var(--loombus-text-muted)] [&_em]:italic [&_strong]:font-semibold [&_strong]:text-[color:var(--loombus-text)]"
+                        dangerouslySetInnerHTML={{
+                          __html: discussionBodyToSafeHtml(
+                            getPlainDiscussionExcerpt(discussion.body)
+                          ),
+                        }}
+                      />
+                    </Link>
 
-                    <div className="mt-5 flex items-center gap-3">
+                    <DiscussionAttachmentGrid attachments={attachments} />
+
+                    <Link
+                      href={`/discussions/${discussion.id}`}
+                      className="mt-5 flex items-center gap-3"
+                    >
                       <ProfileAvatar profile={profile} size="sm" />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-[color:var(--loombus-text)]">
@@ -756,7 +920,7 @@ export default function DiscussionsPage() {
                             : ""}
                         </p>
                       </div>
-                    </div>
+                    </Link>
 
                     {discussionTags[discussion.id]?.length > 0 ? (
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -770,7 +934,7 @@ export default function DiscussionsPage() {
                         ))}
                       </div>
                     ) : null}
-                  </Link>
+                  </div>
 
                   <div className="flex items-center gap-4 border-t border-[color:var(--loombus-border-muted)] px-5 py-4 text-sm font-semibold text-[color:var(--loombus-text)] sm:px-6">
                     <span className="inline-flex items-center gap-2" title="Replies">
