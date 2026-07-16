@@ -51,9 +51,11 @@ function findTabButton(root: Element, label: string) {
 function getDiscussionId(article: HTMLElement) {
   const link = Array.from(
     article.querySelectorAll<HTMLAnchorElement>('a[href^="/discussions/"]')
-  ).find((anchor) => /^\/discussions\/[^/]+$/.test(anchor.getAttribute("href") ?? ""));
-
-  return link?.getAttribute("href")?.split("/").filter(Boolean).at(-1) ?? null;
+  ).find((anchor) =>
+    /^\/discussions\/[^/]+$/.test(anchor.getAttribute("href") ?? "")
+  );
+  const segments = link?.getAttribute("href")?.split("/").filter(Boolean) ?? [];
+  return segments.length > 0 ? segments[segments.length - 1] : null;
 }
 
 function getModeBadge(article: HTMLElement) {
@@ -72,9 +74,7 @@ function renameActivityTerminology(root: Element) {
     for (const span of Array.from(article.querySelectorAll<HTMLElement>("span"))) {
       const text = span.textContent?.trim() ?? "";
       const match = text.match(/^Signal\s+(\d+)$/i);
-      if (match) {
-        span.textContent = `Activity ${match[1]}`;
-      }
+      if (match) span.textContent = `Activity ${match[1]}`;
     }
   }
 
@@ -82,14 +82,9 @@ function renameActivityTerminology(root: Element) {
     const text = paragraph.textContent?.trim() ?? "";
     if (text === "Trending topics") {
       paragraph.textContent = "Active topics";
-      continue;
-    }
-    if (text === "Top contributors") {
+    } else if (text === "Top contributors") {
       paragraph.textContent = "Active contributors";
-      continue;
-    }
-
-    if (/\bsignals?$/i.test(text)) {
+    } else if (/\bsignals?$/i.test(text)) {
       paragraph.textContent = text.replace(/\bsignals?$/i, "activity");
     }
   }
@@ -106,7 +101,6 @@ function styleExactTabs(root: Element, selectedLabel: string | null) {
   for (const label of ALL_TAB_LABELS) {
     const button = findTabButton(root, label);
     if (!button) continue;
-
     if (!selectedLabel) {
       button.removeAttribute("data-loombus-exact-tab");
     } else {
@@ -155,6 +149,7 @@ export function DiscussionFeedRefinements() {
     let loadingPromise: Promise<void> | null = null;
     let bypassTabInterception = false;
     let applying = false;
+    let applyScheduled = false;
 
     async function loadDiscussionTypes() {
       if (loadingPromise) return loadingPromise;
@@ -183,34 +178,42 @@ export function DiscussionFeedRefinements() {
     function applyRefinements() {
       if (applying) return;
       applying = true;
+      try {
+        renameActivityTerminology(root);
+        const articles = Array.from(root.querySelectorAll<HTMLElement>("article"));
+        let visibleCount = 0;
 
-      renameActivityTerminology(root);
-      const articles = Array.from(root.querySelectorAll<HTMLElement>("article"));
-      let visibleCount = 0;
+        for (const article of articles) {
+          const discussionId = getDiscussionId(article);
+          if (!discussionId) continue;
 
-      for (const article of articles) {
-        const discussionId = getDiscussionId(article);
-        if (!discussionId) continue;
+          const type = typeByDiscussionId.get(discussionId) ?? "open_discussion";
+          const badge = getModeBadge(article);
+          if (badge && badge.textContent?.trim() !== MODE_LABELS[type]) {
+            badge.textContent = MODE_LABELS[type];
+          }
 
-        const type = typeByDiscussionId.get(discussionId) ?? "open_discussion";
-        const badge = getModeBadge(article);
-        if (badge && badge.textContent?.trim() !== MODE_LABELS[type]) {
-          badge.textContent = MODE_LABELS[type];
+          const shouldHide = Boolean(activeExactMode && type !== activeExactMode);
+          article.hidden = shouldHide;
+          if (!shouldHide) visibleCount += 1;
         }
 
-        const shouldHide = Boolean(activeExactMode && type !== activeExactMode);
-        article.hidden = shouldHide;
-        if (!shouldHide) visibleCount += 1;
+        const cardList = articles[0]?.parentElement ?? null;
+        const empty = ensureExactEmptyState(root, cardList);
+        if (empty) empty.hidden = !activeExactMode || visibleCount > 0;
+        styleExactTabs(root, activeExactLabel);
+      } finally {
+        applying = false;
       }
+    }
 
-      const cardList = articles[0]?.parentElement ?? null;
-      const empty = ensureExactEmptyState(root, cardList);
-      if (empty) {
-        empty.hidden = !activeExactMode || visibleCount > 0;
-      }
-
-      styleExactTabs(root, activeExactLabel);
-      applying = false;
+    function scheduleApply() {
+      if (applyScheduled) return;
+      applyScheduled = true;
+      window.requestAnimationFrame(() => {
+        applyScheduled = false;
+        applyRefinements();
+      });
     }
 
     function clearExactMode() {
@@ -228,7 +231,6 @@ export function DiscussionFeedRefinements() {
 
     async function activateExactMode(label: string, mode: ExactMode) {
       await loadDiscussionTypes();
-
       const allButton = findTabButton(root, "All");
       if (allButton) {
         bypassTabInterception = true;
@@ -254,7 +256,6 @@ export function DiscussionFeedRefinements() {
 
       const label = button.textContent?.trim() ?? "";
       const exactMode = EXACT_TAB_TYPES[label];
-
       if (exactMode) {
         event.preventDefault();
         event.stopPropagation();
@@ -271,13 +272,9 @@ export function DiscussionFeedRefinements() {
       }
     };
 
-    const observer = new MutationObserver(() => {
-      window.requestAnimationFrame(applyRefinements);
-    });
-
+    const observer = new MutationObserver(scheduleApply);
     root.addEventListener("click", handleClick, true);
     observer.observe(root, { childList: true, subtree: true });
-
     void loadDiscussionTypes().then(applyRefinements);
 
     return () => {
