@@ -2,11 +2,12 @@ const ISO_BOX_HEADER_BYTES = 16;
 const MAX_ISO_BOX_COUNT = 10000;
 const MAX_WEBM_METADATA_BYTES = 4 * 1024 * 1024;
 const WEBM_DEFAULT_TIMECODE_SCALE = 1_000_000;
+const UINT32_MULTIPLIER = 0x1_0000_0000;
 
-const WEBM_SEGMENT_ID = 0x18538067n;
-const WEBM_INFO_ID = 0x1549a966n;
-const WEBM_TIMECODE_SCALE_ID = 0x2ad7b1n;
-const WEBM_DURATION_ID = 0x4489n;
+const WEBM_SEGMENT_ID = 0x18538067;
+const WEBM_INFO_ID = 0x1549a966;
+const WEBM_TIMECODE_SCALE_ID = 0x2ad7b1;
+const WEBM_DURATION_ID = 0x4489;
 
 type IsoBoxHeader = {
   type: string;
@@ -16,23 +17,21 @@ type IsoBoxHeader = {
 };
 
 type EbmlVint = {
-  value: bigint;
+  value: number;
   length: number;
   unknown: boolean;
 };
 
 function readUint64(view: DataView, offset: number) {
-  const high = BigInt(view.getUint32(offset, false));
-  const low = BigInt(view.getUint32(offset + 4, false));
-  return (high << 32n) | low;
-}
+  const high = view.getUint32(offset, false);
+  const low = view.getUint32(offset + 4, false);
+  const value = high * UINT32_MULTIPLIER + low;
 
-function toSafeNumber(value: bigint) {
-  if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+  if (!Number.isSafeInteger(value)) {
     throw new Error("Video metadata value is too large.");
   }
 
-  return Number(value);
+  return value;
 }
 
 function readAscii(view: DataView, offset: number, length: number) {
@@ -68,7 +67,7 @@ async function readIsoBoxHeader(
       throw new Error("Video metadata contains an incomplete extended box.");
     }
     headerSize = 16;
-    boxSize = toSafeNumber(readUint64(view, 8));
+    boxSize = readUint64(view, 8);
   } else if (size32 === 0) {
     boxSize = boundary - offset;
   } else {
@@ -145,9 +144,6 @@ async function readIsoDurationSeconds(file: File) {
   let duration: number;
 
   if (version === 0) {
-    if (metadataBuffer.byteLength < 20) {
-      throw new Error("The video duration metadata is incomplete.");
-    }
     timescale = view.getUint32(12, false);
     duration = view.getUint32(16, false);
   } else if (version === 1) {
@@ -155,7 +151,7 @@ async function readIsoDurationSeconds(file: File) {
       throw new Error("The video duration metadata is incomplete.");
     }
     timescale = view.getUint32(20, false);
-    duration = toSafeNumber(readUint64(view, 24));
+    duration = readUint64(view, 24);
   } else {
     throw new Error("The video uses an unsupported movie-header version.");
   }
@@ -192,12 +188,16 @@ function readEbmlVint(
     return null;
   }
 
-  let value = BigInt(removeMarker ? firstByte & (marker - 1) : firstByte);
-  let unknown = removeMarker && (firstByte & (marker - 1)) === marker - 1;
+  const markerPayload = firstByte & (marker - 1);
+  let value = removeMarker ? markerPayload : firstByte;
+  let unknown = removeMarker && markerPayload === marker - 1;
 
   for (let index = 1; index < length; index += 1) {
     const nextByte = bytes[offset + index];
-    value = (value << 8n) | BigInt(nextByte);
+    value = value * 256 + nextByte;
+    if (!Number.isSafeInteger(value)) {
+      throw new Error("WebM metadata value is too large.");
+    }
     if (removeMarker && nextByte !== 0xff) {
       unknown = false;
     }
@@ -211,11 +211,14 @@ function readEbmlUnsigned(bytes: Uint8Array, start: number, length: number) {
     throw new Error("WebM integer metadata is invalid.");
   }
 
-  let value = 0n;
+  let value = 0;
   for (let index = 0; index < length; index += 1) {
-    value = (value << 8n) | BigInt(bytes[start + index]);
+    value = value * 256 + bytes[start + index];
+    if (!Number.isSafeInteger(value)) {
+      throw new Error("WebM integer metadata is too large.");
+    }
   }
-  return toSafeNumber(value);
+  return value;
 }
 
 function readEbmlFloat(bytes: Uint8Array, start: number, length: number) {
@@ -233,7 +236,7 @@ function findEbmlElement(
   bytes: Uint8Array,
   start: number,
   end: number,
-  targetId: bigint
+  targetId: number
 ) {
   let offset = start;
 
@@ -244,9 +247,7 @@ function findEbmlElement(
     if (!size) return null;
 
     const payloadStart = offset + id.length + size.length;
-    const declaredEnd = size.unknown
-      ? end
-      : payloadStart + toSafeNumber(size.value);
+    const declaredEnd = size.unknown ? end : payloadStart + size.value;
     const payloadEnd = Math.min(declaredEnd, end, bytes.length);
 
     if (id.value === targetId) {
@@ -297,7 +298,7 @@ async function readWebmDurationSeconds(file: File) {
     if (!size || size.unknown) break;
 
     const payloadStart = offset + id.length + size.length;
-    const payloadLength = toSafeNumber(size.value);
+    const payloadLength = size.value;
     const payloadEnd = payloadStart + payloadLength;
     if (payloadEnd > info.payloadEnd || payloadEnd > bytes.length) break;
 
