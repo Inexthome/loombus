@@ -47,6 +47,11 @@ type AuthorizedContext =
     }
   | { ok: false; response: NextResponse };
 
+type StoredObjectInfo = {
+  sizeBytes: number;
+  mimeType: string | null;
+};
+
 function jsonError(message: string, status: number, code?: string) {
   return NextResponse.json(code ? { error: message, code } : { error: message }, {
     status,
@@ -61,6 +66,16 @@ function validUuid(value: unknown): value is string {
       value
     )
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizedMimeType(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.split(";", 1)[0]?.trim().toLowerCase() ?? "";
+  return normalized || null;
 }
 
 async function authorize(request: NextRequest): Promise<AuthorizedContext> {
@@ -140,18 +155,51 @@ async function resourceUsage(
   );
 }
 
-async function verifyStoredObject(
+async function getStoredObjectInfo(
   serviceSupabase: ReturnType<typeof createRoomServiceSupabase>,
   storagePath: string
-) {
+): Promise<StoredObjectInfo | null> {
   const slash = storagePath.lastIndexOf("/");
-  if (slash < 1) return false;
+  if (slash < 1) return null;
   const folder = storagePath.slice(0, slash);
   const name = storagePath.slice(slash + 1);
   const result = await serviceSupabase.storage
     .from(BUCKET)
     .list(folder, { limit: 10, search: name });
-  return !result.error && Boolean(result.data?.some((item) => item.name === name));
+  if (result.error) return null;
+
+  const item = result.data?.find((candidate) => candidate.name === name);
+  if (!item) return null;
+
+  const itemRecord = item as unknown as Record<string, unknown>;
+  const metadata = isRecord(itemRecord.metadata) ? itemRecord.metadata : {};
+  const rawSize =
+    metadata.size ??
+    metadata.contentLength ??
+    metadata.content_length ??
+    itemRecord.size ??
+    0;
+  const sizeBytes = Number(rawSize);
+  const mimeType =
+    normalizedMimeType(metadata.mimetype) ??
+    normalizedMimeType(metadata.mime_type) ??
+    normalizedMimeType(metadata.contentType) ??
+    normalizedMimeType(metadata.content_type) ??
+    normalizedMimeType(itemRecord.mimetype) ??
+    normalizedMimeType(itemRecord.mime_type);
+
+  return {
+    sizeBytes:
+      Number.isSafeInteger(sizeBytes) && sizeBytes > 0 ? sizeBytes : 0,
+    mimeType,
+  };
+}
+
+async function removeStoredObject(
+  serviceSupabase: ReturnType<typeof createRoomServiceSupabase>,
+  storagePath: string
+) {
+  await serviceSupabase.storage.from(BUCKET).remove([storagePath]);
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
@@ -251,8 +299,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const fileName = safeFileName(body?.fileName);
-    const mimeType =
-      typeof body?.mimeType === "string" ? body.mimeType.toLowerCase() : "";
+    const mimeType = normalizedMimeType(body?.mimeType) ?? "";
     const fileSizeBytes = Number(body?.fileSizeBytes ?? 0);
     const kind = mediaKind(mimeType);
 
@@ -323,30 +370,67 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const storagePath = asString(body?.storagePath);
     const fileName = safeFileName(body?.fileName);
-    const mimeType =
-      typeof body?.mimeType === "string" ? body.mimeType.toLowerCase() : "";
-    const fileSizeBytes = Number(body?.fileSizeBytes ?? 0);
-    const kind = mediaKind(mimeType);
+    const declaredMimeType = normalizedMimeType(body?.mimeType) ?? "";
+    const declaredSizeBytes = Number(body?.fileSizeBytes ?? 0);
     const expectedPrefix = `${roomId}/${userId}/`;
 
     if (!storagePath.startsWith(expectedPrefix)) {
       return jsonError("The Room upload path is invalid.", 400);
     }
-    if (!ACCEPTED_MIME_TYPES.has(mimeType)) {
+    if (!ACCEPTED_MIME_TYPES.has(declaredMimeType)) {
+      await removeStoredObject(serviceSupabase, storagePath);
       return jsonError("This file type is not supported in Room resources.", 400);
     }
-    if (kind === "video" && !entitlements.inlineVideo) {
-      return jsonError("Inline video is not included in this Room plan.", 403);
-    }
     if (
-      !Number.isSafeInteger(fileSizeBytes) ||
-      fileSizeBytes <= 0 ||
-      fileSizeBytes > entitlements.maxFileBytes
+      !Number.isSafeInteger(declaredSizeBytes) ||
+      declaredSizeBytes <= 0 ||
+      declaredSizeBytes > entitlements.maxFileBytes
     ) {
+      await removeStoredObject(serviceSupabase, storagePath);
       return jsonError("The Room resource size is invalid.", 400);
     }
-    if (!(await verifyStoredObject(serviceSupabase, storagePath))) {
-      return jsonError("The uploaded Room resource could not be verified.", 400);
+
+    const storedObject = await getStoredObjectInfo(
+      serviceSupabase,
+      storagePath
+    );
+    if (!storedObject || storedObject.sizeBytes <= 0 || !storedObject.mimeType) {
+      await removeStoredObject(serviceSupabase, storagePath);
+      return jsonError(
+        "The uploaded Room resource metadata could not be verified.",
+        400
+      );
+    }
+
+    if (
+      !ACCEPTED_MIME_TYPES.has(storedObject.mimeType) ||
+      storedObject.mimeType !== declaredMimeType
+    ) {
+      await removeStoredObject(serviceSupabase, storagePath);
+      return jsonError(
+        "The stored file type does not match the prepared Room upload.",
+        400,
+        "room_resource_type_mismatch"
+      );
+    }
+
+    const actualSizeBytes = storedObject.sizeBytes;
+    const actualMimeType = storedObject.mimeType;
+    const kind = mediaKind(actualMimeType);
+
+    if (kind === "video" && !entitlements.inlineVideo) {
+      await removeStoredObject(serviceSupabase, storagePath);
+      return jsonError("Inline video is not included in this Room plan.", 403);
+    }
+    if (actualSizeBytes > entitlements.maxFileBytes) {
+      await removeStoredObject(serviceSupabase, storagePath);
+      return jsonError(
+        `This plan allows up to ${formatRoomBytes(
+          entitlements.maxFileBytes
+        )} per upload.`,
+        413,
+        "room_resource_file_too_large"
+      );
     }
 
     const usedBytes = await resourceUsage(serviceSupabase, roomId).catch(
@@ -354,9 +438,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
     if (
       usedBytes < 0 ||
-      usedBytes + fileSizeBytes > entitlements.storageBytes
+      usedBytes + actualSizeBytes > entitlements.storageBytes
     ) {
-      await serviceSupabase.storage.from(BUCKET).remove([storagePath]);
+      await removeStoredObject(serviceSupabase, storagePath);
       return jsonError("The Room resource storage allowance was exceeded.", 413);
     }
 
@@ -367,15 +451,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
         uploaded_by: userId,
         file_name: fileName,
         storage_path: storagePath,
-        mime_type: mimeType,
+        mime_type: actualMimeType,
         media_kind: kind,
-        file_size_bytes: fileSizeBytes,
+        file_size_bytes: actualSizeBytes,
       })
       .select("id")
       .single();
 
     if (inserted.error) {
-      await serviceSupabase.storage.from(BUCKET).remove([storagePath]);
+      await removeStoredObject(serviceSupabase, storagePath);
       return jsonError("The Room resource could not be saved.", 503);
     }
 
@@ -388,7 +472,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         room_id: roomId,
         room_plan: entitlements.id,
         media_kind: kind,
-        file_size_bytes: fileSizeBytes,
+        file_size_bytes: actualSizeBytes,
       },
     });
 
