@@ -7,6 +7,8 @@ import {
   provisionFreeRoom,
   startPaidRoomCheckout,
 } from "@/lib/room-billing";
+import { provisionIncludedRoom } from "@/lib/room-plan-capacity";
+import { normalizeRoomPlanKey } from "@/lib/room-plan-entitlements";
 import {
   getRoomCheckoutStorageMessage,
   getRoomCheckoutStorageReadiness,
@@ -86,18 +88,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const paidPlan = isPaidRoomPlanKey(planId);
-
-    if (paidPlan) {
-      const storage = await getRoomCheckoutStorageReadiness();
-      if (!storage.ready) {
-        return jsonError(
-          getRoomCheckoutStorageMessage(storage.issue),
-          503,
-          `room_checkout_${storage.issue}`
-        );
-      }
-    }
-
     const input = {
       userId: accountAccess.user.id,
       email: accountAccess.user.email ?? null,
@@ -107,6 +97,31 @@ export async function POST(request: NextRequest) {
       planKey: planId,
       origin: getOrigin(request),
     };
+
+    if (paidPlan) {
+      const includedRoom = await provisionIncludedRoom({
+        userId: input.userId,
+        roomName,
+        description,
+        modelId,
+        planKey: normalizeRoomPlanKey(planId),
+      });
+
+      if (includedRoom) {
+        return NextResponse.json(includedRoom, {
+          headers: { "Cache-Control": "private, no-store" },
+        });
+      }
+
+      const storage = await getRoomCheckoutStorageReadiness();
+      if (!storage.ready) {
+        return jsonError(
+          getRoomCheckoutStorageMessage(storage.issue),
+          503,
+          `room_checkout_${storage.issue}`
+        );
+      }
+    }
 
     const result =
       planId === "free"
@@ -137,7 +152,9 @@ export async function POST(request: NextRequest) {
 
     console.error("Room provisioning failed:", error);
     return jsonError(
-      "Loombus could not provision this Room.",
+      error instanceof Error
+        ? error.message
+        : "Loombus could not provision this Room.",
       500,
       "room_provision_failed"
     );
