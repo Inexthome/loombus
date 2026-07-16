@@ -123,6 +123,11 @@ export async function getIncludedRoomPlans(userId: string) {
   >;
 }
 
+export async function freeRoomIsAvailable(userId: string) {
+  const activeFreeRooms = await loadOwnedActivePlanRooms(userId, "free");
+  return activeFreeRooms.length === 0;
+}
+
 async function ensureOwnerMembership(roomId: string, userId: string) {
   const serviceSupabase = createRoomServiceSupabase();
   const now = new Date().toISOString();
