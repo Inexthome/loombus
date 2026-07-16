@@ -1,12 +1,8 @@
 "use client";
 
-import {
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { isVideoContextMimeType } from "@/lib/video-context-limits";
+import { readVideoFileDurationSeconds } from "@/lib/video-file-duration";
 
 const DISCUSSION_PUBLISH_NOTICE_KEY = "loombus:discussion-publish-notice";
 const DISCUSSION_PUBLISHED_MESSAGE = "Your discussion has been published.";
@@ -15,7 +11,6 @@ const ATTACHMENT_ENDPOINT = "/api/discussions/attachments";
 const ROLLBACK_ENDPOINT = "/api/discussions/rollback-create";
 const ATTACHMENT_UPLOAD_ERROR_PATTERN =
   /could not upload|could not be attached|attachment could not be saved|attachments could not be saved/i;
-const VIDEO_METADATA_TIMEOUT_MS = 15000;
 
 type AttachmentPayload = {
   discussionId?: string;
@@ -23,18 +18,6 @@ type AttachmentPayload = {
   mimeType?: string;
   fileSizeBytes?: number;
   videoDurationSeconds?: number;
-};
-
-type VideoProbe = {
-  key: string;
-  objectUrl: string;
-};
-
-type VideoProbeDeferred = {
-  resolve: (durationSeconds: number) => void;
-  reject: (error: Error) => void;
-  objectUrl: string;
-  timeoutId: number;
 };
 
 function getFileKey({
@@ -126,40 +109,10 @@ function mutationContainsUploadError(records: MutationRecord[]) {
 
 export function CreatePublishGuard({ children }: { children: ReactNode }) {
   const [rollbackMessage, setRollbackMessage] = useState("");
-  const [videoProbes, setVideoProbes] = useState<VideoProbe[]>([]);
-  const videoDurationsRef = useRef(new Map<string, Promise<number>>());
-  const videoProbeDeferredsRef = useRef(
-    new Map<string, VideoProbeDeferred>()
-  );
-
-  function finishVideoProbe(key: string, durationSeconds?: number) {
-    const deferred = videoProbeDeferredsRef.current.get(key);
-    if (!deferred) return;
-
-    window.clearTimeout(deferred.timeoutId);
-    URL.revokeObjectURL(deferred.objectUrl);
-    videoProbeDeferredsRef.current.delete(key);
-    setVideoProbes((probes) =>
-      probes.filter((candidate) => candidate.key !== key)
-    );
-
-    if (
-      typeof durationSeconds === "number" &&
-      Number.isFinite(durationSeconds) &&
-      durationSeconds > 0
-    ) {
-      deferred.resolve(Math.ceil(durationSeconds));
-      return;
-    }
-
-    videoDurationsRef.current.delete(key);
-    deferred.reject(new Error("Video duration could not be read."));
-  }
 
   useEffect(() => {
     const originalFetch = window.fetch.bind(window);
-    const videoDurations = videoDurationsRef.current;
-    const videoProbeDeferreds = videoProbeDeferredsRef.current;
+    const videoDurations = new Map<string, Promise<number>>();
     let currentDiscussionId: string | null = null;
     let authorizationHeader: string | null = null;
     let rollbackPromise: Promise<string> | null = null;
@@ -227,7 +180,7 @@ export function CreatePublishGuard({ children }: { children: ReactNode }) {
       return rollbackPromise;
     }
 
-    function queueVideoDurationProbe(file: File) {
+    function queueVideoDurationRead(file: File) {
       const key = getFileKey({
         fileName: file.name,
         fileSizeBytes: file.size,
@@ -236,42 +189,9 @@ export function CreatePublishGuard({ children }: { children: ReactNode }) {
 
       if (videoDurations.has(key)) return;
 
-      const objectUrl = URL.createObjectURL(file);
-      let resolveDuration!: (durationSeconds: number) => void;
-      let rejectDuration!: (error: Error) => void;
-      const durationPromise = new Promise<number>((resolve, reject) => {
-        resolveDuration = resolve;
-        rejectDuration = reject;
-      });
-
+      const durationPromise = readVideoFileDurationSeconds(file);
       void durationPromise.catch(() => null);
       videoDurations.set(key, durationPromise);
-
-      const timeoutId = window.setTimeout(() => {
-        const deferred = videoProbeDeferreds.get(key);
-        if (!deferred) return;
-
-        URL.revokeObjectURL(deferred.objectUrl);
-        videoProbeDeferreds.delete(key);
-        videoDurations.delete(key);
-        rejectDuration(new Error("Video duration could not be read."));
-        if (active) {
-          setVideoProbes((probes) =>
-            probes.filter((candidate) => candidate.key !== key)
-          );
-        }
-      }, VIDEO_METADATA_TIMEOUT_MS);
-
-      videoProbeDeferreds.set(key, {
-        resolve: resolveDuration,
-        reject: rejectDuration,
-        objectUrl,
-        timeoutId,
-      });
-      setVideoProbes((probes) => [
-        ...probes.filter((candidate) => candidate.key !== key),
-        { key, objectUrl },
-      ]);
     }
 
     function handleFileSelection(event: Event) {
@@ -282,7 +202,7 @@ export function CreatePublishGuard({ children }: { children: ReactNode }) {
 
       for (const file of Array.from(target.files ?? [])) {
         if (isVideoContextMimeType(file.type)) {
-          queueVideoDurationProbe(file);
+          queueVideoDurationRead(file);
         }
       }
     }
@@ -411,37 +331,15 @@ export function CreatePublishGuard({ children }: { children: ReactNode }) {
       active = false;
       document.removeEventListener("change", handleFileSelection, true);
       errorObserver.disconnect();
+      videoDurations.clear();
       if (window.fetch === guardedFetch) {
         window.fetch = originalFetch;
       }
-
-      for (const deferred of videoProbeDeferreds.values()) {
-        window.clearTimeout(deferred.timeoutId);
-        URL.revokeObjectURL(deferred.objectUrl);
-        deferred.reject(new Error("Video metadata probe was cancelled."));
-      }
-      videoProbeDeferreds.clear();
-      videoDurations.clear();
     };
   }, []);
 
   return (
     <>
-      {videoProbes.map((probe) => (
-        <video
-          key={probe.key}
-          src={probe.objectUrl}
-          preload="metadata"
-          muted
-          playsInline
-          aria-hidden="true"
-          className="hidden"
-          onLoadedMetadata={(event) =>
-            finishVideoProbe(probe.key, event.currentTarget.duration)
-          }
-          onError={() => finishVideoProbe(probe.key)}
-        />
-      ))}
       {rollbackMessage ? (
         <div
           role="alert"
