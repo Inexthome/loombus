@@ -1,3 +1,8 @@
+import {
+  ROOM_PLAN_ENTITLEMENTS,
+  type RoomPlanKey,
+} from "@/lib/room-plan-entitlements";
+
 export type RoomModelId =
   | "business-team"
   | "residents"
@@ -23,13 +28,7 @@ export type RoomModel = {
   calendarUse: string;
 };
 
-export type RoomPlanId =
-  | "free"
-  | "starter"
-  | "pro"
-  | "organization"
-  | "organization-plus"
-  | "enterprise";
+export type RoomPlanId = RoomPlanKey;
 
 export type RoomPlan = {
   id: RoomPlanId;
@@ -37,6 +36,7 @@ export type RoomPlan = {
   price: string;
   members: string;
   detail: string;
+  features: string[];
   paid: boolean;
 };
 
@@ -104,7 +104,8 @@ export const ROOM_PLANS: RoomPlan[] = [
     name: "Free Room",
     price: "$0",
     members: "Up to 10 members",
-    detail: "A small private starter space",
+    detail: "Core private workspace with link-based resources",
+    features: [...ROOM_PLAN_ENTITLEMENTS.free.features],
     paid: false,
   },
   {
@@ -112,7 +113,8 @@ export const ROOM_PLANS: RoomPlan[] = [
     name: "Room Starter",
     price: "$19/mo",
     members: "Up to 50 members",
-    detail: "One private room for a growing group",
+    detail: "Adds private file and image uploads with 2 GB of storage",
+    features: [...ROOM_PLAN_ENTITLEMENTS.starter.features],
     paid: true,
   },
   {
@@ -120,7 +122,8 @@ export const ROOM_PLANS: RoomPlan[] = [
     name: "Room Pro",
     price: "$49/mo",
     members: "Up to 250 members",
-    detail: "A larger private room with room-management capacity",
+    detail: "Adds inline video, larger uploads, and expanded Room management",
+    features: [...ROOM_PLAN_ENTITLEMENTS.pro.features],
     paid: true,
   },
   {
@@ -128,7 +131,8 @@ export const ROOM_PLANS: RoomPlan[] = [
     name: "Organization",
     price: "$99/mo",
     members: "Up to 3 rooms · 500 members",
-    detail: "Organization controls and setup support",
+    detail: "Multi-Room organization capacity, larger resources, and setup support",
+    features: [...ROOM_PLAN_ENTITLEMENTS.organization.features],
     paid: true,
   },
   {
@@ -136,7 +140,8 @@ export const ROOM_PLANS: RoomPlan[] = [
     name: "Organization Plus",
     price: "$149/mo",
     members: "Up to 10 rooms · 2,000 members",
-    detail: "More rooms, larger membership, and advanced setup",
+    detail: "More Rooms, substantially larger storage, and priority support",
+    features: [...ROOM_PLAN_ENTITLEMENTS["organization-plus"].features],
     paid: true,
   },
   {
@@ -144,7 +149,8 @@ export const ROOM_PLANS: RoomPlan[] = [
     name: "Organization Enterprise",
     price: "$199/mo",
     members: "Custom rooms · Large membership",
-    detail: "Dedicated support and custom organization structure",
+    detail: "Custom limits, enterprise storage, dedicated support, and onboarding",
+    features: [...ROOM_PLAN_ENTITLEMENTS.enterprise.features],
     paid: true,
   },
 ];
@@ -168,7 +174,8 @@ export const ROOM_WORKSPACE_BLUEPRINT = [
   {
     id: "library",
     title: "Files and resources",
-    description: "A shared reference area for documents, links, policies, and working material.",
+    description:
+      "Private file and inline video resources unlocked according to the Room subscription tier.",
   },
   {
     id: "members",
@@ -194,11 +201,13 @@ export function buildRoomSetupSummary(input: {
   const lines = [
     `Room name: ${input.roomName.trim()}`,
     `Room model: ${input.model.title}`,
-    `Planning tier: ${input.plan.name} (${input.plan.price})`,
+    `Monthly tier: ${input.plan.name} (${input.plan.price})`,
     `Member capacity: ${input.plan.members}`,
     `Purpose: ${input.description.trim()}`,
+    "Included features:",
+    ...input.plan.features.map((feature) => `- ${feature}`),
     "Workspace blueprint: Discussions, Announcements, Room calendar, Files and resources, Members and roles",
-    "Privacy boundary: Private by default; no public Discussions publishing unless a future room workflow explicitly allows it.",
+    "Privacy boundary: Private by default; no public Discussions publishing unless a Room workflow explicitly allows it.",
   ];
 
   return lines.join("\n");
