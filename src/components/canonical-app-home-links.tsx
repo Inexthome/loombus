@@ -49,10 +49,11 @@ function getClickedAnchor(event: MouseEvent) {
 
 export function CanonicalAppHomeLinks() {
   useEffect(() => {
-    let signedIn = false;
+    let signedIn: boolean | null = null;
     let active = true;
 
     function normalizeDocument() {
+      if (signedIn === null) return;
       normalizeHomeAnchors(document, signedIn);
     }
 
@@ -91,11 +92,13 @@ export function CanonicalAppHomeLinks() {
       event.stopPropagation();
 
       const { data } = await supabase.auth.getUser();
-      const destination = data.user || signedIn ? "/home" : "/";
+      const destination = data.user || signedIn === true ? "/home" : "/";
       window.location.assign(destination);
     }
 
     const observer = new MutationObserver((records) => {
+      if (signedIn === null) return;
+
       for (const record of records) {
         if (record.type === "attributes" && record.target instanceof HTMLAnchorElement) {
           normalizeHomeAnchors(record.target, signedIn);
