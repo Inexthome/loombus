@@ -34,6 +34,27 @@ const ACCEPTED_MIME_TYPES = new Set([
   "application/vnd.ms-powerpoint",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ]);
+const MIME_BY_EXTENSION: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
+  ".pdf": "application/pdf",
+  ".txt": "text/plain",
+  ".csv": "text/csv",
+  ".doc": "application/msword",
+  ".docx":
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".xls": "application/vnd.ms-excel",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".ppt": "application/vnd.ms-powerpoint",
+  ".pptx":
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+};
 
 type RouteContext = {
   params: Promise<{ roomId: string }>;
@@ -76,6 +97,20 @@ function normalizedMimeType(value: unknown) {
   if (typeof value !== "string") return null;
   const normalized = value.split(";", 1)[0]?.trim().toLowerCase() ?? "";
   return normalized || null;
+}
+
+function extensionMimeType(fileName: string) {
+  const normalizedName = fileName.toLowerCase();
+  const extension = Object.keys(MIME_BY_EXTENSION).find((candidate) =>
+    normalizedName.endsWith(candidate)
+  );
+  return extension ? MIME_BY_EXTENSION[extension] : null;
+}
+
+function uploadMimeType(fileName: string, value: unknown) {
+  const supplied = normalizedMimeType(value);
+  if (supplied && supplied !== "application/octet-stream") return supplied;
+  return extensionMimeType(fileName) ?? supplied ?? "";
 }
 
 async function authorize(request: NextRequest): Promise<AuthorizedContext> {
@@ -299,7 +334,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const fileName = safeFileName(body?.fileName);
-    const mimeType = normalizedMimeType(body?.mimeType) ?? "";
+    const mimeType = uploadMimeType(fileName, body?.mimeType);
     const fileSizeBytes = Number(body?.fileSizeBytes ?? 0);
     const kind = mediaKind(mimeType);
 
@@ -370,7 +405,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const storagePath = asString(body?.storagePath);
     const fileName = safeFileName(body?.fileName);
-    const declaredMimeType = normalizedMimeType(body?.mimeType) ?? "";
+    const declaredMimeType = uploadMimeType(fileName, body?.mimeType);
     const declaredSizeBytes = Number(body?.fileSizeBytes ?? 0);
     const expectedPrefix = `${roomId}/${userId}/`;
 
