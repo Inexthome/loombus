@@ -140,8 +140,9 @@ function ensureExactEmptyState(root: Element, cardList: Element | null) {
 
 export function DiscussionFeedRefinements() {
   useEffect(() => {
-    const root = findDiscussionsFeedRoot();
-    if (!root) return;
+    const rootCandidate = findDiscussionsFeedRoot();
+    if (!rootCandidate) return;
+    const root: HTMLElement = rootCandidate;
 
     const typeByDiscussionId = new Map<string, DiscussionType>();
     let activeExactMode: ExactMode | null = null;
