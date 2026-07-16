@@ -9,6 +9,10 @@ import {
   getBillingPlanLabel,
   getBillingSupabaseAdmin,
 } from "@/lib/billing-entitlements";
+import {
+  fulfillRoomCheckoutSession,
+  handleRoomSubscriptionChanged,
+} from "@/lib/room-billing";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -37,7 +41,6 @@ function getCustomerIdFromCheckoutSession(session: Stripe.Checkout.Session) {
   if (typeof session.customer === "string") {
     return session.customer;
   }
-
   return session.customer?.id ?? null;
 }
 
@@ -45,7 +48,6 @@ function getSubscriptionIdFromCheckoutSession(session: Stripe.Checkout.Session) 
   if (typeof session.subscription === "string") {
     return session.subscription;
   }
-
   return session.subscription?.id ?? null;
 }
 
@@ -53,7 +55,6 @@ function getPaymentIntentIdFromCheckoutSession(session: Stripe.Checkout.Session)
   if (typeof session.payment_intent === "string") {
     return session.payment_intent;
   }
-
   return session.payment_intent?.id ?? null;
 }
 
@@ -61,7 +62,6 @@ function getCustomerIdFromSubscription(subscription: Stripe.Subscription) {
   if (typeof subscription.customer === "string") {
     return subscription.customer;
   }
-
   return subscription.customer?.id ?? null;
 }
 
@@ -71,9 +71,9 @@ function getSubscriptionPriceId(subscription: Stripe.Subscription) {
 }
 
 function getSubscriptionPeriodEnd(subscription: Stripe.Subscription) {
-  const periodEnd = (subscription as Stripe.Subscription & {
-    current_period_end?: number;
-  }).current_period_end;
+  const periodEnd = (
+    subscription as Stripe.Subscription & { current_period_end?: number }
+  ).current_period_end;
 
   if (!periodEnd) {
     return null;
@@ -97,13 +97,17 @@ async function fulfillExtraAiPackForUser(
   const supabase = getBillingSupabaseAdmin();
   const checkoutSessionId = session.id;
 
-  const { data: existingPack, error: existingError } = await (supabase.from("ai_extra_credit_packs") as any)
+  const { data: existingPack, error: existingError } = await (
+    supabase.from("ai_extra_credit_packs") as any
+  )
     .select("id")
     .eq("stripe_checkout_session_id", checkoutSessionId)
     .maybeSingle();
 
   if (existingError) {
-    throw new Error(`Unable to verify Extra AI Pack purchase: ${existingError.message}`);
+    throw new Error(
+      `Unable to verify Extra AI Pack purchase: ${existingError.message}`
+    );
   }
 
   if (existingPack?.id) {
@@ -116,7 +120,9 @@ async function fulfillExtraAiPackForUser(
     return;
   }
 
-  const { data: pack, error } = await (supabase.from("ai_extra_credit_packs") as any)
+  const { data: pack, error } = await (
+    supabase.from("ai_extra_credit_packs") as any
+  )
     .insert({
       user_id: userId,
       stripe_checkout_session_id: checkoutSessionId,
@@ -132,7 +138,9 @@ async function fulfillExtraAiPackForUser(
     .single();
 
   if (error || !pack?.id) {
-    throw new Error(`Unable to fulfill Extra AI Pack: ${error?.message ?? "Missing pack id."}`);
+    throw new Error(
+      `Unable to fulfill Extra AI Pack: ${error?.message ?? "Missing pack id."}`
+    );
   }
 
   await ensureExtraAiPackPurchaseLedger({
@@ -144,11 +152,19 @@ async function fulfillExtraAiPackForUser(
 }
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  if (session.metadata?.product === "loombus_room") {
+    await fulfillRoomCheckoutSession(session);
+    return;
+  }
+
   const userId = getUserIdFromCheckoutSession(session);
   const planKey = getPlanKeyFromCheckoutSession(session);
 
   if (!userId) {
-    console.warn("Stripe checkout session completed without user_id metadata:", session.id);
+    console.warn(
+      "Stripe checkout session completed without user_id metadata:",
+      session.id
+    );
     return;
   }
 
@@ -197,11 +213,19 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 }
 
 async function handleSubscriptionChanged(subscription: Stripe.Subscription) {
+  if (subscription.metadata?.product === "loombus_room") {
+    await handleRoomSubscriptionChanged(subscription);
+    return;
+  }
+
   const userId = getUserIdFromSubscription(subscription);
   const planKey = getPlanKeyFromSubscription(subscription);
 
   if (!userId) {
-    console.warn("Stripe subscription event missing user_id metadata:", subscription.id);
+    console.warn(
+      "Stripe subscription event missing user_id metadata:",
+      subscription.id
+    );
     return;
   }
 
