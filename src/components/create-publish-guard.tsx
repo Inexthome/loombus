@@ -114,6 +114,35 @@ function getRollbackFailureMessage() {
   return "The attachment failed, and Loombus could not automatically remove the incomplete discussion. Open your discussions and remove it before retrying.";
 }
 
+function createAttachmentFailureResponse(message: string, status = 400) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: {
+      "Cache-Control": "private, no-store",
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+function mutationContainsUploadError(records: MutationRecord[]) {
+  for (const record of records) {
+    if (
+      record.type === "characterData" &&
+      ATTACHMENT_UPLOAD_ERROR_PATTERN.test(record.target.textContent ?? "")
+    ) {
+      return true;
+    }
+
+    for (const node of record.addedNodes) {
+      if (ATTACHMENT_UPLOAD_ERROR_PATTERN.test(node.textContent ?? "")) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 export function CreatePublishGuard({ children }: { children: ReactNode }) {
   const [rollbackMessage, setRollbackMessage] = useState("");
 
@@ -203,7 +232,9 @@ export function CreatePublishGuard({ children }: { children: ReactNode }) {
         });
 
         if (!videoDurations.has(key)) {
-          videoDurations.set(key, readVideoDurationSeconds(file));
+          const durationPromise = readVideoDurationSeconds(file);
+          void durationPromise.catch(() => null);
+          videoDurations.set(key, durationPromise);
         }
       }
     }
@@ -236,21 +267,28 @@ export function CreatePublishGuard({ children }: { children: ReactNode }) {
 
       let nextInit = init;
       let attachmentPayload: AttachmentPayload | null = null;
+      let attachmentIsVideo = false;
 
       if (isAttachmentRequest && typeof init?.body === "string") {
         try {
           attachmentPayload = JSON.parse(init.body) as AttachmentPayload;
-          const isVideo = isVideoContextMimeType(
+          attachmentIsVideo = isVideoContextMimeType(
             attachmentPayload.mimeType ?? ""
           );
 
-          if (isVideo && !attachmentPayload.videoDurationSeconds) {
+          if (attachmentIsVideo && !attachmentPayload.videoDurationSeconds) {
             const durationPromise = videoDurations.get(
               getFileKey(attachmentPayload)
             );
 
             if (durationPromise) {
-              attachmentPayload.videoDurationSeconds = await durationPromise;
+              try {
+                attachmentPayload.videoDurationSeconds = await durationPromise;
+              } catch {
+                const message = await rollbackIncompleteDiscussion(true);
+                return createAttachmentFailureResponse(message);
+              }
+
               nextInit = {
                 ...init,
                 headers: requestHeaders,
@@ -263,7 +301,19 @@ export function CreatePublishGuard({ children }: { children: ReactNode }) {
         }
       }
 
-      const response = await originalFetch(input, nextInit);
+      let response: Response;
+      try {
+        response = await originalFetch(input, nextInit);
+      } catch (error) {
+        if (isAttachmentRequest) {
+          const message = await rollbackIncompleteDiscussion(
+            attachmentIsVideo
+          );
+          return createAttachmentFailureResponse(message, 503);
+        }
+
+        throw error;
+      }
 
       if (isCreateRequest && response.ok) {
         try {
@@ -281,25 +331,23 @@ export function CreatePublishGuard({ children }: { children: ReactNode }) {
       }
 
       if (isAttachmentRequest && !response.ok) {
-        const isVideo = isVideoContextMimeType(
-          attachmentPayload?.mimeType ?? ""
+        const message = await rollbackIncompleteDiscussion(
+          attachmentIsVideo
         );
-        const message = await rollbackIncompleteDiscussion(isVideo);
-
-        return new Response(JSON.stringify({ error: message }), {
-          status: response.status || 400,
-          statusText: response.statusText,
-          headers: { "Content-Type": "application/json" },
-        });
+        return createAttachmentFailureResponse(
+          message,
+          response.status || 400
+        );
       }
 
       return response;
     };
 
-    const errorObserver = new MutationObserver(() => {
-      if (!currentDiscussionId) return;
-      const pageText = document.body.textContent ?? "";
-      if (!ATTACHMENT_UPLOAD_ERROR_PATTERN.test(pageText)) return;
+    const errorObserver = new MutationObserver((records) => {
+      if (!currentDiscussionId || !mutationContainsUploadError(records)) {
+        return;
+      }
+
       void rollbackIncompleteDiscussion(false);
     });
 
