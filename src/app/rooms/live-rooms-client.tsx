@@ -172,9 +172,7 @@ export default function LiveRoomsClient() {
       );
       setGeneratedAt(result.generatedAt ?? null);
     } catch (error) {
-      setMessage(
-        error instanceof Error ? error.message : "Unable to load your rooms."
-      );
+      setMessage(error instanceof Error ? error.message : "Unable to load your rooms.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -213,9 +211,7 @@ export default function LiveRoomsClient() {
         { event: "*", schema: "public", table: "room_announcements" },
         () => void loadRooms(true)
       )
-      .subscribe((status) => {
-        setRealtimeConnected(status === "SUBSCRIBED");
-      });
+      .subscribe((status) => setRealtimeConnected(status === "SUBSCRIBED"));
 
     const fallback = window.setInterval(() => void loadRooms(true), 45_000);
 
@@ -252,7 +248,7 @@ export default function LiveRoomsClient() {
         <section className="rooms-live-state-card">
           <p className="rooms-live-eyebrow">Private Rooms</p>
           <h1>Opening your rooms…</h1>
-          <p>Verifying your active memberships and private room access.</p>
+          <p>Verifying your active memberships and private Room access.</p>
         </section>
       </main>
     );
@@ -268,14 +264,14 @@ export default function LiveRoomsClient() {
             <p>
               Rooms connect structured private conversations with announcements,
               members, access requests, and a shared calendar. Content stays visible
-              only to verified room members.
+              only to verified Room members.
             </p>
           </div>
 
           <div className="rooms-live-hero-actions">
             <Link href="/rooms/new" className="rooms-live-primary-action">
               <Plus aria-hidden="true" />
-              Plan a room
+              Create a Room
             </Link>
             <button
               type="button"
@@ -294,11 +290,7 @@ export default function LiveRoomsClient() {
 
         <div className="rooms-live-status-row">
           <span className={realtimeConnected ? "is-live" : "is-fallback"}>
-            {realtimeConnected ? (
-              <Wifi aria-hidden="true" />
-            ) : (
-              <WifiOff aria-hidden="true" />
-            )}
+            {realtimeConnected ? <Wifi aria-hidden="true" /> : <WifiOff aria-hidden="true" />}
             {realtimeConnected ? "Live updates connected" : "Refresh fallback active"}
           </span>
           <span>
@@ -316,22 +308,10 @@ export default function LiveRoomsClient() {
         {message && <div className="rooms-live-notice is-error">{message}</div>}
 
         <section className="rooms-live-metrics" aria-label="Room summary">
-          <article>
-            <span>Active rooms</span>
-            <strong>{summary?.total ?? rooms.length}</strong>
-          </article>
-          <article>
-            <span>Owned</span>
-            <strong>{summary?.owned ?? 0}</strong>
-          </article>
-          <article>
-            <span>Joined</span>
-            <strong>{summary?.joined ?? 0}</strong>
-          </article>
-          <article>
-            <span>Rooms with upcoming dates</span>
-            <strong>{summary?.upcomingEvents ?? 0}</strong>
-          </article>
+          <article><span>Active rooms</span><strong>{summary?.total ?? rooms.length}</strong></article>
+          <article><span>Owned</span><strong>{summary?.owned ?? 0}</strong></article>
+          <article><span>Joined</span><strong>{summary?.joined ?? 0}</strong></article>
+          <article><span>Rooms with upcoming dates</span><strong>{summary?.upcomingEvents ?? 0}</strong></article>
         </section>
 
         <section className="rooms-live-directory">
@@ -354,7 +334,7 @@ export default function LiveRoomsClient() {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search room name, purpose, type, or role"
+                placeholder="Search Room name, purpose, type, or role"
               />
             </label>
 
@@ -394,18 +374,9 @@ export default function LiveRoomsClient() {
                   </div>
 
                   <div className="rooms-live-card-stats">
-                    <span>
-                      <Users aria-hidden="true" />
-                      {room.memberCount} members
-                    </span>
-                    <span>
-                      <MessageSquareText aria-hidden="true" />
-                      {room.postCount} posts
-                    </span>
-                    <span>
-                      <CalendarDays aria-hidden="true" />
-                      {room.eventCount} events
-                    </span>
+                    <span><Users aria-hidden="true" />{room.memberCount} members</span>
+                    <span><MessageSquareText aria-hidden="true" />{room.postCount} posts</span>
+                    <span><CalendarDays aria-hidden="true" />{room.eventCount} events</span>
                   </div>
 
                   {room.nextEvent ? (
@@ -414,22 +385,20 @@ export default function LiveRoomsClient() {
                       <div>
                         <strong>{room.nextEvent.title}</strong>
                         <span>{formatDateTime(room.nextEvent.startsAt)}</span>
-                        {room.nextEvent.location && (
-                          <small>{room.nextEvent.location}</small>
-                        )}
+                        {room.nextEvent.location && <small>{room.nextEvent.location}</small>}
                       </div>
                     </div>
                   ) : (
                     <div className="rooms-live-next-event is-empty">
                       <CheckCircle2 aria-hidden="true" />
-                      <span>No upcoming room event.</span>
+                      <span>No upcoming Room event.</span>
                     </div>
                   )}
 
                   <div className="rooms-live-card-footer">
                     <span>Activity {formatRelativeTime(room.latestActivityAt)}</span>
                     <Link href={`/rooms/${encodeURIComponent(room.id)}`}>
-                      Open room
+                      Open Room
                       <ArrowRight aria-hidden="true" />
                     </Link>
                   </div>
@@ -439,8 +408,8 @@ export default function LiveRoomsClient() {
           ) : rooms.length > 0 ? (
             <div className="rooms-live-empty">
               <Search aria-hidden="true" />
-              <h3>No room matches those filters.</h3>
-              <p>Clear the search or select another room group.</p>
+              <h3>No Room matches those filters.</h3>
+              <p>Clear the search or select another Room group.</p>
               <button
                 type="button"
                 onClick={() => {
@@ -454,14 +423,13 @@ export default function LiveRoomsClient() {
           ) : (
             <div className="rooms-live-empty is-primary">
               <LockKeyhole aria-hidden="true" />
-              <h3>No active room membership was found.</h3>
+              <h3>No active Room membership was found.</h3>
               <p>
-                This dashboard stays empty until you own a room or an owner approves
-                your membership. The setup planner remains available without claiming
-                to provision or charge for a room.
+                Create a Free Room immediately or choose a paid monthly plan. Paid Rooms
+                are provisioned only after Stripe confirms the subscription.
               </p>
               <Link href="/rooms/new" className="rooms-live-primary-action">
-                Plan your first room
+                Create your first Room
                 <ArrowRight aria-hidden="true" />
               </Link>
             </div>
@@ -473,8 +441,8 @@ export default function LiveRoomsClient() {
             <RoomsSectionHeading
               eyebrow="Room models"
               title="Start with a structure that matches the group."
-              description="These blueprints support the existing room planner. They are not live room records and do not create a subscription."
-              action={{ href: "/rooms/new", label: "Open room planner" }}
+              description="Choose a model, select a Free or paid monthly plan, and create a private Room with verified ownership."
+              action={{ href: "/rooms/new", label: "Create a Room" }}
             />
             <div className="rooms-v2-model-grid">
               {ROOM_MODELS.slice(0, 4).map((model) => (
