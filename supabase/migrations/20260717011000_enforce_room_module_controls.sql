@@ -1,7 +1,15 @@
--- Enforce Room participation controls at the database boundary.
+-- Enforce Room participation and module privacy controls at the database boundary.
 -- Apply after 20260717010000_activate_room_tier_modules.sql.
 
 begin;
+
+-- Tier modules are read and mutated through the authenticated server API. This
+-- prevents a custom browser client from bypassing plan downgrades, role checks,
+-- private-directory controls, response privacy, or audit filtering.
+revoke all on table public.room_module_records from authenticated;
+revoke all on table public.room_module_responses from authenticated;
+revoke all on table public.room_module_settings from authenticated;
+revoke all on table public.room_invites from authenticated;
 
 create or replace function public.enforce_room_member_post_setting()
 returns trigger
