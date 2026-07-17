@@ -11,6 +11,7 @@ import {
   Loader2,
   MapPin,
   MessageCircle,
+  ShoppingBag,
   Sparkles,
   UserRound,
   UsersRound,
@@ -31,6 +32,7 @@ function ResultIcon({ result }: { result: EverythingSearchResult }) {
   if (result.type === "person") return <UserRound {...props} />;
   if (result.type === "room") return <UsersRound {...props} />;
   if (result.type === "job") return <BriefcaseBusiness {...props} />;
+  if (result.type === "marketplace") return <ShoppingBag {...props} />;
   if (result.type === "event") return <CalendarDays {...props} />;
   if (result.type === "image") return <ImageIcon {...props} />;
   if (result.type === "video") return <Video {...props} />;
