@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import {
+  EverythingSearchError,
+  runEverythingSearch,
+} from "@/lib/everything-search-server";
+import type { EverythingSearchResult } from "@/lib/everything-search";
 import { getOpenAiUsageMetadata, logAiUsage } from "@/lib/premium-ai";
 
 const SEARCH_AI_MODEL =
@@ -20,8 +25,18 @@ type ProfileAccess = {
   suspended_until: string | null;
 };
 
-function jsonError(message: string, status: number, extras: Record<string, unknown> = {}) {
-  return NextResponse.json({ error: message, ...extras }, { status });
+function jsonError(
+  message: string,
+  status: number,
+  extras: Record<string, unknown> = {}
+) {
+  return NextResponse.json(
+    { error: message, ...extras },
+    {
+      status,
+      headers: { "Cache-Control": "private, no-store" },
+    }
+  );
 }
 
 function getSupabaseForRequest(request: NextRequest) {
@@ -49,34 +64,34 @@ function clampText(value: unknown, maxLength: number) {
     .slice(0, maxLength);
 }
 
-function compactContextItem(item: unknown) {
-  if (!item || typeof item !== "object" || Array.isArray(item)) {
-    return "";
-  }
-
-  const record = item as Record<string, unknown>;
-  const kind = clampText(record.kind, 40);
-  const title = clampText(record.title, 180);
-  const description = clampText(record.description, 400);
-  const href = clampText(record.href, 180);
+function compactContextItem(result: EverythingSearchResult, index: number) {
+  const details = [
+    result.snippet,
+    result.ownerName ? `Contributor: ${result.ownerName}` : "",
+    result.roomName ? `Room: ${result.roomName}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return [
-    kind ? `Type: ${kind}` : "",
-    title ? `Title: ${title}` : "",
-    description ? `Context: ${description}` : "",
-    href ? `Path: ${href}` : "",
-  ].filter(Boolean).join("\n");
+    `Source [${index + 1}]`,
+    `Type: ${result.sourceLabel}`,
+    `Title: ${result.title}`,
+    details ? `Context: ${details.slice(0, 500)}` : "",
+    `Path: ${result.href}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
-function compactContext(items: unknown) {
-  if (!Array.isArray(items)) {
-    return "";
-  }
-
-  return items
+function compactContext(results: EverythingSearchResult[]) {
+  return results
+    .filter(
+      (result) =>
+        result.visibility !== "member" && result.visibility !== "private"
+    )
     .slice(0, 12)
     .map(compactContextItem)
-    .filter(Boolean)
     .join("\n\n")
     .slice(0, MAX_CONTEXT_CHARS);
 }
@@ -164,17 +179,19 @@ async function generateSearchAnswer({
     },
     body: JSON.stringify({
       model: SEARCH_AI_MODEL,
-      temperature: 0.25,
-      max_tokens: 360,
+      temperature: 0.2,
+      max_tokens: 420,
       messages: [
         {
           role: "system",
           content:
-            "You are Loombus AI inside Global Search. Your job is to help the user interpret Loombus search results and choose a real next action inside Loombus. Use only the provided search context and known Loombus navigation. The context may include a Context summary item with counts for People, Discussions, Saved, and Pages. Use those counts accurately. If Pages are the only nonzero results, say matching Loombus page or navigation results were found, not that no matching results were found. If Discussions, Saved, or People are nonzero, say matching Loombus content was found and name the source types. Only say you do not see enough matching Loombus results when all useful context counts are zero or the context is truly empty. Do not invent platform features, filters, ranking systems, dates, popularity sorting, web browsing, external research, admin access, or hidden data. Do not say users can filter by date, popularity, relevance, category, or forum unless that exact feature is present in the provided context. Valid next actions include opening a matching discussion, opening a matching profile, opening a saved item, going to Discussions, going to Saved, going to Premium or AI Usage, using Advanced search, or creating a discussion. Do not reveal private notes unless they are explicitly included in the provided user-owned context. Keep the answer concise, practical, and non-hype.",
+            "You are Loombus AI inside Everything Search. Organize only the supplied Loombus sources. Never claim to search the open web. Never invent businesses, people, prices, reviews, expertise, availability, consensus, or source counts. Use source markers such as [1] only when the numbered source directly supports the sentence. Distinguish member experiences from verified facts. Private Room and private saved-item material is not supplied. When evidence is thin or conflicting, say so plainly. Keep the response practical and concise. End with one useful next action inside Loombus.",
         },
         {
           role: "user",
-          content: `User search query:\n${query}\n\nAvailable Loombus search context:\n${context || "No matching context was provided."}\n\nReturn a short Loombus-grounded answer. Format:\n- Start with one plain sentence that accurately describes the matching context. If only page/navigation results exist, say that. If discussions, saved items, or people exist, name those source types. If nothing useful exists, say you do not see enough matching Loombus results yet.\n- Then give 2-4 bullets using only available context or real Loombus actions.\n- End with one next action.\n\nDo not mention generic search-engine behavior. Do not invent filters, popularity sorting, date sorting, forums, or external search.`,
+          content: `User search query:\n${query}\n\nAvailable Loombus sources:\n${
+            context || "No public or eligible Loombus sources were returned."
+          }\n\nReturn a concise grounded answer with source markers where supported, any important uncertainty, and one next action inside Loombus.`,
         },
       ],
     }),
@@ -212,24 +229,42 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid Ask Loombus AI payload.", 400);
   }
 
-  const query = clampText((body as Record<string, unknown>).query, MAX_QUERY_CHARS);
-  const context = compactContext((body as Record<string, unknown>).context);
+  const query = clampText(
+    (body as Record<string, unknown>).query,
+    MAX_QUERY_CHARS
+  );
 
   if (query.length < 2) {
     return jsonError("Type a question or search first.", 400);
   }
 
   try {
-    const generated = await generateSearchAnswer({
+    const search = await runEverythingSearch({
+      request,
       query,
-      context,
+      limit: 24,
     });
+    const eligibleResults = search.results.filter(
+      (result) =>
+        result.visibility !== "member" && result.visibility !== "private"
+    );
+    const context = compactContext(eligibleResults);
+
+    if (!context) {
+      return jsonError(
+        "No public, member-directory, or Premium sources are available for AI organization. Private Room and saved-item content stays private.",
+        409,
+        { code: "no_ai_eligible_search_context" }
+      );
+    }
+
+    const generated = await generateSearchAnswer({ query, context });
 
     await logAiUsage({
       supabase,
       userId: user.id,
       featureKey: FEATURE_KEY,
-      targetType: "search",
+      targetType: "everything_search",
       provider: "openai",
       modelName: SEARCH_AI_MODEL,
       cached: false,
@@ -237,26 +272,47 @@ export async function POST(request: NextRequest) {
       ...generated.usageMetadata,
     });
 
-    return NextResponse.json({
-      answer: generated.answer,
-      modelName: SEARCH_AI_MODEL,
-    });
-  } catch (error) {
+    return NextResponse.json(
+      {
+        answer: generated.answer,
+        modelName: SEARCH_AI_MODEL,
+        brief: search.brief,
+        sources: eligibleResults.slice(0, 10).map((result, index) => ({
+          number: index + 1,
+          type: result.type,
+          label: result.sourceLabel,
+          title: result.title,
+          href: result.href,
+        })),
+      },
+      {
+        headers: { "Cache-Control": "private, no-store" },
+      }
+    );
+  } catch (caughtError) {
+    const message =
+      caughtError instanceof Error
+        ? caughtError.message
+        : "Ask Loombus AI failed.";
+
     await logAiUsage({
       supabase,
       userId: user.id,
       featureKey: FEATURE_KEY,
-      targetType: "search",
+      targetType: "everything_search",
       provider: "openai",
       modelName: SEARCH_AI_MODEL,
       cached: false,
       success: false,
-      errorMessage: error instanceof Error ? error.message : "Ask Loombus AI failed.",
+      errorMessage: message,
     });
 
-    return jsonError(
-      error instanceof Error ? error.message : "Unable to ask Loombus AI.",
-      500
-    );
+    if (caughtError instanceof EverythingSearchError) {
+      return jsonError(caughtError.message, caughtError.status, {
+        code: caughtError.code,
+      });
+    }
+
+    return jsonError(message, 500);
   }
 }
