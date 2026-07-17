@@ -11,6 +11,7 @@ import {
   type MarketplacePhoto,
   type MarketplaceReport,
 } from "@/lib/marketplace";
+import { marketplaceAuthorizedFetch } from "@/lib/marketplace-auth-client";
 import { MarketplaceAdminReview } from "@/components/marketplace-admin-review";
 import { MarketplaceListingEditor } from "@/components/marketplace-listing-editor";
 import {
@@ -42,14 +43,24 @@ export default function MarketplaceManagerPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/marketplace?manage=1", { cache: "no-store" });
-      const payload = (await response.json()) as MarketplaceManageResponse & { error?: string };
+      const response = await marketplaceAuthorizedFetch(
+        "/api/marketplace?manage=1",
+        { cache: "no-store" },
+        { redirectTo: "/marketplace/manage" }
+      );
+      const payload = (await response.json()) as MarketplaceManageResponse & {
+        error?: string;
+      };
       if (!response.ok) {
         throw new Error(payload.error || "Marketplace management could not load.");
       }
       setData(payload);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Marketplace management could not load.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Marketplace management could not load."
+      );
     } finally {
       setLoading(false);
     }
@@ -78,7 +89,9 @@ export default function MarketplaceManagerPage() {
 
   function startNew() {
     const staleUploads = [...sessionPhotoPaths.current];
-    if (staleUploads.length > 0) void Promise.all(staleUploads.map(deleteUnusedPhoto));
+    if (staleUploads.length > 0) {
+      void Promise.all(staleUploads.map(deleteUnusedPhoto));
+    }
     setEditing(null);
     setDraft(emptyMarketplaceDraft());
     originalPhotoPaths.current = [];
@@ -101,7 +114,7 @@ export default function MarketplaceManagerPage() {
   }
 
   async function deleteUnusedPhoto(path: string) {
-    await fetch("/api/marketplace/photos", {
+    await marketplaceAuthorizedFetch("/api/marketplace/photos", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path }),
@@ -119,18 +132,32 @@ export default function MarketplaceManagerPage() {
       for (const file of files) {
         const form = new FormData();
         form.set("file", file);
-        const response = await fetch("/api/marketplace/photos", { method: "POST", body: form });
-        const payload = (await response.json()) as { photo?: MarketplacePhoto; error?: string };
+        const response = await marketplaceAuthorizedFetch(
+          "/api/marketplace/photos",
+          {
+            method: "POST",
+            body: form,
+          }
+        );
+        const payload = (await response.json()) as {
+          photo?: MarketplacePhoto;
+          error?: string;
+        };
         if (!response.ok || !payload.photo) {
           throw new Error(payload.error || `Unable to upload ${file.name}.`);
         }
         uploaded.push(payload.photo);
         sessionPhotoPaths.current.add(payload.photo.path);
       }
-      setDraft((current) => ({ ...current, photos: [...current.photos, ...uploaded] }));
+      setDraft((current) => ({
+        ...current,
+        photos: [...current.photos, ...uploaded],
+      }));
     } catch (cause) {
       await Promise.all(uploaded.map((photo) => deleteUnusedPhoto(photo.path)));
-      for (const photo of uploaded) sessionPhotoPaths.current.delete(photo.path);
+      for (const photo of uploaded) {
+        sessionPhotoPaths.current.delete(photo.path);
+      }
       setError(cause instanceof Error ? cause.message : "Photo upload failed.");
     } finally {
       setUploading(false);
@@ -138,7 +165,10 @@ export default function MarketplaceManagerPage() {
   }
 
   async function removePhoto(photo: MarketplacePhoto) {
-    updateDraft("photos", draft.photos.filter((item) => item.path !== photo.path));
+    updateDraft(
+      "photos",
+      draft.photos.filter((item) => item.path !== photo.path)
+    );
     if (sessionPhotoPaths.current.has(photo.path)) {
       sessionPhotoPaths.current.delete(photo.path);
       await deleteUnusedPhoto(photo.path);
@@ -178,7 +208,9 @@ export default function MarketplaceManagerPage() {
       });
 
       const retained = new Set(draft.photos.map((photo) => photo.path));
-      const removed = originalPhotoPaths.current.filter((path) => !retained.has(path));
+      const removed = originalPhotoPaths.current.filter(
+        (path) => !retained.has(path)
+      );
       await Promise.all(removed.map(deleteUnusedPhoto));
       setMessage(
         editing
@@ -191,13 +223,18 @@ export default function MarketplaceManagerPage() {
       sessionPhotoPaths.current = new Set();
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Listing could not be saved.");
+      setError(
+        cause instanceof Error ? cause.message : "Listing could not be saved."
+      );
     } finally {
       setWorking(false);
     }
   }
 
-  async function sellerAction(action: "sold" | "reopen" | "remove", listingId: string) {
+  async function sellerAction(
+    action: "sold" | "reopen" | "remove",
+    listingId: string
+  ) {
     setWorking(true);
     setMessage("");
     setError("");
@@ -212,7 +249,9 @@ export default function MarketplaceManagerPage() {
       );
       await load();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Listing could not be updated.");
+      setError(
+        cause instanceof Error ? cause.message : "Listing could not be updated."
+      );
     } finally {
       setWorking(false);
     }

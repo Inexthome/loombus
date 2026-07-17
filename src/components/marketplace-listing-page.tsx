@@ -24,6 +24,7 @@ import {
   marketplacePriceLabel,
   type MarketplaceListing,
 } from "@/lib/marketplace";
+import { marketplaceAuthorizedFetch } from "@/lib/marketplace-auth-client";
 
 const inputClass =
   "w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 py-3 outline-none";
@@ -83,7 +84,7 @@ export default function MarketplaceListingPage() {
     setReporting(true);
     setReportState("");
     try {
-      const response = await fetch("/api/marketplace", {
+      const response = await marketplaceAuthorizedFetch("/api/marketplace", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -94,7 +95,9 @@ export default function MarketplaceListingPage() {
         }),
       });
       const payload = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || "Report could not be submitted.");
+      if (!response.ok) {
+        throw new Error(payload.error || "Report could not be submitted.");
+      }
       setDetails("");
       setReportState("Report submitted for administrator review.");
     } catch (cause) {
@@ -118,7 +121,10 @@ export default function MarketplaceListingPage() {
     return (
       <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 py-12 text-[var(--loombus-text)]">
         <div className="mx-auto max-w-2xl rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-8 text-center">
-          <AlertTriangle className="mx-auto text-[var(--loombus-text-subtle)]" size={36} />
+          <AlertTriangle
+            className="mx-auto text-[var(--loombus-text-subtle)]"
+            size={36}
+          />
           <h1 className="mt-4 text-2xl font-semibold">Listing unavailable</h1>
           <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
             {error || "This item is no longer available."}
@@ -179,7 +185,11 @@ export default function MarketplaceListingPage() {
                     aria-label={`View photo ${index + 1}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={photo.url} alt="" className="h-full w-full object-cover" />
+                    <img
+                      src={photo.url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
                   </button>
                 ))}
               </div>
@@ -194,7 +204,9 @@ export default function MarketplaceListingPage() {
               {listing.title}
             </h1>
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <strong className="text-3xl">{marketplacePriceLabel(listing)}</strong>
+              <strong className="text-3xl">
+                {marketplacePriceLabel(listing)}
+              </strong>
               {listing.isNegotiable ? (
                 <span className="rounded-full bg-[var(--loombus-surface-muted)] px-3 py-1.5 text-xs font-semibold">
                   Negotiable
@@ -248,7 +260,11 @@ export default function MarketplaceListingPage() {
                   </p>
                 </div>
                 {listing.businessVerificationStatus === "verified" ? (
-                  <BadgeCheck className="ml-auto" size={20} aria-label="Verified business" />
+                  <BadgeCheck
+                    className="ml-auto"
+                    size={20}
+                    aria-label="Verified business"
+                  />
                 ) : null}
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
