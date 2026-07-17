@@ -208,7 +208,21 @@ export function useEverythingSearch() {
     setAiUpgradeRequired(false);
 
     try {
-      const context = search.results.slice(0, 12).map((result) => ({
+      const aiEligibleResults = search.results
+        .filter(
+          (result) =>
+            result.visibility !== "member" && result.visibility !== "private"
+        )
+        .slice(0, 12);
+
+      if (aiEligibleResults.length === 0) {
+        setAiMessage(
+          "No public, member-directory, or Premium sources are available for AI organization. Private Room and saved-item content stays private."
+        );
+        return;
+      }
+
+      const context = aiEligibleResults.map((result) => ({
         kind: result.sourceLabel,
         title: result.title,
         description: [
@@ -238,12 +252,14 @@ export function useEverythingSearch() {
       }
 
       setAiAnswer(String(payload.answer ?? ""));
-      setAiSources(
-        search.results.slice(0, 10).map((result) => ({
-          title: result.title,
-          href: result.href,
-        }))
-      );
+
+      const sourceMap = new Map<string, AiSource>();
+      for (const result of aiEligibleResults) {
+        const source = { title: result.title, href: result.href };
+        sourceMap.set(`${source.href}:${source.title}`, source);
+        if (sourceMap.size >= 10) break;
+      }
+      setAiSources([...sourceMap.values()]);
     } catch {
       setAiMessage("Unable to ask Loombus AI. Try again.");
     } finally {

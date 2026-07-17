@@ -148,6 +148,7 @@ export function EverythingSearchAi({
           <h2 className="text-xl font-semibold">AI organizer</h2>
           <p className="mt-1 text-sm leading-6 text-[var(--loombus-text-muted)]">
             Generate a grounded answer and return to the original Loombus sources.
+            Private Room and saved-item content stays outside AI context.
           </p>
           {answer ? (
             <div className="mt-4 whitespace-pre-wrap rounded-2xl bg-[var(--loombus-page-bg)] p-5 text-sm leading-7">
@@ -158,7 +159,7 @@ export function EverythingSearchAi({
             <div className="mt-3 flex flex-wrap gap-2">
               {sources.map((source) => (
                 <Link
-                  key={source.href}
+                  key={`${source.href}:${source.title}`}
                   href={source.href}
                   className="rounded-full border border-[var(--loombus-border)] px-3 py-2 text-xs text-[var(--loombus-text-muted)]"
                 >
