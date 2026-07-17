@@ -56,6 +56,7 @@ export async function visibleModules(service, roomId, access, plan) {
   const modules = new Set(plan.modules.filter((key) => roleCanOpen(access, key)));
   if (modules.has("directory") && !access.canManage) {
     const result = await service.from("room_module_settings").select("settings").eq("room_id", roomId).maybeSingle();
+    if (result.error) throw new Error(result.error.message);
     const settings = result.data?.settings && typeof result.data.settings === "object" ? result.data.settings : {};
     if (settings.memberDirectoryVisible === false) modules.delete("directory");
   }
@@ -125,6 +126,7 @@ export async function reportables(service, roomId, modules) {
     service.from("room_announcements").select("id,title,created_at").eq("room_id", roomId).order("created_at", { ascending: false }).limit(60),
     service.from("room_events").select("id,title,created_at").eq("room_id", roomId).order("created_at", { ascending: false }).limit(60),
   ]);
+  for (const result of [posts, members, records, files, announcements, events]) if (result.error) throw new Error(result.error.message);
   const profiles = await profileMap(service, (members.data ?? []).map((row) => asString(row.user_id)));
   const items = [];
   if (modules.has("discussions")) items.push(...(posts.data ?? []).map((row) => ({ targetType: "room_post", targetId: row.id, label: row.title || "Room discussion", context: text(row.body, 180) })));
@@ -137,7 +139,7 @@ export async function reportables(service, roomId, modules) {
 }
 export async function snapshot(service, roomId, targetType, targetId, modules) {
   const config = {
-    room_post: ["room_posts", "id,title,body,author_id", "discussions"],
+    room_post: ["room_posts", "id,title,body,author_id,deleted_at", "discussions"],
     room_member: ["room_members", "id,user_id,role,status", "members"],
     room_resource: ["room_resources", "id,file_name,mime_type,storage_path", "files"],
     room_announcement: ["room_announcements", "id,title,body", "announcements"],
@@ -150,7 +152,7 @@ export async function snapshot(service, roomId, targetType, targetId, modules) {
   }
   if (!config || !modules.has(config[2])) return null;
   const result = await service.from(config[0]).select(config[1]).eq("room_id", roomId).eq("id", targetId).maybeSingle();
-  if (result.error || !result.data || (targetType === "room_member" && !active(result.data))) return null;
+  if (result.error || !result.data || (targetType === "room_post" && result.data.deleted_at) || (targetType === "room_member" && !active(result.data))) return null;
   const row = result.data;
   if (targetType === "room_post") return { label: row.title || "Room discussion", snapshot: text(row.body), userId: row.author_id };
   if (targetType === "room_member") { const profiles = await profileMap(service, [row.user_id]); return { label: display(profileFor(profiles, row.user_id)), snapshot: `Role: ${normalizeRole(row.role)}. Status: ${row.status}.`, userId: row.user_id }; }
