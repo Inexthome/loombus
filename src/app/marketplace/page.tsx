@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import MarketplaceDirectoryPage from "@/components/marketplace-directory-page";
+import MarketplaceQuickLinks from "@/components/marketplace-quick-links";
 
 export const metadata: Metadata = {
   title: "Marketplace | Loombus",
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function MarketplacePage() {
-  return <MarketplaceDirectoryPage />;
+  return (
+    <>
+      <MarketplaceQuickLinks />
+      <MarketplaceDirectoryPage />
+    </>
+  );
 }
