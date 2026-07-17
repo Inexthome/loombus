@@ -103,8 +103,11 @@ export function getEverythingSearchGroup(type: EverythingSearchType) {
   }
   if (type === "person") return "people";
   if (type === "room") return "rooms";
-  if (["service", "event", "company", "job"].includes(type)) return "services";
-  if (["image", "video", "document", "file", "resource"].includes(type)) return "media";
+  if (type === "job") return "jobs";
+  if (["service", "event", "company"].includes(type)) return "services";
+  if (["image", "video", "document", "file", "resource"].includes(type)) {
+    return "media";
+  }
   if (["knowledge", "task", "poll", "form"].includes(type)) return "knowledge";
   if (["product", "marketplace"].includes(type)) return "commerce";
   if (type === "saved") return "saved";
