@@ -12,6 +12,7 @@ import {
 import {
   normalizeInput,
   refreshExpiredListings,
+  requireMarketplacePhotoOrigins,
   requireBusinessAttribution,
   requireListingControl,
   resolveMarketplaceViewer,
@@ -25,6 +26,11 @@ export async function createMarketplaceListing(
   const viewer = await resolveMarketplaceViewer(request, true);
   await refreshExpiredListings(viewer.service);
   const normalized = normalizeInput(input, viewer.user!.id);
+  requireMarketplacePhotoOrigins(
+    viewer.service,
+    normalized.row.photo_urls,
+    normalized.row.photo_paths
+  );
   await requireBusinessAttribution(viewer, normalized.businessId);
   const slug = await uniqueListingSlug(
     viewer.service,
@@ -66,6 +72,11 @@ export async function updateMarketplaceListing(
   const listingId = cleanUuid(input.listingId, "listing id");
   const current = await requireListingControl(viewer, listingId);
   const normalized = normalizeInput(input, viewer.user!.id);
+  requireMarketplacePhotoOrigins(
+    viewer.service,
+    normalized.row.photo_urls,
+    normalized.row.photo_paths
+  );
   await requireBusinessAttribution(viewer, normalized.businessId);
 
   const currentStatus = cleanMarketplaceText(current.status, 20);
