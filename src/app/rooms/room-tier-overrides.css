@@ -1,0 +1,4 @@
+/* Membership requests are a dedicated Room Starter and higher module. */
+.room-workspace-members-layout > .room-workspace-panel + .room-workspace-panel {
+  display: none;
+}
