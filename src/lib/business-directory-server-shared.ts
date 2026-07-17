@@ -21,7 +21,8 @@ import type {
 } from "@/lib/business-directory";
 
 export const MAX_DIRECTORY_ROWS = 240;
-export const MAX_SERVICES = 20;
+// There is no product-level cap on the number of legitimate services a business may publish.
+export const MAX_SERVICES = Number.POSITIVE_INFINITY;
 
 export type BusinessViewer = {
   user: User | null;
@@ -80,13 +81,14 @@ export function cleanUuid(value: unknown, label = "id") {
   return id;
 }
 
-export function cleanStringArray(value: unknown, maxItems = 20, maxLength = 100) {
+export function cleanStringArray(value: unknown, _maxItems = 20, maxLength = 100) {
   if (!Array.isArray(value)) return [];
+  void _maxItems;
   return [...new Set(
     value
       .map((item) => cleanText(item, maxLength))
       .filter(Boolean)
-  )].slice(0, maxItems);
+  )];
 }
 
 export function slugify(value: string) {
@@ -284,4 +286,3 @@ export function publicBusinessScore(business: BusinessProfile, query: string) {
   if (business.verificationStatus === "verified") score += 0.35;
   return score;
 }
-
