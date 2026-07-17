@@ -145,7 +145,7 @@ export function EverythingSearchAi({
           <Bot size={20} />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-semibold">AI organizer</h2>
+          <h2 className="text-xl font-semibold">Ask Loombus AI</h2>
           <p className="mt-1 text-sm leading-6 text-[var(--loombus-text-muted)]">
             Generate a grounded answer and return to the original Loombus sources.
             Private Room and saved-item content stays outside AI context.
@@ -180,12 +180,18 @@ export function EverythingSearchAi({
               disabled={working || loading}
               className="flex items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
             >
-              {working ? (
+              {working || loading ? (
                 <Loader2 className="animate-spin" size={16} />
               ) : (
                 <Sparkles size={16} />
               )}
-              {working ? "Organizing…" : "Generate grounded answer"}
+              {working
+                ? "Organizing…"
+                : loading
+                  ? "Finding sources…"
+                  : answer
+                    ? "Regenerate grounded answer"
+                    : "Ask Loombus AI"}
             </button>
             {upgradeRequired ? (
               <Link href="/premium" className="text-sm font-semibold underline">

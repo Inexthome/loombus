@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Clock3, Loader2, Search, X } from "lucide-react";
+import {
+  ArrowRight,
+  Clock3,
+  Loader2,
+  Search,
+  Sparkles,
+  X,
+} from "lucide-react";
 import type { ChangeEvent } from "react";
 import {
   EverythingSearchAi,
@@ -13,6 +20,7 @@ import { useEverythingSearch } from "./use-everything-search";
 
 export default function SearchPage() {
   const state = useEverythingSearch();
+  const aiBusy = state.aiQueued || state.aiWorking;
 
   return (
     <main className="search-v2-page loombus-shell-with-right-rail min-h-screen bg-[var(--loombus-page-bg)] text-[var(--loombus-text)]">
@@ -32,10 +40,10 @@ export default function SearchPage() {
 
           <form
             onSubmit={state.submit}
-            className="mt-7 flex flex-col gap-3 rounded-[1.4rem] border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-3 sm:flex-row sm:items-center"
+            className="mt-7 flex flex-col gap-3 rounded-[1.4rem] border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-3 lg:flex-row lg:items-center"
           >
             <Search
-              className="ml-2 hidden text-[var(--loombus-text-subtle)] sm:block"
+              className="ml-2 hidden text-[var(--loombus-text-subtle)] lg:block"
               size={21}
             />
             <input
@@ -53,17 +61,34 @@ export default function SearchPage() {
                 type="button"
                 aria-label="Clear search field"
                 onClick={() => state.setQuery("")}
-                className="hidden rounded-full p-2 sm:block"
+                className="hidden rounded-full p-2 lg:block"
               >
                 <X size={17} />
               </button>
             ) : null}
             <button
               type="submit"
-              disabled={state.query.trim().length < 2}
+              disabled={state.query.trim().length < 2 || aiBusy}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--loombus-primary-bg)] px-6 py-3 font-semibold text-[var(--loombus-primary-text)] disabled:opacity-45"
             >
               Search <ArrowRight size={17} />
+            </button>
+            <button
+              type="button"
+              onClick={state.askAiFromInput}
+              disabled={state.query.trim().length < 2 || aiBusy}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-6 py-3 font-semibold disabled:opacity-45"
+            >
+              {aiBusy ? (
+                <Loader2 className="animate-spin" size={17} />
+              ) : (
+                <Sparkles size={17} />
+              )}
+              {state.aiQueued
+                ? "Finding sources…"
+                : state.aiWorking
+                  ? "Organizing…"
+                  : "Ask Loombus AI"}
             </button>
           </form>
         </section>
@@ -96,7 +121,7 @@ export default function SearchPage() {
             />
             <EverythingSearchAi
               working={state.aiWorking}
-              loading={state.loading}
+              loading={state.loading || state.aiQueued}
               answer={state.aiAnswer}
               message={state.aiMessage}
               upgradeRequired={state.aiUpgradeRequired}

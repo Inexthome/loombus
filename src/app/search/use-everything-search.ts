@@ -1,10 +1,17 @@
 "use client";
 
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   buildSearchHref,
   type EverythingSearchResponse,
+  type EverythingSearchResult,
 } from "@/lib/everything-search";
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -16,6 +23,10 @@ import {
   HISTORY_KEY,
   type SearchGroup,
 } from "./everything-search-model";
+
+function normalizeQuery(value: string) {
+  return value.trim().toLowerCase();
+}
 
 export function useEverythingSearch() {
   const [query, setQuery] = useState("");
@@ -32,6 +43,7 @@ export function useEverythingSearch() {
   const [aiMessage, setAiMessage] = useState("");
   const [aiUpgradeRequired, setAiUpgradeRequired] = useState(false);
   const [aiSources, setAiSources] = useState<AiSource[]>([]);
+  const [pendingAiQuery, setPendingAiQuery] = useState("");
 
   useEffect(() => {
     const initial = getSearchRouteState();
@@ -73,6 +85,7 @@ export function useEverythingSearch() {
       setQuery(next.query);
       setActiveQuery(next.query);
       setActiveGroup(next.group);
+      setPendingAiQuery("");
     }
 
     window.addEventListener("popstate", onPopState);
@@ -101,6 +114,7 @@ export function useEverythingSearch() {
       setAiAnswer("");
       setAiMessage("");
       setAiSources([]);
+      setAiUpgradeRequired(false);
 
       try {
         const response = await fetch(
@@ -117,15 +131,27 @@ export function useEverythingSearch() {
         if (cancelled) return;
         if (!response.ok || !Array.isArray(payload.results)) {
           setSearch(EMPTY_SEARCH);
-          setMessage(payload.error ?? "Everything Search could not load.");
+          const errorMessage =
+            payload.error ?? "Everything Search could not load.";
+          setMessage(errorMessage);
+          setAiMessage(errorMessage);
+          setPendingAiQuery((pending) =>
+            normalizeQuery(pending) === normalizeQuery(clean) ? "" : pending
+          );
           return;
         }
 
         setSearch(payload as EverythingSearchResponse);
       } catch {
         if (!cancelled) {
+          const errorMessage =
+            "Everything Search could not load. Refresh and try again.";
           setSearch(EMPTY_SEARCH);
-          setMessage("Everything Search could not load. Refresh and try again.");
+          setMessage(errorMessage);
+          setAiMessage(errorMessage);
+          setPendingAiQuery((pending) =>
+            normalizeQuery(pending) === normalizeQuery(clean) ? "" : pending
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -145,6 +171,7 @@ export function useEverythingSearch() {
   );
   const groups = useMemo(() => getVisibleGroups(search), [search]);
   const hasQuery = activeQuery.trim().length >= 2;
+  const aiQueued = pendingAiQuery.trim().length >= 2;
 
   function persist(value: string) {
     const clean = value.trim();
@@ -174,16 +201,20 @@ export function useEverythingSearch() {
   }
 
   function runSearch(value: string) {
-    setQuery(value);
-    setActiveQuery(value);
+    const clean = value.trim();
+    if (clean.length < 2) return;
+
+    setPendingAiQuery("");
+    setQuery(clean);
+    setActiveQuery(clean);
     setActiveGroup("all");
-    persist(value);
-    updateUrl(value, "all");
+    persist(clean);
+    updateUrl(clean, "all");
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (query.trim().length >= 2) runSearch(query.trim());
+    if (query.trim().length >= 2) runSearch(query);
   }
 
   function selectGroup(group: SearchGroup) {
@@ -191,7 +222,7 @@ export function useEverythingSearch() {
     updateUrl(activeQuery, group, false);
   }
 
-  async function askAi() {
+  const askAi = useCallback(async () => {
     if (aiWorking || loading || activeQuery.trim().length < 2) return;
 
     if (!accessToken) {
@@ -210,7 +241,7 @@ export function useEverythingSearch() {
     try {
       const aiEligibleResults = search.results
         .filter(
-          (result) =>
+          (result: EverythingSearchResult) =>
             result.visibility !== "member" && result.visibility !== "private"
         )
         .slice(0, 12);
@@ -265,6 +296,36 @@ export function useEverythingSearch() {
     } finally {
       setAiWorking(false);
     }
+  }, [accessToken, activeQuery, aiWorking, loading, search.results]);
+
+  useEffect(() => {
+    const pending = pendingAiQuery.trim();
+    if (!pending || loading || aiWorking) return;
+    if (normalizeQuery(activeQuery) !== normalizeQuery(pending)) return;
+    if (normalizeQuery(search.query) !== normalizeQuery(pending)) return;
+
+    setPendingAiQuery("");
+    void askAi();
+  }, [activeQuery, aiWorking, askAi, loading, pendingAiQuery, search.query]);
+
+  function askAiFromInput() {
+    const clean = query.trim();
+    if (clean.length < 2 || aiWorking || aiQueued) return;
+
+    if (!authResolved) {
+      setAiMessage("Restoring your Loombus session. Try again in a moment.");
+      return;
+    }
+
+    if (!accessToken) {
+      window.location.href = `/login?next=${encodeURIComponent(
+        buildSearchHref(clean)
+      )}`;
+      return;
+    }
+
+    runSearch(clean);
+    setPendingAiQuery(clean);
   }
 
   return {
@@ -280,6 +341,7 @@ export function useEverythingSearch() {
     visibleResults,
     groups,
     aiWorking,
+    aiQueued,
     aiAnswer,
     aiMessage,
     aiUpgradeRequired,
@@ -288,5 +350,6 @@ export function useEverythingSearch() {
     runSearch,
     selectGroup,
     askAi,
+    askAiFromInput,
   };
 }
