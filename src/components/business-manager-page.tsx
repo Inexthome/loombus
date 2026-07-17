@@ -115,10 +115,10 @@ export default function BusinessManagerPage() {
   }
 
   function addService() {
-    setDraft((current) => {
-      if (current.services.length >= 20) return current;
-      return { ...current, services: [...current.services, { ...EMPTY_SERVICE }] };
-    });
+    setDraft((current) => ({
+      ...current,
+      services: [...current.services, { ...EMPTY_SERVICE }],
+    }));
   }
 
   function removeService(index: number) {
