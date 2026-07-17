@@ -1,4 +1,5 @@
 import type { MarketplaceListing, MarketplacePhoto } from "@/lib/marketplace";
+import { marketplaceAuthorizedFetch } from "@/lib/marketplace-auth-client";
 
 export type AttributeRow = { id: string; key: string; value: string };
 
@@ -111,7 +112,7 @@ export function buildMarketplaceAttributes(rows: AttributeRow[]) {
 }
 
 export async function marketplaceApiAction(body: Record<string, unknown>) {
-  const response = await fetch("/api/marketplace", {
+  const response = await marketplaceAuthorizedFetch("/api/marketplace", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
