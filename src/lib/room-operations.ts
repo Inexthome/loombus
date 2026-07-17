@@ -38,6 +38,8 @@ export type RoomAccess = {
   role: RoomRole | null;
   membershipId: string | null;
   membershipStatus: string | null;
+  membershipMutedUntil: string | null;
+  membershipSuspendedUntil: string | null;
   allowed: boolean;
   isOwner: boolean;
   canManage: boolean;
@@ -102,6 +104,13 @@ export function asBoolean(value: unknown) {
     );
   }
   return false;
+}
+
+function normalizedDate(value: unknown) {
+  const raw = asString(value);
+  if (!raw) return null;
+  const date = new Date(raw);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
 
 export function normalizeRoom(row: RoomRow): NormalizedRoom {
@@ -199,10 +208,21 @@ export async function getRoomAccess(
   const membershipStatus = membership
     ? asString(membership.status) || "active"
     : null;
+  const membershipMutedUntil = membership
+    ? normalizedDate(membership.muted_until)
+    : null;
+  const membershipSuspendedUntil = membership
+    ? normalizedDate(membership.suspended_until)
+    : null;
+  const isSuspended =
+    membershipSuspendedUntil !== null &&
+    new Date(membershipSuspendedUntil).getTime() > Date.now();
   const membershipIsActive =
-    membership !== null && !["blocked", "removed", "inactive"].includes(
+    membership !== null &&
+    !["blocked", "removed", "inactive"].includes(
       membershipStatus?.toLowerCase() ?? ""
-    );
+    ) &&
+    !isSuspended;
   const role = isOwner
     ? "owner"
     : membershipIsActive
@@ -216,6 +236,8 @@ export async function getRoomAccess(
     role,
     membershipId: membership ? asString(membership.id) || null : null,
     membershipStatus,
+    membershipMutedUntil,
+    membershipSuspendedUntil,
     allowed,
     isOwner,
     canManage: role === "owner" || role === "administrator",

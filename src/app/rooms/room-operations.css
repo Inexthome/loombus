@@ -1,0 +1,66 @@
+[data-loombus-room-operations-host="true"] { margin: .75rem 0 0; }
+.room-operations { display: grid; gap: .75rem; color: var(--rooms-live-text, var(--loombus-text)); }
+.room-operations button, .room-operations input, .room-operations select, .room-operations textarea { font: inherit; }
+.room-operations-trigger { display: inline-flex; min-height: 2.65rem; width: fit-content; align-items: center; gap: .55rem; border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: 999px; background: var(--rooms-live-surface, var(--loombus-surface)); padding: .55rem .9rem; color: var(--rooms-live-text, var(--loombus-text)); font-size: .8rem; font-weight: 850; cursor: pointer; }
+.room-operations-trigger svg { width: 1rem; height: 1rem; }
+.room-operations-trigger strong, .room-operation-tabs strong { display: inline-grid; min-width: 1.35rem; min-height: 1.35rem; place-items: center; border-radius: 999px; background: #b42318; color: #fff; font-size: .68rem; }
+.room-operations-panel { overflow: hidden; border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: 1.35rem; background: var(--rooms-live-surface, var(--loombus-surface)); box-shadow: 0 18px 50px rgba(15, 23, 42, .12); }
+.room-operations-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1rem 1.1rem; border-bottom: 1px solid var(--rooms-live-border, var(--loombus-border)); background: var(--rooms-live-surface-muted, var(--loombus-surface-muted)); }
+.room-operations-heading p, .room-operations-heading h2, .room-operations-heading span { margin: 0; }
+.room-operations-heading p { color: var(--rooms-live-accent, #25885d); font-size: .72rem; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.room-operations-heading h2 { margin-top: .2rem; font-size: 1.15rem; }
+.room-operations-heading span { display: block; margin-top: .3rem; color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .82rem; line-height: 1.45; }
+.room-operations-heading > button { display: grid; width: 2.25rem; height: 2.25rem; flex: 0 0 auto; place-items: center; border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: .8rem; background: var(--rooms-live-surface, var(--loombus-surface)); color: inherit; cursor: pointer; }
+.room-operations-heading svg { width: 1rem; height: 1rem; }
+.room-operations-notice { margin: .9rem 1rem 0; border: 1px solid color-mix(in srgb, #25885d 35%, var(--rooms-live-border, var(--loombus-border))); border-radius: .9rem; background: color-mix(in srgb, #25885d 9%, transparent); padding: .75rem .85rem; font-size: .8rem; font-weight: 750; }
+.room-operations-loading { display: flex; align-items: center; justify-content: center; gap: .6rem; min-height: 9rem; color: var(--rooms-live-muted, var(--loombus-text-muted)); }
+.room-operation-tabs { display: flex; gap: .45rem; overflow-x: auto; padding: 1rem; border-bottom: 1px solid var(--rooms-live-border, var(--loombus-border)); }
+.room-operation-tabs button { display: inline-flex; min-height: 2.45rem; flex: 0 0 auto; align-items: center; gap: .45rem; border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: 999px; background: var(--rooms-live-surface-muted, var(--loombus-surface-muted)); padding: .5rem .75rem; color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .76rem; font-weight: 850; cursor: pointer; }
+.room-operation-tabs button[aria-pressed="true"] { border-color: color-mix(in srgb, #25885d 45%, var(--rooms-live-border, var(--loombus-border))); background: color-mix(in srgb, #25885d 12%, var(--rooms-live-surface, var(--loombus-surface))); color: var(--rooms-live-text, var(--loombus-text)); }
+.room-operation-tabs svg, .room-operation-actions svg, .room-operation-form button svg, .room-operation-member-controls button svg, .room-operation-report button svg, .room-operation-removed button svg, .room-operation-leave svg, .room-operation-refresh svg, .room-operation-card button svg { width: .95rem; height: .95rem; }
+.room-operation-stack, .room-operation-grid { display: grid; gap: 1rem; padding: 1rem; }
+.room-operation-grid { grid-template-columns: minmax(0, 1.15fr) minmax(16rem, .85fr); }
+.room-operation-grid > section, .room-operation-stack > section, .room-operation-card, .room-operation-form { border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: 1rem; background: var(--rooms-live-surface-muted, var(--loombus-surface-muted)); padding: 1rem; }
+.room-operation-stack h3, .room-operation-grid h3, .room-operation-card h3, .room-operation-form h3 { margin: 0 0 .75rem; font-size: .95rem; }
+.room-operation-stack p, .room-operation-grid p, .room-operation-card p { color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .8rem; line-height: 1.5; }
+.room-operation-usage { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; padding: 0 !important; border: 0 !important; background: transparent !important; }
+.room-operation-metric { border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: 1rem; background: var(--rooms-live-surface-muted, var(--loombus-surface-muted)); padding: 1rem; }
+.room-operation-metric > span, .room-operation-metric small { display: block; color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .72rem; }
+.room-operation-metric strong { display: block; margin: .3rem 0 .65rem; font-size: 1.05rem; }
+.room-operation-metric > div { height: .4rem; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--rooms-live-border, var(--loombus-border)) 75%, transparent); }
+.room-operation-metric i { display: block; height: 100%; border-radius: inherit; background: #25885d; }
+.room-operation-form, .room-operation-member-controls { display: grid; gap: .7rem; }
+.room-operation-form label { display: grid; gap: .35rem; }
+.room-operation-form label > span { color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .72rem; font-weight: 800; }
+.room-operations input, .room-operations select, .room-operations textarea { width: 100%; border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: .75rem; background: var(--rooms-live-surface, var(--loombus-surface)); padding: .65rem .72rem; color: var(--rooms-live-text, var(--loombus-text)); }
+.room-operations textarea { resize: vertical; }
+.room-operations button:disabled { cursor: not-allowed; opacity: .55; }
+.room-operation-form > button, .room-operation-member-controls button, .room-operation-report button, .room-operation-removed button, .room-operation-actions button, .room-operation-card > button, .room-operation-leave, .room-operation-refresh { display: inline-flex; min-height: 2.35rem; width: fit-content; align-items: center; justify-content: center; gap: .45rem; border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: .75rem; background: var(--rooms-live-surface, var(--loombus-surface)); padding: .5rem .75rem; color: inherit; font-size: .75rem; font-weight: 850; cursor: pointer; }
+.room-operation-form > button { border-color: #25885d; background: #25885d; color: #fff; }
+.room-operation-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.room-operation-section-heading h3, .room-operation-section-heading p { margin: 0; }
+.room-operation-section-heading p { margin-top: .3rem; color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .78rem; }
+.room-operation-section-heading > span { border-radius: 999px; background: var(--rooms-live-surface-muted, var(--loombus-surface-muted)); padding: .35rem .6rem; font-size: .7rem; font-weight: 800; }
+.room-operation-member, .room-operation-report, .room-operation-removed, .room-operation-own-report { border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: 1rem; background: var(--rooms-live-surface-muted, var(--loombus-surface-muted)); padding: .85rem; }
+.room-operation-member { display: grid; grid-template-columns: minmax(12rem, .8fr) minmax(18rem, 1.2fr); gap: 1rem; align-items: start; }
+.room-operation-member > div:first-child, .room-operation-own-report { display: grid; gap: .2rem; }
+.room-operation-member span, .room-operation-member small, .room-operation-member em, .room-operation-own-report span, .room-operation-own-report small, .room-operation-removed span, .room-operation-report span, .room-operation-report small { color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .72rem; font-style: normal; }
+.room-operation-member-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.room-operation-member-controls input:last-of-type, .room-operation-member-controls button { grid-column: 1 / -1; }
+.room-operation-report { display: grid; gap: .65rem; margin-top: .65rem; }
+.room-operation-report header { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; }
+.room-operation-report header span { text-align: right; }
+.room-operation-report p { max-height: 9rem; overflow: auto; margin: 0; white-space: pre-wrap; }
+.room-operation-report > div, .room-operation-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.room-operation-report .is-danger, .room-operation-card.is-danger > button.is-danger { border-color: #b42318; color: #b42318; }
+.room-operation-removed { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-top: .6rem; }
+.room-operation-removed > div { display: grid; gap: .2rem; }
+.room-operation-own-report { margin-top: .55rem; }
+.room-operation-leave { margin-top: 1rem; color: #b42318 !important; }
+.room-operation-refresh { margin: 0 1rem 1rem; }
+.room-operation-card { display: grid; gap: .7rem; }
+.room-operation-card > * { margin: 0; }
+.room-operation-card.is-danger { border-color: color-mix(in srgb, #b42318 40%, var(--rooms-live-border, var(--loombus-border))); }
+.room-operation-empty { margin: .5rem 0 0; color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .78rem; }
+@media (max-width: 860px) { .room-operation-grid, .room-operation-member { grid-template-columns: 1fr; } .room-operation-usage { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .room-operations-panel { border-radius: 1rem; } .room-operations-heading, .room-operation-stack, .room-operation-grid, .room-operation-tabs { padding: .8rem; } .room-operation-member-controls { grid-template-columns: 1fr; } .room-operation-member-controls > * { grid-column: 1 !important; } .room-operation-report header, .room-operation-removed, .room-operation-section-heading { align-items: flex-start; flex-direction: column; } .room-operation-report header span { text-align: left; } }
