@@ -2,3 +2,8 @@
 .room-workspace-members-layout > .room-workspace-panel + .room-workspace-panel {
   display: none;
 }
+
+/* Rooms remain private by contract; do not imply a public conversion switch. */
+.room-tier-create-card:has(input[minlength="3"]) > .room-tier-checkbox {
+  display: none;
+}
