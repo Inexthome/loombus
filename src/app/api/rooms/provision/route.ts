@@ -8,6 +8,11 @@ import {
   startPaidRoomCheckout,
 } from "@/lib/room-billing";
 import {
+  freeRoomIsAvailable,
+  provisionIncludedRoom,
+} from "@/lib/room-plan-capacity";
+import { normalizeRoomPlanKey } from "@/lib/room-plan-entitlements";
+import {
   getRoomCheckoutStorageMessage,
   getRoomCheckoutStorageReadiness,
 } from "@/lib/room-checkout-readiness";
@@ -86,18 +91,6 @@ export async function POST(request: NextRequest) {
 
   try {
     const paidPlan = isPaidRoomPlanKey(planId);
-
-    if (paidPlan) {
-      const storage = await getRoomCheckoutStorageReadiness();
-      if (!storage.ready) {
-        return jsonError(
-          getRoomCheckoutStorageMessage(storage.issue),
-          503,
-          `room_checkout_${storage.issue}`
-        );
-      }
-    }
-
     const input = {
       userId: accountAccess.user.id,
       email: accountAccess.user.email ?? null,
@@ -107,6 +100,42 @@ export async function POST(request: NextRequest) {
       planKey: planId,
       origin: getOrigin(request),
     };
+
+    if (planId === "free") {
+      const available = await freeRoomIsAvailable(input.userId);
+      if (!available) {
+        return jsonError(
+          "The Free plan includes one active Room. Choose a paid plan for another Room.",
+          409,
+          "free_room_limit_reached"
+        );
+      }
+    }
+
+    if (paidPlan) {
+      const includedRoom = await provisionIncludedRoom({
+        userId: input.userId,
+        roomName,
+        description,
+        modelId,
+        planKey: normalizeRoomPlanKey(planId),
+      });
+
+      if (includedRoom) {
+        return NextResponse.json(includedRoom, {
+          headers: { "Cache-Control": "private, no-store" },
+        });
+      }
+
+      const storage = await getRoomCheckoutStorageReadiness();
+      if (!storage.ready) {
+        return jsonError(
+          getRoomCheckoutStorageMessage(storage.issue),
+          503,
+          `room_checkout_${storage.issue}`
+        );
+      }
+    }
 
     const result =
       planId === "free"
@@ -137,7 +166,9 @@ export async function POST(request: NextRequest) {
 
     console.error("Room provisioning failed:", error);
     return jsonError(
-      "Loombus could not provision this Room.",
+      error instanceof Error
+        ? error.message
+        : "Loombus could not provision this Room.",
       500,
       "room_provision_failed"
     );

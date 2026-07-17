@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 import { createRequestSupabase } from "@/lib/room-operations";
 import { getRoomCheckoutConfiguration } from "@/lib/room-billing";
+import { getIncludedRoomPlans } from "@/lib/room-plan-capacity";
 import { getRoomCheckoutStorageReadiness } from "@/lib/room-checkout-readiness";
 
 function jsonError(message: string, status: number, code?: string) {
@@ -29,9 +30,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const [config, storage] = await Promise.all([
+  const [config, storage, includedPlans] = await Promise.all([
     Promise.resolve(getRoomCheckoutConfiguration()),
     getRoomCheckoutStorageReadiness(),
+    getIncludedRoomPlans(accountAccess.user.id).catch(() => ({})),
   ]);
   const coreReady =
     config.stripeSecretKey &&
@@ -44,6 +46,7 @@ export async function GET(request: NextRequest) {
       coreReady,
       monthlyOnly: true,
       plans: config.plans,
+      includedPlans,
       storage: {
         ready: storage.ready,
         checkoutIntentsReady: storage.checkoutIntentsReady,
