@@ -1,0 +1,24 @@
+.room-expansion-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--room-expansion-accent) 10%, transparent);
+}
+
+.room-expansion-brand img,
+.room-expansion-brand svg {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
+.room-expansion-brand strong {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

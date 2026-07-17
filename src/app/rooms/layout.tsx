@@ -1,3 +1,4 @@
+import { RoomExpansionWorkspace } from "@/components/room-expansion-workspace";
 import { RoomFoundationWorkspace } from "@/components/room-foundation-workspace";
 import { RoomOperationsWorkspace } from "@/components/room-operations-workspace";
 import { RoomPlanFeatureEnhancer } from "@/components/room-plan-feature-enhancer";
@@ -6,6 +7,8 @@ import { RoomTierModulesWorkspace } from "@/components/room-tier-modules-workspa
 import "./rooms-v2.css";
 import "./rooms-v2-route-states.css";
 import "./rooms-live.css";
+import "./room-expansion.css";
+import "./room-expansion-brand.css";
 import "./room-foundation.css";
 import "./room-operations.css";
 import "./room-tier-features.css";
@@ -21,6 +24,7 @@ export default function RoomsLayout({
       <RoomPlanFeatureEnhancer />
       <RoomFoundationWorkspace />
       <RoomOperationsWorkspace />
+      <RoomExpansionWorkspace />
       <RoomTierModulesWorkspace />
       <RoomResourcesWorkspace />
       {children}
