@@ -129,6 +129,14 @@ export function RoomExpansionWorkspace() {
     void loadManifest();
   }, [loadManifest]);
 
+  useEffect(() => {
+    const shell = document.querySelector(".rooms-live-page .rooms-live-shell");
+    if (!shell) return;
+    const accent = manifest?.organization?.branding?.accent;
+    if (accent) shell.style.setProperty("--room-expansion-accent", accent);
+    else shell.style.removeProperty("--room-expansion-accent");
+  }, [manifest]);
+
   const loadView = useCallback(
     async (view) => {
       setLoading(true);
@@ -189,6 +197,16 @@ export function RoomExpansionWorkspace() {
   return createPortal(
     <div className="room-expansion">
       <div className="room-expansion-toolbar">
+        {manifest.organization ? (
+          <span className="room-expansion-brand">
+            {manifest.organization.branding?.logoUrl ? (
+              <img src={manifest.organization.branding.logoUrl} alt="" />
+            ) : (
+              <Building2 aria-hidden="true" />
+            )}
+            <strong>{manifest.organization.name}</strong>
+          </span>
+        ) : null}
         <button type="button" onClick={() => openStudio("tasks")}>
           <Settings2 aria-hidden="true" />
           <span>Room Studio</span>

@@ -77,7 +77,7 @@ export async function GET(request, context) {
     const view = request.nextUrl.searchParams.get("view") || "manifest";
     let data;
     if (view === "manifest") {
-      data = await loadExpansionManifest(access, authorized.userId);
+      data = await loadExpansionManifest(authorized.service, access, authorized.userId);
     } else if (view === "tasks") {
       data = await loadTasks(authorized.service, roomId, access, authorized.userId);
     } else if (view === "polls") {
@@ -135,7 +135,7 @@ export async function POST(request, context) {
   const authorized = await authorize(request);
   if (!authorized.ok) return authorized.response;
   const { roomId } = await context.params;
-  if (!validUuid(romId)) return jsonError("Invalid Room id.", 400);
+  if (!validUuid(roomId)) return jsonError("Invalid Room id.", 400);
   const body = await request.json().catch(() => ({}));
 
   try {

@@ -8,6 +8,7 @@ import "./rooms-v2.css";
 import "./rooms-v2-route-states.css";
 import "./rooms-live.css";
 import "./room-expansion.css";
+import "./room-expansion-brand.css";
 import "./room-foundation.css";
 import "./room-operations.css";
 import "./room-tier-features.css";

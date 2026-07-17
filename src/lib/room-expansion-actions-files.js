@@ -2,7 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { ACCEPTED_ROOM_MIME_TYPES, ROOM_RESOURCE_BUCKET, ExpansionError, cleanText, ensureRoomModule, mediaKind, normalizeFolderPath, randomStoragePath, resourceUsage, safeFileName, storedObjectInfo, uploadMimeType, validUuid } from "@/lib/room-expansion-service";
-import { asNumber, asString } from "@/lib/room-operations";
+import { asString } from "@/lib/room-operations";
 import { activeRoom } from "@/lib/room-expansion-actions-shared";
 
 export async function prepareFileUpload(service, access, body) {
@@ -115,7 +115,7 @@ export async function completeFileUpload(service, access, userId, body) {
   const versionGroupId = replace?.version_group_id ?? replace?.id ?? randomUUID();
   const versionNumber = replace
     ? Math.max(1, Number(replace.version_number ?? 1)) + 1
-    : Math.max(1, Math.floor(asNumber(body.versionNumber)) || 1);
+    : 1;
   const inserted = await service
     .from("room_resources")
     .insert({

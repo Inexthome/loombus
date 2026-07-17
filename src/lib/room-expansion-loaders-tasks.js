@@ -1,6 +1,6 @@
 import "server-only";
 
-import { ensureRoomModule, loadProfilesMap, serializePlan, serializeRecord, ExpansionError } from "@/lib/room-expansion-service";
+import { asObject, ensureOrganization, ensureRoomModule, loadProfilesMap, serializePlan, serializeRecord, ExpansionError } from "@/lib/room-expansion-service";
 import { asString, profileFor } from "@/lib/room-operations";
 
 async function recordsFor(service, roomId, moduleKey) {
@@ -16,8 +16,26 @@ async function recordsFor(service, roomId, moduleKey) {
   return (result.data ?? []).map(serializeRecord);
 }
 
-export async function loadExpansionManifest(access, userId) {
+export async function loadExpansionManifest(service, access, userId) {
   const plan = serializePlan(access);
+  let organization = null;
+  if (["organization", "organization-plus", "enterprise"].includes(plan.id)) {
+    let organizationId = asString(access.rawRoom.organization_id);
+    if (!organizationId && access.isOwner) {
+      const initialized = await ensureOrganization(service, access, userId);
+      organizationId = initialized.organizationId;
+      organization = initialized.organization;
+    }
+    if (!organization && organizationId) {
+      const result = await service
+        .from("room_organizations")
+        .select("id, name, plan_key, branding")
+        .eq("id", organizationId)
+        .maybeSingle();
+      if (result.error) throw new ExpansionError(result.error.message, 503);
+      organization = result.data;
+    }
+  }
   return {
     room: access.room,
     access: {
@@ -28,9 +46,21 @@ export async function loadExpansionManifest(access, userId) {
       canModerate: access.canModerate,
     },
     plan,
+    organization: organization
+      ? {
+          id: asString(organization.id),
+          name: asString(organization.name),
+          planKey: asString(organization.plan_key),
+          branding: asObject(organization.branding),
+        }
+      : null,
     capabilities: {
-      studio: ["pro", "organization", "organization-plus", "enterprise"].includes(plan.id),
-      organization: ["organization", "organization-plus", "enterprise"].includes(plan.id),
+      studio: ["pro", "organization", "organization-plus", "enterprise"].includes(
+        plan.id
+      ),
+      organization: ["organization", "organization-plus", "enterprise"].includes(
+        plan.id
+      ),
       enterprise: plan.id === "enterprise",
     },
   };
@@ -57,7 +87,8 @@ export async function loadTasks(service, roomId, access, userId) {
   return records.map((record) => ({
     ...record,
     creator: profileFor(profiles, record.createdBy),
-    canUpdate: access.canManage || asString(record.metadata.assigneeId) === userId,
+    canUpdate:
+      access.canManage || asString(record.metadata.assigneeId) === userId,
     comments: comments
       .filter((comment) => asString(comment.record_id) === record.id)
       .map((comment) => {
