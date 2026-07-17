@@ -6,6 +6,8 @@ import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { supabase } from "@/lib/supabase/client";
 
+const AUTHENTICATED_ROOT_DESTINATION = "/home";
+
 const PROTECTED_PATH_PREFIXES = [
   "/home",
   "/dashboard",
@@ -60,10 +62,12 @@ export function SessionLifecycleGuard() {
   const pathname = usePathname();
   const router = useRouter();
   const protectedPath = isProtectedPath(pathname);
-  const [checking, setChecking] = useState(protectedPath);
+  const rootPath = pathname === "/";
+  const shouldResolveSession = protectedPath || rootPath;
+  const [checking, setChecking] = useState(shouldResolveSession);
 
   const validateSession = useCallback(async () => {
-    if (!protectedPath) {
+    if (!shouldResolveSession) {
       setChecking(false);
       return true;
     }
@@ -74,7 +78,17 @@ export function SessionLifecycleGuard() {
       const { data: sessionData } = await supabase.auth.getSession();
 
       if (!sessionData.session) {
+        if (rootPath) {
+          setChecking(false);
+          return true;
+        }
+
         router.replace(getLoginHref(pathname));
+        return false;
+      }
+
+      if (rootPath) {
+        router.replace(AUTHENTICATED_ROOT_DESTINATION);
         return false;
       }
 
@@ -128,10 +142,15 @@ export function SessionLifecycleGuard() {
       setChecking(false);
       return true;
     } catch {
+      if (rootPath) {
+        setChecking(false);
+        return true;
+      }
+
       router.replace(getAccountAccessHref("verification_unavailable"));
       return false;
     }
-  }, [pathname, protectedPath, router]);
+  }, [pathname, rootPath, router, shouldResolveSession]);
 
   useEffect(() => {
     void validateSession();
@@ -139,7 +158,16 @@ export function SessionLifecycleGuard() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!protectedPath) {
+      if (!shouldResolveSession) {
+        return;
+      }
+
+      if (rootPath) {
+        if (session) {
+          router.replace(AUTHENTICATED_ROOT_DESTINATION);
+        } else {
+          setChecking(false);
+        }
         return;
       }
 
@@ -154,7 +182,7 @@ export function SessionLifecycleGuard() {
     });
 
     function handleVisibilityChange() {
-      if (document.visibilityState === "visible" && protectedPath) {
+      if (document.visibilityState === "visible" && shouldResolveSession) {
         void validateSession();
       }
     }
@@ -167,9 +195,9 @@ export function SessionLifecycleGuard() {
       window.removeEventListener("focus", validateSession);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [pathname, protectedPath, router, validateSession]);
+  }, [pathname, rootPath, router, shouldResolveSession, validateSession]);
 
-  if (!protectedPath || !checking) {
+  if (!shouldResolveSession || !checking) {
     return null;
   }
 
@@ -177,8 +205,12 @@ export function SessionLifecycleGuard() {
     <div className="fixed inset-0 z-[9998] bg-black">
       <LoombusLoadingScreen
         eyebrow="Loombus session"
-        title="Checking your session..."
-        message="Confirming your secure access before opening this page."
+        title={rootPath ? "Restoring your Loombus..." : "Checking your session..."}
+        message={
+          rootPath
+            ? "Opening your signed-in Home when a saved session is available."
+            : "Confirming your secure access before opening this page."
+        }
       />
     </div>
   );
