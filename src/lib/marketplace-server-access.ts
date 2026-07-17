@@ -99,6 +99,27 @@ export function missingMarketplaceSchema(error: {
   );
 }
 
+export function requireMarketplacePhotoOrigins(
+  service: SupabaseClient,
+  urls: string[],
+  paths: string[]
+) {
+  for (let index = 0; index < paths.length; index += 1) {
+    const { data } = service.storage
+      .from("marketplace-images")
+      .getPublicUrl(paths[index]);
+    const expectedUrl = new URL(data.publicUrl).toString();
+    const submittedUrl = new URL(urls[index]).toString();
+    if (submittedUrl !== expectedUrl) {
+      throw new MarketplaceError(
+        "Marketplace photos must come from the protected listing uploader.",
+        400,
+        "invalid_photo_source"
+      );
+    }
+  }
+}
+
 export function normalizeInput(input: MarketplaceInput, userId: string) {
   const title = cleanMarketplaceText(input.title, 200);
   const description = cleanLongText(input.description, 16000);
