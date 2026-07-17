@@ -6,6 +6,249 @@ export type RoomPlanKey =
   | "organization-plus"
   | "enterprise";
 
+export type RoomModuleKey =
+  | "overview"
+  | "discussions"
+  | "calendar"
+  | "announcements"
+  | "members"
+  | "requests"
+  | "resources"
+  | "settings"
+  | "tasks"
+  | "polls"
+  | "directory"
+  | "knowledge"
+  | "files"
+  | "forms"
+  | "services"
+  | "invites"
+  | "activity"
+  | "advanced-controls"
+  | "admin-tools"
+  | "operations"
+  | "member-workflows"
+  | "enterprise-controls"
+  | "high-capacity"
+  | "community-operations";
+
+export type RoomModuleDefinition = {
+  id: RoomModuleKey;
+  label: string;
+  description: string;
+  minimumRole: "member" | "manager" | "owner";
+  dataModule?:
+    | "resource"
+    | "task"
+    | "poll"
+    | "directory"
+    | "knowledge"
+    | "form"
+    | "service"
+    | "workflow";
+};
+
+export const ROOM_MODULE_DEFINITIONS: Record<
+  RoomModuleKey,
+  RoomModuleDefinition
+> = {
+  overview: {
+    id: "overview",
+    label: "Overview",
+    description: "Room activity, upcoming dates, announcements, and operating status.",
+    minimumRole: "member",
+  },
+  discussions: {
+    id: "discussions",
+    label: "Discussions",
+    description: "Private Room conversations separated from the public discussion feed.",
+    minimumRole: "member",
+  },
+  calendar: {
+    id: "calendar",
+    label: "Calendar",
+    description: "Shared events, deadlines, meetings, and Room dates.",
+    minimumRole: "member",
+  },
+  announcements: {
+    id: "announcements",
+    label: "Announcements",
+    description: "Leadership updates and important notices.",
+    minimumRole: "member",
+  },
+  members: {
+    id: "members",
+    label: "Members / Roles",
+    description: "Verified Room members and explicit role assignments.",
+    minimumRole: "member",
+  },
+  requests: {
+    id: "requests",
+    label: "Requests",
+    description: "Pending membership requests and approval decisions.",
+    minimumRole: "manager",
+  },
+  resources: {
+    id: "resources",
+    label: "Resources",
+    description: "Curated links, references, policies, and external portals.",
+    minimumRole: "member",
+    dataModule: "resource",
+  },
+  settings: {
+    id: "settings",
+    label: "Settings",
+    description: "Room identity and core private-workspace settings.",
+    minimumRole: "manager",
+  },
+  tasks: {
+    id: "tasks",
+    label: "Tasks / Action Items",
+    description: "Assigned work, due dates, priorities, and completion state.",
+    minimumRole: "member",
+    dataModule: "task",
+  },
+  polls: {
+    id: "polls",
+    label: "Polls / Decisions",
+    description: "Private Room voting with one verified response per member.",
+    minimumRole: "member",
+    dataModule: "poll",
+  },
+  directory: {
+    id: "directory",
+    label: "Directory / Contacts",
+    description: "A private directory of Room contacts and organizations.",
+    minimumRole: "member",
+    dataModule: "directory",
+  },
+  knowledge: {
+    id: "knowledge",
+    label: "Knowledge Base / FAQ",
+    description: "Reusable answers, guidance, policies, and institutional knowledge.",
+    minimumRole: "member",
+    dataModule: "knowledge",
+  },
+  files: {
+    id: "files",
+    label: "Files / Documents",
+    description: "Private documents, images, and included inline video.",
+    minimumRole: "member",
+  },
+  forms: {
+    id: "forms",
+    label: "Forms / Submissions",
+    description: "Structured private forms with member submissions.",
+    minimumRole: "member",
+    dataModule: "form",
+  },
+  services: {
+    id: "services",
+    label: "Services / Store",
+    description: "A private catalog of services, offerings, and external request links.",
+    minimumRole: "member",
+    dataModule: "service",
+  },
+  invites: {
+    id: "invites",
+    label: "Invites / Join Requests",
+    description: "Secure invitation links, usage limits, expiration, and join requests.",
+    minimumRole: "manager",
+  },
+  activity: {
+    id: "activity",
+    label: "Activity / Audit Log",
+    description: "Privileged Room operations recorded in the Loombus audit trail.",
+    minimumRole: "manager",
+  },
+  "advanced-controls": {
+    id: "advanced-controls",
+    label: "Advanced Room Controls",
+    description: "Enforced participation, invitation, and directory controls.",
+    minimumRole: "manager",
+  },
+  "admin-tools": {
+    id: "admin-tools",
+    label: "More Admin Tools",
+    description: "A management dashboard for requests, roles, content, and resources.",
+    minimumRole: "manager",
+  },
+  operations: {
+    id: "operations",
+    label: "Larger Room Operations",
+    description: "Cross-module operational totals and workload visibility.",
+    minimumRole: "manager",
+  },
+  "member-workflows": {
+    id: "member-workflows",
+    label: "Advanced Member Workflows",
+    description: "Private member stages, assignments, notes, and follow-up status.",
+    minimumRole: "manager",
+    dataModule: "workflow",
+  },
+  "enterprise-controls": {
+    id: "enterprise-controls",
+    label: "Enterprise Controls",
+    description: "Owner-governed domain, approval, role, and participation rules.",
+    minimumRole: "owner",
+  },
+  "high-capacity": {
+    id: "high-capacity",
+    label: "High-Capacity Rooms",
+    description: "Searchable, paginated membership operations for large Rooms.",
+    minimumRole: "manager",
+  },
+  "community-operations": {
+    id: "community-operations",
+    label: "Full Private Community Operations",
+    description: "A consolidated operating view across the complete private community.",
+    minimumRole: "manager",
+  },
+};
+
+const CORE_MODULES: RoomModuleKey[] = [
+  "overview",
+  "discussions",
+  "calendar",
+  "announcements",
+  "members",
+  "requests",
+  "resources",
+  "settings",
+];
+
+const PRO_MODULES: RoomModuleKey[] = [
+  ...CORE_MODULES,
+  "tasks",
+  "polls",
+  "directory",
+  "knowledge",
+  "files",
+  "forms",
+];
+
+const ORGANIZATION_MODULES: RoomModuleKey[] = [
+  ...PRO_MODULES,
+  "services",
+  "invites",
+  "activity",
+  "advanced-controls",
+];
+
+const ORGANIZATION_PLUS_MODULES: RoomModuleKey[] = [
+  ...ORGANIZATION_MODULES,
+  "admin-tools",
+  "operations",
+  "member-workflows",
+];
+
+const ENTERPRISE_MODULES: RoomModuleKey[] = [
+  ...ORGANIZATION_PLUS_MODULES,
+  "enterprise-controls",
+  "high-capacity",
+  "community-operations",
+];
+
 export type RoomPlanEntitlements = {
   id: RoomPlanKey;
   label: string;
@@ -15,6 +258,7 @@ export type RoomPlanEntitlements = {
   inlineVideo: boolean;
   maxFileBytes: number;
   storageBytes: number;
+  modules: RoomModuleKey[];
   features: string[];
 };
 
@@ -34,11 +278,13 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
     inlineVideo: false,
     maxFileBytes: 0,
     storageBytes: 0,
+    modules: CORE_MODULES,
     features: [
       "One private Room",
-      "Discussions, announcements, and calendar",
-      "Owner, administrator, moderator, and member roles",
-      "Links in the Resources area",
+      "Up to 10 members",
+      "Overview, discussions, calendar, and announcements",
+      "Members, roles, requests, resources, and basic settings",
+      "Curated resource links",
     ],
   },
   starter: {
@@ -46,15 +292,16 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
     label: "Room Starter",
     roomLimit: 1,
     memberLimit: 50,
-    fileUploads: true,
+    fileUploads: false,
     inlineVideo: false,
-    maxFileBytes: 25 * MIB,
-    storageBytes: 2 * GIB,
+    maxFileBytes: 0,
+    storageBytes: 0,
+    modules: CORE_MODULES,
     features: [
       "Everything in Free",
-      "Private files and image resources",
-      "25 MB maximum per upload",
-      "2 GB Room resource storage",
+      "Up to 50 members",
+      "Complete core Room workspace",
+      "Members, roles, requests, resources, and settings",
     ],
   },
   pro: {
@@ -66,9 +313,12 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
     inlineVideo: true,
     maxFileBytes: 100 * MIB,
     storageBytes: 10 * GIB,
+    modules: PRO_MODULES,
     features: [
-      "Everything in Starter",
-      "Inline video resources",
+      "Everything in Room Starter",
+      "Up to 250 members",
+      "Tasks, polls, directory, knowledge base, files, and forms",
+      "Private documents, images, and inline video",
       "100 MB maximum per upload",
       "10 GB Room resource storage",
       "Priority and pinned announcements",
@@ -83,12 +333,15 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
     inlineVideo: true,
     maxFileBytes: 250 * MIB,
     storageBytes: 50 * GIB,
+    modules: ORGANIZATION_MODULES,
     features: [
-      "Everything in Pro",
-      "Up to 3 Rooms",
+      "Everything in Room Pro",
+      "Up to 3 Rooms under one subscription",
+      "Up to 500 members per Room",
+      "Services, secure invites, audit log, and advanced controls",
       "250 MB maximum per upload",
       "50 GB resource storage per Room",
-      "Organization controls and setup support",
+      "Organization setup support",
     ],
   },
   "organization-plus": {
@@ -100,12 +353,16 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
     inlineVideo: true,
     maxFileBytes: 500 * MIB,
     storageBytes: 250 * GIB,
+    modules: ORGANIZATION_PLUS_MODULES,
     features: [
       "Everything in Organization",
-      "Up to 10 Rooms",
+      "Up to 10 Rooms under one subscription",
+      "Up to 2,000 members per Room",
+      "Expanded admin tools and Room operations",
+      "Advanced member workflows",
       "500 MB maximum per upload",
       "250 GB resource storage per Room",
-      "Advanced setup and priority support",
+      "Priority support",
     ],
   },
   enterprise: {
@@ -117,9 +374,12 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
     inlineVideo: true,
     maxFileBytes: 1024 * MIB,
     storageBytes: 1024 * GIB,
+    modules: ENTERPRISE_MODULES,
     features: [
       "Everything in Organization Plus",
       "Custom Room and membership limits",
+      "Enterprise controls and high-capacity operations",
+      "Full private community operations",
       "1 GB maximum per upload",
       "1 TB resource storage per Room",
       "Dedicated support and custom onboarding",
@@ -129,6 +389,10 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
 
 export function isRoomPlanKey(value: unknown): value is RoomPlanKey {
   return typeof value === "string" && value in ROOM_PLAN_ENTITLEMENTS;
+}
+
+export function isRoomModuleKey(value: unknown): value is RoomModuleKey {
+  return typeof value === "string" && value in ROOM_MODULE_DEFINITIONS;
 }
 
 export function normalizeRoomPlanKey(value: unknown): RoomPlanKey {
@@ -152,6 +416,16 @@ export function getRoomPlanEntitlements(
     return ROOM_PLAN_ENTITLEMENTS.free;
   }
   return ROOM_PLAN_ENTITLEMENTS[normalizedPlan];
+}
+
+export function roomPlanIncludesModule(
+  plan: unknown,
+  subscriptionStatus: unknown,
+  moduleKey: RoomModuleKey
+) {
+  return getRoomPlanEntitlements(plan, subscriptionStatus).modules.includes(
+    moduleKey
+  );
 }
 
 export function formatRoomBytes(bytes: number) {
