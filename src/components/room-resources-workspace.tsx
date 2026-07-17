@@ -1,6 +1,5 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   Download,
@@ -11,6 +10,7 @@ import {
   Upload,
   Video,
 } from "lucide-react";
+import { useParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -25,8 +25,6 @@ const BUCKET = "room-resources";
 type ResourceEntitlements = {
   id: string;
   label: string;
-  roomLimit: number | null;
-  memberLimit: number | null;
   fileUploads: boolean;
   inlineVideo: boolean;
   maxFileBytes: number;
@@ -42,7 +40,6 @@ type RoomResource = {
   mimeType: string;
   mediaKind: "file" | "image" | "video";
   fileSizeBytes: number;
-  uploadedBy: string;
   createdAt: string | null;
   url: string | null;
   canDelete: boolean;
@@ -94,44 +91,15 @@ function resourceIcon(kind: RoomResource["mediaKind"]) {
   return FileText;
 }
 
-function findResourcesPortalHost() {
-  const page = document.querySelector<HTMLElement>(".rooms-live-page");
-  if (!page) return null;
-
-  const existing = page.querySelector<HTMLElement>(
-    '[data-loombus-room-resources-host="true"]'
+function findFilesHost() {
+  return document.querySelector<HTMLElement>(
+    "[data-loombus-room-files-host='true']"
   );
-  if (existing) return existing;
+}
 
-  const candidates = Array.from(
-    page.querySelectorAll<HTMLElement>("p, h2, h3, div")
-  );
-  const placeholder = candidates.find((element) => {
-    const text = element.textContent?.trim().toLowerCase() ?? "";
-    return (
-      text.includes("files and inline video are not connected yet") ||
-      (text.includes("not connected yet") && text.includes("video"))
-    );
-  });
-
-  const resourceHeading = candidates.find((element) => {
-    const text = element.textContent?.trim().toLowerCase() ?? "";
-    return text === "resources" || text === "files and resources";
-  });
-
-  const container =
-    placeholder?.closest<HTMLElement>("section") ??
-    resourceHeading?.closest<HTMLElement>("section") ??
-    placeholder?.parentElement ??
-    resourceHeading?.parentElement ??
-    null;
-  if (!container) return null;
-
-  if (placeholder) placeholder.hidden = true;
-  const host = document.createElement("div");
-  host.dataset.loombusRoomResourcesHost = "true";
-  container.append(host);
-  return host;
+async function getAccessToken() {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
 }
 
 export function RoomResourcesWorkspace() {
@@ -159,8 +127,7 @@ export function RoomResourcesWorkspace() {
     if (!roomId) return;
     setLoading(true);
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const token = await getAccessToken();
       if (!token) return;
       const response = await fetch(
         `/api/rooms/${encodeURIComponent(roomId)}/resources`,
@@ -170,14 +137,16 @@ export function RoomResourcesWorkspace() {
         }
       );
       const result = (await response.json().catch(() => ({}))) as ResourcesResponse;
-      if (!response.ok) throw new Error(result.error ?? "Room resources could not be loaded.");
+      if (!response.ok) {
+        throw new Error(result.error ?? "Room files could not be loaded.");
+      }
       setResources(Array.isArray(result.resources) ? result.resources : []);
       setEntitlements(result.entitlements ?? null);
       setUsedBytes(result.usedBytes ?? 0);
       setUsedLabel(result.usedLabel ?? "0 MB");
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "Room resources could not be loaded."
+        error instanceof Error ? error.message : "Room files could not be loaded."
       );
       setMessageIsError(true);
     } finally {
@@ -186,12 +155,29 @@ export function RoomResourcesWorkspace() {
   }, [roomId]);
 
   useEffect(() => {
-    if (!roomId) return;
-    void loadResources();
-  }, [loadResources, roomId]);
+    let scheduled = false;
+    const scan = () => {
+      scheduled = false;
+      setPortalHost(findFilesHost());
+    };
+    const schedule = () => {
+      if (scheduled) return;
+      scheduled = true;
+      window.requestAnimationFrame(scan);
+    };
+    scan();
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (!roomId) return;
+    if (!portalHost || !roomId) return;
+    void loadResources();
+  }, [loadResources, portalHost, roomId]);
+
+  useEffect(() => {
+    if (!portalHost || !roomId) return;
     const channel = supabase
       .channel(`room-resources:${roomId}`)
       .on(
@@ -208,48 +194,22 @@ export function RoomResourcesWorkspace() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [loadResources, roomId]);
-
-  useEffect(() => {
-    let scheduled = false;
-    const scan = () => {
-      scheduled = false;
-      const host = findResourcesPortalHost();
-      if (host) setPortalHost(host);
-    };
-    const schedule = () => {
-      if (scheduled) return;
-      scheduled = true;
-      window.requestAnimationFrame(scan);
-    };
-
-    scan();
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.body, { childList: true, subtree: true });
-    document.addEventListener("click", schedule, true);
-    return () => {
-      observer.disconnect();
-      document.removeEventListener("click", schedule, true);
-    };
-  }, []);
+  }, [loadResources, portalHost, roomId]);
 
   async function uploadSelectedFile() {
     if (!roomId || !selectedFile || uploading) return;
     setUploading(true);
     setMessage("");
     setMessageIsError(false);
-
     try {
-      const { data } = await supabase.auth.getSession();
-      const accessToken = data.session?.access_token;
-      if (!accessToken) throw new Error("Sign in again before uploading.");
-
+      const token = await getAccessToken();
+      if (!token) throw new Error("Sign in again before uploading.");
       const preparedResponse = await fetch(
         `/api/rooms/${encodeURIComponent(roomId)}/resources`,
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -260,7 +220,9 @@ export function RoomResourcesWorkspace() {
           }),
         }
       );
-      const prepared = (await preparedResponse.json().catch(() => ({}))) as UploadPreparation;
+      const prepared = (await preparedResponse
+        .json()
+        .catch(() => ({}))) as UploadPreparation;
       if (!preparedResponse.ok || !prepared.storagePath || !prepared.token) {
         throw new Error(prepared.error ?? "A secure upload could not be prepared.");
       }
@@ -268,7 +230,7 @@ export function RoomResourcesWorkspace() {
       const uploaded = await supabase.storage
         .from(BUCKET)
         .uploadToSignedUrl(prepared.storagePath, prepared.token, selectedFile, {
-          contentType: prepared.mimeType ?? selectedFile.type,
+          contentType: prepared.mimeType || selectedFile.type || undefined,
         });
       if (uploaded.error) throw new Error(uploaded.error.message);
 
@@ -277,7 +239,7 @@ export function RoomResourcesWorkspace() {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -293,15 +255,15 @@ export function RoomResourcesWorkspace() {
         error?: string;
       };
       if (!completedResponse.ok) {
-        throw new Error(completed.error ?? "The Room resource could not be saved.");
+        throw new Error(completed.error ?? "The Room file could not be saved.");
       }
 
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setMessage(
         prepared.mediaKind === "video"
-          ? "Inline video added to the Room."
-          : "File added to the Room resources."
+          ? "Inline video added to Files / Documents."
+          : "Private file added to Files / Documents."
       );
       await loadResources();
     } catch (error) {
@@ -319,15 +281,14 @@ export function RoomResourcesWorkspace() {
     setMessage("");
     setMessageIsError(false);
     try {
-      const { data } = await supabase.auth.getSession();
-      const accessToken = data.session?.access_token;
-      if (!accessToken) throw new Error("Sign in again before deleting.");
+      const token = await getAccessToken();
+      if (!token) throw new Error("Sign in again before deleting.");
       const response = await fetch(
         `/api/rooms/${encodeURIComponent(roomId)}/resources`,
         {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ resourceId: resource.id }),
@@ -336,8 +297,10 @@ export function RoomResourcesWorkspace() {
       const result = (await response.json().catch(() => ({}))) as {
         error?: string;
       };
-      if (!response.ok) throw new Error(result.error ?? "The resource could not be deleted.");
-      setMessage("Room resource deleted.");
+      if (!response.ok) {
+        throw new Error(result.error ?? "The Room file could not be deleted.");
+      }
+      setMessage("Room file deleted.");
       await loadResources();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Delete failed.");
@@ -349,12 +312,8 @@ export function RoomResourcesWorkspace() {
 
   if (!portalHost) return null;
 
-  const accept = entitlements?.inlineVideo
-    ? "image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,application/pdf,text/plain,text/csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-    : "image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
-  const usagePercentage = entitlements?.storageBytes
-    ? Math.min(100, (usedBytes / entitlements.storageBytes) * 100)
-    : 0;
+  const accept =
+    "image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime,application/pdf,text/plain,text/csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
 
   return createPortal(
     <div className="room-resources-connected">
@@ -362,34 +321,26 @@ export function RoomResourcesWorkspace() {
         <section className="room-resources-plan-card">
           <div className="room-resources-plan-topline">
             <div>
-              <h3>{entitlements.label} resources</h3>
+              <h3>{entitlements.label} file library</h3>
               <p>
                 {entitlements.fileUploads
                   ? `${entitlements.maxFileLabel} per upload · ${entitlements.storageLabel} total storage`
-                  : "This tier supports links in Room discussions. Private uploads begin with Room Starter."}
+                  : "Private Files / Documents begin with Room Pro."}
               </p>
             </div>
             <span className="room-resources-plan-badge">
-              {entitlements.inlineVideo
-                ? "Files + inline video"
-                : entitlements.fileUploads
-                  ? "Files + images"
-                  : "Links only"}
+              {entitlements.inlineVideo ? "Files + inline video" : "Plan locked"}
             </span>
-          </div>
-          <div className="room-resources-feature-chips">
-            {entitlements.features.map((feature) => (
-              <span key={feature}>{feature}</span>
-            ))}
           </div>
         </section>
       ) : null}
 
       {entitlements?.fileUploads ? (
         <section className="room-resources-upload-card">
-          <h3>Add a private Room resource</h3>
+          <h3>Add a private file</h3>
           <p>
-            Only active Room members receive signed access. Videos display inline on Room Pro and higher tiers.
+            Only active Room members receive temporary signed access. Supported videos play
+            directly inside this private module.
           </p>
           <input
             ref={fileInputRef}
@@ -410,8 +361,12 @@ export function RoomResourcesWorkspace() {
               disabled={!selectedFile || uploading}
               onClick={() => void uploadSelectedFile()}
             >
-              {uploading ? <Loader2 aria-hidden="true" size={16} /> : <Upload aria-hidden="true" size={16} />}
-              {uploading ? "Uploading…" : "Upload resource"}
+              {uploading ? (
+                <Loader2 aria-hidden="true" className="is-spinning" />
+              ) : (
+                <Upload aria-hidden="true" />
+              )}
+              {uploading ? "Uploading…" : "Upload file"}
             </button>
           </div>
         </section>
@@ -427,36 +382,25 @@ export function RoomResourcesWorkspace() {
       ) : null}
 
       <div className="room-resources-usage">
-        <span>{resources.length} resource{resources.length === 1 ? "" : "s"}</span>
+        <span>
+          {resources.length} file{resources.length === 1 ? "" : "s"}
+        </span>
         <span>
           {usedLabel}
           {entitlements?.storageBytes ? ` of ${entitlements.storageLabel}` : " used"}
         </span>
       </div>
-      {entitlements?.storageBytes ? (
-        <div
-          className="room-resources-usage-track"
-          role="progressbar"
-          aria-label="Room resource storage used"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(usagePercentage)}
-        >
-          <span style={{ width: `${usagePercentage}%` }} />
-        </div>
-      ) : null}
 
       {loading && resources.length === 0 ? (
         <section className="room-resources-empty">
-          <h3>Loading Room resources…</h3>
+          <h3>Loading private files…</h3>
         </section>
       ) : resources.length === 0 ? (
         <section className="room-resources-empty">
           <h3>No private files have been added.</h3>
           <p>
-            {entitlements?.fileUploads
-              ? "Upload a document, image, or included video to make it available to Room members."
-              : "Upgrade to Room Starter to connect private files and images."}
+            Upload a document, image, or supported video to make it available to Room
+            members.
           </p>
         </section>
       ) : (
@@ -467,7 +411,7 @@ export function RoomResourcesWorkspace() {
               <article key={resource.id} className="room-resources-item">
                 <div className="room-resources-item-topline">
                   <div className="room-resources-item-name" title={resource.fileName}>
-                    <Icon aria-hidden="true" size={16} /> {resource.fileName}
+                    <Icon aria-hidden="true" /> {resource.fileName}
                   </div>
                   {resource.canDelete ? (
                     <button
@@ -478,9 +422,9 @@ export function RoomResourcesWorkspace() {
                       onClick={() => void deleteResource(resource)}
                     >
                       {deletingId === resource.id ? (
-                        <Loader2 aria-hidden="true" size={15} />
+                        <Loader2 aria-hidden="true" className="is-spinning" />
                       ) : (
-                        <Trash2 aria-hidden="true" size={15} />
+                        <Trash2 aria-hidden="true" />
                       )}
                     </button>
                   ) : null}
@@ -501,14 +445,10 @@ export function RoomResourcesWorkspace() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Download aria-hidden="true" size={15} />
+                    <Download aria-hidden="true" />
                     Open or download
                   </a>
-                ) : (
-                  <p className="room-resources-message is-error">
-                    A secure download link could not be generated.
-                  </p>
-                )}
+                ) : null}
               </article>
             );
           })}
