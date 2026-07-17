@@ -206,19 +206,23 @@ export const ROOM_MODULE_DEFINITIONS: Record<
   },
 };
 
-const CORE_MODULES: RoomModuleKey[] = [
+const FREE_MODULES: RoomModuleKey[] = [
   "overview",
   "discussions",
   "calendar",
-  "announcements",
   "members",
+];
+
+const STARTER_MODULES: RoomModuleKey[] = [
+  ...FREE_MODULES,
+  "announcements",
   "requests",
   "resources",
   "settings",
 ];
 
 const PRO_MODULES: RoomModuleKey[] = [
-  ...CORE_MODULES,
+  ...STARTER_MODULES,
   "tasks",
   "polls",
   "directory",
@@ -278,13 +282,13 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
     inlineVideo: false,
     maxFileBytes: 0,
     storageBytes: 0,
-    modules: CORE_MODULES,
+    modules: FREE_MODULES,
     features: [
       "One private Room",
       "Up to 10 members",
-      "Overview, discussions, calendar, and announcements",
-      "Members, roles, requests, resources, and basic settings",
-      "Curated resource links",
+      "Overview and private discussions",
+      "Shared Room calendar",
+      "Members and basic roles",
     ],
   },
   starter: {
@@ -296,12 +300,14 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
     inlineVideo: false,
     maxFileBytes: 0,
     storageBytes: 0,
-    modules: CORE_MODULES,
+    modules: STARTER_MODULES,
     features: [
       "Everything in Free",
       "Up to 50 members",
-      "Complete core Room workspace",
-      "Members, roles, requests, resources, and settings",
+      "Announcements",
+      "Separate membership requests",
+      "Curated Room resources",
+      "Room settings",
     ],
   },
   pro: {
