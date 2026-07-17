@@ -26,7 +26,7 @@ export function BusinessListingServices({
         <div>
           <h2 className="text-lg font-semibold">Services</h2>
           <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
-            Add up to 20 independently searchable offerings.
+            Add every legitimate offering. Each service is independently searchable.
           </p>
         </div>
         <button
