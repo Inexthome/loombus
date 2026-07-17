@@ -1,5 +1,6 @@
 import { RoomPlanFeatureEnhancer } from "@/components/room-plan-feature-enhancer";
 import { RoomResourcesWorkspace } from "@/components/room-resources-workspace";
+import { RoomTierModulesWorkspace } from "@/components/room-tier-modules-workspace";
 import "./rooms-v2.css";
 import "./rooms-v2-route-states.css";
 import "./rooms-live.css";
@@ -13,6 +14,7 @@ export default function RoomsLayout({
   return (
     <>
       <RoomPlanFeatureEnhancer />
+      <RoomTierModulesWorkspace />
       <RoomResourcesWorkspace />
       {children}
     </>
