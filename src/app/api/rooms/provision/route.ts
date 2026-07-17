@@ -25,13 +25,43 @@ function jsonError(message: string, status: number, code?: string) {
   });
 }
 
+function trustedCheckoutOrigin(value: string | null | undefined) {
+  if (!value) return null;
+
+  try {
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.toLowerCase();
+    const isLoombusHost =
+      hostname === "loombus.com" || hostname.endsWith(".loombus.com");
+    const isVercelPreview = hostname.endsWith(".vercel.app");
+    const isLocalHost =
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "[::1]";
+
+    if (!isLoombusHost && !isVercelPreview && !isLocalHost) return null;
+    if (!isLocalHost && parsed.protocol !== "https:") return null;
+    if (isLocalHost && !["http:", "https:"].includes(parsed.protocol)) return null;
+
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
 function getOrigin(request: NextRequest) {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    request.headers.get("origin") ||
-    request.nextUrl.origin ||
-    "https://loombus.com"
-  );
+  const candidates = [
+    request.headers.get("origin"),
+    request.nextUrl.origin,
+    process.env.NEXT_PUBLIC_SITE_URL,
+  ];
+
+  for (const candidate of candidates) {
+    const origin = trustedCheckoutOrigin(candidate);
+    if (origin) return origin;
+  }
+
+  return "https://loombus.com";
 }
 
 export async function POST(request: NextRequest) {
