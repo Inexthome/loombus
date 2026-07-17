@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import MarketplaceAdminMetrics from "@/components/marketplace-admin-metrics";
 import MarketplaceManagerPage from "@/components/marketplace-manager-page";
 
 export const metadata: Metadata = {
@@ -9,5 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default function ManageMarketplacePage() {
-  return <MarketplaceManagerPage />;
+  return (
+    <>
+      <MarketplaceManagerPage />
+      <MarketplaceAdminMetrics />
+    </>
+  );
 }
