@@ -9,6 +9,7 @@ export type SearchGroup =
   | "discussions"
   | "people"
   | "rooms"
+  | "jobs"
   | "services"
   | "knowledge"
   | "media"
@@ -28,6 +29,7 @@ export const GROUP_LABELS: Record<SearchGroup, string> = {
   discussions: "Discussions",
   people: "People",
   rooms: "Rooms",
+  jobs: "Jobs",
   services: "Services & events",
   knowledge: "Knowledge",
   media: "Media & files",
@@ -81,6 +83,7 @@ export function getVisibleGroups(search: EverythingSearchResponse) {
     "discussions",
     "people",
     "rooms",
+    "jobs",
     "services",
     "knowledge",
     "media",

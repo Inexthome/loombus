@@ -50,6 +50,37 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     keywords: ["search", "advanced search", "find", "lookup", "discover"],
   },
   {
+    title: "Local Business and Services",
+    description:
+      "Browse approved businesses, service areas, and current offerings.",
+    href: "/businesses",
+    category: "Real-world",
+    keywords: [
+      "businesses",
+      "business directory",
+      "local services",
+      "companies",
+      "contractors",
+      "appointments",
+    ],
+  },
+  {
+    title: "Jobs Directory",
+    description:
+      "Browse approved job postings connected to attributable employer profiles.",
+    href: "/jobs",
+    category: "Real-world",
+    keywords: [
+      "jobs",
+      "hiring",
+      "employment",
+      "careers",
+      "internships",
+      "remote jobs",
+      "apply",
+    ],
+  },
+  {
     title: "Rooms",
     description: "Open private member workspaces for discussion, announcements, and events.",
     href: "/rooms",
