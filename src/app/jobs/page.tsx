@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import JobsDirectoryPage from "@/components/jobs-directory-page";
+import V2FeatureRouteShell from "@/components/v2-feature-route-shell";
 
 export const metadata: Metadata = {
   title: "Jobs Directory | Loombus",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function JobsPage() {
-  return <JobsDirectoryPage />;
+  return (
+    <V2FeatureRouteShell>
+      <JobsDirectoryPage />
+    </V2FeatureRouteShell>
+  );
 }
