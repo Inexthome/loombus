@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import RequestsManagerPage from "@/components/requests-manager-page";
+import V2FeatureRouteShell from "@/components/v2-feature-route-shell";
 
 export const metadata: Metadata = {
   title: "Manage Requests",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function ManageRequestsPage() {
-  return <RequestsManagerPage />;
+  return (
+    <V2FeatureRouteShell>
+      <RequestsManagerPage />
+    </V2FeatureRouteShell>
+  );
 }
