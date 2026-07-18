@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import EventsDirectoryPage from "@/components/events-directory-page";
+import V2FeatureRouteShell from "@/components/v2-feature-route-shell";
 
 export const metadata: Metadata = {
   title: "Events",
@@ -9,5 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default function EventsPage() {
-  return <EventsDirectoryPage />;
+  return (
+    <V2FeatureRouteShell>
+      <EventsDirectoryPage />
+    </V2FeatureRouteShell>
+  );
 }
