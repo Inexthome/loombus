@@ -6,6 +6,8 @@ const publicRoutes = [
   { route: "/about", priority: 0.9, changeFrequency: "monthly" as const },
   { route: "/download", priority: 0.9, changeFrequency: "monthly" as const },
   { route: "/businesses", priority: 0.9, changeFrequency: "daily" as const },
+  { route: "/services", priority: 0.9, changeFrequency: "daily" as const },
+  { route: "/services/safety", priority: 0.75, changeFrequency: "monthly" as const },
   { route: "/jobs", priority: 0.9, changeFrequency: "daily" as const },
   { route: "/marketplace", priority: 0.9, changeFrequency: "daily" as const },
   { route: "/marketplace/safety", priority: 0.75, changeFrequency: "monthly" as const },
@@ -27,5 +29,10 @@ const publicRoutes = [
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
-  return publicRoutes.map(({ route, priority, changeFrequency }) => ({ url: `${siteUrl}${route}`, lastModified, changeFrequency, priority }));
+  return publicRoutes.map(({ route, priority, changeFrequency }) => ({
+    url: `${siteUrl}${route}`,
+    lastModified,
+    changeFrequency,
+    priority,
+  }));
 }
