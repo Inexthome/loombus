@@ -7,6 +7,7 @@ export type EverythingSearchType =
   | "announcement"
   | "event"
   | "service"
+  | "request"
   | "knowledge"
   | "task"
   | "poll"
@@ -76,6 +77,7 @@ const TYPE_LABELS: Record<EverythingSearchType, string> = {
   announcement: "Announcement",
   event: "Event",
   service: "Service",
+  request: "Request",
   knowledge: "Knowledge",
   task: "Task",
   poll: "Poll",
@@ -98,16 +100,12 @@ export function getEverythingSearchTypeLabel(type: EverythingSearchType) {
 }
 
 export function getEverythingSearchGroup(type: EverythingSearchType) {
-  if (["discussion", "reply", "room_discussion", "announcement"].includes(type)) {
-    return "discussions";
-  }
+  if (["discussion", "reply", "room_discussion", "announcement"].includes(type)) return "discussions";
   if (type === "person") return "people";
   if (type === "room") return "rooms";
   if (type === "job") return "jobs";
-  if (["service", "event", "company"].includes(type)) return "services";
-  if (["image", "video", "document", "file", "resource"].includes(type)) {
-    return "media";
-  }
+  if (["service", "request", "event", "company"].includes(type)) return "services";
+  if (["image", "video", "document", "file", "resource"].includes(type)) return "media";
   if (["knowledge", "task", "poll", "form"].includes(type)) return "knowledge";
   if (["product", "marketplace"].includes(type)) return "commerce";
   if (type === "saved") return "saved";
