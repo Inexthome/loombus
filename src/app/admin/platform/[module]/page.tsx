@@ -23,6 +23,8 @@ const MODULES = new Set<PlatformModule>([
   "services",
   "rooms",
   "appointments",
+  "local",
+  "matches",
 ]);
 
 type Props = {

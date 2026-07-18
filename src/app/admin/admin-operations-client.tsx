@@ -177,7 +177,7 @@ const MODULE_GROUPS: AdminModuleGroup[] = [
         href: "/admin/platform",
         title: "Platform Operations",
         description:
-          "Review Marketplace, Business Directory, Jobs, Events, Requests, Services, Rooms, and Appointments from one role-protected administrator workspace.",
+          "Review Marketplace, Business Directory, Jobs, Events, Requests, Services, Rooms, Appointments, Local, and Matches from one role-protected administrator workspace.",
         action: "Open platform operations",
         Icon: ListChecks,
       },

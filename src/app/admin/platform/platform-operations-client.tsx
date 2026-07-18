@@ -9,8 +9,10 @@ import {
   CalendarDays,
   CircleAlert,
   DoorOpen,
+  GitBranch,
   HandHeart,
   Loader2,
+  MapPin,
   RefreshCw,
   ShieldCheck,
   ShoppingBag,
@@ -38,6 +40,12 @@ import {
   type AppointmentsAdminResponse,
   type RoomsAdminResponse,
 } from "@/components/platform-phase3-operations-panels";
+import {
+  LocalOperationsPanel,
+  MatchesOperationsPanel,
+  type LocalAdminResponse,
+  type MatchesAdminResponse,
+} from "@/components/platform-final-operations-panels";
 import type { BusinessManageResponse } from "@/lib/business-directory";
 import type { EventsManageResponse } from "@/lib/events";
 import type { JobsManageResponse } from "@/lib/jobs-directory";
@@ -58,7 +66,9 @@ export type PlatformModule =
   | "requests"
   | "services"
   | "rooms"
-  | "appointments";
+  | "appointments"
+  | "local"
+  | "matches";
 
 type AccessState =
   | "checking"
@@ -75,6 +85,8 @@ type PlatformData = {
   services: ProviderServicesManageResponse;
   rooms: RoomsAdminResponse;
   appointments: AppointmentsAdminResponse;
+  local: LocalAdminResponse;
+  matches: MatchesAdminResponse;
 };
 
 type ModuleDefinition = {
@@ -168,6 +180,28 @@ const MODULES: ModuleDefinition[] = [
     publicLabel: "Open Appointments",
     manageLabel: "Open provider workspace",
     Icon: CalendarClock,
+  },
+  {
+    key: "local",
+    title: "Local",
+    description:
+      "Inspect Local Discovery source coverage, privacy-safe location anchoring, missing areas, and source freshness without rebuilding indexes or editing source records.",
+    publicHref: "/local",
+    manageHref: "/local/manage",
+    publicLabel: "Open Local",
+    manageLabel: "Open location workspace",
+    Icon: MapPin,
+  },
+  {
+    key: "matches",
+    title: "Matches",
+    description:
+      "Inspect Intelligent Matching eligibility, confidence distribution, feedback signals, delivery health, and stale candidates without manually approving or changing matches.",
+    publicHref: "/matches",
+    manageHref: "/matches",
+    publicLabel: "Open Matches",
+    manageLabel: "Open matching workspace",
+    Icon: GitBranch,
   },
 ];
 
@@ -316,6 +350,8 @@ export default function PlatformOperationsClient({
         services,
         rooms,
         appointments,
+        local,
+        matches,
       ] = await Promise.all([
         authorizedGet<MarketplaceManageResponse>(
           token,
@@ -357,6 +393,16 @@ export default function PlatformOperationsClient({
           "/api/admin/platform/appointments",
           "Appointments operations could not load."
         ),
+        authorizedGet<LocalAdminResponse>(
+          token,
+          "/api/admin/platform/local",
+          "Local diagnostics could not load."
+        ),
+        authorizedGet<MatchesAdminResponse>(
+          token,
+          "/api/admin/platform/matches",
+          "Matches diagnostics could not load."
+        ),
       ]);
 
       if (
@@ -367,7 +413,9 @@ export default function PlatformOperationsClient({
         !requests.isAdmin ||
         !services.isAdmin ||
         !rooms.isAdmin ||
-        !appointments.isAdmin
+        !appointments.isAdmin ||
+        !local.isAdmin ||
+        !matches.isAdmin
       ) {
         setData(null);
         setAccessState("denied");
@@ -383,6 +431,8 @@ export default function PlatformOperationsClient({
         services,
         rooms,
         appointments,
+        local,
+        matches,
       });
       setAccessState("allowed");
     } catch (caught) {
@@ -489,6 +539,12 @@ export default function PlatformOperationsClient({
     const appointments =
       data?.appointments.metrics.overdueAccepted ?? 0;
 
+    const local =
+      data?.local.metrics.attentionRecords ?? 0;
+
+    const matches =
+      data?.matches.metrics.attentionTotal ?? 0;
+
     return {
       marketplace,
       businesses,
@@ -498,6 +554,8 @@ export default function PlatformOperationsClient({
       services,
       rooms,
       appointments,
+      local,
+      matches,
       total:
         marketplace +
         businesses +
@@ -506,7 +564,9 @@ export default function PlatformOperationsClient({
         requests +
         services +
         rooms +
-        appointments,
+        appointments +
+        local +
+        matches,
     };
   }, [data]);
 
@@ -675,10 +735,10 @@ export default function PlatformOperationsClient({
               </h1>
               <p className="mt-4 leading-7 text-[var(--loombus-text-muted)]">
                 Review Marketplace, Business Directory, Jobs,
-                Events, Requests, Services, Rooms, and
-                Appointments without entering seller, organizer,
-                requester, provider, employer, or private Room
-                creation workflows.
+                Events, Requests, Services, Rooms, Appointments,
+                Local, and Matches without entering seller,
+                organizer, requester, provider, employer, private
+                Room, location-source, or matching-rule workflows.
               </p>
             </div>
 
@@ -1079,6 +1139,20 @@ export default function PlatformOperationsClient({
                       successMessage
                     )
                   }
+                />
+              ) : null}
+
+              {module.key === "local" &&
+              data?.local ? (
+                <LocalOperationsPanel
+                  data={data.local}
+                />
+              ) : null}
+
+              {module.key === "matches" &&
+              data?.matches ? (
+                <MatchesOperationsPanel
+                  data={data.matches}
                 />
               ) : null}
             </section>
