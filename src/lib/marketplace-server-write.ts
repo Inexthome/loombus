@@ -1,13 +1,21 @@
 import "server-only";
 
 import type { NextRequest } from "next/server";
+import { asBoolean } from "@/lib/room-operations";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import {
   MarketplaceError,
   type MarketplaceInput,
+  cleanAttributes,
+  cleanExpiry,
   cleanLongText,
   cleanMarketplaceText,
+  cleanMoney,
+  cleanOptionalUuid,
+  cleanPhotos,
+  cleanStringArray,
   cleanUuid,
+  enforceMarketplacePolicy,
 } from "@/lib/marketplace-server-core";
 import {
   normalizeInput,
@@ -19,13 +27,152 @@ import {
   uniqueListingSlug,
 } from "@/lib/marketplace-server-access";
 
+
+const MARKETPLACE_DRAFT_CONDITIONS = new Set([
+  "new",
+  "like_new",
+  "good",
+  "fair",
+  "for_parts",
+  "not_applicable",
+]);
+
+function normalizeMarketplaceDraftSnapshot(
+  value: unknown,
+  businessId: string | null
+) {
+  const raw =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+
+  const attributeRows: Array<{ key: string; value: string }> = [];
+
+  if (Array.isArray(raw.attributes)) {
+    for (const item of raw.attributes.slice(0, 100)) {
+      const row =
+        item && typeof item === "object" && !Array.isArray(item)
+          ? (item as Record<string, unknown>)
+          : {};
+
+      attributeRows.push({
+        key: cleanMarketplaceText(row.key, 80),
+        value: cleanMarketplaceText(row.value, 300),
+      });
+    }
+  }
+
+  return {
+    businessId: businessId ?? "",
+    title: cleanMarketplaceText(raw.title, 200),
+    description: cleanLongText(raw.description, 16000),
+    category: cleanMarketplaceText(raw.category, 120),
+    condition: cleanMarketplaceText(raw.condition, 30),
+    price: cleanMarketplaceText(raw.price, 40),
+    currency: cleanMarketplaceText(raw.currency, 3).toUpperCase(),
+    isFree: asBoolean(raw.isFree),
+    isNegotiable: asBoolean(raw.isNegotiable),
+    city: cleanMarketplaceText(raw.city, 100),
+    region: cleanMarketplaceText(raw.region, 100),
+    postalCode: cleanMarketplaceText(raw.postalCode, 30),
+    countryCode: cleanMarketplaceText(raw.countryCode, 2).toUpperCase(),
+    pickupAvailable: asBoolean(raw.pickupAvailable),
+    localDeliveryAvailable: asBoolean(raw.localDeliveryAvailable),
+    shippingAvailable: asBoolean(raw.shippingAvailable),
+    tags: cleanLongText(raw.tags, 6000),
+    attributes: attributeRows,
+    expiresAt: cleanMarketplaceText(raw.expiresAt, 10),
+  };
+}
+
+function normalizeMarketplaceDraftInput(
+  input: MarketplaceInput,
+  userId: string
+) {
+  const businessId = cleanOptionalUuid(input.businessId, "business id");
+
+  const rawCondition = cleanMarketplaceText(input.condition, 30);
+  const condition = MARKETPLACE_DRAFT_CONDITIONS.has(rawCondition)
+    ? rawCondition
+    : "good";
+
+  const isFree = asBoolean(input.isFree);
+  const isNegotiable = !isFree && asBoolean(input.isNegotiable);
+
+  const rawPrice = cleanMarketplaceText(input.price, 40);
+  const parsedPrice = Number(rawPrice);
+  const price =
+    isFree || !rawPrice || !Number.isFinite(parsedPrice)
+      ? 0
+      : cleanMoney(parsedPrice);
+
+  const rawCurrency =
+    cleanMarketplaceText(input.currency, 3).toUpperCase() || "USD";
+  const currency = /^[A-Z]{3}$/.test(rawCurrency)
+    ? rawCurrency
+    : "USD";
+
+  const rawCountryCode =
+    cleanMarketplaceText(input.countryCode, 2).toUpperCase() || "US";
+  const countryCode = /^[A-Z]{2}$/.test(rawCountryCode)
+    ? rawCountryCode
+    : "US";
+
+  const photos = cleanPhotos(input, userId);
+  const tags = cleanStringArray(input.tags, 120);
+  const attributes = cleanAttributes(input.attributes);
+
+  const row = {
+    title: cleanMarketplaceText(input.title, 200),
+    description: cleanLongText(input.description, 16000),
+    category: cleanMarketplaceText(input.category, 120),
+    item_condition: condition,
+    price,
+    currency,
+    is_free: isFree,
+    is_negotiable: isNegotiable,
+    city: cleanMarketplaceText(input.city, 100) || null,
+    region: cleanMarketplaceText(input.region, 100) || null,
+    postal_code: cleanMarketplaceText(input.postalCode, 30) || null,
+    country_code: countryCode,
+    pickup_available: asBoolean(input.pickupAvailable),
+    local_delivery_available: asBoolean(input.localDeliveryAvailable),
+    shipping_available: asBoolean(input.shippingAvailable),
+    tags,
+    attributes,
+    photo_urls: photos.urls,
+    photo_paths: photos.paths,
+    expires_at: cleanExpiry(input.expiresAt),
+  };
+
+  enforceMarketplacePolicy([
+    row.title,
+    row.description,
+    row.category,
+    row.tags,
+    row.attributes,
+    input.draftData,
+  ]);
+
+  return { row, businessId };
+}
+
 export async function createMarketplaceListing(
   request: NextRequest,
   input: MarketplaceInput
 ) {
   const viewer = await resolveMarketplaceViewer(request, true);
   await refreshExpiredListings(viewer.service);
-  const normalized = normalizeInput(input, viewer.user!.id);
+  const saveAsDraft = asBoolean(input.saveAsDraft);
+  const normalized = saveAsDraft
+    ? normalizeMarketplaceDraftInput(input, viewer.user!.id)
+    : normalizeInput(input, viewer.user!.id);
+  const draftData = saveAsDraft
+    ? normalizeMarketplaceDraftSnapshot(
+        input.draftData,
+        normalized.businessId
+      )
+    : {};
   requireMarketplacePhotoOrigins(
     viewer.service,
     normalized.row.photo_urls,
@@ -44,7 +191,8 @@ export async function createMarketplaceListing(
       seller_id: viewer.user!.id,
       business_id: normalized.businessId,
       slug,
-      status: "pending",
+      draft_data: draftData,
+      status: saveAsDraft ? "draft" : "pending",
       moderation_reason: null,
       published_at: null,
       sold_at: null,
@@ -60,7 +208,7 @@ export async function createMarketplaceListing(
       "listing_create_failed"
     );
   }
-  return { id: data.id, slug, status: "pending" };
+  return { id: data.id, slug, status: saveAsDraft ? "draft" : "pending" };
 }
 
 export async function updateMarketplaceListing(
@@ -71,7 +219,16 @@ export async function updateMarketplaceListing(
   await refreshExpiredListings(viewer.service);
   const listingId = cleanUuid(input.listingId, "listing id");
   const current = await requireListingControl(viewer, listingId);
-  const normalized = normalizeInput(input, viewer.user!.id);
+  const saveAsDraft = asBoolean(input.saveAsDraft);
+  const normalized = saveAsDraft
+    ? normalizeMarketplaceDraftInput(input, viewer.user!.id)
+    : normalizeInput(input, viewer.user!.id);
+  const draftData = saveAsDraft
+    ? normalizeMarketplaceDraftSnapshot(
+        input.draftData,
+        normalized.businessId
+      )
+    : {};
   requireMarketplacePhotoOrigins(
     viewer.service,
     normalized.row.photo_urls,
@@ -93,7 +250,8 @@ export async function updateMarketplaceListing(
     .update({
       ...normalized.row,
       business_id: normalized.businessId,
-      status: "pending",
+      draft_data: draftData,
+      status: saveAsDraft ? "draft" : "pending",
       moderation_reason: null,
       sold_at: null,
       removed_at: null,
@@ -107,7 +265,7 @@ export async function updateMarketplaceListing(
       "listing_update_failed"
     );
   }
-  return { id: listingId, status: "pending" };
+  return { id: listingId, status: saveAsDraft ? "draft" : "pending" };
 }
 
 export async function markMarketplaceListingSold(

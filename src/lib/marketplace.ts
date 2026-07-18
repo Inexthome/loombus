@@ -51,6 +51,7 @@ export type MarketplaceListing = {
   shippingAvailable: boolean;
   tags: string[];
   attributes: Record<string, string>;
+  draftData: Record<string, unknown>;
   photos: MarketplacePhoto[];
   expiresAt: string | null;
   status: MarketplaceListingStatus;

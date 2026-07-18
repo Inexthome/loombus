@@ -37,6 +37,7 @@ type Props = {
   updateDraft: UpdateMarketplaceDraft;
   uploadPhotos: (event: ChangeEvent<HTMLInputElement>) => void | Promise<void>;
   removePhoto: (photo: MarketplacePhoto) => void | Promise<void>;
+  saveDraft: () => void | Promise<void>;
   submitListing: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   startNew: () => void;
 };
@@ -53,6 +54,7 @@ export function MarketplaceListingEditor({
   updateDraft,
   uploadPhotos,
   removePhoto,
+  saveDraft,
   submitListing,
   startNew,
 }: Props) {
@@ -411,13 +413,38 @@ export function MarketplaceListingEditor({
 
           <div className="mt-7 flex flex-wrap gap-3 border-t border-[var(--loombus-border)] pt-6">
             <button
+              type="button"
+              onClick={() => void saveDraft()}
+              disabled={working || uploading}
+              className="inline-flex items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-5 py-3 font-semibold disabled:opacity-50"
+            >
+              {working ? (
+                <Loader2 className="animate-spin" size={17} />
+              ) : (
+                <Save size={17} />
+              )}
+              {editing?.status === "draft"
+                ? "Update draft"
+                : "Save draft"}
+            </button>
+
+            <button
               type="submit"
               disabled={working || uploading}
               className="inline-flex items-center gap-2 rounded-xl bg-[var(--loombus-text)] px-5 py-3 font-semibold text-[var(--loombus-page-bg)] disabled:opacity-50"
             >
-              {working ? <Loader2 className="animate-spin" size={17} /> : <Save size={17} />}
-              {editing ? "Save and resubmit" : "Submit for review"}
+              {working ? (
+                <Loader2 className="animate-spin" size={17} />
+              ) : (
+                <Save size={17} />
+              )}
+              {editing?.status === "draft"
+                ? "Submit for review"
+                : editing
+                  ? "Save and resubmit"
+                  : "Submit for review"}
             </button>
+
             {editing ? (
               <button
                 type="button"
