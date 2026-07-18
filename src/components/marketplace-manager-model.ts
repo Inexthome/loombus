@@ -62,31 +62,84 @@ export function emptyMarketplaceDraft(): MarketplaceDraft {
 export function marketplaceDraftFromListing(
   listing: MarketplaceListing
 ): MarketplaceDraft {
+  const saved =
+    listing.status === "draft" &&
+    listing.draftData &&
+    typeof listing.draftData === "object" &&
+    !Array.isArray(listing.draftData)
+      ? listing.draftData
+      : {};
+
+  const savedText = (key: string, fallback: string) =>
+    typeof saved[key] === "string" ? (saved[key] as string) : fallback;
+
+  const savedBoolean = (key: string, fallback: boolean) =>
+    typeof saved[key] === "boolean" ? (saved[key] as boolean) : fallback;
+
+  const attributes: AttributeRow[] = [];
+
+  if (Array.isArray(saved.attributes)) {
+    for (const item of saved.attributes) {
+      const row =
+        item && typeof item === "object" && !Array.isArray(item)
+          ? (item as Record<string, unknown>)
+          : {};
+
+      attributes.push({
+        id: crypto.randomUUID(),
+        key: typeof row.key === "string" ? row.key : "",
+        value: typeof row.value === "string" ? row.value : "",
+      });
+    }
+  } else {
+    for (const [key, value] of Object.entries(listing.attributes)) {
+      attributes.push({
+        id: crypto.randomUUID(),
+        key,
+        value,
+      });
+    }
+  }
+
   return {
-    businessId: listing.businessId ?? "",
-    title: listing.title,
-    description: listing.description,
-    category: listing.category,
-    condition: listing.condition,
-    price: listing.isFree ? "" : String(listing.price),
-    currency: listing.currency,
-    isFree: listing.isFree,
-    isNegotiable: listing.isNegotiable,
-    city: listing.city,
-    region: listing.region,
-    postalCode: listing.postalCode,
-    countryCode: listing.countryCode,
-    pickupAvailable: listing.pickupAvailable,
-    localDeliveryAvailable: listing.localDeliveryAvailable,
-    shippingAvailable: listing.shippingAvailable,
-    tags: listing.tags.join("\n"),
-    attributes: Object.entries(listing.attributes).map(([key, value]) => ({
-      id: crypto.randomUUID(),
-      key,
-      value,
-    })),
+    businessId: savedText("businessId", listing.businessId ?? ""),
+    title: savedText("title", listing.title),
+    description: savedText("description", listing.description),
+    category: savedText("category", listing.category),
+    condition: savedText("condition", listing.condition),
+    price: savedText(
+      "price",
+      listing.isFree ? "" : String(listing.price)
+    ),
+    currency: savedText("currency", listing.currency),
+    isFree: savedBoolean("isFree", listing.isFree),
+    isNegotiable: savedBoolean(
+      "isNegotiable",
+      listing.isNegotiable
+    ),
+    city: savedText("city", listing.city),
+    region: savedText("region", listing.region),
+    postalCode: savedText("postalCode", listing.postalCode),
+    countryCode: savedText("countryCode", listing.countryCode),
+    pickupAvailable: savedBoolean(
+      "pickupAvailable",
+      listing.pickupAvailable
+    ),
+    localDeliveryAvailable: savedBoolean(
+      "localDeliveryAvailable",
+      listing.localDeliveryAvailable
+    ),
+    shippingAvailable: savedBoolean(
+      "shippingAvailable",
+      listing.shippingAvailable
+    ),
+    tags: savedText("tags", listing.tags.join("\n")),
+    attributes,
     photos: listing.photos,
-    expiresAt: listing.expiresAt?.slice(0, 10) ?? "",
+    expiresAt: savedText(
+      "expiresAt",
+      listing.expiresAt?.slice(0, 10) ?? ""
+    ),
   };
 }
 

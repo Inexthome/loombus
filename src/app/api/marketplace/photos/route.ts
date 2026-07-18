@@ -38,23 +38,37 @@ function safeFilename(value: string) {
 export async function POST(request: NextRequest) {
   try {
     const viewer = await resolveMarketplaceViewer(request, true);
-    const form = await request.formData();
-    const file = form.get("file");
-    if (!(file instanceof File)) {
+    const body = await request.json().catch(() => null);
+    const input =
+      body && typeof body === "object" && !Array.isArray(body)
+        ? (body as Record<string, unknown>)
+        : {};
+
+    const fileName = cleanMarketplaceText(input.fileName, 255);
+    const fileType = cleanMarketplaceText(input.contentType, 100).toLowerCase();
+    const fileSize = Number(input.size);
+
+    if (!fileName) {
       throw new MarketplaceError(
         "Choose a Marketplace photo.",
         400,
         "photo_required"
       );
     }
-    if (!ALLOWED_TYPES.has(file.type)) {
+
+    if (!ALLOWED_TYPES.has(fileType)) {
       throw new MarketplaceError(
         "Marketplace photos must be JPEG, PNG, or WebP.",
         400,
         "photo_type_not_allowed"
       );
     }
-    if (file.size <= 0 || file.size > MAX_PHOTO_BYTES) {
+
+    if (
+      !Number.isFinite(fileSize) ||
+      fileSize <= 0 ||
+      fileSize > MAX_PHOTO_BYTES
+    ) {
       throw new MarketplaceError(
         "Each Marketplace photo must be 12 MB or smaller.",
         400,
@@ -63,28 +77,45 @@ export async function POST(request: NextRequest) {
     }
 
     const extension =
-      file.type === "image/png" ? ".png" : file.type === "image/webp" ? ".webp" : ".jpg";
-    const rawName = safeFilename(file.name.replace(/\.[^.]+$/, ""));
-    const path = `${viewer.user!.id}/${new Date().getUTCFullYear()}/${crypto.randomUUID()}-${rawName}${extension}`;
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const { error } = await viewer.service.storage
-      .from("marketplace-images")
-      .upload(path, bytes, {
-        contentType: file.type,
-        upsert: false,
-        cacheControl: "31536000",
-      });
-    if (error) {
+      fileType === "image/png"
+        ? ".png"
+        : fileType === "image/webp"
+          ? ".webp"
+          : ".jpg";
+
+    const rawName = safeFilename(fileName.replace(/\.[^.]+$/, ""));
+    const path =
+      `${viewer.user!.id}/` +
+      `${new Date().getUTCFullYear()}/` +
+      `${crypto.randomUUID()}-${rawName}${extension}`;
+
+    const { data: signedUpload, error: signedUploadError } =
+      await viewer.service.storage
+        .from("marketplace-images")
+        .createSignedUploadUrl(path);
+
+    if (signedUploadError || !signedUpload?.token) {
       throw new MarketplaceError(
-        "Unable to upload the Marketplace photo.",
+        "Unable to prepare the Marketplace photo upload.",
         503,
-        "photo_upload_failed"
+        "photo_upload_preparation_failed"
       );
     }
-    const { data } = viewer.service.storage
+
+    const { data: publicUrlData } = viewer.service.storage
       .from("marketplace-images")
       .getPublicUrl(path);
-    return response({ photo: { path, url: data.publicUrl } }, 201);
+
+    return response(
+      {
+        upload: {
+          path,
+          token: signedUpload.token,
+          url: publicUrlData.publicUrl,
+        },
+      },
+      201
+    );
   } catch (error) {
     return errorResponse(error);
   }

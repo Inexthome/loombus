@@ -12,6 +12,7 @@ import {
   type MarketplaceReport,
 } from "@/lib/marketplace";
 import { marketplaceAuthorizedFetch } from "@/lib/marketplace-auth-client";
+import { supabase } from "@/lib/supabase/client";
 import { MarketplaceAdminReview } from "@/components/marketplace-admin-review";
 import { MarketplaceListingEditor } from "@/components/marketplace-listing-editor";
 import {
@@ -122,43 +123,106 @@ export default function MarketplaceManagerPage() {
   }
 
   async function uploadPhotos(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = "";
+    const input = event.currentTarget;
+    const files = Array.from(input.files ?? []);
+    input.value = "";
+
     if (files.length === 0) return;
+
     setUploading(true);
     setError("");
+
     const uploaded: MarketplacePhoto[] = [];
+
     try {
       for (const file of files) {
-        const form = new FormData();
-        form.set("file", file);
-        const response = await marketplaceAuthorizedFetch(
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+          throw new Error(
+            `${file.name} must be a JPEG, PNG, or WebP image.`
+          );
+        }
+
+        if (file.size <= 0 || file.size > 12 * 1024 * 1024) {
+          throw new Error(`${file.name} must be 12 MB or smaller.`);
+        }
+
+        const preparationResponse = await marketplaceAuthorizedFetch(
           "/api/marketplace/photos",
           {
             method: "POST",
-            body: form,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fileName: file.name,
+              contentType: file.type,
+              size: file.size,
+            }),
           }
         );
-        const payload = (await response.json()) as {
-          photo?: MarketplacePhoto;
+
+        const responseText = await preparationResponse.text();
+
+        let payload: {
+          upload?: MarketplacePhoto & { token?: string };
           error?: string;
-        };
-        if (!response.ok || !payload.photo) {
-          throw new Error(payload.error || `Unable to upload ${file.name}.`);
+        } = {};
+
+        if (responseText) {
+          try {
+            payload = JSON.parse(responseText) as typeof payload;
+          } catch {
+            payload = {};
+          }
         }
-        uploaded.push(payload.photo);
-        sessionPhotoPaths.current.add(payload.photo.path);
+
+        if (
+          !preparationResponse.ok ||
+          !payload.upload?.path ||
+          !payload.upload?.url ||
+          !payload.upload?.token
+        ) {
+          throw new Error(
+            payload.error ||
+              `Unable to prepare ${file.name} for upload.`
+          );
+        }
+
+        const { path, token, url } = payload.upload;
+
+        const { error: uploadError } = await supabase.storage
+          .from("marketplace-images")
+          .uploadToSignedUrl(path, token, file, {
+            contentType: file.type,
+            cacheControl: "31536000",
+          });
+
+        if (uploadError) {
+          throw new Error(`Unable to upload ${file.name}.`);
+        }
+
+        const photo: MarketplacePhoto = { path, url };
+
+        uploaded.push(photo);
+        sessionPhotoPaths.current.add(path);
       }
+
       setDraft((current) => ({
         ...current,
         photos: [...current.photos, ...uploaded],
       }));
     } catch (cause) {
-      await Promise.all(uploaded.map((photo) => deleteUnusedPhoto(photo.path)));
+      await Promise.all(
+        uploaded.map((photo) => deleteUnusedPhoto(photo.path))
+      );
+
       for (const photo of uploaded) {
         sessionPhotoPaths.current.delete(photo.path);
       }
-      setError(cause instanceof Error ? cause.message : "Photo upload failed.");
+
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Photo upload failed."
+      );
     } finally {
       setUploading(false);
     }
@@ -175,48 +239,89 @@ export default function MarketplaceManagerPage() {
     }
   }
 
-  async function submitListing(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function listingPayload(saveAsDraft: boolean) {
+    return {
+      action: editing ? "update" : "create",
+      listingId: editing?.id,
+      saveAsDraft,
+      businessId: draft.businessId || null,
+      title: draft.title,
+      description: draft.description,
+      category: draft.category,
+      condition: draft.condition,
+      price: draft.isFree ? 0 : draft.price,
+      currency: draft.currency,
+      isFree: draft.isFree,
+      isNegotiable: draft.isNegotiable,
+      city: draft.city,
+      region: draft.region,
+      postalCode: draft.postalCode,
+      countryCode: draft.countryCode,
+      pickupAvailable: draft.pickupAvailable,
+      localDeliveryAvailable: draft.localDeliveryAvailable,
+      shippingAvailable: draft.shippingAvailable,
+      tags: parseMarketplaceTags(draft.tags),
+      attributes: buildMarketplaceAttributes(draft.attributes),
+      photoUrls: draft.photos.map((photo) => photo.url),
+      photoPaths: draft.photos.map((photo) => photo.path),
+      expiresAt: draft.expiresAt || null,
+      draftData: saveAsDraft
+        ? {
+            businessId: draft.businessId,
+            title: draft.title,
+            description: draft.description,
+            category: draft.category,
+            condition: draft.condition,
+            price: draft.price,
+            currency: draft.currency,
+            isFree: draft.isFree,
+            isNegotiable: draft.isNegotiable,
+            city: draft.city,
+            region: draft.region,
+            postalCode: draft.postalCode,
+            countryCode: draft.countryCode,
+            pickupAvailable: draft.pickupAvailable,
+            localDeliveryAvailable: draft.localDeliveryAvailable,
+            shippingAvailable: draft.shippingAvailable,
+            tags: draft.tags,
+            attributes: draft.attributes.map((attribute) => ({
+              key: attribute.key,
+              value: attribute.value,
+            })),
+            expiresAt: draft.expiresAt,
+          }
+        : null,
+    };
+  }
+
+  async function persistListing(saveAsDraft: boolean) {
     setWorking(true);
     setMessage("");
     setError("");
-    try {
-      await marketplaceApiAction({
-        action: editing ? "update" : "create",
-        listingId: editing?.id,
-        businessId: draft.businessId || null,
-        title: draft.title,
-        description: draft.description,
-        category: draft.category,
-        condition: draft.condition,
-        price: draft.isFree ? 0 : draft.price,
-        currency: draft.currency,
-        isFree: draft.isFree,
-        isNegotiable: draft.isNegotiable,
-        city: draft.city,
-        region: draft.region,
-        postalCode: draft.postalCode,
-        countryCode: draft.countryCode,
-        pickupAvailable: draft.pickupAvailable,
-        localDeliveryAvailable: draft.localDeliveryAvailable,
-        shippingAvailable: draft.shippingAvailable,
-        tags: parseMarketplaceTags(draft.tags),
-        attributes: buildMarketplaceAttributes(draft.attributes),
-        photoUrls: draft.photos.map((photo) => photo.url),
-        photoPaths: draft.photos.map((photo) => photo.path),
-        expiresAt: draft.expiresAt || null,
-      });
 
-      const retained = new Set(draft.photos.map((photo) => photo.path));
+    const wasPreviouslySubmitted =
+      Boolean(editing) && editing?.status !== "draft";
+
+    try {
+      await marketplaceApiAction(listingPayload(saveAsDraft));
+
+      const retained = new Set(
+        draft.photos.map((photo) => photo.path)
+      );
       const removed = originalPhotoPaths.current.filter(
         (path) => !retained.has(path)
       );
+
       await Promise.all(removed.map(deleteUnusedPhoto));
+
       setMessage(
-        editing
-          ? "Listing updated and returned to administrator review."
-          : "Listing submitted for administrator review."
+        saveAsDraft
+          ? "Draft saved privately. You can continue editing it later."
+          : wasPreviouslySubmitted
+            ? "Listing updated and returned to administrator review."
+            : "Listing submitted for administrator review."
       );
+
       setEditing(null);
       setDraft(emptyMarketplaceDraft());
       originalPhotoPaths.current = [];
@@ -224,11 +329,24 @@ export default function MarketplaceManagerPage() {
       await load();
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Listing could not be saved."
+        cause instanceof Error
+          ? cause.message
+          : saveAsDraft
+            ? "Draft could not be saved."
+            : "Listing could not be submitted."
       );
     } finally {
       setWorking(false);
     }
+  }
+
+  async function saveDraft() {
+    await persistListing(true);
+  }
+
+  async function submitListing(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await persistListing(false);
   }
 
   async function sellerAction(
@@ -360,6 +478,7 @@ export default function MarketplaceManagerPage() {
           updateDraft={updateDraft}
           uploadPhotos={uploadPhotos}
           removePhoto={removePhoto}
+          saveDraft={saveDraft}
           submitListing={submitListing}
           startNew={startNew}
         />

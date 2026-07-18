@@ -34,6 +34,12 @@ export function normalizeMarketplaceListing(
     row.attributes && typeof row.attributes === "object" && !Array.isArray(row.attributes)
       ? (row.attributes as Record<string, unknown>)
       : {};
+  const rawDraftData =
+    row.draft_data &&
+    typeof row.draft_data === "object" &&
+    !Array.isArray(row.draft_data)
+      ? (row.draft_data as Record<string, unknown>)
+      : {};
 
   return {
     id: cleanMarketplaceText(row.id, 60),
@@ -99,6 +105,7 @@ export function normalizeMarketplaceListing(
       }
       return values;
     })(),
+    draftData: rawDraftData,
     photos,
     expiresAt: cleanMarketplaceText(row.expires_at, 60) || null,
     status: (
@@ -146,6 +153,7 @@ export const MARKETPLACE_SELECT = `
   shipping_available,
   tags,
   attributes,
+  draft_data,
   photo_urls,
   photo_paths,
   expires_at,

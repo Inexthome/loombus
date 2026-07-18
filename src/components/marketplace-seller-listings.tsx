@@ -32,7 +32,7 @@ export function MarketplaceSellerListings({
         <div>
           <h2 className="text-2xl font-semibold">Your listings</h2>
           <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
-            Edit, mark sold, reopen, or remove items without changing seller ownership.
+            Save private drafts, continue editing, submit for review, mark sold, reopen, or remove listings.
           </p>
         </div>
         <button
@@ -74,8 +74,18 @@ export function MarketplaceSellerListings({
                     </span>
                   ) : null}
                 </div>
-                <h3 className="mt-2 text-xl font-semibold">{listing.title}</h3>
-                <p className="mt-1 font-semibold">{marketplacePriceLabel(listing)}</p>
+                <h3 className="mt-2 text-xl font-semibold">
+                  {listing.title || "Untitled draft"}
+                </h3>
+                {listing.status === "draft" ? (
+                  <p className="mt-1 text-sm font-semibold text-[var(--loombus-text-muted)]">
+                    Saved privately
+                  </p>
+                ) : (
+                  <p className="mt-1 font-semibold">
+                    {marketplacePriceLabel(listing)}
+                  </p>
+                )}
                 {listing.moderationReason ? (
                   <p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">
                     Review note: {listing.moderationReason}
@@ -90,7 +100,10 @@ export function MarketplaceSellerListings({
                   onClick={() => startEdit(listing)}
                   className="inline-flex items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 py-2 text-sm font-semibold"
                 >
-                  <Pencil size={15} /> Edit
+                  <Pencil size={15} />{" "}
+                  {listing.status === "draft"
+                    ? "Continue editing"
+                    : "Edit"}
                 </button>
               ) : null}
               {listing.status === "published" ? (
