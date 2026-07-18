@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import MarketplaceDirectoryPage from "@/components/marketplace-directory-page";
 import MarketplaceQuickLinks from "@/components/marketplace-quick-links";
+import V2FeatureRouteShell from "@/components/v2-feature-route-shell";
 
 export const metadata: Metadata = {
   title: "Marketplace | Loombus",
@@ -10,9 +11,9 @@ export const metadata: Metadata = {
 
 export default function MarketplacePage() {
   return (
-    <>
+    <V2FeatureRouteShell>
       <MarketplaceQuickLinks />
       <MarketplaceDirectoryPage />
-    </>
+    </V2FeatureRouteShell>
   );
 }
