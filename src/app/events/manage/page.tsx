@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import EventsManagerPage from "@/components/events-manager-page";
+import V2FeatureRouteShell from "@/components/v2-feature-route-shell";
 
 export const metadata: Metadata = {
   title: "Manage Events",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function ManageEventsPage() {
-  return <EventsManagerPage />;
+  return (
+    <V2FeatureRouteShell>
+      <EventsManagerPage />
+    </V2FeatureRouteShell>
+  );
 }
