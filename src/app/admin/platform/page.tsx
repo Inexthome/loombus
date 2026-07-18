@@ -4,7 +4,7 @@ import PlatformOperationsClient from "./platform-operations-client";
 export const metadata: Metadata = {
   title: "Platform Operations | Loombus Admin",
   description:
-    "Role-protected moderation for Marketplace, Business Directory, Jobs, Events, Requests, and Services.",
+    "Role-protected moderation and operational oversight for Marketplace, Business Directory, Jobs, Events, Requests, Services, Rooms, and Appointments.",
   robots: {
     index: false,
     follow: false,

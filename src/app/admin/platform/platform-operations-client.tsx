@@ -5,8 +5,10 @@ import {
   ArrowLeft,
   BriefcaseBusiness,
   Building2,
+  CalendarClock,
   CalendarDays,
   CircleAlert,
+  DoorOpen,
   HandHeart,
   Loader2,
   RefreshCw,
@@ -30,6 +32,12 @@ import {
   RequestModerationPanel,
   ServiceModerationPanel,
 } from "@/components/platform-phase2-moderation-panels";
+import {
+  AppointmentOperationsPanel,
+  RoomOperationsPanel,
+  type AppointmentsAdminResponse,
+  type RoomsAdminResponse,
+} from "@/components/platform-phase3-operations-panels";
 import type { BusinessManageResponse } from "@/lib/business-directory";
 import type { EventsManageResponse } from "@/lib/events";
 import type { JobsManageResponse } from "@/lib/jobs-directory";
@@ -48,7 +56,9 @@ export type PlatformModule =
   | "jobs"
   | "events"
   | "requests"
-  | "services";
+  | "services"
+  | "rooms"
+  | "appointments";
 
 type AccessState =
   | "checking"
@@ -63,6 +73,8 @@ type PlatformData = {
   events: EventsManageResponse;
   requests: ServiceRequestManageResponse;
   services: ProviderServicesManageResponse;
+  rooms: RoomsAdminResponse;
+  appointments: AppointmentsAdminResponse;
 };
 
 type ModuleDefinition = {
@@ -71,6 +83,8 @@ type ModuleDefinition = {
   description: string;
   publicHref: string;
   manageHref: string;
+  publicLabel?: string;
+  manageLabel?: string;
   Icon: LucideIcon;
 };
 
@@ -132,6 +146,28 @@ const MODULES: ModuleDefinition[] = [
     publicHref: "/services",
     manageHref: "/services/manage",
     Icon: Wrench,
+  },
+  {
+    key: "rooms",
+    title: "Rooms",
+    description:
+      "Review private Room registry health, report snapshots, membership demand, ownership attribution, and billing-state diagnostics without opening private Room content.",
+    publicHref: "/rooms",
+    manageHref: "/rooms",
+    publicLabel: "Open Rooms",
+    manageLabel: "Open Room workspace",
+    Icon: DoorOpen,
+  },
+  {
+    key: "appointments",
+    title: "Appointments",
+    description:
+      "Review appointment lifecycle diagnostics, provider and requester attribution, overdue accepted bookings, and supported administrator cancellations.",
+    publicHref: "/appointments",
+    manageHref: "/appointments",
+    publicLabel: "Open Appointments",
+    manageLabel: "Open provider workspace",
+    Icon: CalendarClock,
   },
 ];
 
@@ -278,6 +314,8 @@ export default function PlatformOperationsClient({
         events,
         requests,
         services,
+        rooms,
+        appointments,
       ] = await Promise.all([
         authorizedGet<MarketplaceManageResponse>(
           token,
@@ -309,6 +347,16 @@ export default function PlatformOperationsClient({
           "/api/services?manage=1",
           "Services moderation could not load."
         ),
+        authorizedGet<RoomsAdminResponse>(
+          token,
+          "/api/admin/platform/rooms",
+          "Rooms operations could not load."
+        ),
+        authorizedGet<AppointmentsAdminResponse>(
+          token,
+          "/api/admin/platform/appointments",
+          "Appointments operations could not load."
+        ),
       ]);
 
       if (
@@ -317,7 +365,9 @@ export default function PlatformOperationsClient({
         !jobs.isAdmin ||
         !events.isAdmin ||
         !requests.isAdmin ||
-        !services.isAdmin
+        !services.isAdmin ||
+        !rooms.isAdmin ||
+        !appointments.isAdmin
       ) {
         setData(null);
         setAccessState("denied");
@@ -331,6 +381,8 @@ export default function PlatformOperationsClient({
         events,
         requests,
         services,
+        rooms,
+        appointments,
       });
       setAccessState("allowed");
     } catch (caught) {
@@ -430,6 +482,13 @@ export default function PlatformOperationsClient({
       (data?.services.metrics.pending ?? 0) +
       (data?.services.metrics.openReports ?? 0);
 
+    const rooms =
+      (data?.rooms.metrics.openReports ?? 0) +
+      (data?.rooms.metrics.billingAttention ?? 0);
+
+    const appointments =
+      data?.appointments.metrics.overdueAccepted ?? 0;
+
     return {
       marketplace,
       businesses,
@@ -437,13 +496,17 @@ export default function PlatformOperationsClient({
       events,
       requests,
       services,
+      rooms,
+      appointments,
       total:
         marketplace +
         businesses +
         jobs +
         events +
         requests +
-        services,
+        services +
+        rooms +
+        appointments,
     };
   }, [data]);
 
@@ -608,12 +671,13 @@ export default function PlatformOperationsClient({
                 Platform Operations
               </p>
               <h1 className="mt-2 text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
-                Trust, moderation, and public operations.
+                Trust, moderation, and operational oversight.
               </h1>
               <p className="mt-4 leading-7 text-[var(--loombus-text-muted)]">
                 Review Marketplace, Business Directory, Jobs,
-                Events, Requests, and Services without entering
-                seller, organizer, requester, provider, or employer
+                Events, Requests, Services, Rooms, and
+                Appointments without entering seller, organizer,
+                requester, provider, employer, or private Room
                 creation workflows.
               </p>
             </div>
@@ -666,7 +730,7 @@ export default function PlatformOperationsClient({
                   {countLabel(counts[module.key])}
                 </strong>
                 <span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">
-                  Pending decisions and open reports.
+                  Pending decisions, reports, and operational exceptions.
                 </span>
               </article>
             ))}
@@ -841,13 +905,15 @@ export default function PlatformOperationsClient({
                       href={module.publicHref}
                       className="rounded-xl border border-[var(--loombus-border)] px-3 py-2 text-sm font-semibold"
                     >
-                      View public surface
+                      {module.publicLabel ??
+                        "View public surface"}
                     </Link>
                     <Link
                       href={module.manageHref}
                       className="rounded-xl border border-[var(--loombus-border)] px-3 py-2 text-sm font-semibold"
                     >
-                      Open owner workspace
+                      {module.manageLabel ??
+                        "Open owner workspace"}
                     </Link>
                   </div>
                 </div>
@@ -973,6 +1039,42 @@ export default function PlatformOperationsClient({
                   ) =>
                     runAction(
                       "/api/services",
+                      payload,
+                      successMessage
+                    )
+                  }
+                />
+              ) : null}
+
+              {module.key === "rooms" &&
+              data?.rooms ? (
+                <RoomOperationsPanel
+                  data={data.rooms}
+                  working={working}
+                  runAction={(
+                    payload,
+                    successMessage
+                  ) =>
+                    runAction(
+                      "/api/admin/platform/rooms",
+                      payload,
+                      successMessage
+                    )
+                  }
+                />
+              ) : null}
+
+              {module.key === "appointments" &&
+              data?.appointments ? (
+                <AppointmentOperationsPanel
+                  data={data.appointments}
+                  working={working}
+                  runAction={(
+                    payload,
+                    successMessage
+                  ) =>
+                    runAction(
+                      "/api/admin/platform/appointments",
                       payload,
                       successMessage
                     )
