@@ -46,7 +46,14 @@ export async function hydrateRequests(
     const ageBand = String(safety?.age_band ?? "unknown");
     const businessId = row.business_id ? String(row.business_id) : null;
     const business = businessId ? businesses.get(businessId) : undefined;
-    const eligible = Boolean(profile && getAccountEnforcementResult(profile).allowed)
+    const enforcementProfile = profile
+      ? {
+          account_status: typeof profile.account_status === "string" ? profile.account_status : null,
+          enforcement_reason: typeof profile.enforcement_reason === "string" ? profile.enforcement_reason : null,
+          suspended_until: typeof profile.suspended_until === "string" ? profile.suspended_until : null,
+        }
+      : null;
+    const eligible = Boolean(profile && getAccountEnforcementResult(enforcementProfile).allowed)
       && ageBand !== "unknown" && ageBand !== "under_13" && safety?.guardian_required !== true
       && (!businessId || (business?.status === "published" && business?.owner_id === requesterId));
     if (!eligible) return [];
