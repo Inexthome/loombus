@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import BusinessDirectoryPage from "@/components/business-directory-page";
+import V2FeatureRouteShell from "@/components/v2-feature-route-shell";
 
 export const metadata: Metadata = {
   title: "Local Business and Services | Loombus",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function BusinessesPage() {
-  return <BusinessDirectoryPage />;
+  return (
+    <V2FeatureRouteShell>
+      <BusinessDirectoryPage />
+    </V2FeatureRouteShell>
+  );
 }
