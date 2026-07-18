@@ -1,4 +1,5 @@
 -- Public Events, responses, reports, and private Room event responses.
+-- Includes compatibility with the earlier Room RSVP schema from PR #544.
 
 begin;
 
@@ -34,27 +35,17 @@ create table if not exists public.public_events (
   cancelled_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint public_events_format_check
-    check (event_format in ('in_person', 'online', 'hybrid')),
-  constraint public_events_status_check
-    check (status in ('pending', 'published', 'rejected', 'cancelled', 'completed', 'removed')),
-  constraint public_events_time_check
-    check (ends_at is null or ends_at > starts_at),
-  constraint public_events_capacity_check
-    check (capacity is null or (capacity >= 1 and capacity <= 1000000)),
-  constraint public_events_country_code_check
-    check (country_code ~ '^[A-Z]{2}$')
+  constraint public_events_format_check check (event_format in ('in_person', 'online', 'hybrid')),
+  constraint public_events_status_check check (status in ('pending', 'published', 'rejected', 'cancelled', 'completed', 'removed')),
+  constraint public_events_time_check check (ends_at is null or ends_at > starts_at),
+  constraint public_events_capacity_check check (capacity is null or (capacity >= 1 and capacity <= 1000000)),
+  constraint public_events_country_code_check check (country_code ~ '^[A-Z]{2}$')
 );
 
-create index if not exists public_events_public_starts_idx
-  on public.public_events (status, starts_at);
-create index if not exists public_events_organizer_updated_idx
-  on public.public_events (organizer_id, updated_at desc);
-create index if not exists public_events_business_starts_idx
-  on public.public_events (business_id, starts_at)
-  where business_id is not null;
-create index if not exists public_events_category_starts_idx
-  on public.public_events (category, starts_at);
+create index if not exists public_events_public_starts_idx on public.public_events (status, starts_at);
+create index if not exists public_events_organizer_updated_idx on public.public_events (organizer_id, updated_at desc);
+create index if not exists public_events_business_starts_idx on public.public_events (business_id, starts_at) where business_id is not null;
+create index if not exists public_events_category_starts_idx on public.public_events (category, starts_at);
 
 create table if not exists public.public_event_rsvps (
   id uuid primary key default gen_random_uuid(),
@@ -63,21 +54,14 @@ create table if not exists public.public_event_rsvps (
   response text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint public_event_rsvps_response_check
-    check (response in ('going', 'interested')),
+  constraint public_event_rsvps_response_check check (response in ('going', 'interested')),
   constraint public_event_rsvps_unique unique (event_id, user_id)
 );
 
-create index if not exists public_event_rsvps_event_response_idx
-  on public.public_event_rsvps (event_id, response);
-create index if not exists public_event_rsvps_user_created_idx
-  on public.public_event_rsvps (user_id, created_at desc);
+create index if not exists public_event_rsvps_event_response_idx on public.public_event_rsvps (event_id, response);
+create index if not exists public_event_rsvps_user_created_idx on public.public_event_rsvps (user_id, created_at desc);
 
-create or replace function public.set_public_event_rsvp(
-  target_event_id uuid,
-  target_user_id uuid,
-  target_response text
-)
+create or replace function public.set_public_event_rsvp(target_event_id uuid, target_user_id uuid, target_response text)
 returns text
 language plpgsql
 security definer
@@ -90,51 +74,23 @@ begin
   if target_response not in ('going', 'interested', 'none') then
     raise exception 'INVALID_EVENT_RESPONSE';
   end if;
-
-  select *
-  into target_event
-  from public.public_events
-  where id = target_event_id
-  for update;
-
-  if target_event.id is null
-    or target_event.status <> 'published'
-    or target_event.starts_at <= now() then
+  select * into target_event from public.public_events where id = target_event_id for update;
+  if target_event.id is null or target_event.status <> 'published' or target_event.starts_at <= now() then
     raise exception 'EVENT_RESPONSE_CLOSED';
   end if;
-
   if target_response = 'none' then
-    delete from public.public_event_rsvps
-    where event_id = target_event_id
-      and user_id = target_user_id;
+    delete from public.public_event_rsvps where event_id = target_event_id and user_id = target_user_id;
     return null;
   end if;
-
   if target_response = 'going' and target_event.capacity is not null then
-    select count(*)::integer
-    into going_total
+    select count(*)::integer into going_total
     from public.public_event_rsvps
-    where event_id = target_event_id
-      and response = 'going'
-      and user_id <> target_user_id;
-
-    if going_total >= target_event.capacity then
-      raise exception 'EVENT_CAPACITY_REACHED';
-    end if;
+    where event_id = target_event_id and response = 'going' and user_id <> target_user_id;
+    if going_total >= target_event.capacity then raise exception 'EVENT_CAPACITY_REACHED'; end if;
   end if;
-
-  insert into public.public_event_rsvps (
-    event_id,
-    user_id,
-    response
-  ) values (
-    target_event_id,
-    target_user_id,
-    target_response
-  )
-  on conflict (event_id, user_id)
-  do update set response = excluded.response;
-
+  insert into public.public_event_rsvps (event_id, user_id, response)
+  values (target_event_id, target_user_id, target_response)
+  on conflict (event_id, user_id) do update set response = excluded.response;
   return target_response;
 end;
 $$;
@@ -151,36 +107,91 @@ create table if not exists public.public_event_reports (
   decision_note text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint public_event_reports_status_check
-    check (status in ('open', 'resolved', 'dismissed'))
+  constraint public_event_reports_status_check check (status in ('open', 'resolved', 'dismissed'))
 );
 
-create unique index if not exists public_event_reports_one_open_per_user_idx
-  on public.public_event_reports (event_id, reporter_id)
-  where status = 'open';
-
-create index if not exists public_event_reports_status_created_idx
-  on public.public_event_reports (status, created_at desc);
-create index if not exists public_event_reports_reporter_created_idx
-  on public.public_event_reports (reporter_id, created_at desc);
+create unique index if not exists public_event_reports_one_open_per_user_idx on public.public_event_reports (event_id, reporter_id) where status = 'open';
+create index if not exists public_event_reports_status_created_idx on public.public_event_reports (status, created_at desc);
+create index if not exists public_event_reports_reporter_created_idx on public.public_event_reports (reporter_id, created_at desc);
 
 create table if not exists public.room_event_rsvps (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null references public.room_events(id) on delete cascade,
   room_id uuid not null references public.rooms(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,
-  response text not null,
+  response text,
+  status text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint room_event_rsvps_response_check
-    check (response in ('going', 'interested')),
   constraint room_event_rsvps_unique unique (event_id, user_id)
 );
 
-create index if not exists room_event_rsvps_room_event_idx
-  on public.room_event_rsvps (room_id, event_id, response);
-create index if not exists room_event_rsvps_user_created_idx
-  on public.room_event_rsvps (user_id, created_at desc);
+alter table public.room_event_rsvps
+  add column if not exists response text,
+  add column if not exists status text,
+  add column if not exists updated_at timestamptz not null default now();
+
+update public.room_event_rsvps
+set response = case status when 'going' then 'going' when 'maybe' then 'interested' else null end
+where response is null;
+
+update public.room_event_rsvps
+set status = case response when 'going' then 'going' when 'interested' then 'maybe' else status end
+where status is null;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.room_event_rsvps'::regclass
+      and conname = 'room_event_rsvps_response_compatibility_check'
+  ) then
+    alter table public.room_event_rsvps
+      add constraint room_event_rsvps_response_compatibility_check
+      check (response is null or response in ('going', 'interested'));
+  end if;
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.room_event_rsvps'::regclass
+      and conname = 'room_event_rsvps_status_compatibility_check'
+  ) then
+    alter table public.room_event_rsvps
+      add constraint room_event_rsvps_status_compatibility_check
+      check (status is null or status in ('going', 'maybe', 'declined', 'waitlist'));
+  end if;
+end;
+$$;
+
+create or replace function public.sync_room_event_rsvp_contract()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
+begin
+  if (tg_op = 'INSERT' and new.response is not null)
+     or (tg_op = 'UPDATE' and new.response is distinct from old.response) then
+    if new.response = 'going' then
+      new.status := 'going';
+    elsif new.response = 'interested' then
+      new.status := 'maybe';
+    else
+      new.response := case new.status when 'going' then 'going' when 'maybe' then 'interested' else null end;
+    end if;
+  else
+    new.response := case new.status when 'going' then 'going' when 'maybe' then 'interested' else null end;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists sync_room_event_rsvp_contract_trigger on public.room_event_rsvps;
+create trigger sync_room_event_rsvp_contract_trigger
+before insert or update on public.room_event_rsvps
+for each row execute function public.sync_room_event_rsvp_contract();
+
+create index if not exists room_event_rsvps_response_idx on public.room_event_rsvps (room_id, event_id, response);
+create index if not exists room_event_rsvps_user_created_idx on public.room_event_rsvps (user_id, created_at desc);
 
 create or replace function public.touch_events_updated_at()
 returns trigger
@@ -195,24 +206,13 @@ end;
 $$;
 
 drop trigger if exists touch_public_events_updated_at on public.public_events;
-create trigger touch_public_events_updated_at
-before update on public.public_events
-for each row execute function public.touch_events_updated_at();
-
+create trigger touch_public_events_updated_at before update on public.public_events for each row execute function public.touch_events_updated_at();
 drop trigger if exists touch_public_event_rsvps_updated_at on public.public_event_rsvps;
-create trigger touch_public_event_rsvps_updated_at
-before update on public.public_event_rsvps
-for each row execute function public.touch_events_updated_at();
-
+create trigger touch_public_event_rsvps_updated_at before update on public.public_event_rsvps for each row execute function public.touch_events_updated_at();
 drop trigger if exists touch_public_event_reports_updated_at on public.public_event_reports;
-create trigger touch_public_event_reports_updated_at
-before update on public.public_event_reports
-for each row execute function public.touch_events_updated_at();
-
+create trigger touch_public_event_reports_updated_at before update on public.public_event_reports for each row execute function public.touch_events_updated_at();
 drop trigger if exists touch_room_event_rsvps_updated_at on public.room_event_rsvps;
-create trigger touch_room_event_rsvps_updated_at
-before update on public.room_event_rsvps
-for each row execute function public.touch_events_updated_at();
+create trigger touch_room_event_rsvps_updated_at before update on public.room_event_rsvps for each row execute function public.touch_events_updated_at();
 
 alter table public.public_events enable row level security;
 alter table public.public_event_rsvps enable row level security;
@@ -223,19 +223,16 @@ revoke all on table public.public_events from public, anon, authenticated;
 revoke all on table public.public_event_rsvps from public, anon, authenticated;
 revoke all on table public.public_event_reports from public, anon, authenticated;
 revoke all on table public.room_event_rsvps from public, anon, authenticated;
-
 grant all on table public.public_events to service_role;
 grant all on table public.public_event_rsvps to service_role;
 grant all on table public.public_event_reports to service_role;
 grant all on table public.room_event_rsvps to service_role;
 
-revoke all on function public.touch_events_updated_at()
-  from public, anon, authenticated;
-revoke all on function public.set_public_event_rsvp(uuid, uuid, text)
-  from public, anon, authenticated;
-grant execute on function public.touch_events_updated_at()
-  to service_role;
-grant execute on function public.set_public_event_rsvp(uuid, uuid, text)
-  to service_role;
+revoke all on function public.touch_events_updated_at() from public, anon, authenticated;
+revoke all on function public.set_public_event_rsvp(uuid, uuid, text) from public, anon, authenticated;
+revoke all on function public.sync_room_event_rsvp_contract() from public, anon, authenticated;
+grant execute on function public.touch_events_updated_at() to service_role;
+grant execute on function public.set_public_event_rsvp(uuid, uuid, text) to service_role;
+grant execute on function public.sync_room_event_rsvp_contract() to service_role;
 
 commit;

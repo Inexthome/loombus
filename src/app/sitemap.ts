@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 
 const siteUrl = "https://loombus.com";
-
 const publicRoutes = [
   { route: "", priority: 1, changeFrequency: "weekly" as const },
   { route: "/about", priority: 0.9, changeFrequency: "monthly" as const },
@@ -11,6 +10,8 @@ const publicRoutes = [
   { route: "/marketplace", priority: 0.9, changeFrequency: "daily" as const },
   { route: "/marketplace/safety", priority: 0.75, changeFrequency: "monthly" as const },
   { route: "/events", priority: 0.9, changeFrequency: "daily" as const },
+  { route: "/requests", priority: 0.9, changeFrequency: "daily" as const },
+  { route: "/requests/safety", priority: 0.75, changeFrequency: "monthly" as const },
   { route: "/login", priority: 0.85, changeFrequency: "monthly" as const },
   { route: "/signup", priority: 0.85, changeFrequency: "monthly" as const },
   { route: "/support", priority: 0.8, changeFrequency: "monthly" as const },
@@ -26,11 +27,5 @@ const publicRoutes = [
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
-
-  return publicRoutes.map(({ route, priority, changeFrequency }) => ({
-    url: `${siteUrl}${route}`,
-    lastModified,
-    changeFrequency,
-    priority,
-  }));
+  return publicRoutes.map(({ route, priority, changeFrequency }) => ({ url: `${siteUrl}${route}`, lastModified, changeFrequency, priority }));
 }
