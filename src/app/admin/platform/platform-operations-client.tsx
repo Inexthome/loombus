@@ -70,6 +70,11 @@ export type PlatformModule =
   | "local"
   | "matches";
 
+type PlatformModuleKey = Exclude<
+  PlatformModule,
+  "overview"
+>;
+
 type AccessState =
   | "checking"
   | "allowed"
@@ -89,8 +94,12 @@ type PlatformData = {
   matches: MatchesAdminResponse;
 };
 
+type ModuleErrors = Partial<
+  Record<PlatformModuleKey, string>
+>;
+
 type ModuleDefinition = {
-  key: Exclude<PlatformModule, "overview">;
+  key: PlatformModuleKey;
   title: string;
   description: string;
   publicHref: string;
@@ -102,6 +111,7 @@ type ModuleDefinition = {
 
 type ErrorPayload = {
   error?: unknown;
+  code?: unknown;
 };
 
 const MODULES: ModuleDefinition[] = [
@@ -214,6 +224,17 @@ function readableError(
     : fallback;
 }
 
+class AuthorizedRequestError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public code: string | null
+  ) {
+    super(message);
+    this.name = "AuthorizedRequestError";
+  }
+}
+
 async function authorizedGet<T>(
   token: string,
   url: string,
@@ -231,7 +252,13 @@ async function authorizedGet<T>(
     .catch(() => ({}))) as ErrorPayload;
 
   if (!response.ok) {
-    throw new Error(readableError(payload, fallback));
+    throw new AuthorizedRequestError(
+      readableError(payload, fallback),
+      response.status,
+      typeof payload.code === "string"
+        ? payload.code
+        : null
+    );
   }
 
   return payload as T;
@@ -264,8 +291,10 @@ async function authorizedPost(
   return payload;
 }
 
-function countLabel(value: number) {
-  return value.toLocaleString();
+function countLabel(value: number | null) {
+  return value === null
+    ? "Unavailable"
+    : value.toLocaleString();
 }
 
 function StateCard({
@@ -325,7 +354,10 @@ export default function PlatformOperationsClient({
   const [accessState, setAccessState] =
     useState<AccessState>("checking");
   const [accessToken, setAccessToken] = useState("");
-  const [data, setData] = useState<PlatformData | null>(null);
+  const [data, setData] =
+    useState<Partial<PlatformData> | null>(null);
+  const [moduleErrors, setModuleErrors] =
+    useState<ModuleErrors>({});
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState("");
@@ -342,17 +374,17 @@ export default function PlatformOperationsClient({
 
     try {
       const [
-        marketplace,
-        businesses,
-        jobs,
-        events,
-        requests,
-        services,
-        rooms,
-        appointments,
-        local,
-        matches,
-      ] = await Promise.all([
+        marketplaceResult,
+        businessesResult,
+        jobsResult,
+        eventsResult,
+        requestsResult,
+        servicesResult,
+        roomsResult,
+        appointmentsResult,
+        localResult,
+        matchesResult,
+      ] = await Promise.allSettled([
         authorizedGet<MarketplaceManageResponse>(
           token,
           "/api/marketplace?manage=1",
@@ -403,47 +435,114 @@ export default function PlatformOperationsClient({
           "/api/admin/platform/matches",
           "Matches diagnostics could not load."
         ),
-      ]);
+      ] as const);
 
-      if (
-        !marketplace.isAdmin ||
-        !businesses.isAdmin ||
-        !jobs.isAdmin ||
-        !events.isAdmin ||
-        !requests.isAdmin ||
-        !services.isAdmin ||
-        !rooms.isAdmin ||
-        !appointments.isAdmin ||
-        !local.isAdmin ||
-        !matches.isAdmin
+      const nextData: Partial<PlatformData> = {};
+      const nextErrors: ModuleErrors = {};
+      let denied = false;
+
+      function assignResult<K extends PlatformModuleKey>(
+        key: K,
+        result: PromiseSettledResult<PlatformData[K]>
       ) {
+        if (result.status === "fulfilled") {
+          if (result.value.isAdmin !== true) {
+            denied = true;
+            return;
+          }
+
+          nextData[key] = result.value;
+          return;
+        }
+
+        const reason = result.reason;
+
+        if (
+          reason instanceof AuthorizedRequestError &&
+          reason.status === 403
+        ) {
+          denied = true;
+          return;
+        }
+
+        nextErrors[key] =
+          reason instanceof Error
+            ? reason.message
+            : `${
+                MODULES.find(
+                  (item) => item.key === key
+                )?.title ?? "Module"
+              } could not load.`;
+      }
+
+      assignResult("marketplace", marketplaceResult);
+      assignResult("businesses", businessesResult);
+      assignResult("jobs", jobsResult);
+      assignResult("events", eventsResult);
+      assignResult("requests", requestsResult);
+      assignResult("services", servicesResult);
+      assignResult("rooms", roomsResult);
+      assignResult(
+        "appointments",
+        appointmentsResult
+      );
+      assignResult("local", localResult);
+      assignResult("matches", matchesResult);
+
+      if (denied) {
         setData(null);
+        setModuleErrors({});
         setAccessState("denied");
         return;
       }
 
-      setData({
-        marketplace,
-        businesses,
-        jobs,
-        events,
-        requests,
-        services,
-        rooms,
-        appointments,
-        local,
-        matches,
-      });
+      const loadedCount = Object.keys(nextData).length;
+      const failedModules = Object.keys(
+        nextErrors
+      ) as PlatformModuleKey[];
+
+      setModuleErrors(nextErrors);
+
+      if (loadedCount === 0) {
+        setData(null);
+        setError(
+          Object.values(nextErrors)[0] ??
+            "Platform Operations could not load."
+        );
+        setAccessState("error");
+        return;
+      }
+
+      setData(nextData);
       setAccessState("allowed");
+
+      if (failedModules.length > 0) {
+        const labels = failedModules
+          .map(
+            (key) =>
+              MODULES.find(
+                (item) => item.key === key
+              )?.title ?? key
+          )
+          .join(", ");
+
+        setError(
+          `${failedModules.length} ${
+            failedModules.length === 1
+              ? "module is"
+              : "modules are"
+          } temporarily unavailable: ${labels}. Available modules remain loaded.`
+        );
+      }
     } catch (caught) {
+      setData(null);
+      setModuleErrors({});
       setError(
         caught instanceof Error
           ? caught.message
           : "Platform Operations could not load."
       );
-      setAccessState((current) =>
-        current === "allowed" ? "allowed" : "error"
-      );
+      setAccessState("error");
     } finally {
       setLoading(false);
     }
@@ -503,47 +602,76 @@ export default function PlatformOperationsClient({
   }, [initialModule, load]);
 
   const counts = useMemo(() => {
-    const marketplace =
-      (data?.marketplace.moderation.pendingListings.length ??
-        0) +
-      (data?.marketplace.moderation.openReports.length ?? 0);
+    const marketplace = data?.marketplace
+      ? data.marketplace.moderation.pendingListings.length +
+        data.marketplace.moderation.openReports.length
+      : null;
 
-    const businesses =
-      (data?.businesses.moderation.pendingBusinesses.length ??
-        0) +
-      (data?.businesses.moderation.pendingClaims.length ?? 0) +
-      (data?.businesses.moderation.openReports.length ?? 0);
+    const businesses = data?.businesses
+      ? data.businesses.moderation.pendingBusinesses.length +
+        data.businesses.moderation.pendingClaims.length +
+        data.businesses.moderation.openReports.length
+      : null;
 
-    const jobs =
-      (data?.jobs.moderation.pendingJobs.length ?? 0) +
-      (data?.jobs.moderation.openReports.length ?? 0);
+    const jobs = data?.jobs
+      ? data.jobs.moderation.pendingJobs.length +
+        data.jobs.moderation.openReports.length
+      : null;
 
-    const events =
-      (data?.events.events.filter(
-        (event) => event.status === "pending"
-      ).length ?? 0) +
-      (data?.events.reports.length ?? 0);
+    const events = data?.events
+      ? data.events.events.filter(
+          (event) => event.status === "pending"
+        ).length + data.events.reports.length
+      : null;
 
-    const requests =
-      (data?.requests.metrics.pending ?? 0) +
-      (data?.requests.metrics.openReports ?? 0);
+    const requests = data?.requests
+      ? data.requests.metrics.pending +
+        data.requests.metrics.openReports
+      : null;
 
-    const services =
-      (data?.services.metrics.pending ?? 0) +
-      (data?.services.metrics.openReports ?? 0);
+    const services = data?.services
+      ? data.services.metrics.pending +
+        data.services.metrics.openReports
+      : null;
 
-    const rooms =
-      (data?.rooms.metrics.openReports ?? 0) +
-      (data?.rooms.metrics.billingAttention ?? 0);
+    const rooms = data?.rooms
+      ? data.rooms.metrics.openReports +
+        data.rooms.metrics.billingAttention
+      : null;
 
-    const appointments =
-      data?.appointments.metrics.overdueAccepted ?? 0;
+    const appointments = data?.appointments
+      ? data.appointments.metrics.overdueAccepted
+      : null;
 
-    const local =
-      data?.local.metrics.attentionRecords ?? 0;
+    const local = data?.local
+      ? data.local.metrics.attentionRecords
+      : null;
 
-    const matches =
-      data?.matches.metrics.attentionTotal ?? 0;
+    const matches = data?.matches
+      ? data.matches.metrics.attentionTotal
+      : null;
+
+    const moduleCounts = [
+      marketplace,
+      businesses,
+      jobs,
+      events,
+      requests,
+      services,
+      rooms,
+      appointments,
+      local,
+      matches,
+    ];
+
+    const total = moduleCounts.some(
+      (value) => value === null
+    )
+      ? null
+      : moduleCounts.reduce<number>(
+          (sum, value) => sum + (value ?? 0),
+          0
+        );
 
     return {
       marketplace,
@@ -556,17 +684,7 @@ export default function PlatformOperationsClient({
       appointments,
       local,
       matches,
-      total:
-        marketplace +
-        businesses +
-        jobs +
-        events +
-        requests +
-        services +
-        rooms +
-        appointments +
-        local +
-        matches,
+      total,
     };
   }, [data]);
 
@@ -774,7 +892,9 @@ export default function PlatformOperationsClient({
                 {countLabel(counts.total)}
               </strong>
               <span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">
-                Items requiring an administrator decision.
+                {counts.total === null
+                  ? "One or more module totals are unavailable. Available queues remain usable."
+                  : "Items requiring an administrator decision."}
               </span>
             </article>
 
@@ -790,7 +910,9 @@ export default function PlatformOperationsClient({
                   {countLabel(counts[module.key])}
                 </strong>
                 <span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">
-                  Pending decisions, reports, and operational exceptions.
+                  {counts[module.key] === null
+                    ? "This module is temporarily unavailable. Other queues remain loaded."
+                    : "Pending decisions, reports, and operational exceptions."}
                 </span>
               </article>
             ))}
@@ -936,6 +1058,9 @@ export default function PlatformOperationsClient({
             return null;
           }
 
+          const moduleError =
+            moduleErrors[module.key];
+
           return (
             <section key={module.key} className="mt-6">
               <div className="rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 sm:p-6">
@@ -978,6 +1103,44 @@ export default function PlatformOperationsClient({
                   </div>
                 </div>
               </div>
+
+              {moduleError ? (
+                <div
+                  className="mt-6 rounded-[1.6rem] border border-amber-500/30 bg-amber-500/10 p-5 sm:p-6"
+                  role="alert"
+                >
+                  <div className="flex items-start gap-3">
+                    <CircleAlert
+                      className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-300"
+                      size={20}
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <h3 className="font-semibold">
+                        {module.title} is temporarily
+                        unavailable
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">
+                        {moduleError}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void load(accessToken)
+                        }
+                        disabled={
+                          loading ||
+                          working ||
+                          !accessToken
+                        }
+                        className="mt-4 rounded-xl border border-[var(--loombus-border)] px-3 py-2 text-sm font-semibold disabled:opacity-50"
+                      >
+                        Retry queues
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               {module.key === "marketplace" &&
               data?.marketplace ? (
