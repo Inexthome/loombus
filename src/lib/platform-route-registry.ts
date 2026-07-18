@@ -50,6 +50,14 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     keywords: ["search", "advanced search", "find", "lookup", "discover"],
   },
   {
+    title: "Intelligent Matching",
+    description:
+      "Review private Request-to-Service and Service-to-Request compatibility suggestions.",
+    href: "/matches",
+    category: "Real-world",
+    keywords: ["matches", "matching", "requests", "services", "compatibility", "recommendations"],
+  },
+  {
     title: "Local Business and Services",
     description:
       "Browse approved businesses, service areas, and current offerings.",
