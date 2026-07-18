@@ -173,8 +173,16 @@ const MODULE_GROUPS: AdminModuleGroup[] = [
   {
     title: "Product & platform operations",
     description:
-      "Review the existing Labs workflow, platform-health diagnostics, and Topic Memory coverage.",
+      "Review the existing Labs workflow, platform-health diagnostics, Topic Memory coverage, and public-module moderation.",
     modules: [
+      {
+        href: "/admin/platform",
+        title: "Platform Operations",
+        description:
+          "Review Marketplace, Business Directory, and Jobs moderation queues from one role-protected administrator workspace.",
+        action: "Open platform operations",
+        Icon: ListChecks,
+      },
       {
         href: "/admin/labs",
         title: "Labs Review",
