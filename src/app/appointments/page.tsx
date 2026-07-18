@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AppointmentsManagerPage from "@/components/appointments-manager-page";
+import V2FeatureRouteShell from "@/components/v2-feature-route-shell";
 
 export const metadata: Metadata = {
   title: "Appointments",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function AppointmentsPage() {
-  return <AppointmentsManagerPage />;
+  return (
+    <V2FeatureRouteShell>
+      <AppointmentsManagerPage />
+    </V2FeatureRouteShell>
+  );
 }
