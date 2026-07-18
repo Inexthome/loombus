@@ -5,11 +5,14 @@ import {
   ArrowLeft,
   BriefcaseBusiness,
   Building2,
+  CalendarDays,
   CircleAlert,
+  HandHeart,
   Loader2,
   RefreshCw,
   ShieldCheck,
   ShoppingBag,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -22,8 +25,16 @@ import { BusinessModerationPanel } from "@/components/business-moderation-panel"
 import { JobModerationPanel } from "@/components/job-moderation-panel";
 import MarketplaceAdminMetrics from "@/components/marketplace-admin-metrics";
 import { MarketplaceAdminReview } from "@/components/marketplace-admin-review";
+import {
+  EventModerationPanel,
+  RequestModerationPanel,
+  ServiceModerationPanel,
+} from "@/components/platform-phase2-moderation-panels";
 import type { BusinessManageResponse } from "@/lib/business-directory";
+import type { EventsManageResponse } from "@/lib/events";
 import type { JobsManageResponse } from "@/lib/jobs-directory";
+import type { ProviderServicesManageResponse } from "@/lib/provider-services";
+import type { ServiceRequestManageResponse } from "@/lib/service-requests";
 import type {
   MarketplaceManageResponse,
   MarketplaceReport,
@@ -34,7 +45,10 @@ export type PlatformModule =
   | "overview"
   | "marketplace"
   | "businesses"
-  | "jobs";
+  | "jobs"
+  | "events"
+  | "requests"
+  | "services";
 
 type AccessState =
   | "checking"
@@ -46,6 +60,9 @@ type PlatformData = {
   marketplace: MarketplaceManageResponse;
   businesses: BusinessManageResponse;
   jobs: JobsManageResponse;
+  events: EventsManageResponse;
+  requests: ServiceRequestManageResponse;
+  services: ProviderServicesManageResponse;
 };
 
 type ModuleDefinition = {
@@ -88,6 +105,33 @@ const MODULES: ModuleDefinition[] = [
     publicHref: "/jobs",
     manageHref: "/jobs/manage",
     Icon: BriefcaseBusiness,
+  },
+  {
+    key: "events",
+    title: "Events",
+    description:
+      "Review public event submissions, future-date requirements, organizers, locations, and reported events.",
+    publicHref: "/events",
+    manageHref: "/events/manage",
+    Icon: CalendarDays,
+  },
+  {
+    key: "requests",
+    title: "Requests",
+    description:
+      "Review public needs, requester attribution, deadlines, reports, suspensions, and removal decisions.",
+    publicHref: "/requests",
+    manageHref: "/requests/manage",
+    Icon: HandHeart,
+  },
+  {
+    key: "services",
+    title: "Services",
+    description:
+      "Review provider listings, business attribution, pricing context, appointment connections, and reports.",
+    publicHref: "/services",
+    manageHref: "/services/manage",
+    Icon: Wrench,
   },
 ];
 
@@ -227,29 +271,53 @@ export default function PlatformOperationsClient({
     setError("");
 
     try {
-      const [marketplace, businesses, jobs] =
-        await Promise.all([
-          authorizedGet<MarketplaceManageResponse>(
-            token,
-            "/api/marketplace?manage=1",
-            "Marketplace moderation could not load."
-          ),
-          authorizedGet<BusinessManageResponse>(
-            token,
-            "/api/businesses?manage=1",
-            "Business Directory moderation could not load."
-          ),
-          authorizedGet<JobsManageResponse>(
-            token,
-            "/api/jobs?manage=1",
-            "Jobs moderation could not load."
-          ),
-        ]);
+      const [
+        marketplace,
+        businesses,
+        jobs,
+        events,
+        requests,
+        services,
+      ] = await Promise.all([
+        authorizedGet<MarketplaceManageResponse>(
+          token,
+          "/api/marketplace?manage=1",
+          "Marketplace moderation could not load."
+        ),
+        authorizedGet<BusinessManageResponse>(
+          token,
+          "/api/businesses?manage=1",
+          "Business Directory moderation could not load."
+        ),
+        authorizedGet<JobsManageResponse>(
+          token,
+          "/api/jobs?manage=1",
+          "Jobs moderation could not load."
+        ),
+        authorizedGet<EventsManageResponse>(
+          token,
+          "/api/events?manage=1",
+          "Events moderation could not load."
+        ),
+        authorizedGet<ServiceRequestManageResponse>(
+          token,
+          "/api/requests?manage=1",
+          "Requests moderation could not load."
+        ),
+        authorizedGet<ProviderServicesManageResponse>(
+          token,
+          "/api/services?manage=1",
+          "Services moderation could not load."
+        ),
+      ]);
 
       if (
         !marketplace.isAdmin ||
         !businesses.isAdmin ||
-        !jobs.isAdmin
+        !jobs.isAdmin ||
+        !events.isAdmin ||
+        !requests.isAdmin ||
+        !services.isAdmin
       ) {
         setData(null);
         setAccessState("denied");
@@ -260,6 +328,9 @@ export default function PlatformOperationsClient({
         marketplace,
         businesses,
         jobs,
+        events,
+        requests,
+        services,
       });
       setAccessState("allowed");
     } catch (caught) {
@@ -345,11 +416,34 @@ export default function PlatformOperationsClient({
       (data?.jobs.moderation.pendingJobs.length ?? 0) +
       (data?.jobs.moderation.openReports.length ?? 0);
 
+    const events =
+      (data?.events.events.filter(
+        (event) => event.status === "pending"
+      ).length ?? 0) +
+      (data?.events.reports.length ?? 0);
+
+    const requests =
+      (data?.requests.metrics.pending ?? 0) +
+      (data?.requests.metrics.openReports ?? 0);
+
+    const services =
+      (data?.services.metrics.pending ?? 0) +
+      (data?.services.metrics.openReports ?? 0);
+
     return {
       marketplace,
       businesses,
       jobs,
-      total: marketplace + businesses + jobs,
+      events,
+      requests,
+      services,
+      total:
+        marketplace +
+        businesses +
+        jobs +
+        events +
+        requests +
+        services,
     };
   }, [data]);
 
@@ -514,12 +608,12 @@ export default function PlatformOperationsClient({
                 Platform Operations
               </p>
               <h1 className="mt-2 text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
-                Commercial trust and moderation.
+                Trust, moderation, and public operations.
               </h1>
               <p className="mt-4 leading-7 text-[var(--loombus-text-muted)]">
-                Review Marketplace listings, Business Directory
-                profiles, ownership claims, Jobs postings, and
-                member reports without entering seller or employer
+                Review Marketplace, Business Directory, Jobs,
+                Events, Requests, and Services without entering
+                seller, organizer, requester, provider, or employer
                 creation workflows.
               </p>
             </div>
@@ -560,41 +654,22 @@ export default function PlatformOperationsClient({
               </span>
             </article>
 
-            <article className="rounded-2xl bg-[var(--loombus-page-bg)] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
-                Marketplace
-              </p>
-              <strong className="mt-2 block text-3xl">
-                {countLabel(counts.marketplace)}
-              </strong>
-              <span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">
-                Listings and open reports.
-              </span>
-            </article>
-
-            <article className="rounded-2xl bg-[var(--loombus-page-bg)] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
-                Businesses
-              </p>
-              <strong className="mt-2 block text-3xl">
-                {countLabel(counts.businesses)}
-              </strong>
-              <span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">
-                Listings, claims, and reports.
-              </span>
-            </article>
-
-            <article className="rounded-2xl bg-[var(--loombus-page-bg)] p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
-                Jobs
-              </p>
-              <strong className="mt-2 block text-3xl">
-                {countLabel(counts.jobs)}
-              </strong>
-              <span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">
-                Postings and open reports.
-              </span>
-            </article>
+            {MODULES.map((module) => (
+              <article
+                key={module.key}
+                className="rounded-2xl bg-[var(--loombus-page-bg)] p-4"
+              >
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
+                  {module.title}
+                </p>
+                <strong className="mt-2 block text-3xl">
+                  {countLabel(counts[module.key])}
+                </strong>
+                <span className="mt-1 block text-sm text-[var(--loombus-text-muted)]">
+                  Pending decisions and open reports.
+                </span>
+              </article>
+            ))}
           </div>
         </header>
 
@@ -676,7 +751,7 @@ export default function PlatformOperationsClient({
           <section className="mt-6">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
-                Phase 1 modules
+                Platform modules
               </p>
               <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">
                 Choose an operational queue.
@@ -848,6 +923,60 @@ export default function PlatformOperationsClient({
                     )
                   }
                   working={working}
+                />
+              ) : null}
+
+              {module.key === "events" &&
+              data?.events ? (
+                <EventModerationPanel
+                  data={data.events}
+                  working={working}
+                  runAction={(
+                    payload,
+                    successMessage
+                  ) =>
+                    runAction(
+                      "/api/events",
+                      payload,
+                      successMessage
+                    )
+                  }
+                />
+              ) : null}
+
+              {module.key === "requests" &&
+              data?.requests ? (
+                <RequestModerationPanel
+                  data={data.requests}
+                  working={working}
+                  runAction={(
+                    payload,
+                    successMessage
+                  ) =>
+                    runAction(
+                      "/api/requests",
+                      payload,
+                      successMessage
+                    )
+                  }
+                />
+              ) : null}
+
+              {module.key === "services" &&
+              data?.services ? (
+                <ServiceModerationPanel
+                  data={data.services}
+                  working={working}
+                  runAction={(
+                    payload,
+                    successMessage
+                  ) =>
+                    runAction(
+                      "/api/services",
+                      payload,
+                      successMessage
+                    )
+                  }
                 />
               ) : null}
             </section>
