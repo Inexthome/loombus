@@ -28,6 +28,7 @@ const PROTECTED_PATH_PREFIXES = [
   "/blocked-users",
   "/admin",
   "/rooms",
+  "/local/manage",
   "/onboarding",
   "/age-gate",
 ];
