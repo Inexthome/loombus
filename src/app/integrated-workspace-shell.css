@@ -1,0 +1,93 @@
+.loombus-integrated-workspace-route {
+  min-height: 100%;
+}
+
+.loombus-integrated-workspace-route main {
+  background: var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
+  padding-top: 1.25rem !important;
+  padding-bottom: 6rem !important;
+}
+
+.loombus-integrated-workspace-route main > div > :is(header, section):first-child {
+  overflow: visible !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--loombus-border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0 1.25rem !important;
+  box-shadow: none !important;
+}
+
+.loombus-integrated-workspace-route
+  main
+  > div
+  > :is(header, section):first-child
+  h1 {
+  max-width: 54rem;
+  font-size: clamp(2rem, 3.6vw, 2.55rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.loombus-integrated-workspace-route
+  main
+  > div
+  > :is(header, section):first-child
+  :is(p, div).text-xs.font-bold.uppercase {
+  letter-spacing: 0.16em !important;
+}
+
+.loombus-integrated-workspace-route
+  main
+  > div
+  > :is(header, section):first-child
+  article {
+  border: 1px solid var(--loombus-border) !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: none !important;
+}
+
+.loombus-integrated-workspace-route
+  main
+  > div
+  > :is(header, section):first-child
+  form {
+  box-shadow: none !important;
+}
+
+.loombus-integrated-workspace-route main > div > section:not(:first-child),
+.loombus-integrated-workspace-route main > div > nav,
+.loombus-integrated-workspace-route main > div > aside {
+  box-shadow: none;
+}
+
+.loombus-integrated-workspace-route main a,
+.loombus-integrated-workspace-route main button,
+.loombus-integrated-workspace-route main input,
+.loombus-integrated-workspace-route main select,
+.loombus-integrated-workspace-route main textarea {
+  transition-duration: 160ms;
+}
+
+@media (max-width: 639px) {
+  .loombus-integrated-workspace-route main {
+    padding-top: 1rem !important;
+  }
+
+  .loombus-integrated-workspace-route
+    main
+    > div
+    > :is(header, section):first-child {
+    padding-bottom: 1rem !important;
+  }
+
+  .loombus-integrated-workspace-route
+    main
+    > div
+    > :is(header, section):first-child
+    h1 {
+    font-size: 2rem !important;
+  }
+}
