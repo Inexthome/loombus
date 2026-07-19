@@ -9,6 +9,7 @@ import "./home-mobile-viewport-fix.css";
 import "./people-v2-shell.css";
 import "./discussion-detail-shell-polish.css";
 import "./loombus-brand-correction.css";
+import "./discovery-commerce-batch.css";
 import "./auth-account-v2.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
