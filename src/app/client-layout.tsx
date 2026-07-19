@@ -4,41 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import {
-  Activity,
-  Bell,
-  Bookmark,
-  Bot,
-  Clock3,
-  Edit3,
-  Home,
-  LayoutDashboard,
-  LogOut,
-  FlaskConical,
   HelpCircle,
-  Menu,
   MessageCircle,
-  MessageSquareReply,
   Palette,
   Search,
-  Settings as SettingsIcon,
-  ShieldCheck,
   Sparkles,
   StickyNote,
-  UserCircle,
-  Users,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import {
-  filterBlockedActorNotifications,
-  getBlockedRelationshipUserIds,
-} from "@/lib/notification-block-filter";
 import { PLATFORM_ROUTE_REGISTRY, type PlatformRouteEntry } from "@/lib/platform-route-registry";
 
 type NavProfile = {
   username: string | null;
   full_name: string | null;
-  avatar_url: string | null;
-  is_admin: boolean | null;
 };
 
 type FloatingConversation = {
@@ -224,7 +202,6 @@ function getFloatingSafeAttachmentFileName(fileName: string) {
 }
 
 
-type DiscussionFeedMode = "all" | "following" | "signal";
 type AppearanceMode = "system" | "dark" | "light";
 const DEFAULT_RIGHT_RAIL_WIDTH = 320;
 const MIN_RIGHT_RAIL_WIDTH = 280;
@@ -267,11 +244,7 @@ export default function ClientLayout({
 }>) {
   const [user, setUser] = useState<any>(null);
   const [navProfile, setNavProfile] = useState<NavProfile | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(0);
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState("");
   const [globalSearchProfiles, setGlobalSearchProfiles] = useState<GlobalSearchProfileResult[]>([]);
@@ -306,22 +279,14 @@ export default function ClientLayout({
   const [floatingConversationAction, setFloatingConversationAction] = useState<string | null>(null);
   const [floatingReportReason, setFloatingReportReason] = useState("harassment");
   const [floatingReportNotes, setFloatingReportNotes] = useState("");
-  const [bottomNavHidden, setBottomNavHidden] = useState(false);
-  const [topNavHidden, setTopNavHidden] = useState(false);
   const [rightRailWidth, setRightRailWidth] = useState(DEFAULT_RIGHT_RAIL_WIDTH);
   const [rightRailResizing, setRightRailResizing] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(0);
   const currentUserIdRef = useRef<string | null>(null);
-  const moreMenuRef = useRef<HTMLDivElement | null>(null);
-  const loadingNotificationCountRef = useRef(false);
-  const lastNotificationLoadRef = useRef<{ userId: string; loadedAt: number } | null>(null);
   const floatingTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastFloatingTypingSentRef = useRef(0);
   const rightRailDragStartRef = useRef<{ pointerX: number; width: number } | null>(null);
   const pathname = usePathname();
-  const isDiscussionsIndex = pathname === "/discussions";
-  const [mobileDiscussionFeed, setMobileDiscussionFeed] =
-    useState<DiscussionFeedMode>("all");
   const isRightRailRoute =
     [
       "/discussions",
@@ -355,6 +320,19 @@ export default function ClientLayout({
       window.removeEventListener("keydown", handleGlobalSearchKeyDown);
     };
   }, [globalSearchOpen]);
+
+  useEffect(() => {
+    function handleOpenGlobalSearch() {
+      setAppearancePickerOpen(false);
+      setGlobalSearchOpen(true);
+    }
+
+    window.addEventListener("loombus:open-global-search", handleOpenGlobalSearch);
+
+    return () => {
+      window.removeEventListener("loombus:open-global-search", handleOpenGlobalSearch);
+    };
+  }, []);
 
   useEffect(() => {
     if (!globalSearchOpen) {
@@ -616,14 +594,6 @@ export default function ClientLayout({
     };
   }, [globalSearchOpen, globalSearchQuery]);
 
-  function isActivePath(href: string) {
-    if (href === "/") {
-      return pathname === "/";
-    }
-
-    return pathname === href || pathname.startsWith(`${href}/`);
-  }
-
   function getCurrentGuideHref() {
     if (pathname === "/home" || pathname === "/") {
       return "/settings/guide#home";
@@ -681,338 +651,79 @@ export default function ClientLayout({
   }
 
 
-  function navLinkClass(href: string) {
-    return isActivePath(href)
-      ? "text-[var(--loombus-text)] transition hover:text-[var(--loombus-text)]"
-      : "text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]";
-  }
-
-  function mobileNavLinkClass(href: string) {
-    return isActivePath(href)
-      ? "loombus-mobile-menu-link-active loombus-mobile-menu-pill rounded-2xl border px-4 py-3 text-base font-semibold transition"
-      : "loombus-mobile-menu-link-inactive loombus-mobile-menu-pill rounded-2xl border px-4 py-3 text-base font-semibold transition";
-  }
-
-  function appTabClass(href: string) {
-    const active =
-      pathname === href || (href !== "/" && pathname.startsWith(href));
-
-    return `flex min-w-0 items-center justify-center rounded-[1.1rem] border px-2 py-3 transition ${
-      active
-        ? "loombus-mobile-bottom-tab-active"
-        : "loombus-mobile-bottom-tab-inactive"
-    }`;
-  }
-
-  function desktopRailLinkClass(href: string, emphasis = false) {
-    const active = isActivePath(href);
-
-    if (emphasis) {
-      return active
-        ? "group relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-2xl shadow-black/10 transition"
-        : "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]";
-    }
-
-    return active
-      ? "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--loombus-text-subtle)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text)] shadow-xl shadow-black/10 transition"
-      : "group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]";
-  }
-
-  function DesktopRailTooltip({ label }: { label: string }) {
-    return (
-      <span className="pointer-events-none absolute left-[3.65rem] z-50 whitespace-nowrap rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-1.5 text-xs text-[var(--loombus-text)] opacity-0 shadow-2xl shadow-black/10 transition group-hover:opacity-100">
-        {label}
-      </span>
-    );
-  }
-
-  function appMenuButtonClass() {
-    return `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2.5 text-[11px] font-medium transition ${
-      mobileMenuOpen
-        ? "border-[var(--loombus-primary-bg)] bg-[var(--loombus-primary-bg)] text-[var(--loombus-primary-text)] shadow-lg shadow-black/10"
-        : "border-transparent text-[var(--loombus-text-muted)] hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
-    }`;
-  }
-
-  function MobileNavIcon({ name }: { name: "home" | "discuss" | "create" | "people" | "alerts" }) {
-    const iconClass = "h-[1.35rem] w-[1.35rem]";
-    const strokeWidth = 2.05;
-
-    if (name === "home") {
-      return <Home aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    }
-
-    if (name === "discuss") {
-      return <MessageCircle aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    }
-
-    if (name === "create") {
-      return <Edit3 aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    }
-
-    if (name === "people") {
-      return <Users aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    }
-
-    return <Bell aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-  }
-
-
-  function MobileMenuItemIcon({
-    name,
-  }: {
-    name:
-      | "search"
-      | "people"
-      | "following"
-      | "messages"
-      | "saved"
-      | "stickies"
-      | "profile"
-      | "activity"
-      | "discussions"
-      | "replies"
-      | "reading"
-      | "dashboard"
-      | "settings"
-      | "labs"
-      | "premium"
-      | "ai"
-      | "admin";
-  }) {
-    const iconClass = "h-5 w-5 shrink-0";
-    const strokeWidth = 2.1;
-
-    if (name === "search") return <Search aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "people") return <Users aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "following") return <Activity aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "messages") return <MessageCircle aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "saved") return <Bookmark aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "stickies") return <StickyNote aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "profile") return <UserCircle aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "activity") return <Activity aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "discussions") return <MessageCircle aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "replies") return <MessageSquareReply aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "reading") return <Clock3 aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "dashboard") return <Home aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "settings") return <SettingsIcon aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "labs") return <FlaskConical aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "premium") return <Sparkles aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-    if (name === "ai") return <Bot aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-
-    return <ShieldCheck aria-hidden="true" className={iconClass} strokeWidth={strokeWidth} />;
-  }
-
-  async function loadNotificationCount(
-    userId: string,
-    options: { force?: boolean } = {}
-  ) {
-    const now = Date.now();
-    const recentLoad = lastNotificationLoadRef.current;
-
-    if (
-      !options.force &&
-      recentLoad?.userId === userId &&
-      now - recentLoad.loadedAt < 3000
-    ) {
-      return;
-    }
-
-    if (loadingNotificationCountRef.current) {
-      return;
-    }
-
-    loadingNotificationCountRef.current = true;
-
-    try {
-      const blockedRelationshipUserIds = await getBlockedRelationshipUserIds(
-        supabase,
-        userId
-      );
-
-      const { data } = await supabase
-        .from("notifications")
-        .select("id, actor_id")
-        .eq("user_id", userId)
-        .is("read_at", null);
-
-      setNotificationCount(
-        filterBlockedActorNotifications(data ?? [], blockedRelationshipUserIds).length
-      );
-
-      lastNotificationLoadRef.current = {
-        userId,
-        loadedAt: Date.now(),
-      };
-    } finally {
-      loadingNotificationCountRef.current = false;
-    }
-  }
-
   useEffect(() => {
     let isMounted = true;
 
-    async function loadAdminStatus(userId: string) {
+    async function loadFloatingProfile(userId: string) {
       try {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("username, full_name, avatar_url, is_admin")
+          .select("username, full_name")
           .eq("id", userId)
-          .single();
+          .maybeSingle();
 
         if (isMounted && currentUserIdRef.current === userId) {
           setNavProfile((profile ?? null) as NavProfile | null);
-          setIsAdmin(Boolean(profile?.is_admin));
         }
       } catch (error) {
-        console.error("Unable to load admin status.", error);
+        console.error("Unable to load floating message profile.", error);
 
         if (isMounted && currentUserIdRef.current === userId) {
-          setIsAdmin(false);
+          setNavProfile(null);
         }
       }
     }
 
-    async function refreshAuthenticatedNavState(
-      userId: string,
-      options: { forceNotifications?: boolean } = {}
-    ) {
-      await Promise.allSettled([
-        loadNotificationCount(userId, {
-          force: Boolean(options.forceNotifications),
-        }),
-        loadAdminStatus(userId),
-      ]);
+    async function applyAuthenticatedUser(nextUser: any) {
+      if (!isMounted) {
+        return;
+      }
+
+      const nextUserId = nextUser?.id ?? null;
+      currentUserIdRef.current = nextUserId;
+      setUser(nextUser ?? null);
+
+      if (!nextUserId) {
+        setNavProfile(null);
+        return;
+      }
+
+      await loadFloatingProfile(nextUserId);
     }
 
     async function loadUser() {
       try {
         const { data } = await supabase.auth.getUser();
-        const userId = data.user?.id ?? null;
 
         if (!isMounted) {
           return;
         }
 
-        currentUserIdRef.current = userId;
-        setUser(data.user ?? null);
-
-        if (!userId) {
-          setNotificationCount(0);
-          setNavProfile(null);
-          setIsAdmin(false);
-          lastNotificationLoadRef.current = null;
-          return;
-        }
-
-        await refreshAuthenticatedNavState(userId);
+        await applyAuthenticatedUser(data.user ?? null);
       } catch (error) {
         console.error("Unable to load layout auth state.", error);
 
         if (isMounted) {
           currentUserIdRef.current = null;
           setUser(null);
-          setNotificationCount(0);
           setNavProfile(null);
-          setIsAdmin(false);
-          lastNotificationLoadRef.current = null;
         }
       }
     }
 
-    loadUser();
+    void loadUser();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      const nextUserId = session?.user?.id ?? null;
-      const previousUserId = currentUserIdRef.current;
-
-      currentUserIdRef.current = nextUserId;
-      setUser(session?.user ?? null);
-
-      if (!nextUserId) {
-        setNotificationCount(0);
-        setIsAdmin(false);
-        lastNotificationLoadRef.current = null;
-        return;
-      }
-
-      if (nextUserId !== previousUserId) {
-        setTimeout(() => {
-          void refreshAuthenticatedNavState(nextUserId, {
-            forceNotifications: true,
-          });
-        }, 0);
-      }
+      void applyAuthenticatedUser(session?.user ?? null);
     });
-
-    function handleNotificationsChanged() {
-      const userId = currentUserIdRef.current;
-
-      if (userId) {
-        setTimeout(() => {
-          void loadNotificationCount(userId, { force: true });
-        }, 0);
-      } else {
-        setNotificationCount(0);
-      }
-    }
-
-    window.addEventListener(
-      "loombus:notifications-changed",
-      handleNotificationsChanged
-    );
 
     return () => {
       isMounted = false;
-      window.removeEventListener(
-        "loombus:notifications-changed",
-        handleNotificationsChanged
-      );
       subscription.unsubscribe();
     };
   }, []);
-
-  function selectMobileDiscussionFeed(feed: DiscussionFeedMode) {
-    setMobileDiscussionFeed(feed);
-
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-
-    if (feed === "all") {
-      params.delete("feed");
-    } else {
-      params.set("feed", feed);
-    }
-
-    params.delete("topic");
-    params.delete("purpose");
-
-    const queryString = params.toString();
-    const nextUrl = queryString
-      ? `${window.location.pathname}?${queryString}`
-      : window.location.pathname;
-
-    window.history.replaceState(null, "", nextUrl);
-
-    window.dispatchEvent(
-      new CustomEvent("loombus:discussion-feed", {
-        detail: { feed },
-      })
-    );
-  }
-
-  function closeMobileMenu() {
-    setMobileMenuOpen(false);
-  }
-
-  function closeMoreMenu() {
-    setMoreMenuOpen(false);
-  }
 
   function getStoredAppearanceMode(): AppearanceMode {
     if (typeof window === "undefined") {
@@ -1165,127 +876,8 @@ export default function ClientLayout({
   }, [rightRailResizing]);
 
   useEffect(() => {
-    setMobileMenuOpen(false);
-    setMoreMenuOpen(false);
     setAppearancePickerOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    if (!mobileMenuOpen) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobileMenuOpen]);
-
-  useEffect(() => {
-    if (!user) {
-      setBottomNavHidden(false);
-      return;
-    }
-
-    function getScrollY() {
-      return (
-        window.scrollY ||
-        document.documentElement.scrollTop ||
-        document.body.scrollTop ||
-        0
-      );
-    }
-
-    let lastScrollY = getScrollY();
-    let touchStartY: number | null = null;
-    let ticking = false;
-
-    function setNavVisibilityFromDelta(currentScrollY: number, scrollDelta: number) {
-      if (mobileMenuOpen || currentScrollY < 80) {
-        setTopNavHidden(false);
-        setBottomNavHidden(false);
-        return;
-      }
-
-      if (scrollDelta > 8) {
-        setTopNavHidden(true);
-        setBottomNavHidden(true);
-      } else if (scrollDelta < -8) {
-        setTopNavHidden(false);
-        setBottomNavHidden(false);
-      }
-    }
-
-    function updateBottomNavVisibility() {
-      const currentScrollY = getScrollY();
-      const scrollDelta = currentScrollY - lastScrollY;
-
-      setNavVisibilityFromDelta(currentScrollY, scrollDelta);
-
-      lastScrollY = currentScrollY;
-      ticking = false;
-    }
-
-    function handleScroll() {
-      if (!ticking) {
-        window.requestAnimationFrame(updateBottomNavVisibility);
-        ticking = true;
-      }
-    }
-
-    function handleTouchStart(event: TouchEvent) {
-      touchStartY = event.touches[0]?.clientY ?? null;
-    }
-
-    function handleTouchMove(event: TouchEvent) {
-      if (touchStartY === null) {
-        return;
-      }
-
-      const currentTouchY = event.touches[0]?.clientY ?? touchStartY;
-      const touchDelta = touchStartY - currentTouchY;
-      const currentScrollY = getScrollY();
-
-      setNavVisibilityFromDelta(currentScrollY, touchDelta);
-    }
-
-    function handleTouchEnd() {
-      lastScrollY = getScrollY();
-      touchStartY = null;
-    }
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    document.addEventListener("touchstart", handleTouchStart, { passive: true });
-    document.addEventListener("touchmove", handleTouchMove, { passive: true });
-    document.addEventListener("touchend", handleTouchEnd, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      document.removeEventListener("touchstart", handleTouchStart);
-      document.removeEventListener("touchmove", handleTouchMove);
-      document.removeEventListener("touchend", handleTouchEnd);
-    };
-  }, [mobileMenuOpen, user]);
-
-  useEffect(() => {
-    function handleOutsideClick(event: MouseEvent) {
-      if (!moreMenuRef.current) {
-        return;
-      }
-
-      if (!moreMenuRef.current.contains(event.target as Node)) {
-        setMoreMenuOpen(false);
-      }
-    }
-
-    window.addEventListener("mousedown", handleOutsideClick);
-
-    return () => {
-      window.removeEventListener("mousedown", handleOutsideClick);
-    };
-  }, []);
 
   function getFloatingConversationName(conversation: FloatingConversation) {
     return (
@@ -2206,11 +1798,6 @@ export default function ClientLayout({
   }
 
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    window.location.href = "/";
-  }
-
   function getGlobalSearchAiContext() {
     const pageResults = globalPageResults.map((result) => ({
       kind: "Page",
@@ -2382,13 +1969,6 @@ export default function ClientLayout({
     return actions.slice(0, 5);
   }
 
-  function openGlobalSearch() {
-    setMobileMenuOpen(false);
-    setMoreMenuOpen(false);
-    setAppearancePickerOpen(false);
-    setGlobalSearchOpen(true);
-  }
-
   function closeGlobalSearch() {
     setGlobalSearchOpen(false);
     setGlobalSearchQuery("");
@@ -2416,342 +1996,13 @@ export default function ClientLayout({
 
   return (
     <div className="min-h-screen bg-[var(--loombus-bg)] text-[var(--loombus-text)] antialiased">
-      {/* Desktop Signal Rail: U2 app-shell foundation. Mobile keeps the existing floating top/bottom shell. */}
-      {user && (
-        <aside className="loombus-desktop-rail fixed inset-y-0 left-0 z-40 hidden w-24 border-r border-[var(--loombus-border)] bg-[var(--loombus-surface)]/95 px-3 py-4 backdrop-blur-xl md:flex md:flex-col md:items-center">
-          <Link
-            href="/home"
-            aria-label="Loombus home"
-            title="Loombus"
-            className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] transition hover:border-[var(--loombus-text-subtle)]"
-          >
-            <img
-              src="/assets/brand/loombus-mark-transparent.png"
-              alt=""
-              className="h-9 w-9 object-contain"
-            />
-          </Link>
-
-          <nav aria-label="Primary desktop navigation" className="flex flex-1 flex-col items-center gap-2">
-            <Link href="/home" aria-label="Home" title="Home" aria-current={isActivePath("/home") ? "page" : undefined} data-active={isActivePath("/home") ? "true" : undefined} className={desktopRailLinkClass("/home")}>
-              <Home aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Home" />
-            </Link>
-
-            <Link href="/discussions" aria-label="Discussions" title="Discussions" aria-current={isActivePath("/discussions") ? "page" : undefined} data-active={isActivePath("/discussions") ? "true" : undefined} className={desktopRailLinkClass("/discussions", true)}>
-              <MessageCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Discussions" />
-            </Link>
-
-            <Link href="/create" aria-label="Create" title="Create" aria-current={isActivePath("/create") ? "page" : undefined} data-active={isActivePath("/create") ? "true" : undefined} className={desktopRailLinkClass("/create", true)}>
-              <Edit3 aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Create" />
-            </Link>
-
-            <button type="button" onClick={openGlobalSearch} aria-label="Search Loombus" title="Search" className={desktopRailLinkClass("/search")}>
-              <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Search" />
-            </button>
-
-            <Link href="/people" aria-label="People" title="People" aria-current={isActivePath("/people") ? "page" : undefined} data-active={isActivePath("/people") ? "true" : undefined} className={desktopRailLinkClass("/people")}>
-              <Users aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="People" />
-            </Link>
-
-            <Link href="/saved" aria-label="Saved" title="Saved" aria-current={isActivePath("/saved") ? "page" : undefined} data-active={isActivePath("/saved") ? "true" : undefined} className={desktopRailLinkClass("/saved")}>
-              <Bookmark aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Saved" />
-            </Link>
-
-            <Link href="/notifications" aria-label="Alerts" title="Alerts" aria-current={isActivePath("/notifications") ? "page" : undefined} data-active={isActivePath("/notifications") ? "true" : undefined} className={desktopRailLinkClass("/notifications")}>
-              <span className="relative">
-                <Bell aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-                {notificationCount > 0 && (
-                  <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-[var(--loombus-primary-bg)] px-1 text-center text-[9px] font-semibold leading-4 text-[var(--loombus-primary-text)]">
-                    {notificationCount > 9 ? "9+" : notificationCount}
-                  </span>
-                )}
-              </span>
-              <DesktopRailTooltip label="Alerts" />
-            </Link>
-          </nav>
-
-          <div className="flex flex-col items-center gap-2">
-            <Link href="/dashboard" aria-label="Home status" title="Home status" aria-current={isActivePath("/dashboard") ? "page" : undefined} data-active={isActivePath("/dashboard") ? "true" : undefined} className={desktopRailLinkClass("/dashboard")}>
-              <LayoutDashboard aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Home status" />
-            </Link>
-
-            <Link href="/profile" aria-label="Profile" title="Profile" aria-current={isActivePath("/profile") ? "page" : undefined} data-active={isActivePath("/profile") ? "true" : undefined} className={desktopRailLinkClass("/profile")}>
-              <UserCircle aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Profile" />
-            </Link>
-
-            <Link href="/labs" aria-label="Labs" title="Labs" aria-current={isActivePath("/labs") ? "page" : undefined} data-active={isActivePath("/labs") ? "true" : undefined} className={desktopRailLinkClass("/labs")}>
-              <FlaskConical aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Labs" />
-            </Link>
-
-            {isAdmin && (
-              <Link href="/admin" aria-label="Admin" title="Admin" aria-current={isActivePath("/admin") ? "page" : undefined} data-active={isActivePath("/admin") ? "true" : undefined} className={desktopRailLinkClass("/admin")}>
-                <ShieldCheck aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-                <DesktopRailTooltip label="Admin" />
-              </Link>
-            )}
-
-            <Link href="/settings" aria-label="Settings" title="Settings" aria-current={isActivePath("/settings") ? "page" : undefined} data-active={isActivePath("/settings") ? "true" : undefined} className={desktopRailLinkClass("/settings")}>
-              <SettingsIcon aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Settings" />
-            </Link>
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              aria-label="Logout"
-              title="Logout"
-              className="group relative flex h-12 w-12 items-center justify-center rounded-2xl border border-transparent text-[var(--loombus-text-subtle)] transition hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-500"
-            >
-              <LogOut aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              <DesktopRailTooltip label="Logout" />
-            </button>
-          </div>
-        </aside>
-      )}
-      {user && (
-        <header className="hidden">
-          <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 sm:py-5">
-            <div className="flex items-center justify-between gap-4">
-              <Link
-                href="/home"
-                className="flex items-center gap-3 text-xl font-semibold tracking-tight"
-                aria-label="Loombus home"
-              >
-                <img
-                  src="/assets/brand/loombus-mark-transparent.png"
-                  alt=""
-                  className="h-7 w-7 object-contain sm:h-8 sm:w-8"
-                />
-                <span className="text-lg sm:text-xl">Loombus</span>
-              </Link>
-
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-expanded={mobileMenuOpen}
-                aria-label="Toggle navigation menu"
-                className="hidden rounded-lg border border-zinc-800 px-3 py-2 text-sm text-zinc-400 transition hover:border-zinc-700 hover:text-white md:hidden"
-              >
-                Menu
-              </button>
-
-              <nav className="hidden items-center gap-5 text-sm text-zinc-400 md:flex">
-                <Link href="/home" onClick={closeMoreMenu} className={navLinkClass("/home")}>
-                  Home
-                </Link>
-
-                <Link
-                  href="/create"
-                  onClick={closeMoreMenu}
-                  className="rounded-full bg-white px-4 py-2 font-medium text-black transition hover:bg-zinc-200"
-                >
-                  Create
-                </Link>
-
-                <Link href="/discussions" onClick={closeMoreMenu} className={navLinkClass("/discussions")}>
-                  Discussions
-                </Link>
-
-                <Link href="/notifications" onClick={closeMoreMenu} className={navLinkClass("/notifications")}>
-                  Alerts
-                  {notificationCount > 0 && (
-                    <span className="ml-2 rounded-full bg-[var(--loombus-primary-bg)] px-2 py-0.5 text-xs text-[var(--loombus-primary-text)]">
-                      {notificationCount}
-                    </span>
-                  )}
-                </Link>
-
-                <div
-                  ref={moreMenuRef}
-                  className="relative"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setMoreMenuOpen((current) => !current)}
-                    aria-expanded={moreMenuOpen}
-                    className="rounded-full border border-[var(--loombus-border)] px-4 py-2 text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
-                  >
-                    More
-                  </button>
-
-                  {moreMenuOpen && (
-                    <div className="absolute right-0 z-50 mt-3 w-60 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-2 shadow-2xl shadow-black/10">
-                      <p className="px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
-                        Explore
-                      </p>
-
-                      <Link href="/search" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Search
-                      </Link>
-                      <Link href="/people" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        People
-                      </Link>
-                      <Link href="/following" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Following
-                      </Link>
-                      <Link href="/messages" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Messages
-                      </Link>
-                      <Link href="/saved" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Saved
-                      </Link>
-                      <Link href="/stickies" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Stickies
-                      </Link>
-
-                      <p className="mt-2 px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
-                        Account
-                      </p>
-
-                      <Link href="/dashboard" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Home status
-                      </Link>
-                      <Link href="/my-activity" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        My Activity
-                      </Link>
-                      <Link href="/profile" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Profile
-                      </Link>
-                      <Link href="/labs" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Labs
-                      </Link>
-                      <Link href="/settings" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Settings
-                      </Link>
-                      <Link href="/premium" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                        Premium
-                      </Link>
-
-                      {isAdmin && (
-                        <Link href="/admin" onClick={closeMoreMenu} className="block rounded-xl px-4 py-3 text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-                          Admin
-                        </Link>
-                      )}
-
-                      <button
-                        onClick={async () => {
-                          closeMoreMenu();
-                          await handleLogout();
-                        }}
-                        className="mt-2 block w-full rounded-xl border border-[var(--loombus-border)] px-4 py-3 text-left text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </nav>
-            </div>
-
-          </div>
-        </header>
-      )}
-
-      <div className={user ? "pb-24 md:pb-0 md:pl-24" : ""}>
-        {user && (
-        <div className={`loombus-mobile-topbar sticky top-0 z-40 px-4 pb-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-xl transition-transform duration-300 md:hidden ${
-          topNavHidden ? "-translate-y-full" : "translate-y-0"
-        }`}>
-          <div className="mx-auto flex max-w-md items-center justify-between">
-            <Link
-              href="/profile"
-              aria-label="View profile"
-              title="View profile"
-              className="loombus-mobile-shell-avatar flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border text-sm font-semibold transition"
-            >
-              {navProfile?.avatar_url ? (
-                <img
-                  src={navProfile.avatar_url}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span>
-                  {(navProfile?.full_name ||
-                    navProfile?.username ||
-                    user.email ||
-                    "U")
-                    .trim()
-                    .charAt(0)
-                    .toUpperCase()}
-                </span>
-              )}
-            </Link>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={openGlobalSearch}
-                aria-label="Search Loombus"
-                title="Search Loombus"
-                className="loombus-mobile-shell-button flex h-11 w-11 items-center justify-center rounded-full border transition"
-              >
-                <Search aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(true)}
-                aria-label="Open menu"
-                title="Open menu"
-                aria-expanded={mobileMenuOpen}
-                className="loombus-mobile-shell-button flex h-11 w-11 items-center justify-center rounded-full border transition"
-              >
-                <Menu aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
-              </button>
-            </div>
-          </div>
-
-          {isDiscussionsIndex && (
-            <nav
-              aria-label="Mobile discussion feed views"
-              className="mx-auto mt-3 grid max-w-md grid-cols-3 border-t border-[var(--loombus-border)] pt-2"
-            >
-              {([
-                ["all", "All"],
-                ["following", "Following"],
-                ["signal", "Active"],
-              ] as const).map(([feed, label]) => (
-                <button
-                  key={feed}
-                  type="button"
-                  onClick={() => selectMobileDiscussionFeed(feed)}
-                  className={`relative flex h-10 items-center justify-center text-sm font-semibold transition ${
-                    mobileDiscussionFeed === feed
-                      ? "text-[var(--loombus-text)]"
-                      : "text-[var(--loombus-text-muted)]"
-                  }`}
-                >
-                  {label}
-                  <span
-                    className={`absolute bottom-0 h-1 rounded-full transition ${
-                      mobileDiscussionFeed === feed
-                        ? "bg-[var(--loombus-text)]"
-                        : "bg-transparent"
-                    } ${feed === "following" ? "w-20" : "w-14"}`}
-                    aria-hidden="true"
-                  />
-                </button>
-              ))}
-            </nav>
-          )}
-        </div>
-      )}
-
-      {children}
+      <div className={user ? "pb-24 md:pb-0" : ""}>
+        {children}
       </div>
 
       {user && globalSearchOpen && (
         <div
-          className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[70] px-3 sm:px-6 md:left-24 md:right-auto md:top-5 md:w-[26rem] lg:w-[28rem]"
+          className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[70] px-3 sm:px-6 md:left-6 md:right-auto md:top-[6.25rem] lg:left-8 md:w-[26rem] lg:w-[28rem]"
         >
           <section
             role="dialog"
@@ -3128,190 +2379,7 @@ export default function ClientLayout({
         </button>
       )}
 
-      {user && mobileMenuOpen && (
-        <div
-          className="loombus-mobile-menu-backdrop fixed inset-0 z-50 px-3 pt-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-md md:hidden"
-          onClick={closeMobileMenu}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Mobile app menu panel"
-            className="loombus-mobile-menu-panel mx-auto flex max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-5.5rem)] max-w-md flex-col overflow-y-auto rounded-[2rem] border p-4"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="loombus-mobile-menu-header mb-4 flex items-center justify-between gap-3 border-b pb-4">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="loombus-mobile-menu-avatar flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border text-sm font-semibold">
-                  {navProfile?.avatar_url ? (
-                    <img
-                      src={navProfile.avatar_url}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span>
-                      {(navProfile?.full_name ||
-                        navProfile?.username ||
-                        user.email ||
-                        "U")
-                        .trim()
-                        .charAt(0)
-                        .toUpperCase()}
-                    </span>
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <p className="loombus-mobile-menu-title truncate text-sm font-medium">
-                    {navProfile?.full_name ||
-                      (navProfile?.username ? `@${navProfile.username}` : user.email)}
-                  </p>
-                  <p className="loombus-mobile-menu-subtitle mt-1 truncate text-xs">
-                    Move with signal.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeMobileMenu}
-                className="loombus-mobile-menu-close rounded-full border px-3 py-2 text-xs transition"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="grid gap-4">
-              <section>
-                <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
-                  Explore Loombus
-                </p>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Link href="/people" onClick={closeMobileMenu} className={mobileNavLinkClass("/people")}>
-                    <MobileMenuItemIcon name="people" />
-                    <span>People</span>
-                  </Link>
-
-                  <Link href="/following" onClick={closeMobileMenu} className={mobileNavLinkClass("/following")}>
-                    <MobileMenuItemIcon name="following" />
-                    <span>Following</span>
-                  </Link>
-
-                  <Link href="/messages" onClick={closeMobileMenu} className={mobileNavLinkClass("/messages")}>
-                    <MobileMenuItemIcon name="messages" />
-                    <span>Messages</span>
-                  </Link>
-
-                  <Link href="/saved" onClick={closeMobileMenu} className={mobileNavLinkClass("/saved")}>
-                    <MobileMenuItemIcon name="saved" />
-                    <span>Saved</span>
-                  </Link>
-                  <Link href="/stickies" onClick={closeMobileMenu} className={mobileNavLinkClass("/stickies")}>
-                    <MobileMenuItemIcon name="stickies" />
-                    <span>Stickies</span>
-                  </Link>
-                </div>
-              </section>
-
-              <section>
-                <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
-                  Your Signal
-                </p>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Link href="/profile" onClick={closeMobileMenu} className={mobileNavLinkClass("/profile")}>
-                    <MobileMenuItemIcon name="profile" />
-                    <span>Profile</span>
-                  </Link>
-
-                  <Link href="/my-activity" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-activity")}>
-                    <MobileMenuItemIcon name="activity" />
-                    <span>My Activity</span>
-                  </Link>
-
-                  <Link href="/my-discussions" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-discussions")}>
-                    <MobileMenuItemIcon name="discussions" />
-                    <span>My Discussions</span>
-                  </Link>
-
-                  <Link href="/my-replies" onClick={closeMobileMenu} className={mobileNavLinkClass("/my-replies")}>
-                    <MobileMenuItemIcon name="replies" />
-                    <span>My Replies</span>
-                  </Link>
-                </div>
-              </section>
-
-              <section>
-                <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
-                  Continue
-                </p>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Link href="/reading-history" onClick={closeMobileMenu} className={mobileNavLinkClass("/reading-history")}>
-                    <MobileMenuItemIcon name="reading" />
-                    <span>Reading History</span>
-                  </Link>
-
-                  <Link href="/dashboard" onClick={closeMobileMenu} className={mobileNavLinkClass("/dashboard")}>
-                    <MobileMenuItemIcon name="dashboard" />
-                    <span>Home status</span>
-                  </Link>
-                </div>
-              </section>
-
-              <section>
-                <p className="loombus-mobile-menu-section-label mb-2 px-1 text-xs uppercase tracking-[0.2em]">
-                  Account
-                </p>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Link href="/settings" onClick={closeMobileMenu} className={mobileNavLinkClass("/settings")}>
-                    <MobileMenuItemIcon name="settings" />
-                    <span>Settings</span>
-                  </Link>
-
-                  <Link href="/labs" onClick={closeMobileMenu} className={mobileNavLinkClass("/labs")}>
-                    <MobileMenuItemIcon name="labs" />
-                    <span>Labs</span>
-                  </Link>
-
-                  <Link href="/premium" onClick={closeMobileMenu} className={mobileNavLinkClass("/premium")}>
-                    <MobileMenuItemIcon name="premium" />
-                    <span>Premium</span>
-                  </Link>
-
-                  <Link href="/ai-usage" onClick={closeMobileMenu} className={mobileNavLinkClass("/ai-usage")}>
-                    <MobileMenuItemIcon name="ai" />
-                    <span>AI Usage</span>
-                  </Link>
-
-                  {isAdmin && (
-                    <Link href="/admin" onClick={closeMobileMenu} className={mobileNavLinkClass("/admin")}>
-                      <MobileMenuItemIcon name="admin" />
-                    <span>Admin</span>
-                    </Link>
-                  )}
-                </div>
-              </section>
-
-              <button
-                onClick={async () => {
-                  closeMobileMenu();
-                  await handleLogout();
-                }}
-                className="loombus-mobile-menu-logout rounded-2xl border px-4 py-3 text-left text-base font-semibold transition"
-              >
-                <LogOut aria-hidden="true" className="h-5 w-5 shrink-0" strokeWidth={2.1} />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {user && !mobileMenuOpen && (
+      {user && (
         <>
           <div className="loombus-floating-utility-stack fixed right-4 z-50 flex flex-col gap-2">
             <Link
@@ -3999,43 +3067,6 @@ export default function ClientLayout({
         </>
       )}
 
-      {user && !mobileMenuOpen && !floatingMessagesOpen && (
-        <nav
-          aria-label="Mobile app navigation"
-          className={`loombus-mobile-bottom-nav fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-50 rounded-[1.75rem] border p-2 backdrop-blur-xl transition-transform duration-300 md:hidden ${
-            bottomNavHidden ? "translate-y-[calc(100%+1rem)]" : "translate-y-0"
-          }`}
-        >
-          <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-            <Link href="/home" aria-label="Home" title="Home" onClick={closeMobileMenu} className={appTabClass("/home")}>
-              <MobileNavIcon name="home" />
-            </Link>
-
-            <Link href="/discussions" aria-label="Discussions" title="Discussions" onClick={closeMobileMenu} className={appTabClass("/discussions")}>
-              <MobileNavIcon name="discuss" />
-            </Link>
-
-            <Link href="/create" aria-label="Create" title="Create" onClick={closeMobileMenu} className={appTabClass("/create")}>
-              <MobileNavIcon name="create" />
-            </Link>
-
-            <Link href="/people" aria-label="People" title="People" onClick={closeMobileMenu} className={appTabClass("/people")}>
-              <MobileNavIcon name="people" />
-            </Link>
-
-            <Link href="/notifications" aria-label="Alerts" title="Alerts" onClick={closeMobileMenu} className={appTabClass("/notifications")}>
-              <span className="relative">
-                <MobileNavIcon name="alerts" />
-                {notificationCount > 0 && (
-                  <span className="loombus-mobile-nav-badge absolute -right-2 -top-2 min-w-4 rounded-full px-1 text-center text-[9px] font-semibold leading-4">
-                    {notificationCount > 9 ? "9+" : notificationCount}
-                  </span>
-                )}
-              </span>
-            </Link>
-          </div>
-        </nav>
-      )}
     </div>
   );
 }
