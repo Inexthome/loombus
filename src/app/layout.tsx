@@ -8,6 +8,7 @@ import "./home-v2-shell.css";
 import "./home-mobile-viewport-fix.css";
 import "./people-v2-shell.css";
 import "./discussion-detail-shell-polish.css";
+import "./integrated-workspace-shell.css";
 import "./loombus-brand-correction.css";
 import "./auth-account-v2.css";
 import type { Metadata, Viewport } from "next";
@@ -16,6 +17,7 @@ import ClientLayout from "./client-layout";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
 import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
+import { IntegratedWorkspaceRoute } from "@/components/integrated-workspace-route";
 import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
@@ -105,7 +107,9 @@ export default function RootLayout({
         />
         <DesktopTopNavbar />
         <MobileNavigationShell />
-        <ClientLayout>{children}</ClientLayout>
+        <ClientLayout>
+          <IntegratedWorkspaceRoute>{children}</IntegratedWorkspaceRoute>
+        </ClientLayout>
         <CanonicalAppHomeLinks />
         <AuthSessionCleanup />
         <SessionLifecycleGuard />
