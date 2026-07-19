@@ -9,9 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function ServicesPage() {
-  return (
-    <div data-loombus-services-page>
-      <ServicesDirectoryPage />
-    </div>
-  );
+  return <ServicesDirectoryPage />;
 }
