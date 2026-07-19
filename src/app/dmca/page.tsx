@@ -276,20 +276,40 @@ const sections: PublicPolicySection[] = [
         United States
       </>,
       <>
-        Email notices to{" "}
+        Email copyright notices and counter-notices to{" "}
         <a
           href={`mailto:${supportEmail}?subject=Loombus%20Copyright%20or%20DMCA`}
           className="text-zinc-200 underline-offset-4 hover:underline"
         >
           {supportEmail}
         </a>
-        . General support is available through{" "}
+        . The registered agent may also be reached by telephone at{" "}
+        <a
+          href="tel:+19042067511"
+          className="text-zinc-200 underline-offset-4 hover:underline"
+        >
+          904-206-7511
+        </a>
+        .
+      </>,
+      <>
+        <strong>Registered designated agent:</strong>
+        <br />
+        Copyright Agent
+        <br />
+        Loombus LLC
+        <br />
+        U.S. Copyright Office registration number:{" "}
+        <strong>DMCA-1075839</strong>
+        <br />
+        Active as of July 19, 2026
+      </>,
+      <>
+        General support is available through{" "}
         <Link href="/support?category=legal" className="text-zinc-200 underline-offset-4 hover:underline">
           Loombus Support
         </Link>
-        . This contact information does not, by itself, represent that Loombus LLC
-        has completed registration of a designated DMCA agent with the U.S.
-        Copyright Office.
+        .
       </>,
     ],
   },
