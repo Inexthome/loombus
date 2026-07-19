@@ -59,3 +59,20 @@ loombus-store-screenshots/
 # Local audit, legal, backup, and polish folders
 loombus_final_*/
 loombus_legal_review_*/
+# local editor and temporary files
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+
+# local source and transfer archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
