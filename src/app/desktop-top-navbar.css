@@ -1,5 +1,5 @@
 /* Shared desktop top navbar shell.
-   Mobile navigation remains controlled by ClientLayout. */
+   Mobile navigation remains controlled by MobileNavigationShell. */
 
 @media (min-width: 768px) {
   .loombus-desktop-top-navbar ~ div.min-h-screen {
@@ -17,6 +17,16 @@
   .loombus-desktop-top-navbar ~ div .md\:left-24 {
     left: 1.5rem !important;
   }
+
+  .loombus-desktop-top-navbar [role="dialog"] {
+    animation: loombus-desktop-navigation-enter 160ms ease-out;
+  }
+
+  .loombus-desktop-top-navbar a:focus-visible,
+  .loombus-desktop-top-navbar button:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--loombus-gold) 58%, transparent);
+    outline-offset: 2px;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -27,4 +37,24 @@
 
 html[data-loombus-theme="dark"] .loombus-desktop-top-navbar {
   box-shadow: 0 14px 44px rgb(0 0 0 / 0.28);
+}
+
+@keyframes loombus-desktop-navigation-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -0.35rem) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loombus-desktop-top-navbar,
+  .loombus-desktop-top-navbar * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

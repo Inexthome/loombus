@@ -15,7 +15,7 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     keywords: ["home", "signal hub", "workspace", "start", "shortcuts"],
   },
   {
-    title: "Dashboard",
+    title: "My Dashboard",
     description: "Review your private account snapshot, goals, and contribution activity.",
     href: "/dashboard",
     category: "Account",
@@ -70,7 +70,7 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     ],
   },
   {
-    title: "Loombus Local",
+    title: "Local",
     description:
       "Discover businesses, Services, Requests, Jobs, Events, Marketplace listings, and remote opportunities by place, distance, date, and availability.",
     href: "/local",
@@ -106,7 +106,7 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     ],
   },
   {
-    title: "Local Business and Services",
+    title: "Businesses",
     description:
       "Browse attributable businesses, service areas, and current offerings.",
     href: "/businesses",
@@ -122,7 +122,7 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     ],
   },
   {
-    title: "Services Directory",
+    title: "Services",
     description:
       "Find attributable Services from Loombus members and businesses, send inquiries, connect Requests, and request appointments.",
     href: "/services",
@@ -138,7 +138,7 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     ],
   },
   {
-    title: "Requests Directory",
+    title: "Requests",
     description:
       "Find public requests for services, recommendations, quotes, consultations, community help, and local problem solving.",
     href: "/requests",
@@ -169,7 +169,23 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     ],
   },
   {
-    title: "Jobs Directory",
+    title: "Calendar",
+    description:
+      "Review appointments, Events, Room dates, and other scheduled Loombus activity.",
+    href: "/calendar",
+    category: "Organize",
+    keywords: [
+      "calendar",
+      "schedule",
+      "appointments",
+      "events",
+      "room calendar",
+      "dates",
+      "upcoming",
+    ],
+  },
+  {
+    title: "Jobs",
     description:
       "Browse approved job postings connected to attributable employer profiles.",
     href: "/jobs",
@@ -186,7 +202,7 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     ],
   },
   {
-    title: "Events Directory",
+    title: "Events",
     description:
       "Browse attributable public events and keep real-world or remote dates connected to their organizers.",
     href: "/events",
@@ -283,7 +299,7 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     keywords: ["saved", "bookmarks", "folders", "notes", "private notes", "library"],
   },
   {
-    title: "Stickies",
+    title: "Signal Board",
     description: "Open your private Signal Board of pinned discussion cards.",
     href: "/stickies",
     category: "Workspace",

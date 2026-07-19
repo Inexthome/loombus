@@ -7,29 +7,48 @@ import {
   Activity,
   Bell,
   Bookmark,
+  BookOpen,
   Bot,
+  BriefcaseBusiness,
+  Building2,
+  CalendarDays,
   ChevronDown,
+  Megaphone,
   Clock3,
+  Compass,
+  DoorOpen,
+  Layers3,
+  Network,
   Home,
   LayoutDashboard,
-  type LucideIcon,
+  LifeBuoy,
   LogOut,
+  MapPin,
   MessageCircle,
   MessageSquareReply,
   Search,
   Settings,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   StickyNote,
   Tags,
   UserCircle,
   Users,
+  Wrench,
+  type LucideIcon,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import {
+  ACCOUNT_NAVIGATION_SECTIONS,
+  EXPLORE_NAVIGATION_SECTIONS,
+  type LoombusNavigationIcon,
+  type LoombusNavigationItem,
+} from "@/lib/loombus-navigation";
 import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
+import { supabase } from "@/lib/supabase/client";
 
 type DesktopTopNavProfile = {
   username: string | null;
@@ -43,6 +62,41 @@ const centerLinks = [
   { href: "/create", label: "Create" },
   { href: "/rooms", label: "Rooms" },
 ];
+
+const navigationIcons: Record<LoombusNavigationIcon, LucideIcon> = {
+  activity: Activity,
+  appointments: CalendarDays,
+  businesses: Building2,
+  calendar: CalendarDays,
+  dashboard: LayoutDashboard,
+  events: CalendarDays,
+  following: Activity,
+  guide: BookOpen,
+  history: Clock3,
+  home: Home,
+  jobs: BriefcaseBusiness,
+  labs: Sparkles,
+  local: MapPin,
+  marketplace: ShoppingBag,
+  matches: Network,
+  messages: MessageCircle,
+  "my-discussions": MessageCircle,
+  "my-replies": MessageSquareReply,
+  people: Users,
+  premium: Sparkles,
+  profile: UserCircle,
+  privacy: ShieldCheck,
+  requests: Megaphone,
+  rooms: DoorOpen,
+  saved: Bookmark,
+  search: Search,
+  services: Wrench,
+  settings: Settings,
+  "signal-board": StickyNote,
+  support: LifeBuoy,
+  topics: Tags,
+  usage: Bot,
+};
 
 function getInitial(profile: DesktopTopNavProfile | null, email: string | null) {
   return (
@@ -64,60 +118,108 @@ function getDisplayName(profile: DesktopTopNavProfile | null, email: string | nu
   );
 }
 
-type DropdownItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-};
+function isPathActive(pathname: string, href: string) {
+  if (href === "/rooms") {
+    return pathname === "/rooms" || pathname.startsWith("/rooms/");
+  }
 
-const discoveryItems: DropdownItem[] = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/onboarding", label: "Onboarding", icon: Sparkles },
-  { href: "/topics", label: "Signal Topics", icon: Tags },
-  { href: "/people", label: "People", icon: Users },
-  { href: "/following", label: "Following", icon: Activity },
-  { href: "/messages", label: "Messages", icon: MessageCircle },
-  { href: "/saved", label: "Saved", icon: Bookmark },
-  { href: "/stickies", label: "Signal Board", icon: StickyNote },
-];
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
-const activityItems: DropdownItem[] = [
-  { href: "/my-activity", label: "My Activity", icon: Activity },
-  { href: "/my-discussions", label: "My Discussions", icon: MessageCircle },
-  { href: "/my-replies", label: "My Replies", icon: MessageSquareReply },
-  { href: "/reading-history", label: "Reading History", icon: Clock3 },
-];
-
-const buildItems: DropdownItem[] = [
-  { href: "/labs", label: "Labs", icon: Sparkles },
-  { href: "/premium", label: "Premium", icon: Sparkles },
-  { href: "/ai-usage", label: "AI Usage", icon: Bot },
-];
-
-function DropdownLink({ item }: { item: DropdownItem }) {
-  const Icon = item.icon;
+function CompactMenuLink({
+  item,
+  active,
+}: {
+  item: LoombusNavigationItem;
+  active: boolean;
+}) {
+  const Icon = navigationIcons[item.icon];
 
   return (
-    <Link href={item.href} className="flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]">
-      <Icon aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={`flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm transition ${
+        active
+          ? "bg-[var(--loombus-gold-surface)] text-[var(--loombus-text)]"
+          : "text-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-muted)] hover:text-[var(--loombus-text)]"
+      }`}
+    >
+      <Icon
+        aria-hidden="true"
+        className={active ? "h-4 w-4 text-[var(--loombus-gold)]" : "h-4 w-4"}
+        strokeWidth={2.1}
+      />
       {item.label}
     </Link>
   );
 }
 
-function DropdownSection({ title, items }: { title: string; items: DropdownItem[] }) {
+function CompactMenuSection({
+  title,
+  items,
+  pathname,
+}: {
+  title: string;
+  items: readonly LoombusNavigationItem[];
+  pathname: string;
+}) {
   return (
     <section className="py-2">
-      <p className="px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
+      <p className="px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--loombus-gold)]">
         {title}
       </p>
       <div className="grid gap-0.5">
         {items.map((item) => (
-          <DropdownLink key={`${item.href}-${item.label}`} item={item} />
+          <CompactMenuLink
+            key={`${item.href}-${item.label}`}
+            item={item}
+            active={isPathActive(pathname, item.href)}
+          />
         ))}
       </div>
     </section>
+  );
+}
+
+function ExploreLink({
+  item,
+  pathname,
+}: {
+  item: LoombusNavigationItem;
+  pathname: string;
+}) {
+  const Icon = navigationIcons[item.icon];
+  const active = isPathActive(pathname, item.href);
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={`group flex min-h-[5.5rem] items-start gap-3 rounded-[1.35rem] border p-3.5 transition ${
+        active
+          ? "border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-gold-surface)]"
+          : "border-transparent hover:border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-muted)]"
+      }`}
+    >
+      <span
+        className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl border ${
+          active
+            ? "border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))] bg-[var(--loombus-surface)] text-[var(--loombus-gold)]"
+            : "border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)] group-hover:text-[var(--loombus-text)]"
+        }`}
+      >
+        <Icon aria-hidden="true" className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.05} />
+      </span>
+      <span className="min-w-0">
+        <strong className="block text-sm font-semibold text-[var(--loombus-text)]">
+          {item.label}
+        </strong>
+        <span className="mt-1 block text-xs leading-5 text-[var(--loombus-text-muted)]">
+          {item.description}
+        </span>
+      </span>
+    </Link>
   );
 }
 
@@ -127,16 +229,10 @@ export function DesktopTopNavbar() {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<DesktopTopNavProfile | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  function isActivePath(href: string) {
-    if (href === "/rooms") {
-      return pathname === "/rooms" || pathname.startsWith("/rooms/");
-    }
-
-    return pathname === href || pathname.startsWith(`${href}/`);
-  }
+  const [exploreOpen, setExploreOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const exploreRef = useRef<HTMLDivElement | null>(null);
+  const profileRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -190,7 +286,7 @@ export function DesktopTopNavbar() {
       await loadNavState(nextUser.id);
     }
 
-    loadUser();
+    void loadUser();
 
     const {
       data: { subscription },
@@ -211,10 +307,8 @@ export function DesktopTopNavbar() {
     });
 
     function handleNotificationsChanged() {
-      const nextUserId = userId;
-
-      if (nextUserId) {
-        void loadNavState(nextUserId);
+      if (userId) {
+        void loadNavState(userId);
       }
     }
 
@@ -229,14 +323,21 @@ export function DesktopTopNavbar() {
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setMenuOpen(false);
+      const target = event.target as Node;
+
+      if (!exploreRef.current?.contains(target)) {
+        setExploreOpen(false);
+      }
+
+      if (!profileRef.current?.contains(target)) {
+        setProfileOpen(false);
       }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setMenuOpen(false);
+        setExploreOpen(false);
+        setProfileOpen(false);
       }
     }
 
@@ -250,7 +351,8 @@ export function DesktopTopNavbar() {
   }, []);
 
   useEffect(() => {
-    setMenuOpen(false);
+    setExploreOpen(false);
+    setProfileOpen(false);
   }, [pathname]);
 
   async function handleLogout() {
@@ -264,11 +366,12 @@ export function DesktopTopNavbar() {
 
   const displayName = getDisplayName(profile, email);
   const profileHref = profile?.username ? `/u/${profile.username}` : "/profile";
-  const accountItems: DropdownItem[] = [
-    { href: profileHref, label: "Profile", icon: UserCircle },
-    { href: "/privacy-security", label: "Privacy & Security", icon: ShieldCheck },
-    { href: "/settings", label: "Settings", icon: Settings },
-  ];
+  const profileItem: LoombusNavigationItem = {
+    href: profileHref,
+    label: "Profile",
+    description: "Open your public profile and identity settings.",
+    icon: "profile",
+  };
 
   return (
     <header className="loombus-desktop-top-navbar fixed inset-x-0 top-0 z-[65] hidden h-[72px] border-b border-[var(--loombus-border)] bg-[var(--loombus-surface)]/92 text-[var(--loombus-text)] shadow-xl shadow-black/5 backdrop-blur-xl md:block">
@@ -288,9 +391,12 @@ export function DesktopTopNavbar() {
           <span className="text-lg font-semibold tracking-tight">Loombus</span>
         </Link>
 
-        <nav aria-label="Desktop primary navigation" className="flex items-center justify-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-1">
+        <nav
+          aria-label="Desktop primary navigation"
+          className="flex items-center justify-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-1"
+        >
           {centerLinks.map((link) => {
-            const active = isActivePath(link.href);
+            const active = isPathActive(pathname, link.href);
 
             return (
               <Link
@@ -310,6 +416,77 @@ export function DesktopTopNavbar() {
         </nav>
 
         <div className="flex items-center justify-end gap-2">
+          <div ref={exploreRef} className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setExploreOpen((current) => !current);
+                setProfileOpen(false);
+              }}
+              aria-label="Explore Loombus"
+              aria-expanded={exploreOpen}
+              aria-controls="loombus-desktop-explore-menu"
+              className="flex h-10 items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 text-sm font-semibold text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+            >
+              <Layers3 aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+              <span className="hidden lg:inline">Explore Loombus</span>
+              <ChevronDown
+                aria-hidden="true"
+                className={`hidden h-4 w-4 transition-transform lg:block ${
+                  exploreOpen ? "rotate-180" : ""
+                }`}
+                strokeWidth={2.1}
+              />
+            </button>
+
+            {exploreOpen && (
+              <div
+                id="loombus-desktop-explore-menu"
+                role="dialog"
+                aria-label="Explore Loombus"
+                className="fixed left-1/2 top-[5.25rem] w-[calc(100vw-3rem)] max-w-[56rem] -translate-x-1/2 overflow-hidden rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/20"
+              >
+                <div className="flex items-center justify-between gap-4 border-b border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-5 py-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_35%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]">
+                      <Compass aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">Explore Loombus</p>
+                      <p className="mt-0.5 text-xs text-[var(--loombus-text-muted)]">
+                        Move between knowledge, local opportunities, and the tools that organize your activity.
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/search"
+                    className="hidden shrink-0 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-xs font-semibold text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-gold)] hover:text-[var(--loombus-text)] sm:inline-flex"
+                  >
+                    Search Everything
+                  </Link>
+                </div>
+
+                <div className="grid max-h-[calc(100vh-8.5rem)] gap-3 overflow-y-auto p-4 lg:grid-cols-3">
+                  {EXPLORE_NAVIGATION_SECTIONS.map((section) => (
+                    <section
+                      key={section.title}
+                      className="rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-2"
+                    >
+                      <p className="px-3 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--loombus-gold)]">
+                        {section.title}
+                      </p>
+                      <div className="grid gap-1">
+                        {section.items.map((item) => (
+                          <ExploreLink key={item.href} item={item} pathname={pathname} />
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <Link
             href="/search"
             aria-label="Search Loombus"
@@ -333,12 +510,15 @@ export function DesktopTopNavbar() {
             )}
           </Link>
 
-          <div ref={menuRef} className="relative">
+          <div ref={profileRef} className="relative">
             <button
               type="button"
-              onClick={() => setMenuOpen((current) => !current)}
-              aria-label="Open profile menu"
-              aria-expanded={menuOpen}
+              onClick={() => {
+                setProfileOpen((current) => !current);
+                setExploreOpen(false);
+              }}
+              aria-label="Open account menu"
+              aria-expanded={profileOpen}
               className="flex h-10 items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] py-1 pl-1 pr-3 text-[var(--loombus-text)] transition hover:border-[var(--loombus-text-subtle)]"
             >
               <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] text-sm font-semibold">
@@ -348,10 +528,16 @@ export function DesktopTopNavbar() {
                   <span>{getInitial(profile, email)}</span>
                 )}
               </span>
-              <ChevronDown aria-hidden="true" className="h-4 w-4 text-[var(--loombus-text-muted)]" strokeWidth={2.1} />
+              <ChevronDown
+                aria-hidden="true"
+                className={`h-4 w-4 text-[var(--loombus-text-muted)] transition-transform ${
+                  profileOpen ? "rotate-180" : ""
+                }`}
+                strokeWidth={2.1}
+              />
             </button>
 
-            {menuOpen && (
+            {profileOpen && (
               <div className="absolute right-0 mt-3 flex max-h-[calc(100vh-6rem)] w-80 flex-col overflow-hidden rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/15">
                 <div className="shrink-0 border-b border-[var(--loombus-border)] px-4 py-3">
                   <p className="truncate text-sm font-semibold">{displayName}</p>
@@ -361,17 +547,48 @@ export function DesktopTopNavbar() {
                 </div>
 
                 <div className="min-h-0 overflow-y-auto p-2">
-                  <DropdownSection title="Navigation" items={discoveryItems} />
-                  <DropdownSection title="Your Signal" items={activityItems} />
-                  <DropdownSection title="Tools" items={buildItems} />
-                  <DropdownSection title="Account" items={accountItems} />
+                  <section className="py-2">
+                    <p className="px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--loombus-gold)]">
+                      Your Account
+                    </p>
+                    <div className="grid gap-0.5">
+                      <CompactMenuLink
+                        item={profileItem}
+                        active={isPathActive(pathname, profileItem.href)}
+                      />
+                      {ACCOUNT_NAVIGATION_SECTIONS[0].items.map((item) => (
+                        <CompactMenuLink
+                          key={item.href}
+                          item={item}
+                          active={isPathActive(pathname, item.href)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+
+                  {ACCOUNT_NAVIGATION_SECTIONS.slice(1).map((section) => (
+                    <CompactMenuSection
+                      key={section.title}
+                      title={section.title}
+                      items={section.items}
+                      pathname={pathname}
+                    />
+                  ))}
 
                   {profile?.is_admin && (
                     <section className="border-t border-[var(--loombus-border)] py-2">
-                      <p className="px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--loombus-text-subtle)]">
-                        Admin
+                      <p className="px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--loombus-gold)]">
+                        Administration
                       </p>
-                      <DropdownLink item={{ href: "/admin", label: "Admin", icon: ShieldCheck }} />
+                      <CompactMenuLink
+                        item={{
+                          href: "/admin",
+                          label: "Admin",
+                          description: "Open Loombus administration.",
+                          icon: "privacy",
+                        }}
+                        active={isPathActive(pathname, "/admin")}
+                      />
                     </section>
                   )}
 
