@@ -41,11 +41,16 @@
 
   .loombus-mobile-v2-brand {
     min-width: 0;
+    border: 0;
+    padding: 0;
     display: inline-flex;
     align-items: center;
     gap: 0.65rem;
+    background: transparent;
     color: var(--loombus-text);
-    text-decoration: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
   }
 
   .loombus-mobile-v2-brand > span {
@@ -74,6 +79,21 @@
     letter-spacing: -0.025em;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .loombus-mobile-v2-brand > svg {
+    flex: 0 0 auto;
+    color: var(--loombus-text-muted);
+    transition: color 150ms ease, transform 150ms ease;
+  }
+
+  .loombus-mobile-v2-brand:hover > svg,
+  .loombus-mobile-v2-brand[aria-expanded="true"] > svg {
+    color: var(--loombus-gold);
+  }
+
+  .loombus-mobile-v2-brand[aria-expanded="true"] > svg {
+    transform: rotate(180deg);
   }
 
   .loombus-mobile-v2-top-actions {
@@ -130,15 +150,22 @@
     inset: 0;
     z-index: 80;
     display: flex;
-    justify-content: flex-end;
     padding: calc(env(safe-area-inset-top) + 0.65rem) 0.7rem calc(env(safe-area-inset-bottom) + 0.7rem);
     background: rgba(0, 0, 0, 0.34);
     backdrop-filter: blur(9px);
     -webkit-backdrop-filter: blur(9px);
   }
 
+  .loombus-mobile-v2-menu-backdrop[data-menu-kind="explore"] {
+    justify-content: flex-start;
+  }
+
+  .loombus-mobile-v2-menu-backdrop[data-menu-kind="account"] {
+    justify-content: flex-end;
+  }
+
   .loombus-mobile-v2-menu-panel {
-    width: min(94vw, 26rem);
+    width: min(92vw, 23rem);
     max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.35rem);
     align-self: flex-start;
     border: 1px solid var(--loombus-border);
@@ -147,7 +174,15 @@
     background: var(--loombus-surface);
     color: var(--loombus-text);
     box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3);
-    animation: loombus-mobile-v2-menu-enter 170ms ease-out;
+  }
+
+  .loombus-mobile-v2-menu-panel[data-menu-kind="explore"] {
+    animation: loombus-mobile-v2-explore-enter 170ms ease-out;
+  }
+
+  .loombus-mobile-v2-menu-panel[data-menu-kind="account"] {
+    width: min(88vw, 21rem);
+    animation: loombus-mobile-v2-account-enter 170ms ease-out;
   }
 
   .loombus-mobile-v2-menu-header {
@@ -158,6 +193,56 @@
     justify-content: space-between;
     gap: 0.8rem;
     background: var(--loombus-surface-strong);
+  }
+
+
+  .loombus-mobile-v2-menu-title {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .loombus-mobile-v2-menu-mark {
+    width: 2.8rem;
+    height: 2.8rem;
+    flex: 0 0 auto;
+    border: 1px solid var(--loombus-border);
+    border-radius: 0.95rem;
+    display: grid;
+    place-items: center;
+    background: var(--loombus-surface);
+  }
+
+  .loombus-mobile-v2-menu-mark img {
+    width: 1.85rem;
+    height: 1.85rem;
+    object-fit: contain;
+  }
+
+  .loombus-mobile-v2-menu-title > div {
+    min-width: 0;
+    display: grid;
+    gap: 0.18rem;
+  }
+
+  .loombus-mobile-v2-menu-title strong,
+  .loombus-mobile-v2-menu-title span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .loombus-mobile-v2-menu-title strong {
+    color: var(--loombus-text);
+    font-size: 0.9rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .loombus-mobile-v2-menu-title span {
+    color: var(--loombus-text-muted);
+    font-size: 0.68rem;
+    line-height: 1.35;
   }
 
   .loombus-mobile-v2-menu-profile {
@@ -273,7 +358,7 @@
 
   .loombus-mobile-v2-menu-section > div {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 0.2rem;
   }
 
@@ -435,9 +520,9 @@
     height: 1.3rem !important;
   }
 
-  body[data-loombus-mobile-menu-open="true"] .loombus-floating-utility-stack,
-  body[data-loombus-mobile-menu-open="true"] .loombus-floating-utility-stack + button,
-  body[data-loombus-mobile-menu-open="true"] .loombus-mobile-v2-bottom-nav {
+  body[data-loombus-mobile-menu-open] .loombus-floating-utility-stack,
+  body[data-loombus-mobile-menu-open] .loombus-floating-utility-stack + button,
+  body[data-loombus-mobile-menu-open] .loombus-mobile-v2-bottom-nav {
     pointer-events: none;
     opacity: 0;
   }
@@ -451,14 +536,25 @@
     outline-offset: 2px;
   }
 
-  @keyframes loombus-mobile-v2-menu-enter {
+  @keyframes loombus-mobile-v2-explore-enter {
     from {
       opacity: 0;
-      transform: translateY(-0.35rem) scale(0.985);
+      transform: translateX(-0.45rem) scale(0.985);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  @keyframes loombus-mobile-v2-account-enter {
+    from {
+      opacity: 0;
+      transform: translateX(0.45rem) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
     }
   }
 }

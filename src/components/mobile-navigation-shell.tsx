@@ -11,6 +11,7 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarDays,
+  ChevronDown,
   Megaphone,
   Clock3,
   DoorOpen,
@@ -166,7 +167,7 @@ export function MobileNavigationShell() {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<MobileNavProfile | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<"explore" | "account" | null>(null);
   const [topHidden, setTopHidden] = useState(false);
   const [bottomHidden, setBottomHidden] = useState(false);
   const menuPanelRef = useRef<HTMLDivElement | null>(null);
@@ -183,7 +184,7 @@ export function MobileNavigationShell() {
   );
 
   function closeMenu() {
-    setMenuOpen(false);
+    setActiveMenu(null);
   }
 
   function openExistingGlobalSearch() {
@@ -301,13 +302,13 @@ export function MobileNavigationShell() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!menuOpen) {
+    if (!activeMenu) {
       delete document.body.dataset.loombusMobileMenuOpen;
       return;
     }
 
     const previousOverflow = document.body.style.overflow;
-    document.body.dataset.loombusMobileMenuOpen = "true";
+    document.body.dataset.loombusMobileMenuOpen = activeMenu;
     document.body.style.overflow = "hidden";
     setTopHidden(false);
     setBottomHidden(false);
@@ -331,7 +332,7 @@ export function MobileNavigationShell() {
       delete document.body.dataset.loombusMobileMenuOpen;
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [menuOpen]);
+  }, [activeMenu]);
 
   useEffect(() => {
     if (!userId) {
@@ -345,7 +346,7 @@ export function MobileNavigationShell() {
       const currentScrollY = window.scrollY;
       const delta = currentScrollY - lastScrollY;
 
-      if (menuOpen || currentScrollY < 80) {
+      if (activeMenu || currentScrollY < 80) {
         setTopHidden(false);
         setBottomHidden(false);
       } else if (delta > 8) {
@@ -369,7 +370,7 @@ export function MobileNavigationShell() {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [menuOpen, userId]);
+  }, [activeMenu, userId]);
 
   if (!userId) {
     return null;
@@ -385,12 +386,19 @@ export function MobileNavigationShell() {
         aria-label="Mobile Loombus navigation"
       >
         <div className="loombus-mobile-v2-topbar-inner">
-          <Link href="/home" className="loombus-mobile-v2-brand" aria-label="Loombus home">
+          <button
+            type="button"
+            className="loombus-mobile-v2-brand"
+            onClick={() => setActiveMenu((current) => (current === "explore" ? null : "explore"))}
+            aria-label="Open Explore Loombus"
+            aria-expanded={activeMenu === "explore"}
+          >
             <span>
               <img src="/assets/brand/loombus-mark-transparent.png" alt="" />
             </span>
             <strong>Loombus</strong>
-          </Link>
+            <ChevronDown aria-hidden="true" size={16} strokeWidth={2.15} />
+          </button>
 
           <div className="loombus-mobile-v2-top-actions">
             <button type="button" onClick={openExistingGlobalSearch} aria-label="Search Loombus">
@@ -398,9 +406,9 @@ export function MobileNavigationShell() {
             </button>
             <button
               type="button"
-              onClick={() => setMenuOpen((current) => !current)}
-              aria-label="Open Loombus menu"
-              aria-expanded={menuOpen}
+              onClick={() => setActiveMenu((current) => (current === "account" ? null : "account"))}
+              aria-label="Open account menu"
+              aria-expanded={activeMenu === "account"}
               className="loombus-mobile-v2-avatar-button"
             >
               {profile?.avatar_url ? (
@@ -413,34 +421,51 @@ export function MobileNavigationShell() {
         </div>
       </header>
 
-      {menuOpen ? (
-        <div className="loombus-mobile-v2-menu-backdrop" onClick={closeMenu}>
+      {activeMenu ? (
+        <div
+          className="loombus-mobile-v2-menu-backdrop"
+          data-menu-kind={activeMenu}
+          onClick={closeMenu}
+        >
           <div
             ref={menuPanelRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Loombus navigation menu"
+            aria-label={activeMenu === "explore" ? "Explore Loombus" : "Loombus account menu"}
             className="loombus-mobile-v2-menu-panel"
+            data-menu-kind={activeMenu}
             onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}
           >
             <div className="loombus-mobile-v2-menu-header">
-              <div className="loombus-mobile-v2-menu-profile">
-                <span className="loombus-mobile-v2-menu-avatar">
-                  {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="" />
-                  ) : (
-                    getInitial(profile, email)
-                  )}
-                </span>
-                <div>
-                  <strong>{displayName}</strong>
-                  <span>{profile?.username ? `@${profile.username}` : email}</span>
+              {activeMenu === "explore" ? (
+                <div className="loombus-mobile-v2-menu-title">
+                  <span className="loombus-mobile-v2-menu-mark">
+                    <img src="/assets/brand/loombus-mark-transparent.png" alt="" />
+                  </span>
+                  <div>
+                    <strong>Explore Loombus</strong>
+                    <span>Everything across the platform, organized by purpose.</span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="loombus-mobile-v2-menu-profile">
+                  <span className="loombus-mobile-v2-menu-avatar">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="" />
+                    ) : (
+                      getInitial(profile, email)
+                    )}
+                  </span>
+                  <div>
+                    <strong>{displayName}</strong>
+                    <span>{profile?.username ? `@${profile.username}` : email}</span>
+                  </div>
+                </div>
+              )}
               <button
                 type="button"
                 onClick={closeMenu}
-                aria-label="Close Loombus menu"
+                aria-label={activeMenu === "explore" ? "Close Explore Loombus" : "Close account menu"}
                 data-menu-close="true"
               >
                 <X aria-hidden="true" size={19} />
@@ -448,65 +473,62 @@ export function MobileNavigationShell() {
             </div>
 
             <div className="loombus-mobile-v2-menu-scroll">
-              <div className="loombus-mobile-v2-menu-intro">
-                <strong>Explore Loombus</strong>
-                <span>
-                  Move between discussions, local opportunities, and your personal tools.
-                </span>
-              </div>
+              {activeMenu === "explore" ? (
+                EXPLORE_NAVIGATION_SECTIONS.map((section) => (
+                  <MenuSection
+                    key={section.title}
+                    title={section.title}
+                    items={section.items}
+                    pathname={pathname}
+                    onNavigate={closeMenu}
+                  />
+                ))
+              ) : (
+                <>
+                  <MenuSection
+                    title="Your Account"
+                    items={accountItems}
+                    pathname={pathname}
+                    onNavigate={closeMenu}
+                  />
 
-              {EXPLORE_NAVIGATION_SECTIONS.map((section) => (
-                <MenuSection
-                  key={section.title}
-                  title={section.title}
-                  items={section.items}
-                  pathname={pathname}
-                  onNavigate={closeMenu}
-                />
-              ))}
+                  {ACCOUNT_NAVIGATION_SECTIONS.slice(1).map((section) => (
+                    <MenuSection
+                      key={section.title}
+                      title={section.title}
+                      items={section.items}
+                      pathname={pathname}
+                      onNavigate={closeMenu}
+                    />
+                  ))}
 
-              <MenuSection
-                title="Your Account"
-                items={accountItems}
-                pathname={pathname}
-                onNavigate={closeMenu}
-              />
+                  {profile?.is_admin ? (
+                    <section className="loombus-mobile-v2-menu-section">
+                      <p>Administration</p>
+                      <div>
+                        <Link
+                          href="/admin"
+                          onClick={closeMenu}
+                          aria-current={isPathActive(pathname, "/admin") ? "page" : undefined}
+                          data-active={isPathActive(pathname, "/admin") ? "true" : "false"}
+                        >
+                          <ShieldCheck aria-hidden="true" size={17} strokeWidth={2.1} />
+                          <span>Admin</span>
+                        </Link>
+                      </div>
+                    </section>
+                  ) : null}
 
-              {ACCOUNT_NAVIGATION_SECTIONS.slice(1).map((section) => (
-                <MenuSection
-                  key={section.title}
-                  title={section.title}
-                  items={section.items}
-                  pathname={pathname}
-                  onNavigate={closeMenu}
-                />
-              ))}
-
-              {profile?.is_admin ? (
-                <section className="loombus-mobile-v2-menu-section">
-                  <p>Administration</p>
-                  <div>
-                    <Link
-                      href="/admin"
-                      onClick={closeMenu}
-                      aria-current={isPathActive(pathname, "/admin") ? "page" : undefined}
-                      data-active={isPathActive(pathname, "/admin") ? "true" : "false"}
-                    >
-                      <ShieldCheck aria-hidden="true" size={17} strokeWidth={2.1} />
-                      <span>Admin</span>
-                    </Link>
-                  </div>
-                </section>
-              ) : null}
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="loombus-mobile-v2-logout"
-              >
-                <LogOut aria-hidden="true" size={17} strokeWidth={2.1} />
-                <span>Logout</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="loombus-mobile-v2-logout"
+                  >
+                    <LogOut aria-hidden="true" size={17} strokeWidth={2.1} />
+                    <span>Logout</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
