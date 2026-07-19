@@ -6,26 +6,44 @@ import {
   Activity,
   Bell,
   Bookmark,
+  BookOpen,
   Bot,
+  BriefcaseBusiness,
+  Building2,
+  CalendarDays,
+  ChevronDown,
+  Megaphone,
   Clock3,
   DoorOpen,
   Edit3,
+  Network,
+  Home,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
+  MapPin,
   MessageCircle,
   MessageSquareReply,
   Search,
   Settings,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   StickyNote,
   Tags,
   UserCircle,
   Users,
+  Wrench,
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ACCOUNT_NAVIGATION_SECTIONS,
+  EXPLORE_NAVIGATION_SECTIONS,
+  type LoombusNavigationIcon,
+  type LoombusNavigationItem,
+} from "@/lib/loombus-navigation";
 import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
@@ -39,36 +57,40 @@ type MobileNavProfile = {
   is_admin: boolean | null;
 };
 
-type MenuItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
+const navigationIcons: Record<LoombusNavigationIcon, LucideIcon> = {
+  activity: Activity,
+  appointments: CalendarDays,
+  businesses: Building2,
+  calendar: CalendarDays,
+  dashboard: LayoutDashboard,
+  events: CalendarDays,
+  following: Activity,
+  guide: BookOpen,
+  history: Clock3,
+  home: Home,
+  jobs: BriefcaseBusiness,
+  labs: Sparkles,
+  local: MapPin,
+  marketplace: ShoppingBag,
+  matches: Network,
+  messages: MessageCircle,
+  "my-discussions": MessageCircle,
+  "my-replies": MessageSquareReply,
+  people: Users,
+  premium: Sparkles,
+  privacy: ShieldCheck,
+  profile: UserCircle,
+  requests: Megaphone,
+  rooms: DoorOpen,
+  saved: Bookmark,
+  search: Search,
+  services: Wrench,
+  settings: Settings,
+  "signal-board": StickyNote,
+  support: LifeBuoy,
+  topics: Tags,
+  usage: Bot,
 };
-
-const discoveryItems: MenuItem[] = [
-  { href: "/home", label: "Home", icon: Sparkles },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/onboarding", label: "Onboarding", icon: Sparkles },
-  { href: "/topics", label: "Signal Topics", icon: Tags },
-  { href: "/people", label: "People", icon: Users },
-  { href: "/following", label: "Following", icon: Activity },
-  { href: "/messages", label: "Messages", icon: MessageCircle },
-  { href: "/saved", label: "Saved", icon: Bookmark },
-  { href: "/stickies", label: "Signal Board", icon: StickyNote },
-];
-
-const activityItems: MenuItem[] = [
-  { href: "/my-activity", label: "My Activity", icon: Activity },
-  { href: "/my-discussions", label: "My Discussions", icon: MessageCircle },
-  { href: "/my-replies", label: "My Replies", icon: MessageSquareReply },
-  { href: "/reading-history", label: "Reading History", icon: Clock3 },
-];
-
-const buildItems: MenuItem[] = [
-  { href: "/labs", label: "Labs", icon: Sparkles },
-  { href: "/premium", label: "Premium", icon: Sparkles },
-  { href: "/ai-usage", label: "AI Usage", icon: Bot },
-];
 
 const primaryItems = [
   { href: "/discussions", label: "Discussions", icon: MessageCircle },
@@ -90,13 +112,27 @@ function getInitial(profile: MobileNavProfile | null, email: string | null) {
   return getDisplayName(profile, email).charAt(0).toUpperCase();
 }
 
+function isPathActive(pathname: string, href: string) {
+  if (href === "/discussions") {
+    return pathname === href || pathname.startsWith("/discussions/");
+  }
+
+  if (href === "/rooms") {
+    return pathname === href || pathname.startsWith("/rooms/");
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function MenuSection({
   title,
   items,
+  pathname,
   onNavigate,
 }: {
   title: string;
-  items: MenuItem[];
+  items: readonly LoombusNavigationItem[];
+  pathname: string;
   onNavigate: () => void;
 }) {
   return (
@@ -104,9 +140,17 @@ function MenuSection({
       <p>{title}</p>
       <div>
         {items.map((item) => {
-          const Icon = item.icon;
+          const Icon = navigationIcons[item.icon];
+          const active = isPathActive(pathname, item.href);
+
           return (
-            <Link key={`${title}-${item.href}`} href={item.href} onClick={onNavigate}>
+            <Link
+              key={`${title}-${item.href}`}
+              href={item.href}
+              onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
+              data-active={active ? "true" : "false"}
+            >
               <Icon aria-hidden="true" size={17} strokeWidth={2.1} />
               <span>{item.label}</span>
             </Link>
@@ -123,35 +167,24 @@ export function MobileNavigationShell() {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<MobileNavProfile | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<"explore" | "account" | null>(null);
   const [topHidden, setTopHidden] = useState(false);
   const [bottomHidden, setBottomHidden] = useState(false);
   const menuPanelRef = useRef<HTMLDivElement | null>(null);
 
   const profileHref = profile?.username ? `/u/${profile.username}` : "/profile";
-  const accountItems = useMemo<MenuItem[]>(
-    () => [
-      { href: profileHref, label: "Profile", icon: UserCircle },
-      { href: "/privacy-security", label: "Privacy & Security", icon: ShieldCheck },
-      { href: "/settings", label: "Settings", icon: Settings },
-    ],
+  const profileItem = useMemo<LoombusNavigationItem>(
+    () => ({
+      href: profileHref,
+      label: "Profile",
+      description: "Open your public profile and identity settings.",
+      icon: "profile",
+    }),
     [profileHref]
   );
 
-  function isActivePath(href: string) {
-    if (href === "/discussions") {
-      return pathname === href || pathname.startsWith("/discussions/");
-    }
-
-    if (href === "/rooms") {
-      return pathname === href || pathname.startsWith("/rooms/");
-    }
-
-    return pathname === href || pathname.startsWith(`${href}/`);
-  }
-
   function closeMenu() {
-    setMenuOpen(false);
+    setActiveMenu(null);
   }
 
   function openExistingGlobalSearch() {
@@ -188,7 +221,9 @@ export function MobileNavigationShell() {
         getBlockedRelationshipUserIds(supabase, nextUserId),
       ]);
 
-      if (!mounted || activeUserId !== nextUserId) return;
+      if (!mounted || activeUserId !== nextUserId) {
+        return;
+      }
 
       setProfile((profileData ?? null) as MobileNavProfile | null);
 
@@ -198,7 +233,9 @@ export function MobileNavigationShell() {
         .eq("user_id", nextUserId)
         .is("read_at", null);
 
-      if (!mounted || activeUserId !== nextUserId) return;
+      if (!mounted || activeUserId !== nextUserId) {
+        return;
+      }
 
       setNotificationCount(
         filterBlockedActorNotifications(notificationRows ?? [], blockedIds).length
@@ -209,7 +246,9 @@ export function MobileNavigationShell() {
       const { data } = await supabase.auth.getUser();
       const nextUser = data.user ?? null;
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
 
       activeUserId = nextUser?.id ?? null;
       setUserId(activeUserId);
@@ -244,7 +283,9 @@ export function MobileNavigationShell() {
     });
 
     function handleNotificationsChanged() {
-      if (activeUserId) void loadNavState(activeUserId);
+      if (activeUserId) {
+        void loadNavState(activeUserId);
+      }
     }
 
     window.addEventListener("loombus:notifications-changed", handleNotificationsChanged);
@@ -261,19 +302,27 @@ export function MobileNavigationShell() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!menuOpen) {
+    if (!activeMenu) {
       delete document.body.dataset.loombusMobileMenuOpen;
       return;
     }
 
     const previousOverflow = document.body.style.overflow;
-    document.body.dataset.loombusMobileMenuOpen = "true";
+    document.body.dataset.loombusMobileMenuOpen = activeMenu;
     document.body.style.overflow = "hidden";
     setTopHidden(false);
     setBottomHidden(false);
 
+    window.requestAnimationFrame(() => {
+      menuPanelRef.current
+        ?.querySelector<HTMLButtonElement>('[data-menu-close="true"]')
+        ?.focus();
+    });
+
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") closeMenu();
+      if (event.key === "Escape") {
+        closeMenu();
+      }
     }
 
     window.addEventListener("keydown", handleEscape);
@@ -283,10 +332,12 @@ export function MobileNavigationShell() {
       delete document.body.dataset.loombusMobileMenuOpen;
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [menuOpen]);
+  }, [activeMenu]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      return;
+    }
 
     let lastScrollY = window.scrollY;
     let ticking = false;
@@ -295,7 +346,7 @@ export function MobileNavigationShell() {
       const currentScrollY = window.scrollY;
       const delta = currentScrollY - lastScrollY;
 
-      if (menuOpen || currentScrollY < 80) {
+      if (activeMenu || currentScrollY < 80) {
         setTopHidden(false);
         setBottomHidden(false);
       } else if (delta > 8) {
@@ -319,11 +370,14 @@ export function MobileNavigationShell() {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [menuOpen, userId]);
+  }, [activeMenu, userId]);
 
-  if (!userId) return null;
+  if (!userId) {
+    return null;
+  }
 
   const displayName = getDisplayName(profile, email);
+  const accountItems = [profileItem, ...ACCOUNT_NAVIGATION_SECTIONS[0].items];
 
   return (
     <>
@@ -332,12 +386,19 @@ export function MobileNavigationShell() {
         aria-label="Mobile Loombus navigation"
       >
         <div className="loombus-mobile-v2-topbar-inner">
-          <Link href="/home" className="loombus-mobile-v2-brand" aria-label="Loombus home">
+          <button
+            type="button"
+            className="loombus-mobile-v2-brand"
+            onClick={() => setActiveMenu((current) => (current === "explore" ? null : "explore"))}
+            aria-label="Open Explore Loombus"
+            aria-expanded={activeMenu === "explore"}
+          >
             <span>
               <img src="/assets/brand/loombus-mark-transparent.png" alt="" />
             </span>
             <strong>Loombus</strong>
-          </Link>
+            <ChevronDown aria-hidden="true" size={16} strokeWidth={2.15} />
+          </button>
 
           <div className="loombus-mobile-v2-top-actions">
             <button type="button" onClick={openExistingGlobalSearch} aria-label="Search Loombus">
@@ -345,9 +406,9 @@ export function MobileNavigationShell() {
             </button>
             <button
               type="button"
-              onClick={() => setMenuOpen((current) => !current)}
-              aria-label="Open profile menu"
-              aria-expanded={menuOpen}
+              onClick={() => setActiveMenu((current) => (current === "account" ? null : "account"))}
+              aria-label="Open account menu"
+              aria-expanded={activeMenu === "account"}
               className="loombus-mobile-v2-avatar-button"
             >
               {profile?.avatar_url ? (
@@ -360,61 +421,114 @@ export function MobileNavigationShell() {
         </div>
       </header>
 
-      {menuOpen ? (
-        <div className="loombus-mobile-v2-menu-backdrop" onClick={closeMenu}>
+      {activeMenu ? (
+        <div
+          className="loombus-mobile-v2-menu-backdrop"
+          data-menu-kind={activeMenu}
+          onClick={closeMenu}
+        >
           <div
             ref={menuPanelRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Profile navigation menu"
+            aria-label={activeMenu === "explore" ? "Explore Loombus" : "Loombus account menu"}
             className="loombus-mobile-v2-menu-panel"
-            onClick={(event) => event.stopPropagation()}
+            data-menu-kind={activeMenu}
+            onClick={(event: MouseEvent<HTMLDivElement>) => event.stopPropagation()}
           >
             <div className="loombus-mobile-v2-menu-header">
-              <div className="loombus-mobile-v2-menu-profile">
-                <span className="loombus-mobile-v2-menu-avatar">
-                  {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="" />
-                  ) : (
-                    getInitial(profile, email)
-                  )}
-                </span>
-                <div>
-                  <strong>{displayName}</strong>
-                  <span>{profile?.username ? `@${profile.username}` : email}</span>
+              {activeMenu === "explore" ? (
+                <div className="loombus-mobile-v2-menu-title">
+                  <span className="loombus-mobile-v2-menu-mark">
+                    <img src="/assets/brand/loombus-mark-transparent.png" alt="" />
+                  </span>
+                  <div>
+                    <strong>Explore Loombus</strong>
+                    <span>Everything across the platform, organized by purpose.</span>
+                  </div>
                 </div>
-              </div>
-              <button type="button" onClick={closeMenu} aria-label="Close profile menu">
+              ) : (
+                <div className="loombus-mobile-v2-menu-profile">
+                  <span className="loombus-mobile-v2-menu-avatar">
+                    {profile?.avatar_url ? (
+                      <img src={profile.avatar_url} alt="" />
+                    ) : (
+                      getInitial(profile, email)
+                    )}
+                  </span>
+                  <div>
+                    <strong>{displayName}</strong>
+                    <span>{profile?.username ? `@${profile.username}` : email}</span>
+                  </div>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={closeMenu}
+                aria-label={activeMenu === "explore" ? "Close Explore Loombus" : "Close account menu"}
+                data-menu-close="true"
+              >
                 <X aria-hidden="true" size={19} />
               </button>
             </div>
 
             <div className="loombus-mobile-v2-menu-scroll">
-              <MenuSection title="Discover" items={discoveryItems} onNavigate={closeMenu} />
-              <MenuSection title="Activity" items={activityItems} onNavigate={closeMenu} />
-              <MenuSection title="Build" items={buildItems} onNavigate={closeMenu} />
-              <MenuSection title="Account" items={accountItems} onNavigate={closeMenu} />
+              {activeMenu === "explore" ? (
+                EXPLORE_NAVIGATION_SECTIONS.map((section) => (
+                  <MenuSection
+                    key={section.title}
+                    title={section.title}
+                    items={section.items}
+                    pathname={pathname}
+                    onNavigate={closeMenu}
+                  />
+                ))
+              ) : (
+                <>
+                  <MenuSection
+                    title="Your Account"
+                    items={accountItems}
+                    pathname={pathname}
+                    onNavigate={closeMenu}
+                  />
 
-              {profile?.is_admin ? (
-                <section className="loombus-mobile-v2-menu-section">
-                  <p>Administration</p>
-                  <div>
-                    <Link href="/admin" onClick={closeMenu}>
-                      <ShieldCheck aria-hidden="true" size={17} strokeWidth={2.1} />
-                      <span>Admin</span>
-                    </Link>
-                  </div>
-                </section>
-              ) : null}
+                  {ACCOUNT_NAVIGATION_SECTIONS.slice(1).map((section) => (
+                    <MenuSection
+                      key={section.title}
+                      title={section.title}
+                      items={section.items}
+                      pathname={pathname}
+                      onNavigate={closeMenu}
+                    />
+                  ))}
 
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="loombus-mobile-v2-logout"
-              >
-                <LogOut aria-hidden="true" size={17} strokeWidth={2.1} />
-                <span>Logout</span>
-              </button>
+                  {profile?.is_admin ? (
+                    <section className="loombus-mobile-v2-menu-section">
+                      <p>Administration</p>
+                      <div>
+                        <Link
+                          href="/admin"
+                          onClick={closeMenu}
+                          aria-current={isPathActive(pathname, "/admin") ? "page" : undefined}
+                          data-active={isPathActive(pathname, "/admin") ? "true" : "false"}
+                        >
+                          <ShieldCheck aria-hidden="true" size={17} strokeWidth={2.1} />
+                          <span>Admin</span>
+                        </Link>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="loombus-mobile-v2-logout"
+                  >
+                    <LogOut aria-hidden="true" size={17} strokeWidth={2.1} />
+                    <span>Logout</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -427,7 +541,8 @@ export function MobileNavigationShell() {
         <div>
           {primaryItems.map((item) => {
             const Icon = item.icon;
-            const active = isActivePath(item.href);
+            const active = isPathActive(pathname, item.href);
+
             return (
               <Link
                 key={item.href}
