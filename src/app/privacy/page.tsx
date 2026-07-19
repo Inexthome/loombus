@@ -469,6 +469,21 @@ const sections: PublicPolicySection[] = [
     title: "Privacy Contact",
     paragraphs: [
       <>
+        This Privacy Policy is issued by <strong>Loombus LLC</strong>, a Florida
+        limited liability company and the operator of Loombus.
+      </>,
+      <>
+        Formal correspondence may be mailed to:
+        <br />
+        Loombus LLC
+        <br />
+        2640 Blanding Blvd, Ste 201-167
+        <br />
+        Middleburg, FL 32068
+        <br />
+        United States
+      </>,
+      <>
         Submit a privacy question or request through{" "}
         <Link href="/support?category=legal" className="text-zinc-200 underline-offset-4 hover:underline">
           Loombus Support
@@ -501,7 +516,7 @@ export default function PrivacyPage() {
       }
       sections={sections}
       effectiveDate="July 18, 2026"
-      reviewedDate="July 18, 2026"
+      reviewedDate="July 19, 2026"
     />
   );
 }
