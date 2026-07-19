@@ -8,9 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function BusinessesPage() {
-  return (
-    <div data-loombus-businesses-page>
-      <BusinessDirectoryPage />
-    </div>
-  );
+  return <BusinessDirectoryPage />;
 }
