@@ -68,10 +68,6 @@ main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) textarea:
   color: var(--loombus-text-subtle) !important;
 }
 
-main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form > .loombus-mobile-topbar {
-  order: -20 !important;
-}
-
 main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form > div:has(> label + input[required]) {
   order: 1 !important;
 }
@@ -245,18 +241,6 @@ main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form butt
 
 main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) form button[type="submit"]:hover {
   opacity: 0.92;
-}
-
-main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) .loombus-mobile-topbar {
-  color: var(--loombus-text) !important;
-}
-
-main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) .loombus-mobile-topbar button {
-  color: var(--loombus-text-muted) !important;
-}
-
-main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) .loombus-mobile-topbar button[aria-expanded="true"] {
-  color: var(--loombus-text) !important;
 }
 
 main.loombus-shell-with-right-rail:has([aria-label="Discussion body"]) .loombus-right-rail section {
