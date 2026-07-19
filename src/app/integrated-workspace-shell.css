@@ -5,11 +5,27 @@
 .loombus-integrated-workspace-route main {
   background: var(--loombus-page-bg) !important;
   color: var(--loombus-text) !important;
-  padding-top: 1.25rem !important;
+  padding-top: clamp(1rem, 1.8vw, 1.5rem) !important;
   padding-bottom: 6rem !important;
 }
 
-.loombus-integrated-workspace-route main > div > :is(header, section):first-child {
+.loombus-integrated-workspace-route main > div {
+  width: 100%;
+}
+
+.loombus-integrated-workspace-index
+  main
+  > div
+  > :is(header, section):first-child,
+.loombus-integrated-workspace-workspace
+  main
+  > div
+  > :is(header, section):first-child,
+.loombus-integrated-workspace-safety
+  main
+  > div
+  > :is(header, section):first-child,
+.loombus-integrated-workspace-detail main > div > header:first-of-type {
   overflow: visible !important;
   border: 0 !important;
   border-bottom: 1px solid var(--loombus-border) !important;
@@ -19,13 +35,24 @@
   box-shadow: none !important;
 }
 
-.loombus-integrated-workspace-route
+.loombus-integrated-workspace-index
   main
   > div
   > :is(header, section):first-child
-  h1 {
-  max-width: 54rem;
-  font-size: clamp(2rem, 3.6vw, 2.55rem) !important;
+  h1,
+.loombus-integrated-workspace-workspace
+  main
+  > div
+  > :is(header, section):first-child
+  h1,
+.loombus-integrated-workspace-safety
+  main
+  > div
+  > :is(header, section):first-child
+  h1,
+.loombus-integrated-workspace-detail main h1 {
+  max-width: 58rem;
+  font-size: clamp(2rem, 3.4vw, 2.75rem) !important;
   font-weight: 800 !important;
   line-height: 1.08 !important;
   letter-spacing: -0.035em !important;
@@ -35,11 +62,21 @@
   main
   > div
   > :is(header, section):first-child
+  :is(p, div).text-xs.font-bold.uppercase,
+.loombus-integrated-workspace-detail
+  main
+  > div
+  > header:first-of-type
   :is(p, div).text-xs.font-bold.uppercase {
   letter-spacing: 0.16em !important;
 }
 
-.loombus-integrated-workspace-route
+.loombus-integrated-workspace-index
+  main
+  > div
+  > :is(header, section):first-child
+  article,
+.loombus-integrated-workspace-workspace
   main
   > div
   > :is(header, section):first-child
@@ -49,18 +86,19 @@
   box-shadow: none !important;
 }
 
-.loombus-integrated-workspace-route
-  main
-  > div
-  > :is(header, section):first-child
-  form {
-  box-shadow: none !important;
+.loombus-integrated-workspace-route main > div > section:not(:first-child),
+.loombus-integrated-workspace-route main > div > article,
+.loombus-integrated-workspace-route main > div > aside,
+.loombus-integrated-workspace-route main > div > nav {
+  box-shadow: none;
 }
 
-.loombus-integrated-workspace-route main > div > section:not(:first-child),
-.loombus-integrated-workspace-route main > div > nav,
-.loombus-integrated-workspace-route main > div > aside {
-  box-shadow: none;
+.loombus-integrated-workspace-detail main > div > a:first-child {
+  margin-bottom: 0.25rem;
+}
+
+.loombus-integrated-workspace-safety main > div > :is(section, header):first-child + * {
+  margin-top: 1.25rem !important;
 }
 
 .loombus-integrated-workspace-route main a,
@@ -71,23 +109,34 @@
   transition-duration: 160ms;
 }
 
+.loombus-integrated-workspace-route main :is(input, select, textarea):focus-visible,
+.loombus-integrated-workspace-route main :is(a, button):focus-visible {
+  outline: 2px solid var(--loombus-text-subtle);
+  outline-offset: 3px;
+}
+
 @media (max-width: 639px) {
   .loombus-integrated-workspace-route main {
     padding-top: 1rem !important;
   }
 
-  .loombus-integrated-workspace-route
+  .loombus-integrated-workspace-index
     main
     > div
-    > :is(header, section):first-child {
+    > :is(header, section):first-child,
+  .loombus-integrated-workspace-workspace
+    main
+    > div
+    > :is(header, section):first-child,
+  .loombus-integrated-workspace-safety
+    main
+    > div
+    > :is(header, section):first-child,
+  .loombus-integrated-workspace-detail main > div > header:first-of-type {
     padding-bottom: 1rem !important;
   }
 
-  .loombus-integrated-workspace-route
-    main
-    > div
-    > :is(header, section):first-child
-    h1 {
+  .loombus-integrated-workspace-route main h1 {
     font-size: 2rem !important;
   }
 }
