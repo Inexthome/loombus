@@ -1,6 +1,13 @@
 "use client";
 
-import { BarChart3, Bookmark, Flag, MessageCircle, PackageCheck, Timer } from "lucide-react";
+import {
+  BarChart3,
+  Bookmark,
+  Flag,
+  MessageCircle,
+  PackageCheck,
+  Timer,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { marketplaceAuthorizedFetch } from "@/lib/marketplace-auth-client";
 
@@ -52,23 +59,28 @@ export default function MarketplaceAdminMetrics() {
   ];
 
   return (
-    <section className="bg-[var(--loombus-page-bg)] px-4 pb-10 text-[var(--loombus-text)] sm:px-6">
-      <div className="mx-auto max-w-7xl rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 sm:p-6">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
-          Administrator operations
+    <section className="bg-[color:var(--loombus-page-bg)] px-4 pb-24 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[82rem] rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
+        <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Administrator diagnostics</p>
+        <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em]">Marketplace trust metrics</h2>
+        <p className="mt-2 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+          Platform-level Marketplace relationships and lifecycle counts. These metrics do not change public ranking.
         </p>
-        <h2 className="mt-2 text-2xl font-semibold">Marketplace trust metrics</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map(({ label, value, icon: Icon }) => (
+          {cards.map(({ label, value, icon: Icon }, index) => (
             <article
               key={label}
-              className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4"
+              className={`rounded-[1.35rem] border p-4 ${
+                index === 0
+                  ? "border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-text)]"
+                  : "border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)]"
+              }`}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-[var(--loombus-text-muted)]">{label}</span>
-                <Icon size={18} />
+                <span className="text-sm text-[color:var(--loombus-text-muted)]">{label}</span>
+                <Icon className="text-[color:var(--loombus-gold)]" size={18} />
               </div>
-              <strong className="mt-3 block text-3xl">{value}</strong>
+              <strong className="mt-3 block text-3xl tracking-[-0.04em]">{value}</strong>
             </article>
           ))}
         </div>

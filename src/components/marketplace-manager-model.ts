@@ -32,7 +32,7 @@ export type UpdateMarketplaceDraft = <K extends keyof MarketplaceDraft>(
 ) => void;
 
 export const marketplaceInputClass =
-  "w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 py-3 outline-none";
+  "w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 py-3 text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]";
 
 export function emptyMarketplaceDraft(): MarketplaceDraft {
   return {
