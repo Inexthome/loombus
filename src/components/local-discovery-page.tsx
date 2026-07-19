@@ -355,6 +355,13 @@ export default function LocalDiscoveryPage() {
               </section>
             ) : null}
 
+            <div className="mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">Local discovery</p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-[-0.035em]">
+                {loading ? "Organizing sources" : `${data.total} result${data.total === 1 ? "" : "s"}`}
+              </h2>
+            </div>
+
             {loading ? (
               <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-10 text-center text-[color:var(--loombus-text-muted)] shadow-xl shadow-black/10">
                 <Loader2 className="mx-auto animate-spin text-[color:var(--loombus-gold)]" size={28} />
