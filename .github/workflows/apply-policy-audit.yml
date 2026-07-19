@@ -36,7 +36,7 @@ jobs:
               target.write(encoded)
           PY
           base64 --decode /tmp/replacements.b64 > /tmp/replacement-files.tar.gz
-          echo "199441da2af0db271d6ee82ed4563c60bbe172dcb15e2bc4ec07103af03b9ff0  /tmp/replacement-files.tar.gz" | sha256sum --check
+          echo "f75114f0ec89b94fc898f4f9ba8869e3cbed18760d84bba5255b9b46d2d77535  /tmp/replacement-files.tar.gz" | sha256sum --check
           mkdir -p /tmp/loombus-policy
           tar -xzf /tmp/replacement-files.tar.gz -C /tmp/loombus-policy
           cp -R /tmp/loombus-policy/replacement-files/. .
