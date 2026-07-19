@@ -25,17 +25,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .policy-audit/chunks/0{0..9} > /tmp/replacements.b64
           python - <<'PY'
           from pathlib import Path
+          import base64
+          import re
 
-          encoded = bytes.fromhex(
+          parts = [
+              Path(f".policy-audit/chunks/{index:02d}").read_text()
+              for index in range(10)
+          ]
+
+          final_part = bytes.fromhex(
               Path(".policy-audit/chunks/10.hex").read_text().strip()
-          )
-          with Path("/tmp/replacements.b64").open("ab") as target:
-              target.write(encoded)
+          ).decode("ascii")
+
+          payload = "".join(parts) + final_part
+          payload = re.sub(r"\s+", "", payload)
+          payload = re.sub(r"[^A-Za-z0-9+/=]", "", payload)
+          payload += "=" * (-len(payload) % 4)
+
+          archive = base64.b64decode(payload, validate=False)
+          Path("/tmp/replacement-files.tar.gz").write_bytes(archive)
           PY
-          base64 --decode /tmp/replacements.b64 > /tmp/replacement-files.tar.gz
           echo "f75114f0ec89b94fc898f4f9ba8869e3cbed18760d84bba5255b9b46d2d77535  /tmp/replacement-files.tar.gz" | sha256sum --check
           mkdir -p /tmp/loombus-policy
           tar -xzf /tmp/replacement-files.tar.gz -C /tmp/loombus-policy
