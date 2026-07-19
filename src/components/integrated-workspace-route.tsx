@@ -3,21 +3,46 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-const INTEGRATED_WORKSPACE_ROUTES = new Set([
+const INTEGRATED_WORKSPACE_ROOTS = [
   "/local",
   "/businesses",
   "/services",
-  "/services/manage",
   "/jobs",
   "/marketplace",
-  "/marketplace/manage",
-  "/marketplace/saved",
   "/appointments",
   "/events",
-  "/events/manage",
   "/requests",
-  "/requests/manage",
-]);
+] as const;
+
+type IntegratedWorkspaceMode = "index" | "workspace" | "detail" | "safety";
+
+function getIntegratedWorkspaceRoot(pathname: string) {
+  return INTEGRATED_WORKSPACE_ROOTS.find(
+    (root) => pathname === root || pathname.startsWith(`${root}/`),
+  );
+}
+
+function getIntegratedWorkspaceMode(
+  pathname: string,
+  root: (typeof INTEGRATED_WORKSPACE_ROOTS)[number],
+): IntegratedWorkspaceMode {
+  const relativePath = pathname.slice(root.length);
+  const routeSegments = relativePath.split("/").filter(Boolean);
+
+  if (routeSegments.includes("safety")) {
+    return "safety";
+  }
+
+  if (
+    root === "/appointments" ||
+    routeSegments.includes("manage") ||
+    routeSegments.includes("saved")
+  ) {
+    return "workspace";
+  }
+
+  return routeSegments.length === 0 ? "index" : "detail";
+}
 
 export function IntegratedWorkspaceRoute({
   children,
@@ -25,15 +50,19 @@ export function IntegratedWorkspaceRoute({
   children: ReactNode;
 }>) {
   const pathname = usePathname();
-  const isIntegratedWorkspaceRoute = INTEGRATED_WORKSPACE_ROUTES.has(pathname);
+  const routeRoot = getIntegratedWorkspaceRoot(pathname);
+
+  if (!routeRoot) {
+    return children;
+  }
+
+  const mode = getIntegratedWorkspaceMode(pathname, routeRoot);
 
   return (
     <div
-      className={
-        isIntegratedWorkspaceRoute
-          ? "loombus-integrated-workspace-route"
-          : undefined
-      }
+      className={`loombus-integrated-workspace-route loombus-integrated-workspace-${mode}`}
+      data-loombus-workspace-root={routeRoot.slice(1)}
+      data-loombus-workspace-mode={mode}
     >
       {children}
     </div>
