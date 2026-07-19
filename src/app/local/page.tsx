@@ -9,9 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function LocalPage() {
-  return (
-    <div data-loombus-local-page>
-      <LocalDiscoveryPage />
-    </div>
-  );
+  return <LocalDiscoveryPage />;
 }
