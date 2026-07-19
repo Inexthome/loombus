@@ -1,151 +1,298 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { PageHeader, PageShell, Panel } from "@/components/ui";
+import {
+  PublicPolicyPage,
+  type PublicPolicySection,
+} from "@/components/public-policy-page";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const supportEmail = "support@loombus.com";
 
+export const metadata: Metadata = {
+  title: "Copyright and DMCA Process | Loombus",
+  description:
+    "Copyright notice, takedown, counter-notice, repeat-infringer, preservation, and rights-review procedures for content across Loombus.",
+  alternates: {
+    canonical: "https://loombus.com/dmca",
+  },
+};
+
+const sections: PublicPolicySection[] = [
+  {
+    id: "scope",
+    title: "Copyright and Rights Scope",
+    paragraphs: [
+      <>
+        Loombus respects intellectual property rights and expects users to post,
+        upload, list, distribute, or process only material they have the right to
+        use.
+      </>,
+      <>
+        A concern may involve a discussion, reply, profile, image, Video Context,
+        PDF, message attachment, private Room file, business material, service,
+        request, job, event, marketplace listing, product image, logo, source link,
+        AI-assisted output, or other material available through Loombus.
+      </>,
+      <>
+        Copyright is distinct from trademark, privacy, publicity, impersonation,
+        defamation, contract, and other rights. Loombus may route or review those
+        concerns under a different policy or support process.
+      </>,
+    ],
+  },
+  {
+    id: "before-notice",
+    title: "Before Submitting a Copyright Notice",
+    paragraphs: [
+      <>
+        Confirm that you own the copyright or are authorized to act for the owner,
+        identify the specific work and material, and consider whether the use may
+        be licensed, authorized, public domain, or permitted by law.
+      </>,
+      <>
+        A knowingly false or materially misleading notice can create legal
+        liability. Loombus may request clarification, reject an abusive notice, or
+        preserve records relating to suspected misrepresentation.
+      </>,
+    ],
+  },
+  {
+    id: "notice",
+    title: "Information Required in a Takedown Notice",
+    bullets: [
+      <>a physical or electronic signature of the copyright owner or a person authorized to act for the owner;</>,
+      <>identification of the copyrighted work claimed to be infringed, or a representative list when multiple works at one site are involved;</>,
+      <>identification of the material claimed to be infringing and information reasonably sufficient for Loombus to locate it, preferably each exact Loombus URL or record;</>,
+      <>your name, mailing address, telephone number, and email address;</>,
+      <>a statement that you have a good-faith belief that the disputed use is not authorized by the copyright owner, its agent, or the law;</>,
+      <>a statement that the information is accurate and, under penalty of perjury, that you are authorized to act for the owner of the exclusive right allegedly infringed.</>,
+    ],
+    paragraphs: [
+      <>
+        Send the written notice to{" "}
+        <a
+          href={`mailto:${supportEmail}?subject=Loombus%20Copyright%20or%20DMCA%20Notice`}
+          className="text-zinc-200 underline-offset-4 hover:underline"
+        >
+          {supportEmail}
+        </a>{" "}
+        unless this page is later updated with different designated-agent contact
+        information.
+      </>,
+    ],
+  },
+  {
+    id: "location",
+    title: "Locating the Material",
+    paragraphs: [
+      <>
+        Include the exact public or member URL, discussion or reply identifier,
+        profile username, Room name and file path, listing title, business,
+        service, request, job, event, marketplace item, message context, or other
+        information that allows Loombus to locate each item.
+      </>,
+      <>
+        A screenshot alone may be insufficient if it does not identify where the
+        material appears. If the content is private, explain your authorized
+        relationship to it without sending passwords, access tokens, or
+        unnecessary private content.
+      </>,
+    ],
+  },
+  {
+    id: "review",
+    title: "Review and Takedown Action",
+    paragraphs: [
+      <>
+        Loombus may request more information, restrict access temporarily, remove
+        or disable material, preserve records, notify the user, refer the matter to
+        a provider, or take account-level action where a notice is sufficiently
+        complete or other evidence creates a legal or policy concern.
+      </>,
+      <>
+        Loombus may decline or delay action when it cannot locate the material,
+        identify the protected work, verify the sender’s authority, distinguish the
+        claim from a non-copyright dispute, or obtain information required for a
+        legally effective notice.
+      </>,
+      <>
+        Removal under this process is not a final judicial determination of
+        infringement.
+      </>,
+    ],
+  },
+  {
+    id: "notification",
+    title: "Notice to the Affected User",
+    paragraphs: [
+      <>
+        Where appropriate and legally permitted, Loombus may notify the user who
+        submitted the material, provide information about the complaint, and
+        explain the available counter-notice process.
+      </>,
+      <>
+        Loombus may withhold information when necessary for safety, privacy,
+        security, legal process, or another lawful reason.
+      </>,
+    ],
+  },
+  {
+    id: "counter",
+    title: "Counter-Notice Requirements",
+    bullets: [
+      <>your physical or electronic signature;</>,
+      <>identification of the material removed or disabled and the location where it appeared before removal;</>,
+      <>a statement under penalty of perjury that you have a good-faith belief the material was removed or disabled because of mistake or misidentification;</>,
+      <>your name, address, and telephone number;</>,
+      <>a statement consenting to the jurisdiction of the applicable United States federal district court, as required by 17 U.S.C. § 512(g);</>,
+      <>a statement that you will accept service of process from the person who submitted the original notice or that person’s agent.</>,
+    ],
+    paragraphs: [
+      <>
+        Send a counter-notice to{" "}
+        <a
+          href={`mailto:${supportEmail}?subject=Loombus%20DMCA%20Counter-Notice`}
+          className="text-zinc-200 underline-offset-4 hover:underline"
+        >
+          {supportEmail}
+        </a>
+        . A general disagreement, assertion of ownership, or request to restore
+        content is not necessarily a legally sufficient counter-notice.
+      </>,
+    ],
+  },
+  {
+    id: "restoration",
+    title: "Restoration After a Counter-Notice",
+    paragraphs: [
+      <>
+        If Loombus receives a legally sufficient counter-notice, it may forward the
+        counter-notice to the original claimant and may restore the material after
+        the waiting period required by law unless the claimant notifies Loombus of
+        a filed court action seeking to restrain the alleged infringement.
+      </>,
+      <>
+        Loombus may decline restoration for an independent violation of the Terms,
+        Community Guidelines, privacy rights, safety rules, fraud controls, or
+        another legal obligation even when a copyright counter-notice is submitted.
+      </>,
+    ],
+  },
+  {
+    id: "repeat",
+    title: "Repeat Infringer and Evasion Policy",
+    paragraphs: [
+      <>
+        Loombus may restrict or terminate accounts that repeatedly infringe
+        copyright, repeatedly receive valid notices, repost removed material,
+        evade enforcement, use alternate accounts, submit abusive notices, or
+        create substantial intellectual-property risk.
+      </>,
+      <>
+        Loombus may consider the number, timing, severity, credibility, and outcome
+        of notices and counter-notices rather than applying a single automatic
+        threshold in every circumstance.
+      </>,
+    ],
+  },
+  {
+    id: "other-rights",
+    title: "Trademark, Publicity, Privacy, and Impersonation Concerns",
+    paragraphs: [
+      <>
+        For trademark misuse, false affiliation, impersonation, privacy, publicity
+        rights, non-consensual imagery, or another non-copyright concern, use{" "}
+        <Link href="/support?category=legal" className="text-zinc-200 underline-offset-4 hover:underline">
+          Loombus Support
+        </Link>{" "}
+        and identify the legal right, affected person or entity, exact material,
+        and requested action.
+      </>,
+      <>
+        Loombus may request proof of identity, authorization, registration,
+        ownership, consent, or other supporting information.
+      </>,
+    ],
+  },
+  {
+    id: "records",
+    title: "Records, Disclosure, and Privacy",
+    paragraphs: [
+      <>
+        Loombus may preserve notices, counter-notices, related content, account
+        information, timestamps, communications, decisions, and technical records
+        for legal compliance, repeat-infringer review, dispute resolution,
+        enforcement, and defense of rights.
+      </>,
+      <>
+        Information in a notice or counter-notice may be shared with the affected
+        user, claimant, service provider, legal advisor, court, regulator, or other
+        party when reasonably necessary or required by law. Do not include
+        information unrelated to the claim.
+      </>,
+    ],
+  },
+  {
+    id: "agent",
+    title: "Designated Agent Status and Required Business Action",
+    paragraphs: [
+      <>
+        The support email above is Loombus’s current public intake channel for
+        copyright concerns. This page does not represent that Loombus has completed
+        registration of a designated DMCA agent with the U.S. Copyright Office.
+      </>,
+      <>
+        To seek the applicable Section 512 safe-harbor protections, Loombus should
+        designate and register an agent with the U.S. Copyright Office, publish the
+        required agent name, mailing address, telephone number, and email address,
+        keep that information current, and renew the registration as required.
+      </>,
+      <>
+        This operational step should be completed with qualified legal review. Once
+        completed, this section should be updated with the exact registered
+        information.
+      </>,
+    ],
+  },
+  {
+    id: "contact",
+    title: "Copyright Contact",
+    paragraphs: [
+      <>
+        Copyright notices, counter-notices, and related questions may be sent to{" "}
+        <a
+          href={`mailto:${supportEmail}?subject=Loombus%20Copyright%20or%20DMCA`}
+          className="text-zinc-200 underline-offset-4 hover:underline"
+        >
+          {supportEmail}
+        </a>
+        . General support is available through{" "}
+        <Link href="/support?category=legal" className="text-zinc-200 underline-offset-4 hover:underline">
+          Loombus Support
+        </Link>
+        .
+      </>,
+    ],
+  },
+];
+
 export default function DmcaPage() {
   return (
-    <PageShell width="lg">
-      <Link href="/" className="mb-10 inline-block text-sm text-zinc-500 hover:text-white">
-        ← Back to Loombus
-      </Link>
-
-      <PageHeader
-        eyebrow="Legal"
-        title="Copyright and DMCA Process"
-        description={
-          <>
-            This page explains how Loombus receives and reviews copyright,
-            intellectual property, and rights-related concerns.
-          </>
-        }
-      />
-
-      <div className="space-y-8 leading-relaxed text-zinc-400">
-        <Panel>
-          <h2 className="mb-4 text-2xl font-semibold text-white">
-            1. Copyright and Rights Concerns
-          </h2>
-
-          <p>
-            Loombus respects intellectual property rights and expects members to
-            post only content they have the right to use, quote, share, or
-            discuss. If you believe content on Loombus infringes your copyright,
-            trademark, publicity, privacy, or other rights, you may submit a
-            rights concern for review.
-          </p>
-
-          <p className="mt-4">
-            Rights concerns may be sent to{" "}
-            <a
-              href={`mailto:${supportEmail}?subject=Loombus%20Copyright%20or%20DMCA%20Notice`}
-              className="text-zinc-200 underline-offset-4 hover:underline"
-            >
-              {supportEmail}
-            </a>
-            .
-          </p>
-        </Panel>
-
-        <Panel>
-          <h2 className="mb-4 text-2xl font-semibold text-white">
-            2. DMCA Notice Information
-          </h2>
-
-          <p>
-            To help Loombus review a copyright takedown request, include as much
-            of the following information as possible:
-          </p>
-
-          <ul className="mt-4 list-disc space-y-2 pl-6">
-            <li>your full legal name or authorized representative name;</li>
-            <li>your email address and contact information;</li>
-            <li>a description of the copyrighted work you claim was infringed;</li>
-            <li>the exact Loombus URL or enough information to locate the allegedly infringing content;</li>
-            <li>a statement that you have a good-faith belief the disputed use is not authorized by the copyright owner, its agent, or the law;</li>
-            <li>a statement that the information in the notice is accurate and, under penalty of perjury, that you are the copyright owner or authorized to act for the owner;</li>
-            <li>your physical or electronic signature.</li>
-          </ul>
-
-          <p className="mt-4">
-            Incomplete notices may delay review. Misrepresentations in copyright
-            claims may create legal liability.
-          </p>
-        </Panel>
-
-        <Panel>
-          <h2 className="mb-4 text-2xl font-semibold text-white">
-            3. Review and Action
-          </h2>
-
-          <p>
-            Loombus may remove, restrict, disable, preserve, or investigate
-            content that appears to infringe rights or create legal risk. Loombus
-            may also contact the user who posted the content, request additional
-            information, keep records for legal and moderation purposes, or take
-            account-level action for repeated or serious violations.
-          </p>
-
-          <p className="mt-4">
-            Loombus may reject requests that are incomplete, abusive,
-            fraudulent, unclear, unrelated to rights ownership, or not supported
-            by sufficient information.
-          </p>
-        </Panel>
-
-        <Panel>
-          <h2 className="mb-4 text-2xl font-semibold text-white">
-            4. Counter-Notice
-          </h2>
-
-          <p>
-            If your content was removed or restricted because of a copyright
-            complaint and you believe the action was mistaken, you may contact
-            Loombus support with a counter-notice or explanation. Include the
-            removed content location, your contact information, and why you
-            believe the content was removed in error.
-          </p>
-
-          <p className="mt-4">
-            Loombus may require additional information before restoring content.
-            Loombus may decline restoration where the content creates legal,
-            safety, privacy, platform-integrity, or repeat-infringement risk.
-          </p>
-        </Panel>
-
-        <Panel>
-          <h2 className="mb-4 text-2xl font-semibold text-white">
-            5. Repeat Infringer Policy
-          </h2>
-
-          <p>
-            Loombus may restrict, suspend, or terminate accounts that repeatedly
-            post infringing content, submit abusive rights claims, evade
-            enforcement, or create significant intellectual-property risk for
-            the platform or others.
-          </p>
-        </Panel>
-
-        <Panel>
-          <h2 className="mb-4 text-2xl font-semibold text-white">
-            6. DMCA Agent Note
-          </h2>
-
-          <p>
-            This page is a public process draft. If Loombus seeks formal DMCA
-            safe-harbor protection, Loombus should designate a DMCA agent with
-            the U.S. Copyright Office and post the designated agent contact
-            information here after attorney review.
-          </p>
-
-          <p className="mt-4 text-sm text-zinc-600">
-            Effective date: May 28, 2026
-          </p>
-        </Panel>
-      </div>
-    </PageShell>
+    <PublicPolicyPage
+      eyebrow="Legal"
+      title="Copyright and DMCA Process"
+      description={
+        <>
+          This page explains how Loombus receives copyright notices, handles
+          takedown review, accepts counter-notices, addresses repeat infringement,
+          and distinguishes copyright from other rights concerns.
+        </>
+      }
+      sections={sections}
+      effectiveDate="July 18, 2026"
+      reviewedDate="July 18, 2026"
+    />
   );
 }
