@@ -1,0 +1,417 @@
+/* Route-scoped visual system for the new Local, Businesses, Services, and
+   Services Management pages. These rules deliberately use the locked Loombus
+   palette only: Gold #CBAB5B and Cream #FEFBEC. */
+
+[data-loombus-local-page],
+[data-loombus-businesses-page],
+[data-loombus-services-page],
+[data-loombus-services-manage-page] {
+  --batch-gold-border: color-mix(
+    in srgb,
+    var(--loombus-gold) 54%,
+    var(--loombus-border)
+  );
+  --batch-gold-ring: color-mix(
+    in srgb,
+    var(--loombus-gold) 25%,
+    transparent
+  );
+}
+
+[data-loombus-local-page] > main,
+[data-loombus-businesses-page] > main,
+[data-loombus-services-page] > main,
+[data-loombus-services-manage-page] > main {
+  padding-top: 1.25rem !important;
+  padding-bottom: 6.5rem !important;
+}
+
+[data-loombus-local-page] > main > div,
+[data-loombus-services-page] > main > div {
+  max-width: 88rem !important;
+}
+
+[data-loombus-businesses-page] > main > div,
+[data-loombus-services-manage-page] > main > div {
+  max-width: 82rem !important;
+}
+
+/* Shared compact page heading treatment. */
+[data-loombus-local-page] main > div > header,
+[data-loombus-services-page] main > div > header,
+[data-loombus-services-manage-page] main > div > header,
+[data-loombus-businesses-page] main > div > section:first-child {
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 0 0.5rem !important;
+  box-shadow: none !important;
+}
+
+[data-loombus-local-page] main > div > header h1,
+[data-loombus-services-page] main > div > header h1,
+[data-loombus-services-manage-page] main > div > header h1,
+[data-loombus-businesses-page] main > div > section:first-child h1 {
+  letter-spacing: -0.055em !important;
+  line-height: 1.02 !important;
+}
+
+[data-loombus-local-page] main > div > header p:first-child,
+[data-loombus-services-page] main > div > header p:first-child,
+[data-loombus-services-manage-page] main > div > header p:first-child,
+[data-loombus-businesses-page] main > div > section:first-child p:first-child {
+  color: var(--loombus-gold) !important;
+}
+
+/* Canonical buttons and focus states inside this batch. */
+[data-loombus-local-page] :where(a, button)[class*="bg-[var(--loombus-primary-bg)]"],
+[data-loombus-businesses-page] :where(a, button)[class*="bg-[var(--loombus-primary-bg)]"],
+[data-loombus-services-page] :where(a, button)[class*="bg-[var(--loombus-primary-bg)]"],
+[data-loombus-services-manage-page] :where(a, button)[class*="bg-[var(--loombus-primary-bg)]"] {
+  background-color: var(--loombus-gold) !important;
+  color: var(--loombus-gold-contrast) !important;
+}
+
+[data-loombus-local-page] :where(input, select, textarea):focus,
+[data-loombus-businesses-page] :where(input, select, textarea):focus,
+[data-loombus-services-page] :where(input, select, textarea):focus,
+[data-loombus-services-manage-page] :where(input, select, textarea):focus {
+  border-color: var(--loombus-gold) !important;
+  box-shadow: 0 0 0 4px var(--batch-gold-ring) !important;
+  outline: none !important;
+}
+
+[data-loombus-local-page] :where(a, button):hover,
+[data-loombus-businesses-page] :where(a, button):hover,
+[data-loombus-services-page] :where(a, button):hover,
+[data-loombus-services-manage-page] :where(a, button):hover {
+  border-color: var(--batch-gold-border);
+}
+
+/* Loombus Local: wide mixed-source discovery workspace. */
+[data-loombus-local-page] main > div > header > div:first-child,
+[data-loombus-services-page] main > div > header > div:first-child {
+  align-items: end !important;
+}
+
+[data-loombus-local-page] main > div > header > div:last-child article:first-child,
+[data-loombus-services-page] main > div > header section article:first-child {
+  border-color: var(--batch-gold-border) !important;
+  background: var(--loombus-cream) !important;
+  color: var(--loombus-cream-contrast) !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-local-page] main > div > header > div:last-child article:first-child,
+html[data-loombus-theme="dark"] [data-loombus-services-page] main > div > header section article:first-child,
+html[data-loombus-theme="system"] [data-loombus-local-page] main > div > header > div:last-child article:first-child,
+html[data-loombus-theme="system"] [data-loombus-services-page] main > div > header section article:first-child {
+  background: var(--loombus-gold-soft) !important;
+  color: var(--loombus-text) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-local-page] main > div > header > div:last-child article:first-child,
+  html[data-loombus-theme="system"] [data-loombus-services-page] main > div > header section article:first-child {
+    background: var(--loombus-cream) !important;
+    color: var(--loombus-cream-contrast) !important;
+  }
+}
+
+[data-loombus-local-page] main > div > header + section,
+[data-loombus-services-page] main > div > header + section {
+  border-radius: 1.75rem !important;
+  border-color: var(--loombus-border) !important;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.08);
+}
+
+[data-loombus-local-page] main > div > header + section::before,
+[data-loombus-services-page] main > div > header + section::before {
+  display: block;
+  margin-bottom: 0.9rem;
+  color: var(--loombus-gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+[data-loombus-local-page] main > div > header + section::before {
+  content: "Search your area";
+}
+
+[data-loombus-services-page] main > div > header + section::before {
+  content: "Filter Services";
+}
+
+[data-loombus-local-page] nav[aria-label="Local result types"] button {
+  border-color: transparent !important;
+  background: var(--loombus-surface-muted) !important;
+}
+
+[data-loombus-local-page] nav[aria-label="Local result types"] button[class*="bg-[var(--loombus-text)]"] {
+  border-color: var(--batch-gold-border) !important;
+  background: var(--loombus-cream) !important;
+  color: var(--loombus-cream-contrast) !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-local-page] nav[aria-label="Local result types"] button[class*="bg-[var(--loombus-text)]"],
+html[data-loombus-theme="system"] [data-loombus-local-page] nav[aria-label="Local result types"] button[class*="bg-[var(--loombus-text)]"] {
+  background: var(--loombus-gold-soft) !important;
+  color: var(--loombus-gold) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-local-page] nav[aria-label="Local result types"] button[class*="bg-[var(--loombus-text)]"] {
+    background: var(--loombus-cream) !important;
+    color: var(--loombus-cream-contrast) !important;
+  }
+}
+
+[data-loombus-local-page] section[aria-label="Local Discovery results"] > a,
+[data-loombus-services-page] section[aria-label="Published Services"] > a {
+  border-radius: 1.75rem !important;
+  box-shadow: 0 12px 34px rgb(0 0 0 / 0.06);
+}
+
+[data-loombus-local-page] section[aria-label="Local Discovery results"] > a:hover,
+[data-loombus-services-page] section[aria-label="Published Services"] > a:hover {
+  border-color: var(--batch-gold-border) !important;
+  box-shadow: 0 18px 42px rgb(0 0 0 / 0.1);
+}
+
+[data-loombus-local-page] section[aria-label="Local Discovery results"] > a > div:first-child > span:first-child,
+[data-loombus-services-page] section[aria-label="Published Services"] > a > div:first-child > span:first-child {
+  border-color: var(--batch-gold-border) !important;
+  background: var(--loombus-cream) !important;
+  color: var(--loombus-gold-deep) !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-local-page] section[aria-label="Local Discovery results"] > a > div:first-child > span:first-child,
+html[data-loombus-theme="dark"] [data-loombus-services-page] section[aria-label="Published Services"] > a > div:first-child > span:first-child,
+html[data-loombus-theme="system"] [data-loombus-local-page] section[aria-label="Local Discovery results"] > a > div:first-child > span:first-child,
+html[data-loombus-theme="system"] [data-loombus-services-page] section[aria-label="Published Services"] > a > div:first-child > span:first-child {
+  background: var(--loombus-gold-soft) !important;
+  color: var(--loombus-gold) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-local-page] section[aria-label="Local Discovery results"] > a > div:first-child > span:first-child,
+  html[data-loombus-theme="system"] [data-loombus-services-page] section[aria-label="Published Services"] > a > div:first-child > span:first-child {
+    background: var(--loombus-cream) !important;
+    color: var(--loombus-gold-deep) !important;
+  }
+}
+
+[data-loombus-local-page] main > div > section:last-child,
+[data-loombus-services-page] main > div > section:last-child {
+  border-left: 4px solid var(--loombus-gold) !important;
+}
+
+/* Businesses: focused public directory, not a multi-rail app shell. */
+[data-loombus-businesses-page] main {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+[data-loombus-businesses-page] main > div > section:first-child > div:first-child > div:last-child {
+  border-color: var(--batch-gold-border) !important;
+  background: var(--loombus-cream) !important;
+  color: var(--loombus-cream-contrast) !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-businesses-page] main > div > section:first-child > div:first-child > div:last-child,
+html[data-loombus-theme="system"] [data-loombus-businesses-page] main > div > section:first-child > div:first-child > div:last-child {
+  background: var(--loombus-gold-soft) !important;
+  color: var(--loombus-text) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-businesses-page] main > div > section:first-child > div:first-child > div:last-child {
+    background: var(--loombus-cream) !important;
+    color: var(--loombus-cream-contrast) !important;
+  }
+}
+
+[data-loombus-businesses-page] main > div > section:first-child form {
+  border-radius: 1.75rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 0.08);
+}
+
+[data-loombus-businesses-page] main > div > section:first-child form button[type="submit"] {
+  background: var(--loombus-gold) !important;
+  color: var(--loombus-gold-contrast) !important;
+}
+
+[data-loombus-businesses-page] a[href="/businesses/manage"] {
+  border-color: var(--batch-gold-border) !important;
+  background: var(--loombus-cream) !important;
+  color: var(--loombus-cream-contrast) !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-businesses-page] a[href="/businesses/manage"],
+html[data-loombus-theme="system"] [data-loombus-businesses-page] a[href="/businesses/manage"] {
+  background: var(--loombus-gold-soft) !important;
+  color: var(--loombus-gold) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-businesses-page] a[href="/businesses/manage"] {
+    background: var(--loombus-cream) !important;
+    color: var(--loombus-cream-contrast) !important;
+  }
+}
+
+[data-loombus-businesses-page] main > div > section:not(:first-child) a[href^="/businesses/"] {
+  border-radius: 1.75rem !important;
+  box-shadow: 0 12px 34px rgb(0 0 0 / 0.06);
+}
+
+[data-loombus-businesses-page] main > div > section:not(:first-child) a[href^="/businesses/"]:hover {
+  border-color: var(--batch-gold-border) !important;
+  box-shadow: 0 18px 42px rgb(0 0 0 / 0.1);
+}
+
+[data-loombus-businesses-page] main > div > section:not(:first-child) a[href^="/businesses/"] > div:first-child > span:first-child {
+  border-color: var(--batch-gold-border) !important;
+  background: var(--loombus-cream) !important;
+  color: var(--loombus-gold-deep) !important;
+}
+
+[data-loombus-businesses-page] main > div > section:not(:first-child) a[href^="/businesses/"] span:has(svg) {
+  color: var(--loombus-gold-deep);
+}
+
+/* Services directory: same family as Businesses, with richer filter controls. */
+[data-loombus-services-page] a[href="/services/saved"] {
+  border-color: var(--batch-gold-border) !important;
+  background: var(--loombus-cream) !important;
+  color: var(--loombus-cream-contrast) !important;
+}
+
+[data-loombus-services-page] a[href="/services/manage"] {
+  background: var(--loombus-gold) !important;
+  color: var(--loombus-gold-contrast) !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-services-page] a[href="/services/saved"],
+html[data-loombus-theme="system"] [data-loombus-services-page] a[href="/services/saved"] {
+  background: var(--loombus-gold-soft) !important;
+  color: var(--loombus-gold) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-services-page] a[href="/services/saved"] {
+    background: var(--loombus-cream) !important;
+    color: var(--loombus-cream-contrast) !important;
+  }
+}
+
+/* Services Management: operational workspace with compact status hierarchy. */
+[data-loombus-services-manage-page] main > div > header > div:first-child {
+  align-items: end !important;
+}
+
+[data-loombus-services-manage-page] main > div > header > div:last-child {
+  gap: 0.65rem !important;
+}
+
+[data-loombus-services-manage-page] main > div > header > div:last-child article {
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.25rem !important;
+  background: var(--loombus-surface) !important;
+}
+
+[data-loombus-services-manage-page] main > div > header > div:last-child article:first-child,
+[data-loombus-services-manage-page] main > div > header > div:last-child article:nth-child(4) {
+  border-color: var(--batch-gold-border) !important;
+  background: var(--loombus-cream) !important;
+  color: var(--loombus-cream-contrast) !important;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-services-manage-page] main > div > header > div:last-child article:first-child,
+html[data-loombus-theme="dark"] [data-loombus-services-manage-page] main > div > header > div:last-child article:nth-child(4),
+html[data-loombus-theme="system"] [data-loombus-services-manage-page] main > div > header > div:last-child article:first-child,
+html[data-loombus-theme="system"] [data-loombus-services-manage-page] main > div > header > div:last-child article:nth-child(4) {
+  background: var(--loombus-gold-soft) !important;
+  color: var(--loombus-text) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-services-manage-page] main > div > header > div:last-child article:first-child,
+  html[data-loombus-theme="system"] [data-loombus-services-manage-page] main > div > header > div:last-child article:nth-child(4) {
+    background: var(--loombus-cream) !important;
+    color: var(--loombus-cream-contrast) !important;
+  }
+}
+
+[data-loombus-services-manage-page] main > div > form,
+[data-loombus-services-manage-page] main > div > section {
+  border-radius: 1.75rem !important;
+  box-shadow: 0 14px 38px rgb(0 0 0 / 0.07);
+}
+
+[data-loombus-services-manage-page] main > div > form {
+  border-top: 4px solid var(--loombus-gold) !important;
+}
+
+[data-loombus-services-manage-page] main > div > form > div:first-child p,
+[data-loombus-services-manage-page] main > div > section > p:first-child {
+  color: var(--loombus-gold) !important;
+}
+
+[data-loombus-services-manage-page] button[class*="bg-[var(--loombus-primary-bg)]"] {
+  background: var(--loombus-gold) !important;
+  color: var(--loombus-gold-contrast) !important;
+}
+
+[data-loombus-services-manage-page] main > div > section article {
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+[data-loombus-services-manage-page] main > div > section article:hover {
+  border-color: var(--batch-gold-border) !important;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.07);
+}
+
+[data-loombus-services-manage-page] input[type="checkbox"],
+[data-loombus-services-manage-page] input[type="radio"] {
+  accent-color: var(--loombus-gold);
+}
+
+@media (min-width: 1280px) {
+  [data-loombus-businesses-page] main > div > section:not(:first-child) > div[class*="md:grid-cols-2"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  [data-loombus-local-page] > main,
+  [data-loombus-businesses-page] > main,
+  [data-loombus-services-page] > main,
+  [data-loombus-services-manage-page] > main {
+    padding-top: 1rem !important;
+  }
+
+  [data-loombus-local-page] main > div > header h1,
+  [data-loombus-services-page] main > div > header h1,
+  [data-loombus-services-manage-page] main > div > header h1,
+  [data-loombus-businesses-page] main > div > section:first-child h1 {
+    font-size: 2.35rem !important;
+  }
+
+  [data-loombus-local-page] main > div > header a,
+  [data-loombus-services-page] main > div > header a,
+  [data-loombus-services-manage-page] main > div > header a,
+  [data-loombus-services-manage-page] main > div > header button {
+    flex: 1 1 auto;
+  }
+
+  [data-loombus-local-page] main > div > header + section,
+  [data-loombus-services-page] main > div > header + section,
+  [data-loombus-services-manage-page] main > div > form,
+  [data-loombus-services-manage-page] main > div > section {
+    border-radius: 1.4rem !important;
+  }
+}
