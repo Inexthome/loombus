@@ -12,7 +12,7 @@ import MarketplaceManagerPage from "@/components/marketplace-manager-page";
 
 export default function MarketplaceManageWorkspace() {
   return (
-    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[88rem]">
         <header className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
@@ -124,6 +124,6 @@ export default function MarketplaceManageWorkspace() {
           </aside>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
