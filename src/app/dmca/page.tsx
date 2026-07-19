@@ -261,7 +261,22 @@ const sections: PublicPolicySection[] = [
     title: "Copyright Contact",
     paragraphs: [
       <>
-        Copyright notices, counter-notices, and related questions may be sent to{" "}
+        Copyright notices, counter-notices, and related questions may be directed
+        to <strong>Loombus LLC</strong>, a Florida limited liability company.
+      </>,
+      <>
+        Formal correspondence may be mailed to:
+        <br />
+        Loombus LLC
+        <br />
+        2640 Blanding Blvd, Ste 201-167
+        <br />
+        Middleburg, FL 32068
+        <br />
+        United States
+      </>,
+      <>
+        Email notices to{" "}
         <a
           href={`mailto:${supportEmail}?subject=Loombus%20Copyright%20or%20DMCA`}
           className="text-zinc-200 underline-offset-4 hover:underline"
@@ -272,7 +287,9 @@ const sections: PublicPolicySection[] = [
         <Link href="/support?category=legal" className="text-zinc-200 underline-offset-4 hover:underline">
           Loombus Support
         </Link>
-        .
+        . This contact information does not, by itself, represent that Loombus LLC
+        has completed registration of a designated DMCA agent with the U.S.
+        Copyright Office.
       </>,
     ],
   },
@@ -292,7 +309,7 @@ export default function DmcaPage() {
       }
       sections={sections}
       effectiveDate="July 18, 2026"
-      reviewedDate="July 18, 2026"
+      reviewedDate="July 19, 2026"
     />
   );
 }
