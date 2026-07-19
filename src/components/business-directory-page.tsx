@@ -34,13 +34,16 @@ export default function BusinessDirectoryPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
-  async function load() {
+  async function load(filters?: { query?: string; category?: string; city?: string }) {
     setLoading(true);
     setMessage("");
+    const nextQuery = filters?.query ?? query;
+    const nextCategory = filters?.category ?? category;
+    const nextCity = filters?.city ?? city;
     const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
-    if (category) params.set("category", category);
-    if (city.trim()) params.set("city", city.trim());
+    if (nextQuery.trim()) params.set("q", nextQuery.trim());
+    if (nextCategory) params.set("category", nextCategory);
+    if (nextCity.trim()) params.set("city", nextCity.trim());
     params.set("limit", "60");
 
     try {
@@ -90,7 +93,7 @@ export default function BusinessDirectoryPage() {
     setQuery("");
     setCategory("");
     setCity("");
-    window.setTimeout(() => void load(), 0);
+    void load({ query: "", category: "", city: "" });
   }
 
   return (
