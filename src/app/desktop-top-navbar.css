@@ -6,17 +6,6 @@
     padding-top: 72px;
   }
 
-  .loombus-desktop-top-navbar ~ div .loombus-desktop-rail {
-    display: none !important;
-  }
-
-  .loombus-desktop-top-navbar ~ div .md\:pl-24 {
-    padding-left: 0 !important;
-  }
-
-  .loombus-desktop-top-navbar ~ div .md\:left-24 {
-    left: 1.5rem !important;
-  }
 
   .loombus-desktop-top-navbar [role="dialog"] {
     animation: loombus-desktop-navigation-enter 160ms ease-out;
@@ -29,11 +18,6 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .loombus-desktop-top-navbar ~ div .md\:left-24 {
-    left: 2rem !important;
-  }
-}
 
 html[data-loombus-theme="dark"] .loombus-desktop-top-navbar {
   box-shadow: 0 14px 44px rgb(0 0 0 / 0.28);

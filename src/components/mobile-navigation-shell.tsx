@@ -187,18 +187,9 @@ export function MobileNavigationShell() {
     setActiveMenu(null);
   }
 
-  function openExistingGlobalSearch() {
+  function openGlobalSearch() {
     closeMenu();
-    const existingSearchButton = document.querySelector<HTMLButtonElement>(
-      '.loombus-mobile-topbar button[aria-label="Search Loombus"]'
-    );
-
-    if (existingSearchButton) {
-      existingSearchButton.click();
-      return;
-    }
-
-    window.location.href = "/search";
+    window.dispatchEvent(new Event("loombus:open-global-search"));
   }
 
   async function handleLogout() {
@@ -401,7 +392,7 @@ export function MobileNavigationShell() {
           </button>
 
           <div className="loombus-mobile-v2-top-actions">
-            <button type="button" onClick={openExistingGlobalSearch} aria-label="Search Loombus">
+            <button type="button" onClick={openGlobalSearch} aria-label="Search Loombus">
               <Search aria-hidden="true" size={21} strokeWidth={2.05} />
             </button>
             <button

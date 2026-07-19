@@ -5,12 +5,7 @@
 }
 
 @media (max-width: 767.98px) {
-  /* Preserve the existing floating mobile shell while expanding the Loombus menu. */
-  .loombus-mobile-topbar,
-  .loombus-mobile-bottom-nav {
-    display: none !important;
-  }
-
+  /* Current Loombus mobile shell and separated Explore/account drawers. */
   .loombus-mobile-v2-topbar {
     position: sticky;
     top: 0;
