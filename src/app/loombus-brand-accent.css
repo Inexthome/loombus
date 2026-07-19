@@ -1,6 +1,9 @@
 /* Canonical Loombus brand palette.
-   Product emphasis uses Loombus Gold and Loombus Cream.
-   Semantic success, warning, and danger colors remain independent. */
+   Locked product colors:
+   Loombus Gold #CBAB5B
+   Loombus Cream #FEFBEC
+   Product emphasis uses only these brand colors. Semantic success, warning,
+   and danger colors remain independent. */
 :root,
 html[data-loombus-theme="dark"],
 html[data-loombus-theme="system"] {

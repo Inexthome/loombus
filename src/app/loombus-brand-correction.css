@@ -60,21 +60,95 @@ main:has(input[placeholder^="e.g., The future of decentralized identity"]) [clas
   background-color: var(--loombus-cream) !important;
 }
 
-/* Canonical /discussions index. The 88rem three-rail container is unique to
-   the current Discussions discovery layout. */
-main:has(> div[class*="max-w-[88rem]"]) [class~="text-[#b45309]"] {
+/* Current upgraded route shells.
+   88rem: Discussions, Marketplace, Calendar
+   78rem: Appointments
+   82rem: Intelligent Matching */
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) [class~="text-[#b45309]"] {
   color: var(--loombus-gold) !important;
 }
 
-main:has(> div[class*="max-w-[88rem]"]) [class~="bg-orange-50"] {
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) [class~="bg-[#b45309]"] {
+  background-color: var(--loombus-gold) !important;
+  color: var(--loombus-gold-contrast) !important;
+}
+
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) [class~="hover:bg-[#92400e]"]:hover {
+  background-color: var(--loombus-gold-deep) !important;
+  color: var(--loombus-cream) !important;
+}
+
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) :where(
+  [class~="hover:border-[#b45309]"]:hover,
+  [class~="focus:border-[#b45309]"]:focus
+) {
+  border-color: var(--loombus-gold) !important;
+}
+
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) [class~="focus:ring-orange-500/10"]:focus {
+  --tw-ring-color: color-mix(in srgb, var(--loombus-gold) 24%, transparent) !important;
+}
+
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) [class~="accent-[#b45309]"] {
+  accent-color: var(--loombus-gold) !important;
+}
+
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) [class~="bg-orange-50"] {
   background-color: var(--loombus-cream) !important;
 }
 
-main:has(> div[class*="max-w-[88rem]"]) [class~="dark:bg-orange-400/10"] {
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) [class~="hover:bg-orange-100"]:hover {
+  background-color: var(--loombus-cream-surface) !important;
+}
+
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) :where(
+  [class~="dark:bg-orange-400/10"],
+  [class~="dark:hover:bg-orange-400/15"]:hover
+) {
   background-color: var(--loombus-gold-soft) !important;
 }
 
-main:has(> div[class*="max-w-[88rem]"]) :where(
+:is(
+  main:has(> div[class*="max-w-[88rem]"]),
+  main:has(> div[class*="max-w-[78rem]"]),
+  main:has(> div[class*="max-w-[82rem]"])
+) :where(
   [class~="border-orange-200"],
   [class~="dark:border-orange-400/30"]
 ) {

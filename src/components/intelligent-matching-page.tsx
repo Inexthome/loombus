@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   Bookmark,
   CheckCircle2,
+  ChevronRight,
   CircleOff,
   Compass,
   Gauge,
@@ -15,6 +16,7 @@ import {
   RotateCcw,
   Save,
   Settings2,
+  ShieldCheck,
   Sparkles,
   ThumbsDown,
   ThumbsUp,
@@ -52,11 +54,14 @@ const EMPTY_RESPONSE: IntelligentMatchingResponse = {
   activeSections: ["requests", "services"],
 };
 
-function buttonClass(secondary = false) {
-  return secondary
-    ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-sm font-semibold transition hover:bg-[var(--loombus-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50"
-    : "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--loombus-text)] px-4 text-sm font-semibold text-[var(--loombus-page-bg)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
-}
+const secondaryButtonClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 text-sm font-semibold text-[color:var(--loombus-text)] transition hover:border-[color:var(--loombus-gold)] hover:bg-[color:var(--loombus-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50";
+
+const primaryButtonClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-4 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
+
+const controlClass =
+  "min-h-11 w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-3 text-sm text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]";
 
 function confidenceClass(label: IntelligentMatch["confidenceLabel"]) {
   if (label === "Strong") {
@@ -89,87 +94,93 @@ function MatchCard({
   ) => Promise<void>;
 }) {
   const cardBusy = busy === match.id;
+
   return (
-    <article className="rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-text-subtle)]">
-            {directionLabel(match.direction)}
-          </p>
-          <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
-            Based on <span className="font-semibold">{match.source.title}</span>
+    <article className="overflow-hidden rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10">
+      <div className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[color:var(--loombus-gold)]">
+              {directionLabel(match.direction)}
+            </p>
+            <p className="mt-2 text-sm text-[color:var(--loombus-text-muted)]">
+              Based on <span className="font-semibold text-[color:var(--loombus-text)]">{match.source.title}</span>
+            </p>
+          </div>
+          <span
+            className={`rounded-full border px-3 py-1 text-xs font-bold ${confidenceClass(match.confidenceLabel)}`}
+          >
+            {match.confidenceLabel} · {match.confidence}%
+          </span>
+        </div>
+
+        <div className="mt-5">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[color:var(--loombus-text-subtle)]">
+            <span>{match.target.category}</span>
+            <span aria-hidden="true">·</span>
+            <span>{match.target.ownerLabel}</span>
+            {match.actedOn ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-[color:var(--loombus-border)] px-2.5 py-1 text-[color:var(--loombus-text-muted)]">
+                <CheckCircle2 size={13} /> Contact started
+              </span>
+            ) : null}
+          </div>
+          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-[color:var(--loombus-text)]">
+            {match.target.title}
+          </h2>
+          <p className="mt-3 line-clamp-4 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+            {match.target.summary}
           </p>
         </div>
-        <span
-          className={`rounded-full border px-3 py-1 text-xs font-bold ${confidenceClass(match.confidenceLabel)}`}
-        >
-          {match.confidenceLabel} · {match.confidence}%
-        </span>
-      </div>
 
-      <div className="mt-5">
-        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-[var(--loombus-text-subtle)]">
-          <span>{match.target.category}</span>
-          <span aria-hidden="true">·</span>
-          <span>{match.target.ownerLabel}</span>
-          {match.actedOn ? (
-            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--loombus-border)] px-2.5 py-1">
-              <CheckCircle2 size={13} /> Contact started
+        <div className="mt-5 grid gap-3 text-sm text-[color:var(--loombus-text-muted)] sm:grid-cols-2">
+          <span className="flex items-start gap-2 rounded-2xl bg-[color:var(--loombus-page-bg)] p-3">
+            {match.factors.remoteCompatible ? (
+              <Wifi className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16} />
+            ) : (
+              <MapPin className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16} />
+            )}
+            <span>
+              {match.target.locationLabel}
+              {match.factors.distanceMiles !== null
+                ? ` · ${match.factors.distanceMiles.toFixed(1)} miles`
+                : ""}
             </span>
-          ) : null}
+          </span>
+          <span className="flex items-start gap-2 rounded-2xl bg-[color:var(--loombus-page-bg)] p-3">
+            <Gauge className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16} />
+            <span>{match.target.priceLabel}</span>
+          </span>
         </div>
-        <h2 className="mt-2 text-2xl font-semibold tracking-tight">
-          {match.target.title}
-        </h2>
-        <p className="mt-3 line-clamp-4 text-sm leading-6 text-[var(--loombus-text-muted)]">
-          {match.target.summary}
-        </p>
+
+        <div className="mt-5 rounded-2xl border border-[color:var(--loombus-border-muted)] bg-[color:var(--loombus-page-bg)] p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-subtle)]">
+            Why it matches
+          </p>
+          <ul className="mt-3 grid gap-2 text-sm text-[color:var(--loombus-text-muted)] sm:grid-cols-2">
+            {match.explanation.map((item) => (
+              <li key={item} className="flex gap-2">
+                <Sparkles className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={14} />
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
-      <div className="mt-5 grid gap-3 text-sm text-[var(--loombus-text-muted)] sm:grid-cols-2">
-        <span className="flex items-start gap-2">
-          {match.factors.remoteCompatible ? (
-            <Wifi className="mt-0.5 shrink-0" size={16} />
-          ) : (
-            <MapPin className="mt-0.5 shrink-0" size={16} />
-          )}
-          {match.target.locationLabel}
-          {match.factors.distanceMiles !== null
-            ? ` · ${match.factors.distanceMiles.toFixed(1)} miles`
-            : ""}
-        </span>
-        <span className="flex items-start gap-2">
-          <Gauge className="mt-0.5 shrink-0" size={16} />
-          {match.target.priceLabel}
-        </span>
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4">
-        <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
-          Why it matches
-        </p>
-        <ul className="mt-3 grid gap-2 text-sm text-[var(--loombus-text-muted)] sm:grid-cols-2">
-          {match.explanation.map((item) => (
-            <li key={item} className="flex gap-2">
-              <Sparkles className="mt-0.5 shrink-0" size={14} />
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mt-5 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 border-t border-[color:var(--loombus-border-muted)] bg-[color:var(--loombus-page-bg)] px-5 py-4 sm:px-6">
         <Link
           href={match.target.href}
-          className={buttonClass()}
+          className={primaryButtonClass}
           onClick={() => void onState(match, "view")}
         >
           Open match <ArrowUpRight size={16} />
         </Link>
+
         {match.dismissed ? (
           <button
             type="button"
-            className={buttonClass(true)}
+            className={secondaryButtonClass}
             disabled={cardBusy}
             onClick={() => void onState(match, "restore")}
           >
@@ -179,7 +190,7 @@ function MatchCard({
           <>
             <button
               type="button"
-              className={buttonClass(true)}
+              className={secondaryButtonClass}
               disabled={cardBusy}
               onClick={() => void onState(match, match.saved ? "unsave" : "save")}
             >
@@ -188,7 +199,7 @@ function MatchCard({
             </button>
             <button
               type="button"
-              className={buttonClass(true)}
+              className={secondaryButtonClass}
               disabled={cardBusy}
               onClick={() => void onState(match, "dismiss")}
             >
@@ -196,10 +207,11 @@ function MatchCard({
             </button>
           </>
         )}
-        <span className="ml-auto flex items-center gap-1 text-xs text-[var(--loombus-text-subtle)]">
+
+        <span className="ml-auto flex items-center gap-1 text-xs text-[color:var(--loombus-text-subtle)]">
           <button
             type="button"
-            className="rounded-full p-2 transition hover:bg-[var(--loombus-surface-muted)]"
+            className="rounded-full p-2 transition hover:bg-[color:var(--loombus-surface-muted)]"
             aria-label="Mark this match helpful"
             disabled={cardBusy}
             onClick={() => void onFeedback(match, "helpful")}
@@ -208,7 +220,7 @@ function MatchCard({
           </button>
           <button
             type="button"
-            className="rounded-full p-2 transition hover:bg-[var(--loombus-surface-muted)]"
+            className="rounded-full p-2 transition hover:bg-[color:var(--loombus-surface-muted)]"
             aria-label="Mark this match not relevant"
             disabled={cardBusy}
             onClick={() => void onFeedback(match, "not_relevant")}
@@ -276,6 +288,7 @@ export default function IntelligentMatchingPage() {
         : viewMode === "saved"
           ? data.matches.filter((match) => match.saved)
           : data.matches;
+
     return direction === "all"
       ? base
       : base.filter((match) => match.direction === direction);
@@ -426,109 +439,141 @@ export default function IntelligentMatchingPage() {
 
   const unauthorized = errorCode === "account_access_denied" || notice === "Unauthorized.";
 
+  const viewTabs: Array<{ value: ViewMode; label: string; count: number }> = [
+    { value: "active", label: "Active", count: data.counts.active },
+    { value: "saved", label: "Saved", count: data.counts.saved },
+    { value: "dismissed", label: "Dismissed", count: data.counts.dismissed },
+  ];
+
   return (
-    <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 py-8 text-[var(--loombus-text)] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <header className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 shadow-sm sm:p-8">
-          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
-            <div className="max-w-4xl">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
-                Private compatibility layer
-              </p>
-              <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
-                Intelligent Matching
-              </h1>
-              <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--loombus-text-muted)]">
-                Find Services that fit your active Requests and Requests that fit
-                your published Services. Matching is deterministic, private, and
-                never ranked by payment, followers, or popularity. Loombus does not
-                contact anyone automatically.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className={buttonClass(true)}
-                disabled={loading || Boolean(busy) || data.matchingPaused}
-                onClick={() => void refresh()}
-              >
-                {busy === "refresh" ? (
-                  <Loader2 className="animate-spin" size={17} />
-                ) : (
-                  <RefreshCw size={17} />
-                )}
-                Refresh matches
-              </button>
-              <Link href="/requests/manage" className={buttonClass(true)}>
-                My Requests
-              </Link>
-              <Link href="/services/manage" className={buttonClass()}>
-                My Services
-              </Link>
-            </div>
+    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[82rem]">
+        <header className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl">
+            <h1 className="text-4xl font-semibold tracking-[-0.055em] text-[color:var(--loombus-text)] sm:text-5xl">
+              Intelligent Matching
+            </h1>
+            <p className="mt-3 text-base leading-7 text-[color:var(--loombus-text-muted)]">
+              Review private compatibility suggestions between your active Requests and published Services. Matches are based on relevance, not payment, followers, or popularity.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={secondaryButtonClass}
+              disabled={loading || Boolean(busy) || data.matchingPaused}
+              onClick={() => void refresh()}
+            >
+              {busy === "refresh" ? (
+                <Loader2 className="animate-spin" size={17} />
+              ) : (
+                <RefreshCw size={17} />
+              )}
+              Refresh matches
+            </button>
+            <Link href="/requests/manage" className={secondaryButtonClass}>
+              My Requests
+            </Link>
+            <Link href="/services/manage" className={primaryButtonClass}>
+              My Services
+            </Link>
           </div>
         </header>
 
+        <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("active");
+              setDirection("all");
+            }}
+            className="rounded-[1.4rem] border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] p-4 text-left text-[color:var(--loombus-cream-contrast)] shadow-sm transition hover:opacity-90 dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-text)]"
+          >
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
+              Active matches
+            </span>
+            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{data.counts.active}</strong>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("saved");
+              setDirection("all");
+            }}
+            className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-left shadow-sm transition hover:border-[color:var(--loombus-gold)]"
+          >
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
+              Saved
+            </span>
+            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{data.counts.saved}</strong>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("active");
+              setDirection("request_to_service");
+            }}
+            className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-left shadow-sm transition hover:border-[color:var(--loombus-gold)]"
+          >
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
+              For Requests
+            </span>
+            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{data.counts.requestToService}</strong>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("active");
+              setDirection("service_to_request");
+            }}
+            className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-left shadow-sm transition hover:border-[color:var(--loombus-gold)]"
+          >
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
+              For Services
+            </span>
+            <strong className="mt-2 block text-3xl tracking-[-0.04em]">{data.counts.serviceToRequest}</strong>
+          </button>
+        </section>
+
         {notice ? (
-          <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm text-[var(--loombus-text-muted)]">
+          <div className="mb-6 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 py-3 text-sm text-[color:var(--loombus-text-muted)] shadow-sm">
             {notice}
             {unauthorized ? (
-              <Link href="/login" className="ml-2 font-semibold underline">
+              <Link href="/login" className="ml-2 font-semibold text-[color:var(--loombus-gold)] underline">
                 Sign in
               </Link>
             ) : null}
           </div>
         ) : null}
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {[
-            ["Active", data.counts.active],
-            ["Saved", data.counts.saved],
-            ["Dismissed", data.counts.dismissed],
-            ["For Requests", data.counts.requestToService],
-            ["For Services", data.counts.serviceToRequest],
-          ].map(([label, value]) => (
-            <div
-              key={String(label)}
-              className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4"
-            >
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
-                {label}
-              </p>
-              <p className="mt-2 text-3xl font-semibold">{value}</p>
-            </div>
-          ))}
-        </section>
-
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <section className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-3">
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    ["active", `Active ${data.counts.active}`],
-                    ["saved", `Saved ${data.counts.saved}`],
-                    ["dismissed", `Dismissed ${data.counts.dismissed}`],
-                  ] as Array<[ViewMode, string]>
-                ).map(([value, label]) => (
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]">
+          <section className="min-w-0 space-y-4">
+            <div className="flex flex-col gap-3 rounded-[1.5rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex gap-2 overflow-x-auto">
+                {viewTabs.map((tab) => (
                   <button
-                    key={value}
+                    key={tab.value}
                     type="button"
-                    onClick={() => setViewMode(value)}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      viewMode === value
-                        ? "bg-[var(--loombus-text)] text-[var(--loombus-page-bg)]"
-                        : "hover:bg-[var(--loombus-surface-muted)]"
+                    onClick={() => setViewMode(tab.value)}
+                    className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
+                      viewMode === tab.value
+                        ? "bg-[color:var(--loombus-cream)] text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]"
+                        : "text-[color:var(--loombus-text)] hover:bg-[color:var(--loombus-surface-muted)]"
                     }`}
                   >
-                    {label}
+                    {tab.label}
+                    <span className="rounded-full bg-[color:var(--loombus-page-bg)] px-2 py-0.5 text-xs">
+                      {tab.count}
+                    </span>
                   </button>
                 ))}
               </div>
+
               <select
                 value={direction}
                 onChange={(event) => setDirection(event.target.value as DirectionFilter)}
-                className="min-h-10 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-sm font-semibold"
+                className="min-h-11 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 text-sm font-semibold text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]"
                 aria-label="Filter match direction"
               >
                 <option value="all">Both directions</option>
@@ -538,18 +583,17 @@ export default function IntelligentMatchingPage() {
             </div>
 
             {data.matchingPaused ? (
-              <div className="rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-8 text-center">
-                <PauseCircle className="mx-auto" size={34} />
-                <h2 className="mt-4 text-2xl font-semibold">Matching is paused</h2>
-                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[var(--loombus-text-muted)]">
-                  Existing candidates remain private. Loombus will not generate new
-                  candidates until matching is resumed in preferences.
+              <div className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-8 text-center shadow-xl shadow-black/10">
+                <PauseCircle className="mx-auto text-[color:var(--loombus-gold)]" size={34} />
+                <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em]">Matching is paused</h2>
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  Existing candidates remain private. Loombus will not generate new candidates until matching is resumed in preferences.
                 </p>
               </div>
             ) : loading ? (
-              <div className="grid min-h-64 place-items-center rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)]">
-                <span className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--loombus-text-muted)]">
-                  <Loader2 className="animate-spin" size={18} /> Evaluating current compatibility
+              <div className="grid min-h-64 place-items-center rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-text-muted)]">
+                  <Loader2 className="animate-spin text-[color:var(--loombus-gold)]" size={18} /> Evaluating current compatibility
                 </span>
               </div>
             ) : visibleMatches.length ? (
@@ -563,29 +607,47 @@ export default function IntelligentMatchingPage() {
                 />
               ))
             ) : (
-              <div className="rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-8 text-center">
-                <Compass className="mx-auto" size={34} />
-                <h2 className="mt-4 text-2xl font-semibold">No matches in this view</h2>
-                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[var(--loombus-text-muted)]">
-                  Publish a Service or keep a Request open with a clear category,
-                  location, budget, timing, tags, and specialties. Loombus only shows
-                  candidates that pass your relevance and eligibility controls.
+              <div className="rounded-[1.75rem] border border-dashed border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-8 text-center shadow-xl shadow-black/10">
+                <Compass className="mx-auto text-[color:var(--loombus-gold)]" size={34} />
+                <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em]">No matches in this view</h2>
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  Publish a Service or keep a Request open with a clear category, location, budget, timing, tags, and specialties. Loombus only shows candidates that pass your relevance and eligibility controls.
                 </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
+                  <Link href="/requests/manage" className={secondaryButtonClass}>
+                    Manage Requests
+                  </Link>
+                  <Link href="/services/manage" className={primaryButtonClass}>
+                    Manage Services
+                  </Link>
+                </div>
               </div>
             )}
           </section>
 
-          <aside className="space-y-5">
-            <section className="rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
-              <div className="flex items-center gap-2">
-                <Settings2 size={19} />
-                <h2 className="text-lg font-semibold">Matching preferences</h2>
+          <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
+            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Settings2 className="text-[color:var(--loombus-gold)]" size={19} />
+                  <h2 className="text-lg font-semibold">Matching preferences</h2>
+                </div>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    preferences.matchingPaused
+                      ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                      : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  }`}
+                >
+                  {preferences.matchingPaused ? "Paused" : "Active"}
+                </span>
               </div>
+
               <div className="mt-5 space-y-5 text-sm">
-                <label className="flex items-center justify-between gap-4">
+                <label className="flex items-center justify-between gap-4 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
                   <span>
                     <span className="block font-semibold">Pause matching</span>
-                    <span className="text-xs text-[var(--loombus-text-subtle)]">
+                    <span className="mt-1 block text-xs leading-5 text-[color:var(--loombus-text-subtle)]">
                       Keep existing candidates without generating new ones.
                     </span>
                   </span>
@@ -598,7 +660,7 @@ export default function IntelligentMatchingPage() {
                         matchingPaused: event.target.checked,
                       }))
                     }
-                    className="h-5 w-5"
+                    className="h-5 w-5 accent-[color:var(--loombus-gold)]"
                   />
                 </label>
 
@@ -611,7 +673,7 @@ export default function IntelligentMatchingPage() {
                     ].map(([value, label]) => (
                       <label
                         key={value}
-                        className="inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] px-3 py-2"
+                        className="inline-flex items-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-3 py-2"
                       >
                         <input
                           type="checkbox"
@@ -628,11 +690,10 @@ export default function IntelligentMatchingPage() {
                                       value as "requests" | "services",
                                     ]),
                                   ]
-                                : current.activeSections.filter(
-                                    (item) => item !== value,
-                                  ),
+                                : current.activeSections.filter((item) => item !== value),
                             }))
                           }
+                          className="accent-[color:var(--loombus-gold)]"
                         />
                         {label}
                       </label>
@@ -642,7 +703,7 @@ export default function IntelligentMatchingPage() {
 
                 <label className="block">
                   <span className="font-semibold">Local radius</span>
-                  <div className="mt-2 flex items-center gap-3">
+                  <div className="mt-2 flex items-center gap-3 rounded-2xl bg-[color:var(--loombus-page-bg)] p-3">
                     <input
                       type="range"
                       min={1}
@@ -654,17 +715,17 @@ export default function IntelligentMatchingPage() {
                           radiusMiles: Number(event.target.value),
                         }))
                       }
-                      className="w-full"
+                      className="w-full accent-[color:var(--loombus-gold)]"
                     />
-                    <span className="w-20 text-right font-semibold">
+                    <span className="w-20 text-right font-semibold text-[color:var(--loombus-gold)]">
                       {preferences.radiusMiles} mi
                     </span>
                   </div>
                 </label>
 
-                <label className="flex items-center justify-between gap-4">
+                <label className="flex items-center justify-between gap-4 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
                   <span className="inline-flex items-center gap-2 font-semibold">
-                    <Wifi size={16} /> Include remote matches
+                    <Wifi size={16} className="text-[color:var(--loombus-gold)]" /> Include remote matches
                   </span>
                   <input
                     type="checkbox"
@@ -675,7 +736,7 @@ export default function IntelligentMatchingPage() {
                         includeRemote: event.target.checked,
                       }))
                     }
-                    className="h-5 w-5"
+                    className="h-5 w-5 accent-[color:var(--loombus-gold)]"
                   />
                 </label>
 
@@ -689,7 +750,7 @@ export default function IntelligentMatchingPage() {
                         minimumRelevance: Number(event.target.value),
                       }))
                     }
-                    className="mt-2 min-h-11 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3"
+                    className={`mt-2 ${controlClass}`}
                   >
                     <option value={55}>Possible and above · 55%</option>
                     <option value={65}>Good and above · 65%</option>
@@ -707,18 +768,18 @@ export default function IntelligentMatchingPage() {
                         notificationFrequency: event.target.value as MatchingPreferences["notificationFrequency"],
                       }))
                     }
-                    className="mt-2 min-h-11 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3"
+                    className={`mt-2 ${controlClass}`}
                   >
                     <option value="none">None</option>
                     <option value="daily">Daily digest preference</option>
                     <option value="weekly">Weekly digest preference</option>
                   </select>
-                  <span className="mt-1 block text-xs text-[var(--loombus-text-subtle)]">
+                  <span className="mt-1 block text-xs leading-5 text-[color:var(--loombus-text-subtle)]">
                     Stored for match digests when delivery is enabled.
                   </span>
                 </label>
 
-                <details>
+                <details className="rounded-2xl border border-[color:var(--loombus-border)] p-4">
                   <summary className="cursor-pointer font-semibold">Categories</summary>
                   <div className="mt-3 grid gap-2">
                     {PROVIDER_SERVICE_CATEGORIES.map((category) => (
@@ -727,19 +788,20 @@ export default function IntelligentMatchingPage() {
                           type="checkbox"
                           checked={preferences.categories.includes(category)}
                           onChange={() => toggleCategory(category)}
+                          className="accent-[color:var(--loombus-gold)]"
                         />
                         <span>{category}</span>
                       </label>
                     ))}
                   </div>
-                  <p className="mt-2 text-xs text-[var(--loombus-text-subtle)]">
+                  <p className="mt-2 text-xs leading-5 text-[color:var(--loombus-text-subtle)]">
                     Leave every category unchecked to match all categories.
                   </p>
                 </details>
 
                 <button
                   type="button"
-                  className={`${buttonClass()} w-full`}
+                  className={`${primaryButtonClass} w-full`}
                   disabled={busy === "preferences"}
                   onClick={() => void savePreferences()}
                 >
@@ -753,26 +815,26 @@ export default function IntelligentMatchingPage() {
               </div>
             </section>
 
-            <section className="rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
+            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
               <h2 className="text-lg font-semibold">Saved matching rules</h2>
-              <p className="mt-2 text-xs leading-5 text-[var(--loombus-text-subtle)]">
-                Rules reuse your current radius, remote, and relevance settings for a
-                specific direction or category.
+              <p className="mt-2 text-xs leading-5 text-[color:var(--loombus-text-subtle)]">
+                Rules reuse your current radius, remote, and relevance settings for a specific direction or category.
               </p>
+
               <div className="mt-4 space-y-3">
                 <input
                   value={ruleName}
                   onChange={(event) => setRuleName(event.target.value)}
                   placeholder="Rule name"
                   maxLength={80}
-                  className="min-h-11 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 text-sm"
+                  className={controlClass}
                 />
                 <select
                   value={ruleSource}
                   onChange={(event) =>
                     setRuleSource(event.target.value as "request" | "service")
                   }
-                  className="min-h-11 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 text-sm"
+                  className={controlClass}
                 >
                   <option value="request">Find Services for my Requests</option>
                   <option value="service">Find Requests for my Services</option>
@@ -780,7 +842,7 @@ export default function IntelligentMatchingPage() {
                 <select
                   value={ruleCategory}
                   onChange={(event) => setRuleCategory(event.target.value)}
-                  className="min-h-11 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 text-sm"
+                  className={controlClass}
                 >
                   <option value="">All categories</option>
                   {PROVIDER_SERVICE_CATEGORIES.map((category) => (
@@ -791,7 +853,7 @@ export default function IntelligentMatchingPage() {
                 </select>
                 <button
                   type="button"
-                  className={`${buttonClass(true)} w-full`}
+                  className={`${secondaryButtonClass} w-full`}
                   disabled={busy === "rule"}
                   onClick={() => void createRule()}
                 >
@@ -809,12 +871,12 @@ export default function IntelligentMatchingPage() {
                   data.rules.map((rule) => (
                     <div
                       key={rule.id}
-                      className="rounded-xl border border-[var(--loombus-border)] p-3"
+                      className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-3"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="font-semibold">{rule.name}</p>
-                          <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-subtle)]">
+                          <p className="mt-1 text-xs leading-5 text-[color:var(--loombus-text-subtle)]">
                             {rule.sourceType === "request"
                               ? "Requests to Services"
                               : "Services to Requests"}
@@ -826,7 +888,7 @@ export default function IntelligentMatchingPage() {
                         <button
                           type="button"
                           aria-label={`Delete ${rule.name}`}
-                          className="rounded-full p-2 transition hover:bg-[var(--loombus-surface-muted)]"
+                          className="rounded-full p-2 transition hover:bg-[color:var(--loombus-surface-muted)]"
                           disabled={busy === rule.id}
                           onClick={() => void deleteRule(rule.id)}
                         >
@@ -840,10 +902,46 @@ export default function IntelligentMatchingPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-[var(--loombus-text-subtle)]">
+                  <p className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4 text-sm text-[color:var(--loombus-text-subtle)]">
                     No saved rules yet.
                   </p>
                 )}
+              </div>
+            </section>
+
+            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+              <div className="flex gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]">
+                  <ShieldCheck aria-hidden="true" className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="font-semibold">Private and member-controlled</h3>
+                  <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                    Loombus does not automatically contact either party. You decide which matches to open, save, dismiss, or act on.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
+              <p className="text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-text)]">
+                Matching sources
+              </p>
+              <div className="mt-4 space-y-2">
+                <Link
+                  href="/requests/manage"
+                  className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]"
+                >
+                  Manage Requests
+                  <ChevronRight aria-hidden="true" className="h-4 w-4 text-[color:var(--loombus-gold)]" />
+                </Link>
+                <Link
+                  href="/services/manage"
+                  className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]"
+                >
+                  Manage Services
+                  <ChevronRight aria-hidden="true" className="h-4 w-4 text-[color:var(--loombus-gold)]" />
+                </Link>
               </div>
             </section>
           </aside>
