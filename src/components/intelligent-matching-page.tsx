@@ -55,13 +55,13 @@ const EMPTY_RESPONSE: IntelligentMatchingResponse = {
 };
 
 const secondaryButtonClass =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 text-sm font-semibold text-[color:var(--loombus-text)] transition hover:border-[#b45309] hover:bg-[color:var(--loombus-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 text-sm font-semibold text-[color:var(--loombus-text)] transition hover:border-[color:var(--loombus-gold)] hover:bg-[color:var(--loombus-surface-muted)] disabled:cursor-not-allowed disabled:opacity-50";
 
 const primaryButtonClass =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#b45309] px-4 text-sm font-semibold text-white transition hover:bg-[#92400e] disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-4 text-sm font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";
 
 const controlClass =
-  "min-h-11 w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-3 text-sm text-[color:var(--loombus-text)] outline-none transition focus:border-[#b45309] focus:ring-4 focus:ring-orange-500/10";
+  "min-h-11 w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-3 text-sm text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]";
 
 function confidenceClass(label: IntelligentMatch["confidenceLabel"]) {
   if (label === "Strong") {
@@ -100,7 +100,7 @@ function MatchCard({
       <div className="p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#b45309]">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[color:var(--loombus-gold)]">
               {directionLabel(match.direction)}
             </p>
             <p className="mt-2 text-sm text-[color:var(--loombus-text-muted)]">
@@ -136,9 +136,9 @@ function MatchCard({
         <div className="mt-5 grid gap-3 text-sm text-[color:var(--loombus-text-muted)] sm:grid-cols-2">
           <span className="flex items-start gap-2 rounded-2xl bg-[color:var(--loombus-page-bg)] p-3">
             {match.factors.remoteCompatible ? (
-              <Wifi className="mt-0.5 shrink-0 text-[#b45309]" size={16} />
+              <Wifi className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16} />
             ) : (
-              <MapPin className="mt-0.5 shrink-0 text-[#b45309]" size={16} />
+              <MapPin className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16} />
             )}
             <span>
               {match.target.locationLabel}
@@ -148,7 +148,7 @@ function MatchCard({
             </span>
           </span>
           <span className="flex items-start gap-2 rounded-2xl bg-[color:var(--loombus-page-bg)] p-3">
-            <Gauge className="mt-0.5 shrink-0 text-[#b45309]" size={16} />
+            <Gauge className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={16} />
             <span>{match.target.priceLabel}</span>
           </span>
         </div>
@@ -160,7 +160,7 @@ function MatchCard({
           <ul className="mt-3 grid gap-2 text-sm text-[color:var(--loombus-text-muted)] sm:grid-cols-2">
             {match.explanation.map((item) => (
               <li key={item} className="flex gap-2">
-                <Sparkles className="mt-0.5 shrink-0 text-[#b45309]" size={14} />
+                <Sparkles className="mt-0.5 shrink-0 text-[color:var(--loombus-gold)]" size={14} />
                 <span>{item}</span>
               </li>
             ))}
@@ -488,9 +488,9 @@ export default function IntelligentMatchingPage() {
               setViewMode("active");
               setDirection("all");
             }}
-            className="rounded-[1.4rem] border border-orange-200 bg-orange-50 p-4 text-left shadow-sm transition hover:border-[#b45309] dark:border-orange-400/30 dark:bg-orange-400/10"
+            className="rounded-[1.4rem] border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] p-4 text-left text-[color:var(--loombus-cream-contrast)] shadow-sm transition hover:opacity-90 dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-text)]"
           >
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[#b45309]">
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-gold)]">
               Active matches
             </span>
             <strong className="mt-2 block text-3xl tracking-[-0.04em]">{data.counts.active}</strong>
@@ -501,7 +501,7 @@ export default function IntelligentMatchingPage() {
               setViewMode("saved");
               setDirection("all");
             }}
-            className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-left shadow-sm transition hover:border-[#b45309]"
+            className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-left shadow-sm transition hover:border-[color:var(--loombus-gold)]"
           >
             <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
               Saved
@@ -514,7 +514,7 @@ export default function IntelligentMatchingPage() {
               setViewMode("active");
               setDirection("request_to_service");
             }}
-            className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-left shadow-sm transition hover:border-[#b45309]"
+            className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-left shadow-sm transition hover:border-[color:var(--loombus-gold)]"
           >
             <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
               For Requests
@@ -527,7 +527,7 @@ export default function IntelligentMatchingPage() {
               setViewMode("active");
               setDirection("service_to_request");
             }}
-            className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-left shadow-sm transition hover:border-[#b45309]"
+            className="rounded-[1.4rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4 text-left shadow-sm transition hover:border-[color:var(--loombus-gold)]"
           >
             <span className="text-xs font-bold uppercase tracking-[0.18em] text-[color:var(--loombus-text-muted)]">
               For Services
@@ -540,7 +540,7 @@ export default function IntelligentMatchingPage() {
           <div className="mb-6 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 py-3 text-sm text-[color:var(--loombus-text-muted)] shadow-sm">
             {notice}
             {unauthorized ? (
-              <Link href="/login" className="ml-2 font-semibold text-[#b45309] underline">
+              <Link href="/login" className="ml-2 font-semibold text-[color:var(--loombus-gold)] underline">
                 Sign in
               </Link>
             ) : null}
@@ -558,7 +558,7 @@ export default function IntelligentMatchingPage() {
                     onClick={() => setViewMode(tab.value)}
                     className={`flex shrink-0 items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
                       viewMode === tab.value
-                        ? "bg-orange-50 text-[#b45309] dark:bg-orange-400/10"
+                        ? "bg-[color:var(--loombus-cream)] text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-gold)]"
                         : "text-[color:var(--loombus-text)] hover:bg-[color:var(--loombus-surface-muted)]"
                     }`}
                   >
@@ -573,7 +573,7 @@ export default function IntelligentMatchingPage() {
               <select
                 value={direction}
                 onChange={(event) => setDirection(event.target.value as DirectionFilter)}
-                className="min-h-11 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 text-sm font-semibold text-[color:var(--loombus-text)] outline-none transition focus:border-[#b45309] focus:ring-4 focus:ring-orange-500/10"
+                className="min-h-11 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 text-sm font-semibold text-[color:var(--loombus-text)] outline-none transition focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]"
                 aria-label="Filter match direction"
               >
                 <option value="all">Both directions</option>
@@ -584,7 +584,7 @@ export default function IntelligentMatchingPage() {
 
             {data.matchingPaused ? (
               <div className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-8 text-center shadow-xl shadow-black/10">
-                <PauseCircle className="mx-auto text-[#b45309]" size={34} />
+                <PauseCircle className="mx-auto text-[color:var(--loombus-gold)]" size={34} />
                 <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em]">Matching is paused</h2>
                 <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                   Existing candidates remain private. Loombus will not generate new candidates until matching is resumed in preferences.
@@ -593,7 +593,7 @@ export default function IntelligentMatchingPage() {
             ) : loading ? (
               <div className="grid min-h-64 place-items-center rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10">
                 <span className="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--loombus-text-muted)]">
-                  <Loader2 className="animate-spin text-[#b45309]" size={18} /> Evaluating current compatibility
+                  <Loader2 className="animate-spin text-[color:var(--loombus-gold)]" size={18} /> Evaluating current compatibility
                 </span>
               </div>
             ) : visibleMatches.length ? (
@@ -608,7 +608,7 @@ export default function IntelligentMatchingPage() {
               ))
             ) : (
               <div className="rounded-[1.75rem] border border-dashed border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-8 text-center shadow-xl shadow-black/10">
-                <Compass className="mx-auto text-[#b45309]" size={34} />
+                <Compass className="mx-auto text-[color:var(--loombus-gold)]" size={34} />
                 <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em]">No matches in this view</h2>
                 <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                   Publish a Service or keep a Request open with a clear category, location, budget, timing, tags, and specialties. Loombus only shows candidates that pass your relevance and eligibility controls.
@@ -629,7 +629,7 @@ export default function IntelligentMatchingPage() {
             <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <Settings2 className="text-[#b45309]" size={19} />
+                  <Settings2 className="text-[color:var(--loombus-gold)]" size={19} />
                   <h2 className="text-lg font-semibold">Matching preferences</h2>
                 </div>
                 <span
@@ -660,7 +660,7 @@ export default function IntelligentMatchingPage() {
                         matchingPaused: event.target.checked,
                       }))
                     }
-                    className="h-5 w-5 accent-[#b45309]"
+                    className="h-5 w-5 accent-[color:var(--loombus-gold)]"
                   />
                 </label>
 
@@ -693,7 +693,7 @@ export default function IntelligentMatchingPage() {
                                 : current.activeSections.filter((item) => item !== value),
                             }))
                           }
-                          className="accent-[#b45309]"
+                          className="accent-[color:var(--loombus-gold)]"
                         />
                         {label}
                       </label>
@@ -715,9 +715,9 @@ export default function IntelligentMatchingPage() {
                           radiusMiles: Number(event.target.value),
                         }))
                       }
-                      className="w-full accent-[#b45309]"
+                      className="w-full accent-[color:var(--loombus-gold)]"
                     />
-                    <span className="w-20 text-right font-semibold text-[#b45309]">
+                    <span className="w-20 text-right font-semibold text-[color:var(--loombus-gold)]">
                       {preferences.radiusMiles} mi
                     </span>
                   </div>
@@ -725,7 +725,7 @@ export default function IntelligentMatchingPage() {
 
                 <label className="flex items-center justify-between gap-4 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
                   <span className="inline-flex items-center gap-2 font-semibold">
-                    <Wifi size={16} className="text-[#b45309]" /> Include remote matches
+                    <Wifi size={16} className="text-[color:var(--loombus-gold)]" /> Include remote matches
                   </span>
                   <input
                     type="checkbox"
@@ -736,7 +736,7 @@ export default function IntelligentMatchingPage() {
                         includeRemote: event.target.checked,
                       }))
                     }
-                    className="h-5 w-5 accent-[#b45309]"
+                    className="h-5 w-5 accent-[color:var(--loombus-gold)]"
                   />
                 </label>
 
@@ -788,7 +788,7 @@ export default function IntelligentMatchingPage() {
                           type="checkbox"
                           checked={preferences.categories.includes(category)}
                           onChange={() => toggleCategory(category)}
-                          className="accent-[#b45309]"
+                          className="accent-[color:var(--loombus-gold)]"
                         />
                         <span>{category}</span>
                       </label>
@@ -911,7 +911,7 @@ export default function IntelligentMatchingPage() {
 
             <section className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-2xl shadow-black/10">
               <div className="flex gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-[#b45309] dark:bg-orange-400/10">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]">
                   <ShieldCheck aria-hidden="true" className="h-5 w-5" />
                 </span>
                 <div>
@@ -933,14 +933,14 @@ export default function IntelligentMatchingPage() {
                   className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]"
                 >
                   Manage Requests
-                  <ChevronRight aria-hidden="true" className="h-4 w-4 text-[#b45309]" />
+                  <ChevronRight aria-hidden="true" className="h-4 w-4 text-[color:var(--loombus-gold)]" />
                 </Link>
                 <Link
                   href="/services/manage"
                   className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]"
                 >
                   Manage Services
-                  <ChevronRight aria-hidden="true" className="h-4 w-4 text-[#b45309]" />
+                  <ChevronRight aria-hidden="true" className="h-4 w-4 text-[color:var(--loombus-gold)]" />
                 </Link>
               </div>
             </section>
