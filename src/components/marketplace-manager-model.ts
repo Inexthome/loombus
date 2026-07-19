@@ -28,11 +28,11 @@ export type MarketplaceDraft = {
 
 export type UpdateMarketplaceDraft = <K extends keyof MarketplaceDraft>(
   key: K,
-  value: MarketplaceDraft[K]
+  value: MarketplaceDraft[K],
 ) => void;
 
 export const marketplaceInputClass =
-  "w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 py-3 outline-none";
+  "w-full rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] px-4 py-3 text-[color:var(--loombus-text)] outline-none transition placeholder:text-[color:var(--loombus-text-subtle)] focus:border-[color:var(--loombus-gold)] focus:ring-4 focus:ring-[color:var(--loombus-gold-soft)]";
 
 export function emptyMarketplaceDraft(): MarketplaceDraft {
   return {
@@ -60,7 +60,7 @@ export function emptyMarketplaceDraft(): MarketplaceDraft {
 }
 
 export function marketplaceDraftFromListing(
-  listing: MarketplaceListing
+  listing: MarketplaceListing,
 ): MarketplaceDraft {
   const saved =
     listing.status === "draft" &&
@@ -77,28 +77,19 @@ export function marketplaceDraftFromListing(
     typeof saved[key] === "boolean" ? (saved[key] as boolean) : fallback;
 
   const attributes: AttributeRow[] = [];
+  const savedAttributes = saved.attributes;
+  const sourceAttributes = Array.isArray(savedAttributes)
+    ? savedAttributes
+    : Object.entries(listing.attributes).map(([key, value]) => ({ key, value }));
 
-  if (Array.isArray(saved.attributes)) {
-    for (const item of saved.attributes) {
-      const row =
-        item && typeof item === "object" && !Array.isArray(item)
-          ? (item as Record<string, unknown>)
-          : {};
-
-      attributes.push({
-        id: crypto.randomUUID(),
-        key: typeof row.key === "string" ? row.key : "",
-        value: typeof row.value === "string" ? row.value : "",
-      });
-    }
-  } else {
-    for (const [key, value] of Object.entries(listing.attributes)) {
-      attributes.push({
-        id: crypto.randomUUID(),
-        key,
-        value,
-      });
-    }
+  for (const row of sourceAttributes) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+    const record = row as Record<string, unknown>;
+    attributes.push({
+      id: crypto.randomUUID(),
+      key: String(record.key ?? ""),
+      value: String(record.value ?? ""),
+    });
   }
 
   return {
@@ -107,61 +98,37 @@ export function marketplaceDraftFromListing(
     description: savedText("description", listing.description),
     category: savedText("category", listing.category),
     condition: savedText("condition", listing.condition),
-    price: savedText(
-      "price",
-      listing.isFree ? "" : String(listing.price)
-    ),
+    price: savedText("price", listing.isFree ? "" : String(listing.price)),
     currency: savedText("currency", listing.currency),
     isFree: savedBoolean("isFree", listing.isFree),
-    isNegotiable: savedBoolean(
-      "isNegotiable",
-      listing.isNegotiable
-    ),
+    isNegotiable: savedBoolean("isNegotiable", listing.isNegotiable),
     city: savedText("city", listing.city),
     region: savedText("region", listing.region),
     postalCode: savedText("postalCode", listing.postalCode),
     countryCode: savedText("countryCode", listing.countryCode),
-    pickupAvailable: savedBoolean(
-      "pickupAvailable",
-      listing.pickupAvailable
-    ),
+    pickupAvailable: savedBoolean("pickupAvailable", listing.pickupAvailable),
     localDeliveryAvailable: savedBoolean(
       "localDeliveryAvailable",
-      listing.localDeliveryAvailable
+      listing.localDeliveryAvailable,
     ),
-    shippingAvailable: savedBoolean(
-      "shippingAvailable",
-      listing.shippingAvailable
-    ),
+    shippingAvailable: savedBoolean("shippingAvailable", listing.shippingAvailable),
     tags: savedText("tags", listing.tags.join("\n")),
     attributes,
     photos: listing.photos,
-    expiresAt: savedText(
-      "expiresAt",
-      listing.expiresAt?.slice(0, 10) ?? ""
-    ),
+    expiresAt: savedText("expiresAt", listing.expiresAt?.slice(0, 10) ?? ""),
   };
 }
 
 export function parseMarketplaceTags(value: string) {
-  return [
-    ...new Set(
-      value
-        .split(/[\n,]/)
-        .map((item) => item.trim())
-        .filter(Boolean)
-    ),
-  ];
+  return [...new Set(value.split(/[\n,]/).map((item) => item.trim()).filter(Boolean))].slice(0, 30);
 }
 
 export function buildMarketplaceAttributes(rows: AttributeRow[]) {
-  const result: Record<string, string> = {};
-  for (const row of rows) {
-    const key = row.key.trim();
-    const value = row.value.trim();
-    if (key && value) result[key] = value;
-  }
-  return result;
+  return Object.fromEntries(
+    rows
+      .map((row) => [row.key.trim(), row.value.trim()] as const)
+      .filter(([key, value]) => key && value),
+  );
 }
 
 export async function marketplaceApiAction(body: Record<string, unknown>) {
@@ -170,11 +137,7 @@ export async function marketplaceApiAction(body: Record<string, unknown>) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const payload = (await response.json()) as Record<string, unknown> & {
-    error?: string;
-  };
-  if (!response.ok) {
-    throw new Error(payload.error || "Marketplace request failed.");
-  }
+  const payload = (await response.json().catch(() => ({}))) as { error?: string };
+  if (!response.ok) throw new Error(payload.error || "Marketplace action failed.");
   return payload;
 }
