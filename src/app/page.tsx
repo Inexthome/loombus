@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Loombus | Signal over noise",
   description:
-    "Loombus is a signal-first discussion platform for thoughtful conversations, sharper ideas, and cleaner community dialogue.",
+    "Loombus is a signal-first platform for meaningful discussions, trusted communities, local discovery, services, jobs, events, and real opportunities in one cleaner place.",
   alternates: {
     canonical: "https://loombus.com/",
   },
@@ -13,17 +13,20 @@ export const metadata: Metadata = {
 const signalCards = [
   {
     title: "Structured discussions",
-    description: "Follow questions, context, replies, and signal without losing the thread.",
+    description:
+      "Explore questions, debates, research, and problem solving with clearer context, stronger replies, and lasting signal.",
     icon: "◌",
   },
   {
-    title: "People and topics",
-    description: "Find thoughtful contributors, saved ideas, and topics worth returning to.",
+    title: "Communities and connections",
+    description:
+      "Join Rooms, follow people and topics, and build around shared interests, organizations, neighborhoods, or real-world needs.",
     icon: "⌘",
   },
   {
-    title: "Search with intent",
-    description: "Move through discussions, people, saved items, and activity with clearer navigation.",
+    title: "Discover and take action",
+    description:
+      "Find businesses, jobs, services, events, Marketplace listings, local opportunities, and relevant matches across Loombus.",
     icon: "⌕",
   },
 ];
@@ -63,8 +66,9 @@ export default function RootPage() {
               </h1>
 
               <p className="mt-8 max-w-3xl text-lg leading-8 text-[color:var(--loombus-text-muted)] sm:text-2xl sm:leading-10">
-                Loombus is a signal-first discussion platform built for clearer
-                conversations, stronger ideas, and less noise.
+                Loombus is a signal-first platform for meaningful discussions,
+                trusted communities, local discovery, services, jobs, events, and
+                real opportunities, all in one cleaner place.
               </p>
 
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -86,11 +90,12 @@ export default function RootPage() {
                   Signal brief
                 </p>
                 <h2 className="mt-4 text-2xl font-semibold leading-tight tracking-[-0.03em] text-[color:var(--loombus-text)] sm:text-3xl">
-                  A cleaner way to follow what matters.
+                  A cleaner place to discuss, discover, connect, and act.
                 </h2>
                 <p className="mt-5 text-sm leading-7 text-[color:var(--loombus-text-muted)] sm:text-base">
-                  Follow discussions with clearer structure, stronger context,
-                  and fewer distractions.
+                  Follow meaningful conversations, connect with people and
+                  communities, and move from ideas to real opportunities without
+                  the usual noise.
                 </p>
               </div>
 
