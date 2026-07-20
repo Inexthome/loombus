@@ -16,13 +16,13 @@ import {
 } from "./admin-platform-foundation";
 import {
   ADMIN_PLATFORM_MODULES,
-  type PlatformModuleKey,
+  type AdminPlatformModuleKey,
 } from "./admin-platform-registry";
 
 type AccessState = "checking" | "allowed" | "denied" | "error";
 
 type OverviewModule = {
-  key: PlatformModuleKey;
+  key: AdminPlatformModuleKey;
   metric: number | null;
   metricLabel: string;
   status: "ready" | "unavailable";
@@ -34,6 +34,15 @@ type OverviewResponse = {
   generatedAt: string;
   activeQueue: number | null;
   modules: OverviewModule[];
+};
+
+type DuplicateSummaryResponse = {
+  isAdmin?: boolean;
+  openSignals?: number;
+  pendingScans?: number;
+  scanErrors?: number;
+  error?: unknown;
+  code?: unknown;
 };
 
 type ErrorPayload = {
@@ -52,11 +61,73 @@ class AdminRequestError extends Error {
   }
 }
 
+async function duplicateSummary(token: string): Promise<OverviewModule> {
+  try {
+    const response = await fetch("/api/admin/platform/duplicates/summary", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    const payload = (await response.json().catch(() => ({}))) as DuplicateSummaryResponse;
+
+    if (response.status === 403) {
+      throw new AdminRequestError(
+        typeof payload.error === "string"
+          ? payload.error
+          : "Administrator access is required.",
+        403,
+        typeof payload.code === "string" ? payload.code : null,
+      );
+    }
+
+    if (!response.ok || payload.isAdmin !== true) {
+      return {
+        key: "duplicates",
+        metric: null,
+        metricLabel: "open signals",
+        status: "unavailable",
+        detail:
+          typeof payload.error === "string"
+            ? payload.error
+            : "Media Duplicate Review summary is temporarily unavailable.",
+      };
+    }
+
+    const pendingScans = Number(payload.pendingScans ?? 0);
+    const scanErrors = Number(payload.scanErrors ?? 0);
+
+    return {
+      key: "duplicates",
+      metric: Number(payload.openSignals ?? 0),
+      metricLabel: "open signals",
+      status: "ready",
+      detail:
+        pendingScans || scanErrors
+          ? `${pendingScans} media scans pending and ${scanErrors} scan errors require operational attention.`
+          : "Cross-account exact-content signals are ready for protected administrator review.",
+    };
+  } catch (caught) {
+    if (caught instanceof AdminRequestError) throw caught;
+    return {
+      key: "duplicates",
+      metric: null,
+      metricLabel: "open signals",
+      status: "unavailable",
+      detail:
+        caught instanceof Error
+          ? caught.message
+          : "Media Duplicate Review summary is temporarily unavailable.",
+    };
+  }
+}
+
 async function authorizedOverview(token: string): Promise<OverviewResponse> {
-  const response = await fetch("/api/admin/platform/overview", {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
+  const [response, duplicates] = await Promise.all([
+    fetch("/api/admin/platform/overview", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }),
+    duplicateSummary(token),
+  ]);
   const payload = (await response.json().catch(() => ({}))) as ErrorPayload;
 
   if (!response.ok) {
@@ -69,7 +140,14 @@ async function authorizedOverview(token: string): Promise<OverviewResponse> {
     );
   }
 
-  return payload as unknown as OverviewResponse;
+  const overview = payload as unknown as OverviewResponse;
+  return {
+    ...overview,
+    modules: [
+      ...overview.modules.filter((module) => module.key !== "duplicates"),
+      duplicates,
+    ],
+  };
 }
 
 export default function PlatformOverviewClient() {
@@ -251,7 +329,7 @@ export default function PlatformOverviewClient() {
         <AdminQueueSection
           eyebrow="Operational modules"
           title="Open one queue at a time"
-          description="The overview reads direct summary counts. Opening a module loads only its own protected payload, not all eleven operational modules."
+          description="The overview reads direct summary counts. Opening a module loads only its own protected payload, not all twelve operational modules."
         >
           <div className="grid gap-4 xl:grid-cols-2">
             {ADMIN_PLATFORM_MODULES.map((definition) => {
