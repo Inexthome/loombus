@@ -1,0 +1,502 @@
+.trigger,
+.compactTrigger,
+.replyTrigger,
+.rightRailButton,
+.sheetHeader > button,
+.toast > button,
+.secondaryButton,
+.primaryButton,
+.dangerButton {
+  font: inherit;
+}
+
+.trigger {
+  min-height: 2.55rem;
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text-muted);
+  border-radius: 999px;
+  padding: 0.65rem 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.trigger:hover,
+.replyTrigger:hover,
+.rightRailButton:hover {
+  background: var(--loombus-surface-muted);
+  color: var(--loombus-text);
+}
+
+.compactTrigger {
+  border: 0;
+  background: transparent;
+  color: var(--loombus-text);
+  min-width: 2.7rem;
+  min-height: 2.7rem;
+  border-radius: 999px;
+  padding: 0.6rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.replyTrigger {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--loombus-text-muted) !important;
+  border-radius: 0.7rem !important;
+  padding: 0.45rem 0.55rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  font-size: 0.68rem !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+}
+
+.rightRailCard {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.rightRailCopy {
+  margin: 0;
+  color: var(--loombus-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.rightRailButton {
+  width: 100%;
+  border: 0;
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text-muted);
+  border-radius: 1rem;
+  padding: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.backdrop {
+  position: fixed;
+  z-index: 150;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.64);
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+}
+
+.sheet,
+.editor {
+  width: min(100%, 48rem);
+  max-height: min(88vh, 56rem);
+  overflow: hidden;
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-surface);
+  color: var(--loombus-text);
+  border-radius: 1.6rem 1.6rem 0 0;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.42);
+  display: flex;
+  flex-direction: column;
+}
+
+.smallSheet {
+  width: min(100%, 34rem);
+}
+
+.sheetHeader {
+  padding: 1.1rem 1.15rem;
+  border-bottom: 1px solid var(--loombus-border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sheetHeader p {
+  margin: 0;
+  color: #b45309;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.sheetHeader h2 {
+  margin: 0.4rem 0 0;
+  color: var(--loombus-text);
+  font-size: clamp(1.15rem, 3vw, 1.45rem);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+.sheetHeader > button,
+.toast > button {
+  border: 0;
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text-muted);
+  width: 2.4rem;
+  height: 2.4rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.sheetBody {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.actionSection {
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-page-bg);
+  border-radius: 1.25rem;
+  padding: 0.85rem;
+}
+
+.actionSection > h3 {
+  margin: 0 0 0.65rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.actionGrid {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.actionGrid > button,
+.actionGrid > a,
+.blockedState {
+  width: 100%;
+  border: 0;
+  background: var(--loombus-surface);
+  color: var(--loombus-text-muted);
+  border-radius: 1rem;
+  padding: 0.8rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.actionGrid > button:hover:not(:disabled),
+.actionGrid > a:hover {
+  background: var(--loombus-surface-muted);
+  color: var(--loombus-text);
+  transform: translateY(-1px);
+}
+
+.actionGrid > button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.actionGrid > button > svg,
+.actionGrid > a > svg,
+.blockedState > svg {
+  margin-top: 0.15rem;
+  flex: 0 0 auto;
+}
+
+.actionGrid > button > span,
+.actionGrid > a > span,
+.blockedState > span,
+.personSummary > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.actionGrid strong,
+.blockedState strong,
+.personSummary strong {
+  color: var(--loombus-text);
+  font-size: 0.78rem;
+}
+
+.actionGrid small,
+.blockedState small,
+.personSummary small {
+  color: var(--loombus-text-muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.dangerAction {
+  color: #b91c1c !important;
+}
+
+.dangerAction strong {
+  color: #b91c1c !important;
+}
+
+:global(:root[data-loombus-theme="dark"]) .dangerAction,
+:global(:root[data-loombus-theme="dark"]) .dangerAction strong {
+  color: #fca5a5 !important;
+}
+
+.personSummary {
+  margin-bottom: 0.65rem;
+  border-radius: 1rem;
+  background: var(--loombus-surface);
+  padding: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.blockedState {
+  cursor: default;
+}
+
+.relatedList {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.relatedList a {
+  border-radius: 1rem;
+  background: var(--loombus-surface);
+  color: var(--loombus-text);
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.2rem;
+  text-decoration: none;
+}
+
+.relatedList a:hover {
+  background: var(--loombus-surface-muted);
+}
+
+.relatedList span {
+  color: #b45309;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.relatedList strong {
+  font-size: 0.77rem;
+  line-height: 1.4;
+}
+
+.relatedList small {
+  color: var(--loombus-text-muted);
+  font-size: 0.65rem;
+}
+
+.formBody,
+.editorGrid {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.formBody {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.formBody label,
+.editorGrid label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.formBody select,
+.formBody textarea,
+.editorGrid input,
+.editorGrid select,
+.editorGrid textarea {
+  width: 100%;
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text);
+  border-radius: 0.95rem;
+  padding: 0.78rem 0.85rem;
+  font: inherit;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.formBody textarea,
+.editorGrid textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.formBody select:focus,
+.formBody textarea:focus,
+.editorGrid input:focus,
+.editorGrid select:focus,
+.editorGrid textarea:focus {
+  border-color: #b45309;
+}
+
+.formBody > p,
+.editorHelp {
+  margin: 0;
+  color: var(--loombus-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.editorGrid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.fullField {
+  grid-column: 1 / -1;
+}
+
+.editorHelp {
+  padding: 0 1rem 1rem;
+}
+
+.modalFooter {
+  padding: 0.9rem 1rem calc(0.9rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--loombus-border);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.secondaryButton,
+.primaryButton,
+.dangerButton {
+  min-height: 2.7rem;
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-size: 0.76rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.secondaryButton {
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text-muted);
+}
+
+.primaryButton {
+  border: 1px solid #b45309;
+  background: #b45309;
+  color: #fff7ed;
+}
+
+.dangerButton {
+  border: 1px solid #b91c1c;
+  background: #b91c1c;
+  color: white;
+}
+
+.secondaryButton:disabled,
+.primaryButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.toast {
+  position: fixed;
+  z-index: 170;
+  left: 50%;
+  bottom: max(5.4rem, calc(4.6rem + env(safe-area-inset-bottom)));
+  transform: translateX(-50%);
+  width: min(calc(100% - 2rem), 34rem);
+  border: 1px solid rgba(5, 150, 105, 0.3);
+  background: var(--loombus-surface);
+  color: #047857;
+  border-radius: 1rem;
+  padding: 0.8rem 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 20px 65px rgba(0, 0, 0, 0.25);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.toastError {
+  border-color: rgba(185, 28, 28, 0.3);
+  color: #b91c1c;
+}
+
+.spinning {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (min-width: 40rem) {
+  .backdrop {
+    align-items: center;
+  }
+
+  .sheet,
+  .editor {
+    border-radius: 1.6rem;
+  }
+
+  .actionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .editorGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toast {
+    bottom: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actionGrid > button,
+  .actionGrid > a,
+  .spinning {
+    transition: none;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
