@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import {
   BadgeAlert,
   Banknote,
   ShieldCheck,
   UserCheck,
-  type LucideIcon,
 } from "lucide-react";
+import CommerceSafetyPage from "@/components/commerce-safety-page";
 
 export const metadata: Metadata = {
   title: "Services Safety",
@@ -15,11 +14,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://loombus.com/services/safety" },
 };
 
-const SAFETY_CARDS: Array<{
-  Icon: LucideIcon;
-  title: string;
-  body: string;
-}> = [
+const SAFETY_CARDS = [
   {
     Icon: UserCheck,
     title: "Verify the provider",
@@ -44,59 +39,17 @@ const SAFETY_CARDS: Array<{
 
 export default function ServicesSafetyPage() {
   return (
-    <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 py-10 text-[var(--loombus-text)] sm:px-6">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-7 sm:p-10">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--loombus-text-subtle)]">
-            Services safety
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold sm:text-5xl">
-            A published Service is attributable. It is not guaranteed.
-          </h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--loombus-text-muted)]">
-            Loombus connects providers and customers through structured
-            inquiries, Requests, conversations, and Appointments. Members remain
-            responsible for verifying qualifications, terms, safety, and payment.
-          </p>
-        </header>
-
-        <section className="grid gap-4 md:grid-cols-2">
-          {SAFETY_CARDS.map(({ Icon, title, body }) => (
-            <article
-              key={title}
-              className="rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6"
-            >
-              <Icon size={22} className="text-[var(--loombus-text-subtle)]" />
-              <h2 className="mt-4 text-xl font-semibold">{title}</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">
-                {body}
-              </p>
-            </article>
-          ))}
-        </section>
-
-        <section className="rounded-[1.6rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 text-sm leading-7 text-[var(--loombus-text-muted)]">
-          Services may not be used for illegal activity, regulated weapons,
-          controlled substances, exploitation, harassment, discriminatory
-          exclusions, identity fraud, financial scams, false credential claims,
-          or attempts to bypass Loombus safety controls.
-        </section>
-
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/services"
-            className="rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-semibold text-[var(--loombus-primary-text)]"
-          >
-            Browse Services
-          </Link>
-          <Link
-            href="/services/manage"
-            className="rounded-full border border-[var(--loombus-border)] px-5 py-3 text-sm font-semibold"
-          >
-            Manage Services
-          </Link>
-        </div>
-      </div>
-    </main>
+    <CommerceSafetyPage
+      eyebrow="Services safety"
+      title="A published Service is attributable. It is not guaranteed."
+      intro="Loombus connects providers and customers through structured inquiries, Requests, conversations, and Appointments. Members remain responsible for verifying qualifications, terms, safety, and payment."
+      cards={SAFETY_CARDS}
+      prohibitedTitle="Services that are not allowed"
+      prohibitedBody="Services may not be used for illegal activity, regulated weapons, controlled substances, exploitation, harassment, discriminatory exclusions, identity fraud, financial scams, false credential claims, or attempts to bypass Loombus safety controls."
+      boundaryTitle="Responsibility remains with the members"
+      boundaryBody="Members remain responsible for verifying qualifications, terms, safety, and payment before work begins."
+      primaryAction={{ href: "/services", label: "Browse Services" }}
+      secondaryAction={{ href: "/services/manage", label: "Manage Services" }}
+    />
   );
 }
