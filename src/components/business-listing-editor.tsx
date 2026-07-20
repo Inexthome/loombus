@@ -29,7 +29,7 @@ type BusinessListingEditorProps = {
   updateService: (
     index: number,
     key: keyof ServiceDraft,
-    value: string
+    value: string,
   ) => void;
   addService: () => void;
   removeService: (index: number) => void;
@@ -55,27 +55,32 @@ export function BusinessListingEditor({
   startNew,
 }: BusinessListingEditorProps) {
   return (
-    <section className="mt-5 rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)]">
+    <section className="overflow-hidden rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] shadow-xl shadow-black/10">
       <button
         type="button"
         onClick={toggleForm}
-        className="flex w-full items-center justify-between gap-4 p-5 text-left sm:p-6"
+        className="flex w-full items-center justify-between gap-4 p-5 text-left transition hover:bg-[color:var(--loombus-surface-muted)] sm:p-6"
       >
         <span>
-          <span className="block text-xs font-bold uppercase tracking-[0.18em] text-[var(--loombus-text-subtle)]">
-            {editingBusiness ? "Edit listing" : "Submit listing"}
+          <span className="block text-xs font-bold uppercase tracking-[0.28em] text-[color:var(--loombus-gold)]">
+            {editingBusiness ? "Edit business" : "Business editor"}
           </span>
-          <span className="mt-1 block text-xl font-semibold">
-            {editingBusiness?.name || "Business profile and services"}
+          <span className="mt-1 block text-2xl font-semibold tracking-[-0.035em]">
+            {editingBusiness?.name || "Profile, location, and Services"}
+          </span>
+          <span className="mt-2 block text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+            Complete the attributable business record and submit material changes for review.
           </span>
         </span>
-        {formOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[color:var(--loombus-cream)] text-[color:var(--loombus-gold)] dark:bg-[color:var(--loombus-gold-soft)]">
+          {formOpen ? <ChevronUp size={19} /> : <ChevronDown size={19} />}
+        </span>
       </button>
 
       {formOpen ? (
         <form
           onSubmit={submit}
-          className="border-t border-[var(--loombus-border)] p-5 sm:p-6"
+          className="border-t border-[color:var(--loombus-border-muted)] p-5 sm:p-6"
         >
           <BusinessListingFields draft={draft} updateDraft={updateDraft} />
           <BusinessListingLocation draft={draft} updateDraft={updateDraft} />
@@ -87,63 +92,41 @@ export function BusinessListingEditor({
           />
 
           {isAdmin ? (
-            <div className="mt-6 rounded-[1.3rem] border border-[var(--loombus-border)] p-5">
+            <div className="mt-6 rounded-[1.4rem] border border-[color:var(--loombus-gold)] bg-[color:var(--loombus-cream)] p-5 text-[color:var(--loombus-cream-contrast)] dark:bg-[color:var(--loombus-gold-soft)] dark:text-[color:var(--loombus-text)]">
               <h2 className="flex items-center gap-2 font-semibold">
-                <ShieldCheck size={18} /> Administrator publishing
+                <ShieldCheck size={18} className="text-[color:var(--loombus-gold)]" /> Administrator publishing
               </h2>
-              <div className="mt-4 flex flex-wrap gap-5 text-sm">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={draft.unclaimed}
-                    onChange={(event) =>
-                      updateDraft("unclaimed", event.target.checked)
-                    }
-                  />
-                  Create as an unclaimed listing
+              <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                <label className="flex items-start gap-2 rounded-2xl bg-white/45 p-3 dark:bg-black/10">
+                  <input type="checkbox" checked={draft.unclaimed} onChange={(event) => updateDraft("unclaimed", event.target.checked)} className="mt-0.5" />
+                  <span>Create as an unclaimed listing</span>
                 </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={draft.publishNow}
-                    onChange={(event) =>
-                      updateDraft("publishNow", event.target.checked)
-                    }
-                  />
-                  Publish immediately
+                <label className="flex items-start gap-2 rounded-2xl bg-white/45 p-3 dark:bg-black/10">
+                  <input type="checkbox" checked={draft.publishNow} onChange={(event) => updateDraft("publishNow", event.target.checked)} className="mt-0.5" />
+                  <span>Publish immediately</span>
                 </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={draft.verified}
-                    onChange={(event) =>
-                      updateDraft("verified", event.target.checked)
-                    }
-                  />
-                  Mark verified
+                <label className="flex items-start gap-2 rounded-2xl bg-white/45 p-3 dark:bg-black/10">
+                  <input type="checkbox" checked={draft.verified} onChange={(event) => updateDraft("verified", event.target.checked)} className="mt-0.5" />
+                  <span>Mark verified</span>
                 </label>
               </div>
             </div>
           ) : null}
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap gap-3 border-t border-[color:var(--loombus-border-muted)] pt-6">
             <button
               type="submit"
               disabled={working}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--loombus-primary-bg)] px-5 py-3 font-semibold text-[var(--loombus-primary-text)] disabled:opacity-50"
+              className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[color:var(--loombus-gold)] px-5 font-semibold text-[color:var(--loombus-gold-contrast)] transition hover:opacity-90 disabled:opacity-50"
             >
-              {working ? (
-                <Loader2 className="animate-spin" size={17} />
-              ) : (
-                <Save size={17} />
-              )}
+              {working ? <Loader2 className="animate-spin" size={17} /> : <Save size={17} />}
               {editingId ? "Save and resubmit" : "Submit for review"}
             </button>
             {editingId ? (
               <button
                 type="button"
                 onClick={startNew}
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-5 py-3 font-semibold"
+                className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-[color:var(--loombus-border)] px-5 font-semibold transition hover:border-[color:var(--loombus-gold)]"
               >
                 <X size={17} /> Cancel edit
               </button>
