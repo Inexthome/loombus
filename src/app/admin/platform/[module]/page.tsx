@@ -5,6 +5,7 @@ import {
   type PlatformModuleKey,
 } from "../admin-platform-registry";
 import PlatformModuleClient from "../platform-module-client";
+import SearchOperationsClient from "../search-operations-client";
 
 export const metadata: Metadata = {
   title: "Platform Module | Loombus Admin",
@@ -31,6 +32,10 @@ export default async function PlatformModulePage({ params }: Props) {
 
   if (!MODULES.has(module as PlatformModuleKey)) {
     notFound();
+  }
+
+  if (module === "search") {
+    return <SearchOperationsClient />;
   }
 
   return <PlatformModuleClient moduleKey={module as PlatformModuleKey} />;

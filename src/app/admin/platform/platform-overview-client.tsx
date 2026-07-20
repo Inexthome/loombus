@@ -204,7 +204,7 @@ export default function PlatformOverviewClient() {
   return (
     <AdminPlatformShell
       active="overview"
-      eyebrow="Admin foundation"
+      eyebrow="Admin platform"
       title="Platform Operations overview"
       description="Review lightweight operational summaries across Loombus, then open one protected module to load only that module's queue and diagnostics."
       error={error}
@@ -223,7 +223,7 @@ export default function PlatformOverviewClient() {
           description={
             data.activeQueue === null
               ? "One or more operational summaries are unavailable, so a false total is not shown."
-              : "Pending decisions, open reports, and operational exceptions across the ten established modules."
+              : "Pending decisions, open reports, and operational exceptions across the ten queue-bearing modules."
           }
           icon={<ShieldCheck size={20} aria-hidden="true" />}
           featured
@@ -242,7 +242,7 @@ export default function PlatformOverviewClient() {
         <AdminMetricCard
           label="Search index"
           value={searchMetric}
-          description="Indexed documents reported by the new Search operations foundation."
+          description="Indexed documents reported by the protected Search Operations workspace."
           icon={<Search size={20} aria-hidden="true" />}
         />
       </div>
@@ -251,7 +251,7 @@ export default function PlatformOverviewClient() {
         <AdminQueueSection
           eyebrow="Operational modules"
           title="Open one queue at a time"
-          description="The overview reads direct summary counts. Opening a module loads only its own protected payload, not all ten established queues."
+          description="The overview reads direct summary counts. Opening a module loads only its own protected payload, not all eleven operational modules."
         >
           <div className="grid gap-4 xl:grid-cols-2">
             {ADMIN_PLATFORM_MODULES.map((definition) => {
@@ -270,22 +270,20 @@ export default function PlatformOverviewClient() {
                     </span>
                     <AdminStatusBadge
                       status={
-                        definition.key === "search"
-                          ? "foundation"
-                          : unavailable
-                            ? "unavailable"
-                            : metric && metric > 0
-                              ? "attention"
-                              : "ready"
+                        unavailable
+                          ? "unavailable"
+                          : metric && metric > 0
+                            ? "attention"
+                            : "ready"
                       }
                     >
-                      {definition.key === "search"
-                        ? "Foundation"
-                        : unavailable
-                          ? "Unavailable"
-                          : metric && metric > 0
-                            ? "Needs review"
-                            : "Ready"}
+                      {unavailable
+                        ? "Unavailable"
+                        : metric && metric > 0
+                          ? definition.key === "search"
+                            ? "Indexed"
+                            : "Needs review"
+                          : "Ready"}
                     </AdminStatusBadge>
                   </div>
 

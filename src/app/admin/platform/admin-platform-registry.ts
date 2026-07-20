@@ -188,7 +188,7 @@ export const ADMIN_PLATFORM_MODULES: AdminModuleDefinition[] = [
     title: "Search Operations",
     shortTitle: "Search",
     description:
-      "Establish the protected Search operations module and its index registry before the dedicated index-health redesign.",
+      "Monitor index integrity, rebuild registered source families, and repair derived records without changing public Search, visibility, or ranking rules.",
     publicHref: "/search",
     manageHref: "/search",
     publicLabel: "Open Search",
