@@ -19,6 +19,19 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    files: [
+      "src/app/admin/platform/platform-overview-client.tsx",
+      "src/app/admin/platform/platform-module-client.tsx",
+    ],
+    rules: {
+      // These controllers intentionally memoize authenticated load/action callbacks
+      // around route-scoped module state. Keep the exception limited to this Admin foundation.
+      "react-hooks/preserve-manual-memoization": "off",
+      // Module icons are selected from the static Admin module registry.
+      "react/jsx-pascal-case": "off",
+    },
+  },
+  {
     files: ["src/app/u/**/public-profile-v2-client.js"],
     rules: {
       // This compact generated client intentionally uses expression-based state updates

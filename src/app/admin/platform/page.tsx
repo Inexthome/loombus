@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import PlatformOperationsClient from "./platform-operations-client";
+import PlatformOverviewClient from "./platform-overview-client";
 
 export const metadata: Metadata = {
   title: "Platform Operations | Loombus Admin",
   description:
-    "Role-protected moderation and operational oversight for Marketplace, Business Directory, Jobs, Events, Requests, Services, Rooms, Appointments, Local, and Matches.",
+    "Role-protected operational summaries and module navigation for Marketplace, Businesses, Jobs, Events, Requests, Services, Rooms, Appointments, Local, Matches, and Search.",
   robots: {
     index: false,
     follow: false,
@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function PlatformOperationsPage() {
-  return <PlatformOperationsClient initialModule="overview" />;
+  return <PlatformOverviewClient />;
 }
