@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CalendarDays,
   DoorOpen,
+  Fingerprint,
   GitBranch,
   HandHeart,
   MapPin,
@@ -26,10 +27,11 @@ export type PlatformModuleKey =
   | "matches"
   | "search";
 
-export type PlatformRoute = "overview" | PlatformModuleKey;
+export type AdminPlatformModuleKey = PlatformModuleKey | "duplicates";
+export type PlatformRoute = "overview" | AdminPlatformModuleKey;
 
 export type AdminModuleDefinition = {
-  key: PlatformModuleKey;
+  key: AdminPlatformModuleKey;
   title: string;
   shortTitle: string;
   description: string;
@@ -184,6 +186,20 @@ export const ADMIN_PLATFORM_MODULES: AdminModuleDefinition[] = [
     Icon: GitBranch,
   },
   {
+    key: "duplicates",
+    title: "Media Duplicate Review",
+    shortTitle: "Duplicates",
+    description:
+      "Review cross-account exact-content matches for public-platform images, videos, and PDFs without changing source records.",
+    publicHref: "/discussions",
+    manageHref: "/admin/platform/duplicates",
+    publicLabel: "Open Discussions",
+    manageLabel: "Open duplicate review",
+    metricLabel: "open signals",
+    includeInQueueTotal: false,
+    Icon: Fingerprint,
+  },
+  {
     key: "search",
     title: "Search Operations",
     shortTitle: "Search",
@@ -199,6 +215,6 @@ export const ADMIN_PLATFORM_MODULES: AdminModuleDefinition[] = [
   },
 ];
 
-export function getAdminPlatformModule(key: PlatformModuleKey) {
+export function getAdminPlatformModule(key: AdminPlatformModuleKey) {
   return ADMIN_PLATFORM_MODULES.find((module) => module.key === key) ?? null;
 }
