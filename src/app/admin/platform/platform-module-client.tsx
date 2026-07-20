@@ -2,13 +2,33 @@
 
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowRight,
+  Building2,
+  CalendarClock,
+  CheckCircle2,
   CircleAlert,
+  Clock3,
   Database,
+  DoorOpen,
+  Flag,
+  GitBranch,
+  MapPin,
   RefreshCw,
   Search,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  XCircle,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type ReactNode,
+} from "react";
 import { BusinessModerationPanel } from "@/components/business-moderation-panel";
 import { JobModerationPanel } from "@/components/job-moderation-panel";
 import MarketplaceAdminMetrics from "@/components/marketplace-admin-metrics";
@@ -18,17 +38,13 @@ import {
   RequestModerationPanel,
   ServiceModerationPanel,
 } from "@/components/platform-phase2-moderation-panels";
-import {
-  AppointmentOperationsPanel,
-  RoomOperationsPanel,
-  type AppointmentsAdminResponse,
-  type RoomsAdminResponse,
+import type {
+  AppointmentsAdminResponse,
+  RoomsAdminResponse,
 } from "@/components/platform-phase3-operations-panels";
-import {
-  LocalOperationsPanel,
-  MatchesOperationsPanel,
-  type LocalAdminResponse,
-  type MatchesAdminResponse,
+import type {
+  LocalAdminResponse,
+  MatchesAdminResponse,
 } from "@/components/platform-final-operations-panels";
 import type { BusinessManageResponse } from "@/lib/business-directory";
 import type { EventsManageResponse } from "@/lib/events";
@@ -41,6 +57,7 @@ import type { ProviderServicesManageResponse } from "@/lib/provider-services";
 import type { ServiceRequestManageResponse } from "@/lib/service-requests";
 import { supabase } from "@/lib/supabase/client";
 import {
+  AdminActionButton,
   AdminActionLink,
   AdminMetricCard,
   AdminPlatformShell,
@@ -104,6 +121,18 @@ type ErrorPayload = {
   isAdmin?: unknown;
 };
 
+type ActionRunner = (
+  payload: Record<string, unknown>,
+  successMessage: string,
+) => void | Promise<void>;
+
+type ProfileSummary = {
+  id: string;
+  displayName: string;
+  username: string | null;
+  accountStatus?: string | null;
+};
+
 const ENDPOINTS: Record<PlatformModuleKey, string> = {
   marketplace: "/api/marketplace?manage=1",
   businesses: "/api/businesses?manage=1",
@@ -117,6 +146,17 @@ const ENDPOINTS: Record<PlatformModuleKey, string> = {
   matches: "/api/admin/platform/matches",
   search: "/api/admin/platform/search",
 };
+
+const recordClass =
+  "rounded-[1.55rem] border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-5 sm:p-6";
+const emptyClass =
+  "rounded-2xl border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-7 text-center text-sm text-[var(--loombus-text-muted)]";
+const detailPillClass =
+  "inline-flex items-center gap-1.5 rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs text-[var(--loombus-text-muted)]";
+const textareaClass =
+  "mt-3 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm outline-none transition focus:border-[var(--loombus-gold)] focus:ring-2 focus:ring-[var(--loombus-gold-soft)]";
+const dangerButtonClass =
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-red-500/30 px-4 text-sm font-semibold text-red-700 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-300";
 
 class AuthorizedRequestError extends Error {
   constructor(
@@ -179,6 +219,935 @@ async function authorizedPost(
   return payload;
 }
 
+function formatDateTime(value: string | null) {
+  if (!value) return "Not recorded";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "Not recorded";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function identity(profile: ProfileSummary) {
+  return profile.username
+    ? `${profile.displayName} (@${profile.username})`
+    : profile.displayName;
+}
+
+function QueueBadge({ count, noun = "open" }: { count: number; noun?: string }) {
+  return (
+    <AdminStatusBadge status={count ? "attention" : "ready"}>
+      {count ? `${count} ${noun}` : "Queue clear"}
+    </AdminStatusBadge>
+  );
+}
+
+function StatusPill({ value, attention = false }: { value: string; attention?: boolean }) {
+  return (
+    <AdminStatusBadge status={attention ? "attention" : "ready"}>
+      {value.replaceAll("_", " ")}
+    </AdminStatusBadge>
+  );
+}
+
+function NotesField({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <label className="mt-5 block text-sm font-semibold" htmlFor={id}>
+        {label}
+      </label>
+      <textarea
+        id={id}
+        rows={3}
+        maxLength={2000}
+        value={value}
+        onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+          onChange(event.target.value)
+        }
+        placeholder={placeholder}
+        className={textareaClass}
+      />
+    </>
+  );
+}
+
+function BoundaryCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-5">
+      <div className="flex items-start gap-3">
+        <ShieldCheck
+          className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
+          size={19}
+          aria-hidden="true"
+        />
+        <div>
+          <h3 className="font-semibold">{title}</h3>
+          <p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">
+            {description}
+          </p>
+          {children ? <div className="mt-4 flex flex-wrap gap-2">{children}</div> : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RoomsOperationsWorkspace({
+  data,
+  working,
+  runAction,
+}: {
+  data: RoomsAdminResponse;
+  working: boolean;
+  runAction: ActionRunner;
+}) {
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const attentionRooms = useMemo(
+    () =>
+      data.rooms.filter(
+        (room) =>
+          room.openReports > 0 ||
+          room.pendingApplications > 0 ||
+          room.status === "pending_deletion" ||
+          !["active", "trialing", "free"].includes(
+            room.subscriptionStatus.toLowerCase(),
+          ),
+      ),
+    [data.rooms],
+  );
+  const noteFor = (id: string) => notes[id] ?? "";
+  const setNote = (id: string, value: string) =>
+    setNotes((current) => ({ ...current, [id]: value }));
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AdminMetricCard
+          label="Open reports"
+          value={data.metrics.openReports}
+          description="Private Room report snapshots awaiting an administrator outcome."
+          icon={<Flag size={20} aria-hidden="true" />}
+          featured
+        />
+        <AdminMetricCard
+          label="Room registry"
+          value={data.metrics.totalRooms}
+          description={`${data.metrics.activeRooms} active, ${data.metrics.archivedRooms} archived, and ${data.metrics.pendingDeletion} pending deletion.`}
+          icon={<DoorOpen size={20} aria-hidden="true" />}
+        />
+        <AdminMetricCard
+          label="Pending access"
+          value={data.metrics.pendingApplications}
+          description="Membership applications still controlled by Room owners and managers."
+          icon={<Users size={20} aria-hidden="true" />}
+        />
+        <AdminMetricCard
+          label="Billing attention"
+          value={data.metrics.billingAttention}
+          description="Room subscriptions carrying an exception or inactive billing state."
+          icon={<AlertTriangle size={20} aria-hidden="true" />}
+        />
+      </div>
+
+      <AdminQueueSection
+        eyebrow="Privacy boundary"
+        title="Private Room operations remain scoped"
+        description="The Admin workspace receives Room metadata, operational counts, billing-state presence, and only the snapshots members deliberately included in reports."
+        action={<AdminStatusBadge status="ready">Boundary enforced</AdminStatusBadge>}
+      >
+        <BoundaryCard
+          title="Private content is not loaded"
+          description="Room discussions, files, resources, calendars, and member workspaces remain outside this administrator payload. Suspension, ownership transfer, and billing mutation are not exposed because durable platform-level action contracts do not exist for them."
+        >
+          <StatusPill value="Metadata only" />
+          <StatusPill value="Report snapshots only" />
+          <StatusPill value="No billing mutation" />
+        </BoundaryCard>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Trust and safety"
+        title="Open Room reports"
+        description="Resolve or dismiss submitted Room report snapshots while preserving the original report, target attribution, and administrator audit note."
+        action={<QueueBadge count={data.reports.length} />}
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          {data.reports.map((report) => (
+            <article key={report.id} className={recordClass}>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill value={report.state} attention />
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
+                  {report.targetType.replaceAll("_", " ")}
+                </span>
+              </div>
+              <h3 className="mt-3 text-xl font-semibold">{report.targetLabel}</h3>
+              <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                {report.roomName} · Reported by {identity(report.reporter)}
+              </p>
+              <p className="mt-4 text-sm font-semibold">{report.reason}</p>
+              {report.details ? (
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-[var(--loombus-text-muted)]">
+                  {report.details}
+                </p>
+              ) : null}
+              {report.targetSnapshot ? (
+                <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
+                    Submitted snapshot
+                  </p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-7">
+                    {report.targetSnapshot}
+                  </p>
+                </div>
+              ) : null}
+              <p className="mt-3 text-xs text-[var(--loombus-text-subtle)]">
+                Submitted {formatDateTime(report.createdAt)}
+              </p>
+              <NotesField
+                id={`room-report-note-${report.id}`}
+                label="Decision note"
+                placeholder="Record the review outcome or supporting context."
+                value={noteFor(report.id)}
+                onChange={(value) => setNote(report.id, value)}
+              />
+              <div className="mt-4 flex flex-wrap gap-2">
+                <AdminActionButton
+                  type="button"
+                  primary
+                  disabled={working}
+                  onClick={() =>
+                    void runAction(
+                      {
+                        action: "review_report",
+                        reportId: report.id,
+                        decision: "resolve",
+                        note: noteFor(report.id),
+                      },
+                      "The Room report was resolved.",
+                    )
+                  }
+                >
+                  <CheckCircle2 size={15} aria-hidden="true" /> Resolve
+                </AdminActionButton>
+                <AdminActionButton
+                  type="button"
+                  disabled={working}
+                  onClick={() =>
+                    void runAction(
+                      {
+                        action: "review_report",
+                        reportId: report.id,
+                        decision: "dismiss",
+                        note: noteFor(report.id),
+                      },
+                      "The Room report was dismissed.",
+                    )
+                  }
+                >
+                  <XCircle size={15} aria-hidden="true" /> Dismiss
+                </AdminActionButton>
+              </div>
+            </article>
+          ))}
+          {data.reports.length === 0 ? (
+            <p className={emptyClass}>No private Room reports require review.</p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Operational attention"
+        title="Rooms with exceptions"
+        description="Review Room status, membership pressure, report volume, owner identity, and billing-state presence without exposing private content."
+        action={<QueueBadge count={attentionRooms.length} noun="flagged" />}
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          {attentionRooms.slice(0, 100).map((room) => (
+            <article key={room.id} className={recordClass}>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill
+                  value={room.status}
+                  attention={room.status !== "active"}
+                />
+                <StatusPill
+                  value={room.subscriptionStatus}
+                  attention={!["active", "trialing", "free"].includes(
+                    room.subscriptionStatus.toLowerCase(),
+                  )}
+                />
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
+                  {room.subscriptionPlan.replaceAll("_", " ")}
+                </span>
+              </div>
+              <h3 className="mt-3 text-xl font-semibold">{room.name}</h3>
+              <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                Owner: {identity(room.owner)}
+              </p>
+              {room.description ? (
+                <p className="mt-3 line-clamp-3 text-sm leading-7 text-[var(--loombus-text-muted)]">
+                  {room.description}
+                </p>
+              ) : null}
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className={detailPillClass}>
+                  <Users size={13} aria-hidden="true" /> {room.memberCount.toLocaleString()}
+                  {room.memberLimit === null
+                    ? " members"
+                    : ` of ${room.memberLimit.toLocaleString()} members`}
+                </span>
+                <span className={detailPillClass}>{room.openReports} reports</span>
+                <span className={detailPillClass}>
+                  {room.pendingApplications} access requests
+                </span>
+                <span className={detailPillClass}>
+                  Billing identity: {room.hasStripeCustomer || room.hasStripeSubscription ? "Connected" : "Not connected"}
+                </span>
+                <span className={detailPillClass}>
+                  Period end: {formatDateTime(room.currentPeriodEnd)}
+                </span>
+              </div>
+              <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">
+                Updated {formatDateTime(room.updatedAt)}
+              </p>
+            </article>
+          ))}
+          {attentionRooms.length === 0 ? (
+            <p className={emptyClass}>
+              No Room reports, membership queues, deletion states, or billing exceptions require attention.
+            </p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Registry"
+        title="Recent Rooms"
+        description="A responsive registry view of the Room records returned by the protected endpoint."
+        action={<AdminStatusBadge status="ready">{data.rooms.length} records</AdminStatusBadge>}
+      >
+        <div className="grid gap-3 xl:grid-cols-2">
+          {data.rooms.map((room) => (
+            <article key={room.id} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="font-semibold">{room.name}</h3>
+                  <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                    {identity(room.owner)} · {room.roomType.replaceAll("_", " ")}
+                  </p>
+                </div>
+                <StatusPill value={room.status} attention={room.status !== "active"} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--loombus-text-muted)]">
+                <span>{room.subscriptionPlan.replaceAll("_", " ")} plan</span>
+                <span>·</span>
+                <span>{room.memberCount.toLocaleString()} members</span>
+                <span>·</span>
+                <span>{room.openReports} reports</span>
+                <span>·</span>
+                <span>Updated {formatDateTime(room.updatedAt)}</span>
+              </div>
+            </article>
+          ))}
+          {data.rooms.length === 0 ? <p className={emptyClass}>No Rooms were returned.</p> : null}
+        </div>
+      </AdminQueueSection>
+    </div>
+  );
+}
+
+function AppointmentsOperationsWorkspace({
+  data,
+  working,
+  runAction,
+}: {
+  data: AppointmentsAdminResponse;
+  working: boolean;
+  runAction: ActionRunner;
+}) {
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const operationalRequests = useMemo(
+    () =>
+      data.requests.filter((request) =>
+        ["pending", "accepted", "reschedule_proposed"].includes(request.status),
+      ),
+    [data.requests],
+  );
+  const noteFor = (id: string) => notes[id] ?? "";
+  const setNote = (id: string, value: string) =>
+    setNotes((current) => ({ ...current, [id]: value }));
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AdminMetricCard
+          label="Overdue accepted"
+          value={data.metrics.overdueAccepted}
+          description="Accepted appointments whose scheduled end has passed."
+          icon={<Clock3 size={20} aria-hidden="true" />}
+          featured
+        />
+        <AdminMetricCard
+          label="Pending requests"
+          value={data.metrics.pendingRequests}
+          description="Requests awaiting the normal provider response workflow."
+          icon={<CalendarClock size={20} aria-hidden="true" />}
+        />
+        <AdminMetricCard
+          label="Accepted"
+          value={data.metrics.acceptedRequests}
+          description="Confirmed appointments currently in the lifecycle."
+          icon={<CheckCircle2 size={20} aria-hidden="true" />}
+        />
+        <AdminMetricCard
+          label="Active services"
+          value={data.metrics.activeServices}
+          description="Appointment services currently accepting requests."
+          icon={<Building2 size={20} aria-hidden="true" />}
+        />
+      </div>
+
+      <AdminQueueSection
+        eyebrow="Operational boundary"
+        title="Administrator intervention is lifecycle-only"
+        description="Provider publishing remains in the provider workspace. The only administrator mutation exposed by the existing endpoint is an audited cancellation of an active request."
+        action={<AdminStatusBadge status="ready">Contract preserved</AdminStatusBadge>}
+      >
+        <BoundaryCard
+          title="No hidden professional or payment controls"
+          description="There is no appointment dispute queue, provider credential review, durable provider suspension, payment operation, or professional ranking system in this module."
+        >
+          <StatusPill value="Audited cancellation" />
+          <StatusPill value="Provider-owned publishing" />
+          <StatusPill value="No payment operations" />
+        </BoundaryCard>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Appointment lifecycle"
+        title="Active requests"
+        description="Review provider, requester, schedule, notes, and current status before using the existing administrator cancellation contract."
+        action={<QueueBadge count={operationalRequests.length} noun="active" />}
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          {operationalRequests.slice(0, 150).map((request) => (
+            <article key={request.id} className={recordClass}>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill value={request.status} attention={request.overdue} />
+                {request.overdue ? (
+                  <AdminStatusBadge status="attention">Overdue</AdminStatusBadge>
+                ) : null}
+              </div>
+              <h3 className="mt-3 text-xl font-semibold">{request.serviceName}</h3>
+              <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                {request.businessName}
+              </p>
+              <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                <span><strong>Provider:</strong> {identity(request.provider)}</span>
+                <span><strong>Requester:</strong> {identity(request.requester)}</span>
+                <span>
+                  <strong>Scheduled:</strong>{" "}
+                  {formatDateTime(
+                    request.status === "reschedule_proposed"
+                      ? request.proposedStart
+                      : request.requestedStart,
+                  )}
+                </span>
+                <span><strong>Timezone:</strong> {request.timezone}</span>
+              </div>
+              {request.note ? (
+                <p className="mt-4 rounded-2xl bg-[var(--loombus-surface)] p-4 text-sm leading-7 text-[var(--loombus-text-muted)]">
+                  <strong className="text-[var(--loombus-text)]">Requester note:</strong>{" "}
+                  {request.note}
+                </p>
+              ) : null}
+              {request.providerNote ? (
+                <p className="mt-3 rounded-2xl bg-[var(--loombus-surface)] p-4 text-sm leading-7 text-[var(--loombus-text-muted)]">
+                  <strong className="text-[var(--loombus-text)]">Provider note:</strong>{" "}
+                  {request.providerNote}
+                </p>
+              ) : null}
+              <NotesField
+                id={`appointment-cancel-note-${request.id}`}
+                label="Administrator cancellation reason"
+                placeholder="Required for the audit log and party notifications."
+                value={noteFor(request.id)}
+                onChange={(value) => setNote(request.id, value)}
+              />
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={working || noteFor(request.id).trim().length < 3}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Cancel this appointment request? Both parties will be notified.",
+                      )
+                    ) {
+                      void runAction(
+                        {
+                          action: "cancel_request",
+                          requestId: request.id,
+                          note: noteFor(request.id),
+                        },
+                        "The appointment request was cancelled.",
+                      );
+                    }
+                  }}
+                  className={dangerButtonClass}
+                >
+                  <XCircle size={15} aria-hidden="true" /> Cancel appointment
+                </button>
+              </div>
+            </article>
+          ))}
+          {operationalRequests.length === 0 ? (
+            <p className={emptyClass}>
+              No pending, accepted, or reschedule-proposed appointments are active.
+            </p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Provider registry"
+        title="Appointment services"
+        description="Inspect business ownership, service status, delivery details, location, duration, and provider account state. Publishing controls remain with the provider."
+        action={<AdminStatusBadge status="ready">{data.services.length} services</AdminStatusBadge>}
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          {data.services.slice(0, 200).map((service) => (
+            <article key={service.id} className={recordClass}>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusPill value={service.status} attention={service.status !== "active"} />
+                    {service.owner.accountStatus && service.owner.accountStatus !== "active" ? (
+                      <StatusPill value={service.owner.accountStatus} attention />
+                    ) : null}
+                  </div>
+                  <h3 className="mt-3 text-xl font-semibold">{service.name}</h3>
+                  <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                    {service.businessName} · {identity(service.owner)}
+                  </p>
+                </div>
+                {service.businessSlug ? (
+                  <Link
+                    href={`/businesses/${service.businessSlug}`}
+                    className="shrink-0 text-sm font-semibold text-[var(--loombus-gold)]"
+                  >
+                    Open business
+                  </Link>
+                ) : null}
+              </div>
+              <p className="mt-4 line-clamp-4 whitespace-pre-wrap text-sm leading-7 text-[var(--loombus-text-muted)]">
+                {service.description}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className={detailPillClass}>{service.durationMinutes} minutes</span>
+                <span className={detailPillClass}>
+                  <MapPin size={13} aria-hidden="true" /> {service.locationText || service.locationMode.replaceAll("_", " ")}
+                </span>
+                <span className={detailPillClass}>{service.priceText || "Price not stated"}</span>
+                <span className={detailPillClass}>Business: {service.businessStatus || "Unavailable"}</span>
+              </div>
+              {service.instructions ? (
+                <p className="mt-4 rounded-2xl bg-[var(--loombus-surface)] p-4 text-sm leading-7 text-[var(--loombus-text-muted)]">
+                  {service.instructions}
+                </p>
+              ) : null}
+              <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">
+                Updated {formatDateTime(service.updatedAt)}
+              </p>
+            </article>
+          ))}
+          {data.services.length === 0 ? (
+            <p className={emptyClass}>No appointment services exist.</p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Lifecycle totals"
+        title="Appointment state distribution"
+        description="Current read-only totals across reschedules, completions, cancellations, and paused provider services."
+      >
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <AdminMetricCard label="Reschedules" value={data.metrics.rescheduleProposed} description="Proposed times awaiting requester acceptance." />
+          <AdminMetricCard label="Completed" value={data.metrics.completedRequests} description="Appointments marked complete by providers." />
+          <AdminMetricCard label="Cancelled" value={data.metrics.cancelledRequests} description="Requests cancelled by a party or administration." />
+          <AdminMetricCard label="Paused services" value={data.metrics.pausedServices} description="Services not currently accepting requests." />
+        </div>
+      </AdminQueueSection>
+    </div>
+  );
+}
+
+function LocalOperationsWorkspace({ data }: { data: LocalAdminResponse }) {
+  const coverage =
+    data.metrics.activePublic > 0
+      ? Math.round((data.metrics.anchored / data.metrics.activePublic) * 100)
+      : 100;
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AdminMetricCard
+          label="Active Local records"
+          value={data.metrics.activePublic}
+          description="Public active source documents eligible for Local Discovery."
+          icon={<MapPin size={20} aria-hidden="true" />}
+          featured
+        />
+        <AdminMetricCard
+          label="Location coverage"
+          value={`${coverage}%`}
+          description="Records with direct, inherited, or place-based location context."
+        />
+        <AdminMetricCard
+          label="Missing location"
+          value={data.metrics.missingLocation}
+          description="Active non-remote records without usable Local area context."
+          icon={<AlertTriangle size={20} aria-hidden="true" />}
+        />
+        <AdminMetricCard
+          label="30-day review"
+          value={data.metrics.stale30Days}
+          description="Records with an absent or older source timestamp."
+          icon={<Clock3 size={20} aria-hidden="true" />}
+        />
+      </div>
+
+      <AdminQueueSection
+        eyebrow="Source health"
+        title="Local coverage by module"
+        description="Inspect the shared Local Discovery document and privacy-safe location layers without rebuilding the index or mutating source records."
+        action={<AdminStatusBadge status="ready">{data.metrics.sourceCount} sources</AdminStatusBadge>}
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          {data.sources.map((source) => (
+            <article key={source.sourceTable} className={recordClass}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">{source.label}</h3>
+                  <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                    {source.total.toLocaleString()} indexed documents
+                  </p>
+                </div>
+                <AdminStatusBadge
+                  status={source.missingLocation || source.stale30Days ? "attention" : "ready"}
+                >
+                  {source.coveragePercent}% covered
+                </AdminStatusBadge>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-2xl bg-[var(--loombus-surface)] p-3 text-sm"><strong className="block text-lg">{source.activePublic}</strong>Active public</div>
+                <div className="rounded-2xl bg-[var(--loombus-surface)] p-3 text-sm"><strong className="block text-lg">{source.anchored}</strong>Anchored</div>
+                <div className="rounded-2xl bg-[var(--loombus-surface)] p-3 text-sm"><strong className="block text-lg">{source.missingLocation}</strong>Missing location</div>
+                <div className="rounded-2xl bg-[var(--loombus-surface)] p-3 text-sm"><strong className="block text-lg">{source.stale30Days}</strong>30-day review</div>
+                <div className="rounded-2xl bg-[var(--loombus-surface)] p-3 text-sm"><strong className="block text-lg">{source.remoteAvailable}</strong>Remote available</div>
+              </div>
+            </article>
+          ))}
+          {data.sources.length === 0 ? (
+            <p className={emptyClass}>No Local source summaries were returned.</p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Operational attention"
+        title="Location and freshness exceptions"
+        description="Open the owning record to correct missing location context or review stale source data. Local does not expose a parallel editor."
+        action={<QueueBadge count={data.attention.length} noun="flagged" />}
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          {data.attention.map((record) => (
+            <article key={`${record.sourceTable}:${record.id}`} className={recordClass}>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill value={record.sourceLabel} />
+                {record.missingLocation ? (
+                  <AdminStatusBadge status="attention">Missing location</AdminStatusBadge>
+                ) : null}
+                {record.stale ? (
+                  <AdminStatusBadge status="attention">
+                    {record.ageDays === null ? "Timestamp missing" : `${record.ageDays} days old`}
+                  </AdminStatusBadge>
+                ) : null}
+              </div>
+              <h3 className="mt-3 text-xl font-semibold">{record.title}</h3>
+              <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                {record.ownerLabel}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className={detailPillClass}>
+                  <MapPin size={13} aria-hidden="true" /> {record.locationLabel}
+                </span>
+                <span className={detailPillClass}>{record.visibility}</span>
+                <span className={detailPillClass}>{record.status}</span>
+                {record.remoteAvailable ? <span className={detailPillClass}>Remote available</span> : null}
+              </div>
+              <p className="mt-4 text-xs text-[var(--loombus-text-subtle)]">
+                Updated {formatDateTime(record.updatedAt)}
+              </p>
+              <Link
+                href={record.href}
+                className="mt-4 inline-flex min-h-11 items-center rounded-full border border-[var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)]"
+              >
+                Open owning record
+              </Link>
+            </article>
+          ))}
+          {data.attention.length === 0 ? (
+            <p className={emptyClass}>
+              No active Local records meet the missing-location or 30-day review criteria.
+            </p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Operational boundary"
+        title="Local remains an aggregation layer"
+        description="Publication, suspension, removal, ownership, and location editing remain in the source module that owns each record."
+        action={<AdminStatusBadge status="ready">Diagnostic only</AdminStatusBadge>}
+      >
+        <BoundaryCard
+          title="No parallel source mutation"
+          description="This workspace reports source health and directs administrators to the owning record. It does not expose global edits, record deletion, visibility changes, or index rebuild actions."
+        />
+      </AdminQueueSection>
+    </div>
+  );
+}
+
+function MatchesOperationsWorkspace({ data }: { data: MatchesAdminResponse }) {
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AdminMetricCard
+          label="Eligible candidates"
+          value={data.metrics.eligible}
+          description="Candidates carrying the existing eligible status."
+          icon={<Sparkles size={20} aria-hidden="true" />}
+          featured
+        />
+        <AdminMetricCard
+          label="Average confidence"
+          value={`${data.metrics.averageConfidence}%`}
+          description="Average stored confidence across the inspected window."
+          icon={<GitBranch size={20} aria-hidden="true" />}
+        />
+        <AdminMetricCard
+          label="Feedback attention"
+          value={data.metrics.feedbackAttention}
+          description="Unsafe and incorrect member feedback signals."
+          icon={<Flag size={20} aria-hidden="true" />}
+        />
+        <AdminMetricCard
+          label="Operational exceptions"
+          value={data.metrics.attentionTotal}
+          description="Feedback attention, stale candidates, and failed deliveries."
+          icon={<AlertTriangle size={20} aria-hidden="true" />}
+        />
+      </div>
+
+      <AdminQueueSection
+        eyebrow="Algorithm health"
+        title="Eligibility, confidence, and delivery"
+        description="Inspect stored matching output generated from active Requests and Services. This workspace does not approve candidates or alter scoring."
+        action={<AdminStatusBadge status="ready">Read-only diagnostics</AdminStatusBadge>}
+      >
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <AdminMetricCard label="High confidence" value={data.metrics.highConfidence} description="Stored confidence of 80 or higher." />
+          <AdminMetricCard label="Medium confidence" value={data.metrics.mediumConfidence} description="Stored confidence from 60 through 79." />
+          <AdminMetricCard label="Low confidence" value={data.metrics.lowConfidence} description="Stored confidence below 60." />
+          <AdminMetricCard label="Stale eligible" value={data.metrics.staleEligible} description="Older than seven days or past expiration." />
+          <AdminMetricCard label="Expired" value={data.metrics.expired} description="Candidates carrying an expired status." />
+          <AdminMetricCard label="Ineligible" value={data.metrics.ineligible} description="Candidates excluded by existing eligibility rules." />
+          <AdminMetricCard label="Paused accounts" value={data.metrics.pausedAccounts} description="Members who paused matching." />
+          <AdminMetricCard label="Active rules" value={data.metrics.activeRules} description="Saved user rules marked active." />
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <article className={recordClass}>
+            <h3 className="font-semibold">Candidate activity</h3>
+            <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+              <span>Unviewed eligible: {data.metrics.unviewedEligible}</span>
+              <span>Saved: {data.metrics.saved}</span>
+              <span>Dismissed: {data.metrics.dismissed}</span>
+              <span>Acted on: {data.metrics.actedOn}</span>
+            </div>
+          </article>
+          <article className={recordClass}>
+            <h3 className="font-semibold">Delivery states</h3>
+            <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+              <span>Queued: {data.deliveryCounts.queued}</span>
+              <span>Sent: {data.deliveryCounts.sent}</span>
+              <span>Skipped: {data.deliveryCounts.skipped}</span>
+              <span>Failed: {data.deliveryCounts.failed}</span>
+            </div>
+          </article>
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Member feedback"
+        title="Quality and safety signals"
+        description="The current schema records feedback but does not provide a review or resolution status. These signals remain diagnostic."
+        action={<QueueBadge count={data.feedbackSignals.length} noun="signals" />}
+      >
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <AdminMetricCard label="Unsafe" value={data.feedbackCounts.unsafe} description="Candidates marked unsafe." />
+          <AdminMetricCard label="Incorrect" value={data.feedbackCounts.incorrect} description="Candidates marked incorrect." />
+          <AdminMetricCard label="Not relevant" value={data.feedbackCounts.notRelevant} description="Candidates marked not relevant." />
+          <AdminMetricCard label="Helpful" value={data.feedbackCounts.helpful} description="Candidates marked helpful." />
+        </div>
+        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+          {data.feedbackSignals.map((signal) => (
+            <article key={signal.id} className={recordClass}>
+              <div className="flex flex-wrap items-center gap-2">
+                <AdminStatusBadge
+                  status={["unsafe", "incorrect"].includes(signal.feedbackType) ? "attention" : "ready"}
+                >
+                  {signal.feedbackType.replaceAll("_", " ")}
+                </AdminStatusBadge>
+                {signal.confidence !== null ? (
+                  <StatusPill value={`${signal.confidence}% confidence`} />
+                ) : null}
+              </div>
+              <h3 className="mt-3 text-lg font-semibold">{signal.viewerLabel}</h3>
+              {signal.source && signal.target ? (
+                <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
+                  {signal.source.title} to {signal.target.title}
+                </p>
+              ) : null}
+              {signal.note ? (
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--loombus-text-muted)]">
+                  {signal.note}
+                </p>
+              ) : null}
+              <p className="mt-3 text-xs text-[var(--loombus-text-subtle)]">
+                Submitted {formatDateTime(signal.createdAt)}
+              </p>
+            </article>
+          ))}
+          {data.feedbackSignals.length === 0 ? (
+            <p className={emptyClass}>No matching feedback signals were returned.</p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Candidate diagnostics"
+        title="Recent match candidates"
+        description="Review viewer account status, source and target records, direction, confidence, stored explanations, lifecycle state, and freshness."
+        action={<AdminStatusBadge status="ready">{data.candidates.length} candidates</AdminStatusBadge>}
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          {data.candidates.map((candidate) => (
+            <article key={candidate.id} className={recordClass}>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill
+                  value={candidate.eligibilityStatus}
+                  attention={candidate.eligibilityStatus !== "eligible"}
+                />
+                <StatusPill value={`${candidate.confidence}% confidence`} />
+                {candidate.stale ? (
+                  <AdminStatusBadge status="attention">Operational review</AdminStatusBadge>
+                ) : null}
+                {candidate.saved ? <StatusPill value="Saved" /> : null}
+                {candidate.dismissed ? <StatusPill value="Dismissed" /> : null}
+                {candidate.actedOn ? <StatusPill value="Acted on" /> : null}
+              </div>
+              <h3 className="mt-3 text-lg font-semibold">{candidate.viewerLabel}</h3>
+              <p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">
+                Account: {candidate.viewerAccountStatus}
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+                <Link
+                  href={candidate.source.href}
+                  className="rounded-2xl border border-[var(--loombus-border)] p-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)]"
+                >
+                  <span className="block text-xs font-bold uppercase tracking-[0.12em] text-[var(--loombus-text-subtle)]">
+                    {candidate.source.type}
+                  </span>
+                  <span className="mt-1 block">{candidate.source.title}</span>
+                </Link>
+                <Sparkles
+                  size={17}
+                  className="mx-auto text-[var(--loombus-gold)]"
+                  aria-hidden="true"
+                />
+                <Link
+                  href={candidate.target.href}
+                  className="rounded-2xl border border-[var(--loombus-border)] p-4 text-sm font-semibold transition hover:border-[var(--loombus-gold)]"
+                >
+                  <span className="block text-xs font-bold uppercase tracking-[0.12em] text-[var(--loombus-text-subtle)]">
+                    {candidate.target.type}
+                  </span>
+                  <span className="mt-1 block">{candidate.target.title}</span>
+                </Link>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className={detailPillClass}>Direction: {candidate.direction.replaceAll("_", " ")}</span>
+                <span className={detailPillClass}>Refreshed: {formatDateTime(candidate.refreshedAt)}</span>
+                <span className={detailPillClass}>Expires: {formatDateTime(candidate.expiresAt)}</span>
+              </div>
+              {candidate.explanation.length ? (
+                <div className="mt-4 rounded-2xl bg-[var(--loombus-surface)] p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
+                    Stored explanation
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm text-[var(--loombus-text-muted)]">
+                    {candidate.explanation.slice(0, 5).map((item) => (
+                      <li key={item}>• {item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </article>
+          ))}
+          {data.candidates.length === 0 ? (
+            <p className={emptyClass}>No Intelligent Matching candidates were returned.</p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Operational boundary"
+        title="Matching remains user-controlled"
+        description="Administrators can inspect algorithm health and member feedback, but cannot approve matches, alter confidence, change preferences, block members, or disable accounts from this module."
+        action={<AdminStatusBadge status="ready">Diagnostic only</AdminStatusBadge>}
+      >
+        <BoundaryCard
+          title="No administrator scoring controls"
+          description="Candidate generation, eligibility, preference rules, saved state, dismissal, and member action remain governed by the existing matching system and user-owned settings."
+        />
+      </AdminQueueSection>
+    </div>
+  );
+}
+
 function SearchFoundationPanel({ data }: { data: SearchAdminResponse }) {
   return (
     <div className="space-y-5">
@@ -211,26 +1180,20 @@ function SearchFoundationPanel({ data }: { data: SearchAdminResponse }) {
       <AdminQueueSection
         eyebrow="Search foundation"
         title="Index registry snapshot"
-        description="This PR establishes the protected route, module contract, and read-only source registry. Search operations, repair tools, and the full index-health workspace remain in the dedicated Search PR."
+        description="This protected route provides a read-only source registry. Search repair tools and the full index-health workspace remain in the dedicated Search phase."
         action={<AdminStatusBadge status="foundation">Foundation only</AdminStatusBadge>}
       >
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-[var(--loombus-page-bg)] p-4">
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-text-subtle)]">
-              Diagnostic sample
-            </span>
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-text-subtle)]">Diagnostic sample</span>
             <strong className="mt-2 block text-2xl">{data.metrics.sampleSize}</strong>
           </div>
           <div className="rounded-2xl bg-[var(--loombus-page-bg)] p-4">
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-text-subtle)]">
-              Stale over 30 days
-            </span>
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-text-subtle)]">Stale over 30 days</span>
             <strong className="mt-2 block text-2xl">{data.metrics.stale30Days}</strong>
           </div>
           <div className="rounded-2xl bg-[var(--loombus-page-bg)] p-4">
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-text-subtle)]">
-              Missing destination
-            </span>
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--loombus-text-subtle)]">Missing destination</span>
             <strong className="mt-2 block text-2xl">{data.metrics.missingHref}</strong>
           </div>
         </div>
@@ -249,29 +1212,21 @@ function SearchFoundationPanel({ data }: { data: SearchAdminResponse }) {
                       Last sampled update: {source.lastUpdatedAt ? new Date(source.lastUpdatedAt).toLocaleString() : "Unavailable"}
                     </span>
                   </div>
-                  <span className="text-sm text-[var(--loombus-text-muted)]">
-                    {source.total} sampled
-                  </span>
-                  <span className="text-sm text-[var(--loombus-text-muted)]">
-                    {source.activePublic} public
-                  </span>
-                  <span className="text-sm text-[var(--loombus-text-muted)]">
-                    {source.stale30Days + source.missingHref} flags
-                  </span>
+                  <span className="text-sm text-[var(--loombus-text-muted)]">{source.total} sampled</span>
+                  <span className="text-sm text-[var(--loombus-text-muted)]">{source.activePublic} public</span>
+                  <span className="text-sm text-[var(--loombus-text-muted)]">{source.stale30Days + source.missingHref} flags</span>
                 </article>
               ))}
             </div>
           ) : (
-            <div className="p-6 text-sm text-[var(--loombus-text-muted)]">
-              No search source records were returned.
-            </div>
+            <div className="p-6 text-sm text-[var(--loombus-text-muted)]">No search source records were returned.</div>
           )}
         </div>
       </AdminQueueSection>
 
       <AdminQueueSection
         eyebrow="Operational boundary"
-        title="No index mutation in the foundation PR"
+        title="No index mutation in the foundation"
         description="The module is read-only. It does not rebuild, delete, republish, change visibility, or bypass source-owned eligibility rules."
       >
         <div className="grid gap-3 sm:grid-cols-3">
@@ -280,10 +1235,7 @@ function SearchFoundationPanel({ data }: { data: SearchAdminResponse }) {
             ["Delete documents", data.boundaries.deleteAvailable],
             ["Change visibility", data.boundaries.visibilityMutationAvailable],
           ].map(([label, available]) => (
-            <div
-              key={String(label)}
-              className="flex items-center justify-between rounded-2xl bg-[var(--loombus-page-bg)] p-4"
-            >
+            <div key={String(label)} className="flex items-center justify-between rounded-2xl bg-[var(--loombus-page-bg)] p-4">
               <span className="text-sm font-semibold">{String(label)}</span>
               <AdminStatusBadge status={available ? "attention" : "ready"}>
                 {available ? "Available" : "Not available"}
@@ -641,7 +1593,7 @@ export default function PlatformModuleClient({
       ) : null}
 
       {roomsData ? (
-        <RoomOperationsPanel
+        <RoomsOperationsWorkspace
           data={roomsData}
           working={working}
           runAction={(payload: Record<string, unknown>, successMessage: string) =>
@@ -651,7 +1603,7 @@ export default function PlatformModuleClient({
       ) : null}
 
       {appointmentsData ? (
-        <AppointmentOperationsPanel
+        <AppointmentsOperationsWorkspace
           data={appointmentsData}
           working={working}
           runAction={(payload: Record<string, unknown>, successMessage: string) =>
@@ -660,8 +1612,8 @@ export default function PlatformModuleClient({
         />
       ) : null}
 
-      {localData ? <LocalOperationsPanel data={localData} /> : null}
-      {matchesData ? <MatchesOperationsPanel data={matchesData} /> : null}
+      {localData ? <LocalOperationsWorkspace data={localData} /> : null}
+      {matchesData ? <MatchesOperationsWorkspace data={matchesData} /> : null}
       {searchData ? <SearchFoundationPanel data={searchData} /> : null}
 
       {!loading && !data ? (
