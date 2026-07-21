@@ -3,6 +3,10 @@
     {
       "path": "/api/notifications/digest/send",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/auth/lifecycle/cleanup",
+      "schedule": "30 12 * * *"
     }
   ]
 }

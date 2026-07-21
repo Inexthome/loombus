@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { AppleLogoMark, GoogleLogoMark } from "@/components/auth-provider-icons";
 import { DateOfBirthSelect } from "@/components/date-of-birth-select";
 import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
+import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { isIosNativeApp } from "@/lib/native-app";
 import { supabase } from "@/lib/supabase/client";
 
@@ -66,11 +67,7 @@ export default function SignupPage() {
     });
 
     if (error) {
-      const publicMessage = error.message.toLowerCase().includes("sending confirmation email")
-        ? "Loombus could not send the confirmation email. Please try Google signup or contact support if this continues."
-        : error.message;
-
-      setMessage(`Error: ${publicMessage}`);
+      setMessage(`Error: ${getAuthErrorMessage(error, "signup")}`);
       setLoading(false);
       return;
     }
@@ -78,7 +75,9 @@ export default function SignupPage() {
     setSignupComplete(true);
     setPassword("");
     setConfirmPassword("");
-    setMessage("Signup successful. Check your email to confirm your account.");
+    setMessage(
+      "Signup successful. Check your email. The verification link expires after 60 minutes."
+    );
     setLoading(false);
   }
 
@@ -202,12 +201,14 @@ export default function SignupPage() {
               <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">Account Created</p>
               <h2 className="text-2xl font-medium">Check your email to confirm your account.</h2>
               <p className="mt-4 leading-relaxed text-zinc-400">
-                After confirming your email, log in and complete your profile so other Loombus members know who they are reading and interacting with.
+                Use the newest verification link within 60 minutes. After confirming your email, log in and complete your profile so other Loombus members know who they are reading and interacting with.
               </p>
             </div>
             <div className="rounded-2xl border border-zinc-800 bg-black p-5">
-              <p className="text-sm text-zinc-500">Next step</p>
-              <p className="mt-2 text-zinc-300">Confirm your email, then log in and finish your profile setup.</p>
+              <p className="text-sm text-zinc-500">Verification lifecycle</p>
+              <p className="mt-2 text-zinc-300">
+                An expired link can be replaced from the Login page. Accounts that remain unverified for seven days are removed.
+              </p>
             </div>
             <Link href="/login" className="inline-flex rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200">
               Go to Log In
