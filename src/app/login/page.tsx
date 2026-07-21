@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { supabase } from "@/lib/supabase/client";
 import { isIosNativeApp, isNativeApp } from "@/lib/native-app";
 import {
@@ -31,6 +32,14 @@ function getOAuthRedirectTo(nextPath: string) {
   return `${window.location.origin}/auth/callback?next=${encodedNext}`;
 }
 
+function isEmailNotConfirmedError(message: string) {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("email not confirmed") ||
+    normalized.includes("email_not_confirmed")
+  );
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,6 +52,8 @@ export default function LoginPage() {
   const [biometricSigningIn, setBiometricSigningIn] = useState(false);
   const [showManualLogin, setShowManualLogin] = useState(false);
   const [nativeApp, setNativeApp] = useState<boolean | null>(null);
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
 
   const autoBiometricStarted = useRef(false);
 
@@ -169,6 +180,7 @@ export default function LoginPage() {
 
     setLoading(true);
     setMessage("");
+    setShowResendVerification(false);
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -176,7 +188,8 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setMessage(`Error: ${error.message}`);
+      setMessage(`Error: ${getAuthErrorMessage(error, "login")}`);
+      setShowResendVerification(isEmailNotConfirmedError(error.message));
       setLoading(false);
       return;
     }
@@ -214,6 +227,37 @@ export default function LoginPage() {
     }
 
     window.location.replace(getNextPath());
+  }
+
+  async function handleResendVerification() {
+    const cleanEmail = email.trim();
+
+    if (!cleanEmail || resendingVerification) {
+      return;
+    }
+
+    setResendingVerification(true);
+    setMessage("");
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: cleanEmail,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/discussions`,
+      },
+    });
+
+    if (error) {
+      setMessage(`Error: ${getAuthErrorMessage(error, "signup")}`);
+      setResendingVerification(false);
+      return;
+    }
+
+    setMessage(
+      "Verification email sent. Use the newest link. It expires after 60 minutes."
+    );
+    setShowResendVerification(false);
+    setResendingVerification(false);
   }
 
   async function handleOAuthLogin(provider: "google" | "apple") {
@@ -370,7 +414,10 @@ export default function LoginPage() {
                   value={email}
                   autoComplete="email"
                   required
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setShowResendVerification(false);
+                  }}
                   className="w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white outline-none focus:border-zinc-500"
                 />
               </div>
@@ -411,6 +458,24 @@ export default function LoginPage() {
               </button>
 
               {message ? <p className="text-sm text-zinc-400">{message}</p> : null}
+
+              {showResendVerification ? (
+                <div className="rounded-2xl border border-zinc-800 bg-black p-4">
+                  <p className="text-sm leading-relaxed text-zinc-400">
+                    The previous confirmation link may have expired. Send a new link to the email above.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void handleResendVerification()}
+                    disabled={resendingVerification}
+                    className="mt-3 w-full rounded-full border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-200 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {resendingVerification
+                      ? "Sending verification email..."
+                      : "Resend verification email"}
+                  </button>
+                </div>
+              ) : null}
 
               <p className="text-xs leading-relaxed text-zinc-500">
                 By logging in or continuing with Apple, Google, or email, you agree to the{" "}
