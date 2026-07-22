@@ -19,6 +19,7 @@
       }
     ],
     "paths": {
+      "@/lib/everything-search-server": ["./src/lib/everything-search-audience-guard.ts"],
       "@/*": ["./src/*"]
     }
   },

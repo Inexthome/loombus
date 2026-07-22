@@ -4,6 +4,7 @@ import "./desktop-top-navbar.css";
 import "./mobile-navigation-shell.css";
 import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
+import "./discussion-audience-controls.css";
 import "./home-v2-shell.css";
 import "./home-mobile-viewport-fix.css";
 import "./mobile-card-polish.css"; // Mobile-only Home and Create card refinements.
