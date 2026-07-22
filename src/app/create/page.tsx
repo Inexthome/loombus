@@ -11,6 +11,13 @@ export default function CreatePage() {
       <CreateDiscussionAudiencePolicyGuard />
       <CreateV2ClientPage />
       <CreateMobileComposerAdapter />
+      <style>{`
+        @media (max-width: 767px) {
+          main[data-mobile-create] .mc-context-wrap[data-mc-ui="true"] {
+            display: block !important;
+          }
+        }
+      `}</style>
     </CreatePublishGuard>
   );
 }
