@@ -44,7 +44,7 @@ export function ProfileAvatar({
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-800 bg-black font-medium text-zinc-300 ${sizeClasses[size]}`}
+      className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] font-medium text-[var(--loombus-text-muted)] ${sizeClasses[size]}`}
       aria-hidden="true"
     >
       {avatarUrl ? (
