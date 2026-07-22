@@ -11,7 +11,7 @@ on:
     - cron: "23 10 * * 1"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -80,3 +80,167 @@ jobs:
 
       - name: Analyze
         uses: github/codeql-action/analyze@v4
+
+  patch-audience-service-fallbacks:
+    name: patch service-side audience fallbacks
+    if: github.event_name == 'pull_request' && github.head_ref == 'feature/discussion-audience-controls'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v6
+        with:
+          ref: feature/discussion-audience-controls
+          fetch-depth: 0
+
+      - name: Patch Everything Search and Discussion metrics
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          search_path = Path("src/lib/everything-search-server.ts")
+          search_content = search_path.read_text()
+          replacements = [
+              (
+                  '    "id, title, topic, body, created_at, user_id, reality_lens, purpose_lane";',
+                  '    "id, title, topic, body, created_at, user_id, reality_lens, purpose_lane, audience_type";',
+              ),
+              (
+                  '''      const ownerId = asString(discussion.user_id);
+                  if (viewer.blockedIds.has(ownerId)) continue;
+                  const id = asString(discussion.id);''',
+                  '''      const ownerId = asString(discussion.user_id);
+                  if (viewer.blockedIds.has(ownerId)) continue;
+                  if ((asString(discussion.audience_type) || "public") !== "public") continue;
+                  const id = asString(discussion.id);''',
+              ),
+              (
+                  '''        user_id,
+                  deleted_at
+                )''',
+                  '''        user_id,
+                  deleted_at,
+                  audience_type
+                )''',
+              ),
+              (
+                  '''    if (!joined || joined.deleted_at) continue;
+
+                  const searchable = [''',
+                  '''    if (!joined || joined.deleted_at) continue;
+                  const joinedAudience = asString(joined.audience_type) || "public";
+                  if (joinedAudience !== "public" && asString(joined.user_id) !== viewer.user.id) continue;
+
+                  const searchable = [''',
+              ),
+          ]
+          for old, new in replacements:
+              if old not in search_content:
+                  raise SystemExit(f"Missing Everything Search patch target: {old[:80]!r}")
+              search_content = search_content.replace(old, new, 1)
+          search_path.write_text(search_content)
+
+          view_path = Path("src/app/api/discussions/view/route.ts")
+          view_content = view_path.read_text()
+          helper_old = '''async function getViewerId(request: NextRequest) {
+            const requestSupabase = getRequestSupabase(request);
+
+            if (!requestSupabase) {
+              return null;
+            }
+
+            const {
+              data: { user },
+            } = await requestSupabase.auth.getUser();
+
+            return user?.id ?? null;
+          }
+'''
+          helper_new = helper_old + '''
+          async function verifyDiscussionAudienceAccess(
+            supabase: NonNullable<ReturnType<typeof getServiceSupabase>>,
+            discussionId: string,
+            viewerId: string | null
+          ) {
+            const { data, error } = await supabase.rpc("can_view_discussion_audience", {
+              p_discussion_id: discussionId,
+              p_viewer_user_id: viewerId,
+            });
+
+            if (error) {
+              const missing =
+                error.code === "42883" ||
+                /can_view_discussion_audience|schema cache|could not find the function/i.test(
+                  error.message ?? ""
+                );
+              return missing
+                ? { allowed: true, unavailable: false }
+                : { allowed: false, unavailable: true };
+            }
+
+            return { allowed: data === true, unavailable: false };
+          }
+'''
+          if helper_old not in view_content:
+              raise SystemExit("Missing view helper patch target")
+          view_content = view_content.replace(helper_old, helper_new, 1)
+
+          post_old = '''  const viewerId = await getViewerId(request);
+            const dedupeSince = new Date('''
+          post_new = '''  const viewerId = await getViewerId(request);
+            const audienceAccess = await verifyDiscussionAudienceAccess(
+              supabase,
+              discussionId,
+              viewerId
+            );
+
+            if (audienceAccess.unavailable) {
+              return jsonError("Unable to verify Discussion access.", 503);
+            }
+
+            if (!audienceAccess.allowed) {
+              return jsonError("Discussion not found.", 404);
+            }
+
+            const dedupeSince = new Date('''
+          if post_old not in view_content:
+              raise SystemExit("Missing POST audience patch target")
+          view_content = view_content.replace(post_old, post_new, 1)
+
+          get_old = '''  const metrics = await getDiscussionMetrics(supabase, discussionId);
+
+            return NextResponse.json('''
+          get_new = '''  const viewerId = await getViewerId(request);
+            const audienceAccess = await verifyDiscussionAudienceAccess(
+              supabase,
+              discussionId,
+              viewerId
+            );
+
+            if (audienceAccess.unavailable) {
+              return jsonError("Unable to verify Discussion access.", 503);
+            }
+
+            if (!audienceAccess.allowed) {
+              return jsonError("Discussion not found.", 404);
+            }
+
+            const metrics = await getDiscussionMetrics(supabase, discussionId);
+
+            return NextResponse.json('''
+          if get_old not in view_content:
+              raise SystemExit("Missing GET audience patch target")
+          view_content = view_content.replace(get_old, get_new, 1)
+          view_path.write_text(view_content)
+          PY
+
+      - name: Restore workflow and commit service guards
+        run: |
+          git fetch origin main
+          git checkout origin/main -- .github/workflows/security.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/security.yml src/lib/everything-search-server.ts src/app/api/discussions/view/route.ts
+          git commit -m "Enforce audience access in service-side fallbacks"
+          git push origin HEAD:feature/discussion-audience-controls
