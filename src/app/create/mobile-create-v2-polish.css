@@ -26,20 +26,42 @@
     background: linear-gradient(90deg, transparent, var(--loombus-gold), transparent);
   }
 
-  main[data-mobile-create] [data-mc-role="title"] {
-    padding-top: 1.25rem !important;
+  main[data-mobile-create] [data-mc-role="title"],
+  main[data-mobile-create] label:has(input[placeholder*="future of decentralized identity"]) {
+    order: 1;
+    padding: 1.25rem 1rem 1rem !important;
+    border-bottom: 1px solid var(--loombus-border);
     background: color-mix(in srgb, var(--loombus-surface) 92%, var(--loombus-cream-soft)) !important;
   }
 
+  main[data-mobile-create] label:has(input[placeholder*="future of decentralized identity"]) > span,
+  main[data-mobile-create] label:has(input[placeholder*="future of decentralized identity"]) > p {
+    display: none !important;
+  }
+
   main[data-mobile-create] [data-mc-role="title"] input,
+  main[data-mobile-create] label:has(input[placeholder*="future of decentralized identity"]) input,
   main[data-mobile-create] [data-mc-role="body"] textarea {
     color: var(--loombus-text) !important;
   }
 
   main[data-mobile-create] [data-mc-role="title"] input::placeholder,
+  main[data-mobile-create] label:has(input[placeholder*="future of decentralized identity"]) input::placeholder,
   main[data-mobile-create] [data-mc-role="body"] textarea::placeholder {
     color: var(--loombus-text-subtle) !important;
     opacity: 1 !important;
+  }
+
+  main[data-mobile-create] label:has(input[placeholder*="web3"]) {
+    display: none !important;
+  }
+
+  main[data-mobile-create][data-mc-advanced="true"] label:has(input[placeholder*="web3"]) {
+    display: block !important;
+    order: 3;
+    padding: 1rem !important;
+    border-top: 1px solid var(--loombus-border);
+    background: var(--loombus-surface-strong) !important;
   }
 
   main[data-mobile-create][data-mc-panel="topic"] [data-mc-role="topic"],
