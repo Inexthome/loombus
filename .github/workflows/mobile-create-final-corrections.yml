@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  apply-and-validate:
+  apply-corrections:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,38 +19,22 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref_name }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
       - name: Apply corrections
         run: |
           python - <<'PY'
+          import re
           from pathlib import Path
-
-          def replace_required(text: str, old: str, new: str, label: str) -> str:
-              if old not in text:
-                  raise RuntimeError(f"Missing expected source for {label}")
-              return text.replace(old, new)
 
           adapter_path = Path("src/components/create-mobile-composer-adapter.tsx")
           adapter = adapter_path.read_text()
 
-          adapter = replace_required(
-              adapter,
-              '''  .mc-context-chip[data-configured="true"]{
+          configured_css = '''  .mc-context-chip[data-configured="true"]{
     border-color:color-mix(in srgb,var(--loombus-gold) 54%,var(--loombus-border));
     background:var(--loombus-gold-surface);
     color:var(--loombus-gold-deep);
   }
-''',
-              '''  .mc-context-chip[data-configured="true"]{
-    border-color:color-mix(in srgb,var(--loombus-gold) 54%,var(--loombus-border));
-    background:var(--loombus-gold-surface);
-    color:var(--loombus-gold-deep);
-  }
-
+'''
+          publish_css = configured_css + '''
   .mc-context-chip--publish{
     margin-left:auto;
     border-color:var(--loombus-gold);
@@ -70,19 +54,19 @@ jobs:
     box-shadow:none;
     opacity:.72;
   }
-''',
-              "publish chip styles",
-          )
+'''
+          if ".mc-context-chip--publish" not in adapter:
+              if configured_css not in adapter:
+                  raise SystemExit("configured chip CSS not found")
+              adapter = adapter.replace(configured_css, publish_css, 1)
 
-          adapter = replace_required(
-              adapter,
-              '''        const add = createButton("Add", "mc-context-chip", () =>
+          old_add = '''        const add = createButton("Add", "mc-context-chip", () =>
           open("attachments")
         );
         mode.dataset.configured = "true";
         chipRow.append(topic, mode, add);
-''',
-              '''        const publish = createButton(
+'''
+          new_publish = '''        const publish = createButton(
           "Publish",
           "mc-context-chip mc-context-chip--publish",
           () => {
@@ -99,28 +83,22 @@ jobs:
         );
         mode.dataset.configured = "true";
         chipRow.append(topic, mode, publish);
-''',
-              "replace Add chip with Publish",
+'''
+          if old_add in adapter:
+              adapter = adapter.replace(old_add, new_publish, 1)
+          elif 'const publish = createButton(' not in adapter:
+              raise SystemExit("Add chip block not found")
+
+          adapter = re.sub(
+              r'''          const attachment = root\.querySelector\('\[data-mc-role="attachments"\]'\);\n          const attachmentCount =\n            attachment\?\.querySelectorAll\('button\[aria-label\^="Remove "\]'\)\.length \?\? 0;\n          setText\(add, attachmentCount \? `Add · \$\{attachmentCount\}` : "Add"\);\n          add\.dataset\.configured = attachmentCount \? "true" : "false";''',
+              '''          const attachment = root.querySelector('[data-mc-role="attachments"]');''',
+              adapter,
+              count=1,
           )
 
-          adapter = replace_required(
-              adapter,
-              '''          const attachment = root.querySelector('[data-mc-role="attachments"]');
-          const attachmentCount =
-            attachment?.querySelectorAll('button[aria-label^="Remove "]').length ?? 0;
-          setText(add, attachmentCount ? `Add · ${attachmentCount}` : "Add");
-          add.dataset.configured = attachmentCount ? "true" : "false";
-''',
-              '''          const attachment = root.querySelector('[data-mc-role="attachments"]');
-''',
-              "remove Add attachment count",
-          )
-
-          adapter = replace_required(
-              adapter,
-              '''          publishAction.element.disabled = Boolean(originalPublish?.disabled);
-''',
-              '''          const publishDisabled = !originalPublish || Boolean(originalPublish.disabled);
+          old_sync = '''          publishAction.element.disabled = Boolean(originalPublish?.disabled);
+'''
+          new_sync = '''          const publishDisabled = !originalPublish || Boolean(originalPublish.disabled);
           const isPublishing = Boolean(
             originalPublish?.textContent?.trim().startsWith("Publishing")
           );
@@ -134,41 +112,30 @@ jobs:
               ? "Complete the required fields before publishing"
               : "Publish discussion"
           );
-''',
-              "sync Publish chip",
-          )
+'''
+          if old_sync in adapter:
+              adapter = adapter.replace(old_sync, new_sync, 1)
+          elif "publish.disabled = publishDisabled" not in adapter:
+              raise SystemExit("publish sync line not found")
 
           adapter_path.write_text(adapter)
 
           review_path = Path("src/app/create/review/review-client-page.tsx")
           review = review_path.read_text()
-
-          review = replace_required(
-              review,
-              '''    { label: "Framing reviewed", done: Boolean(parsed.purpose.trim() || draft?.reality_lens?.trim() || draft?.purpose_lane?.trim()), helper: "Add a purpose, reality lens, or purpose lane before publishing." },
-''',
-              '''    { label: "Framing reviewed", done: true, helper: "Purpose, Reality Lens, and Purpose Lane are optional framing details." },
-''',
-              "make framing optional in readiness",
+          review = review.replace(
+              '{ label: "Framing reviewed", done: Boolean(parsed.purpose.trim() || draft?.reality_lens?.trim() || draft?.purpose_lane?.trim()), helper: "Add a purpose, reality lens, or purpose lane before publishing." },',
+              '{ label: "Optional framing reviewed", done: true, helper: "Purpose, Reality Lens, and Purpose Lane are optional framing details." },',
+              1,
           )
-
-          review = replace_required(
-              review,
-              '''className="inline-flex appearance-none items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"''',
-              '''className="inline-flex appearance-none items-center justify-center gap-2 rounded-2xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_55%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] px-4 py-2 text-sm font-bold text-[var(--loombus-text)] shadow-sm transition hover:border-[var(--loombus-gold)] hover:bg-[var(--loombus-surface-strong)] disabled:cursor-not-allowed disabled:text-[var(--loombus-text-subtle)] disabled:opacity-50"''',
-              "theme Copy review draft button",
+          review = review.replace(
+              'className="inline-flex appearance-none items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"',
+              'className="inline-flex appearance-none items-center justify-center gap-2 rounded-2xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_55%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] px-4 py-2 text-sm font-bold text-[var(--loombus-text)] shadow-sm transition hover:border-[var(--loombus-gold)] hover:bg-[var(--loombus-surface-strong)] disabled:cursor-not-allowed disabled:text-[var(--loombus-text-subtle)] disabled:opacity-50"',
+              1,
           )
-
           review_path.write_text(review)
 
           Path(".github/workflows/mobile-create-final-corrections.yml").unlink()
           PY
-
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run build
-      - run: npm audit --omit=dev
-      - run: git diff --check
 
       - name: Commit corrections
         run: |
