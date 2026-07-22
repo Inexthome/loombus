@@ -71,14 +71,6 @@ function hasCreatorToolsAccess(entitlement: EntitlementRow | null, isAdmin: bool
   );
 }
 
-function hasPremiumDigestAccess(entitlement: EntitlementRow | null, isAdmin: boolean) {
-  if (isAdmin) {
-    return true;
-  }
-
-  return entitlement?.ai_assisted_enabled === true && entitlement.tier === "premium";
-}
-
 export async function POST(request: NextRequest) {
   let supabase;
 
@@ -131,43 +123,6 @@ export async function POST(request: NextRequest) {
   const creatorSupportUrl = cleanOptionalText(source.creatorSupportUrl, 240);
   const creatorSupportLabel = cleanOptionalText(source.creatorSupportLabel, 40);
 
-  const repliesEnabled =
-    typeof source.repliesEnabled === "boolean" ? source.repliesEnabled : true;
-  const followsEnabled =
-    typeof source.followsEnabled === "boolean" ? source.followsEnabled : true;
-  const mentionsEnabled =
-    typeof source.mentionsEnabled === "boolean" ? source.mentionsEnabled : true;
-  const followedDiscussionsEnabled =
-    typeof source.followedDiscussionsEnabled === "boolean"
-      ? source.followedDiscussionsEnabled
-      : true;
-  const followedRepliesEnabled =
-    typeof source.followedRepliesEnabled === "boolean"
-      ? source.followedRepliesEnabled
-      : false;
-  const emailDigestEnabled =
-    typeof source.emailDigestEnabled === "boolean"
-      ? source.emailDigestEnabled
-      : false;
-  const emailDigestFrequency =
-    source.emailDigestFrequency === "daily" ? "daily" : "weekly";
-  const pushMessagesEnabled =
-    typeof source.pushMessagesEnabled === "boolean"
-      ? source.pushMessagesEnabled
-      : true;
-  const pushRepliesEnabled =
-    typeof source.pushRepliesEnabled === "boolean"
-      ? source.pushRepliesEnabled
-      : true;
-  const pushFollowsEnabled =
-    typeof source.pushFollowsEnabled === "boolean"
-      ? source.pushFollowsEnabled
-      : true;
-  const pushAdminReportsEnabled =
-    typeof source.pushAdminReportsEnabled === "boolean"
-      ? source.pushAdminReportsEnabled
-      : true;
-
   if (!isValidOptionalUrl(creatorWebsiteUrl)) {
     return jsonError(
       "Creator website URL must start with http:// or https://.",
@@ -212,10 +167,6 @@ export async function POST(request: NextRequest) {
     Boolean(creatorWebsiteUrl) ||
     Boolean(creatorSupportUrl) ||
     Boolean(creatorSupportLabel);
-  const canUseEmailDigest = hasPremiumDigestAccess(
-    entitlement ?? null,
-    isAdmin
-  );
 
   if (
     hasCreatorFields &&
@@ -248,32 +199,6 @@ export async function POST(request: NextRequest) {
     }
 
     return jsonError(profileError.message || "Unable to save profile.", 400);
-  }
-
-  const { error: preferencesError } = await supabase
-    .from("notification_preferences")
-    .upsert({
-      user_id: accountAccess.user.id,
-      replies_enabled: repliesEnabled,
-      follows_enabled: followsEnabled,
-      mentions_enabled: mentionsEnabled,
-      followed_discussions_enabled: followedDiscussionsEnabled,
-      followed_replies_enabled: followedRepliesEnabled,
-      email_digest_enabled: canUseEmailDigest ? emailDigestEnabled : false,
-      email_digest_frequency: emailDigestFrequency,
-      push_messages_enabled: pushMessagesEnabled,
-      push_replies_enabled: pushRepliesEnabled,
-      push_follows_enabled: pushFollowsEnabled,
-      push_admin_reports_enabled: isAdmin ? pushAdminReportsEnabled : false,
-      updated_at: new Date().toISOString(),
-    });
-
-  if (preferencesError) {
-    return jsonError(
-      preferencesError.message ||
-        "Profile saved, but notification settings failed.",
-      400
-    );
   }
 
   return NextResponse.json({
