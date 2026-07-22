@@ -6,6 +6,7 @@ import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
 import "./home-v2-shell.css";
 import "./home-mobile-viewport-fix.css";
+import "./mobile-card-polish.css"; // Mobile-only Home and Create card refinements.
 import "./people-v2-shell.css";
 import "./discussion-detail-shell-polish.css";
 import "./loombus-brand-correction.css";
