@@ -1,0 +1,17 @@
+.profile-workspace-page { background: var(--loombus-page-bg,var(--loombus-bg,#fefbec)) !important; color: var(--loombus-text,#201b13) !important; }
+.profile-workspace-layout { display: grid; grid-template-columns: 230px minmax(0,1fr); gap: 1rem; align-items: start; }
+.profile-workspace-nav { position: sticky; top: 6rem; display: grid; gap: .3rem; padding: .85rem; border: 1px solid var(--loombus-border,rgba(81,67,39,.18)); border-radius: 1.35rem; background: var(--loombus-surface,#fffdf4); }
+.profile-workspace-nav > p { margin: .2rem .65rem .45rem; color: var(--loombus-text-muted,#736a5b); font-size: .68rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.profile-workspace-nav button, .profile-workspace-nav a { display: flex; align-items: center; gap: .6rem; padding: .72rem .75rem; border: 0; border-radius: .9rem; background: transparent; color: var(--loombus-text-muted,#736a5b); font: inherit; font-size: .8rem; font-weight: 800; text-align: left; text-decoration: none; cursor: pointer; }
+.profile-workspace-nav button:hover, .profile-workspace-nav button.is-active, .profile-workspace-nav a:hover { background: color-mix(in srgb,#cbab5b 14%,transparent); color: var(--loombus-text,#201b13); }
+.profile-workspace-nav button.is-active { box-shadow: inset 3px 0 0 #cbab5b; }
+.profile-workspace-nav svg { width: 1rem; height: 1rem; color: #a07c28; }
+.profile-workspace-content { min-width: 0; }
+.profile-workspace-content .is-preview-only { display: block; }
+.profile-workspace-content .is-preview-only aside { width: min(620px,100%); margin: 0 auto; }
+.profile-workspace-page .bg-black, .profile-workspace-page .bg-zinc-950 { background: var(--loombus-surface,#fffdf4) !important; }
+.profile-workspace-page .text-white, .profile-workspace-page .text-zinc-200, .profile-workspace-page .text-zinc-300, .profile-workspace-page .text-zinc-400 { color: var(--loombus-text,#201b13) !important; }
+.profile-workspace-page .text-zinc-500, .profile-workspace-page .text-zinc-600, .profile-workspace-page .text-zinc-700 { color: var(--loombus-text-muted,#736a5b) !important; }
+.profile-workspace-page .border-zinc-700, .profile-workspace-page .border-zinc-800, .profile-workspace-page .border-zinc-900 { border-color: var(--loombus-border,rgba(81,67,39,.18)) !important; }
+.profile-workspace-page input, .profile-workspace-page textarea, .profile-workspace-page select { background: var(--loombus-page-bg,#fefbec) !important; color: var(--loombus-text,#201b13) !important; }
+@media (max-width: 900px) { .profile-workspace-layout { grid-template-columns: 1fr; } .profile-workspace-nav { position: static; display: flex; overflow-x: auto; } .profile-workspace-nav > p { display: none; } .profile-workspace-nav button, .profile-workspace-nav a { flex: 0 0 auto; white-space: nowrap; } }

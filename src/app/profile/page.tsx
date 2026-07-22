@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { TopicAlertsControl } from "@/components/topic-alerts-control";
 import { type ChangeEvent, type FormEvent, type KeyboardEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { ProfileAvatar } from "@/components/profile-avatar";
+import { ProfileWorkspaceController } from "@/components/profile-workspace-controller";
+import "./profile-workspace.css";
 import { getIdentityVerificationDisplay, normalizeIdentityVerificationStatus, type IdentityVerificationStatus } from "@/lib/identity-verification";
 import { validatePublicProfileCompletion } from "@/lib/profile-completion";
 
@@ -581,7 +582,7 @@ export default function ProfilePage() {
     }
 
     try {
-      const response = await fetch("/api/profile", {
+      const response = await fetch("/api/profile/public", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -651,7 +652,7 @@ export default function ProfilePage() {
           pushAdminReportsEnabled,
         })
       );
-      setMessage("Profile and notification settings updated successfully.");
+      setMessage("Profile updated successfully.");
       return true;
     } catch {
       setSaving(false);
@@ -688,7 +689,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+      <main className="profile-workspace-page min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
         <div className="mx-auto max-w-xl text-zinc-400">
           Loading profile...
         </div>
@@ -697,7 +698,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
+    <main className="profile-workspace-page min-h-screen bg-black px-4 pb-24 pt-4 text-white sm:px-6 sm:py-12 lg:py-16">
       <div className="mx-auto max-w-6xl">
         <Link
           href="/settings"
@@ -711,9 +712,12 @@ export default function ProfilePage() {
         </h1>
 
         <p className="mb-5 text-sm leading-relaxed text-zinc-400 sm:mb-8 sm:text-base">
-          Manage your public Loombus profile and notification preferences.
+          Manage your public Loombus identity, creator tools, preview, and sharing details.
         </p>
 
+        <div className="profile-workspace-layout">
+          <ProfileWorkspaceController />
+          <div className="profile-workspace-content">
         <section className="mb-5 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-6 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -765,7 +769,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        <TopicAlertsControl canUseTopicAlerts={canUseTopicAlerts} />
+        
 
 
         <div className="grid gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-6">
@@ -1330,6 +1334,8 @@ export default function ProfilePage() {
             </p>
           </aside>
         </div>
+          </div>
+        </div>
       </div>
 
       {pendingNavigationHref && (
@@ -1349,7 +1355,7 @@ export default function ProfilePage() {
             </h2>
 
             <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-              You changed your profile or notification settings. Save before leaving so those updates are not lost.
+              You changed your profile settings. Save before leaving so those updates are not lost.
             </p>
 
             <div className="mt-6 grid gap-3">
