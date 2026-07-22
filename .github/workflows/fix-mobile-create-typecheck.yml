@@ -1,0 +1,53 @@
+name: Fix mobile create typecheck
+
+on:
+  push:
+    branches:
+      - agent/mobile-create-v2-polish
+    paths:
+      - .github/workflows/fix-mobile-create-typecheck.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Fix root narrowing
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/components/create-mobile-composer-adapter.tsx')
+          text = path.read_text()
+          old = 'return roleName ? root.querySelector<HTMLElement>(`[data-mc-role="${roleName}"]`) : null;'
+          new = 'return roleName ? root!.querySelector<HTMLElement>(`[data-mc-role="${roleName}"]`) : null;'
+          if old not in text:
+              raise SystemExit('Expected typecheck target not found')
+          path.write_text(text.replace(old, new, 1))
+          Path('.github/workflows/fix-mobile-create-typecheck.yml').unlink()
+          PY
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm audit --omit=dev
+      - run: git diff --check
+
+      - name: Commit correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix mobile create type narrowing"
+          git push origin HEAD:${{ github.ref_name }}
