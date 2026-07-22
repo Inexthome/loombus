@@ -40,10 +40,10 @@ type DiscussionCard = Discussion & {
   replies: number;
   views: number;
   saves: number;
-  signal: number;
+  activity: number;
 };
 
-type SortMode = "newest" | "oldest" | "signal";
+type SortMode = "newest" | "oldest" | "activity";
 
 function getProfileName(profile: Profile | null) {
   return profile?.full_name?.trim() || profile?.username?.trim() || "Loombus member";
@@ -69,7 +69,7 @@ export default function TopicSignalClient() {
   useEffect(() => {
     let mounted = true;
 
-    async function loadTopicSignal() {
+    async function loadTopicActivity() {
       if (!topic) {
         setLoading(false);
         return;
@@ -113,33 +113,34 @@ export default function TopicSignalClient() {
           ...new Set(visibleDiscussions.map((discussion) => discussion.user_id)),
         ];
 
-        const [profileResult, replyResult, viewResult, saveResult] = await Promise.all([
-          authorIds.length
-            ? supabase
-                .from("profiles")
-                .select("id, full_name, username")
-                .in("id", authorIds)
-            : Promise.resolve({ data: [], error: null }),
-          ids.length
-            ? supabase
-                .from("replies")
-                .select("discussion_id, user_id")
-                .in("discussion_id", ids)
-                .is("deleted_at", null)
-            : Promise.resolve({ data: [], error: null }),
-          ids.length
-            ? supabase
-                .from("discussion_views")
-                .select("discussion_id")
-                .in("discussion_id", ids)
-            : Promise.resolve({ data: [], error: null }),
-          ids.length
-            ? supabase
-                .from("bookmarks")
-                .select("discussion_id")
-                .in("discussion_id", ids)
-            : Promise.resolve({ data: [], error: null }),
-        ]);
+        const [profileResult, replyResult, viewResult, saveResult] =
+          await Promise.all([
+            authorIds.length
+              ? supabase
+                  .from("profiles")
+                  .select("id, full_name, username")
+                  .in("id", authorIds)
+              : Promise.resolve({ data: [], error: null }),
+            ids.length
+              ? supabase
+                  .from("replies")
+                  .select("discussion_id, user_id")
+                  .in("discussion_id", ids)
+                  .is("deleted_at", null)
+              : Promise.resolve({ data: [], error: null }),
+            ids.length
+              ? supabase
+                  .from("discussion_views")
+                  .select("discussion_id")
+                  .in("discussion_id", ids)
+              : Promise.resolve({ data: [], error: null }),
+            ids.length
+              ? supabase
+                  .from("bookmarks")
+                  .select("discussion_id")
+                  .in("discussion_id", ids)
+              : Promise.resolve({ data: [], error: null }),
+          ]);
 
         const profiles = Object.fromEntries(
           ((profileResult.data ?? []) as Profile[]).map((profile) => [
@@ -158,11 +159,13 @@ export default function TopicSignalClient() {
         }
 
         for (const row of viewResult.data ?? []) {
-          viewCounts[row.discussion_id] = (viewCounts[row.discussion_id] ?? 0) + 1;
+          viewCounts[row.discussion_id] =
+            (viewCounts[row.discussion_id] ?? 0) + 1;
         }
 
         for (const row of saveResult.data ?? []) {
-          saveCounts[row.discussion_id] = (saveCounts[row.discussion_id] ?? 0) + 1;
+          saveCounts[row.discussion_id] =
+            (saveCounts[row.discussion_id] ?? 0) + 1;
         }
 
         const cards = visibleDiscussions.map((discussion) => {
@@ -176,23 +179,23 @@ export default function TopicSignalClient() {
             replies,
             views,
             saves,
-            signal: replies * 3 + saves * 5 + views,
+            activity: replies * 3 + saves * 5 + views,
           };
         });
 
         if (mounted) setDiscussions(cards);
       } catch (error) {
-        console.error("Unable to load topic Signal.", error);
+        console.error("Unable to load topic Activity.", error);
         if (mounted) {
           setDiscussions([]);
-          setMessage("This topic could not load. Return to Signal Topics and try again.");
+          setMessage("This topic could not load. Return to Topics and try again.");
         }
       } finally {
         if (mounted) setLoading(false);
       }
     }
 
-    void loadTopicSignal();
+    void loadTopicActivity();
 
     return () => {
       mounted = false;
@@ -217,7 +220,7 @@ export default function TopicSignalClient() {
     });
 
     return [...next].sort((a, b) => {
-      if (sortMode === "signal") return b.signal - a.signal;
+      if (sortMode === "activity") return b.activity - a.activity;
 
       const aTime = new Date(a.created_at).getTime();
       const bTime = new Date(b.created_at).getTime();
@@ -227,22 +230,25 @@ export default function TopicSignalClient() {
 
   const totalReplies = discussions.reduce((total, item) => total + item.replies, 0);
   const totalViews = discussions.reduce((total, item) => total + item.views, 0);
-  const totalSignal = discussions.reduce((total, item) => total + item.signal, 0);
+  const totalActivity = discussions.reduce(
+    (total, item) => total + item.activity,
+    0
+  );
 
   return (
     <main className="topic-signal-page">
       <div className="topic-signal-shell">
         <Link href="/topics" className="topic-signal-back">
-          <ArrowLeft aria-hidden="true" /> Back to Signal Topics
+          <ArrowLeft aria-hidden="true" /> Back to Topics
         </Link>
 
         <header className="topic-signal-hero">
           <div>
-            <p>Topic Signal</p>
+            <p>Topic Activity</p>
             <h1>{topic || "Unknown topic"}</h1>
             <span>
-              Every visible discussion currently filed in this topic lane, ordered by
-              recency or Signal.
+              Every visible discussion currently filed in this topic lane,
+              ordered by recency or Activity.
             </span>
           </div>
           <Link href={`/create?topic=${encodeURIComponent(topic)}`}>
@@ -251,10 +257,22 @@ export default function TopicSignalClient() {
         </header>
 
         <section className="topic-signal-metrics">
-          <article><span>Discussions</span><strong>{discussions.length}</strong></article>
-          <article><span>Replies</span><strong>{totalReplies}</strong></article>
-          <article><span>Views</span><strong>{totalViews}</strong></article>
-          <article className="is-accent"><span>Total Signal</span><strong>{totalSignal}</strong></article>
+          <article>
+            <span>Discussions</span>
+            <strong>{discussions.length}</strong>
+          </article>
+          <article>
+            <span>Replies</span>
+            <strong>{totalReplies}</strong>
+          </article>
+          <article>
+            <span>Views</span>
+            <strong>{totalViews}</strong>
+          </article>
+          <article className="is-accent">
+            <span>Total Activity</span>
+            <strong>{totalActivity}</strong>
+          </article>
         </section>
 
         <section className="topic-signal-tools">
@@ -273,7 +291,7 @@ export default function TopicSignalClient() {
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
-            <option value="signal">Most Signal</option>
+            <option value="activity">Most Activity</option>
           </select>
         </section>
 
@@ -282,12 +300,16 @@ export default function TopicSignalClient() {
         {loading ? (
           <section className="topic-signal-state">
             <Sparkles aria-hidden="true" />
-            <h2>Loading topic Signal…</h2>
+            <h2>Loading topic Activity…</h2>
           </section>
         ) : filteredDiscussions.length === 0 ? (
           <section className="topic-signal-state">
             <Sparkles aria-hidden="true" />
-            <h2>{discussions.length === 0 ? "No discussions in this topic yet." : "No discussions match this search."}</h2>
+            <h2>
+              {discussions.length === 0
+                ? "No discussions in this topic yet."
+                : "No discussions match this search."}
+            </h2>
             <p>
               {discussions.length === 0
                 ? "This topic is visible and ready for its first focused discussion."
@@ -303,7 +325,7 @@ export default function TopicSignalClient() {
               <article key={discussion.id}>
                 <div className="topic-signal-card-topline">
                   <span>{formatDate(discussion.created_at)}</span>
-                  <strong>{discussion.signal} Signal</strong>
+                  <strong>{discussion.activity} Activity</strong>
                 </div>
                 <Link href={`/discussions/${discussion.id}`}>
                   <h2>{normalizePublicText(discussion.title)}</h2>
@@ -312,9 +334,18 @@ export default function TopicSignalClient() {
                 <div className="topic-signal-card-footer">
                   <span>{getProfileName(discussion.profile)}</span>
                   <div>
-                    <span><MessageCircle aria-hidden="true" />{discussion.replies}</span>
-                    <span><Eye aria-hidden="true" />{discussion.views}</span>
-                    <span><Bookmark aria-hidden="true" />{discussion.saves}</span>
+                    <span>
+                      <MessageCircle aria-hidden="true" />
+                      {discussion.replies}
+                    </span>
+                    <span>
+                      <Eye aria-hidden="true" />
+                      {discussion.views}
+                    </span>
+                    <span>
+                      <Bookmark aria-hidden="true" />
+                      {discussion.saves}
+                    </span>
                   </div>
                 </div>
               </article>
