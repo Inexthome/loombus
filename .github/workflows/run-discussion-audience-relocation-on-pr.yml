@@ -22,7 +22,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: correction/discussion-audience-settings
-          fetch-depth: 0
+          fetch-depth: 1
+          show-progress: false
 
       - name: Extract relocation scripts
         run: |
@@ -55,10 +56,17 @@ jobs:
               Path(f'/tmp/relocation-step-{number}.sh').write_text(script)
           PY
 
-      - name: Apply and validate correction
-        run: |
-          bash /tmp/relocation-step-0.sh
-          bash /tmp/relocation-step-1.sh
+      - name: Generate corrected files
+        run: bash /tmp/relocation-step-0.sh
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint correction
+        run: npm run lint
+
+      - name: Build correction
+        run: npm run build
 
       - name: Commit final correction
         run: |
