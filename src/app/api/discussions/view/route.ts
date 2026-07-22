@@ -72,6 +72,31 @@ async function getViewerId(request: NextRequest) {
   return user?.id ?? null;
 }
 
+async function verifyDiscussionAudienceAccess(
+  supabase: NonNullable<ReturnType<typeof getServiceSupabase>>,
+  discussionId: string,
+  viewerId: string | null
+) {
+  const { data, error } = await supabase.rpc("can_view_discussion_audience", {
+    p_discussion_id: discussionId,
+    p_viewer_user_id: viewerId,
+  });
+
+  if (error) {
+    const missing =
+      error.code === "42883" ||
+      /can_view_discussion_audience|schema cache|could not find the function/i.test(
+        error.message ?? ""
+      );
+
+    return missing
+      ? { allowed: true, unavailable: false }
+      : { allowed: false, unavailable: true };
+  }
+
+  return { allowed: data === true, unavailable: false };
+}
+
 async function getDiscussionMetrics(
   supabase: NonNullable<ReturnType<typeof getServiceSupabase>>,
   discussionId: string
@@ -146,6 +171,20 @@ export async function POST(request: NextRequest) {
   }
 
   const viewerId = await getViewerId(request);
+  const audienceAccess = await verifyDiscussionAudienceAccess(
+    supabase,
+    discussionId,
+    viewerId
+  );
+
+  if (audienceAccess.unavailable) {
+    return jsonError("Unable to verify Discussion access.", 503);
+  }
+
+  if (!audienceAccess.allowed) {
+    return jsonError("Discussion not found.", 404);
+  }
+
   const dedupeSince = new Date(
     Date.now() - VIEW_DEDUPE_HOURS * 60 * 60 * 1000
   ).toISOString();
@@ -203,6 +242,21 @@ export async function GET(request: NextRequest) {
 
   if (!isValidUuid(discussionId)) {
     return jsonError("Invalid discussion id.", 400);
+  }
+
+  const viewerId = await getViewerId(request);
+  const audienceAccess = await verifyDiscussionAudienceAccess(
+    supabase,
+    discussionId,
+    viewerId
+  );
+
+  if (audienceAccess.unavailable) {
+    return jsonError("Unable to verify Discussion access.", 503);
+  }
+
+  if (!audienceAccess.allowed) {
+    return jsonError("Discussion not found.", 404);
   }
 
   const metrics = await getDiscussionMetrics(supabase, discussionId);
