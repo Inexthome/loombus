@@ -1,6 +1,7 @@
 import { CreateDiscussionAudiencePolicyGuard } from "@/components/create-discussion-audience-policy-guard";
 import { CreateDiscussionRefinements } from "@/components/create-discussion-refinements";
 import { CreateMobileComposerAdapter } from "@/components/create-mobile-composer-adapter";
+import { CreateMobilePublishChipAdapter } from "@/components/create-mobile-publish-chip-adapter";
 import { CreatePublishGuard } from "@/components/create-publish-guard";
 import CreateV2ClientPage from "./create-v2-client-page";
 
@@ -11,6 +12,7 @@ export default function CreatePage() {
       <CreateDiscussionAudiencePolicyGuard />
       <CreateV2ClientPage />
       <CreateMobileComposerAdapter />
+      <CreateMobilePublishChipAdapter />
       <style>{`
         @media (max-width: 767px) {
           main[data-mobile-create] .mc-context-wrap[data-mc-ui="true"] {
