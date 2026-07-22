@@ -6,6 +6,7 @@ import {
   LockKeyhole,
   SlidersHorizontal,
   UserCheck,
+  UserMinus,
   UserRoundCheck,
   UsersRound,
 } from "lucide-react";
@@ -17,6 +18,7 @@ type AudienceType =
   | "public"
   | "followers"
   | "connections"
+  | "exclude_selected"
   | "selected"
   | "only_me"
   | "custom";
@@ -30,7 +32,8 @@ const LABELS: Record<AudienceType, string> = {
   public: "Public",
   followers: "Followers",
   connections: "Connections",
-  selected: "Selected people",
+  exclude_selected: "Don't show to",
+  selected: "Only show to",
   only_me: "Only me",
   custom: "Custom audience",
 };
@@ -39,6 +42,7 @@ const ICONS = {
   public: Globe2,
   followers: UsersRound,
   connections: UserRoundCheck,
+  exclude_selected: UserMinus,
   selected: UserCheck,
   only_me: LockKeyhole,
   custom: SlidersHorizontal,
@@ -50,7 +54,9 @@ function createAudienceBadgeSlot() {
   );
   if (!topicRow) return null;
 
-  const existing = topicRow.querySelector<HTMLElement>("[data-discussion-audience-badge-slot]");
+  const existing = topicRow.querySelector<HTMLElement>(
+    "[data-discussion-audience-badge-slot]"
+  );
   if (existing) return existing;
 
   const slot = document.createElement("span");
@@ -76,6 +82,7 @@ export function DiscussionAudienceDetailBadge() {
         if (!cancelled) setPortalTarget(slot);
         return;
       }
+
       attempts += 1;
       if (attempts < 30) timer = window.setTimeout(locate, 120);
     }
@@ -114,12 +121,16 @@ export function DiscussionAudienceDetailBadge() {
 
   const type = audience.audience_type ?? "public";
   const Icon = ICONS[type];
-  const customBase = type === "custom" && audience.audience_base
-    ? ` · ${LABELS[audience.audience_base]}`
-    : "";
+  const customBase =
+    type === "custom" && audience.audience_base
+      ? ` · ${LABELS[audience.audience_base]}`
+      : "";
 
   return createPortal(
-    <span className="discussion-audience-detail-badge" title={`Audience: ${LABELS[type]}${customBase}`}>
+    <span
+      className="discussion-audience-detail-badge"
+      title={`Audience: ${LABELS[type]}${customBase}`}
+    >
       <Icon aria-hidden="true" size={14} />
       {LABELS[type]}
     </span>,

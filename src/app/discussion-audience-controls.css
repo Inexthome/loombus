@@ -1,147 +1,131 @@
-.discussion-audience-panel {
-  margin: 0;
+.discussion-audience-settings-panel {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0 0 1rem;
   border: 1px solid var(--loombus-border);
-  border-radius: 1.5rem;
+  border-radius: 1.25rem;
   background:
-    radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--loombus-gold) 12%, transparent), transparent 16rem),
-    color-mix(in srgb, var(--loombus-surface) 94%, var(--loombus-page-bg) 6%);
+    radial-gradient(
+      circle at 92% 0%,
+      color-mix(in srgb, var(--loombus-gold) 12%, transparent),
+      transparent 17rem
+    ),
+    color-mix(in srgb, var(--loombus-surface-muted) 72%, transparent);
   padding: 1rem;
   color: var(--loombus-text);
-  box-shadow: 0 18px 46px rgb(15 23 42 / 0.08);
 }
 
-.discussion-audience-heading {
+.discussion-audience-settings-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.discussion-audience-heading > svg {
-  flex: none;
-  color: var(--loombus-gold);
-}
-
-.discussion-audience-eyebrow {
+.discussion-audience-settings-eyebrow {
   margin: 0;
   color: var(--loombus-gold);
   font-size: 0.68rem;
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
-.discussion-audience-heading h2 {
-  margin: 0.28rem 0 0;
+.discussion-audience-settings-heading h3 {
+  margin: 0.3rem 0 0;
   color: var(--loombus-text);
   font-size: 1rem;
   font-weight: 900;
   letter-spacing: -0.02em;
 }
 
-.discussion-audience-heading p:last-child {
-  margin: 0.4rem 0 0;
+.discussion-audience-settings-heading p:last-child {
+  margin: 0.42rem 0 0;
   max-width: 48rem;
   color: var(--loombus-text-muted);
   font-size: 0.8rem;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
-.discussion-audience-loading,
-.discussion-audience-migration-notice,
-.discussion-audience-attachment-note {
-  margin: 0.9rem 0 0;
-  border-radius: 1rem;
-  padding: 0.75rem 0.85rem;
-  color: var(--loombus-text-muted);
-  font-size: 0.78rem;
-  font-weight: 650;
-  line-height: 1.45;
+.discussion-audience-settings-current {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--loombus-gold) 40%, var(--loombus-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--loombus-gold) 10%, var(--loombus-surface));
+  padding: 0.42rem 0.68rem;
+  color: var(--loombus-gold);
+  font-size: 0.72rem;
+  font-weight: 900;
 }
 
-.discussion-audience-loading {
-  background: var(--loombus-surface-muted);
-}
-
-.discussion-audience-migration-notice,
-.discussion-audience-attachment-note {
-  border: 1px solid color-mix(in srgb, var(--loombus-gold) 35%, var(--loombus-border));
-  background: color-mix(in srgb, var(--loombus-gold) 9%, var(--loombus-surface));
-}
-
-.discussion-audience-options {
+.discussion-audience-settings-options {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  margin-top: 0.9rem;
+  gap: 0.62rem;
 }
 
-.discussion-audience-option {
+.discussion-audience-settings-option {
   display: grid;
-  grid-template-columns: 1.9rem minmax(0, 1fr) 1.4rem;
+  grid-template-columns: 2rem minmax(0, 1fr) 1.35rem;
   min-width: 0;
-  min-height: 4.55rem;
+  min-height: 4.75rem;
   align-items: center;
   gap: 0.65rem;
   border: 1px solid var(--loombus-border);
   border-radius: 1rem;
-  background: var(--loombus-surface-muted);
+  background: var(--loombus-surface);
   padding: 0.72rem;
   color: var(--loombus-text);
   text-align: left;
   transition:
+    transform 160ms ease,
     border-color 160ms ease,
     background 160ms ease,
-    transform 160ms ease,
     box-shadow 160ms ease;
 }
 
-.discussion-audience-option:hover:not(:disabled) {
+.discussion-audience-settings-option:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--loombus-gold) 45%, var(--loombus-border));
 }
 
-.discussion-audience-option:disabled {
+.discussion-audience-settings-option:disabled {
   cursor: not-allowed;
-  opacity: 0.46;
+  opacity: 0.5;
 }
 
-.discussion-audience-option[data-selected="true"] {
+.discussion-audience-settings-option[data-selected="true"] {
   border-color: var(--loombus-gold);
-  background: color-mix(in srgb, var(--loombus-gold) 11%, var(--loombus-surface));
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--loombus-gold) 18%, transparent),
-    0 12px 28px color-mix(in srgb, var(--loombus-gold) 10%, transparent);
+  background: color-mix(in srgb, var(--loombus-gold) 10%, var(--loombus-surface));
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--loombus-gold) 10%, transparent);
 }
 
-.discussion-audience-option > svg {
+.discussion-audience-settings-option > svg {
   color: var(--loombus-gold);
 }
 
-.discussion-audience-option > span:nth-child(2) {
-  min-width: 0;
-}
-
-.discussion-audience-option strong,
-.discussion-audience-option small {
+.discussion-audience-settings-option strong,
+.discussion-audience-settings-option small {
   display: block;
 }
 
-.discussion-audience-option strong {
+.discussion-audience-settings-option strong {
   font-size: 0.82rem;
   font-weight: 900;
 }
 
-.discussion-audience-option small {
-  margin-top: 0.2rem;
-  overflow: hidden;
+.discussion-audience-settings-option small {
+  margin-top: 0.22rem;
   color: var(--loombus-text-muted);
-  font-size: 0.68rem;
+  font-size: 0.69rem;
   font-weight: 650;
-  line-height: 1.28;
+  line-height: 1.35;
 }
 
-.discussion-audience-radio {
+.discussion-audience-settings-radio {
   display: grid;
   width: 1.35rem;
   height: 1.35rem;
@@ -151,74 +135,74 @@
   color: var(--loombus-gold-contrast);
 }
 
-.discussion-audience-option[data-selected="true"] .discussion-audience-radio {
+.discussion-audience-settings-option[data-selected="true"]
+  .discussion-audience-settings-radio {
   border-color: var(--loombus-gold);
   background: var(--loombus-gold);
 }
 
-.discussion-audience-detail-panel {
+.discussion-audience-settings-detail {
   display: grid;
-  gap: 0.75rem;
-  margin-top: 0.85rem;
+  gap: 0.72rem;
   border: 1px solid var(--loombus-border);
-  border-radius: 1.1rem;
-  background: color-mix(in srgb, var(--loombus-surface-muted) 78%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--loombus-surface) 82%, transparent);
   padding: 0.8rem;
 }
 
-.discussion-audience-detail-copy,
-.discussion-audience-exceptions > summary,
-.discussion-audience-footer {
+.discussion-audience-settings-detail-copy,
+.discussion-audience-settings-exceptions > summary,
+.discussion-audience-settings-savebar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
-.discussion-audience-detail-copy strong {
-  font-size: 0.82rem;
+.discussion-audience-settings-detail-copy strong {
+  font-size: 0.8rem;
   font-weight: 900;
 }
 
-.discussion-audience-detail-copy span,
-.discussion-audience-exceptions > summary span {
+.discussion-audience-settings-detail-copy span,
+.discussion-audience-settings-exceptions > summary span {
   border-radius: 999px;
   background: color-mix(in srgb, var(--loombus-gold) 12%, var(--loombus-surface));
-  padding: 0.28rem 0.58rem;
+  padding: 0.28rem 0.55rem;
   color: var(--loombus-gold);
   font-size: 0.67rem;
   font-weight: 900;
 }
 
-.discussion-audience-base {
+.discussion-audience-settings-base {
   display: grid;
-  gap: 0.42rem;
+  gap: 0.38rem;
 }
 
-.discussion-audience-base span {
+.discussion-audience-settings-base > span {
   color: var(--loombus-text-muted);
   font-size: 0.72rem;
   font-weight: 900;
 }
 
-.discussion-audience-base select {
+.discussion-audience-settings-base select {
   width: 100%;
   border: 1px solid var(--loombus-border);
-  border-radius: 0.9rem;
+  border-radius: 0.85rem;
   background: var(--loombus-surface);
-  padding: 0.72rem 0.8rem;
+  padding: 0.7rem 0.78rem;
   color: var(--loombus-text);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 800;
   outline: none;
 }
 
-.discussion-audience-exceptions {
+.discussion-audience-settings-exceptions {
   border-top: 1px solid var(--loombus-border-muted);
   padding-top: 0.7rem;
 }
 
-.discussion-audience-exceptions > summary {
+.discussion-audience-settings-exceptions > summary {
   cursor: pointer;
   list-style: none;
   color: var(--loombus-text);
@@ -226,32 +210,32 @@
   font-weight: 850;
 }
 
-.discussion-audience-exceptions > summary::-webkit-details-marker {
+.discussion-audience-settings-exceptions > summary::-webkit-details-marker {
   display: none;
 }
 
-.discussion-audience-exceptions[open] > summary {
-  margin-bottom: 0.7rem;
+.discussion-audience-settings-exceptions[open] > summary {
+  margin-bottom: 0.65rem;
 }
 
-.discussion-audience-picker {
+.discussion-audience-settings-picker {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.58rem;
 }
 
-.discussion-audience-search {
+.discussion-audience-settings-search {
   display: flex;
   min-height: 2.65rem;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.5rem;
   border: 1px solid var(--loombus-border);
-  border-radius: 0.9rem;
+  border-radius: 0.85rem;
   background: var(--loombus-surface);
-  padding: 0 0.72rem;
+  padding: 0 0.7rem;
   color: var(--loombus-text-muted);
 }
 
-.discussion-audience-search input {
+.discussion-audience-settings-search input {
   min-width: 0;
   flex: 1;
   border: 0 !important;
@@ -263,75 +247,75 @@
   outline: none;
 }
 
-.discussion-audience-people {
+.discussion-audience-settings-people {
   display: grid;
-  max-height: 15rem;
-  gap: 0.45rem;
+  max-height: 16rem;
+  gap: 0.42rem;
   overflow-y: auto;
 }
 
-.discussion-audience-person {
+.discussion-audience-settings-person {
   display: grid;
-  grid-template-columns: 2.25rem minmax(0, 1fr) 1.4rem;
+  grid-template-columns: 2.2rem minmax(0, 1fr) 1.35rem;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.62rem;
   border: 1px solid var(--loombus-border-muted);
-  border-radius: 0.9rem;
+  border-radius: 0.85rem;
   background: var(--loombus-surface);
-  padding: 0.55rem 0.62rem;
+  padding: 0.52rem 0.6rem;
   color: var(--loombus-text);
   text-align: left;
 }
 
-.discussion-audience-person[data-selected="true"] {
-  border-color: color-mix(in srgb, var(--loombus-gold) 58%, var(--loombus-border));
+.discussion-audience-settings-person[data-selected="true"] {
+  border-color: color-mix(in srgb, var(--loombus-gold) 55%, var(--loombus-border));
   background: color-mix(in srgb, var(--loombus-gold) 8%, var(--loombus-surface));
 }
 
-.discussion-audience-avatar {
+.discussion-audience-settings-avatar {
   display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.2rem;
+  height: 2.2rem;
   place-items: center;
   overflow: hidden;
   border-radius: 999px;
   background: color-mix(in srgb, var(--loombus-gold) 12%, var(--loombus-surface-muted));
   color: var(--loombus-gold);
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 900;
 }
 
-.discussion-audience-avatar img {
+.discussion-audience-settings-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.discussion-audience-person-copy {
+.discussion-audience-settings-person-copy {
   min-width: 0;
 }
 
-.discussion-audience-person-copy strong,
-.discussion-audience-person-copy small {
+.discussion-audience-settings-person-copy strong,
+.discussion-audience-settings-person-copy small {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.discussion-audience-person-copy strong {
+.discussion-audience-settings-person-copy strong {
   font-size: 0.76rem;
   font-weight: 900;
 }
 
-.discussion-audience-person-copy small {
-  margin-top: 0.16rem;
+.discussion-audience-settings-person-copy small {
+  margin-top: 0.14rem;
   color: var(--loombus-text-muted);
-  font-size: 0.64rem;
+  font-size: 0.65rem;
   font-weight: 650;
 }
 
-.discussion-audience-check {
+.discussion-audience-settings-check {
   display: grid;
   width: 1.35rem;
   height: 1.35rem;
@@ -341,116 +325,115 @@
   color: var(--loombus-gold-contrast);
 }
 
-.discussion-audience-person[data-selected="true"] .discussion-audience-check {
+.discussion-audience-settings-person[data-selected="true"]
+  .discussion-audience-settings-check {
   border-color: var(--loombus-gold);
   background: var(--loombus-gold);
 }
 
-.discussion-audience-empty {
+.discussion-audience-settings-empty {
   margin: 0;
+  border: 1px dashed var(--loombus-border);
+  border-radius: 0.85rem;
+  padding: 0.8rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.discussion-audience-settings-notice {
+  border: 1px solid var(--loombus-border);
   border-radius: 0.9rem;
   background: var(--loombus-surface);
-  padding: 0.75rem;
+  padding: 0.72rem 0.8rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.discussion-audience-settings-notice.is-warning {
+  border-color: color-mix(in srgb, var(--loombus-gold) 38%, var(--loombus-border));
+  background: color-mix(in srgb, var(--loombus-gold) 8%, var(--loombus-surface));
+}
+
+.discussion-audience-settings-savebar {
+  border-top: 1px solid var(--loombus-border-muted);
+  padding-top: 0.8rem;
+}
+
+.discussion-audience-settings-savebar p {
+  margin: 0;
   color: var(--loombus-text-muted);
   font-size: 0.72rem;
-  font-weight: 650;
-  line-height: 1.4;
+  font-weight: 700;
 }
 
-.discussion-audience-footer {
-  margin-top: 0.9rem;
-  align-items: flex-start;
-}
-
-.discussion-audience-default-button {
+.discussion-audience-settings-savebar button {
   display: inline-flex;
-  min-height: 2.55rem;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  gap: 0.42rem;
+}
+
+.discussion-audience-create-policy-note {
+  margin-top: 0.75rem;
   border: 1px solid color-mix(in srgb, var(--loombus-gold) 38%, var(--loombus-border));
   border-radius: 0.9rem;
-  background: var(--loombus-surface-muted);
-  padding: 0.62rem 0.8rem;
-  color: var(--loombus-gold);
-  font-size: 0.73rem;
-  font-weight: 900;
-}
-
-.discussion-audience-default-button:disabled {
-  opacity: 0.48;
-}
-
-.discussion-audience-footer > span {
+  background: color-mix(in srgb, var(--loombus-gold) 8%, var(--loombus-surface));
+  padding: 0.7rem 0.78rem;
   color: var(--loombus-text-muted);
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  line-height: 1.4;
-  text-align: right;
+  line-height: 1.45;
 }
 
-section[data-audience-restricted="true"] > div.mt-4.grid > button {
-  opacity: 0.48;
-  cursor: not-allowed;
+.discussion-audience-create-policy-note a {
+  color: var(--loombus-gold);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.discussion-audience-create-policy-note a:hover {
+  text-decoration: underline;
 }
 
 .discussion-audience-detail-badge {
   display: inline-flex;
-  min-height: 1.9rem;
   align-items: center;
-  gap: 0.38rem;
-  border: 1px solid color-mix(in srgb, var(--loombus-gold) 32%, var(--loombus-border));
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--loombus-gold) 36%, var(--loombus-border));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--loombus-gold) 8%, var(--loombus-surface));
-  padding: 0.3rem 0.62rem;
+  background: color-mix(in srgb, var(--loombus-gold) 9%, var(--loombus-surface));
+  padding: 0.32rem 0.58rem;
   color: var(--loombus-gold);
-  font-size: 0.68rem;
+  font-size: 0.69rem;
   font-weight: 900;
 }
 
-html[data-loombus-theme="dark"] .discussion-audience-panel {
-  box-shadow: 0 22px 58px rgb(0 0 0 / 0.34);
-}
-
-@media (min-width: 768px) {
-  .discussion-audience-options {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .discussion-audience-panel {
-    padding: 1.1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .discussion-audience-options {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .discussion-audience-option {
-    min-height: 4.2rem;
-  }
-
-  .discussion-audience-footer {
+@media (max-width: 760px) {
+  .discussion-audience-settings-heading,
+  .discussion-audience-settings-savebar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .discussion-audience-default-button {
-    width: 100%;
+  .discussion-audience-settings-current {
+    align-self: flex-start;
   }
 
-  .discussion-audience-footer > span {
-    text-align: left;
+  .discussion-audience-settings-options {
+    grid-template-columns: 1fr;
+  }
+
+  .discussion-audience-settings-savebar button {
+    justify-content: center;
+    width: 100%;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .discussion-audience-option {
+  .discussion-audience-settings-option {
     transition: none;
-  }
-
-  .discussion-audience-option:hover:not(:disabled) {
-    transform: none;
   }
 }
