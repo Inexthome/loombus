@@ -3,7 +3,7 @@
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Bell, BookOpen, Clock3, CreditCard, Database, Eye, History, Lock, Mail, MessageCircle, Shield, ShieldOff, Sparkles, Trash2, User, Users } from "lucide-react";
+import { Bell, BookOpen, CreditCard, Database, Eye, History, Lock, Mail, MessageCircle, Shield, ShieldOff, Sparkles, Trash2, User, Users } from "lucide-react";
 import { SettingsPreferencePanel } from "@/components/settings-preference-panels";
 import { SettingsBlockedMembersPanel } from "@/components/settings-blocked-members-panel";
 
@@ -35,6 +35,7 @@ function Card({ eyebrow, title, description, children }: { eyebrow: string; titl
 export function SettingsWorkspaceController() {
   const [active, setActive] = useState<Section>("account");
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [navTarget, setNavTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -44,17 +45,33 @@ export function SettingsWorkspaceController() {
 
   useEffect(() => {
     const oldNav = document.querySelector<HTMLElement>(".settings-v2-nav");
-    if (oldNav) oldNav.hidden = true;
     const main = document.querySelector<HTMLElement>(".settings-v2-main");
-    if (!main) return;
-    let slot = main.querySelector<HTMLElement>("[data-settings-workspace-slot]");
-    if (!slot) {
-      slot = document.createElement("div");
-      slot.dataset.settingsWorkspaceSlot = "true";
-      main.prepend(slot);
+    if (!oldNav || !main) return;
+
+    oldNav.hidden = true;
+
+    let navSlot = oldNav.parentElement?.querySelector<HTMLElement>("[data-settings-workspace-nav-slot]") ?? null;
+    if (!navSlot) {
+      navSlot = document.createElement("div");
+      navSlot.dataset.settingsWorkspaceNavSlot = "true";
+      oldNav.before(navSlot);
     }
-    setPortalTarget(slot);
-    return () => { slot?.remove(); if (oldNav) oldNav.hidden = false; };
+
+    let contentSlot = main.querySelector<HTMLElement>("[data-settings-workspace-slot]");
+    if (!contentSlot) {
+      contentSlot = document.createElement("div");
+      contentSlot.dataset.settingsWorkspaceSlot = "true";
+      main.prepend(contentSlot);
+    }
+
+    setNavTarget(navSlot);
+    setPortalTarget(contentSlot);
+
+    return () => {
+      navSlot?.remove();
+      contentSlot?.remove();
+      oldNav.hidden = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -81,11 +98,15 @@ export function SettingsWorkspaceController() {
     return null;
   })();
 
+  const navigation = (
+    <nav className="settings-workspace-nav" aria-label="Settings sections">
+      {groups.map((group) => <div key={group} className="settings-workspace-nav-group"><p>{group}</p>{sections.filter((section) => section.group === group).map(({ key, label, Icon }) => <button type="button" key={key} className={active === key ? "is-active" : ""} aria-current={active === key ? "page" : undefined} onClick={() => setActive(key)}><Icon aria-hidden="true" /> {label}</button>)}</div>)}
+    </nav>
+  );
+
   return (
     <>
-      <nav className="settings-workspace-nav" aria-label="Settings sections">
-        {groups.map((group) => <div key={group} className="settings-workspace-nav-group"><p>{group}</p>{sections.filter((section) => section.group === group).map(({ key, label, Icon }) => <button type="button" key={key} className={active === key ? "is-active" : ""} aria-current={active === key ? "page" : undefined} onClick={() => setActive(key)}><Icon aria-hidden="true" /> {label}</button>)}</div>)}
-      </nav>
+      {navTarget ? createPortal(navigation, navTarget) : null}
       {portalTarget && generated ? createPortal(generated, portalTarget) : null}
     </>
   );
