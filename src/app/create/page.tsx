@@ -3,6 +3,7 @@ import { CreateDiscussionRefinements } from "@/components/create-discussion-refi
 import { CreateMobileComposerAdapter } from "@/components/create-mobile-composer-adapter";
 import { CreatePublishGuard } from "@/components/create-publish-guard";
 import CreateV2ClientPage from "./create-v2-client-page";
+import "./mobile-create-v2-polish.css";
 
 export default function CreatePage() {
   return (
