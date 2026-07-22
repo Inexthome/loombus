@@ -1,0 +1,50 @@
+name: Patch discussion audience public fallback
+
+on:
+  push:
+    branches:
+      - feature/discussion-audience-controls
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    name: remove audience metadata before migration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v6
+        with:
+          ref: feature/discussion-audience-controls
+
+      - name: Patch public pre-migration fallback
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/components/create-discussion-audience-bridge.tsx")
+          content = path.read_text()
+          old = '''        try {
+          const body = JSON.parse(init.body) as Record<string, unknown>;
+'''
+          new = '''        if (!audience.capabilityReady && audience.type === "public") {
+          return originalFetch(input, init);
+        }
+
+        try {
+          const body = JSON.parse(init.body) as Record<string, unknown>;
+'''
+          if old not in content:
+              raise SystemExit("Expected audience bridge insertion point was not found")
+          path.write_text(content.replace(old, new, 1))
+          PY
+
+      - name: Commit patch and remove one-time workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/patch-discussion-audience-bridge.yml
+          git add src/components/create-discussion-audience-bridge.tsx
+          git commit -m "Preserve clean Public creates before audience migration"
+          git push origin HEAD:feature/discussion-audience-controls
