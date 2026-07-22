@@ -1,5 +1,5 @@
-import CreateReviewClientPage from "./review-client-page";
+import CreateReviewV2ClientPage from "./review-v2-client-page";
 
 export default function CreateReviewPage() {
-  return <CreateReviewClientPage />;
+  return <CreateReviewV2ClientPage />;
 }
