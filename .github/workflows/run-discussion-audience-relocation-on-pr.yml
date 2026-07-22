@@ -1,5 +1,6 @@
 name: Run Discussion audience relocation
 
+# Temporary review workflow. The final correction commit removes this file.
 on:
   pull_request:
     branches:
