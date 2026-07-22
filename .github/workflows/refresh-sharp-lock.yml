@@ -1,0 +1,43 @@
+name: Refresh sharp dependency lock
+
+on:
+  push:
+    branches:
+      - polish/mobile-home-create-cards
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lock:
+    name: refresh sharp lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request branch
+        uses: actions/checkout@v6
+        with:
+          ref: polish/mobile-home-create-cards
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Pin patched sharp through npm overrides
+        run: npm pkg set overrides.sharp=0.35.3
+
+      - name: Regenerate lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Verify production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit refreshed package files and remove this one-time workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/refresh-sharp-lock.yml
+          git add package.json package-lock.json
+          git commit -m "chore: override sharp to patched release"
+          git push origin HEAD:polish/mobile-home-create-cards
