@@ -10,6 +10,7 @@ import { CreateDiscussionRefinements } from "@/components/create-discussion-refi
 import { CreateMobileComposerAdapter } from "@/components/create-mobile-composer-adapter";
 import { CreateMobileComposerCorrections } from "@/components/create-mobile-composer-corrections";
 import { CreatePublishGuard } from "@/components/create-publish-guard";
+import { ForceMobileComposerMode } from "@/components/force-mobile-composer-mode";
 
 const SEARCH_PLACEHOLDER = "Search discussions, topics, and contributors";
 
@@ -89,13 +90,13 @@ function CreateModal({ onClose }: { onClose: () => void }) {
         className="discussions-create-modal-panel"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="discussions-create-modal-title"
+        aria-label="Start a discussion"
         tabIndex={-1}
       >
-        <header className="discussions-create-modal-header">
+        <header className="discussions-create-modal-header" aria-hidden="true">
           <div>
             <p>CREATE ON LOOMBUS</p>
-            <h2 id="discussions-create-modal-title">Start a discussion</h2>
+            <h2>Start a discussion</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="Close discussion composer">
             <X aria-hidden="true" className="size-5" />
@@ -103,6 +104,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
         </header>
 
         <div className="discussions-create-modal-shell">
+          <ForceMobileComposerMode />
           <CreatePublishGuard>
             <CreateDiscussionRefinements />
             <CreateDiscussionAudiencePolicyGuard />
