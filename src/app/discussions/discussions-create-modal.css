@@ -1,7 +1,21 @@
+body[data-discussions-create-open="true"] .loombus-mobile-v2-topbar,
+body[data-discussions-create-open="true"] .loombus-desktop-top-navbar {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  transform: translateY(-110%) !important;
+}
+
+body[data-discussions-create-open="true"] .loombus-mobile-v2-bottom-nav,
+body[data-discussions-create-open="true"] .loombus-adaptive-dock-launcher,
+body[data-discussions-create-open="true"] .loombus-adaptive-utility-root {
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
 .discussions-create-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 90;
   display: grid;
   place-items: center;
   padding: 1.25rem;
