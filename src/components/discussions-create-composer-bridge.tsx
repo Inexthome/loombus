@@ -52,7 +52,10 @@ function CreateModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
+    const previousComposerState = document.body.dataset.discussionsCreateOpen;
+
     document.body.style.overflow = "hidden";
+    document.body.dataset.discussionsCreateOpen = "true";
     panelRef.current?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -68,6 +71,12 @@ function CreateModal({ onClose }: { onClose: () => void }) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
+
+      if (previousComposerState === undefined) {
+        delete document.body.dataset.discussionsCreateOpen;
+      } else {
+        document.body.dataset.discussionsCreateOpen = previousComposerState;
+      }
     };
   }, [onClose]);
 
