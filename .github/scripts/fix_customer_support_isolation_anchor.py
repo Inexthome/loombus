@@ -18,6 +18,11 @@ replacements = [
         "    '              ? \"Start a focused thread that stays inside this Room.\"\\n',",
         "support empty-state copy",
     ),
+    (
+        "async function loadAccessiblePost(\\n  service: ServiceClient,\\n  access: RoomAccess,\\n  roomId: string,\\n  postId: string,\\n  userId: string\\n) {\\n  const post = await loadPost(service, roomId, postId);\\n",
+        "async function loadAccessiblePost(\\n  service: ServiceClient,\\n  access: RoomAccess,\\n  roomId: string,\\n  postId: string,\\n  userId: string\\n): Promise<RoomRow | null> {\\n  const post =\\n    await loadPost(service, roomId, postId);\\n",
+        "accessible post helper return contract",
+    ),
 ]
 
 for old, new, label in replacements:
