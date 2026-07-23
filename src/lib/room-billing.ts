@@ -91,7 +91,7 @@ function present(value: string | undefined) {
 }
 
 export function isPaidRoomPlanKey(value: string): value is PaidRoomPlanKey {
-  return value in PAID_ROOM_PLANS;
+  return Object.prototype.hasOwnProperty.call(PAID_ROOM_PLANS, value);
 }
 
 export function getRoomCheckoutConfiguration() {

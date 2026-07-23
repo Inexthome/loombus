@@ -2,6 +2,10 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
 import {
+  getRoomRequiredBehaviors,
+  isCustomerSupportRoomType,
+} from "@/lib/room-required-behaviors";
+import {
   ROOM_MODULE_DEFINITIONS,
   getRoomPlanEntitlements,
   isRoomModuleKey,
@@ -102,7 +106,10 @@ function safeIsoDate(value: unknown) {
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
 
-function normalizeSettings(value: unknown): RoomModuleSettings {
+function normalizeSettings(
+  value: unknown,
+  roomType?: unknown
+): RoomModuleSettings {
   const source = asObject(value);
   const domains = Array.isArray(source.allowedEmailDomains)
     ? source.allowedEmailDomains
@@ -111,8 +118,9 @@ function normalizeSettings(value: unknown): RoomModuleSettings {
         .slice(0, 50)
     : [];
   return {
-    allowMemberPosts:
-      typeof source.allowMemberPosts === "boolean"
+    allowMemberPosts: isCustomerSupportRoomType(roomType)
+      ? true
+      : typeof source.allowMemberPosts === "boolean"
         ? source.allowMemberPosts
         : DEFAULT_SETTINGS.allowMemberPosts,
     memberDirectoryVisible:
@@ -197,14 +205,21 @@ function serializeRecord(row: RoomRow) {
   };
 }
 
-async function getSettings(service: ServiceClient, roomId: string) {
+async function getSettings(
+  service: ServiceClient,
+  roomId: string,
+  roomType?: unknown
+) {
   const result = await service
     .from("room_module_settings")
     .select("settings")
     .eq("room_id", roomId)
     .maybeSingle();
   if (result.error) throw new Error(result.error.message);
-  return normalizeSettings((result.data as RoomRow | null)?.settings);
+  return normalizeSettings(
+    (result.data as RoomRow | null)?.settings,
+    roomType
+  );
 }
 
 async function enforceModule(access: RoomAccess, moduleKey: RoomModuleKey) {
@@ -240,7 +255,7 @@ async function loadRecords(
   if (!dataModule || !DATA_MODULES.has(dataModule)) return [];
 
   if (moduleKey === "directory" && !access.canManage) {
-    const settings = await getSettings(service, roomId);
+    const settings = await getSettings(service, roomId, access.room.roomType);
     if (!settings.memberDirectoryVisible) {
       throw new Error("The private directory is limited to Room administrators.");
     }
@@ -589,7 +604,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
     return NextResponse.json(
       {
-        room: access.room,
+        room: {
+          ...access.room,
+          requiredBehaviors: getRoomRequiredBehaviors(access.room.roomType),
+        },
         access: {
           role: access.role,
           canManage: access.canManage,
@@ -634,13 +652,16 @@ export async function GET(request: NextRequest, context: RouteContext) {
       )
     ) {
       data = {
-        room: access.room,
-        settings: await getSettings(serviceSupabase, roomId),
+        room: {
+          ...access.room,
+          requiredBehaviors: getRoomRequiredBehaviors(access.room.roomType),
+        },
+        settings: await getSettings(serviceSupabase, roomId, access.room.roomType),
       };
     } else if (requestedModule === "invites") {
       data = {
         invites: await loadInvites(serviceSupabase, roomId),
-        settings: await getSettings(serviceSupabase, roomId),
+        settings: await getSettings(serviceSupabase, roomId, access.room.roomType),
       };
     } else if (requestedModule === "activity") {
       data = await loadActivity(serviceSupabase, roomId);
@@ -979,10 +1000,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
       if (moduleKey === "enterprise-controls" && !access.isOwner) {
         return jsonError("Only the Room owner can update enterprise controls.", 403);
       }
-      const settings = normalizeSettings({
-        ...(await getSettings(serviceSupabase, roomId)),
-        ...asObject(body?.settings),
-      });
+      const settings = normalizeSettings(
+        {
+          ...(await getSettings(
+            serviceSupabase,
+            roomId,
+            access.room.roomType
+          )),
+          ...asObject(body?.settings),
+        },
+        access.room.roomType
+      );
       const settingsResult = await serviceSupabase
         .from("room_module_settings")
         .upsert(
