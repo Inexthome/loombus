@@ -6,7 +6,6 @@ import { createRoomServiceSupabase } from "@/lib/room-operations";
 import {
   RoomBillingError,
   handleRoomSubscriptionChanged,
-  isPaidRoomPlanKey,
   type PaidRoomPlanKey,
 } from "@/lib/room-billing";
 import { getRoomPlanMemberLimit } from "@/lib/room-plan-entitlements";
@@ -27,6 +26,14 @@ const ROOM_PRICE_ENV: Array<{
     envName: "STRIPE_ROOM_ORGANIZATION_ENTERPRISE_MONTHLY_PRICE_ID",
   },
 ];
+
+const PAID_ROOM_PLAN_KEYS = new Set<PaidRoomPlanKey>(
+  ROOM_PRICE_ENV.map((entry) => entry.planKey)
+);
+
+function isKnownPaidRoomPlanKey(value: unknown): value is PaidRoomPlanKey {
+  return typeof value === "string" && PAID_ROOM_PLAN_KEYS.has(value as PaidRoomPlanKey);
+}
 
 function getCustomerId(subscription: Stripe.Subscription) {
   if (typeof subscription.customer === "string") return subscription.customer;
@@ -61,7 +68,7 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
   const priceId = getPriceId(subscription);
   const planKey = getRoomPlanKeyFromPriceId(priceId) ?? metadataPlanKey;
 
-  if (!roomId || !userId || !isPaidRoomPlanKey(planKey)) {
+  if (!roomId || !userId || !isKnownPaidRoomPlanKey(planKey)) {
     throw new RoomBillingError(
       "Stripe Room subscription metadata or price is incomplete.",
       400,
