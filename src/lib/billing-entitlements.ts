@@ -26,6 +26,48 @@ export type BillingIdentity = {
   stripeSubscriptionStatus?: string | null;
 };
 
+export type PremiumBillingPlanKey =
+  | "premium_monthly"
+  | "premium_annual"
+  | "premium_plus_monthly"
+  | "premium_plus_annual";
+
+const PREMIUM_PRICE_ENV: Array<{
+  planKey: PremiumBillingPlanKey;
+  envNames: string[];
+}> = [
+  {
+    planKey: "premium_monthly",
+    envNames: ["STRIPE_PREMIUM_MONTHLY_PRICE_ID", "STRIPE_PREMIUM_PRICE_ID"],
+  },
+  {
+    planKey: "premium_annual",
+    envNames: ["STRIPE_PREMIUM_ANNUAL_PRICE_ID"],
+  },
+  {
+    planKey: "premium_plus_monthly",
+    envNames: ["STRIPE_PREMIUM_PLUS_MONTHLY_PRICE_ID"],
+  },
+  {
+    planKey: "premium_plus_annual",
+    envNames: ["STRIPE_PREMIUM_PLUS_ANNUAL_PRICE_ID"],
+  },
+];
+
+export function getPremiumPlanKeyFromPriceId(
+  priceId: string | null | undefined
+): PremiumBillingPlanKey | null {
+  if (!priceId) return null;
+
+  for (const entry of PREMIUM_PRICE_ENV) {
+    if (entry.envNames.some((name) => process.env[name] === priceId)) {
+      return entry.planKey;
+    }
+  }
+
+  return null;
+}
+
 export function getBillingSupabaseAdmin() {
   if (!SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured.");
@@ -67,7 +109,9 @@ export async function activatePremiumForUser(
 ) {
   const supabase = getBillingSupabaseAdmin();
   const updatedAt = new Date().toISOString();
-  const limits = getLimitsForPlan(planKey);
+  const resolvedPlanKey =
+    getPremiumPlanKeyFromPriceId(billingIdentity.stripePriceId) ?? planKey;
+  const limits = getLimitsForPlan(resolvedPlanKey);
 
   const { error } = await supabase.from("user_ai_entitlements").upsert(
     {
@@ -81,7 +125,7 @@ export async function activatePremiumForUser(
       stripe_current_period_end: billingIdentity.stripeCurrentPeriodEnd ?? null,
       stripe_subscription_status:
         billingIdentity.stripeSubscriptionStatus ?? "active",
-      notes: `${note} Plan: ${getBillingPlanLabel(planKey)}.`,
+      notes: `${note} Plan: ${getBillingPlanLabel(resolvedPlanKey)}.`,
       updated_at: updatedAt,
     },
     {
