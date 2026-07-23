@@ -6,9 +6,9 @@ import { createRoomServiceSupabase } from "@/lib/room-operations";
 import {
   RoomBillingError,
   handleRoomSubscriptionChanged,
-  isPaidRoomPlanKey,
   type PaidRoomPlanKey,
 } from "@/lib/room-billing";
+import { getRoomPlanMemberLimit } from "@/lib/room-plan-entitlements";
 
 const ROOM_PRICE_ENV: Array<{
   planKey: PaidRoomPlanKey;
@@ -26,6 +26,14 @@ const ROOM_PRICE_ENV: Array<{
     envName: "STRIPE_ROOM_ORGANIZATION_ENTERPRISE_MONTHLY_PRICE_ID",
   },
 ];
+
+const PAID_ROOM_PLAN_KEYS = new Set<PaidRoomPlanKey>(
+  ROOM_PRICE_ENV.map((entry) => entry.planKey)
+);
+
+function isKnownPaidRoomPlanKey(value: unknown): value is PaidRoomPlanKey {
+  return typeof value === "string" && PAID_ROOM_PLAN_KEYS.has(value as PaidRoomPlanKey);
+}
 
 function getCustomerId(subscription: Stripe.Subscription) {
   if (typeof subscription.customer === "string") return subscription.customer;
@@ -60,7 +68,7 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
   const priceId = getPriceId(subscription);
   const planKey = getRoomPlanKeyFromPriceId(priceId) ?? metadataPlanKey;
 
-  if (!roomId || !userId || !isPaidRoomPlanKey(planKey)) {
+  if (!roomId || !userId || !isKnownPaidRoomPlanKey(planKey)) {
     throw new RoomBillingError(
       "Stripe Room subscription metadata or price is incomplete.",
       400,
@@ -99,9 +107,11 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
     );
   }
 
+  const memberLimit = getRoomPlanMemberLimit(planKey);
   const billingUpdate = {
     subscription_plan: planKey,
     subscription_status: subscription.status,
+    member_limit: memberLimit,
     stripe_customer_id: getCustomerId(subscription),
     stripe_subscription_id: subscription.id,
     stripe_price_id: priceId,
@@ -152,6 +162,7 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
     target_id: roomId,
     metadata: {
       room_plan: planKey,
+      member_limit: memberLimit,
       stripe_subscription_id: subscription.id,
       stripe_subscription_status: subscription.status,
       synchronized_room_count: synchronizedRoomIds.length,
