@@ -8,7 +8,7 @@ Room discussions do not use the public Loombus Topic taxonomy.
 
 A Room already defines the audience and context. Room discussions may use the shared discussion modes, but they must not require `topic`, `reality_lens`, or `purpose_lane`.
 
-Planned Room discussion fields:
+Room discussion fields:
 
 - `discussion_type`
 - `discussion_metadata`
@@ -17,6 +17,23 @@ Planned Room discussion fields:
 - `resolved_by`
 - `last_activity_at`
 - `reply_count`
+
+## Threaded discussion contract
+
+Room discussions use one level of replies rather than nested reply trees. The four supported modes are Open Discussion, Debate, Research Question, and Problem Solving.
+
+The following rules are part of the product and authorization contract:
+
+- discussion-mode keys and metadata are parsed by the shared server validator
+- unsupported metadata keys and nested metadata values are rejected
+- Room discussions are ordered by `last_activity_at`
+- per-member read markers determine unread thread activity
+- resolved discussions reject new replies until reopened
+- the discussion author or Room management may resolve or reopen a thread
+- the discussion or reply author and Room moderation may soft-delete their content
+- active Room membership is required to read threads and replies
+- reply writes use the authenticated service route rather than direct client inserts
+- the legacy flat Room post creation path must remain closed
 
 ## Load-bearing release sequence
 

@@ -4,6 +4,7 @@ import { DISCUSSION_TOPICS, type DiscussionTopic } from "@/lib/discussion-topics
 import { normalizeRealityLens } from "@/lib/reality-lenses";
 import { normalizePurposeLane } from "@/lib/purpose-lanes";
 import { normalizeDiscussionTags } from "@/lib/discussion-tags";
+import { parseDiscussionModeInput } from "@/lib/discussion-modes";
 import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
@@ -182,31 +183,24 @@ export async function POST(request: NextRequest) {
     const requestedTopic = String(body.topic ?? "").trim();
     const reality_lens = normalizeRealityLens(body.realityLens ?? body.reality_lens);
     const purpose_lane = normalizePurposeLane(body.purposeLane ?? body.purpose_lane);
-    const requestedDiscussionType = String(body.discussionType ?? body.discussion_type ?? "open_discussion").trim();
-    const allowedDiscussionTypes = new Set([
-      "open_discussion",
-      "debate",
-      "research_question",
-      "problem_solving",
-    ]);
+    const discussionModeResult = parseDiscussionModeInput({
+      discussionType: body.discussionType ?? body.discussion_type,
+      discussionMetadata:
+        body.discussionMetadata ?? body.discussion_metadata,
+    });
 
-    if (!allowedDiscussionTypes.has(requestedDiscussionType)) {
+    if (!discussionModeResult.ok) {
       return NextResponse.json(
-        { error: "Choose a valid discussion type." },
+        {
+          error: discussionModeResult.error,
+          code: discussionModeResult.code,
+        },
         { status: 400 }
       );
     }
 
-    const rawDiscussionMetadata =
-      body.discussionMetadata && typeof body.discussionMetadata === "object" && !Array.isArray(body.discussionMetadata)
-        ? body.discussionMetadata
-        : {};
-
-    const discussion_metadata = Object.fromEntries(
-      Object.entries(rawDiscussionMetadata)
-        .map(([key, value]) => [key, String(value ?? "").trim()])
-        .filter(([, value]) => value.length > 0)
-    );
+    const requestedDiscussionType = discussionModeResult.mode;
+    const discussion_metadata = discussionModeResult.metadata;
 
     if (!DISCUSSION_TOPICS.includes(requestedTopic as DiscussionTopic)) {
       return NextResponse.json(
