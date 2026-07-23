@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
-import { getBillingSupabaseAdmin } from "@/lib/billing-entitlements";
+import {
+  getBillingSupabaseAdmin,
+  getPremiumPlanKeyFromPriceId,
+} from "@/lib/billing-entitlements";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
@@ -83,10 +86,102 @@ function roomPlanLabel(value: string | null) {
     .join(" ");
 }
 
+function getSubscriptionPriceId(subscription: Stripe.Subscription) {
+  return subscription.items.data[0]?.price?.id ?? null;
+}
+
 function getPeriodEnd(subscription: Stripe.Subscription) {
   const value = (subscription as Stripe.Subscription & { current_period_end?: number })
     .current_period_end;
   return value ? new Date(value * 1000).toISOString() : null;
+}
+
+function isManageableStatus(status: Stripe.Subscription.Status) {
+  return ["active", "trialing", "past_due"].includes(status);
+}
+
+async function reconcileLegacyMembershipSubscription({
+  entitlement,
+  userId,
+  stripe,
+  admin,
+}: {
+  entitlement: EntitlementRow | null;
+  userId: string;
+  stripe: Stripe | null;
+  admin: ReturnType<typeof getBillingSupabaseAdmin>;
+}): Promise<EntitlementRow | null> {
+  if (
+    !stripe ||
+    !entitlement?.stripe_customer_id ||
+    entitlement.stripe_subscription_id
+  ) {
+    return entitlement;
+  }
+
+  try {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: entitlement.stripe_customer_id,
+      status: "all",
+      limit: 100,
+    });
+
+    const candidates = subscriptions.data
+      .filter((subscription) => {
+        const priceId = getSubscriptionPriceId(subscription);
+        return (
+          subscription.metadata?.product === "loombus_premium_ai" ||
+          Boolean(getPremiumPlanKeyFromPriceId(priceId))
+        );
+      })
+      .sort((left, right) => {
+        const leftActive = isManageableStatus(left.status) ? 1 : 0;
+        const rightActive = isManageableStatus(right.status) ? 1 : 0;
+        if (leftActive !== rightActive) return rightActive - leftActive;
+        return right.created - left.created;
+      });
+
+    const subscription = candidates[0];
+    if (!subscription) return entitlement;
+
+    const priceId = getSubscriptionPriceId(subscription);
+    const currentPeriodEnd = getPeriodEnd(subscription);
+    const reconciled: EntitlementRow = {
+      ...entitlement,
+      stripe_subscription_id: subscription.id,
+      stripe_price_id: priceId,
+      stripe_current_period_end: currentPeriodEnd,
+      stripe_subscription_status: subscription.status,
+    };
+
+    const { error } = await admin
+      .from("user_ai_entitlements")
+      .update({
+        stripe_subscription_id: subscription.id,
+        stripe_price_id: priceId,
+        stripe_current_period_end: currentPeriodEnd,
+        stripe_subscription_status: subscription.status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error("Legacy Premium subscription reconciliation could not persist:", {
+        userId,
+        subscriptionId: subscription.id,
+        message: error.message,
+      });
+    }
+
+    return reconciled;
+  } catch (error) {
+    console.error("Legacy Premium subscription reconciliation failed:", {
+      userId,
+      customerId: entitlement.stripe_customer_id,
+      message: error instanceof Error ? error.message : "Unknown Stripe error",
+    });
+    return entitlement;
+  }
 }
 
 async function enrichFromStripe(
@@ -151,6 +246,7 @@ export async function GET(request: NextRequest) {
     }
 
     const admin = getBillingSupabaseAdmin();
+    const stripe = getStripe();
     const [entitlementResult, roomResult] = await Promise.all([
       admin
         .from("user_ai_entitlements")
@@ -175,7 +271,12 @@ export async function GET(request: NextRequest) {
       throw new Error(`Unable to load Room billing: ${roomResult.error.message}`);
     }
 
-    const entitlement = (entitlementResult.data ?? null) as EntitlementRow | null;
+    const entitlement = await reconcileLegacyMembershipSubscription({
+      entitlement: (entitlementResult.data ?? null) as EntitlementRow | null,
+      userId: user.id,
+      stripe,
+      admin,
+    });
     const rooms = (roomResult.data ?? []) as RoomRow[];
     const membershipPlan = getMembershipPlan(entitlement);
     const membershipProvider = getProvider(entitlement);
@@ -237,7 +338,6 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const stripe = getStripe();
     const [enrichedMembership, enrichedRooms] = await Promise.all([
       enrichFromStripe(membership, stripe),
       Promise.all(roomSubscriptions.map((item) => enrichFromStripe(item, stripe))),
