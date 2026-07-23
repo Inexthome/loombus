@@ -2,6 +2,7 @@ import "./globals.css";
 import "./loombus-brand-accent.css";
 import "./desktop-top-navbar.css";
 import "./mobile-navigation-shell.css";
+import "./adaptive-shell-controls.css";
 import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
 import "./discussion-audience-controls.css";
@@ -15,6 +16,8 @@ import "./auth-account-v2.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
+import { AdaptiveFloatingUtilityLauncher } from "@/components/adaptive-floating-utility-launcher";
+import { AdaptiveMobileDockController } from "@/components/adaptive-mobile-dock-controller";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
 import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
@@ -107,7 +110,9 @@ export default function RootLayout({
         />
         <DesktopTopNavbar />
         <MobileNavigationShell />
+        <AdaptiveMobileDockController />
         <ClientLayout>{children}</ClientLayout>
+        <AdaptiveFloatingUtilityLauncher />
         <CanonicalAppHomeLinks />
         <AuthSessionCleanup />
         <SessionLifecycleGuard />
