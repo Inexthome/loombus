@@ -15,19 +15,19 @@
     "cap:open:android": "cap open android"
   },
   "dependencies": {
-    "@capacitor/android": "^8.4.1",
-    "@capacitor/core": "^8.4.1",
-    "@capacitor/ios": "^8.4.1",
-    "@capacitor/push-notifications": "^8.1.1",
-    "@capgo/capacitor-native-biometric": "^8.4.11",
-    "@supabase/ssr": "^0.12.0",
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capgo/capacitor-native-biometric": "^8.6.2",
+    "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.108.2",
-    "cordova-plugin-purchase": "^13.17.2",
-    "lucide-react": "^1.21.0",
+    "cordova-plugin-purchase": "^13.18.0",
+    "lucide-react": "^1.26.0",
     "next": "16.2.11",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
-    "stripe": "^22.2.2"
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "stripe": "^22.3.2"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.0",
