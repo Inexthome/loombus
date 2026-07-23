@@ -1,16 +1,11 @@
 "use client";
 
-import { PencilLine, Plus, Sparkles, X } from "lucide-react";
+import { PencilLine, Plus, Sparkles } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { type RefObject, useEffect, useRef, useState } from "react";
-import CreateV2ClientPage from "@/app/create/create-v2-client-page";
-import { CreateDiscussionAudiencePolicyGuard } from "@/components/create-discussion-audience-policy-guard";
-import { CreateDiscussionRefinements } from "@/components/create-discussion-refinements";
-import { CreateMobileComposerAdapter } from "@/components/create-mobile-composer-adapter";
-import { CreateMobileComposerCorrections } from "@/components/create-mobile-composer-corrections";
+import CreateDiscussionComposer from "@/components/create-discussion-composer";
 import { CreatePublishGuard } from "@/components/create-publish-guard";
-import { ForceMobileComposerMode } from "@/components/force-mobile-composer-mode";
 
 const SEARCH_PLACEHOLDER = "Search discussions, topics, and contributors";
 
@@ -61,24 +56,17 @@ function CreateModal({ onClose }: { onClose: () => void }) {
     panelRef.current?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-
-    function handleComposerCancel(event: MouseEvent) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const cancelLink = target.closest<HTMLAnchorElement>('a[href="/discussions"]');
-      if (!cancelLink || !panelRef.current?.contains(cancelLink)) return;
-      event.preventDefault();
-      onClose();
+      if (
+        event.key === "Escape" &&
+        !document.querySelector('button[aria-label="Close composer options"]')
+      ) {
+        onClose();
+      }
     }
 
     window.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("click", handleComposerCancel, true);
-
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("click", handleComposerCancel, true);
       document.body.style.overflow = previousOverflow;
     };
   }, [onClose]);
@@ -93,24 +81,9 @@ function CreateModal({ onClose }: { onClose: () => void }) {
         aria-label="Start a discussion"
         tabIndex={-1}
       >
-        <header className="discussions-create-modal-header" aria-hidden="true">
-          <div>
-            <p>CREATE ON LOOMBUS</p>
-            <h2>Start a discussion</h2>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Close discussion composer">
-            <X aria-hidden="true" className="size-5" />
-          </button>
-        </header>
-
         <div className="discussions-create-modal-shell">
-          <ForceMobileComposerMode />
           <CreatePublishGuard>
-            <CreateDiscussionRefinements />
-            <CreateDiscussionAudiencePolicyGuard />
-            <CreateV2ClientPage />
-            <CreateMobileComposerAdapter />
-            <CreateMobileComposerCorrections />
+            <CreateDiscussionComposer variant="modal" onClose={onClose} />
           </CreatePublishGuard>
         </div>
       </section>
