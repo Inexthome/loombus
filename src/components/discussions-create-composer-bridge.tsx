@@ -3,7 +3,7 @@
 import { PencilLine, Plus, Sparkles, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import CreateV2ClientPage from "@/app/create/create-v2-client-page";
 import { CreateDiscussionAudiencePolicyGuard } from "@/components/create-discussion-audience-policy-guard";
 import { CreateDiscussionRefinements } from "@/components/create-discussion-refinements";
@@ -13,9 +13,16 @@ import { CreatePublishGuard } from "@/components/create-publish-guard";
 
 const SEARCH_PLACEHOLDER = "Search discussions, topics, and contributors";
 
-function CreateTrigger({ onOpen }: { onOpen: () => void }) {
+function CreateTrigger({
+  onOpen,
+  buttonRef,
+}: {
+  onOpen: () => void;
+  buttonRef: RefObject<HTMLButtonElement | null>;
+}) {
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={onOpen}
       className="group flex h-14 w-full items-center gap-3 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-3 text-left shadow-sm transition hover:border-amber-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-200/60"
@@ -130,9 +137,9 @@ export function DiscussionsCreateComposerBridge() {
 
     function locateSearchBar() {
       if (cancelled) return;
-      const input = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="search"]')).find(
-        (candidate) => candidate.placeholder === SEARCH_PLACEHOLDER
-      );
+      const input = Array.from(
+        document.querySelectorAll<HTMLInputElement>('input[type="search"]')
+      ).find((candidate) => candidate.placeholder === SEARCH_PLACEHOLDER);
       searchLabel = input?.closest("label") ?? null;
 
       if (!searchLabel?.parentElement) {
@@ -173,9 +180,7 @@ export function DiscussionsCreateComposerBridge() {
     <>
       {slot
         ? createPortal(
-            <span ref={triggerRef as never}>
-              <CreateTrigger onOpen={() => setOpen(true)} />
-            </span>,
+            <CreateTrigger buttonRef={triggerRef} onOpen={() => setOpen(true)} />,
             slot
           )
         : null}
