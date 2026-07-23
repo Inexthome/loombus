@@ -1,0 +1,39 @@
+name: Apply Room threaded discussion polish
+
+on:
+  push:
+    branches:
+      - agent/room-threaded-discussions
+    paths:
+      - scripts/apply-room-threaded-discussion-polish.py
+      - .github/workflows/apply-room-threaded-discussion-polish.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-polish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Room discussion branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/room-threaded-discussions
+          fetch-depth: 0
+
+      - name: Apply deterministic integration polish
+        run: python scripts/apply-room-threaded-discussion-polish.py
+
+      - name: Verify patch formatting
+        run: git diff --check
+
+      - name: Commit only product changes
+        run: |
+          rm scripts/apply-room-threaded-discussion-polish.py
+          rm .github/workflows/apply-room-threaded-discussion-polish.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/app/api/discussions/create/route.ts src/app/api/rooms/'[roomId]'/discussions/route.ts src/components/room-discussions-workspace.tsx supabase/migrations/20260725012000_activate_room_threaded_discussions.sql scripts/apply-room-threaded-discussion-polish.py .github/workflows/apply-room-threaded-discussion-polish.yml
+          git commit -m "Polish Room threaded discussion integration"
+          git push origin HEAD:agent/room-threaded-discussions
