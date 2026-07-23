@@ -37,6 +37,15 @@ jobs:
           npm install next@16.2.11 --save-exact
           npm install eslint-config-next@16.2.11 --save-dev --save-exact
 
+      - name: Commit generated dependency files
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "Upgrade Next.js to 16.2.11" || true
+          git push origin HEAD:"${BRANCH}"
+
       - name: Lint
         run: npm run lint
 
@@ -49,12 +58,10 @@ jobs:
       - name: Verify diff integrity
         run: git diff --check
 
-      - name: Commit validated dependency update
+      - name: Remove temporary workflow
         run: |
           BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
           rm .github/workflows/upgrade-next-16-2-11.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json .github/workflows/upgrade-next-16-2-11.yml
-          git commit -m "Upgrade Next.js to 16.2.11"
+          git add .github/workflows/upgrade-next-16-2-11.yml
+          git commit -m "Remove dependency update workflow"
           git push origin HEAD:"${BRANCH}"
