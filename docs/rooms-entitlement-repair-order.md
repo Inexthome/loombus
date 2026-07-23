@@ -58,6 +58,17 @@ These are different product contracts:
 
 Core admission must never depend on the paid Requests module.
 
+## Invitation delivery contract
+
+Invitation delivery is part of core Room admission and is available to Free Rooms.
+
+- invitation creation returns a one-time plaintext URL while the database stores only its hash
+- the interface must never claim that a link was copied unless a clipboard operation actually succeeds
+- a newly generated URL remains visibly selectable so clipboard restrictions cannot destroy the invitation handoff
+- `/rooms` accepts either the complete Loombus invitation URL or its raw token and forwards it to the canonical join flow
+- clicking or pasting an invitation must use the same authenticated server redemption endpoint
+- revocation, expiration, usage limits, Room capacity, email-domain restrictions, and approval requirements remain server-enforced
+
 ## Billing grace behavior
 
 `past_due` is a retryable billing state and must not immediately collapse a paid Room to Free access.
