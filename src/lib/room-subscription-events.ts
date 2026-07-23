@@ -7,7 +7,25 @@ import {
   RoomBillingError,
   handleRoomSubscriptionChanged,
   isPaidRoomPlanKey,
+  type PaidRoomPlanKey,
 } from "@/lib/room-billing";
+
+const ROOM_PRICE_ENV: Array<{
+  planKey: PaidRoomPlanKey;
+  envName: string;
+}> = [
+  { planKey: "starter", envName: "STRIPE_ROOM_STARTER_MONTHLY_PRICE_ID" },
+  { planKey: "pro", envName: "STRIPE_ROOM_PRO_MONTHLY_PRICE_ID" },
+  { planKey: "organization", envName: "STRIPE_ROOM_ORGANIZATION_MONTHLY_PRICE_ID" },
+  {
+    planKey: "organization-plus",
+    envName: "STRIPE_ROOM_ORGANIZATION_PLUS_MONTHLY_PRICE_ID",
+  },
+  {
+    planKey: "enterprise",
+    envName: "STRIPE_ROOM_ORGANIZATION_ENTERPRISE_MONTHLY_PRICE_ID",
+  },
+];
 
 function getCustomerId(subscription: Stripe.Subscription) {
   if (typeof subscription.customer === "string") return subscription.customer;
@@ -16,6 +34,14 @@ function getCustomerId(subscription: Stripe.Subscription) {
 
 function getPriceId(subscription: Stripe.Subscription) {
   return subscription.items?.data?.[0]?.price?.id ?? null;
+}
+
+function getRoomPlanKeyFromPriceId(priceId: string | null) {
+  if (!priceId) return null;
+  return (
+    ROOM_PRICE_ENV.find((entry) => process.env[entry.envName] === priceId)?.planKey ??
+    null
+  );
 }
 
 function getCurrentPeriodEnd(subscription: Stripe.Subscription) {
@@ -30,11 +56,13 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
 
   const roomId = subscription.metadata?.room_id ?? "";
   const userId = subscription.metadata?.user_id ?? "";
-  const planKey = subscription.metadata?.room_plan ?? "";
+  const metadataPlanKey = subscription.metadata?.room_plan ?? "";
+  const priceId = getPriceId(subscription);
+  const planKey = getRoomPlanKeyFromPriceId(priceId) ?? metadataPlanKey;
 
   if (!roomId || !userId || !isPaidRoomPlanKey(planKey)) {
     throw new RoomBillingError(
-      "Stripe Room subscription metadata is incomplete.",
+      "Stripe Room subscription metadata or price is incomplete.",
       400,
       "room_subscription_metadata_invalid"
     );
@@ -76,7 +104,7 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
     subscription_status: subscription.status,
     stripe_customer_id: getCustomerId(subscription),
     stripe_subscription_id: subscription.id,
-    stripe_price_id: getPriceId(subscription),
+    stripe_price_id: priceId,
     stripe_current_period_end: getCurrentPeriodEnd(subscription),
     billing_updated_at: new Date().toISOString(),
   };
