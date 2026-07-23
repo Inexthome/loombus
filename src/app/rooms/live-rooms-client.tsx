@@ -6,6 +6,7 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Link2,
   LockKeyhole,
   MessageSquareText,
   Plus,
@@ -16,7 +17,13 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { supabase } from "@/lib/supabase/client";
 import { RoomModelCard, RoomsSectionHeading } from "./rooms-v2-components";
 import { ROOM_MODELS } from "./rooms-v2-model";
@@ -115,6 +122,24 @@ function roleLabel(role: RoomRole) {
   return "Member";
 }
 
+function roomInviteToken(value: string) {
+  const input = value.trim();
+  if (!input) return null;
+
+  const tokenPattern = /^[A-Za-z0-9_-]{20,300}$/;
+  if (tokenPattern.test(input)) return input;
+
+  try {
+    const invitation = new URL(input, "https://loombus.com");
+    const pathname = invitation.pathname.replace(/\/+$/, "") || "/";
+    if (pathname !== "/rooms/join") return null;
+    const token = invitation.searchParams.get("token")?.trim() ?? "";
+    return tokenPattern.test(token) ? token : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function LiveRoomsClient() {
   const [rooms, setRooms] = useState<LiveRoomSummary[]>([]);
   const [summary, setSummary] = useState<RoomsResponse["summary"]>({
@@ -128,6 +153,8 @@ export default function LiveRoomsClient() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
+  const [inviteInput, setInviteInput] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
 
@@ -221,6 +248,20 @@ export default function LiveRoomsClient() {
     };
   }, [loadRooms]);
 
+  function joinWithInvitation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const token = roomInviteToken(inviteInput);
+    if (!token) {
+      setInviteMessage(
+        "Paste a complete Loombus Room invitation link or a valid invitation token."
+      );
+      return;
+    }
+
+    setInviteMessage("");
+    window.location.assign(`/rooms/join?token=${encodeURIComponent(token)}`);
+  }
+
   const visibleRooms = useMemo(() => {
     const normalized = query.trim().toLowerCase();
 
@@ -312,6 +353,46 @@ export default function LiveRoomsClient() {
           <article><span>Owned</span><strong>{summary?.owned ?? 0}</strong></article>
           <article><span>Joined</span><strong>{summary?.joined ?? 0}</strong></article>
           <article><span>Rooms with upcoming dates</span><strong>{summary?.upcomingEvents ?? 0}</strong></article>
+        </section>
+
+        <section className="rooms-live-directory rooms-live-invite-entry">
+          <div className="rooms-live-directory-heading">
+            <div>
+              <p className="rooms-live-eyebrow">Join a private Room</p>
+              <h2>Paste a Room invitation link.</h2>
+              <p>
+                Loombus verifies the invitation, your account, the Room capacity, and
+                any approval requirements before granting access.
+              </p>
+            </div>
+          </div>
+          <form className="rooms-live-toolbar" onSubmit={joinWithInvitation}>
+            <label className="rooms-live-search">
+              <Link2 aria-hidden="true" />
+              <span className="sr-only">Room invitation link or token</span>
+              <input
+                type="text"
+                value={inviteInput}
+                onChange={(event) => {
+                  setInviteInput(event.target.value);
+                  setInviteMessage("");
+                }}
+                placeholder="Paste the Loombus Room invitation link"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+            </label>
+            <button type="submit" className="rooms-live-primary-action">
+              <ArrowRight aria-hidden="true" />
+              Join Room
+            </button>
+          </form>
+          {inviteMessage ? (
+            <div className="rooms-live-notice is-error" role="alert">
+              {inviteMessage}
+            </div>
+          ) : null}
         </section>
 
         <section className="rooms-live-directory">
