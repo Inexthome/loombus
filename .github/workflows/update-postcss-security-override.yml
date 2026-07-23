@@ -1,0 +1,47 @@
+name: Update PostCSS security override
+
+on:
+  push:
+    branches:
+      - agent/room-threaded-discussions
+    paths:
+      - .github/workflows/update-postcss-security-override.yml
+
+permissions:
+  contents: write
+
+jobs:
+  update-postcss:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Room discussion branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/room-threaded-discussions
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Update patched PostCSS override and lockfile
+        run: |
+          npm pkg set overrides.postcss=8.5.22
+          npm install --package-lock-only --ignore-scripts
+
+      - name: Verify locked install and production audit
+        run: |
+          npm ci
+          npm audit --omit=dev --audit-level=high
+
+      - name: Commit dependency security update only
+        run: |
+          rm .github/workflows/update-postcss-security-override.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json .github/workflows/update-postcss-security-override.yml
+          git commit -m "Update PostCSS security override"
+          git push origin HEAD:agent/room-threaded-discussions
