@@ -85,7 +85,7 @@ export const ROOM_MODULE_DEFINITIONS: Record<
   requests: {
     id: "requests",
     label: "Requests",
-    description: "Pending membership requests and approval decisions.",
+    description: "Structured Room requests and manager decisions, separate from membership admission.",
     minimumRole: "manager",
   },
   resources: {
@@ -152,7 +152,7 @@ export const ROOM_MODULE_DEFINITIONS: Record<
   invites: {
     id: "invites",
     label: "Invites / Join Requests",
-    description: "Secure invitation links, usage limits, expiration, and join requests.",
+    description: "Basic invitation links and Room admission. Advanced controls remain plan-gated.",
     minimumRole: "manager",
   },
   activity: {
@@ -211,6 +211,8 @@ const FREE_MODULES: RoomModuleKey[] = [
   "discussions",
   "calendar",
   "members",
+  "settings",
+  "invites",
 ];
 
 const STARTER_MODULES: RoomModuleKey[] = [
@@ -218,7 +220,6 @@ const STARTER_MODULES: RoomModuleKey[] = [
   "announcements",
   "requests",
   "resources",
-  "settings",
 ];
 
 const PRO_MODULES: RoomModuleKey[] = [
@@ -234,7 +235,6 @@ const PRO_MODULES: RoomModuleKey[] = [
 const ORGANIZATION_MODULES: RoomModuleKey[] = [
   ...PRO_MODULES,
   "services",
-  "invites",
   "activity",
   "advanced-controls",
 ];
@@ -289,6 +289,8 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
       "Overview and private discussions",
       "Shared Room calendar",
       "Members and basic roles",
+      "Basic invitations and access approvals",
+      "Room identity and basic settings",
     ],
   },
   starter: {
@@ -305,9 +307,8 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
       "Everything in Free",
       "Up to 50 members",
       "Announcements",
-      "Separate membership requests",
+      "Structured Room requests",
       "Curated Room resources",
-      "Room settings",
     ],
   },
   pro: {
@@ -344,7 +345,7 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
       "Everything in Room Pro",
       "Up to 3 Rooms under one subscription",
       "Up to 500 members per Room",
-      "Services, secure invites, audit log, and advanced controls",
+      "Services, audit log, and advanced invitation controls",
       "250 MB maximum per upload",
       "50 GB resource storage per Room",
       "Organization setup support",
@@ -393,12 +394,21 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
   },
 };
 
+const hasOwn = (record: object, key: PropertyKey) =>
+  Object.prototype.hasOwnProperty.call(record, key);
+
+function normalizeRoomSubscriptionStatus(status: unknown) {
+  return typeof status === "string" ? status.trim().toLowerCase() : "active";
+}
+
 export function isRoomPlanKey(value: unknown): value is RoomPlanKey {
-  return typeof value === "string" && value in ROOM_PLAN_ENTITLEMENTS;
+  return (
+    typeof value === "string" && hasOwn(ROOM_PLAN_ENTITLEMENTS, value)
+  );
 }
 
 export function isRoomModuleKey(value: unknown): value is RoomModuleKey {
-  return typeof value === "string" && value in ROOM_MODULE_DEFINITIONS;
+  return typeof value === "string" && hasOwn(ROOM_MODULE_DEFINITIONS, value);
 }
 
 export function normalizeRoomPlanKey(value: unknown): RoomPlanKey {
@@ -406,8 +416,17 @@ export function normalizeRoomPlanKey(value: unknown): RoomPlanKey {
 }
 
 export function roomSubscriptionIsActive(status: unknown) {
-  const normalized = typeof status === "string" ? status.toLowerCase() : "active";
-  return ["active", "trialing"].includes(normalized);
+  return ["active", "trialing"].includes(
+    normalizeRoomSubscriptionStatus(status)
+  );
+}
+
+export function roomSubscriptionIsInGrace(status: unknown) {
+  return normalizeRoomSubscriptionStatus(status) === "past_due";
+}
+
+export function roomSubscriptionHasPaidAccess(status: unknown) {
+  return roomSubscriptionIsActive(status) || roomSubscriptionIsInGrace(status);
 }
 
 export function getRoomPlanEntitlements(
@@ -417,11 +436,15 @@ export function getRoomPlanEntitlements(
   const normalizedPlan = normalizeRoomPlanKey(plan);
   if (
     normalizedPlan !== "free" &&
-    !roomSubscriptionIsActive(subscriptionStatus)
+    !roomSubscriptionHasPaidAccess(subscriptionStatus)
   ) {
     return ROOM_PLAN_ENTITLEMENTS.free;
   }
   return ROOM_PLAN_ENTITLEMENTS[normalizedPlan];
+}
+
+export function getRoomPlanMemberLimit(plan: unknown) {
+  return ROOM_PLAN_ENTITLEMENTS[normalizeRoomPlanKey(plan)].memberLimit;
 }
 
 export function roomPlanIncludesModule(
