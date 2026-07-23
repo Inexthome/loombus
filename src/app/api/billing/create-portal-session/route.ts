@@ -6,12 +6,23 @@ import { getBillingSupabaseAdmin } from "@/lib/billing-entitlements";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_BILLING_PORTAL_CONFIGURATION_ID =
   process.env.STRIPE_BILLING_PORTAL_CONFIGURATION_ID;
+const STRIPE_BILLING_PORTAL_MEMBERSHIP_CONFIGURATION_ID =
+  process.env.STRIPE_BILLING_PORTAL_MEMBERSHIP_CONFIGURATION_ID;
+const STRIPE_BILLING_PORTAL_ROOM_CONFIGURATION_ID =
+  process.env.STRIPE_BILLING_PORTAL_ROOM_CONFIGURATION_ID;
 
 type PortalAction = "manage" | "cancel" | "update";
+type PortalScope = "membership" | "room";
 
 type BillingRow = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+};
+
+type BillingOwnership = {
+  customerId: string;
+  subscriptionId: string | null;
+  scope: PortalScope;
 };
 
 function getStripe() {
@@ -42,13 +53,33 @@ function isPortalAction(value: unknown): value is PortalAction {
   return value === "manage" || value === "cancel" || value === "update";
 }
 
+function getPortalConfiguration(scope: PortalScope, action: PortalAction) {
+  if (scope === "membership") {
+    return (
+      STRIPE_BILLING_PORTAL_MEMBERSHIP_CONFIGURATION_ID ??
+      STRIPE_BILLING_PORTAL_CONFIGURATION_ID ??
+      null
+    );
+  }
+
+  if (action === "update") {
+    return STRIPE_BILLING_PORTAL_ROOM_CONFIGURATION_ID ?? null;
+  }
+
+  return (
+    STRIPE_BILLING_PORTAL_ROOM_CONFIGURATION_ID ??
+    STRIPE_BILLING_PORTAL_CONFIGURATION_ID ??
+    null
+  );
+}
+
 async function resolveBillingOwnership({
   userId,
   subscriptionId,
 }: {
   userId: string;
   subscriptionId?: string | null;
-}) {
+}): Promise<BillingOwnership | null> {
   const admin = getBillingSupabaseAdmin();
   const { data: entitlement, error: entitlementError } = await admin
     .from("user_ai_entitlements")
@@ -68,6 +99,7 @@ async function resolveBillingOwnership({
     return {
       customerId: premium.stripe_customer_id,
       subscriptionId: subscriptionId ?? premium.stripe_subscription_id,
+      scope: "membership",
     };
   }
 
@@ -92,6 +124,7 @@ async function resolveBillingOwnership({
     return {
       customerId: room.stripe_customer_id,
       subscriptionId: subscriptionId ?? room.stripe_subscription_id,
+      scope: "room",
     };
   }
 
@@ -173,14 +206,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const configuration = getPortalConfiguration(ownership.scope, action);
+    if (action === "update" && ownership.scope === "room" && !configuration) {
+      return NextResponse.json(
+        {
+          error:
+            "Room plan changes are not enabled until the dedicated Stripe Room portal configuration is connected.",
+          code: "room_portal_configuration_missing",
+        },
+        { status: 503 }
+      );
+    }
+
     const origin = getSafeOrigin(request);
     const returnUrl = `${origin}/settings?section=plan&billing=returned`;
     const params: Stripe.BillingPortal.SessionCreateParams = {
       customer: ownership.customerId,
       return_url: returnUrl,
-      ...(STRIPE_BILLING_PORTAL_CONFIGURATION_ID
-        ? { configuration: STRIPE_BILLING_PORTAL_CONFIGURATION_ID }
-        : {}),
+      ...(configuration ? { configuration } : {}),
     };
 
     if (action === "cancel" && ownership.subscriptionId) {
