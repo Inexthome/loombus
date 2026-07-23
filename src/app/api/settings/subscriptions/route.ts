@@ -70,12 +70,11 @@ function getMembershipPlan(entitlement: EntitlementRow | null) {
 
 function getProvider(entitlement: EntitlementRow | null): SubscriptionItem["provider"] {
   if (entitlement?.tier === "admin") return "admin";
-  if (entitlement?.stripe_subscription_id || entitlement?.stripe_customer_id) return "stripe";
-  if (entitlement?.ai_assisted_enabled) {
-    const notes = entitlement.notes?.toLowerCase() ?? "";
-    return notes.includes("apple") || notes.includes("app store") ? "apple" : "included";
-  }
-  return "none";
+  if (!entitlement?.ai_assisted_enabled) return "none";
+  if (entitlement.stripe_subscription_id || entitlement.stripe_customer_id) return "stripe";
+
+  const notes = entitlement.notes?.toLowerCase() ?? "";
+  return notes.includes("apple") || notes.includes("app store") ? "apple" : "included";
 }
 
 function roomPlanLabel(value: string | null) {
@@ -96,8 +95,8 @@ function getPeriodEnd(subscription: Stripe.Subscription) {
   return value ? new Date(value * 1000).toISOString() : null;
 }
 
-function isManageableStatus(status: Stripe.Subscription.Status) {
-  return ["active", "trialing", "past_due"].includes(status);
+function isManageableStatus(status: Stripe.Subscription.Status | string | null | undefined) {
+  return status ? ["active", "trialing", "past_due"].includes(status) : false;
 }
 
 async function reconcileLegacyMembershipSubscription({
@@ -128,18 +127,14 @@ async function reconcileLegacyMembershipSubscription({
 
     const candidates = subscriptions.data
       .filter((subscription) => {
+        if (!isManageableStatus(subscription.status)) return false;
         const priceId = getSubscriptionPriceId(subscription);
         return (
           subscription.metadata?.product === "loombus_premium_ai" ||
           Boolean(getPremiumPlanKeyFromPriceId(priceId))
         );
       })
-      .sort((left, right) => {
-        const leftActive = isManageableStatus(left.status) ? 1 : 0;
-        const rightActive = isManageableStatus(right.status) ? 1 : 0;
-        if (leftActive !== rightActive) return rightActive - leftActive;
-        return right.created - left.created;
-      });
+      .sort((left, right) => right.created - left.created);
 
     const subscription = candidates[0];
     if (!subscription) return entitlement;
@@ -280,23 +275,34 @@ export async function GET(request: NextRequest) {
     const rooms = (roomResult.data ?? []) as RoomRow[];
     const membershipPlan = getMembershipPlan(entitlement);
     const membershipProvider = getProvider(entitlement);
+    const currentStripeMembership =
+      membershipProvider === "stripe" &&
+      Boolean(entitlement?.stripe_subscription_id) &&
+      isManageableStatus(entitlement?.stripe_subscription_status);
 
     const membership: SubscriptionItem = {
       id: "loombus-membership",
       scope: "membership",
       label: "Loombus membership",
       planLabel: membershipPlan,
-      provider: membershipProvider,
+      provider: currentStripeMembership ? "stripe" : membershipProvider,
       status:
-        entitlement?.stripe_subscription_status ??
-        (membershipPlan === "Free" ? "free" : membershipProvider === "admin" ? "admin" : "active"),
-      subscriptionId: entitlement?.stripe_subscription_id ?? null,
+        membershipPlan === "Free"
+          ? "free"
+          : entitlement?.stripe_subscription_status ??
+            (membershipProvider === "admin" ? "admin" : "active"),
+      subscriptionId: currentStripeMembership
+        ? entitlement?.stripe_subscription_id ?? null
+        : null,
       amount: null,
       currency: null,
       interval: null,
-      currentPeriodEnd: entitlement?.stripe_current_period_end ?? null,
+      currentPeriodEnd: currentStripeMembership
+        ? entitlement?.stripe_current_period_end ?? null
+        : null,
       cancelAtPeriodEnd: false,
-      canManage: membershipProvider === "stripe" && Boolean(entitlement?.stripe_customer_id),
+      canManage:
+        currentStripeMembership && Boolean(entitlement?.stripe_customer_id),
       roomIds: [],
       roomNames: [],
       memberLimit: null,
@@ -342,13 +348,15 @@ export async function GET(request: NextRequest) {
       enrichFromStripe(membership, stripe),
       Promise.all(roomSubscriptions.map((item) => enrichFromStripe(item, stripe))),
     ]);
+    const recurringCount = [enrichedMembership, ...enrichedRooms].filter((item) =>
+      isManageableStatus(item.status)
+    ).length;
 
     return NextResponse.json(
       {
         membership: enrichedMembership,
         roomSubscriptions: enrichedRooms,
-        recurringCount:
-          (enrichedMembership.subscriptionId ? 1 : 0) + enrichedRooms.length,
+        recurringCount,
       },
       {
         headers: { "Cache-Control": "private, no-store, max-age=0" },
