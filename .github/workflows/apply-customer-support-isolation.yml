@@ -64,6 +64,9 @@ jobs:
       - name: Build
         id: build
         continue-on-error: true
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://build-placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: build-placeholder-anon-key
         run: npm run build > isolation-build-output.txt 2>&1
 
       - name: Upload isolation build diagnostic
