@@ -43,6 +43,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -290,19 +291,44 @@ export function RoomTierModulesWorkspace() {
   const [selectedModule, setSelectedModule] =
     useState<RoomModuleKey>("overview");
   const [moduleData, setModuleData] = useState<unknown>(null);
+  const [loadedModule, setLoadedModule] = useState<RoomModuleKey | null>(null);
   const [loadingManifest, setLoadingManifest] = useState(false);
   const [loadingModule, setLoadingModule] = useState(false);
   const [message, setMessage] = useState("");
   const [messageIsError, setMessageIsError] = useState(false);
   const [highCapacityPage, setHighCapacityPage] = useState(1);
   const [highCapacitySearch, setHighCapacitySearch] = useState("");
+  const selectedModuleRef = useRef<RoomModuleKey>("overview");
+  const moduleRequestIdRef = useRef(0);
+
+  const selectModule = useCallback((moduleKey: RoomModuleKey) => {
+    selectedModuleRef.current = moduleKey;
+    moduleRequestIdRef.current += 1;
+    setSelectedModule(moduleKey);
+    setMessage("");
+    setMessageIsError(false);
+    setLoadingModule(!CORE_TAB_LABELS[moduleKey]);
+    setModuleData(null);
+    setLoadedModule(null);
+  }, []);
 
   useEffect(() => {
     let scheduled = false;
     const scan = () => {
       scheduled = false;
       const nextHosts = findPortalHosts();
-      if (nextHosts) setHosts(nextHosts);
+      if (!nextHosts) return;
+      setHosts((current) => {
+        if (
+          current?.shell === nextHosts.shell &&
+          current.originalNav === nextHosts.originalNav &&
+          current.navHost === nextHosts.navHost &&
+          current.moduleHost === nextHosts.moduleHost
+        ) {
+          return current;
+        }
+        return nextHosts;
+      });
     };
     const schedule = () => {
       if (scheduled) return;
@@ -353,9 +379,10 @@ export function RoomTierModulesWorkspace() {
       setManifest(nextManifest);
       setMembers(Array.isArray(workspace.members) ? workspace.members : []);
       const included = nextManifest.modules?.some(
-        (moduleDefinition) => moduleDefinition.id === selectedModule
+        (moduleDefinition) =>
+          moduleDefinition.id === selectedModuleRef.current
       );
-      if (!included) setSelectedModule("overview");
+      if (!included) selectModule("overview");
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Room modules could not be loaded."
@@ -364,7 +391,7 @@ export function RoomTierModulesWorkspace() {
     } finally {
       setLoadingManifest(false);
     }
-  }, [roomId, selectedModule]);
+  }, [roomId, selectModule]);
 
   useEffect(() => {
     void loadManifest();
@@ -373,12 +400,15 @@ export function RoomTierModulesWorkspace() {
   const loadModule = useCallback(
     async (moduleKey: RoomModuleKey) => {
       if (!roomId || CORE_TAB_LABELS[moduleKey]) return;
+      const requestId = ++moduleRequestIdRef.current;
       setLoadingModule(true);
       setMessage("");
       setMessageIsError(false);
       try {
         const token = await accessToken();
-        if (!token) return;
+        if (!token) {
+          throw new Error("Sign in again before continuing.");
+        }
         const params = new URLSearchParams({ module: moduleKey });
         if (moduleKey === "high-capacity") {
           params.set("page", String(highCapacityPage));
@@ -397,15 +427,21 @@ export function RoomTierModulesWorkspace() {
         if (!response.ok) {
           throw new Error(result.error ?? "The Room module could not be loaded.");
         }
+        if (requestId !== moduleRequestIdRef.current) return;
         setModuleData(result.data ?? null);
+        setLoadedModule(moduleKey);
       } catch (error) {
+        if (requestId !== moduleRequestIdRef.current) return;
         setModuleData(null);
+        setLoadedModule(null);
         setMessage(
           error instanceof Error ? error.message : "The Room module could not be loaded."
         );
         setMessageIsError(true);
       } finally {
-        setLoadingModule(false);
+        if (requestId === moduleRequestIdRef.current) {
+          setLoadingModule(false);
+        }
       }
     },
     [highCapacityPage, highCapacitySearch, roomId]
@@ -414,9 +450,12 @@ export function RoomTierModulesWorkspace() {
   useEffect(() => {
     if (!hosts) return;
     if (CORE_TAB_LABELS[selectedModule]) {
+      moduleRequestIdRef.current += 1;
       hosts.shell.classList.remove("is-room-tier-module-active");
       clickOriginalTab(hosts, selectedModule);
+      setLoadingModule(false);
       setModuleData(null);
+      setLoadedModule(null);
       return;
     }
     hosts.shell.classList.add("is-room-tier-module-active");
@@ -477,6 +516,7 @@ export function RoomTierModulesWorkspace() {
   const selectedDefinition = modules.find(
     (moduleDefinition) => moduleDefinition.id === selectedModule
   );
+  const selectedModuleReady = loadedModule === selectedModule;
 
   const navigation = createPortal(
     <nav
@@ -497,7 +537,7 @@ export function RoomTierModulesWorkspace() {
               key={moduleDefinition.id}
               type="button"
               aria-pressed={selectedModule === moduleDefinition.id}
-              onClick={() => setSelectedModule(moduleDefinition.id)}
+              onClick={() => selectModule(moduleDefinition.id)}
               title={moduleDefinition.description}
             >
               <Icon aria-hidden="true" />
@@ -512,7 +552,10 @@ export function RoomTierModulesWorkspace() {
 
   const moduleContent = createPortal(
     !CORE_TAB_LABELS[selectedModule] ? (
-      <section className="room-tier-module-panel">
+      <section
+        className="room-tier-module-panel"
+        aria-busy={loadingModule}
+      >
         <header className="room-tier-module-heading">
           <div>
             <p className="rooms-live-eyebrow">{manifest?.plan?.label ?? "Room plan"}</p>
@@ -540,11 +583,13 @@ export function RoomTierModulesWorkspace() {
           </div>
         ) : null}
 
-        {loadingModule ? (
-          <div className="room-tier-module-loading">
-            <Loader2 aria-hidden="true" className="is-spinning" />
-            Loading {selectedDefinition?.label ?? "Room module"}…
-          </div>
+        {!selectedModuleReady ? (
+          loadingModule ? (
+            <div className="room-tier-module-loading" role="status" aria-live="polite">
+              <Loader2 aria-hidden="true" className="is-spinning" />
+              Loading {selectedDefinition?.label ?? "Room module"}…
+            </div>
+          ) : null
         ) : (
           <ModuleBody
             moduleKey={selectedModule}
