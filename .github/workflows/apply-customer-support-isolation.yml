@@ -2,11 +2,13 @@
 name: Apply Customer Support isolation
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/customer-support-isolation
-    paths:
-      - .github/workflows/apply-customer-support-isolation.yml
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
