@@ -7,6 +7,11 @@ import {
 } from "@/lib/discussion-modes";
 import { createNotifications } from "@/lib/notifications";
 import {
+  getRequiredRoomThreadVisibility,
+  getRoomRequiredBehaviors,
+  isCustomerSupportRoomType,
+} from "@/lib/room-required-behaviors";
+import {
   asNumber,
   asString,
   createRequestSupabase,
@@ -69,6 +74,20 @@ function normalizedTimestamp(value: unknown) {
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
 
+function roomMembershipIsActive(row: RoomRow) {
+  if (
+    ["blocked", "removed", "inactive"].includes(
+      asString(row.status).toLowerCase()
+    )
+  ) {
+    return false;
+  }
+  const suspendedUntil = normalizedTimestamp(row.suspended_until);
+  return (
+    !suspendedUntil || new Date(suspendedUntil).getTime() <= Date.now()
+  );
+}
+
 async function authorize(request: NextRequest): Promise<Authorized> {
   try {
     const account = await verifyRequestAccountAccess(
@@ -129,7 +148,104 @@ async function memberPostsAreAllowed(service: ServiceClient, roomId: string) {
 }
 
 function canParticipate(access: RoomAccess, memberPostsAllowed: boolean) {
-  return memberPostsAllowed || access.canModerate;
+  return (
+    isCustomerSupportRoomType(access.room.roomType) ||
+    memberPostsAllowed ||
+    access.canModerate
+  );
+}
+
+async function loadSupportStaffIds(
+  service: ServiceClient,
+  access: RoomAccess
+) {
+  const result = await service
+    .from("room_members")
+    .select("user_id, role, status, suspended_until")
+    .eq("room_id", access.room.id)
+    .in("role", ["owner", "admin", "administrator", "moderator"])
+    .not("status", "in", "(blocked,removed,inactive)")
+    .limit(500);
+  if (result.error) throw new Error(result.error.message);
+
+  const activeStaffIds = ((result.data ?? []) as RoomRow[])
+    .filter(roomMembershipIsActive)
+    .map((row) => asString(row.user_id))
+    .filter(Boolean);
+
+  return [
+    ...new Set(
+      [access.room.ownerId, access.room.createdBy, ...activeStaffIds].filter(
+        Boolean
+      )
+    ),
+  ];
+}
+
+async function postIsAccessible(
+  service: ServiceClient,
+  access: RoomAccess,
+  post: RoomRow,
+  userId: string
+) {
+  const visibility = asString(post.visibility_scope) || "room";
+  if (visibility === "room") return access.allowed;
+  if (asString(post.author_id) === userId || access.canModerate) return true;
+
+  const participant = await service
+    .from("room_post_participants")
+    .select("post_id")
+    .eq("post_id", asString(post.id))
+    .eq("room_id", access.room.id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (participant.error) throw new Error(participant.error.message);
+  return Boolean(participant.data);
+}
+
+async function loadAccessiblePost(
+  service: ServiceClient,
+  access: RoomAccess,
+  roomId: string,
+  postId: string,
+  userId: string
+): Promise<RoomRow | null> {
+  const post =
+    await loadPost(service, roomId, postId);
+  if (!post) return null;
+  return (await postIsAccessible(service, access, post, userId)) ? post : null;
+}
+
+async function notifySupportStaffOfNewCase({
+  service,
+  access,
+  postId,
+  title,
+  actorId,
+}: {
+  service: ServiceClient;
+  access: RoomAccess;
+  postId: string;
+  title: string;
+  actorId: string;
+}) {
+  if (!isCustomerSupportRoomType(access.room.roomType)) return;
+  const staffIds = await loadSupportStaffIds(service, access).catch(() => []);
+  const recipients = staffIds.filter((userId) => userId !== actorId);
+  if (recipients.length === 0) return;
+  const { error } = await createNotifications(
+    recipients.map((userId) => ({
+      user_id: userId,
+      actor_id: actorId,
+      type: "room_support_case",
+      target_type: "room_post",
+      target_id: postId,
+      message: `New support case in ${access.room.name}: ${title}`,
+    }))
+  );
+  if (error) {
+    console.error("Room support-case notifications failed:", error.message);
+  }
 }
 
 async function loadPost(
@@ -177,19 +293,14 @@ async function activeParticipantIds(
 
   const result = await service
     .from("room_members")
-    .select("user_id, status")
+    .select("user_id, status, suspended_until")
     .eq("room_id", access.room.id)
     .in("user_id", candidates);
   if (result.error) throw new Error(result.error.message);
 
   const active = new Set(
     ((result.data ?? []) as RoomRow[])
-      .filter(
-        (row) =>
-          !["blocked", "removed", "inactive"].includes(
-            asString(row.status).toLowerCase()
-          )
-      )
+      .filter(roomMembershipIsActive)
       .map((row) => asString(row.user_id))
       .filter(Boolean)
   );
@@ -222,11 +333,34 @@ async function notifyReplyParticipants({
     return;
   }
 
+  const privateSupportThreads = isCustomerSupportRoomType(
+    access.room.roomType
+  );
+  const participantResult = privateSupportThreads
+    ? await service
+        .from("room_post_participants")
+        .select("user_id")
+        .eq("post_id", postId)
+    : { data: [], error: null };
+  if (participantResult.error) {
+    console.error(
+      "Room support participant lookup failed:",
+      participantResult.error.message
+    );
+  }
+  const staffIds = privateSupportThreads
+    ? await loadSupportStaffIds(service, access).catch(() => [])
+    : [];
+
   const candidates = [
     asString(post.author_id),
     ...((replyAuthors.data ?? []) as RoomRow[]).map((row) =>
       asString(row.author_id)
     ),
+    ...((participantResult.data ?? []) as RoomRow[]).map((row) =>
+      asString(row.user_id)
+    ),
+    ...staffIds,
   ].filter((userId) => userId && userId !== actorId);
 
   const recipients = await activeParticipantIds(service, access, candidates).catch(
@@ -264,13 +398,44 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   try {
     const memberPostsAllowed = await memberPostsAreAllowed(service, roomId);
-    const postsResult = await service
+    const privateSupportThreads = isCustomerSupportRoomType(
+      access.room.roomType
+    );
+    let accessibleParticipantPostIds: string[] = [];
+    if (privateSupportThreads && !access.canModerate) {
+      const participantLookup = await service
+        .from("room_post_participants")
+        .select("post_id")
+        .eq("room_id", roomId)
+        .eq("user_id", userId)
+        .limit(POST_LIMIT);
+      if (participantLookup.error) {
+        throw new Error(participantLookup.error.message);
+      }
+      accessibleParticipantPostIds = (
+        (participantLookup.data ?? []) as RoomRow[]
+      )
+        .map((row) => asString(row.post_id))
+        .filter(Boolean);
+    }
+
+    let postsQuery = service
       .from("room_posts")
       .select(
-        "id, room_id, author_id, title, body, discussion_type, discussion_metadata, status, resolved_at, resolved_by, last_activity_at, reply_count, created_at, updated_at"
+        "id, room_id, author_id, title, body, discussion_type, discussion_metadata, visibility_scope, status, resolved_at, resolved_by, last_activity_at, reply_count, created_at, updated_at"
       )
       .eq("room_id", roomId)
-      .is("deleted_at", null)
+      .is("deleted_at", null);
+    if (privateSupportThreads && !access.canModerate) {
+      const accessClauses = [`author_id.eq.${userId}`];
+      if (accessibleParticipantPostIds.length > 0) {
+        accessClauses.push(
+          `id.in.(${accessibleParticipantPostIds.join(",")})`
+        );
+      }
+      postsQuery = postsQuery.or(accessClauses.join(","));
+    }
+    const postsResult = await postsQuery
       .order("last_activity_at", { ascending: false })
       .limit(POST_LIMIT);
 
@@ -285,7 +450,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const postRows = (postsResult.data ?? []) as RoomRow[];
     const postIds = postRows.map((row) => asString(row.id)).filter(Boolean);
 
-    const [repliesResult, readsResult] = await Promise.all([
+    const [repliesResult, readsResult, participantsResult] = await Promise.all([
       postIds.length
         ? service
             .from("room_post_replies")
@@ -305,12 +470,21 @@ export async function GET(request: NextRequest, context: RouteContext) {
             .eq("user_id", userId)
             .in("post_id", postIds)
         : Promise.resolve({ data: [], error: null }),
+      privateSupportThreads && postIds.length
+        ? service
+            .from("room_post_participants")
+            .select("post_id, user_id, added_by, created_at")
+            .eq("room_id", roomId)
+            .in("post_id", postIds)
+            .order("created_at", { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
-    if (repliesResult.error || readsResult.error) {
+    if (repliesResult.error || readsResult.error || participantsResult.error) {
       return jsonError(
         repliesResult.error?.message ||
           readsResult.error?.message ||
+          participantsResult.error?.message ||
           "Room discussion activity could not be loaded.",
         503,
         "room_discussions_storage_unavailable"
@@ -318,10 +492,30 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     const replyRows = (repliesResult.data ?? []) as RoomRow[];
+    const participantRows = (participantsResult.data ?? []) as RoomRow[];
+    let candidateRows: RoomRow[] = [];
+    if (privateSupportThreads && access.canModerate) {
+      const candidateResult = await service
+        .from("room_members")
+        .select("user_id, role, status, suspended_until")
+        .eq("room_id", roomId)
+        .not("status", "in", "(blocked,removed,inactive)")
+        .order("created_at", { ascending: true })
+        .limit(500);
+      if (candidateResult.error) throw new Error(candidateResult.error.message);
+      candidateRows = ((candidateResult.data ?? []) as RoomRow[]).filter(
+        roomMembershipIsActive
+      );
+    }
     const profiles = await loadProfiles(service, [
       ...postRows.map((row) => asString(row.author_id)),
       ...replyRows.map((row) => asString(row.author_id)),
       ...postRows.map((row) => asString(row.resolved_by)),
+      ...participantRows.map((row) => asString(row.user_id)),
+      ...participantRows.map((row) => asString(row.added_by)),
+      ...candidateRows.map((row) => asString(row.user_id)),
+      access.room.ownerId,
+      access.room.createdBy,
     ]);
     const reads = new Map(
       ((readsResult.data ?? []) as RoomRow[]).map((row) => [
@@ -329,6 +523,14 @@ export async function GET(request: NextRequest, context: RouteContext) {
         normalizedTimestamp(row.last_read_at),
       ])
     );
+    const participantsByPost = new Map<string, RoomRow[]>();
+    for (const participant of participantRows) {
+      const postId = asString(participant.post_id);
+      participantsByPost.set(postId, [
+        ...(participantsByPost.get(postId) ?? []),
+        participant,
+      ]);
+    }
     const repliesByPost = new Map<string, RoomRow[]>();
     for (const reply of replyRows) {
       const postId = asString(reply.post_id);
@@ -340,6 +542,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
       room: {
         id: access.room.id,
         name: access.room.name,
+        roomType: access.room.roomType,
+        requiredBehaviors: getRoomRequiredBehaviors(access.room.roomType),
+        threadVisibilityScope: getRequiredRoomThreadVisibility(
+          access.room.roomType
+        ),
       },
       permissions: {
         currentUserId: userId,
@@ -347,8 +554,27 @@ export async function GET(request: NextRequest, context: RouteContext) {
         canReply: canParticipate(access, memberPostsAllowed),
         canManage: access.canManage,
         canModerate: access.canModerate,
-        memberPostsAllowed,
+        canManageParticipants: privateSupportThreads && access.canModerate,
+        memberPostsAllowed: privateSupportThreads ? true : memberPostsAllowed,
       },
+      participantCandidates:
+        privateSupportThreads && access.canModerate
+          ? candidateRows.map((row) => {
+              const candidateUserId = asString(row.user_id);
+              const role = asString(row.role) || "member";
+              return {
+                userId: candidateUserId,
+                role,
+                isStaff: [
+                  "owner",
+                  "admin",
+                  "administrator",
+                  "moderator",
+                ].includes(role),
+                profile: profileFor(profiles, candidateUserId),
+              };
+            })
+          : [],
       posts: postRows.map((row) => {
         const postId = asString(row.id);
         const authorId = asString(row.author_id);
@@ -374,6 +600,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
           body: asString(row.body),
           discussionType: mode,
           discussionMetadata: asMetadata(row.discussion_metadata),
+          visibilityScope:
+            asString(row.visibility_scope) === "author_and_staff"
+              ? "author_and_staff"
+              : "room",
           status: asString(row.status) === "resolved" ? "resolved" : "open",
           resolvedAt: normalizedTimestamp(row.resolved_at),
           resolvedBy: asString(row.resolved_by) || null,
@@ -384,8 +614,24 @@ export async function GET(request: NextRequest, context: RouteContext) {
           isUnread,
           createdAt: normalizedTimestamp(row.created_at),
           updatedAt: normalizedTimestamp(row.updated_at),
-          canResolve: authorId === userId || access.canManage,
+          canResolve:
+            authorId === userId ||
+            (privateSupportThreads ? access.canModerate : access.canManage),
           canDelete: authorId === userId || access.canModerate,
+          canManageParticipants: privateSupportThreads && access.canModerate,
+          participants: (participantsByPost.get(postId) ?? []).map(
+            (participant) => {
+              const participantUserId = asString(participant.user_id);
+              const addedBy = asString(participant.added_by);
+              return {
+                userId: participantUserId,
+                profile: profileFor(profiles, participantUserId),
+                addedBy,
+                addedByProfile: profileFor(profiles, addedBy),
+                createdAt: normalizedTimestamp(participant.created_at),
+              };
+            }
+          ),
           replies: (repliesByPost.get(postId) ?? []).map((reply) => {
             const replyAuthorId = asString(reply.author_id);
             return {
@@ -474,6 +720,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
           body: postBody,
           discussion_type: modeResult.mode,
           discussion_metadata: modeResult.metadata,
+          visibility_scope: getRequiredRoomThreadVisibility(
+            access.room.roomType
+          ),
           status: "open",
           last_activity_at: new Date().toISOString(),
         })
@@ -494,6 +743,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
           .update({ updated_at: new Date().toISOString() })
           .eq("id", roomId),
       ]);
+      await notifySupportStaffOfNewCase({
+        service,
+        access,
+        postId,
+        title,
+        actorId: userId,
+      });
       await logAuditEvent({
         actor_id: userId,
         action: "room.discussion_created",
@@ -502,6 +758,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         metadata: {
           room_id: roomId,
           discussion_type: modeResult.mode,
+          visibility_scope: getRequiredRoomThreadVisibility(
+            access.room.roomType
+          ),
         },
       });
       return json({ ok: true, id: postId }, 201);
@@ -526,7 +785,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
         );
       }
 
-      const post = await loadPost(service, roomId, postId);
+      const post = await loadAccessiblePost(
+        service,
+        access,
+        roomId,
+        postId,
+        userId
+      );
       if (!post) return jsonError("Room discussion not found.", 404);
       if (asString(post.status) === "resolved") {
         return jsonError(
@@ -569,7 +834,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (action === "mark_read") {
       const postId = body?.postId;
       if (!validUuid(postId)) return jsonError("Invalid Room discussion.", 400);
-      const post = await loadPost(service, roomId, postId);
+      const post = await loadAccessiblePost(
+        service,
+        access,
+        roomId,
+        postId,
+        userId
+      );
       if (!post) return jsonError("Room discussion not found.", 404);
       await markThreadRead(service, roomId, postId, userId);
       return json({ ok: true });
@@ -578,11 +849,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (action === "resolve_post" || action === "reopen_post") {
       const postId = body?.postId;
       if (!validUuid(postId)) return jsonError("Invalid Room discussion.", 400);
-      const post = await loadPost(service, roomId, postId);
+      const post = await loadAccessiblePost(
+        service,
+        access,
+        roomId,
+        postId,
+        userId
+      );
       if (!post) return jsonError("Room discussion not found.", 404);
-      if (asString(post.author_id) !== userId && !access.canManage) {
+      const canChangeStatus =
+        asString(post.author_id) === userId ||
+        (isCustomerSupportRoomType(access.room.roomType)
+          ? access.canModerate
+          : access.canManage);
+      if (!canChangeStatus) {
         return jsonError(
-          "Only the discussion author or Room management can change its status.",
+          "Only the discussion author or authorized Room staff can change its status.",
           403
         );
       }
@@ -623,7 +905,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (action === "delete_post") {
       const postId = body?.postId;
       if (!validUuid(postId)) return jsonError("Invalid Room discussion.", 400);
-      const post = await loadPost(service, roomId, postId);
+      const post = await loadAccessiblePost(
+        service,
+        access,
+        roomId,
+        postId,
+        userId
+      );
       if (!post) return jsonError("Room discussion not found.", 404);
       if (asString(post.author_id) !== userId && !access.canModerate) {
         return jsonError(
@@ -672,6 +960,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
         return jsonError("Room reply not found.", 404);
       }
       const reply = replyResult.data as RoomRow;
+      const parentPost = await loadAccessiblePost(
+        service,
+        access,
+        roomId,
+        asString(reply.post_id),
+        userId
+      );
+      if (!parentPost) return jsonError("Room reply not found.", 404);
       if (asString(reply.author_id) !== userId && !access.canModerate) {
         return jsonError(
           "Only the reply author or Room moderation can remove it.",
@@ -704,6 +1000,92 @@ export async function POST(request: NextRequest, context: RouteContext) {
           room_id: roomId,
           post_id: asString(reply.post_id),
           reason: reason || null,
+        },
+      });
+      return json({ ok: true });
+    }
+
+    if (action === "add_participant" || action === "remove_participant") {
+      if (
+        !isCustomerSupportRoomType(access.room.roomType) ||
+        !access.canModerate
+      ) {
+        return jsonError(
+          "Only Customer Support Room staff can manage case participants.",
+          403
+        );
+      }
+      const postId = body?.postId;
+      const participantUserId = body?.participantUserId;
+      if (!validUuid(postId) || !validUuid(participantUserId)) {
+        return jsonError("Choose a valid support-case participant.", 400);
+      }
+      const post = await loadAccessiblePost(
+        service,
+        access,
+        roomId,
+        postId,
+        userId
+      );
+      if (!post) return jsonError("Support case not found.", 404);
+      if (asString(post.author_id) === participantUserId) {
+        return jsonError("The case author already has access.", 409);
+      }
+      const staffIds = await loadSupportStaffIds(service, access);
+      if (staffIds.includes(participantUserId)) {
+        return jsonError("Room support staff already have access.", 409);
+      }
+
+      if (action === "add_participant") {
+        const activeIds = await activeParticipantIds(
+          service,
+          access,
+          [participantUserId]
+        );
+        if (!activeIds.includes(participantUserId)) {
+          return jsonError("Only active Room members can be added.", 400);
+        }
+        const inserted = await service.from("room_post_participants").upsert(
+          {
+            room_id: roomId,
+            post_id: postId,
+            user_id: participantUserId,
+            added_by: userId,
+          },
+          { onConflict: "post_id,user_id" }
+        );
+        if (inserted.error) throw new Error(inserted.error.message);
+        await createNotifications([
+          {
+            user_id: participantUserId,
+            actor_id: userId,
+            type: "room_support_case_participant",
+            target_type: "room_post",
+            target_id: postId,
+            message: `You were added to a support case in ${access.room.name}.`,
+          },
+        ]);
+      } else {
+        const removed = await service
+          .from("room_post_participants")
+          .delete()
+          .eq("room_id", roomId)
+          .eq("post_id", postId)
+          .eq("user_id", participantUserId);
+        if (removed.error) throw new Error(removed.error.message);
+      }
+
+      await logAuditEvent({
+        actor_id: userId,
+        action:
+          action === "add_participant"
+            ? "room.support_case_participant_added"
+            : "room.support_case_participant_removed",
+        target_type: "room_post",
+        target_id: postId,
+        metadata: {
+          room_id: roomId,
+          participant_user_id: participantUserId,
         },
       });
       return json({ ok: true });

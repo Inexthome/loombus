@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Circle,
   Eye,
+  LockKeyhole,
   Loader2,
   MessageCircle,
   MessageSquareText,
@@ -16,6 +17,8 @@ import {
   Search,
   Send,
   Trash2,
+  UserPlus,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -46,6 +49,21 @@ type Profile = {
   account_status: string | null;
 };
 
+type RoomParticipant = {
+  userId: string;
+  profile: Profile | null;
+  addedBy: string;
+  addedByProfile: Profile | null;
+  createdAt: string | null;
+};
+
+type ParticipantCandidate = {
+  userId: string;
+  role: string;
+  isStaff: boolean;
+  profile: Profile | null;
+};
+
 type RoomReply = {
   id: string;
   authorId: string;
@@ -65,6 +83,7 @@ type RoomThread = {
   body: string;
   discussionType: DiscussionMode;
   discussionMetadata: DiscussionMetadata;
+  visibilityScope: "room" | "author_and_staff";
   status: "open" | "resolved";
   resolvedAt: string | null;
   resolvedBy: string | null;
@@ -77,19 +96,29 @@ type RoomThread = {
   updatedAt: string | null;
   canResolve: boolean;
   canDelete: boolean;
+  canManageParticipants: boolean;
+  participants: RoomParticipant[];
   replies: RoomReply[];
 };
 
 type ThreadResponse = {
-  room?: { id: string; name: string };
+  room?: {
+    id: string;
+    name: string;
+    roomType: string;
+    requiredBehaviors: string[];
+    threadVisibilityScope: "room" | "author_and_staff";
+  };
   permissions?: {
     currentUserId: string;
     canPost: boolean;
     canReply: boolean;
     canManage: boolean;
     canModerate: boolean;
+    canManageParticipants: boolean;
     memberPostsAllowed: boolean;
   };
+  participantCandidates?: ParticipantCandidate[];
   posts?: RoomThread[];
   error?: string;
 };
@@ -197,6 +226,9 @@ export function RoomDiscussionsWorkspace() {
   const [mode, setMode] = useState<DiscussionMode>("open_discussion");
   const [metadata, setMetadata] = useState<DiscussionMetadata>({});
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [participantSelections, setParticipantSelections] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     let scheduled = false;
@@ -290,6 +322,16 @@ export function RoomDiscussionsWorkspace() {
           event: "*",
           schema: "public",
           table: "room_post_replies",
+          filter: `room_id=eq.${roomId}`,
+        },
+        reload
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "room_post_participants",
           filter: `room_id=eq.${roomId}`,
         },
         reload
@@ -388,6 +430,30 @@ export function RoomDiscussionsWorkspace() {
     }
   }
 
+  async function addParticipant(postId: string) {
+    const participantUserId = participantSelections[postId] ?? "";
+    if (!participantUserId) return;
+    const completed = await performAction(
+      "add_participant",
+      { postId, participantUserId },
+      `add-participant:${postId}`,
+      "Support-case participant added."
+    );
+    if (completed) {
+      setParticipantSelections((current) => ({ ...current, [postId]: "" }));
+      setExpandedPostId(postId);
+    }
+  }
+
+  async function removeParticipant(postId: string, participantUserId: string) {
+    await performAction(
+      "remove_participant",
+      { postId, participantUserId },
+      `remove-participant:${postId}:${participantUserId}`,
+      "Support-case participant removed."
+    );
+  }
+
   async function markRead(postId: string) {
     setData((current) =>
       current
@@ -422,6 +488,10 @@ export function RoomDiscussionsWorkspace() {
     return true;
   });
   const selectedMode = DISCUSSION_MODE_DEFINITIONS[mode];
+  const privateSupportThreads = Boolean(
+    data?.room?.requiredBehaviors?.includes("private_support_threads") ||
+      data?.room?.threadVisibilityScope === "author_and_staff"
+  );
 
   if (!portal) return null;
 
@@ -436,6 +506,20 @@ export function RoomDiscussionsWorkspace() {
           }`}
         >
           {message}
+        </div>
+      ) : null}
+
+      {privateSupportThreads ? (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800/70 dark:bg-amber-950/30 dark:text-amber-100">
+          <LockKeyhole className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          <div>
+            <strong className="font-black">Private Customer Support cases</strong>
+            <p className="mt-1 leading-6">
+              Each case is visible only to its author, active Room support staff,
+              and participants explicitly added by staff. This privacy rule cannot
+              be disabled.
+            </p>
+          </div>
         </div>
       ) : null}
 
@@ -454,7 +538,9 @@ export function RoomDiscussionsWorkspace() {
               </h3>
             </div>
             <span className="text-xs font-bold text-[var(--loombus-text-subtle)]">
-              Private to verified Room members
+              {privateSupportThreads
+                ? "Author, support staff, and added participants only"
+                : "Private to verified Room members"}
             </span>
           </div>
 
@@ -580,7 +666,7 @@ export function RoomDiscussionsWorkspace() {
               ) : (
                 <Send className="size-4" aria-hidden="true" />
               )}
-              Start discussion
+              {privateSupportThreads ? "Open support case" : "Start discussion"}
             </button>
           </div>
         </form>
@@ -671,6 +757,12 @@ export function RoomDiscussionsWorkspace() {
                           <Icon className="size-3" aria-hidden="true" />
                           {definition.shortLabel}
                         </span>
+                        {thread.visibilityScope === "author_and_staff" ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
+                            <LockKeyhole className="size-3" aria-hidden="true" />
+                            Private support case
+                          </span>
+                        ) : null}
                         {thread.status === "resolved" ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
                             <CheckCircle2 className="size-3" aria-hidden="true" />
@@ -731,6 +823,108 @@ export function RoomDiscussionsWorkspace() {
                     <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--loombus-text)]">
                       {thread.body}
                     </p>
+
+                    {privateSupportThreads ? (
+                      <section className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h4 className="flex items-center gap-2 text-sm font-black text-[var(--loombus-text)]">
+                              <LockKeyhole className="size-4" aria-hidden="true" />
+                              Case access
+                            </h4>
+                            <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">
+                              The author and active Room support staff always have access.
+                            </p>
+                          </div>
+                          <span className="text-xs font-bold text-[var(--loombus-text-subtle)]">
+                            {thread.participants.length} added participant{thread.participants.length === 1 ? "" : "s"}
+                          </span>
+                        </div>
+
+                        {thread.participants.length > 0 ? (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {thread.participants.map((participant) => (
+                              <span
+                                key={participant.userId}
+                                className="inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-2 text-xs font-bold text-[var(--loombus-text)]"
+                              >
+                                {getProfileDisplayName(participant.profile)}
+                                {thread.canManageParticipants ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void removeParticipant(
+                                        thread.id,
+                                        participant.userId
+                                      )
+                                    }
+                                    disabled={
+                                      workingKey ===
+                                      `remove-participant:${thread.id}:${participant.userId}`
+                                    }
+                                    className="grid size-5 place-items-center rounded-full text-red-600 hover:bg-red-50 dark:text-red-300"
+                                    aria-label={`Remove ${getProfileDisplayName(participant.profile)} from this support case`}
+                                  >
+                                    <X className="size-3" aria-hidden="true" />
+                                  </button>
+                                ) : null}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-3 text-xs text-[var(--loombus-text-muted)]">
+                            No additional participants have been added.
+                          </p>
+                        )}
+
+                        {thread.canManageParticipants ? (
+                          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                            <select
+                              value={participantSelections[thread.id] ?? ""}
+                              onChange={(event) =>
+                                setParticipantSelections((current) => ({
+                                  ...current,
+                                  [thread.id]: event.target.value,
+                                }))
+                              }
+                              className="min-h-11 min-w-0 flex-1 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-sm text-[var(--loombus-text)]"
+                            >
+                              <option value="">Add an active Room member</option>
+                              {(data?.participantCandidates ?? [])
+                                .filter(
+                                  (candidate) =>
+                                    !candidate.isStaff &&
+                                    candidate.userId !== thread.authorId &&
+                                    !thread.participants.some(
+                                      (participant) =>
+                                        participant.userId === candidate.userId
+                                    )
+                                )
+                                .map((candidate) => (
+                                  <option
+                                    key={candidate.userId}
+                                    value={candidate.userId}
+                                  >
+                                    {getProfileDisplayName(candidate.profile)}
+                                  </option>
+                                ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => void addParticipant(thread.id)}
+                              disabled={
+                                !(participantSelections[thread.id] ?? "") ||
+                                workingKey === `add-participant:${thread.id}`
+                              }
+                              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-xs font-black text-[var(--loombus-text)] disabled:opacity-50"
+                            >
+                              <UserPlus className="size-4" aria-hidden="true" />
+                              Add participant
+                            </button>
+                          </div>
+                        ) : null}
+                      </section>
+                    ) : null}
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                       {thread.canResolve ? (
@@ -886,7 +1080,9 @@ export function RoomDiscussionsWorkspace() {
           </h3>
           <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">
             {filter === "all"
-              ? "Start a focused thread that stays inside this Room."
+               ? privateSupportThreads
+                 ? "Open a private case that only you and Room support staff can see."
+                 : "Start a focused thread that stays inside this Room."
               : "Choose All to view the complete Room discussion history."}
           </p>
         </div>

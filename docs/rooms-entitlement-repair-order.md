@@ -29,7 +29,7 @@ The following rules are part of the product and authorization contract:
 - Room discussions are ordered by `last_activity_at`
 - per-member read markers determine unread thread activity
 - resolved discussions reject new replies until reopened
-- the discussion author or Room management may resolve or reopen a thread
+- the discussion author or authorized Room staff may resolve or reopen a thread
 - the discussion or reply author and Room moderation may soft-delete their content
 - active Room membership is required to read threads and replies
 - reply writes use the authenticated service route rather than direct client inserts
@@ -92,7 +92,22 @@ Room-type defaults and required behaviors are different:
 - `recommendedModules` may be enabled or disabled when permitted by the plan
 - `requiredBehaviors` are enforced by server authorization and database policy and cannot be disabled
 
-A future customer-support isolation contract must be a required behavior, not a toggle. Until author-and-staff isolation exists, the product must be presented as a shared Customer Community Room rather than a private customer-ticket Room.
+## Customer Support isolation contract
+
+Customer Support Rooms implement `private_support_threads` as a required behavior.
+
+- every support case uses `author_and_staff` visibility
+- the case author and active Room owners, administrators, and moderators always have access
+- ordinary Room membership alone does not grant access to another customer’s case
+- authorized support staff may add or remove active Room members as explicit case participants
+- suspended, blocked, removed, and inactive members are excluded from case participation and notifications
+- case replies, read markers, notifications, attachment metadata, and private Storage objects inherit the parent case authorization boundary
+- customer case creation and replies cannot be disabled through `allowMemberPosts`
+- historical private cases cannot be widened by later post updates
+- a Customer Support Room cannot be converted to a shared Room type through an ordinary Room-type update
+- underscore, hyphenated, spaced, and case-variant Customer Support type values resolve to the same database behavior
+
+Any future conversion away from Customer Support must use an explicit reviewed migration that preserves or deliberately reassigns every private case before changing the Room type.
 
 ## Validation rules
 

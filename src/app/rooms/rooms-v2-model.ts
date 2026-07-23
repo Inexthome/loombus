@@ -2,6 +2,7 @@ import {
   ROOM_PLAN_ENTITLEMENTS,
   type RoomPlanKey,
 } from "@/lib/room-plan-entitlements";
+import type { RoomRequiredBehavior } from "@/lib/room-required-behaviors";
 
 export type RoomModelId =
   | "business-team"
@@ -26,6 +27,7 @@ export type RoomModel = {
   audience: string;
   examples: string[];
   calendarUse: string;
+  requiredBehaviors: readonly RoomRequiredBehavior[];
 };
 
 export type RoomPlanId = RoomPlanKey;
@@ -51,6 +53,7 @@ export const ROOM_MODELS: RoomModel[] = [
     audience: "Companies, departments, project teams, and professional groups",
     examples: ["Decision threads", "Team announcements", "Shared operating files"],
     calendarUse: "Milestones, meetings, deadlines, launches, and internal events",
+    requiredBehaviors: [],
   },
   {
     id: "residents",
@@ -62,6 +65,7 @@ export const ROOM_MODELS: RoomModel[] = [
     audience: "HOAs, condominiums, apartment communities, and neighborhood groups",
     examples: ["Maintenance notices", "Board updates", "Resident questions"],
     calendarUse: "Meetings, inspections, maintenance windows, and community events",
+    requiredBehaviors: [],
   },
   {
     id: "classroom",
@@ -73,17 +77,19 @@ export const ROOM_MODELS: RoomModel[] = [
     audience: "Teachers, students, cohorts, workshops, and training programs",
     examples: ["Class prompts", "Assignment resources", "Moderated discussion"],
     calendarUse: "Due dates, class sessions, office hours, and presentations",
+    requiredBehaviors: [],
   },
   {
     id: "customer-support",
     category: "Customer",
-    title: "Customer Community Room",
-    shortTitle: "Customer Community",
+    title: "Customer Support Room",
+    shortTitle: "Customer Support",
     description:
-      "A shared customer community for known issues, help resources, product questions, requests, and updates. Active Room members can see shared discussions.",
-    audience: "Businesses, service providers, product teams, and customer communities",
-    examples: ["Known issues", "Shared product questions", "Product updates"],
+      "A private support space where each customer case is visible only to its author, Room support staff, and explicitly added participants.",
+    audience: "Businesses, service providers, product teams, and client support groups",
+    examples: ["Private support cases", "Known issues", "Product updates"],
     calendarUse: "Maintenance windows, onboarding sessions, releases, and training",
+    requiredBehaviors: ["private_support_threads"],
   },
   {
     id: "community",
@@ -95,6 +101,7 @@ export const ROOM_MODELS: RoomModel[] = [
     audience: "Associations, nonprofits, clubs, family groups, and local communities",
     examples: ["Member discussions", "Community resources", "Group announcements"],
     calendarUse: "Gatherings, volunteer dates, meetings, and shared milestones",
+    requiredBehaviors: [],
   },
 ];
 

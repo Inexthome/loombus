@@ -82,6 +82,8 @@ type ManifestResponse = {
     subscriptionPlan: string;
     subscriptionStatus: string;
     memberLimit: number | null;
+    roomType?: string;
+    requiredBehaviors?: string[];
   };
   access?: {
     role: string | null;
@@ -1231,7 +1233,13 @@ function SettingsPanel({
   onSave: (payload: Record<string, unknown>) => Promise<boolean>;
 }) {
   const source = (data ?? {}) as {
-    room?: { name?: string; description?: string; inviteOnly?: boolean };
+    room?: {
+      name?: string;
+      description?: string;
+      inviteOnly?: boolean;
+      roomType?: string;
+      requiredBehaviors?: string[];
+    };
     settings?: RoomSettingsData;
   };
   const [name, setName] = useState(source.room?.name ?? "");
@@ -1243,12 +1251,18 @@ function SettingsPanel({
   const [domains, setDomains] = useState((source.settings?.allowedEmailDomains ?? []).join("\n"));
   const [defaultRole, setDefaultRole] = useState<"member" | "moderator">(source.settings?.defaultInviteRole ?? "member");
   const [working, setWorking] = useState(false);
+  const privateSupportThreads = Boolean(
+    source.room?.requiredBehaviors?.includes("private_support_threads") ||
+      source.room?.roomType === "customer_support"
+  );
 
   useEffect(() => {
     setName(source.room?.name ?? "");
     setDescription(source.room?.description ?? "");
     setInviteOnly(source.room?.inviteOnly ?? true);
-    setAllowMemberPosts(source.settings?.allowMemberPosts ?? true);
+    setAllowMemberPosts(
+      privateSupportThreads ? true : source.settings?.allowMemberPosts ?? true
+    );
     setDirectoryVisible(source.settings?.memberDirectoryVisible ?? true);
     setInviteApproval(source.settings?.inviteRequiresApproval ?? false);
     setDomains((source.settings?.allowedEmailDomains ?? []).join("\n"));
@@ -1261,7 +1275,7 @@ function SettingsPanel({
     await onSave({
       room: { name, description, inviteOnly },
       settings: {
-        allowMemberPosts,
+        allowMemberPosts: privateSupportThreads ? true : allowMemberPosts,
         memberDirectoryVisible: directoryVisible,
         inviteRequiresApproval: inviteApproval,
         allowedEmailDomains: domains.split(/\n|,/).map((item) => item.trim()).filter(Boolean),
@@ -1282,7 +1296,24 @@ function SettingsPanel({
         </>
       ) : (
         <>
-          <label className="room-tier-checkbox"><input type="checkbox" checked={allowMemberPosts} onChange={(event) => setAllowMemberPosts(event.target.checked)} /><span>Allow ordinary members to create discussions</span></label>
+          <label className="room-tier-checkbox">
+            <input
+              type="checkbox"
+              checked={privateSupportThreads ? true : allowMemberPosts}
+              disabled={privateSupportThreads}
+              onChange={(event) => setAllowMemberPosts(event.target.checked)}
+            />
+            <span>
+              {privateSupportThreads
+                ? "Customers can always open and reply to their private support cases"
+                : "Allow ordinary members to create discussions"}
+            </span>
+          </label>
+          {privateSupportThreads ? (
+            <p className="rooms-live-notice">
+              This is a required Customer Support behavior. It cannot be disabled.
+            </p>
+          ) : null}
           <label className="room-tier-checkbox"><input type="checkbox" checked={directoryVisible} onChange={(event) => setDirectoryVisible(event.target.checked)} /><span>Allow members to view the private directory</span></label>
           <label className="room-tier-checkbox"><input type="checkbox" checked={inviteApproval} onChange={(event) => setInviteApproval(event.target.checked)} /><span>Require administrator approval after invitation redemption</span></label>
           <label><span>Allowed invitation email domains, one per line</span><textarea rows={5} value={domains} onChange={(event) => setDomains(event.target.value)} placeholder="company.com\npartner.org" /></label>
