@@ -80,6 +80,7 @@ export function AdaptiveMobileDockController() {
 
     function attach(nav: HTMLElement) {
       navRef.current = nav;
+      nav.id = "loombus-adaptive-primary-navigation";
       nav.dataset.adaptiveDock = "true";
       document.body.dataset.adaptiveMobileDock = "true";
       setReady(true);
