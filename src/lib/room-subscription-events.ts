@@ -9,6 +9,7 @@ import {
   isPaidRoomPlanKey,
   type PaidRoomPlanKey,
 } from "@/lib/room-billing";
+import { getRoomPlanMemberLimit } from "@/lib/room-plan-entitlements";
 
 const ROOM_PRICE_ENV: Array<{
   planKey: PaidRoomPlanKey;
@@ -99,9 +100,11 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
     );
   }
 
+  const memberLimit = getRoomPlanMemberLimit(planKey);
   const billingUpdate = {
     subscription_plan: planKey,
     subscription_status: subscription.status,
+    member_limit: memberLimit,
     stripe_customer_id: getCustomerId(subscription),
     stripe_subscription_id: subscription.id,
     stripe_price_id: priceId,
@@ -152,6 +155,7 @@ export async function syncRoomSubscriptionEvent(subscription: Stripe.Subscriptio
     target_id: roomId,
     metadata: {
       room_plan: planKey,
+      member_limit: memberLimit,
       stripe_subscription_id: subscription.id,
       stripe_subscription_status: subscription.status,
       synchronized_room_count: synchronizedRoomIds.length,
