@@ -14,15 +14,26 @@ alter table public.room_posts
   add constraint room_posts_visibility_scope_check
   check (visibility_scope in ('room', 'author_and_staff'));
 
+create or replace function public.room_type_is_customer_support(value text)
+returns boolean
+language sql
+immutable
+set search_path = public
+as $$
+  select lower(
+    regexp_replace(btrim(coalesce(value, '')), '[-[:space:]]+', '_', 'g')
+  ) = 'customer_support';
+$$;
+
 update public.room_posts post
 set visibility_scope = case
-  when room.room_type = 'customer_support' then 'author_and_staff'
+  when public.room_type_is_customer_support(room.room_type) then 'author_and_staff'
   else 'room'
 end
 from public.rooms room
 where room.id = post.room_id
   and post.visibility_scope is distinct from case
-    when room.room_type = 'customer_support' then 'author_and_staff'
+    when public.room_type_is_customer_support(room.room_type) then 'author_and_staff'
     else 'room'
   end;
 
@@ -187,7 +198,7 @@ begin
       message = 'The Room does not exist.';
   end if;
 
-  if target_room_type = 'customer_support' then
+  if public.room_type_is_customer_support(target_room_type) then
     new.visibility_scope := 'author_and_staff';
   elsif tg_op = 'INSERT' then
     new.visibility_scope := 'room';
@@ -215,15 +226,15 @@ security definer
 set search_path = public
 as $$
 begin
-  if old.room_type = 'customer_support'
-     and new.room_type is distinct from 'customer_support' then
+  if public.room_type_is_customer_support(old.room_type)
+     and not public.room_type_is_customer_support(new.room_type) then
     raise exception using
       errcode = '23514',
       message = 'Customer Support Rooms cannot be converted to a shared Room type.';
   end if;
 
-  if old.room_type is distinct from 'customer_support'
-     and new.room_type = 'customer_support' then
+  if not public.room_type_is_customer_support(old.room_type)
+     and public.room_type_is_customer_support(new.room_type) then
     update public.room_posts
     set visibility_scope = 'author_and_staff'
     where room_id = new.id;
@@ -312,7 +323,7 @@ begin
   from public.rooms room
   where room.id = new.room_id;
 
-  if target_room_type = 'customer_support' then
+  if public.room_type_is_customer_support(target_room_type) then
     return new;
   end if;
 
@@ -379,7 +390,7 @@ begin
       message = 'Resolved Room discussions must be reopened before replying.';
   end if;
 
-  if target_room_type = 'customer_support' then
+  if public.room_type_is_customer_support(target_room_type) then
     return new;
   end if;
 
@@ -608,12 +619,14 @@ using (
   )
 );
 
+revoke all on function public.room_type_is_customer_support(text) from public;
 revoke all on function public.room_user_is_active_member(uuid, uuid) from public;
 revoke all on function public.room_user_is_staff(uuid, uuid) from public;
 revoke all on function public.user_is_room_staff(uuid) from public;
 revoke all on function public.user_can_access_room_post(uuid) from public;
 revoke all on function public.try_room_uuid(text) from public;
 
+grant execute on function public.room_type_is_customer_support(text) to service_role;
 grant execute on function public.user_is_room_staff(uuid) to authenticated, service_role;
 grant execute on function public.user_can_access_room_post(uuid) to authenticated, service_role;
 grant execute on function public.try_room_uuid(text) to authenticated, service_role;
