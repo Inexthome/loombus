@@ -30,6 +30,9 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Correct audited isolation patch anchor
+        run: python3 .github/scripts/fix_customer_support_isolation_anchor.py
+
       - name: Apply application patches
         id: patch
         continue-on-error: true
@@ -64,10 +67,11 @@ jobs:
       - name: Commit product changes and remove one-time automation
         run: |
           rm .github/scripts/apply_customer_support_isolation.py
+          rm .github/scripts/fix_customer_support_isolation_anchor.py
           rm .github/workflows/apply-customer-support-isolation.yml
           rm -f .github/placeholder.txt isolation-patch-output.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src supabase .github/scripts/apply_customer_support_isolation.py .github/workflows/apply-customer-support-isolation.yml .github/placeholder.txt
+          git add src supabase .github/scripts/apply_customer_support_isolation.py .github/scripts/fix_customer_support_isolation_anchor.py .github/workflows/apply-customer-support-isolation.yml .github/placeholder.txt
           git commit -m "Enforce private Customer Support cases"
           git push origin HEAD:agent/customer-support-isolation
