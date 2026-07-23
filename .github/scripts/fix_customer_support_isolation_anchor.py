@@ -13,6 +13,11 @@ replacements = [
         "    '          discussion_type: modeResult.mode,\\n        },\\n',",
         "discussion visibility audit",
     ),
+    (
+        "    '               ? \"Start a focused thread that stays inside this Room.\"\\n',",
+        "    '              ? \"Start a focused thread that stays inside this Room.\"\\n',",
+        "support empty-state copy",
+    ),
 ]
 
 for old, new, label in replacements:
