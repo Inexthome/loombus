@@ -13,9 +13,7 @@ alter table public.room_posts
   add column if not exists reply_count integer not null default 0;
 
 update public.room_posts
-set last_activity_at = coalesce(updated_at, created_at, now())
-where last_activity_at is null
-   or last_activity_at < created_at;
+set last_activity_at = coalesce(updated_at, created_at, now());
 
 alter table public.room_posts
   drop constraint if exists room_posts_discussion_type_check,

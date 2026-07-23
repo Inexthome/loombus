@@ -185,7 +185,7 @@ export function RoomDiscussionsWorkspace() {
   );
   const [portal, setPortal] = useState<PortalTarget | null>(null);
   const [data, setData] = useState<ThreadResponse | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [workingKey, setWorkingKey] = useState<string | null>(null);
   const [message, setMessage] = useState("");

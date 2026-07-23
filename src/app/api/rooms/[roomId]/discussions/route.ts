@@ -123,7 +123,9 @@ async function memberPostsAreAllowed(service: ServiceClient, roomId: string) {
   if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
     return true;
   }
-  return (settings as Record<string, unknown>).allowMemberPosts !== false;
+  const allowMemberPosts = (settings as Record<string, unknown>)
+    .allowMemberPosts;
+  return allowMemberPosts !== false && allowMemberPosts !== "false";
 }
 
 function canParticipate(access: RoomAccess, memberPostsAllowed: boolean) {
