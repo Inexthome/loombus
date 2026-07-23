@@ -174,23 +174,30 @@ security definer
 set search_path = public
 as $$
 declare
-  required_scope text;
+  target_room_type text;
 begin
-  select case
-    when room.room_type = 'customer_support' then 'author_and_staff'
-    else 'room'
-  end
-  into required_scope
+  select room.room_type
+  into target_room_type
   from public.rooms room
   where room.id = new.room_id;
 
-  if required_scope is null then
+  if target_room_type is null then
     raise exception using
       errcode = '23503',
       message = 'The Room does not exist.';
   end if;
 
-  new.visibility_scope := required_scope;
+  if target_room_type = 'customer_support' then
+    new.visibility_scope := 'author_and_staff';
+  elsif tg_op = 'INSERT' then
+    new.visibility_scope := 'room';
+  elsif old.visibility_scope = 'author_and_staff' then
+    -- Never widen an existing private case because of a later record update.
+    new.visibility_scope := 'author_and_staff';
+  else
+    new.visibility_scope := 'room';
+  end if;
+
   return new;
 end;
 $$;
@@ -208,14 +215,20 @@ security definer
 set search_path = public
 as $$
 begin
-  if old.room_type is distinct from new.room_type then
+  if old.room_type = 'customer_support'
+     and new.room_type is distinct from 'customer_support' then
+    raise exception using
+      errcode = '23514',
+      message = 'Customer Support Rooms cannot be converted to a shared Room type.';
+  end if;
+
+  if old.room_type is distinct from 'customer_support'
+     and new.room_type = 'customer_support' then
     update public.room_posts
-    set visibility_scope = case
-      when new.room_type = 'customer_support' then 'author_and_staff'
-      else 'room'
-    end
+    set visibility_scope = 'author_and_staff'
     where room_id = new.id;
   end if;
+
   return new;
 end;
 $$;
@@ -399,6 +412,8 @@ $$;
 alter table public.room_post_participants enable row level security;
 
 -- Replace Room-wide discussion policies with thread-aware policies.
+drop policy if exists "Authorized members can read Room discussions"
+  on public.room_posts;
 drop policy if exists "Live room posts are visible inside the room"
   on public.room_posts;
 create policy "Authorized members can read Room discussions"
@@ -407,6 +422,8 @@ for select
 to authenticated
 using (public.user_can_access_room_post(id));
 
+drop policy if exists "Authorized members can read Room replies"
+  on public.room_post_replies;
 drop policy if exists "Room replies are visible to active members"
   on public.room_post_replies;
 create policy "Authorized members can read Room replies"
@@ -418,6 +435,8 @@ using (
   and public.user_can_access_room_post(post_id)
 );
 
+drop policy if exists "Members can read authorized Room thread markers"
+  on public.room_post_reads;
 drop policy if exists "Members can read their Room thread markers"
   on public.room_post_reads;
 create policy "Members can read authorized Room thread markers"
@@ -429,6 +448,8 @@ using (
   and public.user_can_access_room_post(post_id)
 );
 
+drop policy if exists "Members can create authorized Room thread markers"
+  on public.room_post_reads;
 drop policy if exists "Members can create their Room thread markers"
   on public.room_post_reads;
 create policy "Members can create authorized Room thread markers"
@@ -440,6 +461,8 @@ with check (
   and public.user_can_access_room_post(post_id)
 );
 
+drop policy if exists "Members can update authorized Room thread markers"
+  on public.room_post_reads;
 drop policy if exists "Members can update their Room thread markers"
   on public.room_post_reads;
 create policy "Members can update authorized Room thread markers"
@@ -455,6 +478,8 @@ with check (
   and public.user_can_access_room_post(post_id)
 );
 
+drop policy if exists "Authorized members can read support-case participants"
+  on public.room_post_participants;
 create policy "Authorized members can read support-case participants"
 on public.room_post_participants
 for select
@@ -466,6 +491,8 @@ revoke insert, update, delete on table public.room_post_participants from authen
 grant select on table public.room_post_participants to authenticated;
 
 -- Attachment metadata follows the parent thread's authorization boundary.
+drop policy if exists "Authorized members can read post attachments"
+  on public.room_post_attachments;
 drop policy if exists "Room members can read post attachments"
   on public.room_post_attachments;
 create policy "Authorized members can read post attachments"
@@ -482,6 +509,8 @@ using (
   )
 );
 
+drop policy if exists "Authorized members can create post attachments"
+  on public.room_post_attachments;
 drop policy if exists "Room members can create post attachments"
   on public.room_post_attachments;
 create policy "Authorized members can create post attachments"
@@ -499,6 +528,8 @@ with check (
   )
 );
 
+drop policy if exists "Uploaders and Room staff can delete post attachments"
+  on public.room_post_attachments;
 drop policy if exists "Uploaders and room owners can delete post attachments"
   on public.room_post_attachments;
 create policy "Uploaders and Room staff can delete post attachments"
@@ -515,6 +546,8 @@ using (
 
 -- Storage paths are room_id/post_id/file. Access is derived from the post id,
 -- not merely from membership in the Room.
+drop policy if exists "Authorized members can read uploaded post files"
+  on storage.objects;
 drop policy if exists "Room members can read uploaded post files"
   on storage.objects;
 create policy "Authorized members can read uploaded post files"
@@ -532,6 +565,8 @@ using (
   )
 );
 
+drop policy if exists "Authorized members can upload post files"
+  on storage.objects;
 drop policy if exists "Room members can upload post files"
   on storage.objects;
 create policy "Authorized members can upload post files"
@@ -550,6 +585,8 @@ with check (
   )
 );
 
+drop policy if exists "Uploaders and Room staff can manage uploaded post files"
+  on storage.objects;
 drop policy if exists "Uploaders can manage uploaded post files"
   on storage.objects;
 create policy "Uploaders and Room staff can manage uploaded post files"

@@ -74,6 +74,20 @@ function normalizedTimestamp(value: unknown) {
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
 
+function roomMembershipIsActive(row: RoomRow) {
+  if (
+    ["blocked", "removed", "inactive"].includes(
+      asString(row.status).toLowerCase()
+    )
+  ) {
+    return false;
+  }
+  const suspendedUntil = normalizedTimestamp(row.suspended_until);
+  return (
+    !suspendedUntil || new Date(suspendedUntil).getTime() <= Date.now()
+  );
+}
+
 async function authorize(request: NextRequest): Promise<Authorized> {
   try {
     const account = await verifyRequestAccountAccess(
@@ -147,21 +161,24 @@ async function loadSupportStaffIds(
 ) {
   const result = await service
     .from("room_members")
-    .select("user_id, role, status")
+    .select("user_id, role, status, suspended_until")
     .eq("room_id", access.room.id)
     .in("role", ["owner", "admin", "administrator", "moderator"])
     .not("status", "in", "(blocked,removed,inactive)")
     .limit(500);
   if (result.error) throw new Error(result.error.message);
 
+  const activeStaffIds = ((result.data ?? []) as RoomRow[])
+    .filter(roomMembershipIsActive)
+    .map((row) => asString(row.user_id))
+    .filter(Boolean);
+
   return [
-    ...new Set([
-      access.room.ownerId,
-      access.room.createdBy,
-      ...((result.data ?? []) as RoomRow[]).map((row) =>
-        asString(row.user_id)
-      ),
-    ].filter(Boolean)),
+    ...new Set(
+      [access.room.ownerId, access.room.createdBy, ...activeStaffIds].filter(
+        Boolean
+      )
+    ),
   ];
 }
 
@@ -276,19 +293,14 @@ async function activeParticipantIds(
 
   const result = await service
     .from("room_members")
-    .select("user_id, status")
+    .select("user_id, status, suspended_until")
     .eq("room_id", access.room.id)
     .in("user_id", candidates);
   if (result.error) throw new Error(result.error.message);
 
   const active = new Set(
     ((result.data ?? []) as RoomRow[])
-      .filter(
-        (row) =>
-          !["blocked", "removed", "inactive"].includes(
-            asString(row.status).toLowerCase()
-          )
-      )
+      .filter(roomMembershipIsActive)
       .map((row) => asString(row.user_id))
       .filter(Boolean)
   );
@@ -485,13 +497,15 @@ export async function GET(request: NextRequest, context: RouteContext) {
     if (privateSupportThreads && access.canModerate) {
       const candidateResult = await service
         .from("room_members")
-        .select("user_id, role, status")
+        .select("user_id, role, status, suspended_until")
         .eq("room_id", roomId)
         .not("status", "in", "(blocked,removed,inactive)")
         .order("created_at", { ascending: true })
         .limit(500);
       if (candidateResult.error) throw new Error(candidateResult.error.message);
-      candidateRows = (candidateResult.data ?? []) as RoomRow[];
+      candidateRows = ((candidateResult.data ?? []) as RoomRow[]).filter(
+        roomMembershipIsActive
+      );
     }
     const profiles = await loadProfiles(service, [
       ...postRows.map((row) => asString(row.author_id)),
@@ -585,12 +599,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
           title: asString(row.title),
           body: asString(row.body),
           discussionType: mode,
-           discussionMetadata: asMetadata(row.discussion_metadata),
-           visibilityScope:
-             asString(row.visibility_scope) === "author_and_staff"
-               ? "author_and_staff"
-               : "room",
-           status: asString(row.status) === "resolved" ? "resolved" : "open",
+          discussionMetadata: asMetadata(row.discussion_metadata),
+          visibilityScope:
+            asString(row.visibility_scope) === "author_and_staff"
+              ? "author_and_staff"
+              : "room",
+          status: asString(row.status) === "resolved" ? "resolved" : "open",
           resolvedAt: normalizedTimestamp(row.resolved_at),
           resolvedBy: asString(row.resolved_by) || null,
           resolver: profileFor(profiles, asString(row.resolved_by)),
@@ -743,11 +757,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
         target_id: postId,
         metadata: {
           room_id: roomId,
-           discussion_type: modeResult.mode,
-           visibility_scope: getRequiredRoomThreadVisibility(
-             access.room.roomType
-           ),
-         },
+          discussion_type: modeResult.mode,
+          visibility_scope: getRequiredRoomThreadVisibility(
+            access.room.roomType
+          ),
+        },
       });
       return json({ ok: true, id: postId }, 201);
     }
@@ -843,9 +857,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
         userId
       );
       if (!post) return jsonError("Room discussion not found.", 404);
-      if (asString(post.author_id) !== userId && !access.canManage) {
+      const canChangeStatus =
+        asString(post.author_id) === userId ||
+        (isCustomerSupportRoomType(access.room.roomType)
+          ? access.canModerate
+          : access.canManage);
+      if (!canChangeStatus) {
         return jsonError(
-          "Only the discussion author or Room management can change its status.",
+          "Only the discussion author or authorized Room staff can change its status.",
           403
         );
       }
