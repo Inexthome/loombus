@@ -11,7 +11,7 @@ import {
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type DockMode = "full" | "collapsed" | "expanded";
+type DockMode = "collapsed" | "expanded";
 
 type DockDestination = {
   href: string;
@@ -33,6 +33,7 @@ function isPathActive(pathname: string, href: string) {
 function composerIsOpen(pathname: string) {
   return (
     pathname === "/create" ||
+    document.body.dataset.discussionsCreateOpen === "true" ||
     Boolean(document.querySelector("[data-discussions-create-modal]")) ||
     document.body.dataset.createFocus === "true"
   );
@@ -40,12 +41,12 @@ function composerIsOpen(pathname: string) {
 
 export function AdaptiveMobileDockController() {
   const pathname = usePathname();
-  const [mode, setMode] = useState<DockMode>("full");
+  const [mode, setMode] = useState<DockMode>("collapsed");
   const [suppressed, setSuppressed] = useState(false);
   const [ready, setReady] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
   const launcherRef = useRef<HTMLButtonElement | null>(null);
-  const modeRef = useRef<DockMode>("full");
+  const modeRef = useRef<DockMode>("collapsed");
 
   const activeDestination = useMemo(
     () => DESTINATIONS.find((item) => isPathActive(pathname, item.href)) ?? DESTINATIONS[0],
@@ -63,19 +64,10 @@ export function AdaptiveMobileDockController() {
   useEffect(() => {
     let cancelled = false;
     let locateTimer = 0;
-    let classObserver: MutationObserver | null = null;
     let pageObserver: MutationObserver | null = null;
-    let previousScrollY = window.scrollY;
-
-    const mobile = window.matchMedia("(max-width: 767.98px)");
 
     function syncSuppression() {
       setSuppressed(composerIsOpen(pathname));
-    }
-
-    function syncFromShell(nav: HTMLElement) {
-      if (!mobile.matches || modeRef.current === "expanded") return;
-      setMode(nav.classList.contains("is-hidden") ? "collapsed" : "full");
     }
 
     function attach(nav: HTMLElement) {
@@ -83,13 +75,9 @@ export function AdaptiveMobileDockController() {
       nav.id = "loombus-adaptive-primary-navigation";
       nav.dataset.adaptiveDock = "true";
       document.body.dataset.adaptiveMobileDock = "true";
+      setMode("collapsed");
       setReady(true);
-      syncFromShell(nav);
       syncSuppression();
-
-      classObserver = new MutationObserver(() => syncFromShell(nav));
-      classObserver.observe(nav, { attributes: true, attributeFilter: ["class"] });
-
       nav.addEventListener("click", handleNavClick, true);
     }
 
@@ -124,19 +112,8 @@ export function AdaptiveMobileDockController() {
     }
 
     function handleScroll() {
-      const nextScrollY = window.scrollY;
-      const delta = nextScrollY - previousScrollY;
-      previousScrollY = nextScrollY;
-      if (modeRef.current === "expanded" && Math.abs(delta) > 6) {
+      if (modeRef.current === "expanded") {
         setMode("collapsed");
-      }
-    }
-
-    function handleMediaChange() {
-      if (!mobile.matches) {
-        setMode("full");
-      } else if (navRef.current) {
-        syncFromShell(navRef.current);
       }
     }
 
@@ -145,30 +122,30 @@ export function AdaptiveMobileDockController() {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["data-create-focus"],
+      attributeFilter: ["data-create-focus", "data-discussions-create-open"],
     });
 
     document.addEventListener("pointerdown", handleDocumentPointer, true);
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("scroll", handleScroll, { passive: true });
-    mobile.addEventListener("change", handleMediaChange);
     locate();
 
     return () => {
       cancelled = true;
       window.clearTimeout(locateTimer);
-      classObserver?.disconnect();
       pageObserver?.disconnect();
       navRef.current?.removeEventListener("click", handleNavClick, true);
       if (navRef.current) {
         delete navRef.current.dataset.adaptiveDock;
         delete navRef.current.dataset.adaptiveDockState;
+        if (navRef.current.id === "loombus-adaptive-primary-navigation") {
+          navRef.current.removeAttribute("id");
+        }
       }
       delete document.body.dataset.adaptiveMobileDock;
       document.removeEventListener("pointerdown", handleDocumentPointer, true);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("scroll", handleScroll);
-      mobile.removeEventListener("change", handleMediaChange);
     };
   }, [pathname]);
 
@@ -179,10 +156,10 @@ export function AdaptiveMobileDockController() {
   }, [mode]);
 
   useEffect(() => {
-    setMode((current) => (current === "expanded" ? "collapsed" : current));
+    setMode("collapsed");
   }, [pathname]);
 
-  if (!ready || suppressed || mode === "full") return null;
+  if (!ready || suppressed) return null;
 
   return (
     <button
@@ -191,7 +168,11 @@ export function AdaptiveMobileDockController() {
       className="loombus-adaptive-dock-launcher"
       data-expanded={mode === "expanded" ? "true" : "false"}
       onClick={() => setMode((current) => (current === "expanded" ? "collapsed" : "expanded"))}
-      aria-label={mode === "expanded" ? "Collapse Loombus navigation" : `Open Loombus navigation. Current page: ${activeDestination.label}`}
+      aria-label={
+        mode === "expanded"
+          ? "Collapse Loombus navigation"
+          : `Open Loombus navigation. Current page: ${activeDestination.label}`
+      }
       aria-expanded={mode === "expanded"}
       aria-controls="loombus-adaptive-primary-navigation"
     >
@@ -201,7 +182,12 @@ export function AdaptiveMobileDockController() {
       <span className="loombus-adaptive-dock-current" aria-hidden="true">
         <ActiveIcon size={18} strokeWidth={2.1} />
       </span>
-      <Menu className="loombus-adaptive-dock-menu-icon" size={19} strokeWidth={2.15} aria-hidden="true" />
+      <Menu
+        className="loombus-adaptive-dock-menu-icon"
+        size={19}
+        strokeWidth={2.15}
+        aria-hidden="true"
+      />
     </button>
   );
 }
