@@ -18,16 +18,11 @@ export type NotificationPayload = {
 let notificationServiceClient: ReturnType<typeof createClient> | null = null;
 
 function getNotificationServiceClient() {
-  if (notificationServiceClient) {
-    return notificationServiceClient;
-  }
+  if (notificationServiceClient) return notificationServiceClient;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return null;
-  }
+  if (!supabaseUrl || !serviceRoleKey) return null;
 
   notificationServiceClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
@@ -35,7 +30,6 @@ function getNotificationServiceClient() {
       autoRefreshToken: false,
     },
   });
-
   return notificationServiceClient;
 }
 
@@ -46,25 +40,27 @@ function missingServiceRoleError(): ServiceRoleError {
 }
 
 function notificationRow(payload: NotificationPayload) {
-  return {
+  const row: Record<string, unknown> = {
     user_id: payload.user_id,
     actor_id: payload.actor_id ?? null,
     type: payload.type,
     target_type: payload.target_type,
     target_id: payload.target_id ?? null,
-    room_id: payload.room_id ?? null,
     message: payload.message,
   };
+
+  // Keep existing notification writes compatible while the Room migration is
+  // applied after deployment. Room attribution is normally populated by the
+  // database trigger from target_type and target_id.
+  if (payload.room_id) row.room_id = payload.room_id;
+  return row;
 }
 
 export async function createNotification(
   payload: NotificationPayload
 ): Promise<{ error: ServiceRoleError | null }> {
   const supabase = getNotificationServiceClient();
-
-  if (!supabase) {
-    return { error: missingServiceRoleError() };
-  }
+  if (!supabase) return { error: missingServiceRoleError() };
 
   const { error } = await (supabase.from("notifications") as any).insert(
     notificationRow(payload)
@@ -82,15 +78,10 @@ export async function createNotification(
 export async function createNotifications(
   payloads: NotificationPayload[]
 ): Promise<{ error: ServiceRoleError | null }> {
-  if (payloads.length === 0) {
-    return { error: null };
-  }
+  if (payloads.length === 0) return { error: null };
 
   const supabase = getNotificationServiceClient();
-
-  if (!supabase) {
-    return { error: missingServiceRoleError() };
-  }
+  if (!supabase) return { error: missingServiceRoleError() };
 
   const { error } = await (supabase.from("notifications") as any).insert(
     payloads.map(notificationRow)
@@ -109,7 +100,6 @@ export async function createAdminNotifications(
   payload: Omit<NotificationPayload, "user_id">
 ): Promise<{ error: ServiceRoleError | null; notifiedAdminCount: number }> {
   const supabase = getNotificationServiceClient();
-
   if (!supabase) {
     return { error: missingServiceRoleError(), notifiedAdminCount: 0 };
   }
@@ -118,10 +108,7 @@ export async function createAdminNotifications(
     .from("profiles") as any)
     .select("id")
     .eq("is_admin", true);
-
-  if (adminError) {
-    return { error: adminError, notifiedAdminCount: 0 };
-  }
+  if (adminError) return { error: adminError, notifiedAdminCount: 0 };
 
   const adminPayloads = ((admins ?? []) as { id: string }[])
     .filter((admin) => Boolean(admin.id))
@@ -131,12 +118,11 @@ export async function createAdminNotifications(
       type: payload.type,
       target_type: payload.target_type,
       target_id: payload.target_id ?? null,
-      room_id: payload.room_id ?? null,
+      ...(payload.room_id ? { room_id: payload.room_id } : {}),
       message: payload.message,
     }));
 
   const { error } = await createNotifications(adminPayloads);
-
   return {
     error,
     notifiedAdminCount: error ? 0 : adminPayloads.length,
