@@ -17,6 +17,7 @@ type Notification = {
   type: string;
   target_type: string;
   target_id: string | null;
+  room_id: string | null;
   message: string;
   read_at: string | null;
   created_at: string;
@@ -57,7 +58,10 @@ const FILTERS: { value: InboxFilter; label: string }[] = [
   { value: "system", label: "System" },
 ];
 
-function hasAdvancedNotificationAccess(entitlement: AiEntitlement, isAdmin: boolean) {
+function hasAdvancedNotificationAccess(
+  entitlement: AiEntitlement,
+  isAdmin: boolean
+) {
   return (
     isAdmin ||
     (entitlement?.ai_assisted_enabled === true && entitlement.tier === "premium")
@@ -73,14 +77,13 @@ function getCategory(notification: Notification): Category {
     return "messages";
   }
 
-  if (notification.type === "follow") {
-    return "follows";
-  }
+  if (notification.type === "follow") return "follows";
 
   if (
     notification.type === "reply" ||
     notification.type === "mention" ||
-    notification.type === "followed_reply"
+    notification.type === "followed_reply" ||
+    notification.type === "room_reply"
   ) {
     return "replies";
   }
@@ -114,7 +117,9 @@ function getNotificationMessage(
   profiles: Record<string, Profile>
 ) {
   if (notification.type === "follow") {
-    const actor = notification.actor_id ? profiles[notification.actor_id] : undefined;
+    const actor = notification.actor_id
+      ? profiles[notification.actor_id]
+      : undefined;
     return `${getProfileName(actor)} followed you.`;
   }
 
@@ -125,6 +130,13 @@ function getNotificationHref(
   notification: Notification,
   profiles: Record<string, Profile>
 ) {
+  if (notification.room_id) {
+    if (notification.target_type === "room_moderation_item") {
+      return `/rooms/${encodeURIComponent(notification.room_id)}/moderation`;
+    }
+    return `/rooms/${encodeURIComponent(notification.room_id)}`;
+  }
+
   if (notification.target_type === "discussion" && notification.target_id) {
     return `/discussions/${notification.target_id}`;
   }
@@ -133,22 +145,31 @@ function getNotificationHref(
     return `/messages?conversation=${encodeURIComponent(notification.target_id)}`;
   }
 
-  if (notification.target_type === "identity_verification") {
-    return "/profile";
-  }
+  if (notification.target_type === "identity_verification") return "/profile";
 
   if (notification.target_type === "profile") {
-    const actor = notification.actor_id ? profiles[notification.actor_id] : undefined;
-    return actor?.username ? `/u/${encodeURIComponent(actor.username)}` : "/people";
+    const actor = notification.actor_id
+      ? profiles[notification.actor_id]
+      : undefined;
+    return actor?.username
+      ? `/u/${encodeURIComponent(actor.username)}`
+      : "/people";
   }
 
   return null;
 }
 
 function getActionLabel(notification: Notification) {
+  if (notification.room_id) {
+    return notification.target_type === "room_moderation_item"
+      ? "Open moderation"
+      : "Open Room";
+  }
   if (notification.target_type === "discussion") return "Open discussion";
   if (notification.target_type === "conversation") return "Open message";
-  if (notification.target_type === "identity_verification") return "Open verification";
+  if (notification.target_type === "identity_verification") {
+    return "Open verification";
+  }
   if (notification.target_type === "profile") return "Open profile";
   return "Open source";
 }
@@ -179,7 +200,10 @@ export default function NotificationsV2Client() {
   const [notice, setNotice] = useState("");
   const loadingRef = useRef(true);
 
-  const canUseAdvancedControls = hasAdvancedNotificationAccess(entitlement, isAdmin);
+  const canUseAdvancedControls = hasAdvancedNotificationAccess(
+    entitlement,
+    isAdmin
+  );
 
   useEffect(() => {
     loadingRef.current = loading;
@@ -188,7 +212,9 @@ export default function NotificationsV2Client() {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       if (!loadingRef.current) return;
-      setNotice("Signal Inbox took too long to load. Refresh if the list looks incomplete.");
+      setNotice(
+        "Signal Inbox took too long to load. Refresh if the list looks incomplete."
+      );
       setLoading(false);
     }, 10000);
 
@@ -213,7 +239,9 @@ export default function NotificationsV2Client() {
 
       if (!alive) return;
       setProfiles(
-        Object.fromEntries(((data ?? []) as Profile[]).map((profile) => [profile.id, profile]))
+        Object.fromEntries(
+          ((data ?? []) as Profile[]).map((profile) => [profile.id, profile])
+        )
       );
     }
 
@@ -230,27 +258,36 @@ export default function NotificationsV2Client() {
         if (!alive) return;
         setCurrentUserId(user.id);
 
-        const [profileResult, entitlementResult, blockedIds, notificationResult] =
-          await Promise.all([
-            supabase
-              .from("profiles")
-              .select("id, username, full_name, avatar_url, is_admin")
-              .eq("id", user.id)
-              .maybeSingle(),
-            supabase
-              .from("user_ai_entitlements")
-              .select("tier, ai_assisted_enabled, monthly_summary_limit")
-              .eq("user_id", user.id)
-              .maybeSingle(),
-            getBlockedRelationshipUserIds(supabase, user.id),
-            supabase
-              .from("notifications")
-              .select("id, actor_id, type, target_type, target_id, message, read_at, created_at")
-              .eq("user_id", user.id)
-              .order("created_at", { ascending: false }),
-          ]);
+        const [
+          profileResult,
+          entitlementResult,
+          blockedIds,
+          notificationResult,
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url, is_admin")
+            .eq("id", user.id)
+            .maybeSingle(),
+          supabase
+            .from("user_ai_entitlements")
+            .select("tier, ai_assisted_enabled, monthly_summary_limit")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+          getBlockedRelationshipUserIds(supabase, user.id),
+          supabase
+            .from("notifications")
+            .select(
+              "id, actor_id, type, target_type, target_id, room_id, message, read_at, created_at"
+            )
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false }),
+        ]);
 
-        const firstError = profileResult.error || entitlementResult.error || notificationResult.error;
+        const firstError =
+          profileResult.error ||
+          entitlementResult.error ||
+          notificationResult.error;
         if (firstError) throw firstError;
 
         const visible = filterBlockedActorNotifications(
@@ -298,7 +335,9 @@ export default function NotificationsV2Client() {
     };
   }, []);
 
-  const unreadCount = notifications.filter((notification) => !notification.read_at).length;
+  const unreadCount = notifications.filter(
+    (notification) => !notification.read_at
+  ).length;
   const readCount = notifications.length - unreadCount;
 
   const categoryCounts = useMemo(() => {
@@ -320,18 +359,24 @@ export default function NotificationsV2Client() {
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
     const activeFilter =
-      canUseAdvancedControls || filter === "all" || filter === "unread" ? filter : "all";
+      canUseAdvancedControls || filter === "all" || filter === "unread"
+        ? filter
+        : "all";
     const activeSort = canUseAdvancedControls ? sort : "newest";
 
     return notifications
       .filter((notification) => {
         if (activeFilter === "unread") return !notification.read_at;
-        if (activeFilter !== "all") return getCategory(notification) === activeFilter;
+        if (activeFilter !== "all") {
+          return getCategory(notification) === activeFilter;
+        }
         return true;
       })
       .filter((notification) => {
         if (!needle) return true;
-        const actor = notification.actor_id ? profiles[notification.actor_id] : undefined;
+        const actor = notification.actor_id
+          ? profiles[notification.actor_id]
+          : undefined;
         return [
           getNotificationMessage(notification, profiles),
           getProfileName(actor),
@@ -344,7 +389,8 @@ export default function NotificationsV2Client() {
           .includes(needle);
       })
       .sort((a, b) => {
-        const delta = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        const delta =
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         return activeSort === "newest" ? delta : -delta;
       });
   }, [canUseAdvancedControls, filter, notifications, profiles, query, sort]);
@@ -372,7 +418,9 @@ export default function NotificationsV2Client() {
 
     setNotifications((current) =>
       current.map((notification) =>
-        ids.includes(notification.id) ? { ...notification, read_at: readAt } : notification
+        ids.includes(notification.id)
+          ? { ...notification, read_at: readAt }
+          : notification
       )
     );
     window.dispatchEvent(new Event("loombus:notifications-changed"));
@@ -453,13 +501,17 @@ export default function NotificationsV2Client() {
       return;
     }
 
-    setNotifications((current) => current.filter((notification) => !ids.includes(notification.id)));
+    setNotifications((current) =>
+      current.filter((notification) => !ids.includes(notification.id))
+    );
     setNotice("Read notifications cleared.");
     window.dispatchEvent(new Event("loombus:notifications-changed"));
   }
 
   async function openNotification(notification: Notification, href: string) {
-    if (!notification.read_at) await markNotificationIdsRead([notification.id]);
+    if (!notification.read_at) {
+      await markNotificationIdsRead([notification.id]);
+    }
     window.location.href = href;
   }
 
@@ -488,8 +540,8 @@ export default function NotificationsV2Client() {
             <p className="notifications-v2-eyebrow">Signal Inbox</p>
             <h1>Attention without the noise.</h1>
             <p>
-              Review replies, discussions, follows, messages, and account updates connected
-              to you, then return to the Signal that matters.
+              Review replies, discussions, follows, messages, Room activity, and account updates
+              connected to you, then return to the Signal that matters.
             </p>
           </div>
 
@@ -498,13 +550,22 @@ export default function NotificationsV2Client() {
             <div>
               <span>Member inbox</span>
               <strong>{getProfileDisplayName(currentProfile)}</strong>
-              <small>{unreadCount === 0 ? "All caught up" : `${unreadCount} unread`}</small>
+              <small>
+                {unreadCount === 0 ? "All caught up" : `${unreadCount} unread`}
+              </small>
             </div>
           </div>
         </header>
 
-        <section className="notifications-v2-actions" aria-label="Signal Inbox actions">
-          <button type="button" onClick={markAllRead} disabled={bulkWorking || unreadCount === 0}>
+        <section
+          className="notifications-v2-actions"
+          aria-label="Signal Inbox actions"
+        >
+          <button
+            type="button"
+            onClick={markAllRead}
+            disabled={bulkWorking || unreadCount === 0}
+          >
             Mark all read
           </button>
           <button
@@ -518,14 +579,33 @@ export default function NotificationsV2Client() {
           <Link href="/settings">Notification settings</Link>
         </section>
 
-        <section className="notifications-v2-metrics" aria-label="Signal Inbox overview">
-          <article><span>Total</span><strong>{notifications.length}</strong></article>
-          <article className="is-accent"><span>Unread</span><strong>{unreadCount}</strong></article>
-          <article><span>Reply signal</span><strong>{categoryCounts.replies}</strong></article>
-          <article><span>Messages</span><strong>{categoryCounts.messages}</strong></article>
+        <section
+          className="notifications-v2-metrics"
+          aria-label="Signal Inbox overview"
+        >
+          <article>
+            <span>Total</span>
+            <strong>{notifications.length}</strong>
+          </article>
+          <article className="is-accent">
+            <span>Unread</span>
+            <strong>{unreadCount}</strong>
+          </article>
+          <article>
+            <span>Reply signal</span>
+            <strong>{categoryCounts.replies}</strong>
+          </article>
+          <article>
+            <span>Messages</span>
+            <strong>{categoryCounts.messages}</strong>
+          </article>
         </section>
 
-        {notice && <div className="notifications-v2-notice" role="status">{notice}</div>}
+        {notice && (
+          <div className="notifications-v2-notice" role="status">
+            {notice}
+          </div>
+        )}
 
         {notifications.length > 0 && (
           <section className="notifications-v2-controls">
@@ -543,7 +623,9 @@ export default function NotificationsV2Client() {
                 <span>Sort</span>
                 <select
                   value={sort}
-                  onChange={(event) => setSort(event.target.value as SortMode)}
+                  onChange={(event) =>
+                    setSort(event.target.value as SortMode)
+                  }
                   disabled={!canUseAdvancedControls}
                 >
                   <option value="newest">Newest first</option>
@@ -552,9 +634,13 @@ export default function NotificationsV2Client() {
               </label>
             </div>
 
-            <div className="notifications-v2-filter-rail" aria-label="Signal Inbox filters">
+            <div
+              className="notifications-v2-filter-rail"
+              aria-label="Signal Inbox filters"
+            >
               {FILTERS.map((option) => {
-                const advanced = option.value !== "all" && option.value !== "unread";
+                const advanced =
+                  option.value !== "all" && option.value !== "unread";
                 const disabled = advanced && !canUseAdvancedControls;
                 return (
                   <button
@@ -573,12 +659,18 @@ export default function NotificationsV2Client() {
             </div>
 
             <div className="notifications-v2-control-summary">
-              <p>Showing {results.length} of {notifications.length} notifications</p>
+              <p>
+                Showing {results.length} of {notifications.length} notifications
+              </p>
               {!canUseAdvancedControls && (
-                <Link href="/premium">Unlock category filters and oldest-first sorting</Link>
+                <Link href="/premium">
+                  Unlock category filters and oldest-first sorting
+                </Link>
               )}
               {(query || filter !== "all" || sort !== "newest") && (
-                <button type="button" onClick={resetView}>Reset view</button>
+                <button type="button" onClick={resetView}>
+                  Reset view
+                </button>
               )}
             </div>
           </section>
@@ -589,11 +681,13 @@ export default function NotificationsV2Client() {
             <p>Signal Inbox</p>
             <h2>You are all caught up.</h2>
             <span>
-              New replies, follows, discussion updates, messages, and account notices will
-              appear here when they need your attention.
+              New replies, follows, discussion updates, messages, Room activity, and account
+              notices will appear here when they need your attention.
             </span>
             <div>
-              <Link className="is-primary" href="/discussions">Browse discussions</Link>
+              <Link className="is-primary" href="/discussions">
+                Browse discussions
+              </Link>
               <Link href="/following">Open following feed</Link>
               <Link href="/profile">Review profile</Link>
             </div>
@@ -603,12 +697,16 @@ export default function NotificationsV2Client() {
             <p>Filtered view</p>
             <h2>No notifications match this view.</h2>
             <span>Broaden the search or reset the active filters.</span>
-            <button type="button" onClick={resetView}>Reset Signal Inbox</button>
+            <button type="button" onClick={resetView}>
+              Reset Signal Inbox
+            </button>
           </section>
         ) : (
           <section className="notifications-v2-list" aria-label="Notifications">
             {results.map((notification) => {
-              const actor = notification.actor_id ? profiles[notification.actor_id] : undefined;
+              const actor = notification.actor_id
+                ? profiles[notification.actor_id]
+                : undefined;
               const href = getNotificationHref(notification, profiles);
               const category = getCategory(notification);
               const unread = !notification.read_at;
@@ -616,14 +714,20 @@ export default function NotificationsV2Client() {
               return (
                 <article
                   key={notification.id}
-                  className={unread ? "notifications-v2-card is-unread" : "notifications-v2-card"}
+                  className={
+                    unread
+                      ? "notifications-v2-card is-unread"
+                      : "notifications-v2-card"
+                  }
                 >
                   <div className="notifications-v2-card-head">
                     <div className="notifications-v2-card-labels">
                       {unread && <span className="is-new">New</span>}
                       <span>{getCategoryLabel(category)}</span>
                     </div>
-                    <time dateTime={notification.created_at}>{formatDate(notification.created_at)}</time>
+                    <time dateTime={notification.created_at}>
+                      {formatDate(notification.created_at)}
+                    </time>
                   </div>
 
                   <div className="notifications-v2-card-body">
@@ -636,7 +740,10 @@ export default function NotificationsV2Client() {
 
                   <div className="notifications-v2-card-actions">
                     {href && (
-                      <button type="button" onClick={() => openNotification(notification, href)}>
+                      <button
+                        type="button"
+                        onClick={() => openNotification(notification, href)}
+                      >
                         {getActionLabel(notification)}
                       </button>
                     )}
