@@ -16,12 +16,51 @@ alter table public.room_moderation_queue
   add column if not exists reporter_notified_at timestamptz;
 
 update public.room_moderation_queue
+set category = 'other'
+where category is null;
+
+alter table public.room_moderation_queue
+  alter column category set default 'other',
+  alter column category set not null;
+
+update public.room_moderation_queue
 set target_type = 'other', target_id = null
 where target_type <> 'other' and target_id is null;
 
 update public.room_moderation_queue
 set target_id = null
 where target_type = 'other' and target_id is not null;
+
+update public.room_moderation_queue
+set resolution_note = left(resolution_note, 2000)
+where resolution_note is not null and char_length(resolution_note) > 2000;
+
+with ranked_open_reports as (
+  select
+    id,
+    row_number() over (
+      partition by room_id, target_type, target_id, reported_by
+      order by created_at asc, id asc
+    ) as duplicate_rank
+  from public.room_moderation_queue
+  where status in ('open', 'reviewing')
+    and target_id is not null
+    and reported_by is not null
+)
+update public.room_moderation_queue as queue
+set
+  status = 'dismissed',
+  resolution_note = coalesce(
+    nullif(btrim(queue.resolution_note), ''),
+    'Superseded by an earlier open report from the same reporter for this Room item.'
+  ),
+  resolution_action = 'none',
+  resolved_at = coalesce(queue.resolved_at, now()),
+  last_action_at = now(),
+  updated_at = now()
+from ranked_open_reports
+where queue.id = ranked_open_reports.id
+  and ranked_open_reports.duplicate_rank > 1;
 
 alter table public.room_moderation_queue
   drop constraint if exists room_moderation_queue_target_type_check;
