@@ -4,10 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 function getSupabaseServiceClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return null;
-  }
+  if (!supabaseUrl || !serviceRoleKey) return null;
 
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: {
@@ -32,14 +29,12 @@ function isValidUuid(value: unknown): value is string {
 
 export async function POST(request: NextRequest) {
   const supabase = getSupabaseServiceClient();
-
   if (!supabase) {
     return jsonError("Unsubscribe service is not configured.", 503);
   }
 
   const body = await request.json().catch(() => null);
   const token = body?.token;
-
   if (!isValidUuid(token)) {
     return jsonError("Invalid unsubscribe link.", 400);
   }
@@ -49,7 +44,6 @@ export async function POST(request: NextRequest) {
     .select("user_id, email_digest_enabled")
     .eq("email_digest_unsubscribe_token", token)
     .maybeSingle();
-
   if (accountLookupError) {
     return jsonError("Unable to verify unsubscribe link.", 500);
   }
@@ -58,6 +52,7 @@ export async function POST(request: NextRequest) {
     if (accountPreference.email_digest_enabled === false) {
       return NextResponse.json({
         ok: true,
+        scope: "account",
         unsubscribed: true,
         alreadyUnsubscribed: true,
         message: "Account email digests were already turned off.",
@@ -71,13 +66,13 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq("email_digest_unsubscribe_token", token);
-
     if (updateError) {
       return jsonError("Unable to unsubscribe from email digests.", 500);
     }
 
     return NextResponse.json({
       ok: true,
+      scope: "account",
       unsubscribed: true,
       alreadyUnsubscribed: false,
       message: "Account email digests are now turned off.",
@@ -89,11 +84,9 @@ export async function POST(request: NextRequest) {
     .select("room_id, user_id, email_digest_enabled")
     .eq("email_digest_unsubscribe_token", token)
     .maybeSingle();
-
   if (roomLookupError) {
     return jsonError("Unable to verify unsubscribe link.", 500);
   }
-
   if (!roomPreference?.user_id || !roomPreference.room_id) {
     return jsonError("Unsubscribe link was not found.", 404);
   }
@@ -101,6 +94,8 @@ export async function POST(request: NextRequest) {
   if (roomPreference.email_digest_enabled === false) {
     return NextResponse.json({
       ok: true,
+      scope: "room",
+      roomId: roomPreference.room_id,
       unsubscribed: true,
       alreadyUnsubscribed: true,
       message: "This Room email digest was already turned off.",
@@ -114,13 +109,14 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     })
     .eq("email_digest_unsubscribe_token", token);
-
   if (roomUpdateError) {
     return jsonError("Unable to unsubscribe from this Room digest.", 500);
   }
 
   return NextResponse.json({
     ok: true,
+    scope: "room",
+    roomId: roomPreference.room_id,
     unsubscribed: true,
     alreadyUnsubscribed: false,
     message: "This Room email digest is now turned off.",
