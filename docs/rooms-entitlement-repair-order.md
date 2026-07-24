@@ -161,3 +161,30 @@ Room models share the same private infrastructure, but they do not present one g
 
 Model defaults are recommendations applied when a setting has not been saved yet. Owners may change optional settings. Required behaviors remain server-enforced and cannot be disabled. Request categories, module labels, module descriptions, notifications, and builder summaries must resolve from the same shared model profile contract.
 
+## Room billing management contract
+
+Room billing is owner-only and must remain separate from ordinary Room administration.
+
+- the Room owner may view the active plan, subscription state, renewal date, usage, and invoices
+- payment-method changes and hosted invoice management use the Stripe Customer Portal
+- Free Room upgrades create a Stripe subscription for the existing Room rather than provisioning a duplicate Room
+- paid plan changes occur through authenticated server actions and update Stripe subscription metadata
+- paid downgrades are rejected when active membership or stored files exceed the target plan allowance
+- cancellation to Free is rejected until the Room satisfies Free membership and storage limits
+- cancellation is scheduled for the end of the paid period and may be resumed before that date
+- inactive paid subscriptions resolve to effective Free entitlements without deleting Room content or choosing members for removal
+- every upgrade, plan change, cancellation schedule, and resumption is written to the audit log
+- no client-provided Stripe customer, subscription, item, or price identifier is trusted
+
+## Room billing production verification
+
+1. Open Billing as the Room owner and confirm a non-owner receives an authorization error.
+2. Upgrade an existing Free Room and confirm checkout returns to the same Room id.
+3. Change between paid plans and confirm the plan, member limit, renewal date, and Stripe invoice state refresh.
+4. Attempt a downgrade below active-member capacity and confirm the server rejects it.
+5. Attempt a downgrade below stored-file capacity and confirm the server rejects it.
+6. Open the Stripe portal, update the payment method, and confirm recent invoices remain accessible.
+7. Schedule cancellation and confirm paid access remains until the period end.
+8. Resume before period end and confirm the cancellation flag clears.
+9. Confirm cancellation to Free is blocked while the Room exceeds Free member or storage limits.
+10. After a subscription becomes inactive, confirm the Room uses effective Free entitlements without deleting content.
