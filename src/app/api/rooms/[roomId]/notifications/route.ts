@@ -216,8 +216,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       source.emailDigestFrequency === "daily" ? "daily" : "weekly",
   };
 
-  const upsert = await authorized.service
-    .from("room_notification_preferences")
+  const upsert = await (
+    authorized.service.from("room_notification_preferences") as any
+  )
     .upsert(
       {
         room_id: roomId,
