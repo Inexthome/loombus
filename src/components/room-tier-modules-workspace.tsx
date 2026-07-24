@@ -1308,13 +1308,24 @@ function RecordCard({
                 <CheckCircle2 aria-hidden="true" /> Complete
               </button>
               {canManage ? (
-                <button
-                  type="button"
-                  className="rooms-live-secondary-action"
-                  onClick={() => void onUpdate({ status: "declined" })}
-                >
-                  <Trash2 aria-hidden="true" /> Decline
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="rooms-live-secondary-action"
+                    onClick={() => void onUpdate({ status: "declined" })}
+                  >
+                    <Trash2 aria-hidden="true" /> Decline
+                  </button>
+                  {record.createdBy !== currentUserId ? (
+                    <button
+                      type="button"
+                      className="rooms-live-secondary-action"
+                      onClick={() => void onUpdate({ status: "cancelled" })}
+                    >
+                      <Trash2 aria-hidden="true" /> Cancel
+                    </button>
+                  ) : null}
+                </>
               ) : null}
             </div>
           ) : null}

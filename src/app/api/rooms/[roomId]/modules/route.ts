@@ -964,18 +964,23 @@ export async function POST(request: NextRequest, context: RouteContext) {
         if (access.canManage && !managerStatuses.includes(status)) {
           return jsonError("Choose a valid request status.", 400);
         }
-        if (!access.canManage && assignedRequest && !assigneeStatuses.includes(status)) {
-          return jsonError("The assignee cannot apply that request status.", 403);
-        }
         if (
           !access.canManage &&
-          !assignedRequest &&
           requestAuthor &&
-          status !== "cancelled"
+          status === "cancelled"
         ) {
+          updates.status = status;
+        } else if (
+          !access.canManage &&
+          assignedRequest &&
+          !assigneeStatuses.includes(status)
+        ) {
+          return jsonError("The assignee cannot apply that request status.", 403);
+        } else if (!access.canManage && requestAuthor && !assignedRequest) {
           return jsonError("Request authors may only cancel their request.", 403);
+        } else {
+          updates.status = status;
         }
-        updates.status = status;
       } else if (status) {
         updates.status = status;
       }

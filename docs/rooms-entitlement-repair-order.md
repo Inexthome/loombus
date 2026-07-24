@@ -132,7 +132,7 @@ Membership admission and operational requests are separate product systems.
 - The paid `Requests` module never reads or mutates `room_applications`.
 - Starter-or-higher Room members may submit operational requests backed by `room_module_records` with the `request` module key.
 - Operational requests record the requester, category, priority, assignment, target date, and workflow status.
-- Room owners and administrators may assign, reprioritize, complete, decline, or cancel requests.
+- Room owners and administrators may assign requests and control their validated workflow status.
 - Assigned members may move their requests through open, in-progress, waiting, and completed states.
 - Request authors may cancel their own still-open requests.
 - New operational requests notify active Room managers, and request updates notify active requesters and assignees.
