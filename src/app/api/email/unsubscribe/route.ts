@@ -44,45 +44,85 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid unsubscribe link.", 400);
   }
 
-  const { data: preference, error: lookupError } = await supabase
+  const { data: accountPreference, error: accountLookupError } = await supabase
     .from("notification_preferences")
     .select("user_id, email_digest_enabled")
     .eq("email_digest_unsubscribe_token", token)
     .maybeSingle();
 
-  if (lookupError) {
+  if (accountLookupError) {
     return jsonError("Unable to verify unsubscribe link.", 500);
   }
 
-  if (!preference?.user_id) {
+  if (accountPreference?.user_id) {
+    if (accountPreference.email_digest_enabled === false) {
+      return NextResponse.json({
+        ok: true,
+        unsubscribed: true,
+        alreadyUnsubscribed: true,
+        message: "Account email digests were already turned off.",
+      });
+    }
+
+    const { error: updateError } = await supabase
+      .from("notification_preferences")
+      .update({
+        email_digest_enabled: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("email_digest_unsubscribe_token", token);
+
+    if (updateError) {
+      return jsonError("Unable to unsubscribe from email digests.", 500);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      unsubscribed: true,
+      alreadyUnsubscribed: false,
+      message: "Account email digests are now turned off.",
+    });
+  }
+
+  const { data: roomPreference, error: roomLookupError } = await supabase
+    .from("room_notification_preferences")
+    .select("room_id, user_id, email_digest_enabled")
+    .eq("email_digest_unsubscribe_token", token)
+    .maybeSingle();
+
+  if (roomLookupError) {
+    return jsonError("Unable to verify unsubscribe link.", 500);
+  }
+
+  if (!roomPreference?.user_id || !roomPreference.room_id) {
     return jsonError("Unsubscribe link was not found.", 404);
   }
 
-  if (preference.email_digest_enabled === false) {
+  if (roomPreference.email_digest_enabled === false) {
     return NextResponse.json({
       ok: true,
       unsubscribed: true,
       alreadyUnsubscribed: true,
-      message: "Email digests were already turned off.",
+      message: "This Room email digest was already turned off.",
     });
   }
 
-  const { error: updateError } = await supabase
-    .from("notification_preferences")
+  const { error: roomUpdateError } = await supabase
+    .from("room_notification_preferences")
     .update({
       email_digest_enabled: false,
       updated_at: new Date().toISOString(),
     })
     .eq("email_digest_unsubscribe_token", token);
 
-  if (updateError) {
-    return jsonError("Unable to unsubscribe from email digests.", 500);
+  if (roomUpdateError) {
+    return jsonError("Unable to unsubscribe from this Room digest.", 500);
   }
 
   return NextResponse.json({
     ok: true,
     unsubscribed: true,
     alreadyUnsubscribed: false,
-    message: "Email digests are now turned off.",
+    message: "This Room email digest is now turned off.",
   });
 }
