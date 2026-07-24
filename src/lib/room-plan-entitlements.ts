@@ -39,6 +39,7 @@ export type RoomModuleDefinition = {
   minimumRole: "member" | "manager" | "owner";
   dataModule?:
     | "resource"
+    | "request"
     | "task"
     | "poll"
     | "directory"
@@ -85,8 +86,10 @@ export const ROOM_MODULE_DEFINITIONS: Record<
   requests: {
     id: "requests",
     label: "Requests",
-    description: "Structured Room requests and manager decisions, separate from membership admission.",
-    minimumRole: "manager",
+    description:
+      "Operational requests submitted by Room members, with assignment, priority, status, and manager decisions.",
+    minimumRole: "member",
+    dataModule: "request",
   },
   resources: {
     id: "resources",

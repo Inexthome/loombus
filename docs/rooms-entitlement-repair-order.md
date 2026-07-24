@@ -123,3 +123,16 @@ Any future conversion away from Customer Support must use an explicit reviewed m
 ## Validation rules
 
 Plan and module key validation must use an own-property check or a fixed Set. JavaScript's `in` operator must not be used for authorization or entitlement key validation because it accepts inherited prototype properties.
+
+## Admission and operational requests contract
+
+Membership admission and operational requests are separate product systems.
+
+- `Invites / Join Requests` owns invitation creation, revocation, pending membership applications, approval, rejection, capacity checks, and admission notifications on every Room plan.
+- The paid `Requests` module never reads or mutates `room_applications`.
+- Starter-or-higher Room members may submit operational requests backed by `room_module_records` with the `request` module key.
+- Operational requests record the requester, category, priority, assignment, target date, and workflow status.
+- Room owners and administrators may assign, reprioritize, complete, decline, or cancel requests.
+- Assigned members may move their requests through open, in-progress, waiting, and completed states.
+- Request authors may cancel their own still-open requests.
+- New operational requests notify active Room managers, and request updates notify active requesters and assignees.

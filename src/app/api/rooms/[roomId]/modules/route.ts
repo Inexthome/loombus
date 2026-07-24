@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
+import { createNotifications } from "@/lib/notifications";
 import {
   getRoomRequiredBehaviors,
   isCustomerSupportRoomType,
@@ -30,6 +31,7 @@ const AUDIT_LIMIT = 150;
 const MEMBER_PAGE_SIZE = 50;
 const DATA_MODULES = new Set([
   "resource",
+  "request",
   "task",
   "poll",
   "directory",
@@ -167,6 +169,115 @@ async function authorize(request: NextRequest): Promise<AuthorizedContext> {
 
 async function loadAccess(service: ServiceClient, roomId: string, userId: string) {
   return getRoomAccess(service, roomId, userId).catch(() => null);
+}
+
+function membershipRowIsActive(row: RoomRow) {
+  const status = asString(row.status).toLowerCase();
+  if (["blocked", "removed", "inactive"].includes(status)) return false;
+  const suspendedUntil = safeIsoDate(row.suspended_until);
+  return !suspendedUntil || new Date(suspendedUntil).getTime() <= Date.now();
+}
+
+async function activeRoomMemberIds(
+  service: ServiceClient,
+  access: RoomAccess,
+  candidateIds: string[]
+) {
+  const candidates = [...new Set(candidateIds.filter(Boolean))];
+  if (candidates.length === 0) return [];
+
+  const result = await service
+    .from("room_members")
+    .select("user_id, status, suspended_until")
+    .eq("room_id", access.room.id)
+    .in("user_id", candidates);
+  if (result.error) throw new Error(result.error.message);
+
+  const active = new Set(
+    ((result.data ?? []) as RoomRow[])
+      .filter(membershipRowIsActive)
+      .map((row) => asString(row.user_id))
+      .filter(Boolean)
+  );
+  if (candidates.includes(access.room.ownerId)) active.add(access.room.ownerId);
+  if (candidates.includes(access.room.createdBy)) active.add(access.room.createdBy);
+  return [...active];
+}
+
+async function activeManagerIds(service: ServiceClient, access: RoomAccess) {
+  const result = await service
+    .from("room_members")
+    .select("user_id, role, status, suspended_until")
+    .eq("room_id", access.room.id)
+    .in("role", ["owner", "admin", "administrator"])
+    .not("status", "in", "(blocked,removed,inactive)")
+    .limit(500);
+  if (result.error) throw new Error(result.error.message);
+
+  return [
+    ...new Set(
+      [
+        access.room.ownerId,
+        access.room.createdBy,
+        ...((result.data ?? []) as RoomRow[])
+          .filter(membershipRowIsActive)
+          .map((row) => asString(row.user_id)),
+      ].filter(Boolean)
+    ),
+  ];
+}
+
+async function notifyOperationalRequestCreated(
+  service: ServiceClient,
+  access: RoomAccess,
+  record: ReturnType<typeof serializeRecord>,
+  actorId: string
+) {
+  const managers = await activeManagerIds(service, access).catch(() => []);
+  const recipients = managers.filter((userId) => userId !== actorId);
+  if (recipients.length === 0) return;
+  const { error } = await createNotifications(
+    recipients.map((userId) => ({
+      user_id: userId,
+      actor_id: actorId,
+      type: "room_operational_request",
+      target_type: "room_module_record",
+      target_id: record.id,
+      message: `New request in ${access.room.name}: ${record.title}`,
+    }))
+  );
+  if (error) console.error("Room request notifications failed:", error.message);
+}
+
+async function notifyOperationalRequestUpdated(
+  service: ServiceClient,
+  access: RoomAccess,
+  record: ReturnType<typeof serializeRecord>,
+  actorId: string
+) {
+  const metadata = asObject(record.metadata);
+  const candidates = [record.createdBy, asString(metadata.assigneeId)].filter(
+    (userId) => userId && userId !== actorId
+  );
+  const recipients = await activeRoomMemberIds(
+    service,
+    access,
+    candidates
+  ).catch(() => []);
+  if (recipients.length === 0) return;
+  const { error } = await createNotifications(
+    recipients.map((userId) => ({
+      user_id: userId,
+      actor_id: actorId,
+      type: "room_operational_request_update",
+      target_type: "room_module_record",
+      target_id: record.id,
+      message: `Request updated in ${access.room.name}: ${record.title} (${record.status.replaceAll("_", " ")})`,
+    }))
+  );
+  if (error) {
+    console.error("Room request update notifications failed:", error.message);
+  }
 }
 
 function roleCanOpenModule(access: RoomAccess, moduleKey: RoomModuleKey) {
@@ -334,7 +445,7 @@ async function loadRecords(
   });
 }
 
-async function loadRequests(service: ServiceClient, roomId: string) {
+async function loadJoinRequests(service: ServiceClient, roomId: string) {
   const result = await service
     .from("room_applications")
     .select("*")
@@ -414,8 +525,16 @@ async function loadInvites(service: ServiceClient, roomId: string) {
 }
 
 async function operationalSummary(service: ServiceClient, roomId: string) {
-  const [posts, events, announcements, members, requests, records, resources] =
-    await Promise.all([
+  const [
+    posts,
+    events,
+    announcements,
+    members,
+    joinRequests,
+    requests,
+    records,
+    resources,
+  ] = await Promise.all([
       service
         .from("room_posts")
         .select("id", { count: "exact", head: true })
@@ -443,6 +562,12 @@ async function operationalSummary(service: ServiceClient, roomId: string) {
         .from("room_module_records")
         .select("id", { count: "exact", head: true })
         .eq("room_id", roomId)
+        .eq("module_key", "request")
+        .is("archived_at", null),
+      service
+        .from("room_module_records")
+        .select("id", { count: "exact", head: true })
+        .eq("room_id", roomId)
         .is("archived_at", null),
       service
         .from("room_resources")
@@ -454,6 +579,7 @@ async function operationalSummary(service: ServiceClient, roomId: string) {
     events: events.error ? null : events.count ?? 0,
     announcements: announcements.error ? null : announcements.count ?? 0,
     members: members.error ? null : members.count ?? 0,
+    joinRequests: joinRequests.error ? null : joinRequests.count ?? 0,
     requests: requests.error ? null : requests.count ?? 0,
     records: records.error ? null : records.count ?? 0,
     resources: resources.error ? null : resources.count ?? 0,
@@ -520,6 +646,17 @@ function buildMetadata(moduleKey: RoomModuleKey, raw: unknown) {
     const url = safeUrl(source.url);
     if (!url) throw new Error("Enter a valid HTTP or HTTPS resource link.");
     return { url, category: cleanText(source.category, 80) || "Reference" };
+  }
+  if (moduleKey === "requests") {
+    const priority = asString(source.priority);
+    return {
+      category: cleanText(source.category, 100) || "General",
+      priority: ["low", "normal", "high", "urgent"].includes(priority)
+        ? priority
+        : "normal",
+      dueAt: safeIsoDate(source.dueAt),
+      assigneeId: validUuid(source.assigneeId) ? source.assigneeId : null,
+    };
   }
   if (moduleKey === "tasks") {
     return {
@@ -644,8 +781,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
         userId,
         access
       );
-    } else if (requestedModule === "requests") {
-      data = await loadRequests(serviceSupabase, roomId);
     } else if (
       ["settings", "advanced-controls", "enterprise-controls"].includes(
         requestedModule
@@ -661,6 +796,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     } else if (requestedModule === "invites") {
       data = {
         invites: await loadInvites(serviceSupabase, roomId),
+        joinRequests: await loadJoinRequests(serviceSupabase, roomId),
         settings: await getSettings(serviceSupabase, roomId, access.room.roomType),
       };
     } else if (requestedModule === "activity") {
@@ -718,13 +854,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   try {
     if (action === "create_record") {
-      if (!access.canManage) {
+      if (!access.canManage && moduleKey !== "requests") {
         return jsonError("Room management access is required.", 403);
       }
       const dataModule = dataModuleFor(moduleKey);
-      if (!dataModule) return jsonError("This module does not accept records.", 400);
+      if (!dataModule || !DATA_MODULES.has(dataModule)) {
+        return jsonError("This module does not accept records.", 400);
+      }
       const title = cleanText(body?.title, 200);
       if (!title) return jsonError("Enter a title.", 400);
+      const metadata = buildMetadata(moduleKey, body?.metadata);
+      if (moduleKey === "requests" && !access.canManage) {
+        metadata.assigneeId = null;
+        metadata.dueAt = null;
+      }
       const inserted = await serviceSupabase
         .from("room_module_records")
         .insert({
@@ -732,8 +875,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
           module_key: dataModule,
           title,
           body: cleanText(body?.body, 12000),
-          status: ["tasks", "polls"].includes(moduleKey) ? "open" : "active",
-          metadata: buildMetadata(moduleKey, body?.metadata),
+          status: ["tasks", "polls", "requests"].includes(moduleKey)
+            ? "open"
+            : "active",
+          metadata,
           created_by: userId,
         })
         .select("*")
@@ -747,6 +892,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
         target_id: record.id,
         metadata: { room_id: roomId, module: moduleKey },
       });
+      if (moduleKey === "requests") {
+        await notifyOperationalRequestCreated(
+          serviceSupabase,
+          access,
+          record,
+          userId
+        );
+      }
       return NextResponse.json(
         { ok: true, record },
         { headers: { "Cache-Control": "private, no-store" } }
@@ -768,15 +921,65 @@ export async function POST(request: NextRequest, context: RouteContext) {
       if (asString(row.module_key) !== dataModuleFor(moduleKey)) {
         return jsonError("Room module mismatch.", 400);
       }
-      const assigned =
+      const existingMetadata = asObject(row.metadata);
+      const assignedTask =
         moduleKey === "tasks" &&
-        asString(asObject(row.metadata).assigneeId) === userId;
-      if (!access.canManage && !assigned) {
+        asString(existingMetadata.assigneeId) === userId;
+      const assignedRequest =
+        moduleKey === "requests" &&
+        asString(existingMetadata.assigneeId) === userId;
+      const requestAuthor =
+        moduleKey === "requests" && asString(row.created_by) === userId;
+      if (
+        !access.canManage &&
+        !assignedTask &&
+        !assignedRequest &&
+        !requestAuthor
+      ) {
         return jsonError("You cannot update this Room record.", 403);
       }
+
       const updates: JsonObject = {};
       const status = cleanText(body?.status, 40);
-      if (status) updates.status = status;
+      if (moduleKey === "requests" && status) {
+        const managerStatuses = [
+          "open",
+          "in_progress",
+          "waiting",
+          "completed",
+          "declined",
+          "cancelled",
+        ];
+        const assigneeStatuses = [
+          "open",
+          "in_progress",
+          "waiting",
+          "completed",
+        ];
+        const currentStatus = asString(row.status) || "open";
+        const terminalStatuses = ["completed", "declined", "cancelled"];
+        if (terminalStatuses.includes(currentStatus) && !access.canManage) {
+          return jsonError("This request is already closed.", 409);
+        }
+        if (access.canManage && !managerStatuses.includes(status)) {
+          return jsonError("Choose a valid request status.", 400);
+        }
+        if (!access.canManage && assignedRequest && !assigneeStatuses.includes(status)) {
+          return jsonError("The assignee cannot apply that request status.", 403);
+        }
+        if (
+          !access.canManage &&
+          !assignedRequest &&
+          requestAuthor &&
+          status !== "cancelled"
+        ) {
+          return jsonError("Request authors may only cancel their request.", 403);
+        }
+        updates.status = status;
+      } else if (status) {
+        updates.status = status;
+      }
+
       if (access.canManage) {
         const title = cleanText(body?.title, 200);
         if (title) updates.title = title;
@@ -787,6 +990,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
           updates.metadata = buildMetadata(moduleKey, body.metadata);
         }
       }
+      if (Object.keys(updates).length === 0) {
+        return jsonError("No Room record changes were provided.", 400);
+      }
       const updated = await serviceSupabase
         .from("room_module_records")
         .update(updates)
@@ -795,6 +1001,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         .select("*")
         .single();
       if (updated.error) throw new Error(updated.error.message);
+      const updatedRecord = serializeRecord(updated.data as RoomRow);
       await logAuditEvent({
         actor_id: userId,
         action: `room.module.${dataModuleFor(moduleKey)}.updated`,
@@ -802,8 +1009,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
         target_id: recordId,
         metadata: { room_id: roomId, module: moduleKey },
       });
+      if (moduleKey === "requests") {
+        await notifyOperationalRequestUpdated(
+          serviceSupabase,
+          access,
+          updatedRecord,
+          userId
+        );
+      }
       return NextResponse.json(
-        { ok: true, record: serializeRecord(updated.data as RoomRow) },
+        { ok: true, record: updatedRecord },
         { headers: { "Cache-Control": "private, no-store" } }
       );
     }
@@ -922,6 +1137,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     if (action === "review_request") {
+      if (moduleKey !== "invites") {
+        return jsonError(
+          "Membership admission is managed through Invites / Join Requests.",
+          400
+        );
+      }
       if (!access.canManage) {
         return jsonError("Room management access is required.", 403);
       }
@@ -937,7 +1158,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         .eq("room_id", roomId)
         .maybeSingle();
       if (requestResult.error || !requestResult.data) {
-        return jsonError("Room request not found.", 404);
+        return jsonError("Room join request not found.", 404);
       }
       const application = requestResult.data as RoomRow;
       const applicantId = asString(application.applicant_id);
@@ -987,6 +1208,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
         target_id: requestId,
         metadata: { room_id: roomId, applicant_id: applicantId, state },
       });
+      const { error: notificationError } = await createNotifications([
+        {
+          user_id: applicantId,
+          actor_id: userId,
+          type: "room_join_request_review",
+          target_type: "room_application",
+          target_id: requestId,
+          message:
+            state === "approved"
+              ? `Your request to join ${access.room.name} was approved.`
+              : `Your request to join ${access.room.name} was declined.`,
+        },
+      ]);
+      if (notificationError) {
+        console.error(
+          "Room join-request review notification failed:",
+          notificationError.message
+        );
+      }
       return NextResponse.json(
         { ok: true },
         { headers: { "Cache-Control": "private, no-store" } }

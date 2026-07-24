@@ -132,7 +132,7 @@ type ModuleRecord = {
   };
 };
 
-type RequestItem = {
+type JoinRequestItem = {
   id: string;
   applicantId: string;
   state: string;
@@ -732,20 +732,6 @@ function ModuleBody({
   if (moduleKey === "files") {
     return <div data-loombus-room-files-host="true" />;
   }
-  if (moduleKey === "requests") {
-    return (
-      <RequestsPanel
-        requests={Array.isArray(data) ? (data as RequestItem[]) : []}
-        onReview={(requestId, state) =>
-          action(
-            "requests",
-            { action: "review_request", requestId, state },
-            state === "approved" ? "Room membership approved." : "Join request declined."
-          )
-        }
-      />
-    );
-  }
   if (
     moduleKey === "settings" ||
     moduleKey === "advanced-controls" ||
@@ -770,6 +756,15 @@ function ModuleBody({
         }
         onRevoke={(inviteId) =>
           action("invites", { action: "revoke_invite", inviteId }, "Invitation revoked.")
+        }
+        onReview={(requestId, state) =>
+          action(
+            "invites",
+            { action: "review_request", requestId, state },
+            state === "approved"
+              ? "Room membership approved."
+              : "Join request declined."
+          )
         }
       />
     );
@@ -831,12 +826,19 @@ function RecordsPanel({
 }) {
   return (
     <div className="room-tier-records-layout">
-      {canManage ? (
+      {canManage || moduleKey === "requests" ? (
         <CreateRecordForm
           moduleKey={moduleKey}
           members={members}
+          canManage={canManage}
           onCreate={(payload) =>
-            action(moduleKey, { action: "create_record", ...payload }, "Room item created.")
+            action(
+              moduleKey,
+              { action: "create_record", ...payload },
+              moduleKey === "requests"
+                ? "Operational request submitted."
+                : "Room item created."
+            )
           }
         />
       ) : null}
@@ -844,8 +846,16 @@ function RecordsPanel({
       {records.length === 0 ? (
         <div className="room-tier-empty-state">
           <FileText aria-hidden="true" />
-          <h3>No items have been added.</h3>
-          <p>Room administrators can add the first item for this module.</p>
+          <h3>
+            {moduleKey === "requests"
+              ? "No operational requests"
+              : "No items have been added."}
+          </h3>
+          <p>
+            {moduleKey === "requests"
+              ? "Room members can submit the first request."
+              : "Room administrators can add the first item for this module."}
+          </p>
         </div>
       ) : (
         <div className="room-tier-record-grid">
@@ -889,10 +899,12 @@ function RecordsPanel({
 function CreateRecordForm({
   moduleKey,
   members,
+  canManage,
   onCreate,
 }: {
   moduleKey: RoomModuleKey;
   members: RoomMember[];
+  canManage: boolean;
   onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
 }) {
   const [title, setTitle] = useState("");
@@ -900,6 +912,7 @@ function CreateRecordForm({
   const [fieldA, setFieldA] = useState("");
   const [fieldB, setFieldB] = useState("");
   const [fieldC, setFieldC] = useState("");
+  const [fieldD, setFieldD] = useState("");
   const [toggle, setToggle] = useState(false);
   const [working, setWorking] = useState(false);
 
@@ -909,6 +922,7 @@ function CreateRecordForm({
     setFieldA("");
     setFieldB("");
     setFieldC("");
+    setFieldD("");
     setToggle(false);
   }, [moduleKey]);
 
@@ -919,6 +933,13 @@ function CreateRecordForm({
     let metadata: Record<string, unknown> = {};
     if (moduleKey === "resources") {
       metadata = { url: fieldA, category: fieldB };
+    } else if (moduleKey === "requests") {
+      metadata = {
+        category: fieldA,
+        assigneeId: canManage ? fieldB || null : null,
+        priority: fieldC || "normal",
+        dueAt: canManage ? fieldD || null : null,
+      };
     } else if (moduleKey === "tasks") {
       metadata = { assigneeId: fieldA || null, dueAt: fieldB || null, priority: fieldC };
     } else if (moduleKey === "polls") {
@@ -947,14 +968,17 @@ function CreateRecordForm({
       setFieldA("");
       setFieldB("");
       setFieldC("");
+      setFieldD("");
       setToggle(false);
     }
     setWorking(false);
   }
 
   const titleLabel =
-    moduleKey === "directory"
-      ? "Contact name"
+    moduleKey === "requests"
+      ? "Request title"
+      : moduleKey === "directory"
+        ? "Contact name"
       : moduleKey === "polls"
         ? "Poll question"
         : moduleKey === "knowledge"
@@ -972,8 +996,16 @@ function CreateRecordForm({
       <div className="room-tier-create-heading">
         <Plus aria-hidden="true" />
         <div>
-          <h3>Add to this module</h3>
-          <p>New entries remain inside the verified Room boundary.</p>
+          <h3>
+            {moduleKey === "requests"
+              ? "Submit an operational request"
+              : "Add to this module"}
+          </h3>
+          <p>
+            {moduleKey === "requests"
+              ? "Track a Room need from submission through completion."
+              : "New entries remain inside the verified Room boundary."}
+          </p>
         </div>
       </div>
       <label>
@@ -981,7 +1013,13 @@ function CreateRecordForm({
         <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={200} required />
       </label>
       <label>
-        <span>{moduleKey === "knowledge" ? "Answer or content" : "Description or notes"}</span>
+        <span>
+          {moduleKey === "requests"
+            ? "Request details"
+            : moduleKey === "knowledge"
+              ? "Answer or content"
+              : "Description or notes"}
+        </span>
         <textarea value={body} onChange={(event) => setBody(event.target.value)} rows={4} maxLength={12000} />
       </label>
 
@@ -989,6 +1027,51 @@ function CreateRecordForm({
         <div className="room-tier-form-grid">
           <label><span>HTTP or HTTPS link</span><input type="url" value={fieldA} onChange={(event) => setFieldA(event.target.value)} required /></label>
           <label><span>Category</span><input value={fieldB} onChange={(event) => setFieldB(event.target.value)} placeholder="Policy, portal, reference" /></label>
+        </div>
+      ) : null}
+
+      {moduleKey === "requests" ? (
+        <div className="room-tier-form-grid">
+          <label>
+            <span>Category</span>
+            <input
+              value={fieldA}
+              onChange={(event) => setFieldA(event.target.value)}
+              placeholder="Maintenance, service, approval, support"
+            />
+          </label>
+          <label>
+            <span>Priority</span>
+            <select value={fieldC} onChange={(event) => setFieldC(event.target.value)}>
+              <option value="normal">Normal</option>
+              <option value="low">Low</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </label>
+          {canManage ? (
+            <>
+              <label>
+                <span>Assignee</span>
+                <select value={fieldB} onChange={(event) => setFieldB(event.target.value)}>
+                  <option value="">Unassigned</option>
+                  {members.map((member) => (
+                    <option key={member.userId} value={member.userId}>
+                      {displayName(member.profile, member.userId)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Target date</span>
+                <input
+                  type="datetime-local"
+                  value={fieldD}
+                  onChange={(event) => setFieldD(event.target.value)}
+                />
+              </label>
+            </>
+          ) : null}
         </div>
       ) : null}
 
@@ -1065,7 +1148,11 @@ function CreateRecordForm({
 
       <button type="submit" className="rooms-live-primary-action" disabled={working || !title.trim()}>
         {working ? <Loader2 aria-hidden="true" className="is-spinning" /> : <Plus aria-hidden="true" />}
-        {working ? "Saving…" : "Add item"}
+        {working
+          ? "Saving…"
+          : moduleKey === "requests"
+            ? "Submit request"
+            : "Add item"}
       </button>
     </form>
   );
@@ -1095,6 +1182,12 @@ function RecordCard({
   const assignee = members.find((member) => member.userId === assigneeId);
   const workflowMemberId = asString(metadata.memberId);
   const workflowMember = members.find((member) => member.userId === workflowMemberId);
+  const requester = members.find((member) => member.userId === record.createdBy);
+  const [requestAssigneeId, setRequestAssigneeId] = useState(assigneeId);
+
+  useEffect(() => {
+    setRequestAssigneeId(assigneeId);
+  }, [assigneeId, record.id]);
 
   if (moduleKey === "polls") {
     return <PollCard record={record} canManage={canManage} onArchive={onArchive} onVote={onResponse} />;
@@ -1134,6 +1227,105 @@ function RecordCard({
           {(canManage || assigneeId === currentUserId) && record.status !== "completed" ? (
             <button type="button" className="rooms-live-secondary-action" onClick={() => void onUpdate({ status: "completed" })}>
               <CheckCircle2 aria-hidden="true" /> Mark complete
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {moduleKey === "requests" ? (
+        <div className="room-tier-record-details">
+          <span>Category: {asString(metadata.category) || "General"}</span>
+          <span>Priority: {asString(metadata.priority) || "normal"}</span>
+          <span>
+            Requested by: {requester
+              ? displayName(requester.profile, requester.userId)
+              : record.createdBy}
+          </span>
+          <span>
+            Assignee: {assignee
+              ? displayName(assignee.profile, assignee.userId)
+              : "Unassigned"}
+          </span>
+          {asString(metadata.dueAt) ? (
+            <span>Target: {formatDate(asString(metadata.dueAt))}</span>
+          ) : null}
+          {canManage ? (
+            <div className="room-tier-inline-actions">
+              <select
+                value={requestAssigneeId}
+                onChange={(event) => setRequestAssigneeId(event.target.value)}
+                aria-label={`Assign ${record.title}`}
+              >
+                <option value="">Unassigned</option>
+                {members.map((member) => (
+                  <option key={member.userId} value={member.userId}>
+                    {displayName(member.profile, member.userId)}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="rooms-live-secondary-action"
+                onClick={() =>
+                  void onUpdate({
+                    metadata: {
+                      ...metadata,
+                      assigneeId: requestAssigneeId || null,
+                    },
+                  })
+                }
+              >
+                <UserCheck aria-hidden="true" /> Save assignment
+              </button>
+            </div>
+          ) : null}
+          {(canManage || assigneeId === currentUserId) &&
+          !["completed", "declined", "cancelled"].includes(record.status) ? (
+            <div className="room-tier-inline-actions">
+              {record.status !== "in_progress" ? (
+                <button
+                  type="button"
+                  className="rooms-live-secondary-action"
+                  onClick={() => void onUpdate({ status: "in_progress" })}
+                >
+                  <Clock3 aria-hidden="true" /> Start
+                </button>
+              ) : null}
+              {record.status !== "waiting" ? (
+                <button
+                  type="button"
+                  className="rooms-live-secondary-action"
+                  onClick={() => void onUpdate({ status: "waiting" })}
+                >
+                  <Clock3 aria-hidden="true" /> Waiting
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="rooms-live-primary-action"
+                onClick={() => void onUpdate({ status: "completed" })}
+              >
+                <CheckCircle2 aria-hidden="true" /> Complete
+              </button>
+              {canManage ? (
+                <button
+                  type="button"
+                  className="rooms-live-secondary-action"
+                  onClick={() => void onUpdate({ status: "declined" })}
+                >
+                  <Trash2 aria-hidden="true" /> Decline
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {record.createdBy === currentUserId &&
+          !["completed", "declined", "cancelled"].includes(record.status) ? (
+            <button
+              type="button"
+              className="rooms-live-secondary-action"
+              onClick={() => void onUpdate({ status: "cancelled" })}
+            >
+              <Trash2 aria-hidden="true" /> Cancel request
             </button>
           ) : null}
         </div>
@@ -1281,12 +1473,12 @@ function RequestsPanel({
   requests,
   onReview,
 }: {
-  requests: RequestItem[];
+  requests: JoinRequestItem[];
   onReview: (requestId: string, state: "approved" | "declined") => Promise<boolean>;
 }) {
   const pending = requests.filter((request) => request.state === "pending");
   if (pending.length === 0) {
-    return <div className="room-tier-empty-state"><UserCheck aria-hidden="true" /><h3>No pending requests</h3><p>New Room join requests will appear here.</p></div>;
+    return <div className="room-tier-empty-state"><UserCheck aria-hidden="true" /><h3>No pending join requests</h3><p>Invitation redemptions that require approval will appear here.</p></div>;
   }
   return (
     <div className="room-tier-record-grid">
@@ -1415,10 +1607,15 @@ function InvitesPanel({
   data,
   onCreate,
   onRevoke,
+  onReview,
 }: {
   data: unknown;
   onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
   onRevoke: (inviteId: string) => Promise<boolean>;
+  onReview: (
+    requestId: string,
+    state: "approved" | "declined"
+  ) => Promise<boolean>;
 }) {
   const source = (data ?? {}) as {
     invites?: Array<{
@@ -1431,6 +1628,7 @@ function InvitesPanel({
       revokedAt: string | null;
       createdAt: string | null;
     }>;
+    joinRequests?: JoinRequestItem[];
   };
   const [label, setLabel] = useState("Room invitation");
   const [role, setRole] = useState("member");
@@ -1446,8 +1644,16 @@ function InvitesPanel({
   }
 
   const invites = source.invites ?? [];
+  const joinRequests = source.joinRequests ?? [];
   return (
     <div className="room-tier-records-layout">
+      <section className="room-tier-create-card">
+        <h3>Pending join requests</h3>
+        <p>
+          Review invitation redemptions that require administrator approval.
+        </p>
+        <RequestsPanel requests={joinRequests} onReview={onReview} />
+      </section>
       <form className="room-tier-create-card" onSubmit={submit}>
         <h3>Create a secure invitation</h3>
         <div className="room-tier-form-grid">
@@ -1494,7 +1700,16 @@ function ActivityPanel({ entries }: { entries: unknown[] }) {
 function OperationsPanel({ moduleKey, data }: { moduleKey: RoomModuleKey; data: unknown }) {
   const source = (data ?? {}) as { summary?: Record<string, number | null>; plan?: { label?: string; memberLimit?: number | null; roomLimit?: number | null } };
   const summary = source.summary ?? {};
-  const labels: Record<string, string> = { posts: "Discussions", events: "Events", announcements: "Announcements", members: "Members", requests: "Pending requests", records: "Module records", resources: "Stored files" };
+  const labels: Record<string, string> = {
+    posts: "Discussions",
+    events: "Events",
+    announcements: "Announcements",
+    members: "Members",
+    joinRequests: "Pending join requests",
+    requests: "Operational requests",
+    records: "Module records",
+    resources: "Stored files",
+  };
   return (
     <div className="room-tier-operations-layout">
       <section className="room-tier-operation-summary">
