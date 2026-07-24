@@ -1,0 +1,105 @@
+name: Apply Room model-specific workflows
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/room-model-specific-workflows'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out workflow branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply strict Room model patch
+        run: python3 scripts/apply-room-model-specific-workflows.py
+
+      - name: Verify Room model invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          required = {
+              "src/lib/room-model-profiles.ts": [
+                  'minimumRole: "manager"',
+                  'label: "Maintenance Requests"',
+                  'label: "Student Requests"',
+                  'label: "Member Requests"',
+                  'label: "Work Requests"',
+                  'label: "Support Operations"',
+              ],
+              "src/lib/room-required-behaviors.ts": [
+                  '"staff_only_operational_requests"',
+              ],
+              "src/app/api/rooms/[roomId]/modules/route.ts": [
+                  "getRoomModelModuleDefinition",
+                  "normalizeRoomRequestCategory",
+                  "modelProfile: getRoomModelProfile",
+              ],
+              "src/components/room-tier-modules-workspace.tsx": [
+                  "RoomModelProfileView",
+                  "modelProfile?.request.categories",
+                  "Customer Support operations are staff-only",
+              ],
+              "src/app/rooms/rooms-v2-model.ts": [
+                  "defaultAccessSummary",
+                  "workflowSummary",
+                  "getRoomModelProfile",
+              ],
+          }
+          for path, needles in required.items():
+              text = Path(path).read_text()
+              for needle in needles:
+                  if needle not in text:
+                      raise SystemExit(f"Missing invariant in {path}: {needle}")
+
+          route = Path("src/app/api/rooms/[roomId]/modules/route.ts").read_text()
+          if 'const required = ROOM_MODULE_DEFINITIONS[moduleKey].minimumRole' in route:
+              raise SystemExit("Generic module-role authorization remains in the Room module route")
+          if 'category: cleanText(source.category, 100) || "General"' in route:
+              raise SystemExit("Generic request category fallback remains")
+          PY
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+          NEXT_PUBLIC_SITE_URL: https://loombus.com
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit product changes and remove one-time automation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-room-model-specific-workflows.yml
+          git rm scripts/apply-room-model-specific-workflows.py
+          git add src docs
+          if git diff --cached --quiet; then
+            echo "No Room model changes to commit"
+            exit 1
+          fi
+          git commit -m "Add model-specific Room workflows"
+          git push origin HEAD:${{ github.head_ref }}
