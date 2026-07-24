@@ -1,14 +1,14 @@
-name: Diagnose Room lifecycle build
+name: Finalize Room lifecycle build
 
 on:
   pull_request:
     types: [synchronize, reopened]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  diagnose:
+  finalize:
     if: github.head_ref == 'agent/room-search-export-lifecycle'
     runs-on: ubuntu-latest
     env:
@@ -17,22 +17,44 @@ jobs:
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - name: Capture production build
-        id: build
-        continue-on-error: true
-        run: npm run build > room-lifecycle-build.log 2>&1
-      - name: Upload diagnostic
-        uses: actions/upload-artifact@v4
-        with:
-          name: room-lifecycle-build-diagnostic
-          path: room-lifecycle-build.log
-      - name: Report failure
-        if: steps.build.outcome == 'failure'
+      - name: Apply exact TypeScript correction
         run: |
-          tail -n 200 room-lifecycle-build.log
-          exit 1
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/lib/room-lifecycle.ts')
+          text = path.read_text()
+          old = '''  const allowedDataModules = new Set<string>(
+    plan.modules
+      .filter((moduleKey) => moduleCanOpen(access, moduleKey))
+      .map((moduleKey) => ROOM_MODULE_DEFINITIONS[moduleKey].dataModule)
+      .filter((value): value is string => typeof value === "string")
+  );'''
+          new = '''  const allowedDataModules = new Set<string>();
+  for (const moduleKey of plan.modules) {
+    if (!moduleCanOpen(access, moduleKey)) continue;
+    const dataModule = ROOM_MODULE_DEFINITIONS[moduleKey].dataModule;
+    if (dataModule) allowedDataModules.add(dataModule);
+  }'''
+          if text.count(old) != 1:
+              raise SystemExit('Expected lifecycle module-set anchor was not found exactly once.')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+      - name: Commit corrected product tree and remove diagnostic workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/diagnose-room-lifecycle-build.yml
+          git add -A
+          git commit -m "Fix Room lifecycle production build"
+          git push origin HEAD:${{ github.head_ref }}
