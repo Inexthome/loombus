@@ -334,8 +334,6 @@ function memberReport(row: RoomRow) {
     reason: asString(row.reason),
     reporter_note: asString(row.reporter_note) || null,
     status: asString(row.status),
-    resolution_note: asString(row.resolution_note) || null,
-    resolution_action: asString(row.resolution_action) || null,
     resolved_at: asString(row.resolved_at) || null,
     reporter_notified_at: asString(row.reporter_notified_at) || null,
     created_at: asString(row.created_at) || null,
@@ -489,6 +487,13 @@ export async function performRoomModerationAction(
       })
       .select("id")
       .single();
+    if (result.error?.code === "23505") {
+      throw new RoomModerationError(
+        "You already have an open report for this Room item.",
+        409,
+        "duplicate_room_report"
+      );
+    }
     if (result.error) throw new RoomModerationError(result.error.message, 503);
 
     const itemId = asString((result.data as RoomRow).id);
