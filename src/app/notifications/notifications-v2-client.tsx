@@ -17,7 +17,7 @@ type Notification = {
   type: string;
   target_type: string;
   target_id: string | null;
-  room_id: string | null;
+  room_id?: string | null;
   message: string;
   read_at: string | null;
   created_at: string;
@@ -275,11 +275,11 @@ export default function NotificationsV2Client() {
             .eq("user_id", user.id)
             .maybeSingle(),
           getBlockedRelationshipUserIds(supabase, user.id),
+          // Selecting all notification columns keeps the inbox compatible both
+          // before and after the manually applied Room migration adds room_id.
           supabase
             .from("notifications")
-            .select(
-              "id, actor_id, type, target_type, target_id, room_id, message, read_at, created_at"
-            )
+            .select("*")
             .eq("user_id", user.id)
             .order("created_at", { ascending: false }),
         ]);
