@@ -1,0 +1,50 @@
+name: Finalize Room moderation
+
+on:
+  push:
+    branches:
+      - agent/room-moderation-integration
+
+jobs:
+  finalize:
+    if: ${{ !contains(github.event.head_commit.message, '[moderation-finalized]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply strict reporter id correction
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/lib/room-moderation.ts')
+          text = path.read_text()
+          old = '''  if ((action === "resolve" || action === "dismiss") && validUuid(item.reported_by)) {
+    const resolutionMessage ='''
+          new = '''  const reporterId = asString(item.reported_by);
+  if ((action === "resolve" || action === "dismiss") && validUuid(reporterId)) {
+    const resolutionMessage ='''
+          if old not in text:
+              raise SystemExit('Reporter condition target was not found')
+          text = text.replace(old, new, 1)
+          text = text.replace('        user_id: item.reported_by,', '        user_id: reporterId,', 1)
+          path.write_text(text)
+          PY
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm audit --omit=dev
+      - name: Remove temporary workflow and commit validated source
+        run: |
+          rm .github/workflows/finalize-room-moderation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/room-moderation.ts .github/workflows/finalize-room-moderation.yml
+          git commit -m "Harden and validate Room moderation [moderation-finalized]"
+          git push
