@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { RoomDiscussionsWorkspace } from "@/components/room-discussions-workspace";
+import RoomToolsShortcuts from "@/components/room-tools-shortcuts";
 import LiveRoomWorkspaceClient from "./live-room-workspace-client";
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 export default function RoomWorkspacePage() {
   return (
     <>
+      <RoomToolsShortcuts />
       <LiveRoomWorkspaceClient />
       <RoomDiscussionsWorkspace />
     </>
