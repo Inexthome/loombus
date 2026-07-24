@@ -334,8 +334,9 @@ async function runAccountDigests(args: {
       continue;
     }
 
-    const { error: updateError } = await args.supabase
-      .from("notification_preferences")
+    const { error: updateError } = await (
+      args.supabase.from("notification_preferences") as any
+    )
       .update({ email_digest_last_sent_at: new Date().toISOString() })
       .eq("user_id", preference.user_id);
 
