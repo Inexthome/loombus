@@ -136,3 +136,15 @@ Membership admission and operational requests are separate product systems.
 - Assigned members may move their requests through open, in-progress, waiting, and completed states.
 - Request authors may cancel their own still-open requests.
 - New operational requests notify active Room managers, and request updates notify active requesters and assignees.
+
+## Admission and request production verification
+
+A release that changes either workflow must be tested with separate member and manager accounts.
+
+1. In a Free Room with approval enabled, redeem an invitation and confirm the application appears only in `Invites / Join Requests`.
+2. Approve the application, confirm capacity enforcement, confirm the applicant notification, and verify Room access.
+3. In a Starter-or-higher Room, submit an operational request as an ordinary member and confirm active managers are notified.
+4. Assign the request, move it through in-progress and waiting states, then complete it and confirm requester and assignee notifications.
+5. Confirm the request author can cancel a still-open request, including when the author is also the assignee.
+6. Confirm the paid `Requests` module never displays or reviews membership applications.
+7. Confirm Free Rooms do not expose the paid `Requests` module.
