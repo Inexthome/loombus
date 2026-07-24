@@ -494,8 +494,9 @@ export async function runRoomDigests(args: {
       continue;
     }
 
-    const { error: updateError } = await args.supabase
-      .from("room_notification_preferences")
+    const { error: updateError } = await (
+      args.supabase.from("room_notification_preferences") as any
+    )
       .update({ email_digest_last_sent_at: new Date().toISOString() })
       .eq("room_id", preference.room_id)
       .eq("user_id", preference.user_id);
