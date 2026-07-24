@@ -381,26 +381,33 @@ export async function performRoomGovernanceAction(
     }
     const member = await service
       .from("room_members")
-      .select("user_id, status")
+      .select("user_id, status, suspended_until")
       .eq("room_id", roomId)
       .eq("user_id", toUserId)
       .maybeSingle();
+    const memberRow = (member.data ?? null) as RoomRow | null;
+    const memberStatus = asString(memberRow?.status).toLowerCase();
+    const suspendedUntil = asString(memberRow?.suspended_until);
+    const isTemporarilySuspended =
+      Boolean(suspendedUntil) && new Date(suspendedUntil).getTime() > Date.now();
     if (
       member.error ||
-      !member.data ||
-      ["blocked", "removed", "inactive"].includes(
-        asString((member.data as RoomRow).status).toLowerCase()
-      )
+      !memberRow ||
+      memberStatus !== "active" ||
+      isTemporarilySuspended
     ) {
       throw new RoomGovernanceError(
         "Ownership can only be transferred to an active Room member."
       );
     }
-    await service
+    const cancelled = await service
       .from("room_ownership_transfers")
       .update({ status: "cancelled", cancelled_at: now, updated_at: now })
       .eq("room_id", roomId)
       .eq("status", "pending");
+    if (cancelled.error) {
+      throw new RoomGovernanceError(cancelled.error.message, 503);
+    }
     const result = await service
       .from("room_ownership_transfers")
       .insert({
@@ -435,14 +442,26 @@ export async function performRoomGovernanceAction(
       .eq("id", transferId)
       .eq("room_id", roomId)
       .eq("from_user_id", userId)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      .select("id")
+      .maybeSingle();
     if (result.error) throw new RoomGovernanceError(result.error.message, 503);
+    if (!result.data) {
+      throw new RoomGovernanceError("Pending ownership transfer not found.", 404);
+    }
+    await logAuditEvent({
+      actor_id: userId,
+      action: "room.ownership_transfer_cancelled",
+      target_type: "room",
+      target_id: roomId,
+      metadata: { room_id: roomId, transfer_id: transferId },
+    });
     return { ok: true };
   }
 
   if (action === "bulk_members") {
     const memberIds = Array.isArray(input.memberIds)
-      ? input.memberIds.filter(validUuid).slice(0, 200)
+      ? [...new Set(input.memberIds.filter(validUuid))].slice(0, 200)
       : [];
     if (!memberIds.length) {
       throw new RoomGovernanceError("Select at least one Room member.");
@@ -456,6 +475,13 @@ export async function performRoomGovernanceAction(
       .in("id", memberIds);
     if (rowsResult.error) throw new RoomGovernanceError(rowsResult.error.message, 503);
     const rows = (rowsResult.data ?? []) as RoomRow[];
+    if (rows.length !== memberIds.length) {
+      throw new RoomGovernanceError(
+        "One or more selected Room members no longer exist. Refresh and try again.",
+        409,
+        "room_member_selection_stale"
+      );
+    }
     if (rows.some((row) => asString(row.user_id) === access.room.ownerId)) {
       throw new RoomGovernanceError("The current Room owner cannot be modified.");
     }
@@ -471,10 +497,11 @@ export async function performRoomGovernanceAction(
       if (role === "administrator" && !access.isOwner) {
         throw new RoomGovernanceError("Only the Room owner can appoint administrators.", 403);
       }
-      update = { role, status: "active", updated_at: now };
+      update = { role, status: "active", suspended_until: null, updated_at: now };
     } else if (operation === "suspend") {
       const days = Math.min(365, Math.max(1, Math.floor(asNumber(input.days) || 7)));
       update = {
+        status: "suspended",
         suspended_until: new Date(Date.now() + days * 86400000).toISOString(),
         updated_at: now,
       };
@@ -490,8 +517,17 @@ export async function performRoomGovernanceAction(
       .from("room_members")
       .update(update)
       .eq("room_id", roomId)
-      .in("id", memberIds);
+      .in("id", memberIds)
+      .select("id");
     if (result.error) throw new RoomGovernanceError(result.error.message, 503);
+    const updatedRows = (result.data ?? []) as RoomRow[];
+    if (updatedRows.length !== rows.length) {
+      throw new RoomGovernanceError(
+        "Room membership changed before the action completed. Refresh and verify the results.",
+        409,
+        "room_member_update_conflict"
+      );
+    }
     await logAuditEvent({
       actor_id: userId,
       action: `room.members_${operation}`,
@@ -499,7 +535,7 @@ export async function performRoomGovernanceAction(
       target_id: roomId,
       metadata: { room_id: roomId, member_ids: memberIds, role: role || null },
     });
-    return { ok: true, count: memberIds.length };
+    return { ok: true, count: updatedRows.length };
   }
 
   if (action === "create_moderation_item") {
@@ -549,8 +585,14 @@ export async function performRoomGovernanceAction(
         updated_at: now,
       })
       .eq("id", itemId)
-      .eq("room_id", roomId);
+      .eq("room_id", roomId)
+      .in("status", ["open", "reviewing"])
+      .select("id")
+      .maybeSingle();
     if (result.error) throw new RoomGovernanceError(result.error.message, 503);
+    if (!result.data) {
+      throw new RoomGovernanceError("Open moderation item not found.", 404);
+    }
     await logAuditEvent({
       actor_id: userId,
       action: `room.moderation_${status}`,
