@@ -38,7 +38,19 @@ jobs:
         run: npm run lint
 
       - name: Build
-        run: npm run build
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee build-diagnostic.log
+
+      - name: Upload build diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: room-notifications-build-diagnostic
+          path: build-diagnostic.log
+          if-no-files-found: ignore
+          retention-days: 1
 
   dependency-audit:
     name: npm dependency audit
