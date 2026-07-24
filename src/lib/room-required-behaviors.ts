@@ -1,4 +1,6 @@
-export type RoomRequiredBehavior = "private_support_threads";
+export type RoomRequiredBehavior =
+  | "private_support_threads"
+  | "staff_only_operational_requests";
 
 export type RoomThreadVisibilityScope = "room" | "author_and_staff";
 
@@ -21,7 +23,10 @@ export function getRoomRequiredBehaviors(
   roomType: unknown
 ): readonly RoomRequiredBehavior[] {
   return isCustomerSupportRoomType(roomType)
-    ? (["private_support_threads"] as const)
+    ? ([
+        "private_support_threads",
+        "staff_only_operational_requests",
+      ] as const)
     : [];
 }
 

@@ -3,6 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
 import { createNotifications } from "@/lib/notifications";
 import {
+  getRoomModelDefaultSettings,
+  getRoomModelModuleDefinition,
+  getRoomModelProfile,
+  normalizeRoomRequestCategory,
+} from "@/lib/room-model-profiles";
+import {
   getRoomRequiredBehaviors,
   isCustomerSupportRoomType,
 } from "@/lib/room-required-behaviors";
@@ -56,14 +62,6 @@ type RoomModuleSettings = {
   defaultInviteRole: "member" | "moderator";
 };
 
-const DEFAULT_SETTINGS: RoomModuleSettings = {
-  allowMemberPosts: true,
-  memberDirectoryVisible: true,
-  inviteRequiresApproval: false,
-  allowedEmailDomains: [],
-  defaultInviteRole: "member",
-};
-
 function jsonError(message: string, status: number, code?: string) {
   return NextResponse.json(code ? { error: message, code } : { error: message }, {
     status,
@@ -113,6 +111,7 @@ function normalizeSettings(
   roomType?: unknown
 ): RoomModuleSettings {
   const source = asObject(value);
+  const defaults = getRoomModelDefaultSettings(roomType);
   const domains = Array.isArray(source.allowedEmailDomains)
     ? source.allowedEmailDomains
         .map((item) => cleanText(item, 253).toLowerCase())
@@ -124,18 +123,22 @@ function normalizeSettings(
       ? true
       : typeof source.allowMemberPosts === "boolean"
         ? source.allowMemberPosts
-        : DEFAULT_SETTINGS.allowMemberPosts,
+        : defaults.allowMemberPosts,
     memberDirectoryVisible:
       typeof source.memberDirectoryVisible === "boolean"
         ? source.memberDirectoryVisible
-        : DEFAULT_SETTINGS.memberDirectoryVisible,
+        : defaults.memberDirectoryVisible,
     inviteRequiresApproval:
       typeof source.inviteRequiresApproval === "boolean"
         ? source.inviteRequiresApproval
-        : DEFAULT_SETTINGS.inviteRequiresApproval,
+        : defaults.inviteRequiresApproval,
     allowedEmailDomains: [...new Set(domains)],
     defaultInviteRole:
-      source.defaultInviteRole === "moderator" ? "moderator" : "member",
+      source.defaultInviteRole === "moderator"
+        ? "moderator"
+        : source.defaultInviteRole === "member"
+          ? "member"
+          : defaults.defaultInviteRole,
   };
 }
 
@@ -243,7 +246,7 @@ async function notifyOperationalRequestCreated(
       type: "room_operational_request",
       target_type: "room_module_record",
       target_id: record.id,
-      message: `New request in ${access.room.name}: ${record.title}`,
+      message: `New ${getRoomModelProfile(access.room.roomType).request.singularLabel} in ${access.room.name}: ${record.title}`,
     }))
   );
   if (error) console.error("Room request notifications failed:", error.message);
@@ -272,7 +275,7 @@ async function notifyOperationalRequestUpdated(
       type: "room_operational_request_update",
       target_type: "room_module_record",
       target_id: record.id,
-      message: `Request updated in ${access.room.name}: ${record.title} (${record.status.replaceAll("_", " ")})`,
+      message: `${getRoomModelProfile(access.room.roomType).request.singularLabel} updated in ${access.room.name}: ${record.title} (${record.status.replaceAll("_", " ")})`,
     }))
   );
   if (error) {
@@ -280,8 +283,16 @@ async function notifyOperationalRequestUpdated(
   }
 }
 
+function moduleDefinitionFor(access: RoomAccess, moduleKey: RoomModuleKey) {
+  return getRoomModelModuleDefinition(
+    access.room.roomType,
+    moduleKey,
+    ROOM_MODULE_DEFINITIONS[moduleKey]
+  );
+}
+
 function roleCanOpenModule(access: RoomAccess, moduleKey: RoomModuleKey) {
-  const required = ROOM_MODULE_DEFINITIONS[moduleKey].minimumRole;
+  const required = moduleDefinitionFor(access, moduleKey).minimumRole;
   if (required === "member") return access.allowed;
   if (required === "manager") return access.canManage;
   return access.isOwner;
@@ -294,7 +305,7 @@ function modulesFor(access: RoomAccess) {
   );
   return plan.modules
     .filter((moduleKey) => roleCanOpenModule(access, moduleKey))
-    .map((moduleKey) => ROOM_MODULE_DEFINITIONS[moduleKey]);
+    .map((moduleKey) => moduleDefinitionFor(access, moduleKey));
 }
 
 function dataModuleFor(moduleKey: RoomModuleKey) {
@@ -640,7 +651,11 @@ async function loadHighCapacityMembers(
   };
 }
 
-function buildMetadata(moduleKey: RoomModuleKey, raw: unknown) {
+function buildMetadata(
+  moduleKey: RoomModuleKey,
+  raw: unknown,
+  roomType?: unknown
+) {
   const source = asObject(raw);
   if (moduleKey === "resources") {
     const url = safeUrl(source.url);
@@ -649,8 +664,15 @@ function buildMetadata(moduleKey: RoomModuleKey, raw: unknown) {
   }
   if (moduleKey === "requests") {
     const priority = asString(source.priority);
+    const category = normalizeRoomRequestCategory(
+      roomType,
+      cleanText(source.category, 100)
+    );
+    if (!category) {
+      throw new Error("Choose a valid request category for this Room model.");
+    }
     return {
-      category: cleanText(source.category, 100) || "General",
+      category,
       priority: ["low", "normal", "high", "urgent"].includes(priority)
         ? priority
         : "normal",
@@ -759,6 +781,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           memberLimit: plan.memberLimit,
           features: plan.features,
         },
+        modelProfile: getRoomModelProfile(access.room.roomType),
         modules: modulesFor(access),
       },
       { headers: { "Cache-Control": "private, no-store" } }
@@ -792,6 +815,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           requiredBehaviors: getRoomRequiredBehaviors(access.room.roomType),
         },
         settings: await getSettings(serviceSupabase, roomId, access.room.roomType),
+        modelProfile: getRoomModelProfile(access.room.roomType),
       };
     } else if (requestedModule === "invites") {
       data = {
@@ -863,7 +887,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       }
       const title = cleanText(body?.title, 200);
       if (!title) return jsonError("Enter a title.", 400);
-      const metadata = buildMetadata(moduleKey, body?.metadata);
+      const metadata = buildMetadata(
+        moduleKey,
+        body?.metadata,
+        access.room.roomType
+      );
       if (moduleKey === "requests" && !access.canManage) {
         metadata.assigneeId = null;
         metadata.dueAt = null;
@@ -992,7 +1020,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
           updates.body = cleanText(body.body, 12000);
         }
         if (body?.metadata !== undefined) {
-          updates.metadata = buildMetadata(moduleKey, body.metadata);
+          updates.metadata = buildMetadata(
+            moduleKey,
+            body.metadata,
+            access.room.roomType
+          );
         }
       }
       if (Object.keys(updates).length === 0) {

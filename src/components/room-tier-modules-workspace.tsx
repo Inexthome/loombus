@@ -55,6 +55,7 @@ type ModuleDefinition = {
   description: string;
   minimumRole: "member" | "manager" | "owner";
   dataModule?: string;
+  recommended?: boolean;
 };
 
 type Profile = {
@@ -71,6 +72,26 @@ type RoomMember = {
   status: string;
   joinedAt: string | null;
   profile: Profile | null;
+};
+
+type RoomModelProfileView = {
+  key: string;
+  title: string;
+  description: string;
+  defaultAccessSummary: string;
+  workflowSummary: string;
+  workflowHighlights: string[];
+  recommendedModules: RoomModuleKey[];
+  requiredBehaviors: string[];
+  request: {
+    label: string;
+    singularLabel: string;
+    description: string;
+    submitHeading: string;
+    detailsLabel: string;
+    categories: string[];
+    defaultCategory: string;
+  };
 };
 
 type ManifestResponse = {
@@ -100,6 +121,7 @@ type ManifestResponse = {
     features: string[];
   };
   modules?: ModuleDefinition[];
+  modelProfile?: RoomModelProfileView;
   error?: string;
 };
 
@@ -800,6 +822,7 @@ function ModuleBody({
       members={members}
       currentUserId={manifest?.access?.currentUserId ?? ""}
       canManage={Boolean(manifest?.access?.canManage)}
+      modelProfile={manifest?.modelProfile}
       action={action}
     />
   );
@@ -811,6 +834,7 @@ function RecordsPanel({
   members,
   currentUserId,
   canManage,
+  modelProfile,
   action,
 }: {
   moduleKey: RoomModuleKey;
@@ -818,6 +842,7 @@ function RecordsPanel({
   members: RoomMember[];
   currentUserId: string;
   canManage: boolean;
+  modelProfile?: RoomModelProfileView;
   action: (
     moduleKey: RoomModuleKey,
     payload: Record<string, unknown>,
@@ -831,6 +856,7 @@ function RecordsPanel({
           moduleKey={moduleKey}
           members={members}
           canManage={canManage}
+          modelProfile={modelProfile}
           onCreate={(payload) =>
             action(
               moduleKey,
@@ -848,12 +874,12 @@ function RecordsPanel({
           <FileText aria-hidden="true" />
           <h3>
             {moduleKey === "requests"
-              ? "No operational requests"
+              ? `No ${modelProfile?.request.label.toLowerCase() ?? "operational requests"}`
               : "No items have been added."}
           </h3>
           <p>
             {moduleKey === "requests"
-              ? "Room members can submit the first request."
+              ? `Room members can submit the first ${modelProfile?.request.singularLabel ?? "request"}.`
               : "Room administrators can add the first item for this module."}
           </p>
         </div>
@@ -900,11 +926,13 @@ function CreateRecordForm({
   moduleKey,
   members,
   canManage,
+  modelProfile,
   onCreate,
 }: {
   moduleKey: RoomModuleKey;
   members: RoomMember[];
   canManage: boolean;
+  modelProfile?: RoomModelProfileView;
   onCreate: (payload: Record<string, unknown>) => Promise<boolean>;
 }) {
   const [title, setTitle] = useState("");
@@ -919,12 +947,16 @@ function CreateRecordForm({
   useEffect(() => {
     setTitle("");
     setBody("");
-    setFieldA("");
+    setFieldA(
+      moduleKey === "requests"
+        ? modelProfile?.request.defaultCategory ?? "General"
+        : ""
+    );
     setFieldB("");
     setFieldC("");
     setFieldD("");
     setToggle(false);
-  }, [moduleKey]);
+  }, [moduleKey, modelProfile?.key, modelProfile?.request.defaultCategory]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -976,7 +1008,7 @@ function CreateRecordForm({
 
   const titleLabel =
     moduleKey === "requests"
-      ? "Request title"
+      ? `${modelProfile?.request.singularLabel ?? "Request"} title`
       : moduleKey === "directory"
         ? "Contact name"
       : moduleKey === "polls"
@@ -998,12 +1030,13 @@ function CreateRecordForm({
         <div>
           <h3>
             {moduleKey === "requests"
-              ? "Submit an operational request"
+              ? modelProfile?.request.submitHeading ?? "Submit an operational request"
               : "Add to this module"}
           </h3>
           <p>
             {moduleKey === "requests"
-              ? "Track a Room need from submission through completion."
+              ? modelProfile?.request.description ??
+                "Track a Room need from submission through completion."
               : "New entries remain inside the verified Room boundary."}
           </p>
         </div>
@@ -1015,7 +1048,7 @@ function CreateRecordForm({
       <label>
         <span>
           {moduleKey === "requests"
-            ? "Request details"
+            ? modelProfile?.request.detailsLabel ?? "Request details"
             : moduleKey === "knowledge"
               ? "Answer or content"
               : "Description or notes"}
@@ -1034,11 +1067,18 @@ function CreateRecordForm({
         <div className="room-tier-form-grid">
           <label>
             <span>Category</span>
-            <input
+            <select
               value={fieldA}
               onChange={(event) => setFieldA(event.target.value)}
-              placeholder="Maintenance, service, approval, support"
-            />
+            >
+              {(modelProfile?.request.categories ?? ["General", "Other"]).map(
+                (category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                )
+              )}
+            </select>
           </label>
           <label>
             <span>Priority</span>
@@ -1527,6 +1567,7 @@ function SettingsPanel({
       requiredBehaviors?: string[];
     };
     settings?: RoomSettingsData;
+    modelProfile?: RoomModelProfileView;
   };
   const [name, setName] = useState(source.room?.name ?? "");
   const [description, setDescription] = useState(source.room?.description ?? "");
@@ -1540,6 +1581,13 @@ function SettingsPanel({
   const privateSupportThreads = Boolean(
     source.room?.requiredBehaviors?.includes("private_support_threads") ||
       source.room?.roomType === "customer_support"
+  );
+  const staffOnlyOperationalRequests = Boolean(
+    source.room?.requiredBehaviors?.includes(
+      "staff_only_operational_requests"
+    ) || source.modelProfile?.requiredBehaviors?.includes(
+      "staff_only_operational_requests"
+    )
   );
 
   useEffect(() => {
@@ -1574,6 +1622,28 @@ function SettingsPanel({
   const core = moduleKey === "settings";
   return (
     <form className="room-tier-create-card" onSubmit={submit}>
+      {source.modelProfile ? (
+        <section className="room-tier-create-heading">
+          <ShieldCheck aria-hidden="true" />
+          <div>
+            <p className="rooms-live-eyebrow">{source.modelProfile.title}</p>
+            <h3>{source.modelProfile.workflowSummary}</h3>
+            <p>{source.modelProfile.defaultAccessSummary}</p>
+            <div className="room-tier-record-details">
+              {source.modelProfile.workflowHighlights.map((item) => (
+                <span key={item} className="room-tier-record-chip">
+                  {item}
+                </span>
+              ))}
+            </div>
+            {staffOnlyOperationalRequests ? (
+              <p className="rooms-live-notice">
+                Customer Support operations are staff-only and cannot be exposed to ordinary customers.
+              </p>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
       {core ? (
         <>
           <label><span>Room name</span><input value={name} onChange={(event) => setName(event.target.value)} minLength={3} maxLength={80} required /></label>

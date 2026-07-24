@@ -2,6 +2,7 @@ import {
   ROOM_PLAN_ENTITLEMENTS,
   type RoomPlanKey,
 } from "@/lib/room-plan-entitlements";
+import { getRoomModelProfile } from "@/lib/room-model-profiles";
 import type { RoomRequiredBehavior } from "@/lib/room-required-behaviors";
 
 export type RoomModelId =
@@ -27,6 +28,9 @@ export type RoomModel = {
   audience: string;
   examples: string[];
   calendarUse: string;
+  defaultAccessSummary: string;
+  workflowSummary: string;
+  workflowHighlights: readonly string[];
   requiredBehaviors: readonly RoomRequiredBehavior[];
 };
 
@@ -42,66 +46,82 @@ export type RoomPlan = {
   paid: boolean;
 };
 
+const BUSINESS_MODEL = getRoomModelProfile("business");
+const RESIDENTS_MODEL = getRoomModelProfile("residents");
+const CLASSROOM_MODEL = getRoomModelProfile("classroom");
+const CUSTOMER_SUPPORT_MODEL = getRoomModelProfile("customer_support");
+const COMMUNITY_MODEL = getRoomModelProfile("community");
+
 export const ROOM_MODELS: RoomModel[] = [
   {
-    id: "business-team",
-    category: "Business",
-    title: "Business Team Room",
-    shortTitle: "Business Team",
-    description:
-      "A private operating space for team decisions, announcements, shared resources, tasks, and focused discussion.",
-    audience: "Companies, departments, project teams, and professional groups",
-    examples: ["Decision threads", "Team announcements", "Shared operating files"],
-    calendarUse: "Milestones, meetings, deadlines, launches, and internal events",
-    requiredBehaviors: [],
+    id: BUSINESS_MODEL.templateId,
+    category: BUSINESS_MODEL.category,
+    title: BUSINESS_MODEL.title,
+    shortTitle: BUSINESS_MODEL.shortTitle,
+    description: BUSINESS_MODEL.description,
+    audience: BUSINESS_MODEL.audience,
+    examples: [...BUSINESS_MODEL.workflowHighlights],
+    calendarUse: BUSINESS_MODEL.calendarUse,
+    defaultAccessSummary: BUSINESS_MODEL.defaultAccessSummary,
+    workflowSummary: BUSINESS_MODEL.workflowSummary,
+    workflowHighlights: BUSINESS_MODEL.workflowHighlights,
+    requiredBehaviors: BUSINESS_MODEL.requiredBehaviors,
   },
   {
-    id: "residents",
-    category: "Residents",
-    title: "Resident / HOA Room",
-    shortTitle: "Resident Community",
-    description:
-      "A private resident space for notices, maintenance updates, documents, questions, neighborhood decisions, and events.",
-    audience: "HOAs, condominiums, apartment communities, and neighborhood groups",
-    examples: ["Maintenance notices", "Board updates", "Resident questions"],
-    calendarUse: "Meetings, inspections, maintenance windows, and community events",
-    requiredBehaviors: [],
+    id: RESIDENTS_MODEL.templateId,
+    category: RESIDENTS_MODEL.category,
+    title: RESIDENTS_MODEL.title,
+    shortTitle: RESIDENTS_MODEL.shortTitle,
+    description: RESIDENTS_MODEL.description,
+    audience: RESIDENTS_MODEL.audience,
+    examples: [...RESIDENTS_MODEL.workflowHighlights],
+    calendarUse: RESIDENTS_MODEL.calendarUse,
+    defaultAccessSummary: RESIDENTS_MODEL.defaultAccessSummary,
+    workflowSummary: RESIDENTS_MODEL.workflowSummary,
+    workflowHighlights: RESIDENTS_MODEL.workflowHighlights,
+    requiredBehaviors: RESIDENTS_MODEL.requiredBehaviors,
   },
   {
-    id: "classroom",
-    category: "Classroom",
-    title: "Classroom Room",
-    shortTitle: "Classroom",
-    description:
-      "A private learning space for prompts, assignments, resources, moderated discussion, announcements, and class events.",
-    audience: "Teachers, students, cohorts, workshops, and training programs",
-    examples: ["Class prompts", "Assignment resources", "Moderated discussion"],
-    calendarUse: "Due dates, class sessions, office hours, and presentations",
-    requiredBehaviors: [],
+    id: CLASSROOM_MODEL.templateId,
+    category: CLASSROOM_MODEL.category,
+    title: CLASSROOM_MODEL.title,
+    shortTitle: CLASSROOM_MODEL.shortTitle,
+    description: CLASSROOM_MODEL.description,
+    audience: CLASSROOM_MODEL.audience,
+    examples: [...CLASSROOM_MODEL.workflowHighlights],
+    calendarUse: CLASSROOM_MODEL.calendarUse,
+    defaultAccessSummary: CLASSROOM_MODEL.defaultAccessSummary,
+    workflowSummary: CLASSROOM_MODEL.workflowSummary,
+    workflowHighlights: CLASSROOM_MODEL.workflowHighlights,
+    requiredBehaviors: CLASSROOM_MODEL.requiredBehaviors,
   },
   {
-    id: "customer-support",
-    category: "Customer",
-    title: "Customer Support Room",
-    shortTitle: "Customer Support",
-    description:
-      "A private support space where each customer case is visible only to its author, Room support staff, and explicitly added participants.",
-    audience: "Businesses, service providers, product teams, and client support groups",
-    examples: ["Private support cases", "Known issues", "Product updates"],
-    calendarUse: "Maintenance windows, onboarding sessions, releases, and training",
-    requiredBehaviors: ["private_support_threads"],
+    id: CUSTOMER_SUPPORT_MODEL.templateId,
+    category: CUSTOMER_SUPPORT_MODEL.category,
+    title: CUSTOMER_SUPPORT_MODEL.title,
+    shortTitle: CUSTOMER_SUPPORT_MODEL.shortTitle,
+    description: CUSTOMER_SUPPORT_MODEL.description,
+    audience: CUSTOMER_SUPPORT_MODEL.audience,
+    examples: [...CUSTOMER_SUPPORT_MODEL.workflowHighlights],
+    calendarUse: CUSTOMER_SUPPORT_MODEL.calendarUse,
+    defaultAccessSummary: CUSTOMER_SUPPORT_MODEL.defaultAccessSummary,
+    workflowSummary: CUSTOMER_SUPPORT_MODEL.workflowSummary,
+    workflowHighlights: CUSTOMER_SUPPORT_MODEL.workflowHighlights,
+    requiredBehaviors: CUSTOMER_SUPPORT_MODEL.requiredBehaviors,
   },
   {
-    id: "community",
-    category: "Community",
-    title: "Private Community Room",
-    shortTitle: "Private Community",
-    description:
-      "A focused private space for an association, nonprofit, club, family network, or shared-interest community.",
-    audience: "Associations, nonprofits, clubs, family groups, and local communities",
-    examples: ["Member discussions", "Community resources", "Group announcements"],
-    calendarUse: "Gatherings, volunteer dates, meetings, and shared milestones",
-    requiredBehaviors: [],
+    id: COMMUNITY_MODEL.templateId,
+    category: COMMUNITY_MODEL.category,
+    title: COMMUNITY_MODEL.title,
+    shortTitle: COMMUNITY_MODEL.shortTitle,
+    description: COMMUNITY_MODEL.description,
+    audience: COMMUNITY_MODEL.audience,
+    examples: [...COMMUNITY_MODEL.workflowHighlights],
+    calendarUse: COMMUNITY_MODEL.calendarUse,
+    defaultAccessSummary: COMMUNITY_MODEL.defaultAccessSummary,
+    workflowSummary: COMMUNITY_MODEL.workflowSummary,
+    workflowHighlights: COMMUNITY_MODEL.workflowHighlights,
+    requiredBehaviors: COMMUNITY_MODEL.requiredBehaviors,
   },
 ];
 
@@ -211,6 +231,8 @@ export function buildRoomSetupSummary(input: {
     `Monthly tier: ${input.plan.name} (${input.plan.price})`,
     `Member capacity: ${input.plan.members}`,
     `Purpose: ${input.description.trim()}`,
+    `Default access: ${input.model.defaultAccessSummary}`,
+    `Model workflow: ${input.model.workflowSummary}`,
     "Included features:",
     ...input.plan.features.map((feature) => `- ${feature}`),
     "Workspace blueprint: Discussions, Announcements, Room calendar, Files and resources, Members and roles",
