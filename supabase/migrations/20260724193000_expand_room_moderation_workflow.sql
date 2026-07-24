@@ -71,8 +71,7 @@ alter table public.room_moderation_queue
   add constraint room_moderation_queue_resolution_action_check
   check (
     resolution_action is null or resolution_action in (
-      'none','warning','content_removed','member_suspended',
-      'member_removed','escalated_to_loombus'
+      'none','warning','content_removed','member_suspended','member_removed'
     )
   );
 
