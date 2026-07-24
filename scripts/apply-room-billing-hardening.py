@@ -27,8 +27,8 @@ replace_once(
 )
 replace_once(
     "src/lib/room-billing-management.ts",
-    '''  const memberCount = await activeMemberCount(roomId);\n  const usedStorageBytes = await storageUsage(roomId);\n  const subscriptionId = String(room.stripe_subscription_id ?? "");''',
-    '''  const memberCount = await activeMemberCount(roomId);\n  const usedStorageBytes = await storageUsage(roomId);\n  const subscriptionId = String(room.stripe_subscription_id ?? "");''',
+    '''      hostedInvoiceUrl: invoice.hosted_invoice_url,\n      invoicePdf: invoice.invoice_pdf,''',
+    '''      hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,\n      invoicePdf: invoice.invoice_pdf ?? null,''',
 )
 replace_once(
     "src/lib/room-billing-management.ts",
@@ -49,11 +49,6 @@ replace_once(
     "src/lib/room-billing-management.ts",
     '''      "room_plan_member_limit_exceeded"\n    );\n  }\n\n  const stripe = getStripe();''',
     '''      "room_plan_member_limit_exceeded"\n    );\n  }\n  if (usedStorageBytes !== null && usedStorageBytes > targetStorageBytes) {\n    throw new RoomBillingError(\n      `This Room uses ${usedStorageBytes} bytes of storage. Remove files until usage is within the ${targetStorageBytes}-byte allowance before changing to ${PAID_ROOM_PLANS[targetPlan].label}.`,\n      409,\n      "room_plan_storage_limit_exceeded"\n    );\n  }\n\n  const stripe = getStripe();''',
-)
-replace_once(
-    "src/lib/room-billing-management.ts",
-    '''  const subscriptionId = String(room.stripe_subscription_id ?? "");\n  if (!subscriptionId) {\n    throw new RoomBillingError(\n      "Free Rooms do not have a subscription to cancel.",''',
-    '''  const subscriptionId = String(room.stripe_subscription_id ?? "");\n  if (!subscriptionId) {\n    throw new RoomBillingError(\n      "Free Rooms do not have a subscription to cancel.",''',
 )
 replace_once(
     "src/lib/room-billing-management.ts",
