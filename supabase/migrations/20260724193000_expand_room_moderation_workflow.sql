@@ -6,13 +6,28 @@ alter table public.room_moderation_queue
   add column if not exists source text not null default 'manual',
   add column if not exists reporter_note text,
   add column if not exists evidence_snapshot jsonb not null default '{}'::jsonb,
-  add column if not exists assigned_to uuid references auth.users(id) on delete set null,
   add column if not exists assigned_by uuid references auth.users(id) on delete set null,
   add column if not exists assigned_at timestamptz,
   add column if not exists escalated_by uuid references auth.users(id) on delete set null,
   add column if not exists escalated_at timestamptz,
   add column if not exists affected_user_id uuid references auth.users(id) on delete set null,
   add column if not exists last_action_at timestamptz not null default now();
+
+update public.room_moderation_queue
+set status = 'in_review'
+where status = 'reviewing';
+
+alter table public.room_moderation_queue
+  drop constraint if exists room_moderation_queue_target_type_check;
+alter table public.room_moderation_queue
+  add constraint room_moderation_queue_target_type_check
+  check (target_type in ('room_post','room_post_reply','room_file','room_member','other'));
+
+alter table public.room_moderation_queue
+  drop constraint if exists room_moderation_queue_status_check;
+alter table public.room_moderation_queue
+  add constraint room_moderation_queue_status_check
+  check (status in ('open','in_review','escalated','resolved','dismissed'));
 
 alter table public.room_moderation_queue
   drop constraint if exists room_moderation_queue_category_check;
