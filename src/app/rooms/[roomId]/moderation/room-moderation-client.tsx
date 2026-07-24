@@ -437,7 +437,7 @@ export default function RoomModerationClient() {
                     </p>
                   ) : null}
 
-                  {overview.access.canModerate ? (
+                  {overview?.access.canModerate ? (
                     <div className="mt-4 space-y-4">
                       <div className="grid gap-3 text-sm sm:grid-cols-3">
                         <div>
@@ -483,7 +483,7 @@ export default function RoomModerationClient() {
                               className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                             >
                               <option value="">Choose staff</option>
-                              {(overview.staff || []).map((staff) => (
+                              {(overview?.staff || []).map((staff) => (
                                 <option key={staff.userId} value={staff.userId}>
                                   {profileName(staff.profile)} · {staff.role}
                                 </option>
@@ -563,8 +563,12 @@ export default function RoomModerationClient() {
                                 ))}
                               </select>
                             </label>
+                            <p className="mt-2 text-xs text-[var(--muted)]">
+                              Record an action already completed through the appropriate Room tool.
+                              This field does not remove content or change a member&apos;s access.
+                            </p>
                             <label className="mt-3 block text-sm font-medium">
-                              Resolution note
+                              Internal resolution note
                               <textarea
                                 value={resolution[item.id] || ""}
                                 onChange={(event) =>
@@ -578,6 +582,10 @@ export default function RoomModerationClient() {
                                 className="mt-2 w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3 py-2 text-sm"
                               />
                             </label>
+                            <p className="mt-2 text-xs text-[var(--muted)]">
+                              This note stays visible to authorized Room staff. The reporter receives
+                              only the final resolved or dismissed status.
+                            </p>
                             <div className="mt-2 grid grid-cols-2 gap-2">
                               <button
                                 type="button"
@@ -600,18 +608,19 @@ export default function RoomModerationClient() {
                         </div>
                       ) : item.resolution_note ? (
                         <div className="rounded-2xl border border-[var(--border)] p-3 text-sm">
-                          <strong>Resolution:</strong> {item.resolution_note}
+                          <strong>Internal resolution:</strong> {item.resolution_note}
                           {item.resolution_action && item.resolution_action !== "none" ? (
                             <p className="mt-1 text-xs text-[var(--muted)]">
-                              Outcome: {item.resolution_action.replaceAll("_", " ")}
+                              Recorded outcome: {item.resolution_action.replaceAll("_", " ")}
                             </p>
                           ) : null}
                         </div>
                       ) : null}
                     </div>
-                  ) : item.resolution_note ? (
+                  ) : !open ? (
                     <p className="mt-4 rounded-2xl border border-[var(--border)] p-3 text-sm">
-                      <strong>Resolution:</strong> {item.resolution_note}
+                      This report has been reviewed. Internal evidence and case notes remain private
+                      to authorized Room staff.
                     </p>
                   ) : null}
                 </article>
