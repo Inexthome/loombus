@@ -4,7 +4,6 @@ import {
   createRequestSupabase,
   createRoomServiceSupabase,
   getRoomAccess,
-  type RoomRow,
 } from "@/lib/room-operations";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
@@ -56,7 +55,9 @@ function validUuid(value: unknown): value is string {
 
 async function authorize(request: NextRequest): Promise<Authorized> {
   try {
-    const account = await verifyRequestAccountAccess(createRequestSupabase(request));
+    const account = await verifyRequestAccountAccess(
+      createRequestSupabase(request)
+    );
     if (!account.ok) {
       return {
         ok: false,
@@ -147,7 +148,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   if (result.error) {
     return jsonError(
-      result.error.message || "Room notification preferences could not be loaded.",
+      result.error.message ||
+        "Room notification preferences could not be loaded.",
       503,
       "room_notification_preferences_unavailable"
     );
@@ -184,7 +186,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const source = body as Record<string, unknown>;
   const normalized = {
-    inAppEnabled: readBoolean(source, "inAppEnabled", DEFAULTS.inAppEnabled),
+    inAppEnabled: readBoolean(
+      source,
+      "inAppEnabled",
+      DEFAULTS.inAppEnabled
+    ),
     newDiscussionsEnabled: readBoolean(
       source,
       "newDiscussionsEnabled",
@@ -232,7 +238,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   if (upsert.error) {
     return jsonError(
-      upsert.error.message || "Room notification preferences could not be saved.",
+      upsert.error.message ||
+        "Room notification preferences could not be saved.",
       503,
       "room_notification_preferences_unavailable"
     );
@@ -259,6 +266,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
       name: verified.access.room.name,
       roomType: verified.access.room.roomType,
     },
-    preferences: normalize((upsert.data ?? null) as RoomRow as PreferenceRow),
+    preferences: normalize((upsert.data ?? null) as PreferenceRow | null),
   });
 }
