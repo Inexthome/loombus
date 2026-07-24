@@ -189,6 +189,10 @@ export async function getRoomAccess(
 
   const rawRoom = roomResult.data as RoomRow;
   const room = normalizeRoom(rawRoom);
+  const roomStatus = room.status.toLowerCase();
+  if (["deleted", "deleting"].includes(roomStatus)) return null;
+
+  const isArchived = roomStatus === "archived";
   const isOwner = room.ownerId === userId || room.createdBy === userId;
 
   const membershipResult = await serviceSupabase
@@ -223,12 +227,15 @@ export async function getRoomAccess(
       membershipStatus?.toLowerCase() ?? ""
     ) &&
     !isSuspended;
-  const role = isOwner
-    ? "owner"
-    : membershipIsActive
-      ? normalizeRole(membership?.role)
-      : null;
-  const allowed = isOwner || membershipIsActive;
+
+  const role = isArchived
+    ? null
+    : isOwner
+      ? "owner"
+      : membershipIsActive
+        ? normalizeRole(membership?.role)
+        : null;
+  const allowed = !isArchived && (isOwner || membershipIsActive);
 
   return {
     room,
