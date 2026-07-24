@@ -32,6 +32,90 @@ create index if not exists room_notification_preferences_digest_due_idx
   )
   where email_digest_enabled = true;
 
+update public.room_activity_events activity
+set
+  title = 'Private Customer Support case activity',
+  summary = null,
+  audience = 'managers',
+  importance = 'high'
+from public.rooms room
+where activity.room_id = room.id
+  and activity.event_type = 'discussion_created'
+  and lower(replace(coalesce(room.room_type, ''), ' ', '_'))
+    in ('customer_support', 'customer-support');
+
+create or replace function public.capture_room_post_activity()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_room_type text;
+begin
+  select lower(replace(coalesce(room.room_type, ''), ' ', '_'))
+  into v_room_type
+  from public.rooms room
+  where room.id = new.room_id;
+
+  if v_room_type in ('customer_support', 'customer-support') then
+    insert into public.room_activity_events (
+      room_id,
+      event_type,
+      module_key,
+      actor_id,
+      target_type,
+      target_id,
+      title,
+      summary,
+      audience,
+      importance,
+      created_at
+    ) values (
+      new.room_id,
+      'discussion_created',
+      'discussions',
+      new.author_id,
+      'room_post',
+      new.id,
+      'Private Customer Support case activity',
+      null,
+      'managers',
+      'high',
+      coalesce(new.created_at, now())
+    );
+    return new;
+  end if;
+
+  insert into public.room_activity_events (
+    room_id,
+    event_type,
+    module_key,
+    actor_id,
+    target_type,
+    target_id,
+    title,
+    summary,
+    audience,
+    importance,
+    created_at
+  ) values (
+    new.room_id,
+    'discussion_created',
+    'discussions',
+    new.author_id,
+    'room_post',
+    new.id,
+    left(coalesce(nullif(btrim(new.title), ''), 'Untitled discussion'), 180),
+    left(coalesce(new.body, ''), 280),
+    'all',
+    case when new.is_pinned or new.is_announcement then 'high' else 'normal' end,
+    coalesce(new.created_at, now())
+  );
+  return new;
+end;
+$$;
+
 create or replace function public.populate_notification_room_id()
 returns trigger
 language plpgsql
