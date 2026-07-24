@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileClock, FileSearch, Settings2, ShieldCheck } from "lucide-react";
+import { FileClock, FileSearch, Flag, Settings2, ShieldCheck } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -16,6 +16,7 @@ export default function RoomToolsShortcuts() {
   const [allowed, setAllowed] = useState(false);
   const [owner, setOwner] = useState(false);
   const [manager, setManager] = useState(false);
+  const [canModerate, setCanModerate] = useState(false);
   const [archived, setArchived] = useState(false);
 
   useEffect(() => {
@@ -39,6 +40,9 @@ export default function RoomToolsShortcuts() {
         setAllowed(true);
         setOwner(role === "owner");
         setManager(role === "owner" || role === "administrator");
+        setCanModerate(
+          role === "owner" || role === "administrator" || role === "moderator"
+        );
         return;
       }
 
@@ -55,6 +59,7 @@ export default function RoomToolsShortcuts() {
       if (!cancelled && lifecycle.ok) {
         setOwner(true);
         setManager(true);
+        setCanModerate(true);
         setArchived(Boolean(lifecycleResult.room?.isArchived));
       }
     })();
@@ -73,6 +78,12 @@ export default function RoomToolsShortcuts() {
           <Link href={`/rooms/${encodeURIComponent(roomId)}/tools`}>
             <FileSearch aria-hidden="true" />
             Search Room
+          </Link>
+        ) : null}
+        {allowed ? (
+          <Link href={`/rooms/${encodeURIComponent(roomId)}/moderation`}>
+            <Flag aria-hidden="true" />
+            {canModerate ? "Moderation" : "Report issue"}
           </Link>
         ) : null}
         {manager ? (
