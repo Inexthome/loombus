@@ -1,0 +1,72 @@
+name: Harden Room operational requests
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    if: github.head_ref == 'agent/repair-room-admission-and-operational-requests'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply request hardening
+        run: python .github/scripts/harden_room_operational_requests.py
+
+      - name: Verify hardening invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          route = Path('src/app/api/rooms/[roomId]/modules/route.ts').read_text()
+          ui = Path('src/components/room-tier-modules-workspace.tsx').read_text()
+          assert 'requestAuthor &&\n          status === "cancelled"' in route
+          assert '<Trash2 aria-hidden="true" /> Cancel' in ui
+          PY
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        run: |
+          export NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL:-https://example.supabase.co}"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjIwMDAwMDAwMDB9.dummy}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UiLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwMH0.dummy}"
+          export NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-https://loombus.com}"
+          npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit hardening and remove one-time automation
+        run: |
+          git config user.name "Inexthome"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/scripts/harden_room_operational_requests.py
+          git rm .github/workflows/harden-room-operational-requests.yml
+          git add 'src/app/api/rooms/[roomId]/modules/route.ts'
+          git add src/components/room-tier-modules-workspace.tsx
+          git add docs/rooms-entitlement-repair-order.md
+          git commit -m "Harden operational request permissions"
+          git push origin HEAD:${{ github.head_ref }}
