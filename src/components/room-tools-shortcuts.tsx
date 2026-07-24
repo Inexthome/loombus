@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileSearch, Settings2, ShieldCheck } from "lucide-react";
+import { FileClock, FileSearch, Settings2, ShieldCheck } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -79,6 +79,12 @@ export default function RoomToolsShortcuts() {
           <Link href={`/rooms/${encodeURIComponent(roomId)}/governance`}>
             <ShieldCheck aria-hidden="true" />
             Governance
+          </Link>
+        ) : null}
+        {owner ? (
+          <Link href={`/rooms/${encodeURIComponent(roomId)}/retention`}>
+            <FileClock aria-hidden="true" />
+            Retention
           </Link>
         ) : null}
         {owner ? (
