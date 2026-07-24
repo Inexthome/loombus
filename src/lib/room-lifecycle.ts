@@ -63,17 +63,28 @@ export type RoomSearchFilters = {
   dateTo: string;
 };
 
-function asObject(value: unknown): JsonObject {
+function objectValue(value: unknown): JsonObject {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as JsonObject)
     : {};
 }
 
-function normalizedDate(value: unknown) {
+function isoDate(value: unknown) {
   const raw = asString(value);
   if (!raw) return null;
   const date = new Date(raw);
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
+function activeMember(row: RoomRow) {
+  const status = asString(row.status).toLowerCase();
+  if (["blocked", "removed", "inactive"].includes(status)) return false;
+  const suspendedUntil = isoDate(row.suspended_until);
+  return !suspendedUntil || new Date(suspendedUntil).getTime() <= Date.now();
+}
+
+function profileName(profile: ReturnType<typeof profileFor>) {
+  return profile?.full_name || profile?.username || "Room member";
 }
 
 function textMatches(query: string, ...values: unknown[]) {
@@ -84,40 +95,21 @@ function textMatches(query: string, ...values: unknown[]) {
     .includes(query.toLowerCase());
 }
 
-function dateMatches(value: unknown, from: string, to: string) {
-  const timestamp = normalizedDate(value);
-  if (!timestamp) return !from && !to;
-  const time = new Date(timestamp).getTime();
-  if (from) {
-    const minimum = new Date(`${from}T00:00:00.000Z`).getTime();
-    if (Number.isFinite(minimum) && time < minimum) return false;
-  }
-  if (to) {
-    const maximum = new Date(`${to}T23:59:59.999Z`).getTime();
-    if (Number.isFinite(maximum) && time > maximum) return false;
-  }
+function dateMatches(value: string | null, from: string, to: string) {
+  if (!value) return !from && !to;
+  const time = new Date(value).getTime();
+  if (from && time < new Date(`${from}T00:00:00.000Z`).getTime()) return false;
+  if (to && time > new Date(`${to}T23:59:59.999Z`).getTime()) return false;
   return true;
 }
 
-function profileName(profile: ReturnType<typeof profileFor>) {
-  return profile?.full_name || profile?.username || "Room member";
-}
-
-function memberIsActive(row: RoomRow) {
-  const status = asString(row.status).toLowerCase();
-  if (["blocked", "removed", "inactive"].includes(status)) return false;
-  const suspendedUntil = normalizedDate(row.suspended_until);
-  return !suspendedUntil || new Date(suspendedUntil).getTime() <= Date.now();
-}
-
-async function loadOwnedRoom(service: ServiceClient, roomId: string, userId: string) {
+async function ownedRoom(service: ServiceClient, roomId: string, userId: string) {
   const result = await service
     .from("rooms")
     .select("*")
     .eq("id", roomId)
     .or(`owner_id.eq.${userId},created_by.eq.${userId}`)
     .maybeSingle();
-
   if (result.error) {
     throw new RoomLifecycleError(
       "The Room lifecycle record could not be loaded.",
@@ -136,11 +128,9 @@ async function loadOwnedRoom(service: ServiceClient, roomId: string, userId: str
   return row;
 }
 
-async function loadSearchAccess(service: ServiceClient, roomId: string, userId: string) {
+async function searchableAccess(service: ServiceClient, roomId: string, userId: string) {
   const access = await getRoomAccess(service, roomId, userId).catch(() => null);
-  if (!access) {
-    throw new RoomLifecycleError("Room not found.", 404, "room_not_found");
-  }
+  if (!access) throw new RoomLifecycleError("Room not found.", 404, "room_not_found");
   if (!access.allowed && !access.isOwner) {
     throw new RoomLifecycleError(
       "Active Room membership is required.",
@@ -162,75 +152,12 @@ function moduleCanOpen(access: RoomAccess, moduleKey: RoomModuleKey) {
   return access.isOwner;
 }
 
-async function accessibleDiscussionRows(
-  service: ServiceClient,
-  access: RoomAccess,
-  userId: string,
-  limit: number
-) {
-  const privateCases = isCustomerSupportRoomType(access.room.roomType);
-  let participantIds: string[] = [];
-
-  if (privateCases && !access.canModerate) {
-    const participantResult = await service
-      .from("room_post_participants")
-      .select("post_id")
-      .eq("room_id", access.room.id)
-      .eq("user_id", userId)
-      .limit(limit);
-    if (participantResult.error) {
-      throw new RoomLifecycleError(
-        "Room discussion permissions could not be verified.",
-        503,
-        "room_search_storage_unavailable"
-      );
-    }
-    participantIds = ((participantResult.data ?? []) as RoomRow[])
-      .map((row) => asString(row.post_id))
-      .filter(Boolean);
-  }
-
-  let query = service
-    .from("room_posts")
-    .select("*")
-    .eq("room_id", access.room.id)
-    .is("deleted_at", null);
-
-  if (privateCases && !access.canModerate) {
-    const clauses = [`author_id.eq.${userId}`];
-    if (participantIds.length > 0) clauses.push(`id.in.(${participantIds.join(",")})`);
-    query = query.or(clauses.join(","));
-  }
-
-  const result = await query
-    .order("last_activity_at", { ascending: false })
-    .limit(limit);
-  if (result.error) {
-    throw new RoomLifecycleError(
-      "Room discussions could not be searched.",
-      503,
-      "room_search_storage_unavailable"
-    );
-  }
-  return (result.data ?? []) as RoomRow[];
-}
-
-async function roomSettings(service: ServiceClient, roomId: string) {
-  const result = await service
-    .from("room_module_settings")
-    .select("settings")
-    .eq("room_id", roomId)
-    .maybeSingle();
-  if (result.error) return {};
-  return asObject((result.data as RoomRow | null)?.settings);
-}
-
-async function loadRows(
+async function rows(
   service: ServiceClient,
   table: string,
   roomId: string,
   limit: number
-): Promise<RoomRow[]> {
+) {
   const result = await service
     .from(table)
     .select("*")
@@ -246,7 +173,56 @@ async function loadRows(
   return (result.data ?? []) as RoomRow[];
 }
 
-async function loadReplies(service: ServiceClient, postIds: string[]) {
+async function accessiblePosts(
+  service: ServiceClient,
+  access: RoomAccess,
+  userId: string
+) {
+  const privateCases = isCustomerSupportRoomType(access.room.roomType);
+  let participantPostIds: string[] = [];
+  if (privateCases && !access.canModerate) {
+    const participantResult = await service
+      .from("room_post_participants")
+      .select("post_id")
+      .eq("room_id", access.room.id)
+      .eq("user_id", userId)
+      .limit(SEARCH_LIMIT);
+    if (participantResult.error) {
+      throw new RoomLifecycleError(
+        "Room discussion permissions could not be verified.",
+        503,
+        "room_search_storage_unavailable"
+      );
+    }
+    participantPostIds = ((participantResult.data ?? []) as RoomRow[])
+      .map((row) => asString(row.post_id))
+      .filter(Boolean);
+  }
+
+  let query = service
+    .from("room_posts")
+    .select("*")
+    .eq("room_id", access.room.id)
+    .is("deleted_at", null);
+  if (privateCases && !access.canModerate) {
+    const clauses = [`author_id.eq.${userId}`];
+    if (participantPostIds.length > 0) {
+      clauses.push(`id.in.(${participantPostIds.join(",")})`);
+    }
+    query = query.or(clauses.join(","));
+  }
+  const result = await query.limit(SEARCH_LIMIT);
+  if (result.error) {
+    throw new RoomLifecycleError(
+      "Room discussions could not be searched.",
+      503,
+      "room_search_storage_unavailable"
+    );
+  }
+  return (result.data ?? []) as RoomRow[];
+}
+
+async function replyRows(service: ServiceClient, postIds: string[]) {
   if (postIds.length === 0) return [] as RoomRow[];
   const result = await service
     .from("room_post_replies")
@@ -256,7 +232,7 @@ async function loadReplies(service: ServiceClient, postIds: string[]) {
     .limit(SEARCH_LIMIT * 5);
   if (result.error) {
     throw new RoomLifecycleError(
-      "Room search is temporarily unavailable.",
+      "Room replies could not be searched.",
       503,
       "room_search_storage_unavailable"
     );
@@ -264,26 +240,13 @@ async function loadReplies(service: ServiceClient, postIds: string[]) {
   return (result.data ?? []) as RoomRow[];
 }
 
-async function loadRecords(
-  service: ServiceClient,
-  roomId: string,
-  allowedDataModules: Set<string>
-) {
-  if (allowedDataModules.size === 0) return [] as RoomRow[];
+async function settings(service: ServiceClient, roomId: string) {
   const result = await service
-    .from("room_module_records")
-    .select("*")
+    .from("room_module_settings")
+    .select("settings")
     .eq("room_id", roomId)
-    .in("module_key", [...allowedDataModules])
-    .limit(SEARCH_LIMIT * 5);
-  if (result.error) {
-    throw new RoomLifecycleError(
-      "Room search is temporarily unavailable.",
-      503,
-      "room_search_storage_unavailable"
-    );
-  }
-  return (result.data ?? []) as RoomRow[];
+    .maybeSingle();
+  return result.error ? {} : objectValue((result.data as RoomRow | null)?.settings);
 }
 
 export async function searchRoomContent(
@@ -292,39 +255,45 @@ export async function searchRoomContent(
   filters: RoomSearchFilters
 ) {
   const service = createRoomServiceSupabase();
-  const access = await loadSearchAccess(service, roomId, userId);
-  const posts = await accessibleDiscussionRows(service, access, userId, SEARCH_LIMIT);
+  const access = await searchableAccess(service, roomId, userId);
+  const posts = await accessiblePosts(service, access, userId);
   const postIds = posts.map((row) => asString(row.id)).filter(Boolean);
-  const settings = await roomSettings(service, roomId);
+  const roomSettings = await settings(service, roomId);
   const directoryVisible =
-    access.canManage || access.isOwner || settings.memberDirectoryVisible !== false;
+    access.canManage || access.isOwner || roomSettings.memberDirectoryVisible !== false;
 
   const plan = getRoomPlanEntitlements(
     access.room.subscriptionPlan,
     access.room.subscriptionStatus
   );
-  const allowedDataModules = new Set<string>(
-    plan.modules
-      .filter((moduleKey) => moduleCanOpen(access, moduleKey))
-      .map((moduleKey) => ROOM_MODULE_DEFINITIONS[moduleKey].dataModule)
-      .filter((value): value is string => typeof value === "string")
-  );
+  const dataModules: string[] = [];
+  for (const moduleKey of plan.modules) {
+    if (!moduleCanOpen(access, moduleKey)) continue;
+    const dataModule = ROOM_MODULE_DEFINITIONS[moduleKey].dataModule;
+    if (dataModule && !dataModules.includes(dataModule)) dataModules.push(dataModule);
+  }
 
-  const replies = await loadReplies(service, postIds);
-  let attachments = await loadRows(
+  const replies = await replyRows(service, postIds);
+  let attachments = await rows(
     service,
     "room_resource_attachments",
     roomId,
     SEARCH_LIMIT
   );
   const members = directoryVisible
-    ? (await loadRows(service, "room_members", roomId, SEARCH_LIMIT)).filter(
-        memberIsActive
-      )
+    ? (await rows(service, "room_members", roomId, SEARCH_LIMIT)).filter(activeMember)
     : [];
-  const records = await loadRecords(service, roomId, allowedDataModules);
-  const events = await loadRows(service, "room_events", roomId, SEARCH_LIMIT);
-  const announcements = await loadRows(
+  const allRecords = await rows(
+    service,
+    "room_module_records",
+    roomId,
+    SEARCH_LIMIT * 5
+  );
+  const records = allRecords.filter((row) =>
+    dataModules.includes(asString(row.module_key))
+  );
+  const events = await rows(service, "room_events", roomId, SEARCH_LIMIT);
+  const announcements = await rows(
     service,
     "room_announcements",
     roomId,
@@ -332,29 +301,28 @@ export async function searchRoomContent(
   );
 
   if (isCustomerSupportRoomType(access.room.roomType) && !access.canModerate) {
-    const accessible = new Set(postIds);
+    const allowed = new Set(postIds);
     attachments = attachments.filter((row) => {
-      const linkedPostId =
+      const postId =
         asString(row.post_id) ||
         asString(row.room_post_id) ||
         asString(row.parent_post_id);
-      return linkedPostId ? accessible.has(linkedPostId) : false;
+      return Boolean(postId && allowed.has(postId));
     });
   }
 
-  const profileIds = [
+  const profiles = await loadProfiles(service, [
     ...posts.map((row) => asString(row.author_id)),
     ...replies.map((row) => asString(row.author_id)),
     ...members.map((row) => asString(row.user_id)),
     ...records.map((row) => asString(row.created_by)),
     ...events.map((row) => asString(row.created_by)),
     ...announcements.map((row) => asString(row.created_by)),
-  ];
-  const profiles = await loadProfiles(service, profileIds);
-  const results: SearchResult[] = [];
-  const typeFilter = filters.type.toLowerCase();
+  ]);
 
-  function push(item: SearchResult) {
+  const results: SearchResult[] = [];
+  const add = (item: SearchResult) => {
+    const typeFilter = filters.type.toLowerCase();
     if (typeFilter && typeFilter !== "all" && item.type !== typeFilter) return;
     if (filters.author && item.authorId !== filters.author) return;
     if (filters.status && filters.status !== "all" && item.status !== filters.status) return;
@@ -368,53 +336,90 @@ export async function searchRoomContent(
     if (!dateMatches(item.updatedAt ?? item.createdAt, filters.dateFrom, filters.dateTo)) return;
     if (!textMatches(filters.query, item.title, item.excerpt, item.authorName)) return;
     results.push(item);
-  }
+  };
+
+  const addAuthored = (
+    row: RoomRow,
+    type: string,
+    title: string,
+    excerpt: string,
+    status: string,
+    href: string,
+    authorField = "created_by"
+  ) => {
+    const authorId = asString(row[authorField]);
+    add({
+      id: asString(row.id),
+      type,
+      title,
+      excerpt,
+      status,
+      authorId: authorId || null,
+      authorName: profileName(profileFor(profiles, authorId)),
+      fileType: null,
+      createdAt: isoDate(row.created_at),
+      updatedAt: isoDate(row.updated_at) ?? isoDate(row.created_at),
+      href,
+    });
+  };
 
   for (const row of posts) {
-    const authorId = asString(row.author_id);
-    push({
-      id: asString(row.id),
-      type: "discussion",
-      title: asString(row.title) || "Room discussion",
-      excerpt: asString(row.body).slice(0, 360),
-      status: asString(row.status) || "open",
-      authorId: authorId || null,
-      authorName: profileName(profileFor(profiles, authorId)),
-      fileType: null,
-      createdAt: normalizedDate(row.created_at),
-      updatedAt:
-        normalizedDate(row.updated_at) ?? normalizedDate(row.created_at),
-      href: `/rooms/${encodeURIComponent(roomId)}?discussion=${encodeURIComponent(
-        asString(row.id)
-      )}`,
-    });
+    addAuthored(
+      row,
+      "discussion",
+      asString(row.title) || "Room discussion",
+      asString(row.body).slice(0, 360),
+      asString(row.status) || "open",
+      `/rooms/${encodeURIComponent(roomId)}?discussion=${encodeURIComponent(asString(row.id))}`,
+      "author_id"
+    );
   }
-
   for (const row of replies) {
-    const authorId = asString(row.author_id);
-    push({
-      id: asString(row.id),
-      type: "reply",
-      title: "Discussion reply",
-      excerpt: asString(row.body).slice(0, 360),
-      status: "active",
-      authorId: authorId || null,
-      authorName: profileName(profileFor(profiles, authorId)),
-      fileType: null,
-      createdAt: normalizedDate(row.created_at),
-      updatedAt:
-        normalizedDate(row.updated_at) ?? normalizedDate(row.created_at),
-      href: `/rooms/${encodeURIComponent(roomId)}?discussion=${encodeURIComponent(
-        asString(row.post_id)
-      )}`,
-    });
+    addAuthored(
+      row,
+      "reply",
+      "Discussion reply",
+      asString(row.body).slice(0, 360),
+      "active",
+      `/rooms/${encodeURIComponent(roomId)}?discussion=${encodeURIComponent(asString(row.post_id))}`,
+      "author_id"
+    );
   }
-
+  for (const row of records) {
+    const moduleKey = asString(row.module_key) || "record";
+    addAuthored(
+      row,
+      moduleKey,
+      asString(row.title) || "Room record",
+      asString(row.body).slice(0, 360),
+      asString(row.status) || "active",
+      `/rooms/${encodeURIComponent(roomId)}?module=${encodeURIComponent(moduleKey)}`
+    );
+  }
+  for (const row of events) {
+    addAuthored(
+      row,
+      "event",
+      asString(row.title) || "Room event",
+      [asString(row.description), asString(row.location)].filter(Boolean).join(" · "),
+      asString(row.status) || "scheduled",
+      `/rooms/${encodeURIComponent(roomId)}?module=calendar`
+    );
+  }
+  for (const row of announcements) {
+    addAuthored(
+      row,
+      "announcement",
+      asString(row.title) || "Announcement",
+      asString(row.body).slice(0, 360),
+      asString(row.priority) || "normal",
+      `/rooms/${encodeURIComponent(roomId)}?module=announcements`
+    );
+  }
   for (const row of attachments) {
-    const fileName =
-      asString(row.file_name) || asString(row.filename) || "Room attachment";
+    const fileName = asString(row.file_name) || asString(row.filename) || "Room attachment";
     const mimeType = asString(row.mime_type) || asString(row.content_type);
-    push({
+    add({
       id: asString(row.id),
       type: "file",
       title: fileName,
@@ -423,17 +428,15 @@ export async function searchRoomContent(
       authorId: asString(row.uploaded_by) || asString(row.created_by) || null,
       authorName: null,
       fileType: mimeType || fileName.split(".").pop() || null,
-      createdAt: normalizedDate(row.created_at),
-      updatedAt:
-        normalizedDate(row.updated_at) ?? normalizedDate(row.created_at),
+      createdAt: isoDate(row.created_at),
+      updatedAt: isoDate(row.updated_at) ?? isoDate(row.created_at),
       href: `/rooms/${encodeURIComponent(roomId)}?module=files`,
     });
   }
-
   for (const row of members) {
     const memberId = asString(row.user_id);
     const profile = profileFor(profiles, memberId);
-    push({
+    add({
       id: asString(row.id) || memberId,
       type: "member",
       title: profileName(profile),
@@ -442,79 +445,16 @@ export async function searchRoomContent(
       authorId: memberId,
       authorName: profileName(profile),
       fileType: null,
-      createdAt:
-        normalizedDate(row.joined_at) ?? normalizedDate(row.created_at),
-      updatedAt:
-        normalizedDate(row.updated_at) ?? normalizedDate(row.created_at),
+      createdAt: isoDate(row.joined_at) ?? isoDate(row.created_at),
+      updatedAt: isoDate(row.updated_at) ?? isoDate(row.created_at),
       href: `/rooms/${encodeURIComponent(roomId)}?module=members`,
     });
   }
 
-  for (const row of records) {
-    const moduleKey = asString(row.module_key);
-    const authorId = asString(row.created_by);
-    push({
-      id: asString(row.id),
-      type: moduleKey || "record",
-      title: asString(row.title) || "Room record",
-      excerpt: asString(row.body).slice(0, 360),
-      status: asString(row.status) || "active",
-      authorId: authorId || null,
-      authorName: profileName(profileFor(profiles, authorId)),
-      fileType: null,
-      createdAt: normalizedDate(row.created_at),
-      updatedAt:
-        normalizedDate(row.updated_at) ?? normalizedDate(row.created_at),
-      href: `/rooms/${encodeURIComponent(roomId)}?module=${encodeURIComponent(
-        moduleKey
-      )}`,
-    });
-  }
-
-  for (const row of events) {
-    const authorId = asString(row.created_by);
-    push({
-      id: asString(row.id),
-      type: "event",
-      title: asString(row.title) || "Room event",
-      excerpt: [asString(row.description), asString(row.location)]
-        .filter(Boolean)
-        .join(" · "),
-      status: asString(row.status) || "scheduled",
-      authorId: authorId || null,
-      authorName: profileName(profileFor(profiles, authorId)),
-      fileType: null,
-      createdAt: normalizedDate(row.created_at),
-      updatedAt:
-        normalizedDate(row.updated_at) ?? normalizedDate(row.starts_at),
-      href: `/rooms/${encodeURIComponent(roomId)}?module=calendar`,
-    });
-  }
-
-  for (const row of announcements) {
-    const authorId = asString(row.created_by);
-    push({
-      id: asString(row.id),
-      type: "announcement",
-      title: asString(row.title) || "Announcement",
-      excerpt: asString(row.body).slice(0, 360),
-      status: asString(row.priority) || "normal",
-      authorId: authorId || null,
-      authorName: profileName(profileFor(profiles, authorId)),
-      fileType: null,
-      createdAt: normalizedDate(row.created_at),
-      updatedAt:
-        normalizedDate(row.updated_at) ?? normalizedDate(row.created_at),
-      href: `/rooms/${encodeURIComponent(roomId)}?module=announcements`,
-    });
-  }
-
-  results.sort((left, right) => {
-    const leftTime = new Date(left.updatedAt ?? left.createdAt ?? 0).getTime();
-    const rightTime = new Date(right.updatedAt ?? right.createdAt ?? 0).getTime();
-    return rightTime - leftTime;
-  });
-
+  results.sort((left, right) =>
+    new Date(right.updatedAt ?? right.createdAt ?? 0).getTime() -
+    new Date(left.updatedAt ?? left.createdAt ?? 0).getTime()
+  );
   return {
     generatedAt: new Date().toISOString(),
     room: {
@@ -540,17 +480,8 @@ async function countRows(service: ServiceClient, table: string, roomId: string) 
 
 export async function getRoomLifecycleOverview(roomId: string, userId: string) {
   const service = createRoomServiceSupabase();
-  const row = await loadOwnedRoom(service, roomId, userId);
+  const row = await ownedRoom(service, roomId, userId);
   const room = normalizeRoom(row);
-  const members = await countRows(service, "room_members", roomId);
-  const discussions = await countRows(service, "room_posts", roomId);
-  const records = await countRows(service, "room_module_records", roomId);
-  const attachments = await countRows(
-    service,
-    "room_resource_attachments",
-    roomId
-  );
-
   return {
     room: {
       id: room.id,
@@ -561,55 +492,32 @@ export async function getRoomLifecycleOverview(roomId: string, userId: string) {
       isArchived: room.status.toLowerCase() === "archived",
       hasStripeSubscription: Boolean(asString(row.stripe_subscription_id)),
     },
-    counts: { members, discussions, records, attachments },
+    counts: {
+      members: await countRows(service, "room_members", roomId),
+      discussions: await countRows(service, "room_posts", roomId),
+      records: await countRows(service, "room_module_records", roomId),
+      attachments: await countRows(service, "room_resource_attachments", roomId),
+    },
     confirmations: { deletePhrase: `${room.name} DELETE` },
   };
 }
 
-async function tableRows(
-  service: ServiceClient,
-  table: string,
-  roomId: string,
-  limit = EXPORT_LIMIT
-) {
+async function exportTable(service: ServiceClient, table: string, roomId: string) {
   const result = await service
     .from(table)
     .select("*")
     .eq("room_id", roomId)
-    .limit(limit);
-  if (result.error) {
-    return { rows: [] as RoomRow[], unavailable: result.error.message };
-  }
-  return { rows: (result.data ?? []) as RoomRow[], unavailable: null };
-}
-
-async function attachmentExportRows(service: ServiceClient, roomId: string) {
-  const result = await tableRows(service, "room_resource_attachments", roomId);
-  const rows: RoomRow[] = [];
-  for (const row of result.rows) {
-    const bucket =
-      asString(row.bucket_name) ||
-      asString(row.storage_bucket) ||
-      asString(row.bucket);
-    const path =
-      asString(row.storage_path) ||
-      asString(row.object_path) ||
-      asString(row.path);
-    let downloadUrl: string | null = null;
-    if (bucket && path) {
-      const signed = await service.storage.from(bucket).createSignedUrl(path, 3600);
-      downloadUrl = signed.error ? null : signed.data.signedUrl;
-    }
-    rows.push({ ...row, export_download_url: downloadUrl });
-  }
-  return { rows, unavailable: result.unavailable };
+    .limit(EXPORT_LIMIT);
+  return result.error
+    ? { rows: [] as RoomRow[], unavailable: result.error.message }
+    : { rows: (result.data ?? []) as RoomRow[], unavailable: null };
 }
 
 export async function exportRoomData(roomId: string, userId: string) {
   const service = createRoomServiceSupabase();
-  const roomRow = await loadOwnedRoom(service, roomId, userId);
+  const roomRow = await ownedRoom(service, roomId, userId);
   const room = normalizeRoom(roomRow);
-  const tables = [
+  const tableNames = [
     "room_members",
     "room_applications",
     "room_posts",
@@ -620,12 +528,27 @@ export async function exportRoomData(roomId: string, userId: string) {
     "room_module_records",
     "room_module_settings",
   ];
+  const data: Record<string, Awaited<ReturnType<typeof exportTable>>> = {};
+  for (const table of tableNames) data[table] = await exportTable(service, table, roomId);
 
-  const data: Record<string, { rows: RoomRow[]; unavailable: string | null }> = {};
-  for (const table of tables) {
-    data[table] = await tableRows(service, table, roomId);
+  const attachmentExport = await exportTable(
+    service,
+    "room_resource_attachments",
+    roomId
+  );
+  const attachmentRows: RoomRow[] = [];
+  for (const row of attachmentExport.rows) {
+    const bucket =
+      asString(row.bucket_name) || asString(row.storage_bucket) || asString(row.bucket);
+    const path =
+      asString(row.storage_path) || asString(row.object_path) || asString(row.path);
+    let downloadUrl: string | null = null;
+    if (bucket && path) {
+      const signed = await service.storage.from(bucket).createSignedUrl(path, 3600);
+      downloadUrl = signed.data?.signedUrl ?? null;
+    }
+    attachmentRows.push({ ...row, export_download_url: downloadUrl });
   }
-  const attachments = await attachmentExportRows(service, roomId);
 
   await logAuditEvent({
     actor_id: userId,
@@ -634,23 +557,21 @@ export async function exportRoomData(roomId: string, userId: string) {
     target_id: roomId,
     metadata: {
       room_status: room.status,
-      attachment_count: attachments.rows.length,
+      attachment_count: attachmentRows.length,
     },
   });
 
   return {
     exportVersion: 1,
     exportedAt: new Date().toISOString(),
-    signedAttachmentLinksExpireAt: new Date(
-      Date.now() + 3_600_000
-    ).toISOString(),
+    signedAttachmentLinksExpireAt: new Date(Date.now() + 3_600_000).toISOString(),
     room: roomRow,
     data,
-    attachments,
+    attachments: { rows: attachmentRows, unavailable: attachmentExport.unavailable },
   };
 }
 
-async function subscriptionBlocksDeletion(room: RoomRow) {
+async function activeSubscription(room: RoomRow) {
   const subscriptionId = asString(room.stripe_subscription_id);
   if (!subscriptionId) return false;
   if (!STRIPE_SECRET_KEY) {
@@ -660,8 +581,9 @@ async function subscriptionBlocksDeletion(room: RoomRow) {
       "room_deletion_billing_verification_required"
     );
   }
-  const stripe = new Stripe(STRIPE_SECRET_KEY);
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const subscription = await new Stripe(STRIPE_SECRET_KEY).subscriptions.retrieve(
+    subscriptionId
+  );
   return ["active", "trialing", "past_due", "unpaid", "paused"].includes(
     subscription.status
   );
@@ -674,36 +596,16 @@ export async function updateRoomLifecycle(
   confirmation?: string
 ) {
   const service = createRoomServiceSupabase();
-  const row = await loadOwnedRoom(service, roomId, userId);
+  const row = await ownedRoom(service, roomId, userId);
   const room = normalizeRoom(row);
   const status = room.status.toLowerCase();
 
-  if (action === "archive") {
-    if (status === "archived") return { ok: true, status: "archived" };
-    const result = await service
-      .from("rooms")
-      .update({ status: "archived", updated_at: new Date().toISOString() })
-      .eq("id", roomId)
-      .or(`owner_id.eq.${userId},created_by.eq.${userId}`);
-    if (result.error) {
-      throw new RoomLifecycleError(
-        "The Room could not be archived.",
-        503,
-        "room_archive_failed"
-      );
+  if (action === "archive" || action === "restore") {
+    const nextStatus = action === "archive" ? "archived" : "active";
+    if (action === "archive" && status === "archived") {
+      return { ok: true, status: nextStatus };
     }
-    await logAuditEvent({
-      actor_id: userId,
-      action: "room.lifecycle.archived",
-      target_type: "room",
-      target_id: roomId,
-      metadata: { previous_status: room.status },
-    });
-    return { ok: true, status: "archived" };
-  }
-
-  if (action === "restore") {
-    if (status !== "archived") {
+    if (action === "restore" && status !== "archived") {
       throw new RoomLifecycleError(
         "Only an archived Room can be restored.",
         409,
@@ -712,24 +614,24 @@ export async function updateRoomLifecycle(
     }
     const result = await service
       .from("rooms")
-      .update({ status: "active", updated_at: new Date().toISOString() })
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
       .eq("id", roomId)
       .or(`owner_id.eq.${userId},created_by.eq.${userId}`);
     if (result.error) {
       throw new RoomLifecycleError(
-        "The Room could not be restored.",
+        `The Room could not be ${action === "archive" ? "archived" : "restored"}.`,
         503,
-        "room_restore_failed"
+        action === "archive" ? "room_archive_failed" : "room_restore_failed"
       );
     }
     await logAuditEvent({
       actor_id: userId,
-      action: "room.lifecycle.restored",
+      action: `room.lifecycle.${action === "archive" ? "archived" : "restored"}`,
       target_type: "room",
       target_id: roomId,
       metadata: { previous_status: room.status },
     });
-    return { ok: true, status: "active" };
+    return { ok: true, status: nextStatus };
   }
 
   const required = `${room.name} DELETE`;
@@ -747,7 +649,7 @@ export async function updateRoomLifecycle(
       "room_delete_archive_required"
     );
   }
-  if (await subscriptionBlocksDeletion(row)) {
+  if (await activeSubscription(row)) {
     throw new RoomLifecycleError(
       "This paid Room cannot be deleted while its Stripe subscription is active. Cancel it, wait for the paid period to end, then delete the archived Room.",
       409,
@@ -758,12 +660,7 @@ export async function updateRoomLifecycle(
   const now = new Date().toISOString();
   const roomUpdate = await service
     .from("rooms")
-    .update({
-      status: "deleted",
-      visibility: "private",
-      invite_only: true,
-      updated_at: now,
-    })
+    .update({ status: "deleted", visibility: "private", invite_only: true, updated_at: now })
     .eq("id", roomId)
     .or(`owner_id.eq.${userId},created_by.eq.${userId}`);
   if (roomUpdate.error) {
@@ -773,12 +670,10 @@ export async function updateRoomLifecycle(
       "room_delete_failed"
     );
   }
-
   await service
     .from("room_members")
     .update({ status: "removed", updated_at: now })
     .eq("room_id", roomId);
-
   for (const table of ["room_invites", "room_invitations"]) {
     await service
       .from(table)
@@ -786,7 +681,6 @@ export async function updateRoomLifecycle(
       .eq("room_id", roomId)
       .is("revoked_at", null);
   }
-
   await logAuditEvent({
     actor_id: userId,
     action: "room.lifecycle.deleted",
@@ -798,6 +692,5 @@ export async function updateRoomLifecycle(
       member_access_removed: true,
     },
   });
-
   return { ok: true, status: "deleted", redirect: "/rooms" };
 }
