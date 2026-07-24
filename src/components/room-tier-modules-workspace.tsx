@@ -226,6 +226,38 @@ function asArray(value: unknown) {
   return Array.isArray(value) ? value : [];
 }
 
+async function copyTextToClipboard(value: string) {
+  const text = value.trim();
+  if (!text) return false;
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fall through to the selection-based copy fallback below.
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    textarea.remove();
+  }
+}
+
 function findPortalHosts(): PortalHosts | null {
   const shell = document.querySelector<HTMLElement>(
     ".rooms-live-page .rooms-live-shell"
@@ -298,6 +330,7 @@ export function RoomTierModulesWorkspace() {
   const [loadingModule, setLoadingModule] = useState(false);
   const [message, setMessage] = useState("");
   const [messageIsError, setMessageIsError] = useState(false);
+  const [latestInviteUrl, setLatestInviteUrl] = useState("");
   const [highCapacityPage, setHighCapacityPage] = useState(1);
   const [highCapacitySearch, setHighCapacitySearch] = useState("");
   const selectedModuleRef = useRef<RoomModuleKey>("overview");
@@ -493,10 +526,22 @@ export function RoomTierModulesWorkspace() {
       if (!response.ok) {
         throw new Error(result.error ?? "The Room action could not be completed.");
       }
+      const inviteUrl = result.inviteUrl?.trim() ?? "";
+      if (payload.action === "create_invite" && !inviteUrl) {
+        throw new Error(
+          "The invitation was created without a usable link. Revoke it and try again."
+        );
+      }
+
       setMessage(successMessage);
-      if (result.inviteUrl) {
-        await navigator.clipboard.writeText(result.inviteUrl).catch(() => undefined);
-        setMessage("Secure invitation link created and copied.");
+      if (inviteUrl) {
+        setLatestInviteUrl(inviteUrl);
+        const copied = await copyTextToClipboard(inviteUrl);
+        setMessage(
+          copied
+            ? "Secure invitation link created and copied."
+            : "Secure invitation link created. Copy it from the field below."
+        );
       }
       await loadModule(moduleKey);
       if (["requests", "settings", "invites"].includes(moduleKey)) {
@@ -510,6 +555,17 @@ export function RoomTierModulesWorkspace() {
       setMessageIsError(true);
       return false;
     }
+  }
+
+  async function copyLatestInviteLink() {
+    if (!latestInviteUrl) return;
+    const copied = await copyTextToClipboard(latestInviteUrl);
+    setMessage(
+      copied
+        ? "Secure invitation link copied."
+        : "Automatic copying is unavailable. Select the link and copy it manually."
+    );
+    setMessageIsError(!copied);
   }
 
   if (!roomId || !hosts) return null;
@@ -582,6 +638,33 @@ export function RoomTierModulesWorkspace() {
         {message ? (
           <div className={`rooms-live-notice${messageIsError ? " is-error" : ""}`}>
             {message}
+          </div>
+        ) : null}
+
+        {selectedModule === "invites" && latestInviteUrl ? (
+          <div className="room-tier-create-card" role="status">
+            <label>
+              <span>New invitation link</span>
+              <input
+                type="url"
+                value={latestInviteUrl}
+                readOnly
+                onFocus={(event) => event.currentTarget.select()}
+                aria-label="New Room invitation link"
+              />
+            </label>
+            <button
+              type="button"
+              className="rooms-live-secondary-action"
+              onClick={() => void copyLatestInviteLink()}
+            >
+              <Copy aria-hidden="true" />
+              Copy invitation link
+            </button>
+            <small>
+              Keep this page open until you have saved the link. For security, the full
+              token cannot be reconstructed after you leave.
+            </small>
           </div>
         ) : null}
 
