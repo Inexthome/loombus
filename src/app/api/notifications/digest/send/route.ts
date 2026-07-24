@@ -277,8 +277,6 @@ async function runAccountDigests(args: {
 
     const { data: notifications, error: notificationsError } = await args.supabase
       .from("notifications")
-      // Selecting all columns keeps the account digest compatible before the
-      // manually applied Room migration adds room_id.
       .select("*")
       .eq("user_id", preference.user_id)
       .gte("created_at", getDigestSince(preference))
@@ -394,7 +392,9 @@ async function runDigest(request: NextRequest) {
     });
   } catch (error) {
     accountError =
-      error instanceof Error ? error.message : "Account digest processing failed.";
+      error instanceof Error
+        ? error.message
+        : "Account digest processing failed.";
   }
 
   try {
@@ -410,22 +410,26 @@ async function runDigest(request: NextRequest) {
   }
 
   const results = [...accountResults, ...roomResults];
-  return NextResponse.json({
-    ok: !accountError && !roomError,
-    checked: results.length,
-    sent: results.filter((result) => result.sent).length,
-    accountDigests: {
-      checked: accountResults.length,
-      sent: accountResults.filter((result) => result.sent).length,
-      error: accountError,
+  const failed = Boolean(accountError || roomError);
+  return NextResponse.json(
+    {
+      ok: !failed,
+      checked: results.length,
+      sent: results.filter((result) => result.sent).length,
+      accountDigests: {
+        checked: accountResults.length,
+        sent: accountResults.filter((result) => result.sent).length,
+        error: accountError,
+      },
+      roomDigests: {
+        checked: roomResults.length,
+        sent: roomResults.filter((result) => result.sent).length,
+        error: roomError,
+      },
+      results,
     },
-    roomDigests: {
-      checked: roomResults.length,
-      sent: roomResults.filter((result) => result.sent).length,
-      error: roomError,
-    },
-    results,
-  });
+    { status: failed ? 500 : 200 }
+  );
 }
 
 export async function GET(request: NextRequest) {
