@@ -102,6 +102,14 @@ export function RoomModelCard({
           <dt>Calendar</dt>
           <dd>{model.calendarUse}</dd>
         </div>
+        <div>
+          <dt>Default access</dt>
+          <dd>{model.defaultAccessSummary}</dd>
+        </div>
+        <div>
+          <dt>Workflow</dt>
+          <dd>{model.workflowSummary}</dd>
+        </div>
       </dl>
       <div className="rooms-v2-model-examples">
         {model.examples.map((example) => (

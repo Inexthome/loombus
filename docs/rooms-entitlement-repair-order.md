@@ -148,3 +148,16 @@ A release that changes either workflow must be tested with separate member and m
 5. Confirm the request author can cancel a still-open request, including when the author is also the assignee.
 6. Confirm the paid `Requests` module never displays or reviews membership applications.
 7. Confirm Free Rooms do not expose the paid `Requests` module.
+
+## Room model workflow contract
+
+Room models share the same private infrastructure, but they do not present one generic workspace.
+
+- Business Team Rooms use decision, work-request, task, milestone, resource, and team-update language.
+- Resident / HOA Rooms use maintenance, safety, governance, notice, meeting, document, and resident-decision workflows.
+- Classroom Rooms use assignment, attendance, accommodation, course-resource, schedule, submission, and class-announcement workflows.
+- Private Community Rooms use event, volunteer, membership, resource, partnership, poll, and member-update workflows.
+- Customer Support Rooms keep private support cases and restrict the paid operational Requests module to Room staff.
+
+Model defaults are recommendations applied when a setting has not been saved yet. Owners may change optional settings. Required behaviors remain server-enforced and cannot be disabled. Request categories, module labels, module descriptions, notifications, and builder summaries must resolve from the same shared model profile contract.
+
