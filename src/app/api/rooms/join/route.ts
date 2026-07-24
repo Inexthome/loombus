@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { logAuditEvent } from "@/lib/audit-log";
+import { getRoomModelDefaultSettings } from "@/lib/room-model-profiles";
 import { getRoomPlanEntitlements } from "@/lib/room-plan-entitlements";
 import {
   asNumber,
@@ -119,6 +120,7 @@ export async function POST(request: NextRequest) {
     return jsonError("Room invitation settings could not be verified.", 503);
   }
   const settings = asObject((settingsResult.data as RoomRow | null)?.settings);
+  const defaults = getRoomModelDefaultSettings(existingAccess.room.roomType);
   const allowedDomains = normalizeDomains(settings.allowedEmailDomains);
   const email = accountAccess.user.email?.toLowerCase() ?? "";
   const emailDomain = email.includes("@") ? email.split("@").pop() ?? "" : "";
@@ -130,7 +132,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const requireApproval = settings.inviteRequiresApproval === true;
+  const requireApproval =
+    typeof settings.inviteRequiresApproval === "boolean"
+      ? settings.inviteRequiresApproval
+      : defaults.inviteRequiresApproval;
   if (requireApproval) {
     const application = await serviceSupabase.from("room_applications").upsert(
       {
