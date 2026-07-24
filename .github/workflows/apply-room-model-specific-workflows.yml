@@ -88,8 +88,11 @@ jobs:
           route = Path("src/app/api/rooms/[roomId]/modules/route.ts").read_text()
           if 'const required = ROOM_MODULE_DEFINITIONS[moduleKey].minimumRole' in route:
               raise SystemExit("Generic module-role authorization remains in the Room module route")
-          if 'category: cleanText(source.category, 100) || "General"' in route:
-              raise SystemExit("Generic request category fallback remains")
+          request_start = route.index('if (moduleKey === "requests")')
+          request_end = route.index('if (moduleKey === "tasks")', request_start)
+          request_block = route[request_start:request_end]
+          if "normalizeRoomRequestCategory" not in request_block:
+              raise SystemExit("Operational requests do not use model-specific categories")
           print("Room model invariants passed")
           PY
 
