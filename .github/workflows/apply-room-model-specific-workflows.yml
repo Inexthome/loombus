@@ -25,7 +25,22 @@ jobs:
           cache: npm
 
       - name: Apply strict Room model patch
-        run: python3 scripts/apply-room-model-specific-workflows.py
+        id: patch
+        continue-on-error: true
+        run: python3 scripts/apply-room-model-specific-workflows.py > room-model-patch.log 2>&1
+
+      - name: Upload patch diagnostic
+        if: steps.patch.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: room-model-patch-diagnostic
+          path: room-model-patch.log
+
+      - name: Stop after strict patch failure
+        if: steps.patch.outcome == 'failure'
+        run: |
+          cat room-model-patch.log
+          exit 1
 
       - name: Verify Room model invariants
         run: |
