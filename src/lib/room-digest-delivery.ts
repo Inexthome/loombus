@@ -28,10 +28,13 @@ type MembershipRow = {
 };
 
 type ActivityRow = {
-  activity_type: string;
+  event_type: string;
+  module_key: string;
   target_type: string;
-  target_id: string;
+  target_id: string | null;
   title: string;
+  audience: string;
+  importance: string;
   created_at: string;
 };
 
@@ -86,8 +89,10 @@ function getWindowMs(frequency: "daily" | "weekly") {
 function isDue(preference: RoomDigestPreference) {
   if (!preference.email_digest_last_sent_at) return true;
   const lastSent = new Date(preference.email_digest_last_sent_at).getTime();
-  return !Number.isFinite(lastSent) ||
-    Date.now() - lastSent >= getWindowMs(preference.email_digest_frequency);
+  return (
+    !Number.isFinite(lastSent) ||
+    Date.now() - lastSent >= getWindowMs(preference.email_digest_frequency)
+  );
 }
 
 function getDigestSince(preference: RoomDigestPreference) {
@@ -102,7 +107,9 @@ function getDigestSince(preference: RoomDigestPreference) {
 
 function isMissingRoomDigestSchema(error: DatabaseError | null) {
   if (!error) return false;
-  return ["42P01", "42703", "PGRST204", "PGRST205"].includes(error.code ?? "");
+  return ["42P01", "42703", "PGRST204", "PGRST205"].includes(
+    error.code ?? ""
+  );
 }
 
 function normalizedRoomType(value: string | null) {
@@ -128,19 +135,19 @@ function activeMembership(row: MembershipRow | null) {
 
 function activityMessage(activity: ActivityRow, room: RoomRow) {
   if (isCustomerSupportRoom(room)) {
-    if (activity.activity_type === "room_announcement") {
+    if (activity.event_type === "announcement_created") {
       return "A new Customer Support Room announcement is available.";
     }
-    if (activity.activity_type === "room_event") {
+    if (activity.event_type === "calendar_event_created") {
       return "A new Customer Support Room event is available.";
     }
     return "New private activity is available in this Customer Support Room.";
   }
 
-  if (activity.activity_type === "room_discussion") {
+  if (activity.event_type === "discussion_created") {
     return `New discussion: ${activity.title}`;
   }
-  if (activity.activity_type === "room_announcement") {
+  if (activity.event_type === "announcement_created") {
     return `New announcement: ${activity.title}`;
   }
   return `New event: ${activity.title}`;
@@ -277,9 +284,15 @@ function combineItems(
   notifications: NotificationRow[],
   room: RoomRow
 ) {
-  const activityItems: DigestItem[] = activities.map((activity) => ({
-    key: `activity:${activity.target_type}:${activity.target_id}`,
-    type: activity.activity_type,
+  const visibleActivities = isCustomerSupportRoom(room)
+    ? activities.filter((activity) => activity.event_type !== "discussion_created")
+    : activities;
+
+  const activityItems: DigestItem[] = visibleActivities.map((activity) => ({
+    key: `activity:${activity.event_type}:${activity.target_type}:${
+      activity.target_id ?? activity.created_at
+    }`,
+    type: activity.event_type,
     targetType: activity.target_type,
     targetId: activity.target_id,
     message: activityMessage(activity, room),
@@ -328,7 +341,9 @@ export async function runRoomDigests(args: {
 
   if (preferenceError) {
     if (isMissingRoomDigestSchema(preferenceError)) return [];
-    throw new Error(preferenceError.message || "Unable to load Room digest preferences.");
+    throw new Error(
+      preferenceError.message || "Unable to load Room digest preferences."
+    );
   }
 
   const duePreferences = ((preferenceData ?? []) as RoomDigestPreference[]).filter(
@@ -399,9 +414,17 @@ export async function runRoomDigests(args: {
     const since = getDigestSince(preference);
     const [activityResult, notificationResult] = await Promise.all([
       args.supabase
-        .from("room_activity_log")
-        .select("activity_type, target_type, target_id, title, created_at")
+        .from("room_activity_events")
+        .select(
+          "event_type, module_key, target_type, target_id, title, audience, importance, created_at"
+        )
         .eq("room_id", preference.room_id)
+        .eq("audience", "all")
+        .in("event_type", [
+          "discussion_created",
+          "announcement_created",
+          "calendar_event_created",
+        ])
         .gte("created_at", since)
         .order("created_at", { ascending: false })
         .limit(50),
