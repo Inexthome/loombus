@@ -130,10 +130,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/apply-room-model-specific-workflows.yml
-          git rm scripts/apply-room-model-specific-workflows.py
-          git rm scripts/repair-room-model-patcher.py
-          git add src docs
+          rm -f .github/workflows/apply-room-model-specific-workflows.yml
+          rm -f scripts/apply-room-model-specific-workflows.py
+          rm -f scripts/repair-room-model-patcher.py
+          git add -A
           if git diff --cached --quiet; then
             echo "No Room model changes to commit"
             exit 1
