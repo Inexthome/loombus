@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { FileClock, FileSearch, Flag, Settings2, ShieldCheck } from "lucide-react";
+import {
+  Bell,
+  FileClock,
+  FileSearch,
+  Flag,
+  Settings2,
+  ShieldCheck,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -78,6 +85,12 @@ export default function RoomToolsShortcuts() {
           <Link href={`/rooms/${encodeURIComponent(roomId)}/tools`}>
             <FileSearch aria-hidden="true" />
             Search Room
+          </Link>
+        ) : null}
+        {allowed ? (
+          <Link href={`/rooms/${encodeURIComponent(roomId)}/notifications`}>
+            <Bell aria-hidden="true" />
+            Notifications
           </Link>
         ) : null}
         {allowed ? (
