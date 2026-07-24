@@ -1,0 +1,100 @@
+name: Apply Room billing management
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/room-billing-management'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply billing hardening
+        run: python3 scripts/apply-room-billing-hardening.py
+
+      - name: Verify billing invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          checks = {
+            "src/lib/room-billing-management.ts": [
+              "room_plan_member_limit_exceeded",
+              "room_plan_storage_limit_exceeded",
+              "room_free_member_limit_exceeded",
+              "room_free_storage_limit_exceeded",
+              "billingPortal.sessions.create",
+              "subscriptions.update",
+              "getRoomPlanEntitlements",
+            ],
+            "src/app/api/rooms/[roomId]/billing/route.ts": [
+              'action === "portal"',
+              'action === "upgrade"',
+              'action === "change_plan"',
+              'action === "schedule_cancel"',
+            ],
+            "src/app/rooms/[roomId]/billing/room-billing-client.tsx": [
+              "Payment method and invoices",
+              "Upgrade or change plan",
+              "Billing history",
+              "overMemberLimit",
+            ],
+            "src/app/rooms/[roomId]/live-room-workspace-client.tsx": [
+              "Billing",
+              "/billing",
+              "access.role === \"owner\"",
+            ],
+          }
+          for path, needles in checks.items():
+            text = Path(path).read_text()
+            for needle in needles:
+              if needle not in text:
+                raise SystemExit(f"Missing billing invariant in {path}: {needle}")
+          print("Room billing invariants passed")
+          PY
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key
+          STRIPE_SECRET_KEY: sk_test_placeholder
+          NEXT_PUBLIC_SITE_URL: https://loombus.com
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit product files and remove one-time automation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/apply-room-billing-management.yml
+          rm -f scripts/apply-room-billing-hardening.py
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No Room billing changes to commit"
+            exit 1
+          fi
+          git commit -m "Add Room billing and subscription management"
+          git push origin HEAD:${{ github.head_ref }}
