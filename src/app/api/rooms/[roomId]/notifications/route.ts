@@ -15,7 +15,7 @@ type Authorized =
   | { ok: false; response: NextResponse };
 
 type PreferenceRow = {
-  in_app_enabled?: boolean | null;
+  muted?: boolean | null;
   new_discussions_enabled?: boolean | null;
   announcements_enabled?: boolean | null;
   events_enabled?: boolean | null;
@@ -79,7 +79,7 @@ async function authorize(request: NextRequest): Promise<Authorized> {
 
 function normalize(row: PreferenceRow | null) {
   return {
-    inAppEnabled: row?.in_app_enabled ?? DEFAULTS.inAppEnabled,
+    inAppEnabled: !(row?.muted ?? false),
     newDiscussionsEnabled:
       row?.new_discussions_enabled ?? DEFAULTS.newDiscussionsEnabled,
     announcementsEnabled:
@@ -123,6 +123,9 @@ async function requireRoomAccess(
   return { access, response: null };
 }
 
+const SELECT_COLUMNS =
+  "muted, new_discussions_enabled, announcements_enabled, events_enabled, email_digest_enabled, email_digest_frequency, email_digest_last_sent_at";
+
 export async function GET(request: NextRequest, context: RouteContext) {
   const authorized = await authorize(request);
   if (!authorized.ok) return authorized.response;
@@ -139,9 +142,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const result = await authorized.service
     .from("room_notification_preferences")
-    .select(
-      "in_app_enabled, new_discussions_enabled, announcements_enabled, events_enabled, email_digest_enabled, email_digest_frequency, email_digest_last_sent_at"
-    )
+    .select(SELECT_COLUMNS)
     .eq("room_id", roomId)
     .eq("user_id", authorized.userId)
     .maybeSingle();
@@ -221,7 +222,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       {
         room_id: roomId,
         user_id: authorized.userId,
-        in_app_enabled: normalized.inAppEnabled,
+        muted: !normalized.inAppEnabled,
         new_discussions_enabled: normalized.newDiscussionsEnabled,
         announcements_enabled: normalized.announcementsEnabled,
         events_enabled: normalized.eventsEnabled,
@@ -231,9 +232,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       },
       { onConflict: "room_id,user_id" }
     )
-    .select(
-      "in_app_enabled, new_discussions_enabled, announcements_enabled, events_enabled, email_digest_enabled, email_digest_frequency, email_digest_last_sent_at"
-    )
+    .select(SELECT_COLUMNS)
     .single();
 
   if (upsert.error) {
@@ -251,7 +250,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     target_type: "room",
     target_id: roomId,
     metadata: {
-      in_app_enabled: normalized.inAppEnabled,
+      muted: !normalized.inAppEnabled,
       new_discussions_enabled: normalized.newDiscussionsEnabled,
       announcements_enabled: normalized.announcementsEnabled,
       events_enabled: normalized.eventsEnabled,
