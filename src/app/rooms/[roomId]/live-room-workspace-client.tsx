@@ -9,6 +9,7 @@ import {
   Check,
   CheckCircle2,
   Clock3,
+  CreditCard,
   FileText,
   Link2,
   Loader2,
@@ -644,6 +645,15 @@ export default function LiveRoomWorkspaceClient() {
           </div>
 
           <div className="room-workspace-hero-actions">
+            {access.role === "owner" ? (
+              <Link
+                href={`/rooms/${encodeURIComponent(room.id)}/billing`}
+                className="rooms-live-secondary-action"
+              >
+                <CreditCard aria-hidden="true" />
+                Billing
+              </Link>
+            ) : null}
             <button
               type="button"
               onClick={() => void loadWorkspace(true)}

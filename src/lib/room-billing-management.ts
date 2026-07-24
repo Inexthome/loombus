@@ -10,6 +10,7 @@ import {
 } from "@/lib/room-billing";
 import {
   ROOM_PLAN_ENTITLEMENTS,
+  getRoomPlanEntitlements,
   normalizeRoomPlanKey,
   type RoomPlanKey,
 } from "@/lib/room-plan-entitlements";
@@ -172,30 +173,39 @@ export async function getRoomBillingOverview(roomId: string, userId: string) {
       amountPaid: invoice.amount_paid,
       currency: invoice.currency,
       createdAt: new Date(invoice.created * 1000).toISOString(),
-      hostedInvoiceUrl: invoice.hosted_invoice_url,
-      invoicePdf: invoice.invoice_pdf,
+      hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
+      invoicePdf: invoice.invoice_pdf ?? null,
     }));
   }
+
+  const subscriptionStatus =
+    subscription?.status ?? String(room.subscription_status ?? "active");
+  const effectivePlan = getRoomPlanEntitlements(planKey, subscriptionStatus);
 
   return {
     room: {
       id: String(room.id),
       name: String(room.name ?? "Room"),
-      planKey,
-      subscriptionStatus: subscription?.status ?? String(room.subscription_status ?? "active"),
+      planKey: effectivePlan.id,
+      subscribedPlanKey: planKey,
+      subscriptionStatus,
       currentPeriodEnd: subscription ? periodEnd(subscription) : room.stripe_current_period_end ?? null,
       cancelAtPeriodEnd: subscription?.cancel_at_period_end ?? false,
       canceledAt: subscription?.canceled_at
         ? new Date(subscription.canceled_at * 1000).toISOString()
         : null,
     },
-    currentPlan: planSummary(planKey),
+    currentPlan: planSummary(effectivePlan.id),
     availablePlans: (Object.keys(ROOM_PLAN_ENTITLEMENTS) as RoomPlanKey[]).map(planSummary),
     usage: {
       memberCount,
-      memberLimit: ROOM_PLAN_ENTITLEMENTS[planKey].memberLimit,
+      memberLimit: effectivePlan.memberLimit,
       usedStorageBytes,
-      storageLimitBytes: ROOM_PLAN_ENTITLEMENTS[planKey].storageBytes,
+      storageLimitBytes: effectivePlan.storageBytes,
+      overMemberLimit:
+        effectivePlan.memberLimit !== null && memberCount > effectivePlan.memberLimit,
+      overStorageLimit:
+        usedStorageBytes !== null && usedStorageBytes > effectivePlan.storageBytes,
     },
     billingConfigured: Boolean(STRIPE_SECRET_KEY),
     hasStripeSubscription: Boolean(subscriptionId),
@@ -332,12 +342,21 @@ export async function changeRoomPaidPlan(
   }
 
   const memberCount = await activeMemberCount(roomId);
+  const usedStorageBytes = await storageUsage(roomId);
   const targetLimit = PAID_ROOM_PLANS[targetPlan].memberLimit;
+  const targetStorageBytes = ROOM_PLAN_ENTITLEMENTS[targetPlan].storageBytes;
   if (targetLimit !== null && memberCount > targetLimit) {
     throw new RoomBillingError(
       `This Room has ${memberCount} active members. Reduce membership to ${targetLimit} or fewer before changing to ${PAID_ROOM_PLANS[targetPlan].label}.`,
       409,
       "room_plan_member_limit_exceeded"
+    );
+  }
+  if (usedStorageBytes !== null && usedStorageBytes > targetStorageBytes) {
+    throw new RoomBillingError(
+      `This Room uses ${usedStorageBytes} bytes of storage. Remove files until usage is within the ${targetStorageBytes}-byte allowance before changing to ${PAID_ROOM_PLANS[targetPlan].label}.`,
+      409,
+      "room_plan_storage_limit_exceeded"
     );
   }
 
@@ -414,6 +433,25 @@ export async function setRoomCancellation(
       409,
       "room_subscription_missing"
     );
+  }
+  if (cancelAtPeriodEnd) {
+    const memberCount = await activeMemberCount(roomId);
+    const usedStorageBytes = await storageUsage(roomId);
+    const freePlan = ROOM_PLAN_ENTITLEMENTS.free;
+    if (freePlan.memberLimit !== null && memberCount > freePlan.memberLimit) {
+      throw new RoomBillingError(
+        `Reduce active membership to ${freePlan.memberLimit} or fewer before scheduling cancellation to Free.`,
+        409,
+        "room_free_member_limit_exceeded"
+      );
+    }
+    if (usedStorageBytes !== null && usedStorageBytes > freePlan.storageBytes) {
+      throw new RoomBillingError(
+        "Remove paid Room files before scheduling cancellation to Free.",
+        409,
+        "room_free_storage_limit_exceeded"
+      );
+    }
   }
   const subscription = await getStripe().subscriptions.update(subscriptionId, {
     cancel_at_period_end: cancelAtPeriodEnd,

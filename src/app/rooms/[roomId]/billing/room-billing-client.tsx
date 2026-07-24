@@ -32,6 +32,7 @@ type BillingOverview = {
     id: string;
     name: string;
     planKey: string;
+    subscribedPlanKey: string;
     subscriptionStatus: string;
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
@@ -44,6 +45,8 @@ type BillingOverview = {
     memberLimit: number | null;
     usedStorageBytes: number | null;
     storageLimitBytes: number;
+    overMemberLimit: boolean;
+    overStorageLimit: boolean;
   };
   billingConfigured: boolean;
   hasStripeSubscription: boolean;
@@ -280,6 +283,12 @@ export default function RoomBillingClient() {
             <strong>{formatDate(overview.room.currentPeriodEnd)}</strong>
           </article>
         </section>
+
+        {overview.usage.overMemberLimit || overview.usage.overStorageLimit ? (
+          <div className="rooms-live-notice is-error">
+            This Room is above the active plan capacity. New paid-only activity may remain limited until membership or storage is reduced, or the Room is upgraded.
+          </div>
+        ) : null}
 
         {overview.room.cancelAtPeriodEnd ? (
           <div className="rooms-live-notice is-error">
