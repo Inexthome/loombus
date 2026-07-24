@@ -59,8 +59,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { error: updateError } = await supabase
-      .from("notification_preferences")
+    const { error: updateError } = await (
+      supabase.from("notification_preferences") as any
+    )
       .update({
         email_digest_enabled: false,
         updated_at: new Date().toISOString(),
@@ -102,8 +103,9 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { error: roomUpdateError } = await supabase
-    .from("room_notification_preferences")
+  const { error: roomUpdateError } = await (
+    supabase.from("room_notification_preferences") as any
+  )
     .update({
       email_digest_enabled: false,
       updated_at: new Date().toISOString(),
