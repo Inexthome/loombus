@@ -11,6 +11,7 @@ export type NotificationPayload = {
   type: string;
   target_type: string;
   target_id?: string | null;
+  room_id?: string | null;
   message: string;
 };
 
@@ -44,6 +45,18 @@ function missingServiceRoleError(): ServiceRoleError {
   };
 }
 
+function notificationRow(payload: NotificationPayload) {
+  return {
+    user_id: payload.user_id,
+    actor_id: payload.actor_id ?? null,
+    type: payload.type,
+    target_type: payload.target_type,
+    target_id: payload.target_id ?? null,
+    room_id: payload.room_id ?? null,
+    message: payload.message,
+  };
+}
+
 export async function createNotification(
   payload: NotificationPayload
 ): Promise<{ error: ServiceRoleError | null }> {
@@ -53,14 +66,9 @@ export async function createNotification(
     return { error: missingServiceRoleError() };
   }
 
-  const { error } = await (supabase.from("notifications") as any).insert({
-    user_id: payload.user_id,
-    actor_id: payload.actor_id ?? null,
-    type: payload.type,
-    target_type: payload.target_type,
-    target_id: payload.target_id ?? null,
-    message: payload.message,
-  });
+  const { error } = await (supabase.from("notifications") as any).insert(
+    notificationRow(payload)
+  );
 
   if (!error) {
     await sendNativePushForNotification(payload).catch((pushError) => {
@@ -84,16 +92,9 @@ export async function createNotifications(
     return { error: missingServiceRoleError() };
   }
 
-  const rows = payloads.map((payload) => ({
-    user_id: payload.user_id,
-    actor_id: payload.actor_id ?? null,
-    type: payload.type,
-    target_type: payload.target_type,
-    target_id: payload.target_id ?? null,
-    message: payload.message,
-  }));
-
-  const { error } = await (supabase.from("notifications") as any).insert(rows);
+  const { error } = await (supabase.from("notifications") as any).insert(
+    payloads.map(notificationRow)
+  );
 
   if (!error) {
     await Promise.allSettled(
@@ -130,6 +131,7 @@ export async function createAdminNotifications(
       type: payload.type,
       target_type: payload.target_type,
       target_id: payload.target_id ?? null,
+      room_id: payload.room_id ?? null,
       message: payload.message,
     }));
 
