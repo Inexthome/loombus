@@ -4,10 +4,12 @@ import {
   cancelRoomCalendarEvent,
   createRoomCalendarEvent,
   loadRoomCalendar,
+  normalizeRoomCalendarError,
   roomCalendarIsAdvanced,
   setRoomCalendarRsvp,
   updateRoomCalendarEvent,
-} from "@/lib/room-calendar-service";
+  validateRoomCalendarInput,
+} from "@/lib/room-calendar-runtime";
 import {
   createRequestSupabase,
   createRoomServiceSupabase,
@@ -34,10 +36,14 @@ function json(data: unknown, status = 200) {
 }
 
 function errorResponse(error: unknown) {
-  if (error instanceof ExpansionError) {
-    return json({ error: error.message, code: error.code }, error.status);
+  const normalized = normalizeRoomCalendarError(error);
+  if (normalized instanceof ExpansionError) {
+    return json(
+      { error: normalized.message, code: normalized.code },
+      normalized.status
+    );
   }
-  console.error("Room calendar failure:", error);
+  console.error("Room calendar failure:", normalized);
   return json(
     {
       error: "The Room calendar could not complete this request.",
@@ -186,7 +192,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         authorized.service,
         access,
         authorized.userId,
-        body,
+        validateRoomCalendarInput(body),
         { advanced }
       );
     } else if (action === "update") {
@@ -194,7 +200,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         authorized.service,
         access,
         authorized.userId,
-        body,
+        validateRoomCalendarInput(body),
         { advanced }
       );
     } else if (action === "cancel") {
