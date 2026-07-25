@@ -15,6 +15,7 @@ import "./room-tier-features.css";
 import "./room-tier-overrides.css";
 import "./room-expansion-hardening.css";
 import "./room-core-list-hardening.css";
+import "./room-foundation-operations-hardening.css";
 
 export default function RoomsLayout({
   children,

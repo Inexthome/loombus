@@ -1,0 +1,205 @@
+.room-foundation-panel,
+.room-operations-panel,
+.room-operation-tabpanel,
+.room-core-results-region {
+  min-width: 0;
+}
+
+.room-foundation-panel,
+.room-operations-panel {
+  width: 100%;
+  contain: layout paint;
+}
+
+.room-foundation-panel[aria-busy="true"],
+.room-operations-panel[aria-busy="true"] {
+  cursor: progress;
+}
+
+.room-foundation-heading h2,
+.room-operations-heading h2,
+.room-core-results-region {
+  scroll-margin-top: 6rem;
+}
+
+.room-foundation-notice[role="alert"],
+.room-operations-notice[role="alert"] {
+  border-color: color-mix(in srgb, #b42318 45%, var(--rooms-live-border, var(--loombus-border)));
+  background: color-mix(in srgb, #b42318 8%, transparent);
+}
+
+.room-foundation-results,
+.room-foundation-events {
+  align-content: start;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.room-foundation-results .room-core-results-heading,
+.room-foundation-events .room-core-results-heading {
+  margin: 0 0 0.1rem;
+}
+
+.room-foundation-results .room-core-pagination,
+.room-foundation-events .room-core-pagination {
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--rooms-live-border, var(--loombus-border));
+  padding-top: 0.8rem;
+}
+
+.room-foundation-result,
+.room-foundation-event {
+  min-height: 44px;
+}
+
+.room-foundation-result:focus-visible,
+.room-foundation-event:focus-visible,
+.room-foundation-search-trigger:focus-visible,
+.room-foundation-inbox-trigger:focus-visible,
+.room-foundation-close:focus-visible,
+.room-operations-trigger:focus-visible,
+.room-operations-heading > button:focus-visible,
+.room-operation-tabs button:focus-visible,
+.room-operation-tabpanel button:focus-visible,
+.room-operation-tabpanel input:focus-visible,
+.room-operation-tabpanel select:focus-visible,
+.room-operation-tabpanel textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--rooms-live-accent, var(--loombus-accent)) 72%, transparent);
+  outline-offset: 3px;
+}
+
+.room-operation-tabpanel {
+  display: grid;
+  min-height: 8rem;
+}
+
+.room-operation-tabpanel > .room-core-pagination {
+  margin: 0 1rem 1rem;
+}
+
+.room-operation-tabpanel .room-operation-stack,
+.room-operation-tabpanel .room-operation-grid {
+  min-width: 0;
+}
+
+.room-operation-tabpanel .room-operation-card,
+.room-operation-tabpanel .room-operation-form,
+.room-operation-tabpanel .room-operation-member,
+.room-operation-tabpanel .room-operation-report,
+.room-operation-tabpanel .room-operation-removed,
+.room-operation-tabpanel .room-operation-own-report {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.room-operation-tabpanel .room-operation-member-controls,
+.room-operation-tabpanel .room-operation-actions,
+.room-operation-tabpanel .room-operation-report > div {
+  min-width: 0;
+}
+
+.room-operation-tabpanel .room-operation-member-controls > *,
+.room-operation-tabpanel .room-operation-actions > *,
+.room-operation-tabpanel .room-operation-report > div > * {
+  max-width: 100%;
+}
+
+.room-operation-tabpanel .room-core-pagination {
+  padding-inline: 0;
+}
+
+.room-operation-tabs {
+  position: sticky;
+  z-index: 2;
+  top: 5.8rem;
+  background: var(--rooms-live-surface, var(--loombus-surface));
+  scrollbar-gutter: stable;
+}
+
+.room-operation-tabs button[aria-selected="true"] {
+  border-color: color-mix(in srgb, #25885d 45%, var(--rooms-live-border, var(--loombus-border)));
+  background: color-mix(in srgb, #25885d 12%, var(--rooms-live-surface, var(--loombus-surface)));
+  color: var(--rooms-live-text, var(--loombus-text));
+}
+
+.room-operation-section-heading > span {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .room-foundation-panel,
+  .room-operations-panel {
+    max-height: calc(100dvh - 7rem);
+    border-radius: 1rem;
+  }
+
+  .room-operation-tabs {
+    top: 5.25rem;
+    padding-block: 0.65rem;
+  }
+
+  .room-foundation-results,
+  .room-foundation-events {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .room-foundation-search-form,
+  .room-foundation-inbox-controls,
+  .room-operation-grid,
+  .room-operation-member,
+  .room-operation-member-controls {
+    min-width: 0;
+  }
+
+  .room-operation-tabpanel > .room-core-pagination {
+    margin-inline: 0.8rem;
+  }
+
+  .room-operation-report > div,
+  .room-operation-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .room-operation-report > div > button,
+  .room-operation-actions > button,
+  .room-operation-card > button,
+  .room-operation-refresh,
+  .room-operation-leave {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .room-foundation-toolbar {
+    grid-template-columns: minmax(0, 1fr) 48px;
+  }
+
+  .room-foundation-inbox-trigger {
+    width: 48px;
+    padding-inline: 0;
+  }
+
+  .room-foundation-inbox-trigger strong {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+  }
+
+  .room-operations-trigger {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .room-operation-tabs {
+    padding-inline: 0.65rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-foundation-panel *,
+  .room-operations-panel * {
+    scroll-behavior: auto !important;
+  }
+}
