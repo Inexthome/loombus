@@ -4,10 +4,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type UnsubscribeState = "checking" | "success" | "error";
+type UnsubscribeScope = "account" | "room" | null;
 
 export default function UnsubscribePage() {
   const [state, setState] = useState<UnsubscribeState>("checking");
-  const [message, setMessage] = useState("Processing your unsubscribe request...");
+  const [scope, setScope] = useState<UnsubscribeScope>(null);
+  const [roomId, setRoomId] = useState("");
+  const [message, setMessage] = useState(
+    "Processing your unsubscribe request..."
+  );
 
   useEffect(() => {
     async function unsubscribe() {
@@ -23,13 +28,15 @@ export default function UnsubscribePage() {
       try {
         const response = await fetch("/api/email/unsubscribe", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
         });
-
-        const result = await response.json().catch(() => ({}));
+        const result = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          message?: string;
+          scope?: UnsubscribeScope;
+          roomId?: string;
+        };
 
         if (!response.ok) {
           setState("error");
@@ -37,16 +44,23 @@ export default function UnsubscribePage() {
           return;
         }
 
+        setScope(result.scope ?? null);
+        setRoomId(result.roomId ?? "");
         setState("success");
-        setMessage(result.message ?? "Email digests are now turned off.");
+        setMessage(result.message ?? "The selected email digest is now turned off.");
       } catch {
         setState("error");
         setMessage("Unable to unsubscribe from email digests.");
       }
     }
 
-    unsubscribe();
+    void unsubscribe();
   }, []);
+
+  const settingsHref =
+    scope === "room" && roomId
+      ? `/rooms/${encodeURIComponent(roomId)}/notifications`
+      : "/settings#signal";
 
   return (
     <main
@@ -71,10 +85,12 @@ export default function UnsubscribePage() {
 
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/settings#signal"
+              href={settingsHref}
               className="rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
             >
-              Manage notification settings
+              {scope === "room"
+                ? "Manage Room notifications"
+                : "Manage notification settings"}
             </Link>
 
             <Link
@@ -86,9 +102,9 @@ export default function UnsubscribePage() {
           </div>
 
           <p className="mt-8 text-sm text-zinc-600">
-            This only turns off Loombus email digests. In-app notifications and
-            required account, security, billing, and support emails are not
-            changed.
+            This link only turns off the account or Room digest identified by the
+            link. In-app notifications and required account, security, billing,
+            and support emails are not changed.
           </p>
         </section>
       </div>

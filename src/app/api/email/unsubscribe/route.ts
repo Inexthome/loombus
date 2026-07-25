@@ -4,10 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 function getSupabaseServiceClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    return null;
-  }
+  if (!supabaseUrl || !serviceRoleKey) return null;
 
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: {
@@ -32,57 +29,98 @@ function isValidUuid(value: unknown): value is string {
 
 export async function POST(request: NextRequest) {
   const supabase = getSupabaseServiceClient();
-
   if (!supabase) {
     return jsonError("Unsubscribe service is not configured.", 503);
   }
 
   const body = await request.json().catch(() => null);
   const token = body?.token;
-
   if (!isValidUuid(token)) {
     return jsonError("Invalid unsubscribe link.", 400);
   }
 
-  const { data: preference, error: lookupError } = await supabase
+  const { data: accountPreference, error: accountLookupError } = await supabase
     .from("notification_preferences")
     .select("user_id, email_digest_enabled")
     .eq("email_digest_unsubscribe_token", token)
     .maybeSingle();
-
-  if (lookupError) {
+  if (accountLookupError) {
     return jsonError("Unable to verify unsubscribe link.", 500);
   }
 
-  if (!preference?.user_id) {
-    return jsonError("Unsubscribe link was not found.", 404);
-  }
+  if (accountPreference?.user_id) {
+    if (accountPreference.email_digest_enabled === false) {
+      return NextResponse.json({
+        ok: true,
+        scope: "account",
+        unsubscribed: true,
+        alreadyUnsubscribed: true,
+        message: "Account email digests were already turned off.",
+      });
+    }
 
-  if (preference.email_digest_enabled === false) {
+    const { error: updateError } = await (
+      supabase.from("notification_preferences") as any
+    )
+      .update({
+        email_digest_enabled: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("email_digest_unsubscribe_token", token);
+    if (updateError) {
+      return jsonError("Unable to unsubscribe from email digests.", 500);
+    }
+
     return NextResponse.json({
       ok: true,
+      scope: "account",
       unsubscribed: true,
-      alreadyUnsubscribed: true,
-      message: "Email digests were already turned off.",
+      alreadyUnsubscribed: false,
+      message: "Account email digests are now turned off.",
     });
   }
 
-  const { error: updateError } = await supabase
-    .from("notification_preferences")
+  const { data: roomPreference, error: roomLookupError } = await supabase
+    .from("room_notification_preferences")
+    .select("room_id, user_id, email_digest_enabled")
+    .eq("email_digest_unsubscribe_token", token)
+    .maybeSingle();
+  if (roomLookupError) {
+    return jsonError("Unable to verify unsubscribe link.", 500);
+  }
+  if (!roomPreference?.user_id || !roomPreference.room_id) {
+    return jsonError("Unsubscribe link was not found.", 404);
+  }
+
+  if (roomPreference.email_digest_enabled === false) {
+    return NextResponse.json({
+      ok: true,
+      scope: "room",
+      roomId: roomPreference.room_id,
+      unsubscribed: true,
+      alreadyUnsubscribed: true,
+      message: "This Room email digest was already turned off.",
+    });
+  }
+
+  const { error: roomUpdateError } = await (
+    supabase.from("room_notification_preferences") as any
+  )
     .update({
       email_digest_enabled: false,
       updated_at: new Date().toISOString(),
     })
     .eq("email_digest_unsubscribe_token", token);
-
-  if (updateError) {
-    return jsonError("Unable to unsubscribe from email digests.", 500);
+  if (roomUpdateError) {
+    return jsonError("Unable to unsubscribe from this Room digest.", 500);
   }
 
   return NextResponse.json({
     ok: true,
+    scope: "room",
+    roomId: roomPreference.room_id,
     unsubscribed: true,
     alreadyUnsubscribed: false,
-    message: "Email digests are now turned off.",
+    message: "This Room email digest is now turned off.",
   });
 }
