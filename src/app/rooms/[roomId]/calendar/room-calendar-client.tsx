@@ -98,7 +98,7 @@ function emptyCoreForm(): CoreForm {
   };
 }
 
-function localInput(value: string | null, timezone: string, allDay: boolean) {
+function localInput(value: string | null, timeZone: string, allDay: boolean) {
   if (!value) return "";
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "";
@@ -120,14 +120,15 @@ function localInput(value: string | null, timezone: string, allDay: boolean) {
 }
 
 function eventDateLabel(event: RoomCalendarEvent) {
-  const formatter = new Intl.DateTimeFormat(undefined, {
+  const options: Intl.DateTimeFormatOptions = {
     timeZone: event.timezone || "UTC",
     weekday: "short",
     month: "short",
     day: "numeric",
     year: "numeric",
     ...(event.allDay ? {} : { hour: "numeric", minute: "2-digit" }),
-  });
+  };
+  const formatter = new Intl.DateTimeFormat(undefined, options);
   const start = formatter.format(new Date(event.startsAt));
   if (!event.endsAt) return start;
   return `${start} to ${formatter.format(new Date(event.endsAt))}`;
@@ -223,7 +224,7 @@ function CoreCalendar({
             <span>Event title</span>
             <input
               value={form.title}
-              maxLength={180}
+              maxLength={160}
               required
               onChange={(event) =>
                 setForm((current) => ({ ...current, title: event.target.value }))
