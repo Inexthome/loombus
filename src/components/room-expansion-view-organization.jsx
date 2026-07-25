@@ -62,8 +62,8 @@ export function OrganizationView({
   const roomListHeadingRef = useRef(null);
 
   useEffect(() => {
-    if (data?.organization?.id) setConsoleData(data);
-  }, [data?.organization?.id]);
+    setConsoleData(data ?? null);
+  }, [data]);
 
   useEffect(() => {
     setName(organization?.name ?? "");
@@ -160,7 +160,7 @@ export function OrganizationView({
   }
 
   async function saveOrganization() {
-    const saved = await action(
+    await action(
       {
         action: "save_organization",
         name,
@@ -176,16 +176,14 @@ export function OrganizationView({
       "Organization settings saved.",
       "organization"
     );
-    if (saved) await loadPage(pageInfo?.page ?? 1, false);
   }
 
   async function applyPolicy() {
-    const saved = await action(
+    await action(
       { action: "propagate_organization_security" },
       "Organization invitation policy applied to all Rooms.",
       "organization"
     );
-    if (saved) await loadPage(pageInfo?.page ?? 1, false);
   }
 
   return (

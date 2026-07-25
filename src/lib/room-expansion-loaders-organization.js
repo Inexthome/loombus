@@ -16,7 +16,10 @@ import { asNumber, asString, profileFor } from "@/lib/room-operations";
 const ORGANIZATION_ROOM_PAGE_SIZE = 12;
 const ORGANIZATION_ROOM_TOTAL_LIMIT = 500;
 const ORGANIZATION_STORAGE_ROW_LIMIT = 20000;
+const ORGANIZATION_ROOM_STORAGE_ROW_LIMIT = 5000;
+const ORGANIZATION_ROOM_ID_BATCH_SIZE = 100;
 const ORGANIZATION_SEARCH_ROOM_LIMIT = 25;
+const ORGANIZATION_SEARCH_CONCURRENCY = 5;
 const ORGANIZATION_SEARCH_RESULT_LIMIT = 75;
 const FORM_EXPORT_LIMIT = 5000;
 
@@ -34,15 +37,56 @@ async function countRoom(service, table, roomId, options = {}) {
 
 async function countAcrossRooms(service, table, roomIds, options = {}) {
   if (!roomIds.length) return 0;
-  let query = service
-    .from(table)
-    .select("id", { count: "exact", head: true })
-    .in("room_id", roomIds);
-  if (options.activePosts) query = query.is("deleted_at", null);
-  if (options.activeRecords) query = query.is("archived_at", null);
-  if (options.currentFiles) query = query.eq("is_current", true);
-  const result = await query;
-  return result.error ? 0 : result.count ?? 0;
+  const batches = [];
+  for (let index = 0; index < roomIds.length; index += ORGANIZATION_ROOM_ID_BATCH_SIZE) {
+    batches.push(roomIds.slice(index, index + ORGANIZATION_ROOM_ID_BATCH_SIZE));
+  }
+  const counts = await Promise.all(
+    batches.map(async (batch) => {
+      let query = service
+        .from(table)
+        .select("id", { count: "exact", head: true })
+        .in("room_id", batch);
+      if (options.activePosts) query = query.is("deleted_at", null);
+      if (options.activeRecords) query = query.is("archived_at", null);
+      if (options.currentFiles) query = query.eq("is_current", true);
+      const result = await query;
+      return result.error ? 0 : result.count ?? 0;
+    })
+  );
+  return counts.reduce((total, value) => total + value, 0);
+}
+
+async function loadBoundedStorageRows(service, roomIds) {
+  const rows = [];
+  for (let index = 0; index < roomIds.length; index += ORGANIZATION_ROOM_ID_BATCH_SIZE) {
+    const remaining = ORGANIZATION_STORAGE_ROW_LIMIT - rows.length;
+    if (remaining <= 0) break;
+    const batch = roomIds.slice(index, index + ORGANIZATION_ROOM_ID_BATCH_SIZE);
+    const result = await service
+      .from("room_resources")
+      .select("file_size_bytes")
+      .in("room_id", batch)
+      .limit(remaining);
+    if (!result.error) rows.push(...(result.data ?? []));
+  }
+  return rows;
+}
+
+async function mapWithConcurrency(items, concurrency, worker) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  async function run() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await worker(items[index], index);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => run())
+  );
+  return results;
 }
 
 async function organizationTotals(service, organizationId, totalRooms) {
@@ -83,14 +127,10 @@ async function organizationTotals(service, organizationId, totalRooms) {
     countAcrossRooms(service, "room_module_records", roomIds, { activeRecords: true }),
     countAcrossRooms(service, "room_resources", roomIds, { currentFiles: true }),
     countAcrossRooms(service, "room_events", roomIds),
-    service
-      .from("room_resources")
-      .select("file_size_bytes")
-      .in("room_id", roomIds)
-      .limit(ORGANIZATION_STORAGE_ROW_LIMIT),
+    loadBoundedStorageRows(service, roomIds),
   ]);
 
-  const storageRows = storageResult.error ? [] : storageResult.data ?? [];
+  const storageRows = Array.isArray(storageResult) ? storageResult : [];
   return {
     totals: {
       rooms: totalRooms,
@@ -167,7 +207,7 @@ export async function loadOrganizationConsole(
             .from("room_resources")
             .select("file_size_bytes")
             .eq("room_id", roomId)
-            .limit(ORGANIZATION_STORAGE_ROW_LIMIT),
+            .limit(ORGANIZATION_ROOM_STORAGE_ROW_LIMIT),
         ]);
       const storageRows = storageResult.error ? [] : storageResult.data ?? [];
       return {
@@ -189,7 +229,8 @@ export async function loadOrganizationConsole(
           (total, resource) => total + Number(resource.file_size_bytes ?? 0),
           0
         ),
-        storageRowsCapped: storageRows.length >= ORGANIZATION_STORAGE_ROW_LIMIT,
+        storageRowsCapped:
+          storageRows.length >= ORGANIZATION_ROOM_STORAGE_ROW_LIMIT,
       };
     })
   );
@@ -236,17 +277,18 @@ export async function searchOrganization(service, access, userId, queryText) {
     throw new ExpansionError(roomsResult.error.message, 503);
   }
 
-  const results = [];
-  for (const room of roomsResult.data ?? []) {
-    const searched = await service.rpc("search_room_content", {
-      target_room_id: room.id,
-      search_text: cleanQuery,
-      module_filter: null,
-      result_limit: 15,
-    });
-    if (searched.error) continue;
-    for (const item of searched.data ?? []) {
-      results.push({
+  const groupedResults = await mapWithConcurrency(
+    roomsResult.data ?? [],
+    ORGANIZATION_SEARCH_CONCURRENCY,
+    async (room) => {
+      const searched = await service.rpc("search_room_content", {
+        target_room_id: room.id,
+        search_text: cleanQuery,
+        module_filter: null,
+        result_limit: 15,
+      });
+      if (searched.error) return [];
+      return (searched.data ?? []).map((item) => ({
         roomId: asString(room.id),
         roomName: asString(room.name),
         moduleKey: asString(item.module_key),
@@ -256,9 +298,10 @@ export async function searchOrganization(service, access, userId, queryText) {
         snippet: asString(item.snippet),
         createdAt: asString(item.created_at) || null,
         rank: Number(item.rank ?? 0),
-      });
+      }));
     }
-  }
+  );
+  const results = groupedResults.flat();
 
   return {
     items: results
