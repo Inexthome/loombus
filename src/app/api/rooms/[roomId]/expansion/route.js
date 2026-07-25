@@ -9,6 +9,7 @@ import {
   loadExpansionAccess,
   validUuid,
 } from "@/lib/room-expansion-service";
+import { normalizeRoomCalendarError } from "@/lib/room-calendar-runtime";
 import {
   exportFormCsv,
   loadCalendar,
@@ -59,10 +60,11 @@ async function authorize(request) {
 }
 
 function expansionFailure(error) {
-  if (error instanceof ExpansionError) {
-    return jsonError(error.message, error.status, error.code);
+  const normalized = normalizeRoomCalendarError(error);
+  if (normalized instanceof ExpansionError) {
+    return jsonError(normalized.message, normalized.status, normalized.code);
   }
-  console.error("Room expansion failure:", error);
+  console.error("Room expansion failure:", normalized);
   return jsonError("The Room expansion service could not complete this request.", 503);
 }
 
