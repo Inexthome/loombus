@@ -12,8 +12,7 @@ import {
   createRoomCalendarEvent,
   setRoomCalendarRsvp,
   updateRoomCalendarEvent,
-} from "@/lib/room-calendar";
-import { asString } from "@/lib/room-operations";
+} from "@/lib/room-calendar-service";
 import {
   activeRoom,
   getRecord,
