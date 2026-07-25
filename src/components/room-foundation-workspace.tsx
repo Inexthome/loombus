@@ -1,141 +1,12 @@
 "use client";
 
-import {
-  Bell,
-  BellOff,
-  CheckCheck,
-  Loader2,
-  Search,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
 import { useParams } from "next/navigation";
 import { createPortal } from "react-dom";
-import {
-  type FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { RoomFoundationPanel } from "@/components/room-foundation-panel";
+import { MODULE_LABELS, PAGE_SIZE, type ActivityPayload, type Panel, type SearchPayload } from "@/components/room-foundation-types";
 import { supabase } from "@/lib/supabase/client";
-import { isRoomModuleKey, type RoomModuleKey } from "@/lib/room-plan-entitlements";
-
-type Panel = "search" | "inbox" | null;
-
-type Preferences = {
-  muted: boolean;
-  importantOnly: boolean;
-  lastReadAt: string;
-};
-
-type Actor = {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  avatar_url: string | null;
-} | null;
-
-type ActivityEvent = {
-  id: string;
-  actorId: string | null;
-  actor: Actor;
-  eventType: string;
-  moduleKey: string;
-  moduleLabel: string;
-  targetType: string;
-  targetId: string | null;
-  title: string;
-  summary: string;
-  importance: string;
-  createdAt: string | null;
-};
-
-type SearchResult = {
-  moduleKey: string;
-  moduleLabel: string;
-  targetType: string;
-  targetId: string;
-  title: string;
-  snippet: string;
-  createdAt: string | null;
-  rank: number;
-};
-
-type ActivityPayload = {
-  room?: { id: string; name: string };
-  preferences?: Preferences;
-  unreadCount?: number;
-  unreadCapped?: boolean;
-  events?: ActivityEvent[];
-  error?: string;
-};
-
-type SearchPayload = {
-  query?: string;
-  results?: SearchResult[];
-  error?: string;
-};
-
-const SEARCH_MODULES: Array<{ value: string; label: string }> = [
-  { value: "", label: "Everything" },
-  { value: "discussions", label: "Discussions" },
-  { value: "calendar", label: "Calendar" },
-  { value: "announcements", label: "Announcements" },
-  { value: "resources", label: "Resources" },
-  { value: "tasks", label: "Tasks" },
-  { value: "polls", label: "Polls" },
-  { value: "directory", label: "Directory" },
-  { value: "knowledge", label: "Knowledge Base" },
-  { value: "files", label: "Files" },
-  { value: "forms", label: "Forms" },
-  { value: "services", label: "Services" },
-  { value: "member-workflows", label: "Member Workflows" },
-];
-
-const MODULE_LABELS: Partial<Record<RoomModuleKey, string>> = {
-  overview: "Overview",
-  discussions: "Discussions",
-  calendar: "Calendar",
-  announcements: "Announcements",
-  members: "Members / Roles",
-  requests: "Requests",
-  resources: "Resources",
-  settings: "Settings",
-  tasks: "Tasks / Action Items",
-  polls: "Polls / Decisions",
-  directory: "Directory / Contacts",
-  knowledge: "Knowledge Base / FAQ",
-  files: "Files / Documents",
-  forms: "Forms / Submissions",
-  services: "Services / Store",
-  invites: "Invites / Join Requests",
-  activity: "Activity / Audit Log",
-  "advanced-controls": "Advanced Room Controls",
-  "admin-tools": "More Admin Tools",
-  operations: "Larger Room Operations",
-  "member-workflows": "Advanced Member Workflows",
-  "enterprise-controls": "Enterprise Controls",
-  "high-capacity": "High-Capacity Rooms",
-  "community-operations": "Full Private Community Operations",
-};
-
-function formatDate(value: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "";
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function actorName(actor: Actor) {
-  return actor?.full_name?.trim() || actor?.username?.trim() || "";
-}
+import { isRoomModuleKey } from "@/lib/room-plan-entitlements";
 
 async function accessToken() {
   const { data } = await supabase.auth.getSession();
@@ -178,14 +49,20 @@ export function RoomFoundationWorkspace() {
   const [panel, setPanel] = useState<Panel>(null);
   const [summary, setSummary] = useState<ActivityPayload | null>(null);
   const [inbox, setInbox] = useState<ActivityPayload | null>(null);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchPayload, setSearchPayload] = useState<SearchPayload | null>(null);
   const [query, setQuery] = useState("");
   const [moduleFilter, setModuleFilter] = useState("");
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [loadingPanel, setLoadingPanel] = useState(false);
   const [working, setWorking] = useState(false);
   const [notice, setNotice] = useState("");
+  const [noticeError, setNoticeError] = useState(false);
+
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  const resultsHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const requestAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     let scheduled = false;
@@ -203,6 +80,7 @@ export function RoomFoundationWorkspace() {
     observer.observe(document.body, { childList: true, subtree: true });
     return () => {
       observer.disconnect();
+      requestAbortRef.current?.abort();
       document
         .querySelector<HTMLElement>(
           "[data-loombus-room-foundation-host='true']"
@@ -216,10 +94,10 @@ export function RoomFoundationWorkspace() {
       if (!roomId) throw new Error("Room could not be identified.");
       const token = await accessToken();
       if (!token) throw new Error("Sign in again before continuing.");
-      const params = extra ?? new URLSearchParams();
-      params.set("view", view);
+      const queryParams = new URLSearchParams(extra);
+      queryParams.set("view", view);
       const response = await fetch(
-        `/api/rooms/${encodeURIComponent(roomId)}/foundation?${params.toString()}`,
+        `/api/rooms/${encodeURIComponent(roomId)}/foundation?${queryParams.toString()}`,
         {
           ...init,
           headers: {
@@ -245,32 +123,107 @@ export function RoomFoundationWorkspace() {
     if (!roomId) return;
     setLoadingSummary(true);
     try {
-      const payload = (await request("summary")) as ActivityPayload;
-      setSummary(payload);
+      setSummary((await request("summary")) as ActivityPayload);
     } catch (error) {
-      setNotice(
-        error instanceof Error ? error.message : "Room activity could not load."
-      );
+      if (panel) {
+        setNotice(
+          error instanceof Error ? error.message : "Room activity could not load."
+        );
+        setNoticeError(true);
+      }
     } finally {
       setLoadingSummary(false);
     }
-  }, [request, roomId]);
+  }, [panel, request, roomId]);
 
-  const loadInbox = useCallback(async () => {
-    setLoadingPanel(true);
-    setNotice("");
-    try {
-      const payload = (await request("inbox")) as ActivityPayload;
-      setInbox(payload);
-      setSummary(payload);
-    } catch (error) {
-      setNotice(
-        error instanceof Error ? error.message : "Room inbox could not load."
-      );
-    } finally {
-      setLoadingPanel(false);
-    }
-  }, [request]);
+  const focusResults = useCallback(() => {
+    window.requestAnimationFrame(() => resultsHeadingRef.current?.focus());
+  }, []);
+
+  const loadInbox = useCallback(
+    async (page = 1, focus = false) => {
+      requestAbortRef.current?.abort();
+      const controller = new AbortController();
+      requestAbortRef.current = controller;
+      setLoadingPanel(true);
+      setNotice("");
+      setNoticeError(false);
+      try {
+        const queryParams = new URLSearchParams({
+          page: String(Math.max(1, page)),
+          limit: String(PAGE_SIZE),
+        });
+        const payload = (await request(
+          "inbox",
+          { signal: controller.signal },
+          queryParams
+        )) as ActivityPayload;
+        setInbox(payload);
+        setSummary((current) => ({
+          ...(current ?? {}),
+          room: payload.room ?? current?.room,
+          preferences: payload.preferences ?? current?.preferences,
+          unreadCount: payload.unreadCount ?? current?.unreadCount,
+          unreadCapped: payload.unreadCapped ?? current?.unreadCapped,
+        }));
+        if (focus) focusResults();
+      } catch (error) {
+        if ((error as Error)?.name !== "AbortError") {
+          setNotice(
+            error instanceof Error ? error.message : "Room inbox could not load."
+          );
+          setNoticeError(true);
+        }
+      } finally {
+        if (requestAbortRef.current === controller) setLoadingPanel(false);
+      }
+    },
+    [focusResults, request]
+  );
+
+  const loadSearch = useCallback(
+    async (page = 1, focus = false) => {
+      const cleaned = query.trim();
+      if (cleaned.length < 2) {
+        setNotice("Enter at least two characters to search this Room.");
+        setNoticeError(true);
+        setSearchPayload({ results: [], pageInfo: null });
+        return;
+      }
+
+      requestAbortRef.current?.abort();
+      const controller = new AbortController();
+      requestAbortRef.current = controller;
+      setLoadingPanel(true);
+      setNotice("");
+      setNoticeError(false);
+      try {
+        const queryParams = new URLSearchParams({
+          q: cleaned,
+          page: String(Math.max(1, page)),
+          limit: String(PAGE_SIZE),
+        });
+        if (moduleFilter) queryParams.set("module", moduleFilter);
+        const payload = (await request(
+          "search",
+          { signal: controller.signal },
+          queryParams
+        )) as SearchPayload;
+        setSearchPayload(payload);
+        if (focus) focusResults();
+      } catch (error) {
+        if ((error as Error)?.name !== "AbortError") {
+          setNotice(
+            error instanceof Error ? error.message : "Room search could not run."
+          );
+          setNoticeError(true);
+        }
+      } finally {
+        if (requestAbortRef.current === controller) setLoadingPanel(false);
+      }
+    },
+    [focusResults, moduleFilter, query, request]
+  );
 
   useEffect(() => {
     void loadSummary();
@@ -283,44 +236,61 @@ export function RoomFoundationWorkspace() {
     };
   }, [loadSummary]);
 
+  const closePanel = useCallback(() => {
+    requestAbortRef.current?.abort();
+    setPanel(null);
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
+  }, []);
+
+  const openPanel = useCallback(
+    (nextPanel: Exclude<Panel, null>, trigger: HTMLButtonElement) => {
+      if (panel === nextPanel) {
+        closePanel();
+        return;
+      }
+      triggerRef.current = trigger;
+      setNotice("");
+      setNoticeError(false);
+      setPanel(nextPanel);
+    },
+    [closePanel, panel]
+  );
+
   useEffect(() => {
+    if (!panel) return;
+    window.requestAnimationFrame(() => headingRef.current?.focus());
     if (panel === "search") {
       window.setTimeout(() => searchInputRef.current?.focus(), 0);
+    } else {
+      void loadInbox(1);
     }
-    if (panel === "inbox") void loadInbox();
-  }, [loadInbox, panel]);
 
-  async function runSearch(event?: FormEvent<HTMLFormElement>) {
-    event?.preventDefault();
-    const cleaned = query.trim();
-    if (cleaned.length < 2) {
-      setNotice("Enter at least two characters to search this Room.");
-      setSearchResults([]);
-      return;
-    }
-    setLoadingPanel(true);
-    setNotice("");
-    try {
-      const params = new URLSearchParams({ q: cleaned });
-      if (moduleFilter) params.set("module", moduleFilter);
-      const payload = (await request("search", undefined, params)) as SearchPayload;
-      setSearchResults(payload.results ?? []);
-    } catch (error) {
-      setNotice(
-        error instanceof Error ? error.message : "Room search could not run."
-      );
-    } finally {
-      setLoadingPanel(false);
-    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closePanel();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [closePanel, loadInbox, panel]);
+
+  async function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await loadSearch(1, true);
   }
 
-  async function postAction(action: string, values: Record<string, unknown> = {}) {
+  async function postAction(
+    action: string,
+    values: Record<string, unknown> = {}
+  ) {
     setWorking(true);
     setNotice("");
+    setNoticeError(false);
     try {
       const payload = (await request("preferences", {
         method: "POST",
-        body: JSON.stringify({ action, ...values }),
+        body: JSON.stringify({ action: action, ...values }),
       })) as ActivityPayload;
       if (payload.preferences) {
         setInbox((current) =>
@@ -343,7 +313,7 @@ export function RoomFoundationWorkspace() {
         );
       }
       if (action === "mark_read") setNotice("Room activity marked read.");
-      if (action === "update_preferences") await loadInbox();
+      if (action === "update_preferences") await loadInbox(1);
       window.dispatchEvent(new Event("loombus:room-activity-changed"));
     } catch (error) {
       setNotice(
@@ -351,6 +321,7 @@ export function RoomFoundationWorkspace() {
           ? error.message
           : "Room preferences could not be updated."
       );
+      setNoticeError(true);
     } finally {
       setWorking(false);
     }
@@ -369,229 +340,38 @@ export function RoomFoundationWorkspace() {
       return Boolean(label && (text === label || text.startsWith(label)));
     });
     button?.click();
-    setPanel(null);
+    closePanel();
   }
+
 
   if (!roomId || !host) return null;
 
-  const unreadCount = summary?.unreadCount ?? 0;
-  const preferences = inbox?.preferences ?? summary?.preferences;
-  const events = inbox?.events ?? [];
-  const badge =
-    unreadCount > 99 || summary?.unreadCapped ? "99+" : String(unreadCount);
-
   return createPortal(
-    <div className="room-foundation">
-      <div className="room-foundation-toolbar">
-        <button
-          type="button"
-          className="room-foundation-search-trigger"
-          onClick={() => setPanel(panel === "search" ? null : "search")}
-          aria-expanded={panel === "search"}
-        >
-          <Search aria-hidden="true" />
-          <span>Search this Room</span>
-        </button>
-
-        <button
-          type="button"
-          className="room-foundation-inbox-trigger"
-          onClick={() => setPanel(panel === "inbox" ? null : "inbox")}
-          aria-expanded={panel === "inbox"}
-          aria-label={
-            unreadCount
-              ? `Room inbox, ${unreadCount} unread`
-              : "Room inbox, no unread activity"
-          }
-        >
-          {preferences?.muted ? (
-            <BellOff aria-hidden="true" />
-          ) : (
-            <Bell aria-hidden="true" />
-          )}
-          <span>Room Inbox</span>
-          {unreadCount > 0 ? <strong>{badge}</strong> : null}
-          {loadingSummary ? <Loader2 className="is-spinning" aria-hidden="true" /> : null}
-        </button>
-      </div>
-
-      {panel ? (
-        <section className="room-foundation-panel">
-          <header className="room-foundation-heading">
-            <div>
-              <p>{summary?.room?.name ?? "Private Room"}</p>
-              <h2>{panel === "search" ? "Search this Room" : "Room Inbox"}</h2>
-              <span>
-                {panel === "search"
-                  ? "Find private discussions, dates, announcements, knowledge, files, and operational records."
-                  : "Review new Room activity without leaving the private workspace."}
-              </span>
-            </div>
-            <button
-              type="button"
-              className="room-foundation-close"
-              onClick={() => setPanel(null)}
-              aria-label="Close Room panel"
-            >
-              <X aria-hidden="true" />
-            </button>
-          </header>
-
-          {notice ? <div className="room-foundation-notice">{notice}</div> : null}
-
-          {panel === "search" ? (
-            <>
-              <form className="room-foundation-search-form" onSubmit={runSearch}>
-                <label>
-                  <span className="sr-only">Search Room content</span>
-                  <Search aria-hidden="true" />
-                  <input
-                    ref={searchInputRef}
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search words, titles, files, tasks, or answers"
-                    maxLength={160}
-                  />
-                </label>
-                <select
-                  value={moduleFilter}
-                  onChange={(event) => setModuleFilter(event.target.value)}
-                  aria-label="Filter Room search by module"
-                >
-                  {SEARCH_MODULES.map((option) => (
-                    <option key={option.value || "all"} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="submit"
-                  disabled={loadingPanel || query.trim().length < 2}
-                >
-                  {loadingPanel ? (
-                    <Loader2 className="is-spinning" aria-hidden="true" />
-                  ) : (
-                    <Search aria-hidden="true" />
-                  )}
-                  Search
-                </button>
-              </form>
-
-              <div className="room-foundation-results">
-                {!loadingPanel && searchResults.length === 0 ? (
-                  <div className="room-foundation-empty">
-                    <Search aria-hidden="true" />
-                    <h3>{query.trim() ? "No matching Room content" : "Search the complete Room"}</h3>
-                    <p>
-                      Results are limited to modules included in this Room plan and
-                      sections your role may open.
-                    </p>
-                  </div>
-                ) : (
-                  searchResults.map((result) => (
-                    <button
-                      key={`${result.targetType}-${result.targetId}`}
-                      type="button"
-                      className="room-foundation-result"
-                      onClick={() => openModule(result.moduleKey)}
-                    >
-                      <span>
-                        {result.moduleLabel}
-                        {result.createdAt ? ` · ${formatDate(result.createdAt)}` : ""}
-                      </span>
-                      <strong>{result.title}</strong>
-                      {result.snippet ? <p>{result.snippet}</p> : null}
-                    </button>
-                  ))
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="room-foundation-inbox-controls">
-                <div>
-                  <SlidersHorizontal aria-hidden="true" />
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(preferences?.importantOnly)}
-                      disabled={working}
-                      onChange={(event) =>
-                        void postAction("update_preferences", {
-                          importantOnly: event.target.checked,
-                        })
-                      }
-                    />
-                    <span>Important activity only</span>
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(preferences?.muted)}
-                      disabled={working}
-                      onChange={(event) =>
-                        void postAction("update_preferences", {
-                          muted: event.target.checked,
-                        })
-                      }
-                    />
-                    <span>Mute unread badge</span>
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void postAction("mark_read")}
-                  disabled={working || unreadCount === 0}
-                >
-                  {working ? (
-                    <Loader2 className="is-spinning" aria-hidden="true" />
-                  ) : (
-                    <CheckCheck aria-hidden="true" />
-                  )}
-                  Mark all read
-                </button>
-              </div>
-
-              <div className="room-foundation-events">
-                {loadingPanel ? (
-                  <div className="room-foundation-loading">
-                    <Loader2 className="is-spinning" aria-hidden="true" />
-                    Loading Room activity
-                  </div>
-                ) : events.length === 0 ? (
-                  <div className="room-foundation-empty">
-                    <Bell aria-hidden="true" />
-                    <h3>No Room activity yet</h3>
-                    <p>New discussions, announcements, dates, files, tasks, polls, and membership actions will appear here.</p>
-                  </div>
-                ) : (
-                  events.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={`room-foundation-event${
-                        item.importance === "high" ? " is-important" : ""
-                      }`}
-                      onClick={() => openModule(item.moduleKey)}
-                    >
-                      <span>
-                        {item.moduleLabel}
-                        {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ""}
-                      </span>
-                      <strong>{item.title}</strong>
-                      {item.summary ? <p>{item.summary}</p> : null}
-                      {actorName(item.actor) ? (
-                        <small>By {actorName(item.actor)}</small>
-                      ) : null}
-                    </button>
-                  ))
-                )}
-              </div>
-            </>
-          )}
-        </section>
-      ) : null}
-    </div>,
+    <RoomFoundationPanel
+      panel={panel}
+      summary={summary}
+      inbox={inbox}
+      searchPayload={searchPayload}
+      query={query}
+      moduleFilter={moduleFilter}
+      loadingSummary={loadingSummary}
+      loadingPanel={loadingPanel}
+      working={working}
+      notice={notice}
+      noticeError={noticeError}
+      headingRef={headingRef}
+      resultsHeadingRef={resultsHeadingRef}
+      searchInputRef={searchInputRef}
+      closePanel={closePanel}
+      setQuery={setQuery}
+      setModuleFilter={setModuleFilter}
+      handleSearchSubmit={handleSearchSubmit}
+      loadSearch={loadSearch}
+      loadInbox={loadInbox}
+      postAction={postAction}
+      openModule={openModule}
+      openPanel={openPanel}
+    />,
     host
   );
 }

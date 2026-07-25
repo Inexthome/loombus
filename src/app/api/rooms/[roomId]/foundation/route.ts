@@ -5,6 +5,10 @@ import {
   isRoomModuleKey,
 } from "@/lib/room-plan-entitlements";
 import {
+  corePagingFromSearchParams,
+  pageBoundedRows,
+} from "@/lib/room-core-pagination";
+import {
   asBoolean,
   asString,
   createRequestSupabase,
@@ -29,9 +33,10 @@ type Authorized =
   | { ok: true; userId: string; service: ServiceClient }
   | { ok: false; response: NextResponse };
 
-const INBOX_LIMIT = 120;
+const SUMMARY_SCAN_LIMIT = 48;
+const INBOX_SCAN_LIMIT = 480;
 const UNREAD_SCAN_LIMIT = 1000;
-const SEARCH_LIMIT = 75;
+const SEARCH_SCAN_LIMIT = 240;
 
 function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
@@ -211,10 +216,6 @@ function serializeEvent(
     title: asString(row.title) || "Room activity",
     summary: asString(row.summary),
     importance: asString(row.importance) || "normal",
-    metadata:
-      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
-        ? row.metadata
-        : {},
     createdAt: asString(row.created_at) || null,
   };
 }
@@ -225,16 +226,18 @@ async function activityPayload(
   userId: string,
   access: RoomAccess,
   preference: Preference,
-  includeInbox: boolean
+  includeInbox: boolean,
+  paging: ReturnType<typeof corePagingFromSearchParams>
 ) {
   const directoryVisible = await directoryIsVisible(service, roomId);
+  const scanLimit = includeInbox ? INBOX_SCAN_LIMIT : SUMMARY_SCAN_LIMIT;
   const [eventResult, unreadResult] = await Promise.all([
     service
       .from("room_activity_events")
       .select("*")
       .eq("room_id", roomId)
       .order("created_at", { ascending: false })
-      .limit(includeInbox ? INBOX_LIMIT : 8),
+      .limit(scanLimit),
     service
       .from("room_activity_events")
       .select("id, actor_id, audience, module_key, importance, created_at")
@@ -247,24 +250,29 @@ async function activityPayload(
   if (eventResult.error) throw new Error(eventResult.error.message);
   if (unreadResult.error) throw new Error(unreadResult.error.message);
 
-  const events = ((eventResult.data ?? []) as RoomRow[]).filter((row) =>
+  const visibleEvents = ((eventResult.data ?? []) as RoomRow[]).filter((row) =>
     eventIsVisible(row, access, userId, directoryVisible, preference)
   );
   const unread = ((unreadResult.data ?? []) as RoomRow[]).filter((row) =>
     eventIsVisible(row, access, userId, directoryVisible, preference)
   );
+
+  const page = includeInbox
+    ? pageBoundedRows(visibleEvents, paging)
+    : { items: visibleEvents.slice(0, 8), pageInfo: null };
   const profiles = await loadProfiles(
     service,
-    events.map((row) => asString(row.actor_id)).filter(Boolean)
+    page.items.map((row: RoomRow) => asString(row.actor_id)).filter(Boolean)
   );
-  const unreadCount = preference.muted ? 0 : unread.length;
 
   return {
     room: { id: access.room.id, name: access.room.name },
     preferences: preference,
-    unreadCount,
+    unreadCount: preference.muted ? 0 : unread.length,
     unreadCapped: unread.length >= UNREAD_SCAN_LIMIT,
-    events: events.map((row) => serializeEvent(row, profiles)),
+    events: page.items.map((row: RoomRow) => serializeEvent(row, profiles)),
+    pageInfo: page.pageInfo,
+    eventsCapped: includeInbox && (eventResult.data ?? []).length >= scanLimit,
   };
 }
 
@@ -285,6 +293,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   try {
     const view = request.nextUrl.searchParams.get("view") ?? "summary";
+    const paging = corePagingFromSearchParams(request.nextUrl.searchParams);
     const preference = await loadPreference(
       authorized.service,
       roomId,
@@ -297,7 +306,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       const query = (request.nextUrl.searchParams.get("q") ?? "")
         .trim()
         .slice(0, 160);
-      if (query.length < 2) return json({ query, results: [] });
+      if (query.length < 2) {
+        return json({ query, results: [], pageInfo: null, resultsCapped: false });
+      }
 
       const requestedModule = request.nextUrl.searchParams.get("module") ?? "";
       const moduleFilter =
@@ -312,11 +323,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
         target_room_id: roomId,
         search_text: query,
         module_filter: moduleFilter,
-        result_limit: SEARCH_LIMIT,
+        result_limit: SEARCH_SCAN_LIMIT,
       });
       if (result.error) throw new Error(result.error.message);
 
-      const results = ((result.data ?? []) as RoomRow[])
+      const rawRows = (result.data ?? []) as RoomRow[];
+      const visibleResults = rawRows
         .filter((row) =>
           moduleIsVisible(
             asString(row.module_key),
@@ -337,13 +349,23 @@ export async function GET(request: NextRequest, context: RouteContext) {
             snippet: asString(row.snippet),
             createdAt: asString(row.created_at) || null,
             rank:
-              typeof row.rank === "number"
-                ? row.rank
-                : Number(row.rank) || 0,
+              typeof row.rank === "number" ? row.rank : Number(row.rank) || 0,
           };
-        });
+        })
+        .sort((left, right) => right.rank - left.rank);
+      const page = pageBoundedRows(visibleResults, paging);
 
-      return json({ query, module: moduleFilter, results });
+      return json({
+        query,
+        module: moduleFilter,
+        results: page.items,
+        pageInfo: page.pageInfo,
+        resultsCapped: rawRows.length >= SEARCH_SCAN_LIMIT,
+      });
+    }
+
+    if (view !== "summary" && view !== "inbox") {
+      return jsonError("Unknown Room activity view.", 400);
     }
 
     return json(
@@ -353,7 +375,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
         authorized.userId,
         access,
         preference,
-        view === "inbox"
+        view === "inbox",
+        paging
       )
     );
   } catch (caught) {
