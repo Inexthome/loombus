@@ -1,19 +1,39 @@
 import "server-only";
 
-import { asObject, ensureOrganization, ensureRoomModule, loadProfilesMap, serializePlan, serializeRecord, ExpansionError } from "@/lib/room-expansion-service";
+import {
+  asObject,
+  ensureOrganization,
+  ensureRoomModule,
+  loadProfilesMap,
+  serializePlan,
+  serializeRecord,
+  ExpansionError,
+} from "@/lib/room-expansion-service";
+import { loadStudioPage } from "@/lib/room-expansion-pagination";
 import { asString, profileFor } from "@/lib/room-operations";
 
-async function recordsFor(service, roomId, moduleKey) {
-  const result = await service
-    .from("room_module_records")
-    .select("*")
-    .eq("room_id", roomId)
-    .eq("module_key", moduleKey)
-    .is("archived_at", null)
-    .order("created_at", { ascending: false })
-    .limit(300);
-  if (result.error) throw new ExpansionError(result.error.message, 503);
-  return (result.data ?? []).map(serializeRecord);
+const MAX_TASK_COMMENTS = 1200;
+
+async function taskRecords(service, roomId, paging) {
+  const loaded = await loadStudioPage(
+    ({ from, to }) =>
+      service
+        .from("room_module_records")
+        .select("*", { count: "exact" })
+        .eq("room_id", roomId)
+        .eq("module_key", "task")
+        .is("archived_at", null)
+        .order("created_at", { ascending: false })
+        .range(from, to),
+    paging
+  );
+  if (loaded.result.error) {
+    throw new ExpansionError(loaded.result.error.message, 503);
+  }
+  return {
+    records: (loaded.result.data ?? []).map(serializeRecord),
+    pageInfo: loaded.pageInfo,
+  };
 }
 
 export async function loadExpansionManifest(service, access, userId) {
@@ -66,10 +86,16 @@ export async function loadExpansionManifest(service, access, userId) {
   };
 }
 
-export async function loadTasks(service, roomId, access, userId) {
+export async function loadTasks(
+  service,
+  roomId,
+  access,
+  userId,
+  paging = {}
+) {
   ensureRoomModule(access, "tasks");
-  const records = await recordsFor(service, roomId, "task");
-  const ids = records.map((record) => record.id);
+  const loaded = await taskRecords(service, roomId, paging);
+  const ids = loaded.records.map((record) => record.id);
   const commentsResult = ids.length
     ? await service
         .from("room_task_comments")
@@ -77,30 +103,41 @@ export async function loadTasks(service, roomId, access, userId) {
         .eq("room_id", roomId)
         .in("record_id", ids)
         .order("created_at", { ascending: true })
+        .limit(MAX_TASK_COMMENTS)
     : { data: [], error: null };
-  if (commentsResult.error) throw new ExpansionError(commentsResult.error.message, 503);
+  if (commentsResult.error) {
+    throw new ExpansionError(commentsResult.error.message, 503);
+  }
   const comments = commentsResult.data ?? [];
   const profiles = await loadProfilesMap(service, [
-    ...records.map((record) => record.createdBy),
+    ...loaded.records.map((record) => record.createdBy),
     ...comments.map((comment) => asString(comment.author_id)),
   ]);
-  return records.map((record) => ({
-    ...record,
-    creator: profileFor(profiles, record.createdBy),
-    canUpdate:
-      access.canManage || asString(record.metadata.assigneeId) === userId,
-    comments: comments
-      .filter((comment) => asString(comment.record_id) === record.id)
-      .map((comment) => {
-        const authorId = asString(comment.author_id);
-        return {
-          id: asString(comment.id),
-          body: asString(comment.body),
-          authorId,
-          author: profileFor(profiles, authorId),
-          createdAt: asString(comment.created_at) || null,
-          updatedAt: asString(comment.updated_at) || null,
-        };
-      }),
-  }));
+
+  return {
+    items: loaded.records.map((record) => ({
+      ...record,
+      creator: profileFor(profiles, record.createdBy),
+      canUpdate:
+        access.canManage || asString(record.metadata.assigneeId) === userId,
+      comments: comments
+        .filter((comment) => asString(comment.record_id) === record.id)
+        .map((comment) => {
+          const authorId = asString(comment.author_id);
+          return {
+            id: asString(comment.id),
+            body: asString(comment.body),
+            authorId,
+            author: profileFor(profiles, authorId),
+            createdAt: asString(comment.created_at) || null,
+            updatedAt: asString(comment.updated_at) || null,
+          };
+        }),
+    })),
+    pageInfo: loaded.pageInfo,
+    limits: {
+      comments: MAX_TASK_COMMENTS,
+      relatedRowsTruncated: comments.length >= MAX_TASK_COMMENTS,
+    },
+  };
 }

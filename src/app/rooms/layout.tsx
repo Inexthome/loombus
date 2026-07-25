@@ -13,6 +13,7 @@ import "./room-foundation.css";
 import "./room-operations.css";
 import "./room-tier-features.css";
 import "./room-tier-overrides.css";
+import "./room-expansion-hardening.css";
 
 export default function RoomsLayout({
   children,

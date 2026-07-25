@@ -9,6 +9,7 @@ import {
   loadExpansionAccess,
   validUuid,
 } from "@/lib/room-expansion-service";
+import { studioPagingFromSearchParams } from "@/lib/room-expansion-pagination";
 import { normalizeRoomCalendarError } from "@/lib/room-calendar-runtime";
 import {
   exportFormCsv,
@@ -77,21 +78,60 @@ export async function GET(request, context) {
   try {
     const { access } = await loadExpansionAccess(roomId, authorized.userId);
     const view = request.nextUrl.searchParams.get("view") || "manifest";
+    const paging = studioPagingFromSearchParams(request.nextUrl.searchParams);
     let data;
     if (view === "manifest") {
-      data = await loadExpansionManifest(authorized.service, access, authorized.userId);
+      data = await loadExpansionManifest(
+        authorized.service,
+        access,
+        authorized.userId
+      );
     } else if (view === "tasks") {
-      data = await loadTasks(authorized.service, roomId, access, authorized.userId);
+      data = await loadTasks(
+        authorized.service,
+        roomId,
+        access,
+        authorized.userId,
+        paging
+      );
     } else if (view === "polls") {
-      data = await loadPolls(authorized.service, roomId, access, authorized.userId);
+      data = await loadPolls(
+        authorized.service,
+        roomId,
+        access,
+        authorized.userId,
+        paging
+      );
     } else if (view === "forms") {
-      data = await loadForms(authorized.service, roomId, access, authorized.userId);
+      data = await loadForms(
+        authorized.service,
+        roomId,
+        access,
+        authorized.userId,
+        paging
+      );
     } else if (view === "knowledge") {
-      data = await loadKnowledge(authorized.service, roomId, access);
+      data = await loadKnowledge(
+        authorized.service,
+        roomId,
+        access,
+        paging
+      );
     } else if (view === "calendar") {
-      data = await loadCalendar(authorized.service, roomId, access, authorized.userId);
+      data = await loadCalendar(
+        authorized.service,
+        roomId,
+        access,
+        authorized.userId
+      );
     } else if (view === "files") {
-      data = await loadFiles(authorized.service, roomId, access, authorized.userId);
+      data = await loadFiles(
+        authorized.service,
+        roomId,
+        access,
+        authorized.userId,
+        paging
+      );
     } else if (view === "organization") {
       data = await loadOrganizationConsole(
         authorized.service,
