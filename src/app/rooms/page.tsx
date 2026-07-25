@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import LiveRoomsClient from "./live-rooms-client";
+import RoomsDirectoryV3 from "@/components/rooms-directory-v3";
 
 export const metadata: Metadata = {
   title: "Private Rooms | Loombus",
@@ -15,5 +15,5 @@ export const metadata: Metadata = {
 };
 
 export default function RoomsPage() {
-  return <LiveRoomsClient />;
+  return <RoomsDirectoryV3 />;
 }
