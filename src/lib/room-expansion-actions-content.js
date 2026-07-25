@@ -1,11 +1,24 @@
 import "server-only";
 
-import { ExpansionError, cleanStringArray, cleanText, ensureRoomModule, safeIsoDate, serializePlan, validUuid } from "@/lib/room-expansion-service";
-import { asNumber, asString } from "@/lib/room-operations";
-import { activeRoom, getRecord, requireManage } from "@/lib/room-expansion-actions-shared";
-
-const RECURRENCES = new Set(["none", "daily", "weekly", "monthly"]);
-const RSVP_STATUSES = new Set(["going", "maybe", "declined"]);
+import {
+  ExpansionError,
+  cleanStringArray,
+  cleanText,
+  ensureRoomModule,
+  validUuid,
+} from "@/lib/room-expansion-service";
+import {
+  cancelRoomCalendarEvent,
+  createRoomCalendarEvent,
+  setRoomCalendarRsvp,
+  updateRoomCalendarEvent,
+} from "@/lib/room-calendar";
+import { asString } from "@/lib/room-operations";
+import {
+  activeRoom,
+  getRecord,
+  requireManage,
+} from "@/lib/room-expansion-actions-shared";
 
 export async function saveKnowledge(service, access, userId, body) {
   ensureRoomModule(access, "knowledge");
@@ -26,7 +39,12 @@ export async function saveKnowledge(service, access, userId, body) {
     created_by: userId,
   };
   if (validUuid(body.recordId)) {
-    const record = await getRecord(service, access.room.id, body.recordId, "knowledge");
+    const record = await getRecord(
+      service,
+      access.room.id,
+      body.recordId,
+      "knowledge"
+    );
     const updated = await service
       .from("room_module_records")
       .update(payload)
@@ -52,8 +70,15 @@ export async function restoreKnowledge(service, access, userId, body) {
   ensureRoomModule(access, "knowledge");
   requireManage(access);
   activeRoom(access);
-  const record = await getRecord(service, access.room.id, body.recordId, "knowledge");
-  if (!validUuid(body.versionId)) throw new ExpansionError("Invalid knowledge version.", 400);
+  const record = await getRecord(
+    service,
+    access.room.id,
+    body.recordId,
+    "knowledge"
+  );
+  if (!validUuid(body.versionId)) {
+    throw new ExpansionError("Invalid knowledge version.", 400);
+  }
   const version = await service
     .from("room_knowledge_versions")
     .select("*")
@@ -78,84 +103,22 @@ export async function restoreKnowledge(service, access, userId, body) {
   return { ok: true };
 }
 
-function recurrenceRule(value) {
-  const recurrence = RECURRENCES.has(asString(value)) ? asString(value) : "none";
-  if (recurrence === "daily") return "FREQ=DAILY;INTERVAL=1";
-  if (recurrence === "weekly") return "FREQ=WEEKLY;INTERVAL=1";
-  if (recurrence === "monthly") return "FREQ=MONTHLY;INTERVAL=1";
-  return null;
+export async function createCalendarEvent(service, access, userId, body) {
+  return createRoomCalendarEvent(service, access, userId, body, {
+    advanced: true,
+  });
 }
 
-export async function createCalendarEvent(service, access, userId, body) {
-  ensureRoomModule(access, "calendar");
-  if (!["pro", "organization", "organization-plus", "enterprise"].includes(serializePlan(access).id)) {
-    throw new ExpansionError("Expanded calendar operations begin with Room Pro.", 403);
-  }
-  requireManage(access);
-  activeRoom(access);
-  const title = cleanText(body.title, 180);
-  const startsAt = safeIsoDate(body.startsAt);
-  const endsAt = safeIsoDate(body.endsAt);
-  if (!title || !startsAt) {
-    throw new ExpansionError("Enter an event title and start time.", 400);
-  }
-  if (endsAt && new Date(endsAt).getTime() < new Date(startsAt).getTime()) {
-    throw new ExpansionError("The event end must follow its start.", 400);
-  }
-  const capacity = Math.max(0, Math.min(100000, Math.floor(asNumber(body.capacity))));
-  const inserted = await service.from("room_events").insert({
-    room_id: access.room.id,
-    title,
-    description: cleanText(body.description, 3000),
-    location: cleanText(body.location, 300),
-    starts_at: startsAt,
-    ends_at: endsAt,
-    recurrence_rule: recurrenceRule(body.recurrence),
-    recurrence_until: safeIsoDate(body.recurrenceUntil),
-    timezone: cleanText(body.timezone, 100) || "UTC",
-    capacity: capacity || null,
-    registration_required: body.registrationRequired === true,
-    created_by: userId,
+export async function updateCalendarEvent(service, access, userId, body) {
+  return updateRoomCalendarEvent(service, access, userId, body, {
+    advanced: true,
   });
-  if (inserted.error) throw new ExpansionError(inserted.error.message, 503);
-  return { ok: true };
+}
+
+export async function cancelCalendarEvent(service, access, userId, body) {
+  return cancelRoomCalendarEvent(service, access, userId, body);
 }
 
 export async function rsvpEvent(service, access, userId, body) {
-  ensureRoomModule(access, "calendar");
-  if (!["pro", "organization", "organization-plus", "enterprise"].includes(serializePlan(access).id)) {
-    throw new ExpansionError("Expanded calendar operations begin with Room Pro.", 403);
-  }
-  activeRoom(access);
-  if (!validUuid(body.eventId)) throw new ExpansionError("Invalid event.", 400);
-  const event = await service
-    .from("room_events")
-    .select("id, capacity")
-    .eq("id", body.eventId)
-    .eq("room_id", access.room.id)
-    .maybeSingle();
-  if (event.error || !event.data) throw new ExpansionError("Event not found.", 404);
-  let status = RSVP_STATUSES.has(asString(body.status)) ? asString(body.status) : "going";
-  if (status === "going" && Number(event.data.capacity ?? 0) > 0) {
-    const going = await service
-      .from("room_event_rsvps")
-      .select("user_id", { count: "exact", head: true })
-      .eq("event_id", body.eventId)
-      .eq("status", "going")
-      .neq("user_id", userId);
-    if (going.error) throw new ExpansionError(going.error.message, 503);
-    if ((going.count ?? 0) >= Number(event.data.capacity)) status = "waitlist";
-  }
-  const saved = await service.from("room_event_rsvps").upsert(
-    {
-      room_id: access.room.id,
-      event_id: body.eventId,
-      user_id: userId,
-      status,
-      note: cleanText(body.note, 500),
-    },
-    { onConflict: "event_id,user_id" }
-  );
-  if (saved.error) throw new ExpansionError(saved.error.message, 503);
-  return { ok: true, status };
+  return setRoomCalendarRsvp(service, access, userId, body);
 }
