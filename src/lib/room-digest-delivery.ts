@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
-type ServiceClient = ReturnType<typeof createClient>;
+type ServiceClient = ReturnType<typeof createClient<any>>;
 
 type RoomDigestPreference = {
   room_id: string;
@@ -346,9 +346,9 @@ export async function runRoomDigests(args: {
     );
   }
 
-  const duePreferences = ((preferenceData ?? []) as RoomDigestPreference[]).filter(
-    isDue
-  );
+  const duePreferences = (
+    (preferenceData ?? []) as unknown as RoomDigestPreference[]
+  ).filter(isDue);
   const results: RoomDigestResult[] = [];
 
   for (const preference of duePreferences) {
