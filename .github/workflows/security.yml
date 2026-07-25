@@ -38,17 +38,7 @@ jobs:
         run: npm run lint
 
       - name: Build
-        run: |
-          set -o pipefail
-          npm run build 2>&1 | tee /tmp/room-calendar-build.log
-
-      - name: Upload Room calendar build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: room-calendar-build-log
-          path: /tmp/room-calendar-build.log
-          if-no-files-found: ignore
+        run: npm run build
 
   dependency-audit:
     name: npm dependency audit
