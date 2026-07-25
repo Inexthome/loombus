@@ -7,7 +7,7 @@ import {
   roomCalendarIsAdvanced,
   setRoomCalendarRsvp,
   updateRoomCalendarEvent,
-} from "@/lib/room-calendar";
+} from "@/lib/room-calendar-service";
 import {
   createRequestSupabase,
   createRoomServiceSupabase,
@@ -102,7 +102,9 @@ async function roomAccess(
 function rangeValue(value: string | null, fallback: Date) {
   if (!value) return fallback.toISOString();
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toISOString() : fallback.toISOString();
+  return Number.isFinite(date.getTime())
+    ? date.toISOString()
+    : fallback.toISOString();
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
