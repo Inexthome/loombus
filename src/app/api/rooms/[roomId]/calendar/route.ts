@@ -219,6 +219,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
+    const resultRecord =
+      result && typeof result === "object"
+        ? (result as Record<string, unknown>)
+        : {};
+
     await logAuditEvent({
       actor_id: authorized.userId,
       action: `room.calendar.${action}`,
@@ -229,8 +234,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         event_id:
           typeof body?.eventId === "string"
             ? body.eventId
-            : typeof result?.id === "string"
-              ? result.id
+            : typeof resultRecord.id === "string"
+              ? resultRecord.id
               : null,
         advanced,
       },
