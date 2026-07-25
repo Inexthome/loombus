@@ -42,8 +42,8 @@ export function ExpansionBody(props) {
     <>
       {props.data?.limits?.relatedRowsTruncated ? (
         <p className="room-expansion-limit-warning" role="status">
-          This page reached its related-record safety limit. Narrower detail
-          loading will be used instead of exposing an unbounded Room dataset.
+          This page reached its related-record safety limit. Only the bounded
+          set already loaded is shown; no unbounded Room dataset was returned.
         </p>
       ) : null}
       {body}
