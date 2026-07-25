@@ -7,7 +7,7 @@ import {
   serializeResource,
   ExpansionError,
 } from "@/lib/room-expansion-service";
-import { loadRoomCalendar } from "@/lib/room-calendar";
+import { loadRoomCalendar } from "@/lib/room-calendar-service";
 import { asString } from "@/lib/room-operations";
 
 export async function loadCalendar(service, roomId, access, userId) {
