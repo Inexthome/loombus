@@ -3,7 +3,10 @@ import {
   RoomAnalyticsError,
   getRoomAnalyticsOverview,
 } from "@/lib/room-analytics";
-import { createRequestSupabase } from "@/lib/room-operations";
+import {
+  createRequestSupabase,
+  createRoomServiceSupabase,
+} from "@/lib/room-operations";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
 type RouteContext = { params: Promise<{ roomId: string }> };
@@ -38,9 +41,19 @@ function errorResponse(error: unknown) {
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const account = await verifyRequestAccountAccess(
-    createRequestSupabase(request)
-  );
+  let account;
+  try {
+    account = await verifyRequestAccountAccess(createRequestSupabase(request));
+  } catch {
+    return json(
+      {
+        error: "Room analytics service is not configured.",
+        code: "room_analytics_not_configured",
+      },
+      500
+    );
+  }
+
   if (!account.ok) {
     return json(
       { error: account.error, code: account.code },
@@ -57,9 +70,31 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const windowDays = [7, 30, 90].includes(rawWindow) ? rawWindow : 30;
 
   try {
-    return json(
-      await getRoomAnalyticsOverview(roomId, account.user.id, windowDays)
+    const overview = await getRoomAnalyticsOverview(
+      roomId,
+      account.user.id,
+      windowDays
     );
+
+    if (overview.room.supportRoom) {
+      const service = createRoomServiceSupabase();
+      const openCases = await service
+        .from("room_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("room_id", roomId)
+        .is("deleted_at", null)
+        .not("status", "in", "(resolved,closed,cancelled)");
+      if (openCases.error) {
+        throw new RoomAnalyticsError(
+          openCases.error.message || "Open Customer Support cases could not be counted.",
+          503,
+          "room_analytics_storage_unavailable"
+        );
+      }
+      overview.metrics.discussions.openCases = openCases.count ?? 0;
+    }
+
+    return json(overview);
   } catch (error) {
     return errorResponse(error);
   }
