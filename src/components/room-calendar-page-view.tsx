@@ -242,7 +242,13 @@ function downloadIcs(event: RoomCalendarEvent) {
     event.location ? `LOCATION:${icsEscape(event.location)}` : "",
     event.description ? `DESCRIPTION:${icsEscape(event.description)}` : "",
     event.onlineUrl ? `URL:${icsEscape(event.onlineUrl)}` : "",
-    event.recurrenceRule ? `RRULE:${event.recurrenceRule}` : "",
+    event.recurrenceRule
+      ? `RRULE:${event.recurrenceRule}${
+          event.recurrenceUntil
+            ? `;UNTIL=${icsStamp(event.recurrenceUntil)}`
+            : ""
+        }`
+      : "",
     event.status === "cancelled" ? "STATUS:CANCELLED" : "STATUS:CONFIRMED",
     "END:VEVENT",
     "END:VCALENDAR",
@@ -586,7 +592,7 @@ export default function RoomCalendarPageView({
           <button
             type="submit"
             disabled={busy || !form.title.trim() || !form.startsAtLocal}
-            className="min-h-11"
+            className="!min-h-11"
           >
             {form.eventId ? (
               <Edit3 aria-hidden="true" />
@@ -627,7 +633,7 @@ export default function RoomCalendarPageView({
               aria-pressed={view === value}
               disabled={loading}
               onClick={() => onViewChange(value)}
-              className="min-h-11"
+              className="!min-h-11"
             >
               {label}
             </button>
@@ -672,8 +678,8 @@ export default function RoomCalendarPageView({
 
         {calendar.limits?.occurrencesTruncated ? (
           <p className="room-expansion-notice is-error" role="status">
-            This date window reached the 1,000-occurrence safety limit. Use a
-            narrower date window before relying on the complete count.
+            This view reached the 1,000-occurrence safety limit, so its total may
+            be incomplete.
           </p>
         ) : null}
 
@@ -718,7 +724,7 @@ export default function RoomCalendarPageView({
                         <button
                           type="button"
                           onClick={() => downloadIcs(event)}
-                          className="min-h-11"
+                          className="!min-h-11"
                           aria-label={`Download ${event.title} as an ICS calendar file`}
                         >
                           <Download aria-hidden="true" /> ICS
@@ -731,7 +737,7 @@ export default function RoomCalendarPageView({
                             onClick={() =>
                               editSeries(event.seriesId || event.id)
                             }
-                            className="min-h-11"
+                            className="!min-h-11"
                           >
                             <Edit3 aria-hidden="true" /> Edit
                           </button>
@@ -739,7 +745,7 @@ export default function RoomCalendarPageView({
                             type="button"
                             onClick={() => void cancelEvent(event)}
                             disabled={busy}
-                            className="min-h-11"
+                            className="!min-h-11"
                           >
                             <XCircle aria-hidden="true" /> Cancel
                           </button>
@@ -772,7 +778,7 @@ export default function RoomCalendarPageView({
                       href={event.onlineUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="room-expansion-link min-h-11 break-all"
+                      className="room-expansion-link !min-h-11 break-all"
                     >
                       <Link2 aria-hidden="true" /> Open meeting link in new tab
                     </a>
@@ -791,7 +797,7 @@ export default function RoomCalendarPageView({
                             type="button"
                             aria-pressed={event.ownRsvp?.status === status}
                             disabled={busy}
-                            className="min-h-11 capitalize"
+                            className="!min-h-11 capitalize"
                             onClick={() =>
                               void action(
                                 {
@@ -813,7 +819,7 @@ export default function RoomCalendarPageView({
                         <button
                           type="button"
                           disabled={busy}
-                          className="min-h-11"
+                          className="!min-h-11"
                           onClick={() =>
                             void action(
                               {
@@ -856,7 +862,7 @@ export default function RoomCalendarPageView({
               type="button"
               disabled={loading || !pageInfo.hasPrevious}
               onClick={() => onPageChange(pageInfo.page - 1)}
-              className="min-h-11"
+              className="!min-h-11"
             >
               Previous page
             </button>
@@ -867,7 +873,7 @@ export default function RoomCalendarPageView({
               type="button"
               disabled={loading || !pageInfo.hasNext}
               onClick={() => onPageChange(pageInfo.page + 1)}
-              className="min-h-11"
+              className="!min-h-11"
             >
               Next page
             </button>

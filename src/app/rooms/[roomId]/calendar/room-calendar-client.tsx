@@ -188,15 +188,12 @@ export default function RoomCalendarClient() {
 
   function changeView(nextView: CalendarViewName) {
     if (nextView === view && page === 0) return;
-    setView(nextView);
-    setPage(0);
     void load(nextView, 0, true);
   }
 
   function changePage(nextPage: number) {
     const normalized = Math.max(0, nextPage);
     if (normalized === page) return;
-    setPage(normalized);
     void load(view, normalized, true);
   }
 
@@ -210,7 +207,7 @@ export default function RoomCalendarClient() {
       <div className="rooms-live-shell mx-auto max-w-6xl space-y-6">
         <Link
           href={`/rooms/${encodeURIComponent(roomId)}`}
-          className="rooms-live-back-link min-h-11"
+          className="rooms-live-back-link !min-h-11"
         >
           <ArrowLeft aria-hidden="true" /> Back to Room
         </Link>
@@ -242,7 +239,7 @@ export default function RoomCalendarClient() {
             type="button"
             onClick={() => void load(view, page)}
             disabled={loading}
-            className="rooms-live-secondary-action min-h-11"
+            className="rooms-live-secondary-action !min-h-11"
           >
             <RefreshCw
               aria-hidden="true"
