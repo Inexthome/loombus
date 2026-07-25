@@ -215,7 +215,7 @@ function getProvidedCronSecret(request: NextRequest) {
 }
 
 async function runAccountDigests(args: {
-  supabase: ReturnType<typeof createClient>;
+  supabase: ReturnType<typeof createClient<any>>;
   siteUrl: string;
   resendApiKey: string;
   digestFromEmail: string;
