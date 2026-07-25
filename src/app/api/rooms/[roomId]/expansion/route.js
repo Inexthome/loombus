@@ -136,7 +136,8 @@ export async function GET(request, context) {
       data = await loadOrganizationConsole(
         authorized.service,
         access,
-        authorized.userId
+        authorized.userId,
+        paging
       );
     } else if (view === "organization_search") {
       data = await searchOrganization(
