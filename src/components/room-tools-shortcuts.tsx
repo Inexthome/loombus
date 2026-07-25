@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  BarChart3,
   Bell,
   FileClock,
   FileSearch,
@@ -24,6 +25,7 @@ export default function RoomToolsShortcuts() {
   const [owner, setOwner] = useState(false);
   const [manager, setManager] = useState(false);
   const [canModerate, setCanModerate] = useState(false);
+  const [operationsEnabled, setOperationsEnabled] = useState(false);
   const [archived, setArchived] = useState(false);
 
   useEffect(() => {
@@ -41,14 +43,25 @@ export default function RoomToolsShortcuts() {
       });
       const workspaceResult = (await workspace.json().catch(() => ({}))) as {
         access?: { allowed?: boolean; role?: string | null };
+        room?: {
+          subscriptionPlan?: string | null;
+          subscriptionStatus?: string | null;
+        } | null;
       };
       if (!cancelled && workspace.ok && workspaceResult.access?.allowed) {
         const role = workspaceResult.access.role;
+        const plan = workspaceResult.room?.subscriptionPlan?.trim().toLowerCase() ?? "";
+        const status =
+          workspaceResult.room?.subscriptionStatus?.trim().toLowerCase() || "active";
         setAllowed(true);
         setOwner(role === "owner");
         setManager(role === "owner" || role === "administrator");
         setCanModerate(
           role === "owner" || role === "administrator" || role === "moderator"
+        );
+        setOperationsEnabled(
+          ["organization-plus", "enterprise"].includes(plan) &&
+            ["active", "trialing", "past_due"].includes(status)
         );
         return;
       }
@@ -91,6 +104,12 @@ export default function RoomToolsShortcuts() {
           <Link href={`/rooms/${encodeURIComponent(roomId)}/notifications`}>
             <Bell aria-hidden="true" />
             Notifications
+          </Link>
+        ) : null}
+        {manager && operationsEnabled ? (
+          <Link href={`/rooms/${encodeURIComponent(roomId)}/analytics`}>
+            <BarChart3 aria-hidden="true" />
+            Analytics
           </Link>
         ) : null}
         {allowed ? (
