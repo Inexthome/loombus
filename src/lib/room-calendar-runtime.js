@@ -11,8 +11,7 @@ import {
   updateRoomCalendarEvent,
 } from "@/lib/room-calendar-service";
 
-const RSVP_STATUSES = new Set(["going", "maybe", "declined", "waitlist"]);
-const MAX_RSVPS = 5000;
+const CALENDAR_VIEWS = new Set(["upcoming", "past", "cancelled"]);
 export const ROOM_EVENT_TITLE_MAX = 160;
 
 export {
@@ -56,9 +55,23 @@ export function normalizeRoomCalendarError(error) {
   return error;
 }
 
-function occurrenceKey(eventId, occurrenceStart) {
-  const timestamp = new Date(occurrenceStart).toISOString();
-  return `${eventId}:${timestamp}`;
+function boundedInteger(value, minimum, maximum, fallback) {
+  const parsed = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(maximum, Math.max(minimum, parsed));
+}
+
+function eventMatchesView(event, view, now) {
+  const startsAt = new Date(event.startsAt).getTime();
+  if (!Number.isFinite(startsAt)) return false;
+  if (view === "cancelled") return event.status === "cancelled";
+  if (event.status === "cancelled") return false;
+  const endsAt = event.endsAt
+    ? new Date(event.endsAt).getTime()
+    : startsAt;
+  const effectiveEnd = Number.isFinite(endsAt) ? endsAt : startsAt;
+  if (view === "past") return effectiveEnd < now;
+  return effectiveEnd >= now;
 }
 
 export async function loadRoomCalendar(
@@ -75,59 +88,65 @@ export async function loadRoomCalendar(
     userId,
     options
   );
-  if (options.advanced !== true || !calendar.events.length) return calendar;
 
-  const eventIds = calendar.series.map((event) => event.id).filter(Boolean);
-  if (!eventIds.length) return calendar;
-
-  const responseResult = await service
-    .from("room_event_rsvps")
-    .select("*")
-    .eq("room_id", roomId)
-    .in("event_id", eventIds)
-    .limit(MAX_RSVPS);
-  if (responseResult.error) {
-    throw new ExpansionError(
-      responseResult.error.message || "Room event responses could not be loaded.",
-      503,
-      "room_calendar_rsvps_unavailable"
-    );
+  const requestedPageSize = boundedInteger(options.pageSize, 0, 50, 0);
+  if (!requestedPageSize) {
+    return {
+      ...calendar,
+      view: "all",
+      pageInfo: null,
+    };
   }
 
-  const seriesStarts = new Map(
-    calendar.series.map((event) => [event.id, event.startsAt])
+  const requestedView = asString(options.view);
+  const view = CALENDAR_VIEWS.has(requestedView)
+    ? requestedView
+    : "upcoming";
+  const now = Date.now();
+  const filteredEvents = calendar.events
+    .filter((event) => eventMatchesView(event, view, now))
+    .sort((left, right) => {
+      const difference =
+        new Date(left.startsAt).getTime() -
+        new Date(right.startsAt).getTime();
+      return view === "past" ? -difference : difference;
+    });
+
+  const totalItems = filteredEvents.length;
+  const totalPages = totalItems
+    ? Math.ceil(totalItems / requestedPageSize)
+    : 0;
+  const requestedPage = boundedInteger(options.page, 0, 1000, 0);
+  const page = totalPages
+    ? Math.min(requestedPage, totalPages - 1)
+    : 0;
+  const offset = page * requestedPageSize;
+  const events = filteredEvents.slice(offset, offset + requestedPageSize);
+  const visibleSeriesIds = new Set(
+    events.map((event) => event.seriesId || event.id).filter(Boolean)
   );
-  const occurrences = new Map(
-    calendar.events.map((event) => [
-      occurrenceKey(event.seriesId || event.id, event.occurrenceStart || event.startsAt),
-      event,
-    ])
+  const series = calendar.series.filter((event) =>
+    visibleSeriesIds.has(event.id)
   );
 
-  for (const event of calendar.events) {
-    event.rsvpCounts = { going: 0, maybe: 0, declined: 0, waitlist: 0 };
-    event.ownRsvp = null;
-  }
-
-  for (const response of responseResult.data ?? []) {
-    const eventId = asString(response.event_id);
-    const occurrenceStart =
-      asString(response.occurrence_start) || seriesStarts.get(eventId);
-    if (!eventId || !occurrenceStart) continue;
-    const event = occurrences.get(occurrenceKey(eventId, occurrenceStart));
-    if (!event) continue;
-    const status = asString(response.status);
-    if (RSVP_STATUSES.has(status)) event.rsvpCounts[status] += 1;
-    if (asString(response.user_id) === userId) {
-      event.ownRsvp = {
-        status,
-        note: asString(response.note),
-        updatedAt: asString(response.updated_at) || null,
-      };
-    }
-  }
-
-  calendar.limits.rsvpsTruncated =
-    (responseResult.data ?? []).length >= MAX_RSVPS;
-  return calendar;
+  return {
+    ...calendar,
+    events,
+    series,
+    view,
+    pageInfo: {
+      page,
+      pageSize: requestedPageSize,
+      totalItems,
+      totalPages,
+      hasPrevious: page > 0,
+      hasNext: page + 1 < totalPages,
+      from: totalItems ? offset + 1 : 0,
+      to: Math.min(offset + requestedPageSize, totalItems),
+    },
+    limits: {
+      ...calendar.limits,
+      filteredOccurrences: totalItems,
+    },
+  };
 }

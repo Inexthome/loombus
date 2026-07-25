@@ -19,6 +19,7 @@ import { ExpansionError, validUuid } from "@/lib/room-expansion-service";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
 type RouteContext = { params: Promise<{ roomId: string }> };
+type CalendarViewName = "upcoming" | "past" | "cancelled";
 
 type Authorized =
   | {
@@ -27,6 +28,13 @@ type Authorized =
       service: ReturnType<typeof createRoomServiceSupabase>;
     }
   | { ok: false; response: NextResponse };
+
+const DAY_MS = 86400000;
+const CALENDAR_VIEWS = new Set<CalendarViewName>([
+  "upcoming",
+  "past",
+  "cancelled",
+]);
 
 function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
@@ -113,6 +121,43 @@ function rangeValue(value: string | null, fallback: Date) {
     : fallback.toISOString();
 }
 
+function integerValue(
+  value: string | null,
+  minimum: number,
+  maximum: number,
+  fallback: number
+) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(maximum, Math.max(minimum, parsed));
+}
+
+function calendarView(value: string | null): CalendarViewName {
+  return CALENDAR_VIEWS.has(value as CalendarViewName)
+    ? (value as CalendarViewName)
+    : "upcoming";
+}
+
+function defaultCalendarRange(view: CalendarViewName) {
+  const now = Date.now();
+  if (view === "past") {
+    return {
+      start: new Date(now - 180 * DAY_MS),
+      end: new Date(now),
+    };
+  }
+  if (view === "cancelled") {
+    return {
+      start: new Date(now - 365 * DAY_MS),
+      end: new Date(now + 365 * DAY_MS),
+    };
+  }
+  return {
+    start: new Date(now - 30 * DAY_MS),
+    end: new Date(now + 180 * DAY_MS),
+  };
+}
+
 export async function GET(request: NextRequest, context: RouteContext) {
   const authorized = await authorize(request);
   if (!authorized.ok) return authorized.response;
@@ -128,14 +173,29 @@ export async function GET(request: NextRequest, context: RouteContext) {
       authorized.userId
     );
     const advanced = roomCalendarIsAdvanced(access);
+    const view = calendarView(request.nextUrl.searchParams.get("view"));
+    const defaultRange = defaultCalendarRange(view);
     const start = rangeValue(
       request.nextUrl.searchParams.get("start"),
-      new Date(Date.now() - 30 * 86400000)
+      defaultRange.start
     );
     const end = rangeValue(
       request.nextUrl.searchParams.get("end"),
-      new Date(Date.now() + 365 * 86400000)
+      defaultRange.end
     );
+    const page = integerValue(
+      request.nextUrl.searchParams.get("page"),
+      0,
+      1000,
+      0
+    );
+    const pageSize = integerValue(
+      request.nextUrl.searchParams.get("limit"),
+      12,
+      50,
+      24
+    );
+
     const calendar = await loadRoomCalendar(
       authorized.service,
       roomId,
@@ -146,6 +206,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
         rangeStart: start,
         rangeEnd: end,
         includeCancelled: true,
+        view,
+        page,
+        pageSize,
       }
     );
     return json({
