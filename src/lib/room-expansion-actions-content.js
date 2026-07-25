@@ -12,7 +12,8 @@ import {
   createRoomCalendarEvent,
   setRoomCalendarRsvp,
   updateRoomCalendarEvent,
-} from "@/lib/room-calendar-service";
+  validateRoomCalendarInput,
+} from "@/lib/room-calendar-runtime";
 import {
   activeRoom,
   getRecord,
@@ -103,15 +104,23 @@ export async function restoreKnowledge(service, access, userId, body) {
 }
 
 export async function createCalendarEvent(service, access, userId, body) {
-  return createRoomCalendarEvent(service, access, userId, body, {
-    advanced: true,
-  });
+  return createRoomCalendarEvent(
+    service,
+    access,
+    userId,
+    validateRoomCalendarInput(body),
+    { advanced: true }
+  );
 }
 
 export async function updateCalendarEvent(service, access, userId, body) {
-  return updateRoomCalendarEvent(service, access, userId, body, {
-    advanced: true,
-  });
+  return updateRoomCalendarEvent(
+    service,
+    access,
+    userId,
+    validateRoomCalendarInput(body),
+    { advanced: true }
+  );
 }
 
 export async function cancelCalendarEvent(service, access, userId, body) {
