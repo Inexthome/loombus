@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   BarChart3,
   Bell,
+  CalendarDays,
   FileClock,
   FileSearch,
   Flag,
@@ -50,9 +51,11 @@ export default function RoomToolsShortcuts() {
       };
       if (!cancelled && workspace.ok && workspaceResult.access?.allowed) {
         const role = workspaceResult.access.role;
-        const plan = workspaceResult.room?.subscriptionPlan?.trim().toLowerCase() ?? "";
+        const plan =
+          workspaceResult.room?.subscriptionPlan?.trim().toLowerCase() ?? "";
         const status =
-          workspaceResult.room?.subscriptionStatus?.trim().toLowerCase() || "active";
+          workspaceResult.room?.subscriptionStatus?.trim().toLowerCase() ||
+          "active";
         setAllowed(true);
         setOwner(role === "owner");
         setManager(role === "owner" || role === "administrator");
@@ -94,6 +97,12 @@ export default function RoomToolsShortcuts() {
   return (
     <div className="rooms-live-shell">
       <nav className="room-workspace-tabs" aria-label="Room tools">
+        {allowed ? (
+          <Link href={`/rooms/${encodeURIComponent(roomId)}/calendar`}>
+            <CalendarDays aria-hidden="true" />
+            Calendar
+          </Link>
+        ) : null}
         {allowed ? (
           <Link href={`/rooms/${encodeURIComponent(roomId)}/tools`}>
             <FileSearch aria-hidden="true" />
