@@ -1,0 +1,208 @@
+.room-foundation-toolbar button,
+.room-foundation-panel button,
+.room-foundation-panel select,
+.room-foundation-panel input,
+.room-operations-trigger,
+.room-operations-panel button,
+.room-operations-panel select,
+.room-operations-panel input,
+.room-organization-console button,
+.room-organization-console a,
+.room-organization-branding button {
+  min-height: 44px;
+}
+
+.room-foundation-panel,
+.room-operations-panel {
+  max-height: min(78vh, 900px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.room-foundation-heading,
+.room-operations-heading {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--rooms-panel, var(--background));
+}
+
+.room-foundation-result,
+.room-foundation-event,
+.room-operation-member,
+.room-operation-report,
+.room-operation-removed,
+.room-operation-own-report,
+.room-organization-room-list .room-expansion-card,
+.room-organization-results a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.room-foundation-result strong,
+.room-foundation-result p,
+.room-foundation-event strong,
+.room-foundation-event p,
+.room-operation-member strong,
+.room-operation-member span,
+.room-operation-member small,
+.room-operation-report strong,
+.room-operation-report p,
+.room-operation-report small,
+.room-organization-room-list h3,
+.room-organization-room-list p,
+.room-organization-results strong,
+.room-organization-results p {
+  overflow-wrap: anywhere;
+}
+
+.room-core-results-heading {
+  margin: 16px 0 8px;
+  font-size: 1rem;
+  scroll-margin-top: 90px;
+}
+
+.room-core-results-heading:focus,
+.room-core-results-region:focus,
+.room-foundation-heading h2:focus,
+.room-operations-heading h2:focus,
+.room-operation-tabs + [role="tabpanel"]:focus {
+  outline: 2px solid color-mix(in srgb, var(--rooms-accent, #6d5efc) 72%, transparent);
+  outline-offset: 4px;
+}
+
+.room-core-pagination,
+.room-expansion-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0 0;
+  padding: 12px 0 2px;
+}
+
+.room-core-pagination p,
+.room-expansion-pagination p {
+  margin: 0;
+  color: var(--rooms-muted, inherit);
+  font-size: 0.88rem;
+}
+
+.room-core-pagination > div,
+.room-expansion-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.room-core-pagination button,
+.room-expansion-pagination button {
+  min-width: 88px;
+  min-height: 44px;
+}
+
+.room-core-limit-warning {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--rooms-accent, #6d5efc) 32%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rooms-accent, #6d5efc) 7%, transparent);
+  color: var(--rooms-muted, inherit);
+}
+
+.room-operation-tabs {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.room-operation-tabs button {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.room-operation-member-controls {
+  min-width: 0;
+}
+
+.room-operation-member-controls input,
+.room-operation-member-controls select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.room-organization-console {
+  min-width: 0;
+}
+
+.room-organization-room-list {
+  min-width: 0;
+}
+
+.room-organization-results a {
+  display: grid;
+  gap: 4px;
+}
+
+@media (max-width: 760px) {
+  .room-foundation-panel,
+  .room-operations-panel {
+    max-height: calc(100dvh - 150px);
+    border-radius: 18px;
+  }
+
+  .room-foundation-heading,
+  .room-operations-heading {
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .room-foundation-search-form,
+  .room-foundation-inbox-controls,
+  .room-operation-grid,
+  .room-operation-member,
+  .room-operation-member-controls,
+  .room-organization-search {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .room-foundation-search-form > *,
+  .room-foundation-inbox-controls > *,
+  .room-operation-member-controls > *,
+  .room-organization-search > * {
+    width: 100%;
+  }
+
+  .room-core-pagination,
+  .room-expansion-pagination {
+    align-items: stretch;
+  }
+
+  .room-core-pagination > div,
+  .room-expansion-pagination > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .room-core-pagination button,
+  .room-expansion-pagination button {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-foundation *,
+  .room-operations *,
+  .room-organization-layout * {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
