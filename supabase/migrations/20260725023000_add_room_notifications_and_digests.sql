@@ -35,7 +35,7 @@ create index if not exists room_notification_preferences_digest_due_idx
 update public.room_activity_events activity
 set
   title = 'Private Customer Support case activity',
-  summary = null,
+  summary = '',
   audience = 'managers',
   importance = 'high'
 from public.rooms room
@@ -79,7 +79,7 @@ begin
       'room_post',
       new.id,
       'Private Customer Support case activity',
-      null,
+      '',
       'managers',
       'high',
       coalesce(new.created_at, now())
