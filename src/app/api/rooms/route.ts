@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
           .from("room_members")
           .select("room_id, status")
           .in("room_id", roomIds),
-        serviceSupabase
+        requestSupabase
           .from("room_posts")
           .select("room_id, created_at, deleted_at")
           .in("room_id", roomIds)

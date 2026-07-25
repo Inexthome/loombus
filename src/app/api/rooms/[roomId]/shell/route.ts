@@ -29,7 +29,8 @@ function validUuid(value: unknown): value is string {
 
 export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const account = await verifyRequestAccountAccess(createRequestSupabase(request));
+    const requestSupabase = createRequestSupabase(request);
+    const account = await verifyRequestAccountAccess(requestSupabase);
     if (!account.ok) return json({ error: account.error, code: account.code }, account.status);
 
     const { roomId } = await context.params;
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           .select("id", { count: "exact", head: true })
           .eq("room_id", roomId)
           .not("status", "in", "(blocked,removed,inactive)"),
-        service
+        (access.allowed ? requestSupabase : service)
           .from("room_posts")
           .select("id", { count: "exact", head: true })
           .eq("room_id", roomId)
@@ -128,7 +129,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
         operationsEnabled: plan.modules.includes("operations"),
       },
       metrics: {
-        members: Math.max(members.count ?? 0, access.isOwner ? 1 : 0),
+        members:
+          access.room.roomType.toLowerCase().replaceAll("-", "_") === "customer_support" &&
+          !access.canModerate
+            ? 1
+            : Math.max(members.count ?? 0, access.isOwner ? 1 : 0),
         discussions: posts.count ?? 0,
         upcomingEvents: events.count ?? 0,
         announcements: announcements.count ?? 0,
