@@ -13,6 +13,7 @@ import {
 
 const RSVP_STATUSES = new Set(["going", "maybe", "declined", "waitlist"]);
 const MAX_RSVPS = 5000;
+export const ROOM_EVENT_TITLE_MAX = 160;
 
 export {
   cancelRoomCalendarEvent,
@@ -25,10 +26,10 @@ export {
 export function validateRoomCalendarInput(body) {
   if (
     typeof body?.title === "string" &&
-    body.title.trim().length > 160
+    body.title.trim().length > ROOM_EVENT_TITLE_MAX
   ) {
     throw new ExpansionError(
-      "Room event titles are limited to 160 characters.",
+      `Room event titles are limited to ${ROOM_EVENT_TITLE_MAX} characters.`,
       400,
       "room_calendar_title_too_long"
     );
