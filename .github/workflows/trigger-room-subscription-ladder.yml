@@ -48,6 +48,13 @@ jobs:
               '<Loader2 aria-hidden="true" size={16} className="is-spinning" />',
           )
           script = script.replace('].join("\\n");', '].join("\\\\n");')
+          script = script.replace(
+              '''  const unitAmount = price?.unit_amount;
+              '  if (unitAmount === null || unitAmount === undefined) return null;''',
+              '''  if (!price) return null;
+              '  const unitAmount = price.unit_amount;
+              '  if (unitAmount === null || unitAmount === undefined) return null;''',
+          )
 
           helper_start = script.index('def replace_once(')
           helper_end = script.index('\ndef replace_regex(', helper_start)
