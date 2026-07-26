@@ -1,9 +1,9 @@
 name: Diagnose PR 660 build
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/member-privacy-viewers-directory
+      - main
 
 permissions:
   contents: read
