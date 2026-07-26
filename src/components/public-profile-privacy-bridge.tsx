@@ -1,10 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { LockKeyhole, UserCheck, UserPlus } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { supabase } from "@/lib/supabase/client";
+
+const PublicProfileV2Client = dynamic(
+  () => import("@/app/u/[username]/public-profile-v2-client"),
+  { ssr: false }
+);
 
 type AccessPayload = {
   profile?: {
@@ -35,7 +41,9 @@ async function getToken() {
 export function PublicProfilePrivacyBridge() {
   const params = useParams();
   const username = decodeURIComponent(String(params.username ?? ""));
-  const [state, setState] = useState<"checking" | "full" | "limited" | "error">("checking");
+  const [state, setState] = useState<"checking" | "full" | "limited" | "error">(
+    "checking"
+  );
   const [payload, setPayload] = useState<AccessPayload>({});
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState("");
@@ -126,12 +134,20 @@ export function PublicProfilePrivacyBridge() {
   }
 
   if (state === "full") {
-    return <span data-public-profile-privacy-state="full" hidden />;
+    return (
+      <>
+        <span data-public-profile-privacy-state="full" hidden />
+        <PublicProfileV2Client />
+      </>
+    );
   }
 
   if (state === "checking") {
     return (
-      <main className="private-profile-gate" data-public-profile-privacy-state="checking">
+      <main
+        className="private-profile-gate"
+        data-public-profile-privacy-state="checking"
+      >
         <section className="private-profile-card">
           <p className="private-profile-eyebrow">Member privacy</p>
           <h1>Checking profile access…</h1>
@@ -143,7 +159,10 @@ export function PublicProfilePrivacyBridge() {
 
   if (state === "error" || !payload.profile) {
     return (
-      <main className="private-profile-gate" data-public-profile-privacy-state="limited">
+      <main
+        className="private-profile-gate"
+        data-public-profile-privacy-state="limited"
+      >
         <section className="private-profile-card">
           <p className="private-profile-eyebrow">Profile unavailable</p>
           <h1>This member profile could not be opened.</h1>
@@ -162,24 +181,50 @@ export function PublicProfilePrivacyBridge() {
   };
 
   return (
-    <main className="private-profile-gate" data-public-profile-privacy-state="limited">
+    <main
+      className="private-profile-gate"
+      data-public-profile-privacy-state="limited"
+    >
       <section className="private-profile-card">
-        <div className="private-profile-lock"><LockKeyhole aria-hidden="true" /></div>
+        <div className="private-profile-lock">
+          <LockKeyhole aria-hidden="true" />
+        </div>
         <ProfileAvatar profile={avatarProfile} size="xl" />
         <p className="private-profile-eyebrow">Private Loombus account</p>
-        <h1>{profile.fullName?.trim() || profile.username?.trim() || "Loombus member"}</h1>
-        <p className="private-profile-handle">{profile.username ? `@${profile.username}` : "Member identity"}</p>
-        <p className="private-profile-copy">This member limits profile activity to approved followers. Send a follow request to see their member activity and follower-only Discussions.</p>
+        <h1>
+          {profile.fullName?.trim() ||
+            profile.username?.trim() ||
+            "Loombus member"}
+        </h1>
+        <p className="private-profile-handle">
+          {profile.username ? `@${profile.username}` : "Member identity"}
+        </p>
+        <p className="private-profile-copy">
+          This member limits profile activity to approved followers. Send a follow
+          request to see their member activity and follower-only Discussions.
+        </p>
         <button
           type="button"
           disabled={working}
           onClick={() => void toggleFollowRequest()}
           className="private-profile-follow"
         >
-          {payload.requested ? <UserCheck aria-hidden="true" /> : <UserPlus aria-hidden="true" />}
-          {working ? "Working…" : payload.requested ? "Requested · tap to cancel" : "Request to follow"}
+          {payload.requested ? (
+            <UserCheck aria-hidden="true" />
+          ) : (
+            <UserPlus aria-hidden="true" />
+          )}
+          {working
+            ? "Working…"
+            : payload.requested
+              ? "Requested · tap to cancel"
+              : "Request to follow"}
         </button>
-        {message ? <p className="private-profile-message" role="status">{message}</p> : null}
+        {message ? (
+          <p className="private-profile-message" role="status">
+            {message}
+          </p>
+        ) : null}
       </section>
     </main>
   );
