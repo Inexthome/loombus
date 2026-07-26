@@ -1,0 +1,37 @@
+name: PR 653 build diagnostic
+
+on:
+  push:
+    branches:
+      - agent/room-permanent-deletion-worker
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies quietly
+        run: npm ci --silent >/dev/null 2>&1
+      - name: Print only build failure
+        shell: bash
+        run: |
+          set +e
+          npm run build > /tmp/pr653-build.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            tail -n 160 /tmp/pr653-build.log
+          else
+            echo "Build passed."
+          fi
+          exit "$status"
