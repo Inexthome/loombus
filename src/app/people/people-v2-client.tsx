@@ -2,57 +2,434 @@
 
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { supabase } from "@/lib/supabase/client";
-import { MessageCircle, Search, ShieldCheck, Sparkles, UserPlus } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  LockKeyhole,
+  MessageCircle,
+  Search,
+  ShieldCheck,
+  UserCheck,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
-import { type MouseEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 
-type Profile={id:string;full_name:string|null;username:string|null;avatar_url:string|null;bio:string|null};
-type Badge={key:"premium"|"premium_plus"|"admin";label:string};
-type Counts=Record<string,{followers:number;following:number}>;
-type View="all"|"following"|"followers"|"mutual"|"suggested";
-type Sort="recommended"|"name"|"followers";
-const VIEWS:[View,string][]=[["all","All"],["following","Following"],["followers","Followers"],["mutual","Mutual"],["suggested","Suggested"]];
-const name=(p:Profile)=>p.full_name?.trim()||p.username?.trim()||"Loombus member";
-const complete=(p:Profile)=>Boolean(p.full_name?.trim()&&p.username?.trim()&&p.avatar_url&&p.bio?.trim());
+type Member = {
+  id: string;
+  fullName: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  isAdmin: boolean;
+  privateAccount: boolean;
+  following: boolean;
+  followsYou: boolean;
+  mutual: boolean;
+  requested: boolean;
+  followerCount: number;
+  followingCount: number;
+};
 
-export default function PeopleV2Client(){
- const [profiles,setProfiles]=useState<Profile[]>([]),[following,setFollowing]=useState(new Set<string>()),[followers,setFollowers]=useState(new Set<string>()),[suggested,setSuggested]=useState(new Set<string>()),[blocked,setBlocked]=useState(new Set<string>()),[badges,setBadges]=useState<Record<string,Badge>>({}),[counts,setCounts]=useState<Counts>({});
- const [viewer,setViewer]=useState<string|null>(null),[admin,setAdmin]=useState(false),[loading,setLoading]=useState(true),[working,setWorking]=useState<string|null>(null),[opening,setOpening]=useState<string|null>(null),[notice,setNotice]=useState("");
- const [view,setView]=useState<View>("all"),[query,setQuery]=useState(""),[sort,setSort]=useState<Sort>("recommended"),[role,setRole]=useState("all"),[quality,setQuality]=useState("all");
- useEffect(()=>{let alive=true;(async()=>{try{
-  const {data:u}=await supabase.auth.getUser();const id=u.user?.id??null;if(!alive)return;setViewer(id);if(!id){setLoading(false);return}
-  const [me,fo,fr,bl]=await Promise.all([
-   supabase.from("profiles").select("is_admin").eq("id",id).maybeSingle(),
-   supabase.from("follows").select("following_id").eq("follower_id",id),
-   supabase.from("follows").select("follower_id").eq("following_id",id),
-   supabase.from("user_blocks").select("blocker_id,blocked_id").or(`blocker_id.eq.${id},blocked_id.eq.${id}`)
-  ]);const error=me.error||fo.error||fr.error||bl.error;if(error)throw error;
-  const isAdmin=Boolean(me.data?.is_admin),fing=new Set((fo.data??[]).map(x=>x.following_id).filter(Boolean)),fers=new Set((fr.data??[]).map(x=>x.follower_id).filter(Boolean)),hidden=new Set<string>();
-  for(const b of bl.data??[])hidden.add(b.blocker_id===id?b.blocked_id:b.blocker_id);setAdmin(isAdmin);setFollowing(fing);setFollowers(fers);setBlocked(isAdmin?new Set():hidden);
-  const related=new Set<string>([...fing,...fers]);related.delete(id);hidden.forEach(x=>related.delete(x));const sug=new Set<string>();
-  if(fing.size){const r=await supabase.from("follows").select("following_id").in("follower_id",[...fing]).limit(120);for(const x of r.data??[])if(x.following_id&&x.following_id!==id&&!hidden.has(x.following_id)&&!related.has(x.following_id))sug.add(x.following_id)}
-  const authored=await supabase.from("discussions").select("id").eq("user_id",id).is("deleted_at",null).limit(50);const ids=(authored.data??[]).map(x=>x.id);
-  if(ids.length){const r=await supabase.from("discussion_views").select("viewer_id").in("discussion_id",ids).not("viewer_id","is",null).limit(120);for(const x of r.data??[])if(x.viewer_id&&x.viewer_id!==id&&!hidden.has(x.viewer_id)&&!related.has(x.viewer_id))sug.add(x.viewer_id)}
-  let visible=[...new Set([...related,...[...sug].slice(0,24)])],rows:Profile[]=[];
-  if(isAdmin){const r=await supabase.from("profiles").select("id,full_name,username,avatar_url,bio").order("full_name");if(r.error)throw r.error;rows=(r.data??[]) as Profile[];visible=rows.map(x=>x.id)}
-  else if(visible.length){const r=await supabase.from("profiles").select("id,full_name,username,avatar_url,bio").in("id",visible).order("full_name");if(r.error)throw r.error;rows=(r.data??[]) as Profile[]}
-  if(!alive)return;setProfiles(rows);setSuggested(sug);
-  const base:Counts=Object.fromEntries(visible.map(x=>[x,{followers:0,following:0}]));if(visible.length){const [a,b]=await Promise.all([supabase.from("follows").select("following_id").in("following_id",visible),supabase.from("follows").select("follower_id").in("follower_id",visible)]);for(const x of a.data??[])if(base[x.following_id])base[x.following_id].followers++;for(const x of b.data??[])if(base[x.follower_id])base[x.follower_id].following++}setCounts(base);
-  const br=await fetch("/api/profiles/badges",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({profileIds:visible})});if(br.ok&&alive){const j=await br.json();setBadges(j.badges??{})}
- }catch(e){console.error(e);if(alive)setNotice("People could not load. Refresh and try again.")}finally{if(alive)setLoading(false)}})();return()=>{alive=false}},[]);
- const visible=useMemo(()=>admin?profiles:profiles.filter(p=>!blocked.has(p.id)),[profiles,blocked,admin]);
- const mutual=useMemo(()=>visible.filter(p=>following.has(p.id)&&followers.has(p.id)).length,[visible,following,followers]);
- const results=useMemo(()=>{const q=query.trim().toLowerCase();const rows=visible.filter(p=>{const b=badges[p.id],isF=following.has(p.id),isR=followers.has(p.id),isM=isF&&isR;const mv=view==="all"||(view==="following"&&isF)||(view==="followers"&&isR)||(view==="mutual"&&isM)||(view==="suggested"&&suggested.has(p.id));const mr=role==="all"||(role==="member"&&!b)||b?.key===role;const mq=quality==="all"||(quality==="bio"&&Boolean(p.bio?.trim()))||(quality==="complete"&&complete(p));const text=[p.full_name,p.username,p.bio,b?.label].filter(Boolean).join(" ").toLowerCase();return mv&&mr&&mq&&(!q||text.includes(q))});return rows.sort((a,b)=>sort==="name"?name(a).localeCompare(name(b)):sort==="followers"?(counts[b.id]?.followers??0)-(counts[a.id]?.followers??0):Number(suggested.has(b.id))*4+Number(followers.has(b.id))*2+Number(following.has(b.id))-Number(suggested.has(a.id))*4-Number(followers.has(a.id))*2-Number(following.has(a.id))||name(a).localeCompare(name(b)))},[visible,badges,following,followers,suggested,view,role,quality,query,sort,counts]);
- async function toggle(e:MouseEvent<HTMLButtonElement>,p:Profile){e.preventDefault();if(!viewer||working)return;setWorking(p.id);setNotice("");try{const {data:s}=await supabase.auth.getSession();if(!s.session){location.href="/login";return}const r=await fetch("/api/follows/toggle",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${s.session.access_token}`},body:JSON.stringify({targetUserId:p.id})}),j=await r.json();if(!r.ok)throw new Error(j.error||"Unable to update follow status.");setFollowing(x=>{const n=new Set(x);j.following?n.add(p.id):n.delete(p.id);return n});setCounts(x=>({...x,[p.id]:{followers:Math.max(0,(x[p.id]?.followers??0)+(j.following?1:-1)),following:x[p.id]?.following??0}}));setNotice(j.following?`Following ${name(p)}.`:`Unfollowed ${name(p)}.`)}catch(e){setNotice(e instanceof Error?e.message:"Unable to update follow status.")}finally{setWorking(null)}}
- async function message(e:MouseEvent<HTMLButtonElement>,p:Profile){e.preventDefault();if(!viewer||opening)return;setOpening(p.id);try{const {data:s}=await supabase.auth.getSession();if(!s.session){location.href="/login";return}const r=await fetch("/api/messages/conversations",{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${s.session.access_token}`},body:JSON.stringify({targetUserId:p.id})}),j=await r.json();if(!r.ok)throw new Error(j.error||"Unable to start message.");location.href=`/messages?conversation=${encodeURIComponent(j.conversationId)}`}catch(e){setNotice(e instanceof Error?e.message:"Unable to start message.");setOpening(null)}}
- if(loading)return <main className="min-h-screen bg-[var(--loombus-page-bg)] p-6 text-[var(--loombus-text)]"><div className="mx-auto max-w-7xl rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-8"><p className="text-sm font-semibold uppercase tracking-[.22em] text-[var(--loombus-gold)]">People discovery</p><h1 className="mt-3 text-4xl font-bold">Building your network view…</h1></div></main>;
- if(!viewer)return <main className="min-h-screen bg-[var(--loombus-page-bg)] p-6 text-[var(--loombus-text)]"><div className="mx-auto max-w-3xl rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-8"><p className="text-sm font-semibold uppercase tracking-[.22em] text-[var(--loombus-gold)]">Members only</p><h1 className="mt-3 text-4xl font-bold">Log in to discover people.</h1><p className="mt-4 text-[var(--loombus-text-muted)]">Build a network around contributors who improve the conversation.</p><div className="mt-6 flex gap-3"><Link href="/login" className="rounded-full bg-[var(--loombus-gold-strong)] px-6 py-3 font-semibold text-[var(--loombus-gold-contrast)]">Log in</Link><Link href="/signup" className="rounded-full border border-[var(--loombus-border)] px-6 py-3 font-semibold">Create account</Link></div></div></main>;
- return <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-24 pt-4 text-[var(--loombus-text)] sm:px-6 sm:py-10 lg:px-8"><div className="mx-auto max-w-7xl space-y-6">
-  <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 sm:p-9"><p className="text-sm font-semibold uppercase tracking-[.22em] text-[var(--loombus-gold)]">People discovery</p><div className="mt-3 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><div><h1 className="max-w-4xl text-4xl font-bold tracking-[-.045em] sm:text-6xl">Build a network around useful signal.</h1><p className="mt-4 max-w-2xl leading-7 text-[var(--loombus-text-muted)]">Find contributors, understand the relationship context, and follow people whose experience makes discussions clearer.</p></div><div className="flex gap-3"><Link href="/following" className="rounded-full bg-[var(--loombus-gold-strong)] px-5 py-3 text-sm font-semibold text-[var(--loombus-gold-contrast)]">Open following feed</Link><Link href="/profile" className="rounded-full border border-[var(--loombus-border)] px-5 py-3 text-sm font-semibold">Improve profile</Link></div></div></section>
-  <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">{[["Visible",visible.length],["Following",[...following].filter(x=>visible.some(p=>p.id===x)).length],["Followers",[...followers].filter(x=>visible.some(p=>p.id===x)).length],["Mutual",mutual],["Suggested",suggested.size]].map(([l,v])=><div key={l} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4"><p className="text-xs uppercase tracking-[.16em] text-[var(--loombus-text-subtle)]">{l}</p><p className="mt-2 text-2xl font-bold">{v}</p></div>)}</section>
-  {notice&&<div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm text-[var(--loombus-text-muted)]">{notice}</div>}
-  <section className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 sm:p-5"><div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem_13rem_13rem]"><label className="relative"><Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[var(--loombus-text-subtle)]"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search names, usernames, bios, or roles" className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] py-3.5 pl-12 pr-4 text-sm outline-none focus:border-[var(--loombus-gold)]"/></label><select value={sort} onChange={e=>setSort(e.target.value as Sort)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4"><option value="recommended">Recommended</option><option value="name">Name A–Z</option><option value="followers">Most followed</option></select><select value={role} onChange={e=>setRole(e.target.value)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4"><option value="all">All roles</option><option value="member">Members</option><option value="premium">Premium</option><option value="premium_plus">Premium Plus</option><option value="admin">Admin</option></select><select value={quality} onChange={e=>setQuality(e.target.value)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4"><option value="all">All profiles</option><option value="bio">With bio</option><option value="complete">Complete profiles</option></select></div><div className="mt-4 flex gap-2 overflow-x-auto border-t border-[var(--loombus-border)] pt-4">{VIEWS.map(([v,l])=><button key={v} onClick={()=>setView(v)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium ${view===v?"border-[var(--loombus-gold-strong)] bg-[var(--loombus-gold-strong)] text-[var(--loombus-gold-contrast)]":"border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"}`}>{l}</button>)}</div></section>
-  <div className="flex items-center justify-between"><div><p className="font-semibold">{results.length} {results.length===1?"person":"people"}</p><p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">{admin?"Admin platform visibility is active.":"Blocked relationships remain excluded."}</p></div><Link href="/discussions" className="text-sm font-semibold text-[var(--loombus-gold)]">Discover through discussions →</Link></div>
-  {results.length===0?<section className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-10 text-center"><h2 className="text-2xl font-bold">No people match this view.</h2><button onClick={()=>{setView("all");setRole("all");setQuality("all");setQuery("");setSort("recommended")}} className="mt-5 rounded-full bg-[var(--loombus-gold-strong)] px-5 py-3 font-semibold text-[var(--loombus-gold-contrast)]">Clear filters</button></section>:<section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{results.map(p=>{const isF=following.has(p.id),isR=followers.has(p.id),isM=isF&&isR,b=badges[p.id],self=p.id===viewer,href=p.username?`/u/${p.username}`:null;return <article key={p.id} className="flex min-w-0 flex-col rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 transition hover:-translate-y-0.5 hover:border-[var(--loombus-gold)]"><div className="flex min-w-0 items-start gap-4">{href?<Link href={href}><ProfileAvatar profile={p} size="xl"/></Link>:<ProfileAvatar profile={p} size="xl"/>}<div className="min-w-0 flex-1"><h2 className="truncate text-lg font-bold">{name(p)}</h2><p className="mt-1 truncate text-sm text-[var(--loombus-text-muted)]">{p.username?`@${p.username}`:"Username not set"}</p></div></div><div className="mt-4 flex flex-wrap gap-2">{isM&&<span className="rounded-full border border-[var(--loombus-gold)] bg-[var(--loombus-gold-surface)] px-2.5 py-1 text-[.7rem] font-semibold text-[var(--loombus-gold)]">Mutual</span>}{!isM&&isR&&<span className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-[.7rem]">Follows you</span>}{suggested.has(p.id)&&!isF&&<span className="inline-flex items-center gap-1 rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-[.7rem]"><Sparkles className="size-3"/>Suggested</span>}{b&&<span className="inline-flex items-center gap-1 rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-[.7rem]"><ShieldCheck className="size-3"/>{b.label}</span>}</div><p className="mt-4 line-clamp-3 min-h-[4.5rem] text-sm leading-6 text-[var(--loombus-text-muted)]">{p.bio?.trim()||"This member has not added a bio yet."}</p><div className="mt-auto pt-5"><div className="grid grid-cols-2 gap-3 border-t border-[var(--loombus-border)] pt-4"><div><p className="text-xs uppercase tracking-[.14em] text-[var(--loombus-text-subtle)]">Followers</p><p className="mt-1 font-bold">{counts[p.id]?.followers??0}</p></div><div><p className="text-xs uppercase tracking-[.14em] text-[var(--loombus-text-subtle)]">Following</p><p className="mt-1 font-bold">{counts[p.id]?.following??0}</p></div></div><div className="mt-4 flex gap-2">{self?<Link href="/profile" className="flex-1 rounded-full border border-[var(--loombus-border)] px-4 py-2.5 text-center text-sm font-semibold">Edit profile</Link>:<>{isM&&<button onClick={e=>message(e,p)} disabled={opening===p.id} className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 py-2.5 text-sm font-semibold"><MessageCircle className="size-4"/>{opening===p.id?"Opening…":"Message"}</button>}<button onClick={e=>toggle(e,p)} disabled={working===p.id} className={`inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ${isF?"border border-[var(--loombus-border)]":"bg-[var(--loombus-gold-strong)] text-[var(--loombus-gold-contrast)]"}`}><UserPlus className="size-4"/>{working===p.id?"Updating…":isF?"Following":"Follow"}</button></>}</div></div></article>})}</section>}
- </div></main>
+type DirectoryPayload = {
+  members?: Member[];
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  hasMore?: boolean;
+  adminVisibility?: boolean;
+  error?: string;
+};
+
+type View = "all" | "following" | "followers" | "mutual" | "requests";
+type Sort = "recommended" | "name" | "followers";
+type Quality = "all" | "bio" | "complete";
+type Role = "all" | "member" | "admin";
+
+const VIEWS: Array<[View, string]> = [
+  ["all", "All members"],
+  ["following", "Following"],
+  ["followers", "Followers"],
+  ["mutual", "Mutual"],
+  ["requests", "Requested"],
+];
+
+function displayName(member: Member) {
+  return member.fullName?.trim() || member.username?.trim() || "Loombus member";
+}
+
+function completeProfile(member: Member) {
+  return Boolean(
+    member.fullName?.trim() &&
+      member.username?.trim() &&
+      member.avatarUrl &&
+      member.bio?.trim()
+  );
+}
+
+async function getSessionToken() {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? "";
+}
+
+export default function PeopleV2Client() {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [viewerReady, setViewerReady] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState("");
+  const [openingMessage, setOpeningMessage] = useState("");
+  const [notice, setNotice] = useState("");
+  const [query, setQuery] = useState("");
+  const [activeQuery, setActiveQuery] = useState("");
+  const [view, setView] = useState<View>("all");
+  const [sort, setSort] = useState<Sort>("recommended");
+  const [role, setRole] = useState<Role>("all");
+  const [quality, setQuality] = useState<Quality>("all");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [adminVisibility, setAdminVisibility] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function resolveViewer() {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      setSignedIn(Boolean(data.session));
+      setViewerReady(true);
+    }
+    void resolveViewer();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!viewerReady || !signedIn) {
+      if (viewerReady) setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    async function loadDirectory() {
+      setLoading(true);
+      setNotice("");
+      const token = await getSessionToken();
+      if (!token) {
+        setSignedIn(false);
+        setLoading(false);
+        return;
+      }
+
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: "48",
+      });
+      if (activeQuery.trim().length >= 2) params.set("q", activeQuery.trim());
+
+      const response = await fetch(`/api/people/directory?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => ({}))) as DirectoryPayload;
+      if (cancelled) return;
+
+      if (!response.ok) {
+        setNotice(payload.error ?? "People could not load. Refresh and try again.");
+        setMembers([]);
+      } else {
+        setMembers(payload.members ?? []);
+        setTotal(payload.total ?? 0);
+        setHasMore(Boolean(payload.hasMore));
+        setAdminVisibility(Boolean(payload.adminVisibility));
+      }
+      setLoading(false);
+    }
+
+    void loadDirectory();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeQuery, page, signedIn, viewerReady]);
+
+  const filteredMembers = useMemo(() => {
+    const rows = members.filter((member) => {
+      const relationshipMatches =
+        view === "all" ||
+        (view === "following" && member.following) ||
+        (view === "followers" && member.followsYou) ||
+        (view === "mutual" && member.mutual) ||
+        (view === "requests" && member.requested);
+      const roleMatches =
+        role === "all" ||
+        (role === "admin" && member.isAdmin) ||
+        (role === "member" && !member.isAdmin);
+      const qualityMatches =
+        quality === "all" ||
+        (quality === "bio" && Boolean(member.bio?.trim())) ||
+        (quality === "complete" && completeProfile(member));
+      return relationshipMatches && roleMatches && qualityMatches;
+    });
+
+    return rows.sort((left, right) => {
+      if (sort === "name") return displayName(left).localeCompare(displayName(right));
+      if (sort === "followers") return right.followerCount - left.followerCount;
+      const leftRank =
+        Number(left.mutual) * 8 +
+        Number(left.followsYou) * 4 +
+        Number(left.following) * 3 +
+        Number(left.requested) * 2 +
+        Math.min(left.followerCount, 20) / 20;
+      const rightRank =
+        Number(right.mutual) * 8 +
+        Number(right.followsYou) * 4 +
+        Number(right.following) * 3 +
+        Number(right.requested) * 2 +
+        Math.min(right.followerCount, 20) / 20;
+      return rightRank - leftRank || displayName(left).localeCompare(displayName(right));
+    });
+  }, [members, quality, role, sort, view]);
+
+  const metrics = useMemo(
+    () => ({
+      visible: members.length,
+      following: members.filter((member) => member.following).length,
+      followers: members.filter((member) => member.followsYou).length,
+      mutual: members.filter((member) => member.mutual).length,
+      requested: members.filter((member) => member.requested).length,
+    }),
+    [members]
+  );
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPage(1);
+    setActiveQuery(query.trim());
+  }
+
+  async function toggleFollow(member: Member) {
+    if (working) return;
+    setWorking(member.id);
+    setNotice("");
+    const token = await getSessionToken();
+    if (!token) {
+      window.location.href = "/login?next=/people";
+      return;
+    }
+
+    const response = await fetch("/api/follows/toggle", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ targetUserId: member.id }),
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setNotice(payload.error ?? "Unable to update follow status.");
+    } else {
+      setMembers((current) =>
+        current.map((item) => {
+          if (item.id !== member.id) return item;
+          const following = Boolean(payload.following);
+          const requested = Boolean(payload.requested);
+          return {
+            ...item,
+            following,
+            requested,
+            mutual: following && item.followsYou,
+            followerCount: Math.max(
+              0,
+              item.followerCount +
+                (following && !item.following ? 1 : !following && item.following ? -1 : 0)
+            ),
+          };
+        })
+      );
+      setNotice(
+        payload.requested
+          ? `Follow request sent to ${displayName(member)}.`
+          : payload.following
+            ? `Following ${displayName(member)}.`
+            : member.requested
+              ? `Follow request cancelled for ${displayName(member)}.`
+              : `Unfollowed ${displayName(member)}.`
+      );
+    }
+    setWorking("");
+  }
+
+  async function openMessage(member: Member) {
+    if (openingMessage) return;
+    setOpeningMessage(member.id);
+    setNotice("");
+    const token = await getSessionToken();
+    if (!token) {
+      window.location.href = "/login?next=/people";
+      return;
+    }
+
+    const response = await fetch("/api/messages/conversations", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ targetUserId: member.id }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (response.ok) {
+      window.location.href = `/messages?conversation=${encodeURIComponent(payload.conversationId)}`;
+      return;
+    }
+    setNotice(payload.error ?? "Unable to start a private conversation.");
+    setOpeningMessage("");
+  }
+
+  if (!viewerReady || loading) {
+    return (
+      <main className="min-h-screen bg-[var(--loombus-page-bg)] p-6 text-[var(--loombus-text)]">
+        <section className="mx-auto max-w-7xl rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-8">
+          <p className="text-sm font-semibold uppercase tracking-[.22em] text-[var(--loombus-gold)]">People discovery</p>
+          <h1 className="mt-3 text-4xl font-bold">Loading the Loombus member directory…</h1>
+        </section>
+      </main>
+    );
+  }
+
+  if (!signedIn) {
+    return (
+      <main className="min-h-screen bg-[var(--loombus-page-bg)] p-6 text-[var(--loombus-text)]">
+        <section className="mx-auto max-w-3xl rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-8">
+          <p className="text-sm font-semibold uppercase tracking-[.22em] text-[var(--loombus-gold)]">Members only</p>
+          <h1 className="mt-3 text-4xl font-bold">Log in to browse Loombus members.</h1>
+          <p className="mt-4 text-[var(--loombus-text-muted)]">The directory is visible inside Loombus while undiscoverable accounts and blocked relationships remain hidden.</p>
+          <Link href="/login?next=/people" className="mt-6 inline-flex rounded-full bg-[var(--loombus-gold-strong)] px-6 py-3 font-semibold text-[var(--loombus-gold-contrast)]">Log in</Link>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-24 pt-4 text-[var(--loombus-text)] sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 sm:p-9">
+          <p className="text-sm font-semibold uppercase tracking-[.22em] text-[var(--loombus-gold)]">Loombus member directory</p>
+          <div className="mt-3 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1 className="max-w-4xl text-4xl font-bold tracking-[-.045em] sm:text-6xl">Discover every member who chooses to be found.</h1>
+              <p className="mt-4 max-w-3xl leading-7 text-[var(--loombus-text-muted)]">Browse the active Loombus community, search by identity or experience, and build relationships around useful signal. Private accounts require approval before following.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/following" className="rounded-full bg-[var(--loombus-gold-strong)] px-5 py-3 text-sm font-semibold text-[var(--loombus-gold-contrast)]">Following feed</Link>
+              <Link href="/settings#privacy" className="rounded-full border border-[var(--loombus-border)] px-5 py-3 text-sm font-semibold">Privacy settings</Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            ["Directory page", metrics.visible],
+            ["Following", metrics.following],
+            ["Followers", metrics.followers],
+            ["Mutual", metrics.mutual],
+            ["Requested", metrics.requested],
+          ].map(([label, value]) => (
+            <article key={label} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
+              <p className="text-xs uppercase tracking-[.16em] text-[var(--loombus-text-subtle)]">{label}</p>
+              <p className="mt-2 text-2xl font-bold">{value}</p>
+            </article>
+          ))}
+        </section>
+
+        {notice ? <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm text-[var(--loombus-text-muted)]" role="status">{notice}</div> : null}
+
+        <section className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 sm:p-5">
+          <form onSubmit={submitSearch} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_12rem_12rem_12rem]">
+            <label className="relative">
+              <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[var(--loombus-text-subtle)]" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search names, usernames, or bios" className="w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] py-3.5 pl-12 pr-4 text-sm outline-none focus:border-[var(--loombus-gold)]" />
+            </label>
+            <button type="submit" className="rounded-2xl bg-[var(--loombus-gold-strong)] px-5 py-3 text-sm font-semibold text-[var(--loombus-gold-contrast)]">Search</button>
+            <select value={sort} onChange={(event) => setSort(event.target.value as Sort)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm"><option value="recommended">Recommended</option><option value="name">Name A–Z</option><option value="followers">Most followed</option></select>
+            <select value={role} onChange={(event) => setRole(event.target.value as Role)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm"><option value="all">All roles</option><option value="member">Members</option><option value="admin">Admins</option></select>
+            <select value={quality} onChange={(event) => setQuality(event.target.value as Quality)} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm"><option value="all">All profiles</option><option value="bio">With bio</option><option value="complete">Complete profiles</option></select>
+          </form>
+          <div className="mt-4 flex gap-2 overflow-x-auto border-t border-[var(--loombus-border)] pt-4">
+            {VIEWS.map(([key, label]) => (
+              <button key={key} type="button" onClick={() => setView(key)} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium ${view === key ? "border-[var(--loombus-gold-strong)] bg-[var(--loombus-gold-strong)] text-[var(--loombus-gold-contrast)]" : "border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"}`}>{label}</button>
+            ))}
+          </div>
+        </section>
+
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold">{filteredMembers.length} shown · {total} discoverable members</p>
+            <p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">{adminVisibility ? "Admin visibility includes active undiscoverable accounts." : "Undiscoverable accounts and blocked relationships are excluded."}</p>
+          </div>
+          {activeQuery ? <button type="button" onClick={() => { setQuery(""); setActiveQuery(""); setPage(1); }} className="text-sm font-semibold text-[var(--loombus-text-muted)]">Clear search</button> : null}
+        </div>
+
+        {filteredMembers.length ? (
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredMembers.map((member) => {
+              const profile = { id: member.id, full_name: member.fullName, username: member.username, avatar_url: member.avatarUrl };
+              const href = member.username ? `/u/${encodeURIComponent(member.username)}` : "/people";
+              return (
+                <article key={member.id} className="rounded-[1.65rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <Link href={href}><ProfileAvatar profile={profile} size="lg" /></Link>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link href={href} className="truncate text-lg font-bold">{displayName(member)}</Link>
+                        {member.isAdmin ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-[.68rem] font-bold text-amber-900"><ShieldCheck className="size-3" /> Admin</span> : null}
+                        {member.privateAccount ? <span className="inline-flex items-center gap-1 rounded-full border border-[var(--loombus-border)] px-2 py-1 text-[.68rem] font-bold text-[var(--loombus-text-muted)]"><LockKeyhole className="size-3" /> Private</span> : null}
+                        {member.mutual ? <span className="rounded-full bg-emerald-100 px-2 py-1 text-[.68rem] font-bold text-emerald-800">Mutual</span> : member.followsYou ? <span className="rounded-full bg-sky-100 px-2 py-1 text-[.68rem] font-bold text-sky-800">Follows you</span> : null}
+                      </div>
+                      <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">{member.username ? `@${member.username}` : "Loombus member"}</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 line-clamp-3 min-h-[4.1rem] text-sm leading-6 text-[var(--loombus-text-muted)]">{member.bio?.trim() || (member.privateAccount ? "This member has a private account." : "This member has not added a bio yet.")}</p>
+
+                  <div className="mt-4 flex items-center gap-4 border-t border-[var(--loombus-border)] pt-4 text-xs font-semibold text-[var(--loombus-text-muted)]">
+                    <span>{member.followerCount} followers</span>
+                    <span>{member.followingCount} following</span>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <button type="button" disabled={working === member.id} onClick={() => void toggleFollow(member)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--loombus-gold-strong)] px-3 text-sm font-bold text-[var(--loombus-gold-contrast)] disabled:opacity-60">
+                      {member.requested ? <UserCheck className="size-4" /> : <UserPlus className="size-4" />}
+                      {working === member.id ? "Working…" : member.following ? "Following" : member.requested ? "Requested" : member.privateAccount ? "Request follow" : "Follow"}
+                    </button>
+                    {member.mutual ? (
+                      <button type="button" disabled={openingMessage === member.id} onClick={() => void openMessage(member)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-sm font-bold disabled:opacity-60"><MessageCircle className="size-4" /> {openingMessage === member.id ? "Opening…" : "Message"}</button>
+                    ) : (
+                      <Link href={href} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--loombus-border)] px-3 text-sm font-bold"><Users className="size-4" /> View profile</Link>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+        ) : (
+          <section className="rounded-[1.75rem] border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-10 text-center">
+            <Search className="mx-auto size-9 text-[var(--loombus-gold)]" />
+            <h2 className="mt-4 text-2xl font-bold">No members match this view.</h2>
+            <p className="mt-2 text-sm text-[var(--loombus-text-muted)]">Try All members, broaden the search, or clear the filters.</p>
+          </section>
+        )}
+
+        <nav className="flex items-center justify-center gap-3" aria-label="People directory pages">
+          <button type="button" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-4 text-sm font-bold disabled:opacity-40"><ChevronLeft className="size-4" /> Previous</button>
+          <span className="text-sm font-semibold text-[var(--loombus-text-muted)]">Page {page}</span>
+          <button type="button" disabled={!hasMore} onClick={() => setPage((current) => current + 1)} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--loombus-border)] px-4 text-sm font-bold disabled:opacity-40">Next <ChevronRight className="size-4" /></button>
+        </nav>
+      </div>
+    </main>
+  );
 }
