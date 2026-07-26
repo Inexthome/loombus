@@ -63,9 +63,13 @@ as $$
 $$;
 
 revoke all on function public.user_has_bookmark_collection_access(uuid) from public;
+revoke all on function public.user_has_bookmark_collection_access(uuid) from anon;
+revoke all on function public.user_has_bookmark_collection_access(uuid) from authenticated;
+revoke all on function public.user_has_bookmark_collection_access(uuid) from service_role;
 grant execute on function public.user_has_bookmark_collection_access(uuid) to authenticated;
 grant execute on function public.user_has_bookmark_collection_access(uuid) to service_role;
 
+revoke all on table public.bookmark_collections from public;
 revoke all on table public.bookmark_collections from anon;
 revoke all on table public.bookmark_collections from authenticated;
 grant select, insert, update, delete on table public.bookmark_collections to authenticated;
@@ -176,9 +180,9 @@ begin
     from information_schema.role_table_grants
     where table_schema = 'public'
       and table_name = 'bookmark_collections'
-      and grantee = 'anon'
+      and grantee in ('PUBLIC', 'anon')
   ) then
-    raise exception 'Anonymous privileges still exist on public.bookmark_collections.';
+    raise exception 'Public or anonymous privileges still exist on public.bookmark_collections.';
   end if;
 
   select array_agg(privilege_type::text order by privilege_type::text)
