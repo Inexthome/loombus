@@ -111,6 +111,9 @@ jobs:
           path: /tmp/room-ladder-apply.log
           retention-days: 1
 
+      - name: Capture generated patch
+        run: git diff --binary > /tmp/room-ladder-generated.patch
+
       - name: Install locked dependencies
         run: npm ci --silent
 
@@ -118,7 +121,24 @@ jobs:
         run: git diff --check
 
       - name: Lint
-        run: npm run lint
+        id: lint
+        shell: bash
+        run: |
+          set +e
+          npm run lint > /tmp/room-ladder-lint.log 2>&1
+          status=$?
+          cat /tmp/room-ladder-lint.log
+          exit "$status"
+
+      - name: Upload lint diagnostic
+        if: failure() && steps.lint.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: room-ladder-lint-diagnostic
+          path: |
+            /tmp/room-ladder-lint.log
+            /tmp/room-ladder-generated.patch
+          retention-days: 1
 
       - name: Build
         run: npm run build
