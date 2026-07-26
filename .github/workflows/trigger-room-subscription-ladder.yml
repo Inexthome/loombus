@@ -47,6 +47,7 @@ jobs:
               '<Loader2 aria-hidden="true" className="is-spinning" size={16} />',
               '<Loader2 aria-hidden="true" size={16} className="is-spinning" />',
           )
+          script = script.replace('].join("\\n");', '].join("\\\\n");')
 
           helper_start = script.index('def replace_once(')
           helper_end = script.index('\ndef replace_regex(', helper_start)
