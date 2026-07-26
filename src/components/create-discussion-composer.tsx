@@ -16,9 +16,8 @@ import {
   Circle,
   Copy,
   FileText,
-  Image as ImageIcon,
   MessageSquare,
-  Mic,
+  Paperclip,
   Puzzle,
   Save,
   Scale,
@@ -38,9 +37,8 @@ import { PURPOSE_LANES } from "@/lib/purpose-lanes";
 import {
   DISCUSSION_ATTACHMENT_ACCEPT,
   MAX_DISCUSSION_ATTACHMENTS,
+  MAX_VIDEO_CONTEXTS_PER_DISCUSSION,
   NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES,
-  NON_VIDEO_ATTACHMENT_MIME_TYPES,
-  VIDEO_CONTEXT_ALLOWED_MIME_TYPES,
   getAttachmentKindForMimeType,
   isVideoContextMimeType,
 } from "@/lib/video-context-limits";
@@ -115,7 +113,8 @@ const MODE_OPTIONS: ModeOption[] = [
     Icon: MessageSquare,
     purposeLabel: "Discussion Purpose",
     purposePlaceholder: "What should members explore, clarify, or contribute?",
-    purposeHelp: "Explain the kind of thoughtful response you want from the community.",
+    purposeHelp:
+      "Optional: explain the kind of thoughtful response you want from the community.",
     bodyPlaceholder:
       "Provide the background, explain why the subject matters, and state the main question you want members to discuss.",
     bodyHelp: "Include context, stakes, examples, and the main question.",
@@ -130,7 +129,8 @@ const MODE_OPTIONS: ModeOption[] = [
     Icon: Scale,
     purposeLabel: "Debate Goal",
     purposePlaceholder: "What should the debate clarify or test?",
-    purposeHelp: "State what a productive comparison of the two positions should accomplish.",
+    purposeHelp:
+      "Optional: state what a productive comparison of the two positions should accomplish.",
     bodyPlaceholder:
       "State the central claim, explain Position A and Position B fairly, and identify the evidence or reasoning members should examine.",
     bodyHelp: "Avoid framing one side as obviously correct before the discussion begins.",
@@ -146,7 +146,8 @@ const MODE_OPTIONS: ModeOption[] = [
     Icon: Search,
     purposeLabel: "Research Goal",
     purposePlaceholder: "What should the research discussion help establish?",
-    purposeHelp: "Describe the knowledge gap or uncertainty you want members to investigate.",
+    purposeHelp:
+      "Optional: describe the knowledge gap or uncertainty you want members to investigate.",
     bodyPlaceholder:
       "State the research question, summarize what is already known, include relevant sources, and explain what remains unresolved.",
     bodyHelp: "Distinguish evidence, assumptions, and open questions.",
@@ -168,13 +169,12 @@ const MODE_OPTIONS: ModeOption[] = [
     purposeLabel: "Desired Outcome",
     purposePlaceholder: "What useful result should this discussion produce?",
     purposeHelp:
-      "Describe the decision, solution, or next step you hope the community can help identify.",
+      "Optional: describe the decision, solution, or next step you hope the community can help identify.",
     bodyPlaceholder:
       "Define the problem, list attempted solutions, explain the constraints, and describe the outcome you need.",
     bodyHelp: "Concrete constraints help members propose realistic solutions.",
     prompts: ["Problem", "What has been attempted", "Constraints", "Desired outcome"],
-    template:
-      "Problem:\n\nWhat has been attempted:\n\nConstraints:\n\nDesired outcome:\n",
+    template: "Problem:\n\nWhat has been attempted:\n\nConstraints:\n\nDesired outcome:\n",
   },
 ];
 
@@ -374,12 +374,11 @@ function buildQualityFindings({
           : "Add more background, stakes, or examples before review.",
     },
     {
-      label: "Response intent",
-      done: purpose.trim().length >= 8,
-      detail:
-        purpose.trim().length >= 8
-          ? "The purpose tells readers how to respond."
-          : "Explain what you want others to clarify, solve, or debate.",
+      label: "Optional response intent",
+      done: true,
+      detail: purpose.trim()
+        ? "The optional purpose gives readers extra response guidance."
+        : "A separate purpose is optional when the title and body already frame the discussion.",
     },
   ];
 }
@@ -405,18 +404,12 @@ function buildClaritySuggestion({
     body.trim() ||
       "Add the background, situation, or question that people need before responding.",
     "",
-    "What I want from the discussion:",
+    "Optional response guidance:",
     purpose.trim() ||
-      "I want thoughtful replies that add clarity, useful examples, and practical insight.",
+      "Invite thoughtful replies only when additional response guidance would improve the discussion.",
   ]
     .filter((section, index) => section !== "" || index === 2 || index === 5)
     .join("\n");
-}
-
-function isAllowedFile(file: File, kind: ContextKind) {
-  const allowed =
-    kind === "video" ? VIDEO_CONTEXT_ALLOWED_MIME_TYPES : NON_VIDEO_ATTACHMENT_MIME_TYPES;
-  return (allowed as readonly string[]).includes(file.type);
 }
 
 function getStatusLabel(status: string) {
@@ -508,8 +501,7 @@ export default function CreateDiscussionComposer({
   const [attachmentMessage, setAttachmentMessage] = useState("");
   const [attachmentsRestricted, setAttachmentsRestricted] = useState(false);
   const [safetyWarning, setSafetyWarning] = useState<SafetyWarningState>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const videoInputRef = useRef<HTMLInputElement | null>(null);
+  const attachmentInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedMode = MODE_OPTIONS.find((option) => option.key === mode) ?? MODE_OPTIONS[0];
   const tagCount = getTagCount(tags);
@@ -543,10 +535,6 @@ export default function CreateDiscussionComposer({
       { label: "Select the right topic", done: topic.trim().length >= 2 },
       { label: "Select the right mode", done: Boolean(mode) },
       { label: "Add useful context", done: body.trim().length >= 40 },
-      {
-        label: "Invite meaningful responses",
-        done: purpose.trim().length >= 8 || purposeLane.trim().length > 0,
-      },
     ];
     const completed = checks.filter((check) => check.done).length;
     return {
@@ -555,7 +543,7 @@ export default function CreateDiscussionComposer({
       total: checks.length,
       percent: Math.round((completed / checks.length) * 100),
     };
-  }, [body, mode, purpose, purposeLane, title, topic]);
+  }, [body, mode, title, topic]);
 
   function hydrateDraft(draft: DraftRow, status: string) {
     const parsed = parseDraftBody(draft.body);
@@ -707,7 +695,7 @@ export default function CreateDiscussionComposer({
     setAiMessage(`Clarity suggestion:\n\n${suggestion}`);
   }
 
-  function addSupportingContext(event: ChangeEvent<HTMLInputElement>, kind: ContextKind) {
+  function addSupportingContext(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []) as File[];
     if (files.length === 0) return;
 
@@ -725,19 +713,25 @@ export default function CreateDiscussionComposer({
       return;
     }
 
-    const invalidFile = files.find((file) => !isAllowedFile(file, kind));
+    const invalidFile = files.find((file) => !getAttachmentKindForMimeType(file.type));
     if (invalidFile) {
-      setAttachmentMessage(
-        kind === "video"
-          ? "Video Context must be MP4, MOV, or WebM."
-          : "Attachments must be images or PDFs."
-      );
+      setAttachmentMessage("Choose a supported image, PDF, MP4, MOV, or WebM file.");
+      event.target.value = "";
+      return;
+    }
+
+    const incomingVideoCount = files.filter((file) => isVideoContextMimeType(file.type)).length;
+    const existingVideoCount = contextItems.filter((item) => item.kind === "video").length;
+    if (existingVideoCount + incomingVideoCount > MAX_VIDEO_CONTEXTS_PER_DISCUSSION) {
+      setAttachmentMessage("You can attach one Video Context item per discussion.");
       event.target.value = "";
       return;
     }
 
     const invalidSizeFile = files.find(
-      (file) => kind !== "video" && file.size > NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES
+      (file) =>
+        !isVideoContextMimeType(file.type) &&
+        file.size > NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES
     );
     if (invalidSizeFile) {
       setAttachmentMessage("Images and PDFs must be 10 MB or less.");
@@ -745,20 +739,25 @@ export default function CreateDiscussionComposer({
       return;
     }
 
-    const nextItems = files.map((file) => ({
-      id: `${kind}-${file.name}-${file.size}-${file.lastModified}`,
-      file,
-      kind,
-    }));
+    const nextItems = files.map((file) => {
+      const kind: ContextKind = isVideoContextMimeType(file.type) ? "video" : "file";
+      return {
+        id: `${kind}-${file.name}-${file.size}-${file.lastModified}`,
+        file,
+        kind,
+      };
+    });
+
     setContextItems((items) =>
       [...items, ...nextItems]
         .filter(
-          (item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index
+          (item, index, list) =>
+            list.findIndex((candidate) => candidate.id === item.id) === index
         )
         .slice(0, MAX_DISCUSSION_ATTACHMENTS)
     );
     setAttachmentMessage(
-      `${files.length} ${kind === "video" ? "video" : "file"}${files.length === 1 ? "" : "s"} staged.`
+      `${files.length} attachment${files.length === 1 ? "" : "s"} staged.`
     );
     event.target.value = "";
   }
@@ -984,11 +983,6 @@ export default function CreateDiscussionComposer({
       setPublishing(false);
       return;
     }
-    if (!purpose.trim() && !purposeLane.trim()) {
-      setMessage("Explain what you want members to explore, clarify, or contribute.");
-      setPublishing(false);
-      return;
-    }
     if (!body.trim()) {
       setMessage("Please enter discussion content.");
       setPublishing(false);
@@ -1106,11 +1100,14 @@ export default function CreateDiscussionComposer({
 
   const centerRail = (
     <div className="min-w-0 space-y-5">
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-1 py-2">
+      <header
+        data-create-composer-header
+        className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-1 py-2"
+      >
         <button
           type="button"
           onClick={cancelComposer}
-          className="justify-self-start text-sm font-black text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]"
+          className="min-h-11 justify-self-start px-2 text-sm font-black text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]"
         >
           Cancel
         </button>
@@ -1120,7 +1117,7 @@ export default function CreateDiscussionComposer({
         <button
           type="button"
           onClick={() => void saveDraft({ manual: true })}
-          className="justify-self-end text-sm font-black text-[#9a701c] dark:text-[#d6a84f]"
+          className="min-h-11 justify-self-end px-2 text-sm font-black text-[#9a701c] dark:text-[#d6a84f]"
           title={autosaveStatus}
         >
           {getStatusLabel(autosaveStatus)}
@@ -1172,7 +1169,8 @@ export default function CreateDiscussionComposer({
 
         <label className="block border-b border-[var(--loombus-border)] p-5 sm:p-6">
           <span className="mb-3 block text-sm font-black text-[var(--loombus-text)]">
-            {selectedMode.purposeLabel} <span className="text-red-500">*</span>
+            {selectedMode.purposeLabel}{" "}
+            <span className="font-semibold text-[var(--loombus-text-subtle)]">(optional)</span>
           </span>
           <input
             value={purpose}
@@ -1221,14 +1219,7 @@ export default function CreateDiscussionComposer({
         </div>
       )}
 
-      <section className="grid grid-cols-[1fr_1fr_1.35fr] gap-2 rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-3 shadow-sm sm:gap-3">
-        <button
-          type="button"
-          onClick={() => setActivePanel("guidance")}
-          className="min-h-14 rounded-2xl text-sm font-black text-[var(--loombus-text-muted)] transition hover:bg-[var(--loombus-surface-muted)]"
-        >
-          Guidance
-        </button>
+      <section className="grid grid-cols-[1fr_1fr_1.2fr] gap-2 rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-3 shadow-sm sm:gap-3">
         <button
           type="button"
           onClick={() => setActivePanel("more")}
@@ -1240,10 +1231,17 @@ export default function CreateDiscussionComposer({
           type="button"
           onClick={reviewDraft}
           disabled={draftLoading || publishing}
-          className="min-h-14 rounded-2xl px-4 text-sm font-black text-[#17140c] shadow-sm disabled:opacity-60"
-          style={{ backgroundColor: LOOMBUS_GOLD }}
+          className="min-h-14 rounded-2xl border border-[var(--loombus-border)] px-4 text-sm font-black text-[var(--loombus-text)] transition hover:border-amber-300 disabled:opacity-60"
         >
           Review
+        </button>
+        <button
+          type="submit"
+          disabled={publishing}
+          className="inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-black text-[#17140c] shadow-sm disabled:opacity-60"
+          style={{ backgroundColor: LOOMBUS_GOLD }}
+        >
+          <Send className="size-4" /> {publishing ? "Publishing..." : "Publish"}
         </button>
       </section>
     </div>
@@ -1468,20 +1466,12 @@ export default function CreateDiscussionComposer({
         <PanelShell title="Add supporting context" onClose={() => setActivePanel(null)}>
           <section>
             <input
-              ref={fileInputRef}
+              ref={attachmentInputRef}
               type="file"
               multiple
               accept={DISCUSSION_ATTACHMENT_ACCEPT}
               className="hidden"
-              onChange={(event) => addSupportingContext(event, "file")}
-            />
-            <input
-              ref={videoInputRef}
-              type="file"
-              multiple
-              accept="video/*"
-              className="hidden"
-              onChange={(event) => addSupportingContext(event, "video")}
+              onChange={addSupportingContext}
             />
 
             {attachmentsRestricted && (
@@ -1490,36 +1480,24 @@ export default function CreateDiscussionComposer({
               </div>
             )}
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                disabled={attachmentsRestricted}
-                onClick={() => fileInputRef.current?.click()}
-                className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-left transition hover:border-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span className="grid size-11 place-items-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-[#d6a84f]">
-                  <ImageIcon className="size-5" />
-                </span>
-                <strong className="mt-3 block text-sm text-[var(--loombus-text)]">Attach files</strong>
+            <button
+              type="button"
+              disabled={attachmentsRestricted}
+              onClick={() => attachmentInputRef.current?.click()}
+              className="flex w-full items-center gap-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-left transition hover:border-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-[#d6a84f]">
+                <Paperclip className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <strong className="block text-sm text-[var(--loombus-text)]">
+                  Attach files or Video Context
+                </strong>
                 <span className="mt-1 block text-xs leading-5 text-[var(--loombus-text-muted)]">
-                  Images and PDFs up to 10 MB.
+                  Images and PDFs up to 10 MB, or one MP4, MOV, or WebM within your plan limit.
                 </span>
-              </button>
-              <button
-                type="button"
-                disabled={attachmentsRestricted}
-                onClick={() => videoInputRef.current?.click()}
-                className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-4 text-left transition hover:border-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <span className="grid size-11 place-items-center rounded-2xl bg-amber-50 text-amber-700 dark:bg-amber-400/10 dark:text-[#d6a84f]">
-                  <Mic className="size-5" />
-                </span>
-                <strong className="mt-3 block text-sm text-[var(--loombus-text)]">Video Context</strong>
-                <span className="mt-1 block text-xs leading-5 text-[var(--loombus-text-muted)]">
-                  MP4, MOV, or WebM within your plan limit.
-                </span>
-              </button>
-            </div>
+              </span>
+            </button>
 
             {contextItems.length > 0 && (
               <div className="mt-5 space-y-2">
@@ -1531,10 +1509,7 @@ export default function CreateDiscussionComposer({
                     <div className="min-w-0">
                       <p className="truncate font-black text-[var(--loombus-text)]">{item.file.name}</p>
                       <p className="text-xs font-semibold text-[var(--loombus-text-subtle)]">
-                        {item.kind === "video" || isVideoContextMimeType(item.file.type)
-                          ? "Video"
-                          : "File"}{" "}
-                        · {formatFileSize(item.file.size)}
+                        {item.kind === "video" ? "Video Context" : "File"} · {formatFileSize(item.file.size)}
                       </p>
                     </div>
                     <button

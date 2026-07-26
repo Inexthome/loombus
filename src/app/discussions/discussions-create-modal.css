@@ -68,5 +68,26 @@ body[data-discussions-create-open="true"] .loombus-adaptive-utility-root {
   .discussions-create-modal-shell {
     height: 100dvh;
     overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .discussions-create-modal-shell main[data-create-composer-variant="modal"] > section {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.35rem);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+  }
+
+  .discussions-create-modal-shell [data-create-composer-header] {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    margin-inline: -0.25rem;
+    min-height: 3.5rem;
+    border-bottom: 1px solid var(--loombus-border);
+    background: color-mix(in srgb, var(--loombus-page-bg) 96%, transparent);
+    padding-inline: 0.25rem;
+    padding-block: 0.25rem;
+    backdrop-filter: blur(16px);
   }
 }

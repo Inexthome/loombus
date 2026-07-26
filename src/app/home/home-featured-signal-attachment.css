@@ -1,0 +1,109 @@
+.home-v2-featured-art[data-home-featured-media="true"] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 0;
+}
+
+.home-v2-featured-art[data-home-featured-media="true"] > svg {
+  display: none;
+}
+
+.home-featured-attachment,
+.home-featured-attachment-video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.home-featured-attachment img,
+.home-featured-attachment video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-featured-attachment-video::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(to top, rgb(0 0 0 / 0.38), transparent 55%);
+}
+
+.home-featured-attachment-play {
+  position: absolute;
+  z-index: 2;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.58);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.home-featured-attachment-play svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.home-featured-attachment-document {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 1rem;
+  text-align: center;
+  background:
+    radial-gradient(circle at 25% 20%, rgb(214 168 79 / 0.24), transparent 45%),
+    var(--loombus-surface-muted);
+  color: var(--loombus-text);
+}
+
+.home-featured-attachment-document svg {
+  width: 2rem;
+  height: 2rem;
+  color: #b7791f;
+}
+
+.home-featured-attachment-document strong {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.8rem;
+  line-height: 1.2rem;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.home-featured-attachment-document small {
+  color: var(--loombus-text-muted);
+}
+
+.home-featured-attachment-count {
+  position: absolute;
+  z-index: 3;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: grid;
+  min-width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.45);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.64);
+  padding-inline: 0.55rem;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 800;
+  backdrop-filter: blur(10px);
+}
