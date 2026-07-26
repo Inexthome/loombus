@@ -49,11 +49,8 @@ jobs:
           )
           script = script.replace('].join("\\n");', '].join("\\\\n");')
           script = script.replace(
-              '''  const unitAmount = price?.unit_amount;
-              '  if (unitAmount === null || unitAmount === undefined) return null;''',
-              '''  if (!price) return null;
-              '  const unitAmount = price.unit_amount;
-              '  if (unitAmount === null || unitAmount === undefined) return null;''',
+              '  const unitAmount = price?.unit_amount;\n  if (unitAmount === null || unitAmount === undefined) return null;',
+              '  if (!price) return null;\n  const unitAmount = price.unit_amount;\n  if (unitAmount === null || unitAmount === undefined) return null;',
           )
 
           helper_start = script.index('def replace_once(')
