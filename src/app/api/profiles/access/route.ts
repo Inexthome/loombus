@@ -4,6 +4,7 @@ import {
   createMemberPrivacyServiceClient,
   getMemberPrivacy,
   hasBlockRelationship,
+  isActiveAccountStatus,
   isFollower,
   requireMemberUser,
 } from "@/lib/member-privacy-server";
@@ -35,12 +36,16 @@ export async function GET(request: NextRequest) {
 
   const { data: profile, error } = await service
     .from("profiles")
-    .select("id, full_name, username, avatar_url, bio, perspective_marker, is_admin, account_status")
+    .select(
+      "id, full_name, username, avatar_url, bio, perspective_marker, is_admin, account_status"
+    )
     .eq("username", username)
     .maybeSingle();
 
   if (error) return jsonError(error.message, 500);
-  if (!profile) return jsonError("Profile not found.", 404);
+  if (!profile || !isActiveAccountStatus(profile.account_status)) {
+    return jsonError("Profile not found.", 404);
+  }
   if (await hasBlockRelationship(service, profile.id, user.id)) {
     return jsonError("Profile not found.", 404);
   }
