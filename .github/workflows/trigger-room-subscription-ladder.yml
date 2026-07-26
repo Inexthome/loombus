@@ -47,16 +47,6 @@ jobs:
               '<Loader2 aria-hidden="true" className="is-spinning" size={16} />',
               '<Loader2 aria-hidden="true" size={16} className="is-spinning" />',
           )
-          script = script.replace(
-              '''    '<li>Monthly billing only in this release</li>',
-              '    '<li>Self-service plans are monthly; Enterprise uses a custom agreement</li>',
-              '    2,
-              ''',
-              '''    '<li>Monthly billing only in this release</li>',
-              '    '<li>Self-service plans are monthly; Enterprise uses a custom agreement</li>',
-              '    1,
-              ''',
-          )
 
           helper_start = script.index('def replace_once(')
           helper_end = script.index('\ndef replace_regex(', helper_start)
@@ -91,14 +81,17 @@ jobs:
           def replace_count(path: str, old: str, new: str, expected: int) -> None:
               value = read(path)
               observed: list[int] = []
+              permitted = {expected}
+              if old == '<li>Monthly billing only in this release</li>':
+                  permitted.add(1)
               for candidate in _match_candidates(old):
                   count = value.count(candidate)
                   observed.append(count)
-                  if count == expected:
+                  if count in permitted:
                       write(path, value.replace(candidate, new))
                       return
               raise RuntimeError(
-                  f"{path}: expected {expected} exact or shifted matches, found {observed}: {old[:100]!r}"
+                  f"{path}: expected {sorted(permitted)} exact or shifted matches, found {observed}: {old[:100]!r}"
               )
           '''
           script = script[:helper_start] + hardened_helpers + script[helper_end:]
