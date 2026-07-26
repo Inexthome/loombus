@@ -36,6 +36,38 @@ async function organizationPolicy(service, access) {
   };
 }
 
+async function activeRoomRetentionHold(service, roomId) {
+  const result = await service
+    .from("room_retention_holds")
+    .select("id, reason")
+    .eq("room_id", roomId)
+    .eq("target_type", "room")
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+  if (result.error) return { error: result.error.message };
+  return {
+    active: Boolean(result.data?.id),
+    reason: text(result.data?.reason, 1000),
+  };
+}
+
+function activeOrganizationRetention(policy, access) {
+  if (policy.retentionDays <= 0) return { active: false };
+  const createdAt = iso(access.rawRoom.created_at);
+  if (!createdAt) {
+    return {
+      error: "Room creation time could not be verified for retention enforcement.",
+    };
+  }
+  const retainedUntil =
+    new Date(createdAt).getTime() + policy.retentionDays * 86_400_000;
+  return {
+    active: retainedUntil > Date.now(),
+    retainedUntil: new Date(retainedUntil).toISOString(),
+  };
+}
+
 export async function handleLifecycleAction(ctx, body, action) {
   const { service, roomId, access, userId } = ctx;
 
@@ -93,21 +125,29 @@ export async function handleLifecycleAction(ctx, body, action) {
         "organization_legal_hold"
       );
     }
-    if (policy.retentionDays > 0) {
-      const createdAt = iso(access.rawRoom.created_at);
-      if (createdAt) {
-        const retainedUntil =
-          new Date(createdAt).getTime() + policy.retentionDays * 86_400_000;
-        if (retainedUntil > Date.now()) {
-          return error(
-            `Organization retention protects this Room until ${new Date(
-              retainedUntil
-            ).toLocaleDateString()}.`,
-            409,
-            "organization_retention_active"
-          );
-        }
-      }
+    const roomHold = await activeRoomRetentionHold(service, roomId);
+    if (roomHold.error) return error(roomHold.error, 503);
+    if (roomHold.active) {
+      return error(
+        roomHold.reason
+          ? `This Room is protected by an active retention hold: ${roomHold.reason}`
+          : "This Room is protected by an active retention hold.",
+        409,
+        "room_retention_hold_active"
+      );
+    }
+    const retention = activeOrganizationRetention(policy, access);
+    if (retention.error) {
+      return error(retention.error, 503, "organization_retention_unverifiable");
+    }
+    if (retention.active) {
+      return error(
+        `Organization retention protects this Room until ${new Date(
+          retention.retainedUntil
+        ).toLocaleDateString()}.`,
+        409,
+        "organization_retention_active"
+      );
     }
     const now = new Date();
     const scheduled = new Date(now.getTime() + 30 * 86_400_000);
@@ -163,6 +203,30 @@ export async function handleLifecycleAction(ctx, body, action) {
         "organization_legal_hold"
       );
     }
+    const roomHold = await activeRoomRetentionHold(service, roomId);
+    if (roomHold.error) return error(roomHold.error, 503);
+    if (roomHold.active) {
+      return error(
+        roomHold.reason
+          ? `This Room is protected by an active retention hold: ${roomHold.reason}`
+          : "This Room is protected by an active retention hold.",
+        409,
+        "room_retention_hold_active"
+      );
+    }
+    const retention = activeOrganizationRetention(policy, access);
+    if (retention.error) {
+      return error(retention.error, 503, "organization_retention_unverifiable");
+    }
+    if (retention.active) {
+      return error(
+        `Organization retention protects this Room until ${new Date(
+          retention.retainedUntil
+        ).toLocaleDateString()}.`,
+        409,
+        "organization_retention_active"
+      );
+    }
     const scheduled = iso(access.rawRoom.deletion_scheduled_for);
     if (!scheduled || new Date(scheduled).getTime() > Date.now()) {
       return error("The 30-day Room recovery period has not ended.", 409);
@@ -170,20 +234,11 @@ export async function handleLifecycleAction(ctx, body, action) {
     if (paidAndActive(access)) {
       return error("Cancel the active Room subscription before permanent deletion.", 409);
     }
-    const files = await service
-      .from("room_resources")
-      .select("storage_path")
-      .eq("room_id", roomId)
-      .limit(10000);
-    if (files.error) return error(files.error.message, 503);
-    const paths = (files.data ?? []).map((row) => row.storage_path).filter(Boolean);
-    if (paths.length) {
-      const storage = await service.storage.from("room-resources").remove(paths);
-      if (storage.error) return error(storage.error.message, 503);
-    }
-    const result = await service.from("rooms").delete().eq("id", roomId);
-    if (result.error) return error(result.error.message);
-    return reply({ ok: true, deleted: true });
+    return error(
+      "Permanent Room deletion remains paused until the idempotent deletion state machine is deployed.",
+      503,
+      "room_permanent_deletion_state_machine_required"
+    );
   }
 
   return null;
