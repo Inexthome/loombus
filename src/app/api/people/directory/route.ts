@@ -137,21 +137,25 @@ export async function GET(request: NextRequest) {
     followingCounts.set(row.follower_id, (followingCounts.get(row.follower_id) ?? 0) + 1);
   }
 
-  const members = profiles.map((profile) => ({
-    id: profile.id,
-    fullName: profile.full_name,
-    username: profile.username,
-    avatarUrl: profile.avatar_url,
-    bio: profile.bio,
-    isAdmin: Boolean(profile.is_admin),
-    privateAccount: privacyMap.get(profile.id) ?? false,
-    following: following.has(profile.id),
-    followsYou: followers.has(profile.id),
-    mutual: following.has(profile.id) && followers.has(profile.id),
-    requested: requested.has(profile.id),
-    followerCount: followerCounts.get(profile.id) ?? 0,
-    followingCount: followingCounts.get(profile.id) ?? 0,
-  }));
+  const members = profiles.map((profile) => {
+    const privateAccount = privacyMap.get(profile.id) ?? false;
+    const viewerFollows = following.has(profile.id);
+    return {
+      id: profile.id,
+      fullName: profile.full_name,
+      username: profile.username,
+      avatarUrl: profile.avatar_url,
+      bio: admin || !privateAccount || viewerFollows ? profile.bio : null,
+      isAdmin: Boolean(profile.is_admin),
+      privateAccount,
+      following: viewerFollows,
+      followsYou: followers.has(profile.id),
+      mutual: viewerFollows && followers.has(profile.id),
+      requested: requested.has(profile.id),
+      followerCount: followerCounts.get(profile.id) ?? 0,
+      followingCount: followingCounts.get(profile.id) ?? 0,
+    };
+  });
 
   return NextResponse.json(
     {
