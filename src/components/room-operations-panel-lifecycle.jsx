@@ -201,9 +201,7 @@ export function Lifecycle({ payload, working, onAction, onExport }) {
             <button
               type="button"
               className="is-danger"
-              disabled={
-                confirmName !== room.name || working === "schedule_deletion"
-              }
+              disabled={working === "schedule_deletion"}
               onClick={() =>
                 onAction(
                   "schedule_deletion",
