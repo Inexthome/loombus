@@ -50,6 +50,15 @@ jobs:
           fi
           exit "$status"
 
+      - name: Upload build diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr653-build-log
+          path: /tmp/pr653-build.log
+          if-no-files-found: error
+          retention-days: 1
+
   dependency-audit:
     name: npm dependency audit
     runs-on: ubuntu-latest
