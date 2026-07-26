@@ -1,4 +1,5 @@
 import { asString } from "@/lib/room-operations";
+import { verifyRoomBillingInactive } from "@/lib/room-deletion-worker";
 import { error, iso, reply, text, uuid } from "@/lib/room-operations-service";
 
 function paidAndActive(access) {
@@ -68,8 +69,16 @@ function activeOrganizationRetention(policy, access) {
   };
 }
 
+function deletionJobErrorStatus(code) {
+  if (code === "42501") return 403;
+  if (code === "P0002") return 404;
+  if (["P0001", "23505"].includes(code)) return 409;
+  return 503;
+}
+
 export async function handleLifecycleAction(ctx, body, action) {
   const { service, roomId, access, userId } = ctx;
+  const roomStatus = access.room.status.toLowerCase();
 
   if (action === "transfer_ownership") {
     if (!access.isOwner) {
@@ -113,6 +122,24 @@ export async function handleLifecycleAction(ctx, body, action) {
 
   if (action === "schedule_deletion") {
     if (!access.isOwner) return error("Only the Room owner can schedule deletion.", 403);
+    if (roomStatus === "deleting") {
+      return error(
+        "Permanent Room deletion has already started and cannot be rescheduled.",
+        409,
+        "room_permanent_deletion_in_progress"
+      );
+    }
+    if (roomStatus === "pending_deletion") {
+      const scheduledFor = iso(access.rawRoom.deletion_scheduled_for);
+      if (!scheduledFor) {
+        return error(
+          "The existing Room deletion schedule could not be verified.",
+          503,
+          "room_deletion_schedule_unverifiable"
+        );
+      }
+      return reply({ ok: true, scheduledFor, alreadyScheduled: true });
+    }
     if (text(body.confirmName, 240) !== access.room.name) {
       return error("Enter the exact Room name to schedule deletion.", 400);
     }
@@ -168,6 +195,17 @@ export async function handleLifecycleAction(ctx, body, action) {
 
   if (action === "restore_deletion") {
     if (!access.isOwner) return error("Only the Room owner can restore this Room.", 403);
+    if (roomStatus !== "pending_deletion") {
+      return error(
+        roomStatus === "deleting"
+          ? "Permanent deletion has already started and can no longer be canceled."
+          : "Only a Room in its recovery period can be restored.",
+        409,
+        roomStatus === "deleting"
+          ? "room_permanent_deletion_in_progress"
+          : "room_deletion_restore_unavailable"
+      );
+    }
     const result = await service
       .from("rooms")
       .update({
@@ -178,8 +216,18 @@ export async function handleLifecycleAction(ctx, body, action) {
         deletion_reason: null,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", roomId);
+      .eq("id", roomId)
+      .eq("status", "pending_deletion")
+      .select("id")
+      .maybeSingle();
     if (result.error) return error(result.error.message);
+    if (!result.data?.id) {
+      return error(
+        "Permanent deletion has already started and can no longer be canceled.",
+        409,
+        "room_permanent_deletion_in_progress"
+      );
+    }
     return reply({ ok: true });
   }
 
@@ -234,11 +282,56 @@ export async function handleLifecycleAction(ctx, body, action) {
     if (paidAndActive(access)) {
       return error("Cancel the active Room subscription before permanent deletion.", 409);
     }
-    return error(
-      "Permanent Room deletion remains paused until the idempotent deletion state machine is deployed.",
-      503,
-      "room_permanent_deletion_state_machine_required"
-    );
+
+    let billingPreflight;
+    try {
+      billingPreflight = await verifyRoomBillingInactive(service, roomId);
+    } catch (cause) {
+      const message =
+        cause instanceof Error
+          ? cause.message
+          : "Room billing could not be verified for permanent deletion.";
+      const activeBilling = message.startsWith("Room billing remains active in Stripe");
+      return error(
+        message,
+        activeBilling ? 409 : 503,
+        activeBilling
+          ? "active_room_subscription"
+          : "room_deletion_billing_verification_required"
+      );
+    }
+
+    const result = await service.rpc("begin_room_deletion_job", {
+      target_room_id: roomId,
+      acting_owner_id: userId,
+      billing_preflight: billingPreflight,
+    });
+    if (result.error) {
+      return error(
+        result.error.message,
+        deletionJobErrorStatus(result.error.code),
+        "room_permanent_deletion_job_failed"
+      );
+    }
+
+    const job = Array.isArray(result.data) ? result.data[0] : result.data;
+    const jobId = asString(job?.job_id);
+    if (!uuid(jobId)) {
+      return error(
+        "The permanent deletion job could not be verified.",
+        503,
+        "room_permanent_deletion_job_unverified"
+      );
+    }
+
+    return reply({
+      ok: true,
+      deletionStarted: true,
+      jobId,
+      jobStatus: asString(job?.job_status) || "building_manifest",
+      created: job?.created === true,
+      url: "/rooms",
+    });
   }
 
   return null;
