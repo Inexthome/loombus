@@ -32,32 +32,13 @@ jobs:
           cache: npm
 
       - name: Install locked dependencies
-        run: npm ci --silent >/dev/null 2>&1
+        run: npm ci
 
       - name: Lint
         run: npm run lint
 
       - name: Build
-        shell: bash
-        run: |
-          set +e
-          npm run build > /tmp/pr653-build.log 2>&1
-          status=$?
-          if [ "$status" -ne 0 ]; then
-            tail -n 160 /tmp/pr653-build.log
-          else
-            echo "Build passed."
-          fi
-          exit "$status"
-
-      - name: Upload build diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr653-build-log
-          path: /tmp/pr653-build.log
-          if-no-files-found: error
-          retention-days: 1
+        run: npm run build
 
   dependency-audit:
     name: npm dependency audit
