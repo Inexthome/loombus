@@ -142,7 +142,24 @@ jobs:
           retention-days: 1
 
       - name: Build
-        run: npm run build
+        id: build
+        shell: bash
+        run: |
+          set +e
+          npm run build > /tmp/room-ladder-build.log 2>&1
+          status=$?
+          cat /tmp/room-ladder-build.log
+          exit "$status"
+
+      - name: Upload build diagnostic
+        if: failure() && steps.build.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: room-ladder-build-diagnostic
+          path: |
+            /tmp/room-ladder-build.log
+            /tmp/room-ladder-generated.patch
+          retention-days: 1
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
