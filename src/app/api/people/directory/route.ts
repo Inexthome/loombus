@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createMemberPrivacyServiceClient,
-  isActiveAccountStatus,
   isAdmin,
   requireMemberUser,
   safePageNumber,
@@ -55,6 +54,7 @@ export async function GET(request: NextRequest) {
     .select("id, full_name, username, avatar_url, bio, is_admin, account_status", {
       count: "exact",
     })
+    .or("account_status.is.null,account_status.eq.active")
     .order("full_name", { ascending: true, nullsFirst: false })
     .order("username", { ascending: true, nullsFirst: false });
 
@@ -71,13 +71,10 @@ export async function GET(request: NextRequest) {
 
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
-  const { data: rawProfiles, error, count } = await query.range(from, to);
+  const { data: profiles, error, count } = await query.range(from, to);
   if (error) return jsonError(error.message, 500);
 
-  const profiles = (rawProfiles ?? []).filter((profile) =>
-    isActiveAccountStatus(profile.account_status)
-  );
-  const profileIds = profiles.map((profile) => profile.id);
+  const profileIds = (profiles ?? []).map((profile) => profile.id);
 
   if (profileIds.length === 0) {
     return NextResponse.json({
@@ -137,7 +134,7 @@ export async function GET(request: NextRequest) {
     followingCounts.set(row.follower_id, (followingCounts.get(row.follower_id) ?? 0) + 1);
   }
 
-  const members = profiles.map((profile) => {
+  const members = (profiles ?? []).map((profile) => {
     const privateAccount = privacyMap.get(profile.id) ?? false;
     const viewerFollows = following.has(profile.id);
     return {
