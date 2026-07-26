@@ -50,11 +50,15 @@ jobs:
               candidates = [old]
               lines = old.split("\\n")
               if len(lines) > 1:
-                  shifted = "\\n".join(
-                      [lines[0], *[("  " + line) if line else line for line in lines[1:]]]
-                  )
-                  if shifted != old:
-                      candidates.append(shifted)
+                  for shift in range(2, 18, 2):
+                      shifted = "\\n".join(
+                          [
+                              lines[0],
+                              *[(" " * shift + line) if line else line for line in lines[1:]],
+                          ]
+                      )
+                      if shifted not in candidates:
+                          candidates.append(shifted)
               return candidates
 
           def replace_once(path: str, old: str, new: str) -> None:
