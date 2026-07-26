@@ -1,0 +1,111 @@
+/*
+ * System-wide protection for user-authored Room content.
+ *
+ * Room names, descriptions, event titles, and other user text may contain a
+ * single long token with no spaces. Those values must never widen a grid or
+ * flex item, overlap another Room rail, or force horizontal page overflow.
+ */
+
+.room-route-page *,
+.rooms-directory-page *,
+.rooms-v2-page * {
+  box-sizing: border-box;
+}
+
+:where(
+  .room-route-left,
+  .room-route-content,
+  .room-route-right,
+  .room-route-left-sticky,
+  .room-route-right-sticky,
+  .room-route-identity,
+  .room-route-nav,
+  .room-route-card,
+  .room-workspace-hero,
+  .room-workspace-hero > div,
+  .room-workspace-panel,
+  .room-workspace-section-heading,
+  .room-workspace-section-heading > div,
+  .room-workspace-overview,
+  .room-workspace-overview-grid,
+  .room-workspace-metrics,
+  .room-workspace-event-card,
+  .room-workspace-announcement,
+  .room-workspace-post,
+  .rooms-directory-left,
+  .rooms-directory-center,
+  .rooms-directory-right,
+  .rooms-directory-sticky,
+  .rooms-directory-card,
+  .rooms-directory-card-main,
+  .rooms-directory-card-side,
+  .rooms-live-card,
+  .rooms-live-card-copy,
+  .rooms-v2-builder-main,
+  .rooms-v2-builder-sidebar,
+  .rooms-v2-builder-summary,
+  .rooms-v2-review-identity,
+  .rooms-v2-review-card,
+  .room-foundation,
+  .room-foundation-toolbar,
+  .room-expansion,
+  .room-expansion-toolbar,
+  [data-loombus-room-foundation-host="true"],
+  [data-loombus-room-expansion-host="true"],
+  [data-loombus-tier-navigation-host="true"]
+) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rooms-live-hero > div:first-child,
+.room-workspace-hero > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+:where(
+  .room-route-identity h2,
+  .room-route-identity > span:last-child,
+  .room-route-card-heading h2,
+  .room-route-card-detail,
+  .room-workspace-hero h1,
+  .room-workspace-hero p,
+  .room-workspace-section-heading h2,
+  .room-workspace-section-heading p,
+  .room-workspace-event-card h3,
+  .room-workspace-event-card p,
+  .room-workspace-announcement h3,
+  .room-workspace-announcement p,
+  .room-workspace-post h3,
+  .room-workspace-post p,
+  .rooms-directory-card h2,
+  .rooms-directory-card-main > p,
+  .rooms-live-card-copy h3,
+  .rooms-live-card-copy span,
+  .rooms-v2-builder-summary h2,
+  .rooms-v2-review-identity h2,
+  .rooms-v2-review-identity p,
+  .room-foundation-heading p,
+  .room-foundation-heading h2,
+  .room-expansion-header p,
+  .room-expansion-header h2
+) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.room-route-content .room-workspace-hero h1 {
+  text-wrap: balance;
+}
+
+@media (min-width: 1280px) {
+  .rooms-directory-layout,
+  .room-route-layout {
+    grid-template-columns:
+      minmax(0, var(--room-shell-left))
+      minmax(0, 1fr)
+      minmax(0, var(--room-shell-right));
+  }
+}
