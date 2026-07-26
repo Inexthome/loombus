@@ -6,6 +6,7 @@ import {
   PAID_ROOM_PLANS,
   RoomBillingError,
   isPaidRoomPlanKey,
+  isSelfServeRoomPlanKey,
   type PaidRoomPlanKey,
 } from "@/lib/room-billing";
 import {
@@ -40,6 +41,13 @@ function safeOrigin(value: string) {
 }
 
 function priceIdFor(planKey: PaidRoomPlanKey) {
+  if (!PAID_ROOM_PLANS[planKey].selfServe) {
+    throw new RoomBillingError(
+      "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales.",
+      409,
+      "enterprise_contact_required"
+    );
+  }
   const priceId = process.env[PAID_ROOM_PLANS[planKey].priceEnvVar];
   if (!priceId) {
     throw new RoomBillingError(
@@ -69,6 +77,22 @@ function pricePlanKey(priceId: string | null | undefined): PaidRoomPlanKey | nul
     if (process.env[PAID_ROOM_PLANS[key].priceEnvVar] === priceId) return key;
   }
   return null;
+}
+
+function subscriptionPriceLabel(subscription: Stripe.Subscription | null) {
+  const price = subscription?.items.data[0]?.price;
+  if (!price) return null;
+  const unitAmount = price.unit_amount;
+  if (unitAmount === null || unitAmount === undefined) return null;
+  const currency = (price.currency || "usd").toUpperCase();
+  const value = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: unitAmount % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(unitAmount / 100);
+  const interval = price.recurring?.interval;
+  return interval ? `${value}/${interval}` : value;
 }
 
 async function loadOwnedRoom(roomId: string, userId: string) {
@@ -127,17 +151,19 @@ async function storageUsage(roomId: string) {
   );
 }
 
-function planSummary(planKey: RoomPlanKey) {
+function planSummary(planKey: RoomPlanKey, priceOverride: string | null = null) {
   const plan = ROOM_PLAN_ENTITLEMENTS[planKey];
   const paid = isPaidRoomPlanKey(planKey) ? PAID_ROOM_PLANS[planKey] : null;
   return {
     id: plan.id,
     label: plan.label,
-    priceLabel: paid?.priceLabel ?? "$0/month",
+    priceLabel: priceOverride ?? paid?.priceLabel ?? "$0/month",
     memberLimit: plan.memberLimit,
     roomLimit: plan.roomLimit,
     storageBytes: plan.storageBytes,
     features: plan.features,
+    selfServe: paid?.selfServe ?? false,
+    contactSales: planKey === "enterprise",
   };
 }
 
@@ -195,8 +221,8 @@ export async function getRoomBillingOverview(roomId: string, userId: string) {
         ? new Date(subscription.canceled_at * 1000).toISOString()
         : null,
     },
-    currentPlan: planSummary(effectivePlan.id),
-    availablePlans: (Object.keys(ROOM_PLAN_ENTITLEMENTS) as RoomPlanKey[]).map(planSummary),
+    currentPlan: planSummary(effectivePlan.id, subscriptionPriceLabel(subscription)),
+    availablePlans: (Object.keys(ROOM_PLAN_ENTITLEMENTS) as RoomPlanKey[]).map((planKey) => planSummary(planKey)),
     usage: {
       memberCount,
       memberLimit: effectivePlan.memberLimit,
@@ -241,8 +267,14 @@ export async function startExistingRoomUpgrade(
   targetPlan: string,
   origin: string
 ) {
-  if (!isPaidRoomPlanKey(targetPlan)) {
-    throw new RoomBillingError("Choose a paid Room plan.", 400, "invalid_room_plan");
+  if (!isSelfServeRoomPlanKey(targetPlan)) {
+    throw new RoomBillingError(
+      targetPlan === "enterprise"
+        ? "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales."
+        : "Choose a self-service paid Room plan.",
+      targetPlan === "enterprise" ? 409 : 400,
+      targetPlan === "enterprise" ? "enterprise_contact_required" : "invalid_room_plan"
+    );
   }
   const room = await loadOwnedRoom(roomId, userId);
   if (room.stripe_subscription_id) {
@@ -328,8 +360,14 @@ export async function changeRoomPaidPlan(
   userId: string,
   targetPlan: string
 ) {
-  if (!isPaidRoomPlanKey(targetPlan)) {
-    throw new RoomBillingError("Choose a paid Room plan.", 400, "invalid_room_plan");
+  if (!isSelfServeRoomPlanKey(targetPlan)) {
+    throw new RoomBillingError(
+      targetPlan === "enterprise"
+        ? "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales."
+        : "Choose a self-service paid Room plan.",
+      targetPlan === "enterprise" ? 409 : 400,
+      targetPlan === "enterprise" ? "enterprise_contact_required" : "invalid_room_plan"
+    );
   }
   const room = await loadOwnedRoom(roomId, userId);
   const subscriptionId = String(room.stripe_subscription_id ?? "");

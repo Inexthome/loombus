@@ -2,6 +2,7 @@ export type RoomPlanKey =
   | "free"
   | "starter"
   | "pro"
+  | "business"
   | "organization"
   | "organization-plus"
   | "enterprise";
@@ -235,6 +236,13 @@ const PRO_MODULES: RoomModuleKey[] = [
   "forms",
 ];
 
+const BUSINESS_MODULES: RoomModuleKey[] = [
+  ...PRO_MODULES,
+  "activity",
+  "advanced-controls",
+  "high-capacity",
+];
+
 const ORGANIZATION_MODULES: RoomModuleKey[] = [
   ...PRO_MODULES,
   "services",
@@ -334,8 +342,29 @@ export const ROOM_PLAN_ENTITLEMENTS: Record<
       "Priority and pinned announcements",
     ],
   },
-  organization: {
-    id: "organization",
+  business: {
+  id: "business",
+  label: "Room Business",
+  roomLimit: 1,
+  memberLimit: 750,
+  fileUploads: true,
+  inlineVideo: true,
+  maxFileBytes: 250 * MIB,
+  storageBytes: 50 * GIB,
+  modules: BUSINESS_MODULES,
+  features: [
+    "Everything in Room Pro",
+    "One high-capacity private Room",
+    "Up to 750 members",
+    "Activity and audit history",
+    "Advanced Room controls and admission workflows",
+    "High-capacity member operations",
+    "250 MB maximum per upload",
+    "50 GB Room resource storage",
+  ],
+},
+organization: {
+  id: "organization",
     label: "Organization",
     roomLimit: 3,
     memberLimit: 500,

@@ -16,6 +16,7 @@ const ROOM_PRICE_ENV: Array<{
 }> = [
   { planKey: "starter", envName: "STRIPE_ROOM_STARTER_MONTHLY_PRICE_ID" },
   { planKey: "pro", envName: "STRIPE_ROOM_PRO_MONTHLY_PRICE_ID" },
+  { planKey: "business", envName: "STRIPE_ROOM_BUSINESS_MONTHLY_PRICE_ID" },
   { planKey: "organization", envName: "STRIPE_ROOM_ORGANIZATION_MONTHLY_PRICE_ID" },
   {
     planKey: "organization-plus",

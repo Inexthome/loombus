@@ -13,30 +13,42 @@ export const PAID_ROOM_PLANS = {
     priceLabel: "$19/month",
     priceEnvVar: "STRIPE_ROOM_STARTER_MONTHLY_PRICE_ID",
     memberLimit: 50,
+    selfServe: true,
   },
   pro: {
     label: "Loombus Room Pro",
     priceLabel: "$49/month",
     priceEnvVar: "STRIPE_ROOM_PRO_MONTHLY_PRICE_ID",
     memberLimit: 250,
+    selfServe: true,
+  },
+  business: {
+    label: "Loombus Room Business",
+    priceLabel: "$79/month",
+    priceEnvVar: "STRIPE_ROOM_BUSINESS_MONTHLY_PRICE_ID",
+    memberLimit: 750,
+    selfServe: true,
   },
   organization: {
-    label: "Loombus Organization Room",
+    label: "Loombus Organization",
     priceLabel: "$99/month",
     priceEnvVar: "STRIPE_ROOM_ORGANIZATION_MONTHLY_PRICE_ID",
     memberLimit: 500,
+    selfServe: true,
   },
   "organization-plus": {
     label: "Loombus Organization Plus",
-    priceLabel: "$149/month",
+    priceLabel: "$199/month",
     priceEnvVar: "STRIPE_ROOM_ORGANIZATION_PLUS_MONTHLY_PRICE_ID",
     memberLimit: 2000,
+    selfServe: true,
   },
   enterprise: {
     label: "Loombus Organization Enterprise",
-    priceLabel: "$199/month",
+    priceLabel: "Custom",
     priceEnvVar: "STRIPE_ROOM_ORGANIZATION_ENTERPRISE_MONTHLY_PRICE_ID",
     memberLimit: null,
+    selfServe: false,
   },
 } as const;
 
@@ -94,11 +106,15 @@ export function isPaidRoomPlanKey(value: string): value is PaidRoomPlanKey {
   return Object.prototype.hasOwnProperty.call(PAID_ROOM_PLANS, value);
 }
 
+export function isSelfServeRoomPlanKey(value: string): value is PaidRoomPlanKey {
+  return isPaidRoomPlanKey(value) && PAID_ROOM_PLANS[value].selfServe;
+}
+
 export function getRoomCheckoutConfiguration() {
   const plans = Object.fromEntries(
     Object.entries(PAID_ROOM_PLANS).map(([key, plan]) => [
       key,
-      present(process.env[plan.priceEnvVar]),
+      plan.selfServe && present(process.env[plan.priceEnvVar]),
     ])
   ) as Record<PaidRoomPlanKey, boolean>;
 
@@ -124,6 +140,13 @@ function getStripe() {
 }
 
 function getRoomPriceId(planKey: PaidRoomPlanKey) {
+  if (!PAID_ROOM_PLANS[planKey].selfServe) {
+    throw new RoomBillingError(
+      "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales.",
+      409,
+      "enterprise_contact_required"
+    );
+  }
   const value = process.env[PAID_ROOM_PLANS[planKey].priceEnvVar];
   if (!value) {
     throw new RoomBillingError(
@@ -300,8 +323,16 @@ export async function provisionFreeRoom(input: RoomSetupInput) {
 }
 
 export async function startPaidRoomCheckout(input: RoomSetupInput) {
-  if (!isPaidRoomPlanKey(input.planKey)) {
-    throw new RoomBillingError("Invalid paid Room plan.", 400, "invalid_room_plan");
+  if (!isSelfServeRoomPlanKey(input.planKey)) {
+    throw new RoomBillingError(
+      input.planKey === "enterprise"
+        ? "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales."
+        : "Invalid paid Room plan.",
+      input.planKey === "enterprise" ? 409 : 400,
+      input.planKey === "enterprise"
+        ? "enterprise_contact_required"
+        : "invalid_room_plan"
+    );
   }
 
   const plan = PAID_ROOM_PLANS[input.planKey];

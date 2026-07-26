@@ -1,0 +1,56 @@
+.rooms-v2-plan-segments {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.rooms-v2-plan-segment {
+  display: grid;
+  gap: 1rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.5rem;
+  background: color-mix(in srgb, var(--loombus-surface) 94%, transparent);
+  padding: 1rem;
+}
+
+.rooms-v2-plan-segment-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem;
+}
+
+.rooms-v2-plan-segment-heading span {
+  display: block;
+  color: var(--loombus-gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rooms-v2-plan-segment-heading h3 {
+  margin: 0.35rem 0 0;
+  color: var(--loombus-text);
+  font-size: 1.05rem;
+}
+
+.rooms-v2-plan-segment-heading p {
+  max-width: 32rem;
+  margin: 0;
+  color: var(--loombus-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  .rooms-v2-plan-segment {
+    border-radius: 1.25rem;
+    padding: 0.8rem;
+  }
+
+  .rooms-v2-plan-segment-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -25,6 +25,8 @@ type Plan = {
   roomLimit: number | null;
   storageBytes: number;
   features: string[];
+  selfServe: boolean;
+  contactSales: boolean;
 };
 
 type BillingOverview = {
@@ -92,6 +94,16 @@ function formatMoney(amount: number, currency: string) {
 function usagePercent(used: number, limit: number | null) {
   if (limit === null || limit <= 0) return 0;
   return Math.min(100, Math.round((used / limit) * 100));
+}
+
+function planCapacityLabel(plan: Plan) {
+  if (plan.roomLimit === null || plan.memberLimit === null) {
+    return "Custom Room and member capacity";
+  }
+  if (plan.roomLimit === 1) {
+    return `1 Room · Up to ${plan.memberLimit.toLocaleString("en-US")} members`;
+  }
+  return `Up to ${plan.roomLimit.toLocaleString("en-US")} Rooms · ${plan.memberLimit.toLocaleString("en-US")} members per Room`;
 }
 
 export default function RoomBillingClient() {
@@ -393,11 +405,7 @@ export default function RoomBillingClient() {
                     {current ? <span className="room-tier-record-chip">Current</span> : null}
                   </div>
                   <h3>{plan.label}</h3>
-                  <p>
-                    {plan.memberLimit === null
-                      ? "Custom membership capacity"
-                      : `Up to ${plan.memberLimit.toLocaleString()} members`}
-                  </p>
+                  <p>{planCapacityLabel(plan)}</p>
                   <ul>
                     {plan.features.slice(0, 5).map((feature) => <li key={feature}>{feature}</li>)}
                   </ul>
@@ -406,27 +414,35 @@ export default function RoomBillingClient() {
                       Reduce active membership to {plan.memberLimit} before selecting this plan.
                     </div>
                   ) : null}
-                  {!current && !isFree ? (
-                    <button
-                      type="button"
-                      className="rooms-live-primary-action"
-                      disabled={Boolean(working) || targetTooSmall || !overview.billingConfigured}
-                      onClick={() => {
-                        const action = overview.hasStripeSubscription ? "change_plan" : "upgrade";
-                        const verb = overview.hasStripeSubscription ? "change" : "upgrade";
-                        if (window.confirm(`Confirm ${verb} to ${plan.label}? Stripe may apply prorated charges or credits.`)) {
-                          void runAction(action, { planKey: plan.id });
-                        }
-                      }}
-                    >
-                      {working === "change_plan" || working === "upgrade" ? (
-                        <Loader2 className="is-spinning" />
-                      ) : (
-                        <CheckCircle2 />
-                      )}
-                      {overview.hasStripeSubscription ? "Change to this plan" : "Upgrade to this plan"}
-                    </button>
-                  ) : null}
+                  {!current && plan.contactSales ? (
+          <Link
+            href={`/rooms/enterprise?roomId=${encodeURIComponent(roomId)}&currentPlan=${encodeURIComponent(overview.currentPlan.label)}`}
+            className="rooms-live-primary-action"
+          >
+            <ShieldCheck aria-hidden="true" /> Contact Enterprise sales
+          </Link>
+        ) : null}
+        {!current && !isFree && plan.selfServe ? (
+          <button
+            type="button"
+            className="rooms-live-primary-action"
+            disabled={Boolean(working) || targetTooSmall || !overview.billingConfigured}
+            onClick={() => {
+              const action = overview.hasStripeSubscription ? "change_plan" : "upgrade";
+              const verb = overview.hasStripeSubscription ? "change" : "upgrade";
+              if (window.confirm(`Confirm ${verb} to ${plan.label}? Stripe may apply prorated charges or credits.`)) {
+                void runAction(action, { planKey: plan.id });
+              }
+            }}
+          >
+            {working === "change_plan" || working === "upgrade" ? (
+              <Loader2 className="is-spinning" />
+            ) : (
+              <CheckCircle2 />
+            )}
+            {overview.hasStripeSubscription ? "Change to this plan" : "Upgrade to this plan"}
+          </button>
+        ) : null}
                   {!current && isFree ? (
                     <p>To return to Free, schedule cancellation. Paid features remain available through the current billing period.</p>
                   ) : null}

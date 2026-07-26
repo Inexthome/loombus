@@ -18,6 +18,7 @@ import "./room-core-list-hardening.css";
 import "./room-foundation-operations-hardening.css";
 import "./room-shell-v3.css";
 import "./room-content-overflow-hardening.css";
+import "./room-subscription-refresh.css";
 
 export default function RoomsLayout({
   children,

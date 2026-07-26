@@ -25,6 +25,7 @@ import {
 import {
   type RoomModel,
   type RoomModelId,
+  type RoomPlan,
   type RoomPlanId,
   ROOM_MODELS,
   ROOM_PLANS,
@@ -42,10 +43,17 @@ type RoomBuilderDraft = {
   description: string;
 };
 
+type IncludedPlanStatus = {
+  available: boolean;
+  usedRooms: number;
+  roomLimit: number | null;
+};
+
 type CheckoutConfig = {
   coreReady: boolean;
   monthlyOnly: boolean;
   plans: Partial<Record<RoomPlanId, boolean>>;
+  includedPlans?: Partial<Record<RoomPlanId, IncludedPlanStatus>>;
   checks: {
     stripeSecretKey: boolean;
     stripeWebhookSecret: boolean;
@@ -67,6 +75,11 @@ const DEFAULT_DRAFT: RoomBuilderDraft = {
   roomName: "Business Team",
   description: ROOM_MODELS[0].description,
 };
+
+const SINGLE_ROOM_PLANS = ROOM_PLANS.filter((plan) => plan.segment === "single");
+const ORGANIZATION_PLANS = ROOM_PLANS.filter(
+  (plan) => plan.segment === "organization"
+);
 
 function isRoomModelId(value: unknown): value is RoomModelId {
   return typeof value === "string" && ROOM_MODELS.some((model) => model.id === value);
@@ -157,6 +170,8 @@ export default function NewRoomPage() {
 
   const selectedModel = useMemo(() => getRoomModel(draft.modelId), [draft.modelId]);
   const selectedPlan = useMemo(() => getRoomPlan(draft.planId), [draft.planId]);
+  const includedPlanStatus = checkoutConfig?.includedPlans?.[selectedPlan.id];
+  const includedPlanAvailable = Boolean(includedPlanStatus?.available);
   const trimmedName = draft.roomName.trim();
   const trimmedDescription = draft.description.trim();
   const nameIsValid = trimmedName.length >= 3;
@@ -164,7 +179,28 @@ export default function NewRoomPage() {
   const formIsValid = nameIsValid && descriptionIsValid;
   const paidPlanReady =
     !selectedPlan.paid ||
+    !selectedPlan.selfServe ||
+    includedPlanAvailable ||
     Boolean(checkoutConfig?.coreReady && checkoutConfig.plans[selectedPlan.id]);
+  const enterpriseContactRequired = Boolean(
+    selectedPlan.contactSales && !includedPlanAvailable
+  );
+  const reviewActionLabel = provisioning
+    ? "Preparing Room…"
+    : includedPlanAvailable
+      ? "Create included Room"
+      : enterpriseContactRequired
+        ? "Contact Enterprise sales"
+        : selectedPlan.paid
+          ? "Continue to monthly checkout"
+          : "Create free Room";
+  const reviewBoundaryTitle = includedPlanAvailable
+    ? "This Room is included in your active subscription."
+    : enterpriseContactRequired
+      ? "Enterprise begins with a custom agreement and sales review."
+      : selectedPlan.paid
+        ? "Payment must complete before the paid Room exists."
+        : "The free Room will be created now.";
 
   function selectRoomModel(model: RoomModel) {
     setDraft((current) => ({
@@ -218,10 +254,77 @@ export default function NewRoomPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function provisionRoom() {
-    if (provisioning || !formIsValid) return;
+  function renderPlanCards(plans: RoomPlan[]) {
+  return plans.map((plan) => {
+    const selected = plan.id === draft.planId;
+    const included = Boolean(checkoutConfig?.includedPlans?.[plan.id]?.available);
+    const configured =
+      included ||
+      !plan.paid ||
+      !plan.selfServe ||
+      Boolean(checkoutConfig?.coreReady && checkoutConfig.plans[plan.id]);
+    const statusCopy = included
+      ? "Included Room available on your active subscription"
+      : plan.contactSales
+        ? "Custom agreement · Contact us"
+        : plan.paid
+          ? checkingCheckout
+            ? "Checking monthly checkout"
+            : configured
+              ? "Monthly Stripe checkout ready"
+              : "Checkout configuration incomplete"
+          : "No payment required";
 
-    if (selectedPlan.paid && !paidPlanReady) {
+    return (
+      <button
+        key={plan.id}
+        type="button"
+        aria-pressed={selected}
+        onClick={() => {
+          setDraft((current) => ({ ...current, planId: plan.id }));
+          setStatusMessage("");
+        }}
+        className={`rooms-v2-plan-card${selected ? " is-selected" : ""}`}
+      >
+        <div className="rooms-v2-plan-heading">
+          <div>
+            <strong>{plan.name}</strong>
+            <span>{plan.members}</span>
+          </div>
+          <b>{plan.price}</b>
+        </div>
+        <p>{plan.detail}</p>
+        <span className="rooms-v2-plan-note">{statusCopy}</span>
+        {selected ? (
+          <span className="rooms-v2-selected-mark">
+            <Check aria-hidden="true" size={13} />
+            Selected
+          </span>
+        ) : null}
+      </button>
+    );
+  });
+}
+
+async function provisionRoom() {
+  if (provisioning || !formIsValid) return;
+
+  if (enterpriseContactRequired) {
+    const params = new URLSearchParams({
+      organization: trimmedName,
+      useCase: trimmedDescription,
+      model: selectedModel.title,
+    });
+    window.location.assign(`/rooms/enterprise?${params.toString()}`);
+    return;
+  }
+
+  if (
+    selectedPlan.paid &&
+    selectedPlan.selfServe &&
+    !includedPlanAvailable &&
+    !paidPlanReady
+  ) {
       setStatusMessage(
         "This monthly Room plan is missing one or more Stripe or server settings. Review the Vercel environment configuration before checkout."
       );
@@ -312,8 +415,13 @@ export default function NewRoomPage() {
               <p className="rooms-v2-eyebrow">Review Room setup</p>
               <h1>Confirm the private workspace before creation.</h1>
               <p>
-                Free Rooms are created immediately. Paid monthly plans open Stripe Checkout,
-                and the Room is provisioned only after Stripe confirms an active subscription.
+                {enterpriseContactRequired
+        ? "Enterprise does not create a Room or open Stripe Checkout. Submit the sales inquiry to begin a custom agreement."
+        : includedPlanAvailable
+          ? "This Room is included in your active subscription and can be created without another checkout."
+          : selectedPlan.paid
+            ? "Paid monthly plans open Stripe Checkout, and the Room is provisioned only after Stripe confirms an active subscription."
+            : "The Free Room is created immediately with its owner membership."}
               </p>
             </div>
             <span className="rooms-v2-draft-badge">
@@ -335,7 +443,7 @@ export default function NewRoomPage() {
             </article>
 
             <article className="rooms-v2-review-card">
-              <p className="rooms-v2-eyebrow">Monthly plan</p>
+              <p className="rooms-v2-eyebrow">Room plan</p>
               <div className="rooms-v2-plan-heading">
                 <div>
                   <h2>{selectedPlan.name}</h2>
@@ -344,11 +452,15 @@ export default function NewRoomPage() {
                 <strong>{selectedPlan.price}</strong>
               </div>
               <p className="rooms-v2-plan-boundary">
-                {selectedPlan.paid
-                  ? paidPlanReady
-                    ? "Monthly Stripe checkout is configured for this plan. Annual Room billing is not offered yet."
-                    : "This plan is missing required Stripe or server configuration."
-                  : "No payment is required. The private Room opens after creation."}
+                {includedPlanAvailable
+        ? "No additional checkout is required for this included Room."
+        : enterpriseContactRequired
+          ? "Enterprise pricing and capacity are defined through a custom agreement."
+          : selectedPlan.paid
+            ? paidPlanReady
+              ? "Monthly Stripe checkout is configured for this plan. Annual Room billing is not offered yet."
+              : "This plan is missing required Stripe or server configuration."
+            : "No payment is required. The private Room opens after creation."}
               </p>
             </article>
           </section>
@@ -367,7 +479,7 @@ export default function NewRoomPage() {
               <span><ShieldCheck aria-hidden="true" size={22} /></span>
               <div>
                 <p className="rooms-v2-eyebrow">Provisioning boundary</p>
-                <h2>{selectedPlan.paid ? "Payment must complete before the paid Room exists." : "The free Room will be created now."}</h2>
+                <h2>{reviewBoundaryTitle}</h2>
               </div>
             </div>
             <div className="rooms-v2-boundary-review-list">
@@ -382,21 +494,25 @@ export default function NewRoomPage() {
             <button
               type="button"
               onClick={() => void provisionRoom()}
-              disabled={provisioning || (selectedPlan.paid && (!paidPlanReady || checkingCheckout))}
+              disabled={
+      provisioning ||
+      (selectedPlan.paid &&
+        selectedPlan.selfServe &&
+        !includedPlanAvailable &&
+        (!paidPlanReady || checkingCheckout))
+    }
               className="rooms-v2-button rooms-v2-button-primary"
             >
               {provisioning ? (
-                <Loader2 aria-hidden="true" size={16} className="is-spinning" />
-              ) : selectedPlan.paid ? (
-                <CreditCard aria-hidden="true" size={16} />
-              ) : (
-                <CheckCircle2 aria-hidden="true" size={16} />
-              )}
-              {provisioning
-                ? "Preparing Room…"
-                : selectedPlan.paid
-                  ? "Continue to monthly checkout"
-                  : "Create free Room"}
+      <Loader2 aria-hidden="true" size={16} className="is-spinning" />
+    ) : enterpriseContactRequired ? (
+      <LifeBuoy aria-hidden="true" size={16} />
+    ) : selectedPlan.paid ? (
+      <CreditCard aria-hidden="true" size={16} />
+    ) : (
+      <CheckCircle2 aria-hidden="true" size={16} />
+    )}
+    {reviewActionLabel}
             </button>
             <button
               type="button"
@@ -435,10 +551,10 @@ export default function NewRoomPage() {
         <section className="rooms-v2-builder-hero">
           <div>
             <p className="rooms-v2-eyebrow">Create a private Room</p>
-            <h1>Choose the group model, monthly plan, and private identity.</h1>
+            <h1>Choose the group model, Room plan, and private identity.</h1>
             <p>
               Your setup draft stays on this device until you create the Room. Free opens
-              immediately. Paid monthly plans continue through Stripe Checkout.
+    immediately. Self-service paid plans use Stripe Checkout, while Enterprise starts with a sales review.
             </p>
           </div>
           <span className="rooms-v2-draft-badge">
@@ -473,56 +589,33 @@ export default function NewRoomPage() {
               <div className="rooms-v2-step-heading">
                 <span>02</span>
                 <div>
-                  <p className="rooms-v2-eyebrow">Monthly plan</p>
+                  <p className="rooms-v2-eyebrow">Room plan</p>
                   <h2>Choose the Room size and operating scope.</h2>
-                  <p>Annual Room subscriptions can be added later. This release uses monthly Stripe prices only.</p>
+        <p>Self-service plans use monthly Stripe prices. Enterprise is sales-assisted and custom.</p>
                 </div>
               </div>
-              <div className="rooms-v2-plan-grid">
-                {ROOM_PLANS.map((plan) => {
-                  const selected = plan.id === draft.planId;
-                  const configured =
-                    !plan.paid ||
-                    Boolean(checkoutConfig?.coreReady && checkoutConfig.plans[plan.id]);
-
-                  return (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      aria-pressed={selected}
-                      onClick={() => {
-                        setDraft((current) => ({ ...current, planId: plan.id }));
-                        setStatusMessage("");
-                      }}
-                      className={`rooms-v2-plan-card${selected ? " is-selected" : ""}`}
-                    >
-                      <div className="rooms-v2-plan-heading">
-                        <div>
-                          <strong>{plan.name}</strong>
-                          <span>{plan.members}</span>
-                        </div>
-                        <b>{plan.price}</b>
-                      </div>
-                      <p>{plan.detail}</p>
-                      <span className="rooms-v2-plan-note">
-                        {plan.paid
-                          ? checkingCheckout
-                            ? "Checking monthly checkout"
-                            : configured
-                              ? "Monthly Stripe checkout ready"
-                              : "Checkout configuration incomplete"
-                          : "No payment required"}
-                      </span>
-                      {selected ? (
-                        <span className="rooms-v2-selected-mark">
-                          <Check aria-hidden="true" size={13} />
-                          Selected
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
+              <div className="rooms-v2-plan-segments">
+      <section className="rooms-v2-plan-segment">
+        <div className="rooms-v2-plan-segment-heading">
+          <div>
+            <span>Single-Room plans</span>
+            <h3>One private Room, scaled to the community.</h3>
+          </div>
+          <p>Choose Free, Starter, Pro, or Business based on the members and operating controls needed in one Room.</p>
+        </div>
+        <div className="rooms-v2-plan-grid">{renderPlanCards(SINGLE_ROOM_PLANS)}</div>
+      </section>
+      <section className="rooms-v2-plan-segment">
+        <div className="rooms-v2-plan-segment-heading">
+          <div>
+            <span>Organization plans</span>
+            <h3>Multiple Rooms under one subscription.</h3>
+          </div>
+          <p>Organization capacity is measured per Room. Enterprise begins with a custom agreement.</p>
+        </div>
+        <div className="rooms-v2-plan-grid">{renderPlanCards(ORGANIZATION_PLANS)}</div>
+      </section>
+    </div>
             </section>
 
             <section className="rooms-v2-builder-step">
@@ -590,7 +683,7 @@ export default function NewRoomPage() {
                   <dd>{selectedPlan.members}</dd>
                 </div>
                 <div>
-                  <dt>Monthly price</dt>
+                  <dt>Price</dt>
                   <dd>{selectedPlan.price}</dd>
                 </div>
                 <div>
@@ -615,7 +708,7 @@ export default function NewRoomPage() {
                 <li>No public Discussion is created</li>
                 <li>Free Rooms create the owner membership immediately</li>
                 <li>Paid Rooms are created only after Stripe confirms payment</li>
-                <li>Monthly billing only in this release</li>
+                <li>Self-service plans are monthly; Enterprise uses a custom agreement</li>
               </ul>
             </section>
           </aside>
