@@ -40,7 +40,11 @@ export async function POST(request: NextRequest) {
       (profile ?? null) as ProfileAccess | null
     );
     if (!enforcement.allowed) {
-      return jsonError(enforcement.errorMessage, 403, { code: enforcement.code });
+      return jsonError(
+        enforcement.errorMessage ?? "This account cannot change follow relationships.",
+        403,
+        { code: enforcement.code }
+      );
     }
 
     const body = await request.json().catch(() => ({}));
