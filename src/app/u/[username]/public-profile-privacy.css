@@ -1,0 +1,111 @@
+[data-public-profile-content] {
+  min-width: 0;
+}
+
+body:has([data-public-profile-privacy-state="checking"]) [data-public-profile-content],
+body:has([data-public-profile-privacy-state="limited"]) [data-public-profile-content] {
+  display: none !important;
+}
+
+.private-profile-gate {
+  min-height: calc(100vh - 8rem);
+  display: grid;
+  place-items: center;
+  background: var(--loombus-page-bg);
+  padding: 2rem 1rem 7rem;
+  color: var(--loombus-text);
+}
+
+.private-profile-card {
+  width: min(100%, 38rem);
+  border: 1px solid var(--loombus-border);
+  border-radius: 2rem;
+  background: var(--loombus-surface);
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.12);
+}
+
+.private-profile-lock {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  margin: 0 auto 1rem;
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--loombus-gold) 18%, transparent);
+  color: var(--loombus-gold);
+}
+
+.private-profile-lock svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.private-profile-eyebrow {
+  margin: 1rem 0 0;
+  color: var(--loombus-gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.private-profile-card h1 {
+  margin: 0.55rem 0 0;
+  font-size: clamp(2rem, 7vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.private-profile-handle {
+  margin: 0.7rem 0 0;
+  color: var(--loombus-text-muted);
+  font-weight: 700;
+}
+
+.private-profile-copy {
+  max-width: 31rem;
+  margin: 1.25rem auto 0;
+  color: var(--loombus-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.65rem;
+}
+
+.private-profile-follow {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 1.4rem;
+  border: 0;
+  border-radius: 1rem;
+  background: var(--loombus-gold-strong);
+  padding: 0.75rem 1.1rem;
+  color: var(--loombus-gold-contrast);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.private-profile-follow svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.private-profile-follow:disabled {
+  opacity: 0.6;
+}
+
+.private-profile-message {
+  margin: 0.9rem 0 0;
+  color: var(--loombus-text-muted);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .private-profile-card {
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+  }
+}
