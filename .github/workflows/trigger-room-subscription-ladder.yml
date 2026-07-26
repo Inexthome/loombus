@@ -52,10 +52,17 @@ jobs:
               '  const unitAmount = price?.unit_amount;\n  if (unitAmount === null || unitAmount === undefined) return null;',
               '  if (!price) return null;\n  const unitAmount = price.unit_amount;\n  if (unitAmount === null || unitAmount === undefined) return null;',
           )
-          script = script.replace(
-              '.map(planSummary),',
-              '.map((planKey) => planSummary(planKey)),',
+          map_patch = (
+              '\nreplace_once(\n'
+              '    management,\n'
+              "    '    availablePlans: (Object.keys(ROOM_PLAN_ENTITLEMENTS) as RoomPlanKey[]).map(planSummary),',\n"
+              "    '    availablePlans: (Object.keys(ROOM_PLAN_ENTITLEMENTS) as RoomPlanKey[]).map((planKey) => planSummary(planKey)),',\n"
+              ')\n'
           )
+          model_marker = '\nmodel = "src/app/rooms/rooms-v2-model.ts"'
+          if model_marker not in script:
+              raise RuntimeError('Room model patch marker is missing.')
+          script = script.replace(model_marker, map_patch + model_marker, 1)
 
           helper_start = script.index('def replace_once(')
           helper_end = script.index('\ndef replace_regex(', helper_start)
