@@ -101,7 +101,9 @@ function parseDraftBody(value: string | null | undefined): ParsedDraft {
   const firstBlock = parts[0] ?? "";
   const rest = parts.slice(1).join("\n\n");
   const metadataLines = firstBlock.split("\n").filter((line) => line.trim().length > 0);
-  const hasMetadata = metadataLines.length > 0 && metadataLines.every((line) => /^(Purpose|Mode|Tags):\s*/.test(line));
+  const hasMetadata =
+    metadataLines.length > 0 &&
+    metadataLines.every((line) => /^(Purpose|Mode|Tags):\s*/.test(line));
 
   if (!hasMetadata) {
     return { body: raw, purpose: "", mode: "open_discussion", tags: "" };
@@ -123,12 +125,31 @@ function parseDraftBody(value: string | null | undefined): ParsedDraft {
 
 function getReadiness(draft: DraftRow | null, parsed: ParsedDraft, tags: string[]) {
   const checks = [
-    { label: "Title is clear", done: (draft?.title?.trim().length ?? 0) >= 8, helper: "Use a title long enough to frame the signal." },
-    { label: "Topic is valid", done: isValidDiscussionTopic(draft?.topic), helper: "Choose a valid Loombus topic before publishing." },
-    { label: "Body has context", done: parsed.body.trim().length >= 40, helper: "Add enough context for useful replies." },
-    { label: "Mode is selected", done: Boolean(parsed.mode), helper: "Choose how the discussion should be structured." },
-    { label: "Framing reviewed", done: Boolean(parsed.purpose.trim() || draft?.reality_lens?.trim() || draft?.purpose_lane?.trim()), helper: "Add a purpose, reality lens, or purpose lane before publishing." },
-    { label: "Tags reviewed", done: tags.length <= 6, helper: "Keep tags focused. Six or fewer is recommended." },
+    {
+      label: "Title is clear",
+      done: (draft?.title?.trim().length ?? 0) >= 8,
+      helper: "Use a title long enough to frame the signal.",
+    },
+    {
+      label: "Topic is valid",
+      done: isValidDiscussionTopic(draft?.topic),
+      helper: "Choose a valid Loombus topic before publishing.",
+    },
+    {
+      label: "Body has context",
+      done: parsed.body.trim().length >= 40,
+      helper: "Add enough context for useful replies.",
+    },
+    {
+      label: "Mode is selected",
+      done: Boolean(parsed.mode),
+      helper: "Choose how the discussion should be structured.",
+    },
+    {
+      label: "Tags reviewed",
+      done: tags.length <= 6,
+      helper: "Keep tags focused. Six or fewer is recommended.",
+    },
   ];
   const completed = checks.filter((check) => check.done).length;
   return { checks, completed, total: checks.length, ready: completed === checks.length };
@@ -183,7 +204,11 @@ export default function CreateReviewClientPage() {
 
         if (localDraft) {
           setDraft(localDraft);
-          setMessage(response.ok ? "Using your local draft." : "Server draft storage is unavailable. Using your local draft.");
+          setMessage(
+            response.ok
+              ? "Using your local draft."
+              : "Server draft storage is unavailable. Using your local draft."
+          );
           setAcknowledged(false);
           return;
         }
@@ -219,7 +244,9 @@ export default function CreateReviewClientPage() {
       tags.length > 0 ? `Tags: ${tags.join(", ")}` : null,
       "",
       parsed.body.trim() || "No body text yet.",
-    ].filter(Boolean).join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     await navigator.clipboard.writeText(reviewText);
     setCopyMessage("Draft copied.");
@@ -232,7 +259,7 @@ export default function CreateReviewClientPage() {
       return;
     }
     if (!publishPrepared) {
-      setPublishMessage("Review the checks and confirm the acknowledgment before publishing.");
+      setPublishMessage("Review the required checks and confirm the acknowledgment before publishing.");
       return;
     }
 
@@ -247,7 +274,10 @@ export default function CreateReviewClientPage() {
     try {
       const response = await fetch("/api/discussions/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           title: draft.title ?? "",
           topic: draft.topic ?? "",
@@ -269,7 +299,10 @@ export default function CreateReviewClientPage() {
       if (!isLocalDraft) {
         await fetch("/api/discussion-drafts", {
           method: "DELETE",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({ draftId: draft.id }),
         }).catch(() => null);
       }
@@ -287,7 +320,9 @@ export default function CreateReviewClientPage() {
     return (
       <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 py-10 text-[var(--loombus-text)]">
         <section className="mx-auto max-w-3xl rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6">
-          <p className="text-sm font-semibold text-[var(--loombus-text-muted)]">Loading draft review...</p>
+          <p className="text-sm font-semibold text-[var(--loombus-text-muted)]">
+            Loading draft review...
+          </p>
         </section>
       </main>
     );
@@ -297,67 +332,188 @@ export default function CreateReviewClientPage() {
     <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[var(--loombus-text)] sm:px-6 lg:px-8">
       <section className="mx-auto max-w-6xl">
         <header className="mb-6 rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-6">
-          <Link href="/create" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]">
+          <Link
+            href="/create"
+            className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-[var(--loombus-text-muted)] transition hover:text-[var(--loombus-text)]"
+          >
             <ArrowLeft className="size-4" />
             Back to Create
           </Link>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--loombus-text-subtle)]">Loombus Review</p>
-          <h1 className="mt-2 text-4xl font-black tracking-tight text-[var(--loombus-text)] sm:text-5xl">Review before publishing.</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--loombus-text-muted)] sm:text-base">Review your autosaved draft, confirm the checks, and publish it to the discussion feed.</p>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--loombus-text-subtle)]">
+            Loombus Review
+          </p>
+          <h1 className="mt-2 text-4xl font-black tracking-tight text-[var(--loombus-text)] sm:text-5xl">
+            Review before publishing.
+          </h1>
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--loombus-text-muted)] sm:text-base">
+            Review your autosaved draft, confirm the required checks, and publish it to the discussion feed. A separate discussion purpose is optional.
+          </p>
         </header>
 
-        {message && <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">{message}</div>}
-        {publishMessage && <div className="mb-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm font-medium text-[var(--loombus-text-muted)]">{publishMessage}</div>}
+        {message && (
+          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+            {message}
+          </div>
+        )}
+        {publishMessage && (
+          <div className="mb-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm font-medium text-[var(--loombus-text-muted)]">
+            {publishMessage}
+          </div>
+        )}
 
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm sm:p-6">
             {!draft || !hasDraftContent ? (
-              <div className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-6 text-[var(--loombus-text-muted)]">No draft is ready to review yet. Return to Create and start a draft first.</div>
+              <div className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-6 text-[var(--loombus-text-muted)]">
+                No draft is ready to review yet. Return to Create and start a draft first.
+              </div>
             ) : (
               <>
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-800">{draft.topic?.trim() || "No topic selected"}</span>
-                  <span className="text-xs text-[var(--loombus-text-subtle)]">Saved {formatDraftTime(draft.updated_at)}</span>
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-800">
+                    {draft.topic?.trim() || "No topic selected"}
+                  </span>
+                  <span className="text-xs text-[var(--loombus-text-subtle)]">
+                    Saved {formatDraftTime(draft.updated_at)}
+                  </span>
                 </div>
-                <h2 className="text-3xl font-black tracking-tight text-[var(--loombus-text)]">{draft.title?.trim() || "Untitled discussion"}</h2>
+                <h2 className="text-3xl font-black tracking-tight text-[var(--loombus-text)]">
+                  {draft.title?.trim() || "Untitled discussion"}
+                </h2>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-[var(--loombus-text-muted)]">
-                  <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1">{getModeLabel(parsed.mode)}</span>
-                  {draft.reality_lens && <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700">Reality Lens: {draft.reality_lens}</span>}
-                  {draft.purpose_lane && <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">Purpose Lane: {draft.purpose_lane}</span>}
-                  {tags.map((tag) => <span key={tag} className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1">#{tag}</span>)}
+                  <span className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1">
+                    {getModeLabel(parsed.mode)}
+                  </span>
+                  {draft.reality_lens && (
+                    <span className="rounded-full bg-violet-50 px-3 py-1 text-violet-700">
+                      Reality Lens: {draft.reality_lens}
+                    </span>
+                  )}
+                  {draft.purpose_lane && (
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                      Purpose Lane: {draft.purpose_lane}
+                    </span>
+                  )}
+                  {tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-1"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
                 </div>
-                {parsed.purpose && <div className="mt-5 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><span className="font-bold">Purpose: </span>{parsed.purpose}</div>}
-                <div className="mt-6 whitespace-pre-wrap rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-5 text-base leading-8 text-[var(--loombus-text-muted)]">{parsed.body.trim() || "No body text yet."}</div>
+                {parsed.purpose && (
+                  <div className="mt-5 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                    <span className="font-bold">Optional purpose: </span>
+                    {parsed.purpose}
+                  </div>
+                )}
+                <div className="mt-6 whitespace-pre-wrap rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-5 text-base leading-8 text-[var(--loombus-text-muted)]">
+                  {parsed.body.trim() || "No body text yet."}
+                </div>
               </>
             )}
           </article>
 
           <aside className="space-y-4">
             <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
-              <div className="flex items-center gap-3"><Send className="size-5 text-amber-700" /><h2 className="font-black text-[var(--loombus-text)]">Publish preparation</h2></div>
-              <div className="mt-4 space-y-2">
-                {readiness.checks.map((check) => <div key={check.label} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-sm"><div className="flex items-center justify-between gap-3"><span className="font-semibold text-[var(--loombus-text)]">{check.label}</span><span className={check.done ? "text-emerald-600" : "text-amber-700"}>{check.done ? "Ready" : "Needed"}</span></div>{!check.done && <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">{check.helper}</p>}</div>)}
+              <div className="flex items-center gap-3">
+                <Send className="size-5 text-amber-700" />
+                <h2 className="font-black text-[var(--loombus-text)]">Publish preparation</h2>
               </div>
-              <label className="mt-4 flex items-start gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 text-sm text-[var(--loombus-text-muted)]"><input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} className="mt-1 size-4 accent-amber-500" /><span>I reviewed this draft and understand it will publish to the live discussion feed.</span></label>
-              <button type="button" onClick={publishDraft} disabled={!publishPrepared || publishing} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-[var(--loombus-surface-muted)] disabled:text-[var(--loombus-text-subtle)] disabled:opacity-80">
+              <div className="mt-4 space-y-2">
+                {readiness.checks.map((check) => (
+                  <div
+                    key={check.label}
+                    className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 py-2 text-sm"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold text-[var(--loombus-text)]">{check.label}</span>
+                      <span className={check.done ? "text-emerald-600" : "text-amber-700"}>
+                        {check.done ? "Ready" : "Needed"}
+                      </span>
+                    </div>
+                    {!check.done && (
+                      <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">
+                        {check.helper}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <label className="mt-4 flex items-start gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 text-sm text-[var(--loombus-text-muted)]">
+                <input
+                  type="checkbox"
+                  checked={acknowledged}
+                  onChange={(event) => setAcknowledged(event.target.checked)}
+                  className="mt-1 size-4 accent-amber-500"
+                />
+                <span>
+                  I reviewed this draft and understand it will publish to the live discussion feed.
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={publishDraft}
+                disabled={!publishPrepared || publishing}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 py-3 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:bg-[var(--loombus-surface-muted)] disabled:text-[var(--loombus-text-subtle)] disabled:opacity-80"
+              >
                 {publishing ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-                {publishing ? "Publishing..." : publishPrepared ? "Publish live discussion" : "Complete review to publish"}
+                {publishing
+                  ? "Publishing..."
+                  : publishPrepared
+                    ? "Publish live discussion"
+                    : "Complete review to publish"}
               </button>
             </section>
 
             <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
-              <div className="flex items-center gap-3"><CheckCircle2 className="size-5 text-amber-700" /><h2 className="font-black text-[var(--loombus-text)]">Readiness summary</h2></div>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--loombus-surface-muted)]"><div className="h-full rounded-full" style={{ width: `${Math.round((readiness.completed / readiness.total) * 100)}%`, backgroundColor: LOOMBUS_GOLD }} /></div>
-              <p className="mt-3 text-sm text-[var(--loombus-text-muted)]">{readiness.completed} of {readiness.total} checks ready.</p>
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="size-5 text-amber-700" />
+                <h2 className="font-black text-[var(--loombus-text)]">Readiness summary</h2>
+              </div>
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--loombus-surface-muted)]">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.round((readiness.completed / readiness.total) * 100)}%`,
+                    backgroundColor: LOOMBUS_GOLD,
+                  }}
+                />
+              </div>
+              <p className="mt-3 text-sm text-[var(--loombus-text-muted)]">
+                {readiness.completed} of {readiness.total} required checks ready.
+              </p>
             </section>
 
             <section className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-sm">
-              <div className="flex items-center gap-3"><FileText className="size-5 text-amber-700" /><h2 className="font-black text-[var(--loombus-text)]">Actions</h2></div>
-              <div className="mt-4 flex flex-col gap-3">
-                <button type="button" onClick={copyReviewDraft} disabled={!draft || !hasDraftContent} className="inline-flex appearance-none items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"><ClipboardCopy className="size-4" />Copy review draft</button>
-                <Link href="/create" className="rounded-2xl border border-[var(--loombus-border)] px-4 py-2 text-center text-sm font-semibold text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]">Edit draft</Link>
+              <div className="flex items-center gap-3">
+                <FileText className="size-5 text-amber-700" />
+                <h2 className="font-black text-[var(--loombus-text)]">Actions</h2>
               </div>
-              {copyMessage && <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">{copyMessage}</p>}
+              <div className="mt-4 flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={copyReviewDraft}
+                  disabled={!draft || !hasDraftContent}
+                  className="inline-flex appearance-none items-center justify-center gap-2 rounded-2xl border border-amber-300 bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ClipboardCopy className="size-4" />
+                  Copy review draft
+                </button>
+                <Link
+                  href="/create"
+                  className="rounded-2xl border border-[var(--loombus-border)] px-4 py-2 text-center text-sm font-semibold text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+                >
+                  Edit draft
+                </Link>
+              </div>
+              {copyMessage && (
+                <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">
+                  {copyMessage}
+                </p>
+              )}
             </section>
           </aside>
         </section>
