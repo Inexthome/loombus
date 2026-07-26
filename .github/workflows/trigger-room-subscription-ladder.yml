@@ -43,6 +43,47 @@ jobs:
           run_end = source.index(end_marker, run_start)
           lines = source[run_start:run_end].splitlines()
           script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+
+          helper_start = script.index('def replace_once(')
+          helper_end = script.index('\ndef replace_regex(', helper_start)
+          hardened_helpers = '''def _match_candidates(old: str) -> list[str]:
+              candidates = [old]
+              lines = old.split("\\n")
+              if len(lines) > 1:
+                  shifted = "\\n".join(
+                      [lines[0], *[("  " + line) if line else line for line in lines[1:]]]
+                  )
+                  if shifted != old:
+                      candidates.append(shifted)
+              return candidates
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              value = read(path)
+              observed: list[int] = []
+              for candidate in _match_candidates(old):
+                  count = value.count(candidate)
+                  observed.append(count)
+                  if count == 1:
+                      write(path, value.replace(candidate, new, 1))
+                      return
+              raise RuntimeError(
+                  f"{path}: expected one exact or shifted match, found {observed}: {old[:100]!r}"
+              )
+
+          def replace_count(path: str, old: str, new: str, expected: int) -> None:
+              value = read(path)
+              observed: list[int] = []
+              for candidate in _match_candidates(old):
+                  count = value.count(candidate)
+                  observed.append(count)
+                  if count == expected:
+                      write(path, value.replace(candidate, new))
+                      return
+              raise RuntimeError(
+                  f"{path}: expected {expected} exact or shifted matches, found {observed}: {old[:100]!r}"
+              )
+          '''
+          script = script[:helper_start] + hardened_helpers + script[helper_end:]
           Path('/tmp/apply-room-subscription-ladder.sh').write_text(script, encoding='utf-8')
           PY
           set +e
