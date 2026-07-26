@@ -1,5 +1,5 @@
 import { DiscussionAudienceSettingsBridge } from "@/components/discussion-audience-settings-bridge";
-import { MemberPrivacySettingsBridge } from "@/components/member-privacy-settings-bridge";
+import { MemberPrivacySettingsMount } from "@/components/member-privacy-settings-mount";
 import { SettingsWorkspaceController } from "@/components/settings-workspace-controller";
 import { SubscriptionSettingsBridge } from "@/components/subscription-settings-bridge";
 import SettingsV2Client from "./settings-v2-client";
@@ -16,7 +16,7 @@ export default function SettingsPage() {
       <SettingsV2Client />
       <SettingsWorkspaceController />
       <DiscussionAudienceSettingsBridge />
-      <MemberPrivacySettingsBridge />
+      <MemberPrivacySettingsMount />
       <SubscriptionSettingsBridge />
     </>
   );
