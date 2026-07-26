@@ -36,12 +36,12 @@ function copyResponseCookies(source: NextResponse, target: NextResponse) {
   return target;
 }
 
-function redirectToAppHome(request: NextRequest, response: NextResponse) {
-  const homeUrl = request.nextUrl.clone();
-  homeUrl.pathname = "/home";
-  homeUrl.search = "";
+function redirectToDefaultAppLanding(request: NextRequest, response: NextResponse) {
+  const discussionsUrl = request.nextUrl.clone();
+  discussionsUrl.pathname = "/discussions";
+  discussionsUrl.search = "";
 
-  return copyResponseCookies(response, NextResponse.redirect(homeUrl));
+  return copyResponseCookies(response, NextResponse.redirect(discussionsUrl));
 }
 
 function redirectToLogin(request: NextRequest) {
@@ -99,7 +99,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (pathname === "/") {
-    return !error && user ? redirectToAppHome(request, response) : response;
+    return !error && user ? redirectToDefaultAppLanding(request, response) : response;
   }
 
   if (!isProtectedPath(pathname)) {
