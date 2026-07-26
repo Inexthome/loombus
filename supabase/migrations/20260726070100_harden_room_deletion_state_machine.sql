@@ -1,7 +1,54 @@
--- Final authorization and retention hardening for the Room deletion state machine.
--- Apply immediately after 20260726070000_room_deletion_state_machine.sql.
+-- Final authorization, retention, and Storage-race hardening for the Room
+-- deletion state machine. Apply immediately after
+-- 20260726070000_room_deletion_state_machine.sql.
 
 begin;
+
+alter table public.room_deletion_jobs
+  add column if not exists storage_quiet_until timestamptz;
+
+update public.room_deletion_jobs
+set storage_quiet_until = coalesce(started_at, created_at, now()) + interval '24 hours'
+where storage_quiet_until is null;
+
+alter table public.room_deletion_jobs
+  alter column storage_quiet_until set default (now() + interval '24 hours'),
+  alter column storage_quiet_until set not null;
+
+-- Legacy post attachments were uploaded directly by authenticated Room members.
+-- Keep that path available only while the owning Room is active. This prevents
+-- new direct uploads after a deletion job changes the Room to `deleting`.
+drop policy if exists "Room members can upload post files" on storage.objects;
+create policy "Room members can upload post files"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'room-post-attachments'
+  and owner = auth.uid()
+  and exists (
+    select 1
+    from public.rooms room
+    where room.id = ((storage.foldername(name))[1])::uuid
+      and coalesce(room.status, 'active') = 'active'
+      and (
+        room.owner_id = auth.uid()
+        or room.created_by = auth.uid()
+        or exists (
+          select 1
+          from public.room_members member
+          where member.room_id = room.id
+            and member.user_id = auth.uid()
+            and coalesce(member.status, 'active')
+              not in ('blocked', 'removed', 'inactive')
+            and (
+              member.suspended_until is null
+              or member.suspended_until <= now()
+            )
+        )
+      )
+  )
+);
 
 create or replace function public.room_deletion_owner_matches(
   acting_owner_id uuid,
@@ -179,7 +226,8 @@ begin
     previous_room_status,
     status,
     room_snapshot,
-    preflight_snapshot
+    preflight_snapshot,
+    storage_quiet_until
   )
   values (
     room_record.id,
@@ -197,7 +245,8 @@ begin
       'createdAt', room_record.created_at,
       'deletionScheduledFor', room_record.deletion_scheduled_for
     ),
-    coalesce(billing_preflight, '{}'::jsonb)
+    coalesce(billing_preflight, '{}'::jsonb),
+    now() + interval '24 hours'
   )
   returning id into inserted_job_id;
 
@@ -333,6 +382,18 @@ begin
       message = 'Storage must be fully reconciled before final Room deletion.';
   end if;
 
+  if job_record.storage_quiet_until > now() then
+    raise exception using
+      errcode = 'P0001',
+      message = 'The Storage upload quiet period has not ended.';
+  end if;
+
+  if job_record.reconciled_at < job_record.storage_quiet_until then
+    raise exception using
+      errcode = 'P0001',
+      message = 'Storage must be reconciled again after the upload quiet period.';
+  end if;
+
   if not public.room_deletion_billing_preflight_is_current(
     job_record.preflight_snapshot
   ) then
@@ -350,6 +411,36 @@ begin
     raise exception using
       errcode = 'P0001',
       message = 'Undeleted Storage objects still remain in the manifest.';
+  end if;
+
+  -- Verify every manifest path directly against Storage at finalization time.
+  if exists (
+    select 1
+    from public.room_deletion_objects deletion_object
+    join storage.objects stored_object
+      on stored_object.bucket_id = deletion_object.bucket_id
+     and stored_object.name = deletion_object.object_path
+    where deletion_object.job_id = target_job_id
+  ) then
+    raise exception using
+      errcode = 'P0001',
+      message = 'A manifest Storage object still exists.';
+  end if;
+
+  -- Catch orphaned or newly recreated objects under both confirmed Room-owned
+  -- bucket prefixes, even when no metadata row exists.
+  if exists (
+    select 1
+    from storage.objects stored_object
+    where stored_object.bucket_id in ('room-resources', 'room-post-attachments')
+      and (
+        stored_object.name = job_record.room_id::text
+        or stored_object.name like job_record.room_id::text || '/%'
+      )
+  ) then
+    raise exception using
+      errcode = 'P0001',
+      message = 'Room-prefixed Storage objects still exist.';
   end if;
 
   select *
@@ -481,5 +572,33 @@ grant execute on function public.refresh_room_deletion_billing_preflight(uuid, u
   to service_role;
 grant execute on function public.finalize_room_deletion_job(uuid, uuid)
   to service_role;
+
+do $$
+declare
+  quiet_column_nullable text;
+begin
+  select column_value.is_nullable
+  into quiet_column_nullable
+  from information_schema.columns column_value
+  where column_value.table_schema = 'public'
+    and column_value.table_name = 'room_deletion_jobs'
+    and column_value.column_name = 'storage_quiet_until';
+
+  if quiet_column_nullable is distinct from 'NO' then
+    raise exception 'room_deletion_jobs.storage_quiet_until must be NOT NULL.';
+  end if;
+
+  if not exists (
+    select 1
+    from pg_catalog.pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and policyname = 'Room members can upload post files'
+      and cmd = 'INSERT'
+  ) then
+    raise exception 'The active-Room post-file upload policy is missing.';
+  end if;
+end
+$$;
 
 commit;
