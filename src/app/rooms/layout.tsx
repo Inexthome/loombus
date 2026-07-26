@@ -17,6 +17,7 @@ import "./room-expansion-hardening.css";
 import "./room-core-list-hardening.css";
 import "./room-foundation-operations-hardening.css";
 import "./room-shell-v3.css";
+import "./room-content-overflow-hardening.css";
 
 export default function RoomsLayout({
   children,
