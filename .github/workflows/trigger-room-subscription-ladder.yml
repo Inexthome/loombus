@@ -28,6 +28,7 @@ jobs:
           cache: npm
 
       - name: Extract and apply the approved implementation
+        id: apply_patch
         shell: bash
         run: |
           python - <<'PY'
@@ -44,7 +45,19 @@ jobs:
           script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
           Path('/tmp/apply-room-subscription-ladder.sh').write_text(script, encoding='utf-8')
           PY
-          bash /tmp/apply-room-subscription-ladder.sh
+          set +e
+          bash /tmp/apply-room-subscription-ladder.sh > /tmp/room-ladder-apply.log 2>&1
+          status=$?
+          cat /tmp/room-ladder-apply.log
+          exit "$status"
+
+      - name: Upload patch diagnostic
+        if: failure() && steps.apply_patch.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: room-ladder-patch-diagnostic
+          path: /tmp/room-ladder-apply.log
+          retention-days: 1
 
       - name: Install locked dependencies
         run: npm ci --silent
