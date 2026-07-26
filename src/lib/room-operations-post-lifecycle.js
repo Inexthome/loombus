@@ -8,6 +8,12 @@ function paidAndActive(access) {
   );
 }
 
+function permanentDeletionEnabled() {
+  return (
+    process.env.ROOM_PERMANENT_DELETION_ENABLED?.trim().toLowerCase() === "true"
+  );
+}
+
 async function organizationPolicy(service, access) {
   const organizationId = asString(access.rawRoom.organization_id);
   if (!organizationId) return { legalHold: false, retentionDays: 0 };
@@ -140,6 +146,13 @@ export async function handleLifecycleAction(ctx, body, action) {
   if (action === "delete_now") {
     if (!access.isOwner) {
       return error("Only the Room owner can permanently delete this Room.", 403);
+    }
+    if (!permanentDeletionEnabled()) {
+      return error(
+        "Permanent Room deletion is temporarily paused for safety hardening.",
+        503,
+        "room_permanent_deletion_paused"
+      );
     }
     const policy = await organizationPolicy(service, access);
     if (policy.error) return error(policy.error, 503);
