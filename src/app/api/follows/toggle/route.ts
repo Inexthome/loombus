@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createNotification } from "@/lib/notifications";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import {
+  createMemberPrivacyServiceClient,
+  getMemberPrivacy,
+  hasBlockRelationship,
+  requireMemberUser,
+} from "@/lib/member-privacy-server";
 
 type ProfileAccess = {
   account_status: string | null;
@@ -10,36 +15,22 @@ type ProfileAccess = {
 };
 
 const ACTION_COOLDOWN_SECONDS = 5;
-
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+function jsonError(message: string, status: number, extras: Record<string, unknown> = {}) {
+  return NextResponse.json({ error: message, ...extras }, { status });
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: request.headers.get("Authorization") ?? "",
-          },
-        },
-      }
-    );
+    const service = createMemberPrivacyServiceClient();
+    if (!service) return jsonError("Follow service is not configured.", 503);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { user } = await requireMemberUser(request);
+    if (!user) return jsonError("Unauthorized.", 401);
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized." },
-        { status: 401 }
-      );
-    }
-
-    const { data: profile } = await supabase
+    const { data: profile } = await service
       .from("profiles")
       .select("account_status, enforcement_reason, suspended_until")
       .eq("id", user.id)
@@ -48,47 +39,26 @@ export async function POST(request: NextRequest) {
     const enforcement = getAccountEnforcementResult(
       (profile ?? null) as ProfileAccess | null
     );
-
     if (!enforcement.allowed) {
-      return NextResponse.json(
-        {
-          error: enforcement.errorMessage,
-          code: enforcement.code,
-        },
-        { status: 403 }
-      );
+      return jsonError(enforcement.errorMessage, 403, { code: enforcement.code });
     }
 
-    const body = await request.json();
-
+    const body = await request.json().catch(() => ({}));
     const targetUserId = String(body.targetUserId ?? "").trim();
+    if (!UUID_PATTERN.test(targetUserId)) return jsonError("Invalid target user id.", 400);
+    if (user.id === targetUserId) return jsonError("You cannot follow yourself.", 400);
 
-    if (!targetUserId) {
-      return NextResponse.json(
-        { error: "Missing target user id." },
-        { status: 400 }
-      );
-    }
-
-    if (!UUID_PATTERN.test(targetUserId)) {
-      return NextResponse.json(
-        { error: "Invalid target user id." },
-        { status: 400 }
-      );
-    }
-
-    if (user.id === targetUserId) {
-      return NextResponse.json(
-        { error: "You cannot follow yourself." },
-        { status: 400 }
-      );
-    }
+    const { data: targetProfile } = await service
+      .from("profiles")
+      .select("id, account_status")
+      .eq("id", targetUserId)
+      .maybeSingle();
+    if (!targetProfile) return jsonError("Member not found.", 404);
 
     const cooldownSince = new Date(
       Date.now() - ACTION_COOLDOWN_SECONDS * 1000
     ).toISOString();
-
-    const { data: recentAction } = await supabase
+    const { data: recentAction } = await service
       .from("action_rate_events")
       .select("id")
       .eq("user_id", user.id)
@@ -98,110 +68,122 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (recentAction) {
-      return NextResponse.json(
-        { error: "Please wait before changing follow status again." },
-        { status: 429 }
-      );
+      return jsonError("Please wait before changing follow status again.", 429);
     }
 
-    await supabase.from("action_rate_events").insert({
+    await service.from("action_rate_events").insert({
       user_id: user.id,
       action_key: "follow_toggle",
       target_id: targetUserId,
     });
 
-
-    const { data: viewerBlock } = await supabase
-      .from("user_blocks")
-      .select("id")
-      .eq("blocker_id", user.id)
-      .eq("blocked_id", targetUserId)
-      .maybeSingle();
-
-    if (viewerBlock) {
-      return NextResponse.json(
-        { error: "Unblock this member before following them." },
-        { status: 403 }
-      );
+    if (await hasBlockRelationship(service, user.id, targetUserId)) {
+      return jsonError("This follow relationship is unavailable.", 403);
     }
 
-    const { data: targetBlock } = await supabase
-      .from("user_blocks")
-      .select("id")
-      .eq("blocker_id", targetUserId)
-      .eq("blocked_id", user.id)
-      .maybeSingle();
-
-    if (targetBlock) {
-      return NextResponse.json(
-        { error: "You cannot follow this member." },
-        { status: 403 }
-      );
-    }
-
-    const { data: existingFollow } = await supabase
-      .from("follows")
-      .select("*")
-      .eq("follower_id", user.id)
-      .eq("following_id", targetUserId)
-      .maybeSingle();
+    const [{ data: existingFollow }, { data: pendingRequest }] = await Promise.all([
+      service
+        .from("follows")
+        .select("id")
+        .eq("follower_id", user.id)
+        .eq("following_id", targetUserId)
+        .maybeSingle(),
+      service
+        .from("follow_requests")
+        .select("id")
+        .eq("requester_id", user.id)
+        .eq("target_id", targetUserId)
+        .eq("status", "pending")
+        .maybeSingle(),
+    ]);
 
     if (existingFollow) {
-      await supabase
+      const { error: deleteError } = await service
         .from("follows")
         .delete()
         .eq("follower_id", user.id)
         .eq("following_id", targetUserId);
+      if (deleteError) return jsonError(deleteError.message, 500);
+
+      if (pendingRequest) {
+        await service
+          .from("follow_requests")
+          .update({ status: "cancelled", responded_at: new Date().toISOString() })
+          .eq("id", pendingRequest.id);
+      }
+
+      return NextResponse.json({ following: false, requested: false });
+    }
+
+    const targetPrivacy = await getMemberPrivacy(service, targetUserId);
+    if (targetPrivacy.private_account) {
+      if (pendingRequest) {
+        const { error: cancelError } = await service
+          .from("follow_requests")
+          .update({ status: "cancelled", responded_at: new Date().toISOString() })
+          .eq("id", pendingRequest.id)
+          .eq("status", "pending");
+        if (cancelError) return jsonError(cancelError.message, 500);
+        return NextResponse.json({ following: false, requested: false });
+      }
+
+      const { data: requestRow, error: requestError } = await service
+        .from("follow_requests")
+        .insert({ requester_id: user.id, target_id: targetUserId, status: "pending" })
+        .select("id")
+        .single();
+      if (requestError) return jsonError(requestError.message, 500);
+
+      const { data: preferences } = await service
+        .from("notification_preferences")
+        .select("follows_enabled")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+
+      if (preferences?.follows_enabled ?? true) {
+        await createNotification({
+          user_id: targetUserId,
+          actor_id: user.id,
+          type: "follow_request",
+          target_type: "profile",
+          target_id: user.id,
+          message: "Someone requested to follow you.",
+        }).catch(() => null);
+      }
 
       return NextResponse.json({
         following: false,
+        requested: true,
+        followRequestId: requestRow.id,
       });
     }
 
-    const { error: followError } = await supabase.from("follows").insert({
+    const { error: followError } = await service.from("follows").insert({
       follower_id: user.id,
       following_id: targetUserId,
     });
+    if (followError) return jsonError(followError.message, 500);
 
-    if (followError) {
-      return NextResponse.json(
-        { error: followError.message },
-        { status: 500 }
-      );
-    }
-
-    const { data: preferences } = await supabase
+    const { data: preferences } = await service
       .from("notification_preferences")
       .select("follows_enabled")
       .eq("user_id", targetUserId)
       .maybeSingle();
 
-    const followsEnabled = preferences?.follows_enabled ?? true;
-
-    if (followsEnabled) {
-      const { error: notificationError } = await createNotification({
+    if (preferences?.follows_enabled ?? true) {
+      await createNotification({
         user_id: targetUserId,
         actor_id: user.id,
         type: "follow",
         target_type: "profile",
         target_id: user.id,
         message: "Someone followed you.",
-      });
-
-      if (notificationError) {
-        console.error("Follow notification failed:", notificationError.message);
-      }
+      }).catch(() => null);
     }
 
-    return NextResponse.json({
-      following: true,
-    });
+    return NextResponse.json({ following: true, requested: false });
   } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      { error: "Unexpected server error." },
-      { status: 500 }
-    );
+    console.error("Follow toggle failed:", error);
+    return jsonError("Unexpected server error.", 500);
   }
 }
