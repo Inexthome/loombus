@@ -1,3 +1,4 @@
+import { ProfileViewersPanel } from "@/components/profile-viewers-panel";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import "./profile-v2-shell.css";
@@ -54,7 +55,10 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
           </article>
         </section>
 
-        <div className="profile-v2-content">{children}</div>
+        <div className="profile-v2-content">
+          {children}
+          <ProfileViewersPanel />
+        </div>
       </div>
     </div>
   );
