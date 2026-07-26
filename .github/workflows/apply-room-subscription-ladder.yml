@@ -1,0 +1,1606 @@
+name: Apply Room subscription ladder refresh
+
+on:
+  push:
+    branches:
+      - agent/room-subscription-ladder-refresh
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/room-subscription-ladder-refresh
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply approved Room subscription ladder
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import textwrap
+
+          def read(path: str) -> str:
+              return Path(path).read_text(encoding="utf-8")
+
+          def write(path: str, value: str) -> None:
+              target = Path(path)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(value, encoding="utf-8")
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              value = read(path)
+              count = value.count(old)
+              if count != 1:
+                  raise RuntimeError(f"{path}: expected one exact match, found {count}: {old[:100]!r}")
+              write(path, value.replace(old, new, 1))
+
+          def replace_count(path: str, old: str, new: str, expected: int) -> None:
+              value = read(path)
+              count = value.count(old)
+              if count != expected:
+                  raise RuntimeError(f"{path}: expected {expected} matches, found {count}: {old[:100]!r}")
+              write(path, value.replace(old, new))
+
+          def replace_regex(path: str, pattern: str, new: str, expected: int = 1) -> None:
+              value = read(path)
+              updated, count = re.subn(pattern, new, value, flags=re.S)
+              if count != expected:
+                  raise RuntimeError(f"{path}: expected {expected} regex matches, found {count}: {pattern}")
+              write(path, updated)
+
+          entitlements = "src/lib/room-plan-entitlements.ts"
+          replace_once(
+              entitlements,
+              '  | "pro"\n  | "organization"',
+              '  | "pro"\n  | "business"\n  | "organization"',
+          )
+          replace_once(
+              entitlements,
+              'const ORGANIZATION_MODULES: RoomModuleKey[] = [',
+              '''const BUSINESS_MODULES: RoomModuleKey[] = [
+            ...PRO_MODULES,
+            "activity",
+            "advanced-controls",
+            "high-capacity",
+          ];
+
+          const ORGANIZATION_MODULES: RoomModuleKey[] = [''',
+          )
+          replace_once(
+              entitlements,
+              '''  organization: {
+            id: "organization",''',
+              '''  business: {
+            id: "business",
+            label: "Room Business",
+            roomLimit: 1,
+            memberLimit: 750,
+            fileUploads: true,
+            inlineVideo: true,
+            maxFileBytes: 250 * MIB,
+            storageBytes: 50 * GIB,
+            modules: BUSINESS_MODULES,
+            features: [
+              "Everything in Room Pro",
+              "One high-capacity private Room",
+              "Up to 750 members",
+              "Activity and audit history",
+              "Advanced Room controls and admission workflows",
+              "High-capacity member operations",
+              "250 MB maximum per upload",
+              "50 GB Room resource storage",
+            ],
+          },
+          organization: {
+            id: "organization",''',
+          )
+
+          billing = "src/lib/room-billing.ts"
+          replace_regex(
+              billing,
+              r'export const PAID_ROOM_PLANS = \{.*?\n\} as const;',
+              '''export const PAID_ROOM_PLANS = {
+            starter: {
+              label: "Loombus Room Starter",
+              priceLabel: "$19/month",
+              priceEnvVar: "STRIPE_ROOM_STARTER_MONTHLY_PRICE_ID",
+              memberLimit: 50,
+              selfServe: true,
+            },
+            pro: {
+              label: "Loombus Room Pro",
+              priceLabel: "$49/month",
+              priceEnvVar: "STRIPE_ROOM_PRO_MONTHLY_PRICE_ID",
+              memberLimit: 250,
+              selfServe: true,
+            },
+            business: {
+              label: "Loombus Room Business",
+              priceLabel: "$79/month",
+              priceEnvVar: "STRIPE_ROOM_BUSINESS_MONTHLY_PRICE_ID",
+              memberLimit: 750,
+              selfServe: true,
+            },
+            organization: {
+              label: "Loombus Organization",
+              priceLabel: "$99/month",
+              priceEnvVar: "STRIPE_ROOM_ORGANIZATION_MONTHLY_PRICE_ID",
+              memberLimit: 500,
+              selfServe: true,
+            },
+            "organization-plus": {
+              label: "Loombus Organization Plus",
+              priceLabel: "$199/month",
+              priceEnvVar: "STRIPE_ROOM_ORGANIZATION_PLUS_MONTHLY_PRICE_ID",
+              memberLimit: 2000,
+              selfServe: true,
+            },
+            enterprise: {
+              label: "Loombus Organization Enterprise",
+              priceLabel: "Custom",
+              priceEnvVar: "STRIPE_ROOM_ORGANIZATION_ENTERPRISE_MONTHLY_PRICE_ID",
+              memberLimit: null,
+              selfServe: false,
+            },
+          } as const;''',
+          )
+          replace_once(
+              billing,
+              '''export function isPaidRoomPlanKey(value: string): value is PaidRoomPlanKey {
+            return Object.prototype.hasOwnProperty.call(PAID_ROOM_PLANS, value);
+          }
+          ''',
+              '''export function isPaidRoomPlanKey(value: string): value is PaidRoomPlanKey {
+            return Object.prototype.hasOwnProperty.call(PAID_ROOM_PLANS, value);
+          }
+
+          export function isSelfServeRoomPlanKey(value: string): value is PaidRoomPlanKey {
+            return isPaidRoomPlanKey(value) && PAID_ROOM_PLANS[value].selfServe;
+          }
+          ''',
+          )
+          replace_once(
+              billing,
+              '      present(process.env[plan.priceEnvVar]),',
+              '      plan.selfServe && present(process.env[plan.priceEnvVar]),',
+          )
+          replace_once(
+              billing,
+              '''function getRoomPriceId(planKey: PaidRoomPlanKey) {
+            const value = process.env[PAID_ROOM_PLANS[planKey].priceEnvVar];''',
+              '''function getRoomPriceId(planKey: PaidRoomPlanKey) {
+            if (!PAID_ROOM_PLANS[planKey].selfServe) {
+              throw new RoomBillingError(
+                "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales.",
+                409,
+                "enterprise_contact_required"
+              );
+            }
+            const value = process.env[PAID_ROOM_PLANS[planKey].priceEnvVar];''',
+          )
+          replace_once(
+              billing,
+              '''export async function startPaidRoomCheckout(input: RoomSetupInput) {
+            if (!isPaidRoomPlanKey(input.planKey)) {
+              throw new RoomBillingError("Invalid paid Room plan.", 400, "invalid_room_plan");
+            }''',
+              '''export async function startPaidRoomCheckout(input: RoomSetupInput) {
+            if (!isSelfServeRoomPlanKey(input.planKey)) {
+              throw new RoomBillingError(
+                input.planKey === "enterprise"
+                  ? "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales."
+                  : "Invalid paid Room plan.",
+                input.planKey === "enterprise" ? 409 : 400,
+                input.planKey === "enterprise"
+                  ? "enterprise_contact_required"
+                  : "invalid_room_plan"
+              );
+            }''',
+          )
+
+          subscription_events = "src/lib/room-subscription-events.ts"
+          replace_once(
+              subscription_events,
+              '''  { planKey: "pro", envName: "STRIPE_ROOM_PRO_MONTHLY_PRICE_ID" },
+            { planKey: "organization", envName: "STRIPE_ROOM_ORGANIZATION_MONTHLY_PRICE_ID" },''',
+              '''  { planKey: "pro", envName: "STRIPE_ROOM_PRO_MONTHLY_PRICE_ID" },
+            { planKey: "business", envName: "STRIPE_ROOM_BUSINESS_MONTHLY_PRICE_ID" },
+            { planKey: "organization", envName: "STRIPE_ROOM_ORGANIZATION_MONTHLY_PRICE_ID" },''',
+          )
+
+          management = "src/lib/room-billing-management.ts"
+          replace_once(
+              management,
+              '''  RoomBillingError,
+            isPaidRoomPlanKey,
+            type PaidRoomPlanKey,''',
+              '''  RoomBillingError,
+            isPaidRoomPlanKey,
+            isSelfServeRoomPlanKey,
+            type PaidRoomPlanKey,''',
+          )
+          replace_once(
+              management,
+              '''function priceIdFor(planKey: PaidRoomPlanKey) {
+            const priceId = process.env[PAID_ROOM_PLANS[planKey].priceEnvVar];''',
+              '''function priceIdFor(planKey: PaidRoomPlanKey) {
+            if (!PAID_ROOM_PLANS[planKey].selfServe) {
+              throw new RoomBillingError(
+                "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales.",
+                409,
+                "enterprise_contact_required"
+              );
+            }
+            const priceId = process.env[PAID_ROOM_PLANS[planKey].priceEnvVar];''',
+          )
+          replace_once(
+              management,
+              '''function pricePlanKey(priceId: string | null | undefined): PaidRoomPlanKey | null {
+            if (!priceId) return null;
+            for (const key of Object.keys(PAID_ROOM_PLANS) as PaidRoomPlanKey[]) {
+              if (process.env[PAID_ROOM_PLANS[key].priceEnvVar] === priceId) return key;
+            }
+            return null;
+          }
+          ''',
+              '''function pricePlanKey(priceId: string | null | undefined): PaidRoomPlanKey | null {
+            if (!priceId) return null;
+            for (const key of Object.keys(PAID_ROOM_PLANS) as PaidRoomPlanKey[]) {
+              if (process.env[PAID_ROOM_PLANS[key].priceEnvVar] === priceId) return key;
+            }
+            return null;
+          }
+
+          function subscriptionPriceLabel(subscription: Stripe.Subscription | null) {
+            const price = subscription?.items.data[0]?.price;
+            const unitAmount = price?.unit_amount;
+            if (unitAmount === null || unitAmount === undefined) return null;
+            const currency = (price.currency || "usd").toUpperCase();
+            const value = new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency,
+              minimumFractionDigits: unitAmount % 100 === 0 ? 0 : 2,
+              maximumFractionDigits: 2,
+            }).format(unitAmount / 100);
+            const interval = price.recurring?.interval;
+            return interval ? `${value}/${interval}` : value;
+          }
+          ''',
+          )
+          replace_once(
+              management,
+              '''function planSummary(planKey: RoomPlanKey) {
+            const plan = ROOM_PLAN_ENTITLEMENTS[planKey];
+            const paid = isPaidRoomPlanKey(planKey) ? PAID_ROOM_PLANS[planKey] : null;
+            return {
+              id: plan.id,
+              label: plan.label,
+              priceLabel: paid?.priceLabel ?? "$0/month",
+              memberLimit: plan.memberLimit,
+              roomLimit: plan.roomLimit,
+              storageBytes: plan.storageBytes,
+              features: plan.features,
+            };
+          }''',
+              '''function planSummary(planKey: RoomPlanKey, priceOverride: string | null = null) {
+            const plan = ROOM_PLAN_ENTITLEMENTS[planKey];
+            const paid = isPaidRoomPlanKey(planKey) ? PAID_ROOM_PLANS[planKey] : null;
+            return {
+              id: plan.id,
+              label: plan.label,
+              priceLabel: priceOverride ?? paid?.priceLabel ?? "$0/month",
+              memberLimit: plan.memberLimit,
+              roomLimit: plan.roomLimit,
+              storageBytes: plan.storageBytes,
+              features: plan.features,
+              selfServe: paid?.selfServe ?? false,
+              contactSales: planKey === "enterprise",
+            };
+          }''',
+          )
+          replace_once(
+              management,
+              '    currentPlan: planSummary(effectivePlan.id),',
+              '    currentPlan: planSummary(effectivePlan.id, subscriptionPriceLabel(subscription)),',
+          )
+          replace_count(
+              management,
+              '  if (!isPaidRoomPlanKey(targetPlan)) {\n    throw new RoomBillingError("Choose a paid Room plan.", 400, "invalid_room_plan");\n  }',
+              '  if (!isSelfServeRoomPlanKey(targetPlan)) {\n    throw new RoomBillingError(\n      targetPlan === "enterprise"\n        ? "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales."\n        : "Choose a self-service paid Room plan.",\n      targetPlan === "enterprise" ? 409 : 400,\n      targetPlan === "enterprise" ? "enterprise_contact_required" : "invalid_room_plan"\n    );\n  }',
+              2,
+          )
+
+          model = "src/app/rooms/rooms-v2-model.ts"
+          replace_once(
+              model,
+              '''export type RoomPlan = {
+            id: RoomPlanId;
+            name: string;
+            price: string;
+            members: string;
+            detail: string;
+            features: string[];
+            paid: boolean;
+          };''',
+              '''export type RoomPlan = {
+            id: RoomPlanId;
+            name: string;
+            price: string;
+            members: string;
+            detail: string;
+            features: string[];
+            paid: boolean;
+            selfServe: boolean;
+            contactSales?: boolean;
+            segment: "single" | "organization";
+          };''',
+          )
+          replace_regex(
+              model,
+              r'export const ROOM_PLANS: RoomPlan\[\] = \[.*?\n\];\n\nexport const ROOM_WORKSPACE_BLUEPRINT',
+              '''export const ROOM_PLANS: RoomPlan[] = [
+            {
+              id: "free",
+              name: "Free Room",
+              price: "$0",
+              members: "1 Room · Up to 10 members",
+              detail: "Core private workspace with basic invitations and Room settings",
+              features: [...ROOM_PLAN_ENTITLEMENTS.free.features],
+              paid: false,
+              selfServe: false,
+              segment: "single",
+            },
+            {
+              id: "starter",
+              name: "Room Starter",
+              price: "$19/mo",
+              members: "1 Room · Up to 50 members",
+              detail: "Adds announcements, structured requests, and curated resources",
+              features: [...ROOM_PLAN_ENTITLEMENTS.starter.features],
+              paid: true,
+              selfServe: true,
+              segment: "single",
+            },
+            {
+              id: "pro",
+              name: "Room Pro",
+              price: "$49/mo",
+              members: "1 Room · Up to 250 members",
+              detail: "Adds inline video, larger uploads, and expanded Room management",
+              features: [...ROOM_PLAN_ENTITLEMENTS.pro.features],
+              paid: true,
+              selfServe: true,
+              segment: "single",
+            },
+            {
+              id: "business",
+              name: "Room Business",
+              price: "$79/mo",
+              members: "1 Room · Up to 750 members",
+              detail: "High-capacity single Room with audit history, advanced controls, and larger resources",
+              features: [...ROOM_PLAN_ENTITLEMENTS.business.features],
+              paid: true,
+              selfServe: true,
+              segment: "single",
+            },
+            {
+              id: "organization",
+              name: "Organization",
+              price: "$99/mo",
+              members: "Up to 3 Rooms · 500 members per Room",
+              detail: "Multi-Room organization capacity, larger resources, and setup support",
+              features: [...ROOM_PLAN_ENTITLEMENTS.organization.features],
+              paid: true,
+              selfServe: true,
+              segment: "organization",
+            },
+            {
+              id: "organization-plus",
+              name: "Organization Plus",
+              price: "$199/mo",
+              members: "Up to 10 Rooms · 2,000 members per Room",
+              detail: "More Rooms, substantially larger storage, and priority support",
+              features: [...ROOM_PLAN_ENTITLEMENTS["organization-plus"].features],
+              paid: true,
+              selfServe: true,
+              segment: "organization",
+            },
+            {
+              id: "enterprise",
+              name: "Organization Enterprise",
+              price: "Custom",
+              members: "Custom Rooms · Custom member capacity",
+              detail: "Custom limits, enterprise controls, dedicated support, and onboarding",
+              features: [...ROOM_PLAN_ENTITLEMENTS.enterprise.features],
+              paid: true,
+              selfServe: false,
+              contactSales: true,
+              segment: "organization",
+            },
+          ];
+
+          export const ROOM_WORKSPACE_BLUEPRINT''',
+          )
+          replace_once(
+              model,
+              '`Monthly tier: ${input.plan.name} (${input.plan.price})`,',
+              '`Room plan: ${input.plan.name} (${input.plan.price})`,',
+          )
+
+          new_page = "src/app/rooms/new/page.tsx"
+          replace_once(
+              new_page,
+              '''  type RoomModel,
+            type RoomModelId,''',
+              '''  type RoomModel,
+            type RoomModelId,
+            type RoomPlan,''',
+          )
+          replace_once(
+              new_page,
+              '''type CheckoutConfig = {
+            coreReady: boolean;
+            monthlyOnly: boolean;
+            plans: Partial<Record<RoomPlanId, boolean>>;
+            checks: {
+              stripeSecretKey: boolean;
+              stripeWebhookSecret: boolean;
+              siteUrl: boolean;
+              supabaseServiceRole: boolean;
+            };
+          };''',
+              '''type IncludedPlanStatus = {
+            available: boolean;
+            usedRooms: number;
+            roomLimit: number | null;
+          };
+
+          type CheckoutConfig = {
+            coreReady: boolean;
+            monthlyOnly: boolean;
+            plans: Partial<Record<RoomPlanId, boolean>>;
+            includedPlans?: Partial<Record<RoomPlanId, IncludedPlanStatus>>;
+            checks: {
+              stripeSecretKey: boolean;
+              stripeWebhookSecret: boolean;
+              siteUrl: boolean;
+              supabaseServiceRole: boolean;
+            };
+          };''',
+          )
+          replace_once(
+              new_page,
+              '''const DEFAULT_DRAFT: RoomBuilderDraft = {
+            modelId: "business-team",
+            planId: "free",
+            roomName: "Business Team",
+            description: ROOM_MODELS[0].description,
+          };
+          ''',
+              '''const DEFAULT_DRAFT: RoomBuilderDraft = {
+            modelId: "business-team",
+            planId: "free",
+            roomName: "Business Team",
+            description: ROOM_MODELS[0].description,
+          };
+
+          const SINGLE_ROOM_PLANS = ROOM_PLANS.filter((plan) => plan.segment === "single");
+          const ORGANIZATION_PLANS = ROOM_PLANS.filter(
+            (plan) => plan.segment === "organization"
+          );
+          ''',
+          )
+          replace_once(
+              new_page,
+              '''  const selectedModel = useMemo(() => getRoomModel(draft.modelId), [draft.modelId]);
+            const selectedPlan = useMemo(() => getRoomPlan(draft.planId), [draft.planId]);
+            const trimmedName = draft.roomName.trim();
+            const trimmedDescription = draft.description.trim();
+            const nameIsValid = trimmedName.length >= 3;
+            const descriptionIsValid = trimmedDescription.length >= 10;
+            const formIsValid = nameIsValid && descriptionIsValid;
+            const paidPlanReady =
+              !selectedPlan.paid ||
+              Boolean(checkoutConfig?.coreReady && checkoutConfig.plans[selectedPlan.id]);''',
+              '''  const selectedModel = useMemo(() => getRoomModel(draft.modelId), [draft.modelId]);
+            const selectedPlan = useMemo(() => getRoomPlan(draft.planId), [draft.planId]);
+            const includedPlanStatus = checkoutConfig?.includedPlans?.[selectedPlan.id];
+            const includedPlanAvailable = Boolean(includedPlanStatus?.available);
+            const trimmedName = draft.roomName.trim();
+            const trimmedDescription = draft.description.trim();
+            const nameIsValid = trimmedName.length >= 3;
+            const descriptionIsValid = trimmedDescription.length >= 10;
+            const formIsValid = nameIsValid && descriptionIsValid;
+            const paidPlanReady =
+              !selectedPlan.paid ||
+              !selectedPlan.selfServe ||
+              includedPlanAvailable ||
+              Boolean(checkoutConfig?.coreReady && checkoutConfig.plans[selectedPlan.id]);
+            const enterpriseContactRequired = Boolean(
+              selectedPlan.contactSales && !includedPlanAvailable
+            );
+            const reviewActionLabel = provisioning
+              ? "Preparing Room…"
+              : includedPlanAvailable
+                ? "Create included Room"
+                : enterpriseContactRequired
+                  ? "Contact Enterprise sales"
+                  : selectedPlan.paid
+                    ? "Continue to monthly checkout"
+                    : "Create free Room";
+            const reviewBoundaryTitle = includedPlanAvailable
+              ? "This Room is included in your active subscription."
+              : enterpriseContactRequired
+                ? "Enterprise begins with a custom agreement and sales review."
+                : selectedPlan.paid
+                  ? "Payment must complete before the paid Room exists."
+                  : "The free Room will be created now.";''',
+          )
+          replace_once(
+              new_page,
+              '''  async function provisionRoom() {
+            if (provisioning || !formIsValid) return;
+
+            if (selectedPlan.paid && !paidPlanReady) {''',
+              '''  function renderPlanCards(plans: RoomPlan[]) {
+            return plans.map((plan) => {
+              const selected = plan.id === draft.planId;
+              const included = Boolean(checkoutConfig?.includedPlans?.[plan.id]?.available);
+              const configured =
+                included ||
+                !plan.paid ||
+                !plan.selfServe ||
+                Boolean(checkoutConfig?.coreReady && checkoutConfig.plans[plan.id]);
+              const statusCopy = included
+                ? "Included Room available on your active subscription"
+                : plan.contactSales
+                  ? "Custom agreement · Contact us"
+                  : plan.paid
+                    ? checkingCheckout
+                      ? "Checking monthly checkout"
+                      : configured
+                        ? "Monthly Stripe checkout ready"
+                        : "Checkout configuration incomplete"
+                    : "No payment required";
+
+              return (
+                <button
+                  key={plan.id}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    setDraft((current) => ({ ...current, planId: plan.id }));
+                    setStatusMessage("");
+                  }}
+                  className={`rooms-v2-plan-card${selected ? " is-selected" : ""}`}
+                >
+                  <div className="rooms-v2-plan-heading">
+                    <div>
+                      <strong>{plan.name}</strong>
+                      <span>{plan.members}</span>
+                    </div>
+                    <b>{plan.price}</b>
+                  </div>
+                  <p>{plan.detail}</p>
+                  <span className="rooms-v2-plan-note">{statusCopy}</span>
+                  {selected ? (
+                    <span className="rooms-v2-selected-mark">
+                      <Check aria-hidden="true" size={13} />
+                      Selected
+                    </span>
+                  ) : null}
+                </button>
+              );
+            });
+          }
+
+          async function provisionRoom() {
+            if (provisioning || !formIsValid) return;
+
+            if (enterpriseContactRequired) {
+              const params = new URLSearchParams({
+                organization: trimmedName,
+                useCase: trimmedDescription,
+                model: selectedModel.title,
+              });
+              window.location.assign(`/rooms/enterprise?${params.toString()}`);
+              return;
+            }
+
+            if (
+              selectedPlan.paid &&
+              selectedPlan.selfServe &&
+              !includedPlanAvailable &&
+              !paidPlanReady
+            ) {''',
+          )
+          replace_count(
+              new_page,
+              '<p className="rooms-v2-eyebrow">Monthly plan</p>',
+              '<p className="rooms-v2-eyebrow">Room plan</p>',
+              2,
+          )
+          replace_once(
+              new_page,
+              'Choose the group model, monthly plan, and private identity.',
+              'Choose the group model, Room plan, and private identity.',
+          )
+          replace_once(
+              new_page,
+              '''              Your setup draft stays on this device until you create the Room. Free opens
+              immediately. Paid monthly plans continue through Stripe Checkout.''',
+              '''              Your setup draft stays on this device until you create the Room. Free opens
+              immediately. Self-service paid plans use Stripe Checkout, while Enterprise starts with a sales review.''',
+          )
+          replace_once(
+              new_page,
+              '''                Free Rooms are created immediately. Paid monthly plans open Stripe Checkout,
+                and the Room is provisioned only after Stripe confirms an active subscription.''',
+              '''                {enterpriseContactRequired
+                  ? "Enterprise does not create a Room or open Stripe Checkout. Submit the sales inquiry to begin a custom agreement."
+                  : includedPlanAvailable
+                    ? "This Room is included in your active subscription and can be created without another checkout."
+                    : selectedPlan.paid
+                      ? "Paid monthly plans open Stripe Checkout, and the Room is provisioned only after Stripe confirms an active subscription."
+                      : "The Free Room is created immediately with its owner membership."}''',
+          )
+          replace_once(
+              new_page,
+              '''                {selectedPlan.paid
+                  ? paidPlanReady
+                    ? "Monthly Stripe checkout is configured for this plan. Annual Room billing is not offered yet."
+                    : "This plan is missing required Stripe or server configuration."
+                  : "No payment is required. The private Room opens after creation."}''',
+              '''                {includedPlanAvailable
+                  ? "No additional checkout is required for this included Room."
+                  : enterpriseContactRequired
+                    ? "Enterprise pricing and capacity are defined through a custom agreement."
+                    : selectedPlan.paid
+                      ? paidPlanReady
+                        ? "Monthly Stripe checkout is configured for this plan. Annual Room billing is not offered yet."
+                        : "This plan is missing required Stripe or server configuration."
+                      : "No payment is required. The private Room opens after creation."}''',
+          )
+          replace_once(
+              new_page,
+              '''                <h2>{selectedPlan.paid ? "Payment must complete before the paid Room exists." : "The free Room will be created now."}</h2>''',
+              '''                <h2>{reviewBoundaryTitle}</h2>''',
+          )
+          replace_once(
+              new_page,
+              '''              disabled={provisioning || (selectedPlan.paid && (!paidPlanReady || checkingCheckout))}''',
+              '''              disabled={
+                provisioning ||
+                (selectedPlan.paid &&
+                  selectedPlan.selfServe &&
+                  !includedPlanAvailable &&
+                  (!paidPlanReady || checkingCheckout))
+              }''',
+          )
+          replace_once(
+              new_page,
+              '''              {provisioning ? (
+                <Loader2 aria-hidden="true" className="is-spinning" size={16} />
+              ) : selectedPlan.paid ? (
+                <CreditCard aria-hidden="true" size={16} />
+              ) : (
+                <CheckCircle2 aria-hidden="true" size={16} />
+              )}
+              {provisioning
+                ? "Preparing Room…"
+                : selectedPlan.paid
+                  ? "Continue to monthly checkout"
+                  : "Create free Room"}''',
+              '''              {provisioning ? (
+                <Loader2 aria-hidden="true" className="is-spinning" size={16} />
+              ) : enterpriseContactRequired ? (
+                <LifeBuoy aria-hidden="true" size={16} />
+              ) : selectedPlan.paid ? (
+                <CreditCard aria-hidden="true" size={16} />
+              ) : (
+                <CheckCircle2 aria-hidden="true" size={16} />
+              )}
+              {reviewActionLabel}''',
+          )
+          replace_once(
+              new_page,
+              '''                  <h2>Choose the Room size and operating scope.</h2>
+                  <p>Annual Room subscriptions can be added later. This release uses monthly Stripe prices only.</p>''',
+              '''                  <h2>Choose the Room size and operating scope.</h2>
+                  <p>Self-service plans use monthly Stripe prices. Enterprise is sales-assisted and custom.</p>''',
+          )
+          replace_regex(
+              new_page,
+              r'              <div className="rooms-v2-plan-grid">\n                \{ROOM_PLANS\.map\(\(plan\) => \{.*?                \}\)\}\n              </div>',
+              '''              <div className="rooms-v2-plan-segments">
+                <section className="rooms-v2-plan-segment">
+                  <div className="rooms-v2-plan-segment-heading">
+                    <div>
+                      <span>Single-Room plans</span>
+                      <h3>One private Room, scaled to the community.</h3>
+                    </div>
+                    <p>Choose Free, Starter, Pro, or Business based on the members and operating controls needed in one Room.</p>
+                  </div>
+                  <div className="rooms-v2-plan-grid">{renderPlanCards(SINGLE_ROOM_PLANS)}</div>
+                </section>
+                <section className="rooms-v2-plan-segment">
+                  <div className="rooms-v2-plan-segment-heading">
+                    <div>
+                      <span>Organization plans</span>
+                      <h3>Multiple Rooms under one subscription.</h3>
+                    </div>
+                    <p>Organization capacity is measured per Room. Enterprise begins with a custom agreement.</p>
+                  </div>
+                  <div className="rooms-v2-plan-grid">{renderPlanCards(ORGANIZATION_PLANS)}</div>
+                </section>
+              </div>''',
+          )
+          replace_once(new_page, '<dt>Monthly price</dt>', '<dt>Price</dt>')
+          replace_count(
+              new_page,
+              '<li>Monthly billing only in this release</li>',
+              '<li>Self-service plans are monthly; Enterprise uses a custom agreement</li>',
+              2,
+          )
+
+          enhancer = "src/components/room-plan-feature-enhancer.tsx"
+          replace_regex(
+              enhancer,
+              r'\nfunction replaceButtonCopy\(.*?\nexport function RoomPlanFeatureEnhancer\(\)',
+              '\nexport function RoomPlanFeatureEnhancer()',
+          )
+          replace_once(
+              enhancer,
+              '      updateReviewAction(root, includedPlans);\n',
+              '',
+          )
+
+          provision = "src/app/api/rooms/provision/route.ts"
+          replace_once(
+              provision,
+              '''  RoomBillingError,
+            isPaidRoomPlanKey,
+            provisionFreeRoom,''',
+              '''  RoomBillingError,
+            isPaidRoomPlanKey,
+            isSelfServeRoomPlanKey,
+            provisionFreeRoom,''',
+          )
+          replace_once(
+              provision,
+              '''      if (includedRoom) {
+                return NextResponse.json(includedRoom, {
+                  headers: { "Cache-Control": "private, no-store" },
+                });
+              }
+
+              const storage = await getRoomCheckoutStorageReadiness();''',
+              '''      if (includedRoom) {
+                return NextResponse.json(includedRoom, {
+                  headers: { "Cache-Control": "private, no-store" },
+                });
+              }
+
+              if (!isSelfServeRoomPlanKey(planId)) {
+                return jsonError(
+                  "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales.",
+                  409,
+                  "enterprise_contact_required"
+                );
+              }
+
+              const storage = await getRoomCheckoutStorageReadiness();''',
+          )
+
+          billing_client = "src/app/rooms/[roomId]/billing/room-billing-client.tsx"
+          replace_once(
+              billing_client,
+              '''  storageBytes: number;
+            features: string[];
+          };''',
+              '''  storageBytes: number;
+            features: string[];
+            selfServe: boolean;
+            contactSales: boolean;
+          };''',
+          )
+          replace_once(
+              billing_client,
+              '''function usagePercent(used: number, limit: number | null) {
+            if (limit === null || limit <= 0) return 0;
+            return Math.min(100, Math.round((used / limit) * 100));
+          }
+          ''',
+              '''function usagePercent(used: number, limit: number | null) {
+            if (limit === null || limit <= 0) return 0;
+            return Math.min(100, Math.round((used / limit) * 100));
+          }
+
+          function planCapacityLabel(plan: Plan) {
+            if (plan.roomLimit === null || plan.memberLimit === null) {
+              return "Custom Room and member capacity";
+            }
+            if (plan.roomLimit === 1) {
+              return `1 Room · Up to ${plan.memberLimit.toLocaleString("en-US")} members`;
+            }
+            return `Up to ${plan.roomLimit.toLocaleString("en-US")} Rooms · ${plan.memberLimit.toLocaleString("en-US")} members per Room`;
+          }
+          ''',
+          )
+          replace_once(
+              billing_client,
+              '''                  <p>
+                    {plan.memberLimit === null
+                      ? "Custom membership capacity"
+                      : `Up to ${plan.memberLimit.toLocaleString()} members`}
+                  </p>''',
+              '''                  <p>{planCapacityLabel(plan)}</p>''',
+          )
+          replace_once(
+              billing_client,
+              '''                  {!current && !isFree ? (
+                    <button
+                      type="button"
+                      className="rooms-live-primary-action"
+                      disabled={Boolean(working) || targetTooSmall || !overview.billingConfigured}
+                      onClick={() => {
+                        const action = overview.hasStripeSubscription ? "change_plan" : "upgrade";
+                        const verb = overview.hasStripeSubscription ? "change" : "upgrade";
+                        if (window.confirm(`Confirm ${verb} to ${plan.label}? Stripe may apply prorated charges or credits.`)) {
+                          void runAction(action, { planKey: plan.id });
+                        }
+                      }}
+                    >
+                      {working === "change_plan" || working === "upgrade" ? (
+                        <Loader2 className="is-spinning" />
+                      ) : (
+                        <CheckCircle2 />
+                      )}
+                      {overview.hasStripeSubscription ? "Change to this plan" : "Upgrade to this plan"}
+                    </button>
+                  ) : null}''',
+              '''                  {!current && plan.contactSales ? (
+                    <Link
+                      href={`/rooms/enterprise?roomId=${encodeURIComponent(roomId)}&currentPlan=${encodeURIComponent(overview.currentPlan.label)}`}
+                      className="rooms-live-primary-action"
+                    >
+                      <ShieldCheck aria-hidden="true" /> Contact Enterprise sales
+                    </Link>
+                  ) : null}
+                  {!current && !isFree && plan.selfServe ? (
+                    <button
+                      type="button"
+                      className="rooms-live-primary-action"
+                      disabled={Boolean(working) || targetTooSmall || !overview.billingConfigured}
+                      onClick={() => {
+                        const action = overview.hasStripeSubscription ? "change_plan" : "upgrade";
+                        const verb = overview.hasStripeSubscription ? "change" : "upgrade";
+                        if (window.confirm(`Confirm ${verb} to ${plan.label}? Stripe may apply prorated charges or credits.`)) {
+                          void runAction(action, { planKey: plan.id });
+                        }
+                      }}
+                    >
+                      {working === "change_plan" || working === "upgrade" ? (
+                        <Loader2 className="is-spinning" />
+                      ) : (
+                        <CheckCircle2 />
+                      )}
+                      {overview.hasStripeSubscription ? "Change to this plan" : "Upgrade to this plan"}
+                    </button>
+                  ) : null}''',
+          )
+
+          layout = "src/app/rooms/layout.tsx"
+          replace_once(
+              layout,
+              'import "./room-content-overflow-hardening.css";\n',
+              'import "./room-content-overflow-hardening.css";\nimport "./room-subscription-refresh.css";\n',
+          )
+
+          write(
+              "src/app/rooms/room-subscription-refresh.css",
+              '''.rooms-v2-plan-segments {
+            display: grid;
+            gap: 1.25rem;
+          }
+
+          .rooms-v2-plan-segment {
+            display: grid;
+            gap: 1rem;
+            border: 1px solid var(--loombus-border);
+            border-radius: 1.5rem;
+            background: color-mix(in srgb, var(--loombus-surface) 94%, transparent);
+            padding: 1rem;
+          }
+
+          .rooms-v2-plan-segment-heading {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.25rem;
+          }
+
+          .rooms-v2-plan-segment-heading span {
+            display: block;
+            color: var(--loombus-gold);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+          }
+
+          .rooms-v2-plan-segment-heading h3 {
+            margin: 0.35rem 0 0;
+            color: var(--loombus-text);
+            font-size: 1.05rem;
+          }
+
+          .rooms-v2-plan-segment-heading p {
+            max-width: 32rem;
+            margin: 0;
+            color: var(--loombus-text-muted);
+            font-size: 0.82rem;
+            line-height: 1.55;
+          }
+
+          @media (max-width: 760px) {
+            .rooms-v2-plan-segment {
+              border-radius: 1.25rem;
+              padding: 0.8rem;
+            }
+
+            .rooms-v2-plan-segment-heading {
+              align-items: flex-start;
+              flex-direction: column;
+            }
+          }
+          ''',
+          )
+
+          write(
+              "src/app/rooms/enterprise/page.tsx",
+              '''import type { Metadata } from "next";
+          import RoomEnterpriseClient from "./room-enterprise-client";
+          import "./room-enterprise.css";
+
+          export const metadata: Metadata = {
+            title: "Organization Enterprise | Loombus Rooms",
+            description:
+              "Contact Loombus about a custom Organization Enterprise agreement for private Rooms, capacity, controls, onboarding, and support.",
+            robots: { index: false, follow: false },
+          };
+
+          function first(value: string | string[] | undefined) {
+            return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+          }
+
+          export default async function RoomEnterprisePage({
+            searchParams,
+          }: {
+            searchParams: Promise<Record<string, string | string[] | undefined>>;
+          }) {
+            const params = await searchParams;
+            return (
+              <RoomEnterpriseClient
+                initialOrganization={first(params.organization)}
+                initialUseCase={first(params.useCase)}
+                initialModel={first(params.model)}
+                roomId={first(params.roomId)}
+                currentPlan={first(params.currentPlan)}
+              />
+            );
+          }
+          ''',
+          )
+
+          write(
+              "src/app/rooms/enterprise/room-enterprise-client.tsx",
+              '''"use client";
+
+          import Link from "next/link";
+          import {
+            ArrowLeft,
+            Building2,
+            CheckCircle2,
+            FileCheck2,
+            Headphones,
+            Loader2,
+            LockKeyhole,
+            Send,
+            ShieldCheck,
+            Users,
+          } from "lucide-react";
+          import { type FormEvent, useEffect, useState } from "react";
+          import { supabase } from "@/lib/supabase/client";
+
+          type Props = {
+            initialOrganization: string;
+            initialUseCase: string;
+            initialModel: string;
+            roomId: string;
+            currentPlan: string;
+          };
+
+          type SubmissionState =
+            | { tone: "success" | "error"; message: string }
+            | null;
+
+          export default function RoomEnterpriseClient({
+            initialOrganization,
+            initialUseCase,
+            initialModel,
+            roomId,
+            currentPlan,
+          }: Props) {
+            const [organization, setOrganization] = useState(initialOrganization);
+            const [email, setEmail] = useState("");
+            const [estimatedRooms, setEstimatedRooms] = useState("11-25");
+            const [membersPerRoom, setMembersPerRoom] = useState("2000+");
+            const [useCase, setUseCase] = useState(initialUseCase);
+            const [requirements, setRequirements] = useState("");
+            const [timeline, setTimeline] = useState("Exploring");
+            const [whiteLabel, setWhiteLabel] = useState(false);
+            const [compliance, setCompliance] = useState(false);
+            const [integrations, setIntegrations] = useState(false);
+            const [submitting, setSubmitting] = useState(false);
+            const [submission, setSubmission] = useState<SubmissionState>(null);
+
+            useEffect(() => {
+              let active = true;
+              void supabase.auth.getUser().then(({ data }) => {
+                if (active && data.user?.email) setEmail(data.user.email);
+              });
+              return () => {
+                active = false;
+              };
+            }, []);
+
+            async function submit(event: FormEvent<HTMLFormElement>) {
+              event.preventDefault();
+              if (submitting) return;
+              setSubmitting(true);
+              setSubmission(null);
+
+              const { data } = await supabase.auth.getSession();
+              const token = data.session?.access_token;
+              const context = [
+                `Organization: ${organization.trim()}`,
+                `Estimated Rooms: ${estimatedRooms}`,
+                `Estimated members per Room: ${membersPerRoom}`,
+                `Room model or use case: ${initialModel || "Not specified"}`,
+                `Current Room plan: ${currentPlan || "Not specified"}`,
+                `Existing Room id: ${roomId || "None"}`,
+                `Timeline: ${timeline}`,
+                `White-label interest: ${whiteLabel ? "Yes" : "No"}`,
+                `Compliance or data requirements: ${compliance ? "Yes" : "No"}`,
+                `Integrations or migration support: ${integrations ? "Yes" : "No"}`,
+                "",
+                "Use case:",
+                useCase.trim(),
+                "",
+                "Requirements and notes:",
+                requirements.trim() || "No additional notes provided.",
+              ].join("\n");
+
+              try {
+                const response = await fetch("/api/contact", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                  },
+                  body: JSON.stringify({
+                    email,
+                    category: "billing",
+                    subject: `Organization Enterprise inquiry: ${organization.trim()}`,
+                    message: context.slice(0, 4000),
+                  }),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                  setSubmission({
+                    tone: "error",
+                    message: result.error ?? "The Enterprise inquiry could not be submitted.",
+                  });
+                  return;
+                }
+                setSubmission({
+                  tone: "success",
+                  message:
+                    "Enterprise inquiry submitted. The request is now in the Loombus support queue for review.",
+                });
+              } catch {
+                setSubmission({
+                  tone: "error",
+                  message: "The Enterprise inquiry could not be submitted. Check your connection and try again.",
+                });
+              } finally {
+                setSubmitting(false);
+              }
+            }
+
+            return (
+              <main className="rooms-v2-page rooms-enterprise-page">
+                <div className="rooms-v2-shell rooms-enterprise-shell">
+                  <div className="rooms-v2-builder-topbar">
+                    <Link href="/rooms/new" className="rooms-v2-back-button">
+                      <ArrowLeft aria-hidden="true" size={16} /> Back to Room plans
+                    </Link>
+                    <span className="rooms-enterprise-private-badge">
+                      <LockKeyhole aria-hidden="true" size={15} /> Private sales inquiry
+                    </span>
+                  </div>
+
+                  <header className="rooms-v2-builder-hero rooms-enterprise-hero">
+                    <div>
+                      <p className="rooms-v2-eyebrow">Organization Enterprise</p>
+                      <h1>Design the Room structure around the organization.</h1>
+                      <p>
+                        Enterprise removes the self-service ceiling. Define the Room count,
+                        membership capacity, controls, integrations, onboarding, and support
+                        model through a custom agreement.
+                      </p>
+                    </div>
+                    <span className="rooms-v2-draft-badge">
+                      <ShieldCheck aria-hidden="true" size={15} /> Custom agreement
+                    </span>
+                  </header>
+
+                  <section className="rooms-enterprise-value-grid" aria-label="Enterprise capabilities">
+                    <article>
+                      <Building2 aria-hidden="true" />
+                      <h2>Custom Room structure</h2>
+                      <p>Set the number of Rooms, capacity per Room, ownership model, and shared administration.</p>
+                    </article>
+                    <article>
+                      <FileCheck2 aria-hidden="true" />
+                      <h2>Governance and requirements</h2>
+                      <p>Plan for domain controls, retention, data handling, white-label needs, and integrations.</p>
+                    </article>
+                    <article>
+                      <Headphones aria-hidden="true" />
+                      <h2>Onboarding and support</h2>
+                      <p>Coordinate migration, launch sequencing, training, and an appropriate support agreement.</p>
+                    </article>
+                  </section>
+
+                  <div className="rooms-enterprise-grid">
+                    <form className="rooms-enterprise-form" onSubmit={submit}>
+                      <div className="rooms-enterprise-section-heading">
+                        <p className="rooms-v2-eyebrow">Contact Enterprise sales</p>
+                        <h2>Describe the organization and expected scale.</h2>
+                        <p>No Room or Stripe subscription is created by this form.</p>
+                      </div>
+
+                      <div className="rooms-enterprise-fields">
+                        <label>
+                          <span>Organization name</span>
+                          <input
+                            value={organization}
+                            onChange={(event) => setOrganization(event.target.value)}
+                            minLength={2}
+                            maxLength={140}
+                            required
+                          />
+                        </label>
+                        <label>
+                          <span>Contact email</span>
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(event) => setEmail(event.target.value)}
+                            maxLength={320}
+                            required
+                          />
+                        </label>
+                        <label>
+                          <span>Estimated Rooms</span>
+                          <select value={estimatedRooms} onChange={(event) => setEstimatedRooms(event.target.value)}>
+                            <option value="1-10">1 to 10</option>
+                            <option value="11-25">11 to 25</option>
+                            <option value="26-100">26 to 100</option>
+                            <option value="100+">More than 100</option>
+                            <option value="Custom">Not determined yet</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span>Members per Room</span>
+                          <select value={membersPerRoom} onChange={(event) => setMembersPerRoom(event.target.value)}>
+                            <option value="Under 500">Under 500</option>
+                            <option value="500-2000">500 to 2,000</option>
+                            <option value="2000+">More than 2,000</option>
+                            <option value="Custom">Varies by Room</option>
+                          </select>
+                        </label>
+                        <label className="is-wide">
+                          <span>Primary use case</span>
+                          <textarea
+                            value={useCase}
+                            onChange={(event) => setUseCase(event.target.value)}
+                            minLength={10}
+                            maxLength={1000}
+                            rows={5}
+                            required
+                            placeholder="Explain who will use the Rooms and what the organization needs to operate."
+                          />
+                        </label>
+                        <label>
+                          <span>Expected timeline</span>
+                          <select value={timeline} onChange={(event) => setTimeline(event.target.value)}>
+                            <option>Exploring</option>
+                            <option>Within 30 days</option>
+                            <option>Within 90 days</option>
+                            <option>Within 6 months</option>
+                            <option>Long-term planning</option>
+                          </select>
+                        </label>
+                        <label className="is-wide">
+                          <span>Requirements and notes</span>
+                          <textarea
+                            value={requirements}
+                            onChange={(event) => setRequirements(event.target.value)}
+                            maxLength={1600}
+                            rows={6}
+                            placeholder="Include controls, migration needs, integrations, support expectations, or other requirements."
+                          />
+                        </label>
+                      </div>
+
+                      <fieldset className="rooms-enterprise-checks">
+                        <legend>Areas to review</legend>
+                        <label><input type="checkbox" checked={whiteLabel} onChange={(event) => setWhiteLabel(event.target.checked)} /> White-label or branded experience</label>
+                        <label><input type="checkbox" checked={compliance} onChange={(event) => setCompliance(event.target.checked)} /> Compliance, retention, or data requirements</label>
+                        <label><input type="checkbox" checked={integrations} onChange={(event) => setIntegrations(event.target.checked)} /> Integrations, migration, or custom onboarding</label>
+                      </fieldset>
+
+                      {submission ? (
+                        <p className={`rooms-enterprise-message is-${submission.tone}`} role="status">
+                          {submission.tone === "success" ? <CheckCircle2 aria-hidden="true" /> : null}
+                          {submission.message}
+                        </p>
+                      ) : null}
+
+                      <button className="rooms-v2-button rooms-v2-button-primary rooms-enterprise-submit" disabled={submitting}>
+                        {submitting ? <Loader2 aria-hidden="true" className="is-spinning" /> : <Send aria-hidden="true" />}
+                        {submitting ? "Submitting inquiry…" : "Submit Enterprise inquiry"}
+                      </button>
+                    </form>
+
+                    <aside className="rooms-enterprise-summary">
+                      <p className="rooms-v2-eyebrow">Enterprise boundary</p>
+                      <h2>Sales-assisted, not self-service checkout.</h2>
+                      <ul>
+                        <li><Users aria-hidden="true" /> Custom Rooms and member capacity</li>
+                        <li><ShieldCheck aria-hidden="true" /> Enterprise controls and high-capacity operations</li>
+                        <li><FileCheck2 aria-hidden="true" /> Defined data, retention, and integration requirements</li>
+                        <li><Headphones aria-hidden="true" /> Dedicated onboarding and support terms</li>
+                      </ul>
+                      <p>
+                        Existing Enterprise subscriptions remain active under their current Stripe agreement.
+                        New Enterprise access begins only after commercial terms and provisioning are approved.
+                      </p>
+                    </aside>
+                  </div>
+                </div>
+              </main>
+            );
+          }
+          ''',
+          )
+
+          write(
+              "src/app/rooms/enterprise/room-enterprise.css",
+              '''.rooms-enterprise-page {
+            color: var(--loombus-text);
+          }
+
+          .rooms-enterprise-shell {
+            display: grid;
+            gap: 1.5rem;
+          }
+
+          .rooms-enterprise-private-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            border: 1px solid var(--loombus-border);
+            border-radius: 999px;
+            background: var(--loombus-surface);
+            padding: 0.65rem 0.9rem;
+            color: var(--loombus-text-muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+          }
+
+          .rooms-enterprise-hero {
+            background:
+              radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--loombus-gold) 24%, transparent), transparent 35%),
+              var(--loombus-surface);
+          }
+
+          .rooms-enterprise-value-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 1rem;
+          }
+
+          .rooms-enterprise-value-grid article,
+          .rooms-enterprise-form,
+          .rooms-enterprise-summary {
+            border: 1px solid var(--loombus-border);
+            border-radius: 1.5rem;
+            background: var(--loombus-surface);
+            box-shadow: var(--loombus-shadow-sm);
+          }
+
+          .rooms-enterprise-value-grid article {
+            padding: 1.25rem;
+          }
+
+          .rooms-enterprise-value-grid svg {
+            width: 1.35rem;
+            height: 1.35rem;
+            color: var(--loombus-gold);
+          }
+
+          .rooms-enterprise-value-grid h2 {
+            margin: 0.8rem 0 0.4rem;
+            font-size: 1rem;
+          }
+
+          .rooms-enterprise-value-grid p,
+          .rooms-enterprise-section-heading p,
+          .rooms-enterprise-summary p {
+            margin: 0;
+            color: var(--loombus-text-muted);
+            font-size: 0.88rem;
+            line-height: 1.65;
+          }
+
+          .rooms-enterprise-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 0.75fr);
+            gap: 1rem;
+            align-items: start;
+          }
+
+          .rooms-enterprise-form,
+          .rooms-enterprise-summary {
+            padding: clamp(1.1rem, 2vw, 1.75rem);
+          }
+
+          .rooms-enterprise-section-heading h2,
+          .rooms-enterprise-summary h2 {
+            margin: 0.35rem 0 0.55rem;
+            font-size: clamp(1.35rem, 2vw, 2rem);
+          }
+
+          .rooms-enterprise-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+            margin-top: 1.35rem;
+          }
+
+          .rooms-enterprise-fields label {
+            display: grid;
+            gap: 0.5rem;
+          }
+
+          .rooms-enterprise-fields label.is-wide {
+            grid-column: 1 / -1;
+          }
+
+          .rooms-enterprise-fields label > span,
+          .rooms-enterprise-checks legend {
+            color: var(--loombus-text);
+            font-size: 0.78rem;
+            font-weight: 800;
+          }
+
+          .rooms-enterprise-fields input,
+          .rooms-enterprise-fields select,
+          .rooms-enterprise-fields textarea {
+            width: 100%;
+            border: 1px solid var(--loombus-border);
+            border-radius: 1rem;
+            background: var(--loombus-page-bg);
+            padding: 0.85rem 0.95rem;
+            color: var(--loombus-text);
+            font: inherit;
+            outline: none;
+          }
+
+          .rooms-enterprise-fields textarea {
+            resize: vertical;
+          }
+
+          .rooms-enterprise-fields input:focus,
+          .rooms-enterprise-fields select:focus,
+          .rooms-enterprise-fields textarea:focus {
+            border-color: var(--loombus-gold);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--loombus-gold) 18%, transparent);
+          }
+
+          .rooms-enterprise-checks {
+            display: grid;
+            gap: 0.65rem;
+            margin: 1.25rem 0 0;
+            border: 1px solid var(--loombus-border);
+            border-radius: 1rem;
+            padding: 1rem;
+          }
+
+          .rooms-enterprise-checks label {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            color: var(--loombus-text-muted);
+            font-size: 0.86rem;
+          }
+
+          .rooms-enterprise-checks input {
+            width: 1rem;
+            height: 1rem;
+            accent-color: var(--loombus-gold);
+          }
+
+          .rooms-enterprise-submit {
+            margin-top: 1.25rem;
+          }
+
+          .rooms-enterprise-message {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 1rem 0 0;
+            border-radius: 0.9rem;
+            padding: 0.8rem 0.9rem;
+            font-size: 0.84rem;
+          }
+
+          .rooms-enterprise-message.is-success {
+            background: color-mix(in srgb, #22c55e 12%, var(--loombus-surface));
+            color: var(--loombus-text);
+          }
+
+          .rooms-enterprise-message.is-error {
+            background: color-mix(in srgb, #ef4444 12%, var(--loombus-surface));
+            color: var(--loombus-text);
+          }
+
+          .rooms-enterprise-summary {
+            position: sticky;
+            top: 1rem;
+          }
+
+          .rooms-enterprise-summary ul {
+            display: grid;
+            gap: 0.85rem;
+            margin: 1.2rem 0;
+            padding: 0;
+            list-style: none;
+          }
+
+          .rooms-enterprise-summary li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            color: var(--loombus-text);
+            font-size: 0.86rem;
+            line-height: 1.45;
+          }
+
+          .rooms-enterprise-summary li svg {
+            flex: 0 0 auto;
+            width: 1rem;
+            height: 1rem;
+            margin-top: 0.15rem;
+            color: var(--loombus-gold);
+          }
+
+          @media (max-width: 900px) {
+            .rooms-enterprise-value-grid,
+            .rooms-enterprise-grid {
+              grid-template-columns: 1fr;
+            }
+
+            .rooms-enterprise-summary {
+              position: static;
+            }
+          }
+
+          @media (max-width: 620px) {
+            .rooms-enterprise-fields {
+              grid-template-columns: 1fr;
+            }
+
+            .rooms-enterprise-fields label.is-wide {
+              grid-column: auto;
+            }
+          }
+          ''',
+          )
+
+          write(
+              "docs/room-subscription-ladder.md",
+              '''# Room subscription ladder
+
+          ## Customer-facing plans
+
+          ### Single-Room plans
+
+          - Free Room: $0, one Room, up to 10 members
+          - Room Starter: $19/month, one Room, up to 50 members
+          - Room Pro: $49/month, one Room, up to 250 members
+          - Room Business: $79/month, one Room, up to 750 members
+
+          ### Organization plans
+
+          - Organization: $99/month, up to 3 Rooms, up to 500 members per Room
+          - Organization Plus: $199/month, up to 10 Rooms, up to 2,000 members per Room
+          - Organization Enterprise: custom agreement and sales-assisted provisioning
+
+          ## Stripe configuration
+
+          Self-service checkout requires the existing Room billing environment variables plus:
+
+          - `STRIPE_ROOM_BUSINESS_MONTHLY_PRICE_ID` for the $79 monthly Room Business price
+          - `STRIPE_ROOM_ORGANIZATION_PLUS_MONTHLY_PRICE_ID` updated to the new $199 monthly price for new purchases and future plan changes
+
+          Keep `STRIPE_ROOM_ORGANIZATION_ENTERPRISE_MONTHLY_PRICE_ID` only while legacy self-service Enterprise subscriptions still exist. New Enterprise purchases do not use that price or self-service checkout.
+
+          Existing Organization Plus and Enterprise subscriptions remain on their current Stripe Price until the customer deliberately changes plans. Billing displays the actual Stripe subscription price for the active Room, so grandfathered subscribers continue to see their contracted amount.
+
+          ## Database
+
+          No Supabase migration is required. Room plan keys and checkout intent plan keys are stored as text. Room Business is a single-Room tier and is intentionally excluded from Organization Console grouping and included-Room provisioning.
+          ''',
+          )
+
+          print("Room subscription ladder changes applied.")
+          PY
+
+      - name: Install locked dependencies
+        run: npm ci --silent
+
+      - name: Check formatting and patch integrity
+        run: |
+          git diff --check
+          rg -n 'RoomPlanKey|organization-plus|enterprise|business' src/lib src/app/rooms src/components/room-plan-feature-enhancer.tsx | head -n 260
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit validated implementation
+        shell: bash
+        run: |
+          rm -f .github/workflows/apply-room-subscription-ladder.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Refresh Room subscription ladder and Enterprise sales flow"
+          git push origin HEAD:agent/room-subscription-ladder-refresh
