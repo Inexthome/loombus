@@ -12,8 +12,8 @@
 .room-operations-heading span { display: block; margin-top: .3rem; color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .82rem; line-height: 1.45; }
 .room-operations-heading > button { display: grid; width: 2.25rem; height: 2.25rem; flex: 0 0 auto; place-items: center; border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: .8rem; background: var(--rooms-live-surface, var(--loombus-surface)); color: inherit; cursor: pointer; }
 .room-operations-heading svg { width: 1rem; height: 1rem; }
-.room-operations-notice { margin: .9rem 1rem 0; border: 1px solid color-mix(in srgb, #25885d 35%, var(--rooms-live-border, var(--loombus-border))); border-radius: .9rem; background: color-mix(in srgb, #25885d 9%, transparent); padding: .75rem .85rem; font-size: .8rem; font-weight: 750; }
-.room-operations-notice[role="alert"] { position: fixed; top: max(1rem, env(safe-area-inset-top)); left: 50%; z-index: 5000; width: min(34rem, calc(100vw - 2rem)); margin: 0; transform: translateX(-50%); border-color: color-mix(in srgb, #b42318 55%, var(--rooms-live-border, var(--loombus-border))); background: color-mix(in srgb, #b42318 12%, var(--rooms-live-surface, var(--loombus-surface))); box-shadow: 0 18px 50px rgba(15, 23, 42, .22); color: var(--rooms-live-text, var(--loombus-text)); }
+.room-operations-notice { margin: .9rem 1rem 0; border: 1px solid color-mix(in srgb, #25885d 35%, var(--rooms-live-border, var(--loombus-border))); border-radius: .9rem; background: color-mix(in srgb, #25885d 9%, var(--rooms-live-surface, var(--loombus-surface))); padding: .75rem .85rem; color: var(--rooms-live-text, var(--loombus-text)); font-size: .8rem; font-weight: 750; line-height: 1.45; overflow-wrap: anywhere; }
+.room-operations .room-operations-notice[role="alert"] { position: fixed; top: auto; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); left: auto; z-index: 5000; width: min(32rem, calc(100vw - 2rem)); max-height: min(14rem, calc(100dvh - 2rem)); margin: 0; transform: none; overflow: auto; border-color: color-mix(in srgb, #b42318 55%, var(--rooms-live-border, var(--loombus-border))); background: color-mix(in srgb, #b42318 10%, var(--rooms-live-surface, var(--loombus-surface))); box-shadow: 0 18px 50px rgba(15, 23, 42, .22); color: var(--rooms-live-text, var(--loombus-text)); padding: .9rem 1rem; }
 .room-operations-loading { display: flex; align-items: center; justify-content: center; gap: .6rem; min-height: 9rem; color: var(--rooms-live-muted, var(--loombus-text-muted)); }
 .room-operation-tabs { display: flex; gap: .45rem; overflow-x: auto; padding: 1rem; border-bottom: 1px solid var(--rooms-live-border, var(--loombus-border)); }
 .room-operation-tabs button { display: inline-flex; min-height: 2.45rem; flex: 0 0 auto; align-items: center; gap: .45rem; border: 1px solid var(--rooms-live-border, var(--loombus-border)); border-radius: 999px; background: var(--rooms-live-surface-muted, var(--loombus-surface-muted)); padding: .5rem .75rem; color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .76rem; font-weight: 850; cursor: pointer; }
@@ -63,5 +63,40 @@
 .room-operation-card > * { margin: 0; }
 .room-operation-card.is-danger { border-color: color-mix(in srgb, #b42318 40%, var(--rooms-live-border, var(--loombus-border))); }
 .room-operation-empty { margin: .5rem 0 0; color: var(--rooms-live-muted, var(--loombus-text-muted)); font-size: .78rem; }
+
+html[data-loombus-theme="light"] .room-operations-panel,
+html[data-loombus-theme="light"] .room-operation-tabs {
+  background: #ffffff;
+  color: #09090b;
+}
+html[data-loombus-theme="light"] .room-operations-heading {
+  border-bottom-color: #d4d4d8;
+  background: #f4f4f5;
+  color: #09090b;
+}
+html[data-loombus-theme="light"] .room-operations-heading h2 { color: #18181b; }
+html[data-loombus-theme="light"] .room-operations-heading span { color: #52525b; }
+html[data-loombus-theme="light"] .room-operations-heading > button { border-color: #d4d4d8; background: #ffffff; color: #18181b; }
+html[data-loombus-theme="light"] .room-operations-notice { border-color: #8bbda3; background: #eff8f3; color: #173d2c; }
+html[data-loombus-theme="light"] .room-operations .room-operations-notice[role="alert"] { border-color: #d27e76; background: #fff4f2; color: #7a271f; }
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] .room-operations-panel,
+  html[data-loombus-theme="system"] .room-operation-tabs {
+    background: #ffffff;
+    color: #09090b;
+  }
+  html[data-loombus-theme="system"] .room-operations-heading {
+    border-bottom-color: #d4d4d8;
+    background: #f4f4f5;
+    color: #09090b;
+  }
+  html[data-loombus-theme="system"] .room-operations-heading h2 { color: #18181b; }
+  html[data-loombus-theme="system"] .room-operations-heading span { color: #52525b; }
+  html[data-loombus-theme="system"] .room-operations-heading > button { border-color: #d4d4d8; background: #ffffff; color: #18181b; }
+  html[data-loombus-theme="system"] .room-operations-notice { border-color: #8bbda3; background: #eff8f3; color: #173d2c; }
+  html[data-loombus-theme="system"] .room-operations .room-operations-notice[role="alert"] { border-color: #d27e76; background: #fff4f2; color: #7a271f; }
+}
+
 @media (max-width: 860px) { .room-operation-grid, .room-operation-member { grid-template-columns: 1fr; } .room-operation-usage { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .room-operations-panel { border-radius: 1rem; } .room-operations-heading, .room-operation-stack, .room-operation-grid, .room-operation-tabs { padding: .8rem; } .room-operation-member-controls { grid-template-columns: 1fr; } .room-operation-member-controls > * { grid-column: 1 !important; } .room-operation-report header, .room-operation-removed, .room-operation-section-heading { align-items: flex-start; flex-direction: column; } .room-operation-report header span { text-align: left; } }
+@media (max-width: 560px) { .room-operations-panel { border-radius: 1rem; } .room-operations-heading, .room-operation-stack, .room-operation-grid, .room-operation-tabs { padding: .8rem; } .room-operation-member-controls { grid-template-columns: 1fr; } .room-operation-member-controls > * { grid-column: 1 !important; } .room-operation-report header, .room-operation-removed, .room-operation-section-heading { align-items: flex-start; flex-direction: column; } .room-operation-report header span { text-align: left; } .room-operations .room-operations-notice[role="alert"] { right: .8rem; bottom: max(.8rem, env(safe-area-inset-bottom)); left: .8rem; width: auto; max-height: min(14rem, calc(100dvh - 1.6rem)); } }
