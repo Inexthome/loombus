@@ -1,0 +1,73 @@
+name: Trigger Room subscription ladder refresh
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.head_ref == 'agent/room-subscription-ladder-refresh' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: agent/room-subscription-ladder-refresh
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Extract and apply the approved implementation
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('.github/workflows/apply-room-subscription-ladder.yml').read_text(encoding='utf-8')
+          start_marker = '      - name: Apply approved Room subscription ladder\n'
+          end_marker = '      - name: Install locked dependencies\n'
+          start = source.index(start_marker)
+          run_marker = '        run: |\n'
+          run_start = source.index(run_marker, start) + len(run_marker)
+          run_end = source.index(end_marker, run_start)
+          lines = source[run_start:run_end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+          Path('/tmp/apply-room-subscription-ladder.sh').write_text(script, encoding='utf-8')
+          PY
+          bash /tmp/apply-room-subscription-ladder.sh
+
+      - name: Install locked dependencies
+        run: npm ci --silent
+
+      - name: Validate patch integrity
+        run: git diff --check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Commit validated implementation
+        shell: bash
+        run: |
+          rm -f .github/workflows/apply-room-subscription-ladder.yml
+          rm -f .github/workflows/trigger-room-subscription-ladder.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Refresh Room subscription ladder and Enterprise sales flow"
+          git push origin HEAD:agent/room-subscription-ladder-refresh
