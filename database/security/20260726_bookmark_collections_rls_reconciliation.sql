@@ -2,11 +2,17 @@
 --
 -- This migration is intentionally idempotent and transactional. It restores the
 -- repository source of truth after the earlier RLS migration disappeared from
--- main, removes any stale permissive policies, and preserves the intended
--- behavior:
+-- main, removes stale permissive policies, and preserves the intended behavior:
 --   - authenticated users may read only their own folders
 --   - Premium or Admin users may create, update, and delete only their own folders
 --   - anonymous users have no table privileges
+--
+-- Confirmed live preflight before this migration:
+--   - RLS was enabled
+--   - five permissive policies existed
+--   - bookmark_collections_insert_own allowed every authenticated owner to insert,
+--     bypassing the intended Premium/Admin insert policy through OR-combination
+--   - anon retained SELECT and MAINTAIN table privileges
 --
 -- Apply with the Supabase SQL Editor or the project's database migration runner.
 
@@ -38,18 +44,21 @@ security definer
 set search_path = ''
 as $$
   select
-    exists (
-      select 1
-      from public.user_ai_entitlements as entitlement
-      where entitlement.user_id = target_user_id
-        and entitlement.ai_assisted_enabled is true
-        and entitlement.tier in ('premium', 'admin')
-    )
-    or exists (
-      select 1
-      from public.profiles as profile
-      where profile.id = target_user_id
-        and profile.is_admin is true
+    target_user_id = (select auth.uid())
+    and (
+      exists (
+        select 1
+        from public.user_ai_entitlements as entitlement
+        where entitlement.user_id = target_user_id
+          and entitlement.ai_assisted_enabled is true
+          and entitlement.tier in ('premium', 'admin')
+      )
+      or exists (
+        select 1
+        from public.profiles as profile
+        where profile.id = target_user_id
+          and profile.is_admin is true
+      )
     );
 $$;
 
@@ -123,17 +132,20 @@ do $$
 declare
   rls_enabled boolean;
   policy_count integer;
+  authenticated_privileges text[];
+  helper_security_definer boolean;
+  helper_volatility "char";
+  anon_can_execute boolean;
+  authenticated_can_execute boolean;
+  service_role_can_execute boolean;
 begin
-  select table_row_security.is_enabled
+  select relation.relrowsecurity
   into rls_enabled
-  from (
-    select relation.relrowsecurity as is_enabled
-    from pg_catalog.pg_class as relation
-    join pg_catalog.pg_namespace as namespace
-      on namespace.oid = relation.relnamespace
-    where namespace.nspname = 'public'
-      and relation.relname = 'bookmark_collections'
-  ) as table_row_security;
+  from pg_catalog.pg_class as relation
+  join pg_catalog.pg_namespace as namespace
+    on namespace.oid = relation.relnamespace
+  where namespace.nspname = 'public'
+    and relation.relname = 'bookmark_collections';
 
   if rls_enabled is distinct from true then
     raise exception 'RLS verification failed for public.bookmark_collections.';
@@ -151,12 +163,66 @@ begin
 
   if exists (
     select 1
+    from pg_catalog.pg_policies
+    where schemaname = 'public'
+      and tablename = 'bookmark_collections'
+      and roles <> array['authenticated']::name[]
+  ) then
+    raise exception 'A bookmark_collections policy is not scoped exclusively to authenticated.';
+  end if;
+
+  if exists (
+    select 1
     from information_schema.role_table_grants
     where table_schema = 'public'
       and table_name = 'bookmark_collections'
       and grantee = 'anon'
   ) then
     raise exception 'Anonymous privileges still exist on public.bookmark_collections.';
+  end if;
+
+  select array_agg(privilege_type::text order by privilege_type::text)
+  into authenticated_privileges
+  from information_schema.role_table_grants
+  where table_schema = 'public'
+    and table_name = 'bookmark_collections'
+    and grantee = 'authenticated';
+
+  if authenticated_privileges is distinct from array['DELETE', 'INSERT', 'SELECT', 'UPDATE']::text[] then
+    raise exception 'Unexpected authenticated privileges on public.bookmark_collections: %.', authenticated_privileges;
+  end if;
+
+  select
+    procedure.prosecdef,
+    procedure.provolatile,
+    has_function_privilege('anon', procedure.oid, 'EXECUTE'),
+    has_function_privilege('authenticated', procedure.oid, 'EXECUTE'),
+    has_function_privilege('service_role', procedure.oid, 'EXECUTE')
+  into
+    helper_security_definer,
+    helper_volatility,
+    anon_can_execute,
+    authenticated_can_execute,
+    service_role_can_execute
+  from pg_catalog.pg_proc as procedure
+  join pg_catalog.pg_namespace as namespace
+    on namespace.oid = procedure.pronamespace
+  where namespace.nspname = 'public'
+    and procedure.proname = 'user_has_bookmark_collection_access'
+    and pg_catalog.pg_get_function_identity_arguments(procedure.oid) = 'target_user_id uuid';
+
+  if helper_security_definer is distinct from true then
+    raise exception 'Bookmark collection access helper is not SECURITY DEFINER.';
+  end if;
+
+  if helper_volatility is distinct from 's' then
+    raise exception 'Bookmark collection access helper is not STABLE.';
+  end if;
+
+  if anon_can_execute is distinct from false
+     or authenticated_can_execute is distinct from true
+     or service_role_can_execute is distinct from true then
+    raise exception 'Unexpected helper-function execution privileges.';
   end if;
 end
 $$;
