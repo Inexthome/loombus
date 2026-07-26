@@ -142,7 +142,7 @@ async function loadJobs(service: SupabaseClient, limit: number) {
     .order("created_at", { ascending: true })
     .limit(limit);
   if (result.error) throw new Error(result.error.message);
-  return (result.data ?? []).map((row: JsonRecord) => mapJob(row));
+  return ((result.data ?? []) as unknown as JsonRecord[]).map(mapJob);
 }
 
 async function loadJob(service: SupabaseClient, jobId: string) {
@@ -154,7 +154,7 @@ async function loadJob(service: SupabaseClient, jobId: string) {
   if (result.error || !result.data) {
     throw new Error(result.error?.message ?? "Room deletion job not found.");
   }
-  return mapJob(result.data as JsonRecord);
+  return mapJob(result.data as unknown as JsonRecord);
 }
 
 async function manifestState(service: SupabaseClient, jobId: string) {
@@ -167,7 +167,7 @@ async function manifestState(service: SupabaseClient, jobId: string) {
       .order("id", { ascending: true })
       .range(offset, offset + PAGE_SIZE - 1);
     if (result.error) throw new Error(result.error.message);
-    for (const row of result.data ?? []) {
+    for (const row of (result.data ?? []) as unknown as JsonRecord[]) {
       const bucket = text(row.bucket_id);
       const path = text(row.object_path);
       if (bucket && path) state.set(key(bucket, path), text(row.status));
@@ -243,8 +243,8 @@ async function registerTable(args: {
       }
       throw new Error(result.error.message);
     }
-    const candidates = (result.data ?? [])
-      .map((row: JsonRecord) => args.convert(row))
+    const candidates = ((result.data ?? []) as unknown as JsonRecord[])
+      .map((row) => args.convert(row))
       .filter((value: Candidate | null): value is Candidate => Boolean(value));
     const page = await register(
       args.service,
@@ -550,9 +550,10 @@ export async function verifyRoomBillingInactive(
   if (result.error) throw new Error(result.error.message);
   if (!result.data) throw new Error("Room not found for billing verification.");
 
-  const plan = text(result.data.subscription_plan).toLowerCase() || "free";
-  const localStatus = text(result.data.subscription_status).toLowerCase();
-  const subscriptionId = text(result.data.stripe_subscription_id);
+  const billingRow = result.data as unknown as JsonRecord;
+  const plan = text(billingRow.subscription_plan).toLowerCase() || "free";
+  const localStatus = text(billingRow.subscription_status).toLowerCase();
+  const subscriptionId = text(billingRow.stripe_subscription_id);
   const verifiedAt = new Date().toISOString();
 
   if (!subscriptionId) {
