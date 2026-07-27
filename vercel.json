@@ -11,6 +11,10 @@
     {
       "path": "/api/rooms/deletion/process",
       "schedule": "17 13 * * *"
+    },
+    {
+      "path": "/api/account/age-transition/process",
+      "schedule": "45 13 * * *"
     }
   ]
 }
