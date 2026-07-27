@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createMemberPrivacyServiceClient,
+  getMemberAgeBand,
   getMemberPrivacy,
   requireMemberUser,
 } from "@/lib/member-privacy-server";
@@ -8,7 +9,7 @@ import {
 function jsonError(message: string, status: number) {
   return NextResponse.json(
     { error: message },
-    { status, headers: { "Cache-Control": "private, no-store" } }
+    { status, headers: { "Cache-Control": "private, no-store" } },
   );
 }
 
@@ -19,18 +20,28 @@ export async function GET(request: NextRequest) {
   const { user } = await requireMemberUser(request);
   if (!user) return jsonError("Unauthorized.", 401);
 
-  const [settings, pendingResult] = await Promise.all([
+  const [settings, pendingResult, ageBand] = await Promise.all([
     getMemberPrivacy(service, user.id),
     service
       .from("follow_requests")
       .select("id", { count: "exact", head: true })
       .eq("target_id", user.id)
       .eq("status", "pending"),
+    getMemberAgeBand(service, user.id),
   ]);
 
   return NextResponse.json(
-    { settings, pendingFollowRequests: pendingResult.count ?? 0 },
-    { headers: { "Cache-Control": "private, no-store" } }
+    {
+      settings,
+      pendingFollowRequests: pendingResult.count ?? 0,
+      ageSafety: {
+        ageBand,
+        teenSafetyMode: ageBand === "teen",
+        privateAccountLocked: ageBand === "teen",
+        adultDiscoveryLimited: ageBand === "teen",
+      },
+    },
+    { headers: { "Cache-Control": "private, no-store" } },
   );
 }
 
@@ -42,11 +53,17 @@ export async function PATCH(request: NextRequest) {
   if (!user) return jsonError("Unauthorized.", 401);
 
   const body = await request.json().catch(() => ({}));
-  const current = await getMemberPrivacy(service, user.id);
+  const [current, ageBand] = await Promise.all([
+    getMemberPrivacy(service, user.id),
+    getMemberAgeBand(service, user.id),
+  ]);
+  const teen = ageBand === "teen";
+
   const next = {
     user_id: user.id,
-    private_account:
-      typeof body.privateAccount === "boolean"
+    private_account: teen
+      ? true
+      : typeof body.privateAccount === "boolean"
         ? body.privateAccount
         : current.private_account,
     discoverable:
@@ -57,6 +74,7 @@ export async function PATCH(request: NextRequest) {
       typeof body.showViewIdentity === "boolean"
         ? body.showViewIdentity
         : current.show_view_identity,
+    updated_at: new Date().toISOString(),
   };
 
   const { data, error } = await service
@@ -71,12 +89,16 @@ export async function PATCH(request: NextRequest) {
   if (next.private_account) {
     const { data: audiencePreference } = await service
       .from("discussion_audience_preferences")
-      .select("default_audience_type")
+      .select("default_audience_type, default_audience_base")
       .eq("user_id", user.id)
       .maybeSingle();
 
     const currentAudience = audiencePreference?.default_audience_type ?? "public";
-    if (currentAudience === "public") {
+    const publicCustom =
+      currentAudience === "custom" &&
+      (audiencePreference?.default_audience_base ?? "public") === "public";
+
+    if (currentAudience === "public" || currentAudience === "exclude_selected" || publicCustom) {
       const { error: audienceError } = await service
         .from("discussion_audience_preferences")
         .upsert(
@@ -86,8 +108,9 @@ export async function PATCH(request: NextRequest) {
             default_audience_base: null,
             include_user_ids: [],
             exclude_user_ids: [],
+            updated_at: new Date().toISOString(),
           },
-          { onConflict: "user_id" }
+          { onConflict: "user_id" },
         );
 
       if (!audienceError) futureDiscussionVisibilityChanged = true;
@@ -98,7 +121,13 @@ export async function PATCH(request: NextRequest) {
     {
       settings: data,
       futureDiscussionVisibilityChanged,
+      ageSafety: {
+        ageBand,
+        teenSafetyMode: teen,
+        privateAccountLocked: teen,
+        adultDiscoveryLimited: teen,
+      },
     },
-    { headers: { "Cache-Control": "private, no-store" } }
+    { headers: { "Cache-Control": "private, no-store" } },
   );
 }
