@@ -2,6 +2,12 @@ import "server-only";
 
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
+import {
+  canDiscoverTeenProfile,
+  getAgeSafetyRecord,
+  normalizeAgeBand,
+  type LoombusAgeBand,
+} from "@/lib/teen-safety-server";
 
 export type MemberPrivacySettings = {
   user_id: string;
@@ -16,6 +22,12 @@ export const DEFAULT_MEMBER_PRIVACY = {
   private_account: false,
   discoverable: true,
   show_view_identity: true,
+} as const;
+
+export const TEEN_MEMBER_PRIVACY_DEFAULTS = {
+  private_account: true,
+  discoverable: false,
+  show_view_identity: false,
 } as const;
 
 export const HIDDEN_ACCOUNT_STATUSES = new Set([
@@ -57,21 +69,36 @@ export async function requireMemberUser(request: NextRequest) {
   return { user: error ? null : data.user, requestClient };
 }
 
+export async function getMemberAgeBand(
+  service: SupabaseClient,
+  userId: string,
+): Promise<LoombusAgeBand> {
+  const ageSafety = await getAgeSafetyRecord(service, userId);
+  return normalizeAgeBand(ageSafety?.age_band);
+}
+
 export async function getMemberPrivacy(
   service: SupabaseClient,
-  userId: string
+  userId: string,
 ): Promise<MemberPrivacySettings> {
-  const { data } = await service
-    .from("member_privacy_settings")
-    .select("user_id, private_account, discoverable, show_view_identity, created_at, updated_at")
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [{ data }, ageBand] = await Promise.all([
+    service
+      .from("member_privacy_settings")
+      .select("user_id, private_account, discoverable, show_view_identity, created_at, updated_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    getMemberAgeBand(service, userId),
+  ]);
+
+  const defaults =
+    ageBand === "teen" ? TEEN_MEMBER_PRIVACY_DEFAULTS : DEFAULT_MEMBER_PRIVACY;
 
   return {
     user_id: userId,
-    private_account: data?.private_account ?? DEFAULT_MEMBER_PRIVACY.private_account,
-    discoverable: data?.discoverable ?? DEFAULT_MEMBER_PRIVACY.discoverable,
-    show_view_identity: data?.show_view_identity ?? DEFAULT_MEMBER_PRIVACY.show_view_identity,
+    private_account:
+      ageBand === "teen" ? true : (data?.private_account ?? defaults.private_account),
+    discoverable: data?.discoverable ?? defaults.discoverable,
+    show_view_identity: data?.show_view_identity ?? defaults.show_view_identity,
     created_at: data?.created_at,
     updated_at: data?.updated_at,
   };
@@ -89,13 +116,13 @@ export async function isAdmin(service: SupabaseClient, userId: string) {
 export async function hasBlockRelationship(
   service: SupabaseClient,
   firstUserId: string,
-  secondUserId: string
+  secondUserId: string,
 ) {
   const { data } = await service
     .from("user_blocks")
     .select("id")
     .or(
-      `and(blocker_id.eq.${firstUserId},blocked_id.eq.${secondUserId}),and(blocker_id.eq.${secondUserId},blocked_id.eq.${firstUserId})`
+      `and(blocker_id.eq.${firstUserId},blocked_id.eq.${secondUserId}),and(blocker_id.eq.${secondUserId},blocked_id.eq.${firstUserId})`,
     )
     .limit(1)
     .maybeSingle();
@@ -105,7 +132,7 @@ export async function hasBlockRelationship(
 export async function isFollower(
   service: SupabaseClient,
   followerId: string,
-  targetId: string
+  targetId: string,
 ) {
   const { data } = await service
     .from("follows")
@@ -119,11 +146,16 @@ export async function isFollower(
 export async function canViewMemberProfile(
   service: SupabaseClient,
   profileId: string,
-  viewer: User
+  viewer: User,
 ) {
   if (profileId === viewer.id) return true;
   if (await isAdmin(service, viewer.id)) return true;
   if (await hasBlockRelationship(service, profileId, viewer.id)) return false;
+
+  if (!(await canDiscoverTeenProfile(service, viewer.id, profileId))) {
+    return false;
+  }
+
   const privacy = await getMemberPrivacy(service, profileId);
   if (!privacy.private_account) return true;
   return isFollower(service, viewer.id, profileId);
