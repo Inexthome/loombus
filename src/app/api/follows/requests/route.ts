@@ -12,7 +12,7 @@ const UUID_PATTERN =
 function jsonError(message: string, status: number) {
   return NextResponse.json(
     { error: message },
-    { status, headers: { "Cache-Control": "private, no-store" } }
+    { status, headers: { "Cache-Control": "private, no-store" } },
   );
 }
 
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     { requests: items },
-    { headers: { "Cache-Control": "private, no-store" } }
+    { headers: { "Cache-Control": "private, no-store" } },
   );
 }
 
@@ -72,7 +72,9 @@ export async function POST(request: NextRequest) {
   const action = String(body.action ?? "").trim().toLowerCase();
 
   if (!UUID_PATTERN.test(requestId)) return jsonError("Invalid follow request.", 400);
-  if (!['accept', 'decline'].includes(action)) return jsonError("Choose accept or decline.", 400);
+  if (!["accept", "decline"].includes(action)) {
+    return jsonError("Choose accept or decline.", 400);
+  }
 
   const { data: followRequest, error } = await service
     .from("follow_requests")
@@ -95,31 +97,46 @@ export async function POST(request: NextRequest) {
       .eq("status", "pending");
 
     if (declineError) return jsonError(declineError.message, 500);
-    return NextResponse.json({ accepted: false, declined: true });
+    return NextResponse.json(
+      { accepted: false, declined: true },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   }
 
   if (await hasBlockRelationship(service, user.id, followRequest.requester_id)) {
     return jsonError("This member cannot be approved while a block is active.", 403);
   }
 
+  const respondedAt = new Date().toISOString();
+  const { data: acceptedRequest, error: updateError } = await service
+    .from("follow_requests")
+    .update({ status: "accepted", responded_at: respondedAt })
+    .eq("id", requestId)
+    .eq("target_id", user.id)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
+
+  if (updateError) return jsonError(updateError.message, 500);
+  if (!acceptedRequest) return jsonError("This follow request is no longer pending.", 409);
+
   const { error: followError } = await service.from("follows").upsert(
     {
       follower_id: followRequest.requester_id,
       following_id: user.id,
     },
-    { onConflict: "follower_id,following_id" }
+    { onConflict: "follower_id,following_id" },
   );
 
-  if (followError) return jsonError(followError.message, 500);
-
-  const { error: updateError } = await service
-    .from("follow_requests")
-    .update({ status: "accepted", responded_at: new Date().toISOString() })
-    .eq("id", requestId)
-    .eq("target_id", user.id)
-    .eq("status", "pending");
-
-  if (updateError) return jsonError(updateError.message, 500);
+  if (followError) {
+    await service
+      .from("follow_requests")
+      .update({ status: "pending", responded_at: null })
+      .eq("id", requestId)
+      .eq("target_id", user.id)
+      .eq("status", "accepted");
+    return jsonError(followError.message, 500);
+  }
 
   await createNotification({
     user_id: followRequest.requester_id,
@@ -130,5 +147,8 @@ export async function POST(request: NextRequest) {
     message: "Your follow request was approved.",
   }).catch(() => null);
 
-  return NextResponse.json({ accepted: true, following: true });
+  return NextResponse.json(
+    { accepted: true, following: true },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }
