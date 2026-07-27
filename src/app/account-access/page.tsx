@@ -7,17 +7,17 @@ const STATUS_COPY: Record<string, { title: string; message: string }> = {
   suspended: {
     title: "Your account is suspended.",
     message:
-      "Access to authenticated Loombus features is temporarily unavailable. Contact support if you believe this is an error.",
+      "Access to authenticated Loombus features is temporarily unavailable. You can review the recorded decision and submit an appeal when that decision is eligible.",
   },
   banned: {
     title: "Your account is restricted.",
     message:
-      "This account cannot access authenticated Loombus features. Contact support for information about an appeal.",
+      "This account cannot access ordinary authenticated Loombus features. The decision-history page remains available for eligible appeal and review information.",
   },
   deactivated: {
     title: "Your account is deactivated.",
     message:
-      "This account was deactivated and cannot access authenticated Loombus features until it is restored.",
+      "This account cannot access ordinary authenticated Loombus features until it is restored. Review the account record for any related enforcement decision.",
   },
   deletion_requested: {
     title: "Your deletion request is pending.",
@@ -27,12 +27,12 @@ const STATUS_COPY: Record<string, { title: string; message: string }> = {
   verification_unavailable: {
     title: "We could not verify account access.",
     message:
-      "Loombus could not confirm the current account status. Protected pages remain closed until verification succeeds. Return later or contact support if the problem continues.",
+      "Loombus could not confirm the current account status. Protected pages remain closed until verification succeeds. Return later or contact Support if the problem continues.",
   },
   profile_unavailable: {
     title: "Your account profile could not be verified.",
     message:
-      "Protected Loombus features require a verified account profile. Contact support so the account record can be reviewed safely.",
+      "Protected Loombus features require an available account profile. Contact Support so the account record can be reviewed safely.",
   },
   account_access_unverified: {
     title: "Your account status needs review.",
@@ -49,8 +49,9 @@ export default function AccountAccessPage() {
     ({
       title: "Account access is unavailable.",
       message:
-        "This account cannot currently access authenticated Loombus features. Contact support for assistance.",
+        "This account cannot currently access authenticated Loombus features. Review any recorded decision or contact Support for assistance.",
     } satisfies { title: string; message: string });
+  const showDecisionHistory = !["deletion_requested", "profile_unavailable"].includes(status);
 
   return (
     <main
@@ -68,12 +69,21 @@ export default function AccountAccessPage() {
 
         <p className="mb-7 leading-relaxed text-zinc-400">{copy.message}</p>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          {showDecisionHistory ? (
+            <Link
+              href="/account/enforcement"
+              className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
+            >
+              View decisions and appeals
+            </Link>
+          ) : null}
+
           <Link
             href="/support"
-            className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
+            className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
           >
-            Contact support
+            Contact Support
           </Link>
 
           <Link
