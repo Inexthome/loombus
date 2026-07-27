@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AdminTeenSafetyLink } from "@/components/admin-teen-safety-link";
 import AdminOperationsClient from "./admin-operations-client";
 import "./admin-operations.css";
 
@@ -25,6 +26,7 @@ export default function AdminDashboardPage() {
         </Link>
       </nav>
       <AdminOperationsClient />
+      <AdminTeenSafetyLink />
     </>
   );
 }
