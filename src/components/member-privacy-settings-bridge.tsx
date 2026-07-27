@@ -1,8 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
-import { Check, Eye, EyeOff, LockKeyhole, Search, UserCheck, X } from "lucide-react";
+import {
+  Check,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Search,
+  ShieldCheck,
+  UserCheck,
+  X,
+} from "lucide-react";
 import { ProfileAvatar } from "@/components/profile-avatar";
 import { supabase } from "@/lib/supabase/client";
 
@@ -10,6 +20,13 @@ type PrivacySettings = {
   private_account: boolean;
   discoverable: boolean;
   show_view_identity: boolean;
+};
+
+type AgeSafety = {
+  ageBand: string;
+  teenSafetyMode: boolean;
+  privateAccountLocked: boolean;
+  adultDiscoveryLimited: boolean;
 };
 
 type FollowRequest = {
@@ -28,6 +45,13 @@ const DEFAULTS: PrivacySettings = {
   private_account: false,
   discoverable: true,
   show_view_identity: true,
+};
+
+const DEFAULT_AGE_SAFETY: AgeSafety = {
+  ageBand: "unknown",
+  teenSafetyMode: false,
+  privateAccountLocked: false,
+  adultDiscoveryLimited: false,
 };
 
 async function getToken() {
@@ -73,6 +97,7 @@ function PrivacyToggle({
 export function MemberPrivacySettingsBridge() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
   const [settings, setSettings] = useState<PrivacySettings>(DEFAULTS);
+  const [ageSafety, setAgeSafety] = useState<AgeSafety>(DEFAULT_AGE_SAFETY);
   const [requests, setRequests] = useState<FollowRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -107,6 +132,14 @@ export function MemberPrivacySettingsBridge() {
           discoverable: privacyPayload.settings.discoverable !== false,
           show_view_identity: privacyPayload.settings.show_view_identity !== false,
         });
+        if (privacyPayload.ageSafety) {
+          setAgeSafety({
+            ageBand: String(privacyPayload.ageSafety.ageBand ?? "unknown"),
+            teenSafetyMode: Boolean(privacyPayload.ageSafety.teenSafetyMode),
+            privateAccountLocked: Boolean(privacyPayload.ageSafety.privateAccountLocked),
+            adultDiscoveryLimited: Boolean(privacyPayload.ageSafety.adultDiscoveryLimited),
+          });
+        }
       } else if (!privacyResponse.ok) {
         setMessage(privacyPayload.error ?? "Privacy controls could not load.");
       }
@@ -122,7 +155,13 @@ export function MemberPrivacySettingsBridge() {
   async function updateSettings(patch: Partial<PrivacySettings>) {
     if (saving) return;
     const previous = settings;
-    const next = { ...settings, ...patch };
+    const next = {
+      ...settings,
+      ...patch,
+      private_account: ageSafety.privateAccountLocked
+        ? true
+        : patch.private_account ?? settings.private_account,
+    };
     setSettings(next);
     setSaving(true);
     setMessage("");
@@ -149,10 +188,25 @@ export function MemberPrivacySettingsBridge() {
       setSettings(previous);
       setMessage(payload.error ?? "Privacy settings could not be saved.");
     } else {
+      if (payload.settings) {
+        setSettings({
+          private_account: Boolean(payload.settings.private_account),
+          discoverable: payload.settings.discoverable !== false,
+          show_view_identity: payload.settings.show_view_identity !== false,
+        });
+      }
+      if (payload.ageSafety) {
+        setAgeSafety({
+          ageBand: String(payload.ageSafety.ageBand ?? "unknown"),
+          teenSafetyMode: Boolean(payload.ageSafety.teenSafetyMode),
+          privateAccountLocked: Boolean(payload.ageSafety.privateAccountLocked),
+          adultDiscoveryLimited: Boolean(payload.ageSafety.adultDiscoveryLimited),
+        });
+      }
       setMessage(
         payload.futureDiscussionVisibilityChanged
           ? "Privacy saved. Future Discussions now default to Followers. Existing Discussions were not changed."
-          : "Privacy settings saved."
+          : "Privacy settings saved.",
       );
     }
     setSaving(false);
@@ -194,18 +248,37 @@ export function MemberPrivacySettingsBridge() {
         <span>{loading ? "Loading" : saving ? "Saving" : "Saved"}</span>
       </div>
 
+      {ageSafety.teenSafetyMode ? (
+        <div className="member-privacy-message" role="status">
+          <ShieldCheck aria-hidden="true" size={17} />
+          <span>
+            Teen Safety keeps this account private. Adult members outside an established
+            Loombus relationship cannot discover or open the profile. Turning 18 preserves
+            the privacy choices already in place. <Link href="/account/age-safety">Review Age Safety</Link>
+          </span>
+        </div>
+      ) : null}
+
       <div className="member-privacy-toggle-list">
         <PrivacyToggle
           title="Private account"
-          description="New followers must be approved. Non-followers see a limited profile, and future Discussions move from Public to Followers when needed. Existing Discussions keep their original visibility."
+          description={
+            ageSafety.privateAccountLocked
+              ? "Required while Teen Safety is active. Every new follower needs approval, and future Discussions cannot use a public audience."
+              : "New followers must be approved. Non-followers see a limited profile, and future Discussions move from Public to Followers when needed. Existing Discussions keep their original visibility."
+          }
           checked={settings.private_account}
-          disabled={loading || saving}
+          disabled={loading || saving || ageSafety.privateAccountLocked}
           onChange={(value) => void updateSettings({ private_account: value })}
-          icon={LockKeyhole}
+          icon={ageSafety.privateAccountLocked ? ShieldCheck : LockKeyhole}
         />
         <PrivacyToggle
           title="Appear in People and search"
-          description="Allow signed-in Loombus members to find your account in the People directory, Everything Search, and recommendations."
+          description={
+            ageSafety.adultDiscoveryLimited
+              ? "Allow eligible Loombus discovery. Adult strangers remain excluded even when this setting is on."
+              : "Allow signed-in Loombus members to find your account in the People directory, Everything Search, and recommendations."
+          }
           checked={settings.discoverable}
           disabled={loading || saving}
           onChange={(value) => void updateSettings({ discoverable: value })}
@@ -270,6 +343,6 @@ export function MemberPrivacySettingsBridge() {
         )}
       </section>
     </div>,
-    mount
+    mount,
   );
 }
