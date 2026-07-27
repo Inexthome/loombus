@@ -12,6 +12,10 @@ import {
   type RoomRow,
 } from "@/lib/room-operations";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
+import {
+  getAgeSafetyRecord,
+  getRoomMinorSafetySettings,
+} from "@/lib/teen-safety-server";
 
 type JsonObject = Record<string, unknown>;
 
@@ -49,9 +53,26 @@ export async function POST(request: NextRequest) {
     return jsonError(
       accountAccess.error,
       accountAccess.status,
-      accountAccess.code
+      accountAccess.code,
     );
   }
+
+  const ageSafety = await getAgeSafetyRecord(serviceSupabase, accountAccess.user.id);
+  if (!ageSafety || ageSafety.age_band === "unknown") {
+    return jsonError(
+      "Complete Age Safety before joining a Room.",
+      403,
+      "age_gate_required",
+    );
+  }
+  if (ageSafety.age_band === "under_13" || ageSafety.guardian_required) {
+    return jsonError(
+      "This account is not eligible to use Loombus.",
+      403,
+      "account_not_eligible",
+    );
+  }
+  const teen = ageSafety.age_band === "teen";
 
   const body = await request.json().catch(() => null);
   const token = asString(body?.token);
@@ -93,32 +114,44 @@ export async function POST(request: NextRequest) {
   const existingAccess = await getRoomAccess(
     serviceSupabase,
     roomId,
-    userId
+    userId,
   ).catch(() => null);
   if (!existingAccess) return jsonError("Room not found.", 404);
   if (existingAccess.allowed) {
     return NextResponse.json(
       { ok: true, roomId, alreadyMember: true },
-      { headers: { "Cache-Control": "private, no-store" } }
+      { headers: { "Cache-Control": "private, no-store" } },
     );
   }
 
   const entitlements = getRoomPlanEntitlements(
     existingAccess.room.subscriptionPlan,
-    existingAccess.room.subscriptionStatus
+    existingAccess.room.subscriptionStatus,
   );
   if (!entitlements.modules.includes("invites")) {
     return jsonError("Secure invitations are not active for this Room plan.", 403);
   }
 
-  const settingsResult = await serviceSupabase
-    .from("room_module_settings")
-    .select("settings")
-    .eq("room_id", roomId)
-    .maybeSingle();
+  const [settingsResult, minorSafety] = await Promise.all([
+    serviceSupabase
+      .from("room_module_settings")
+      .select("settings")
+      .eq("room_id", roomId)
+      .maybeSingle(),
+    getRoomMinorSafetySettings(serviceSupabase, roomId),
+  ]);
   if (settingsResult.error) {
     return jsonError("Room invitation settings could not be verified.", 503);
   }
+
+  if (teen && !minorSafety.allowsMinors) {
+    return jsonError(
+      "This Room is not configured for teen members.",
+      403,
+      "room_minors_not_allowed",
+    );
+  }
+
   const settings = asObject((settingsResult.data as RoomRow | null)?.settings);
   const defaults = getRoomModelDefaultSettings(existingAccess.room.roomType);
   const allowedDomains = normalizeDomains(settings.allowedEmailDomains);
@@ -128,24 +161,29 @@ export async function POST(request: NextRequest) {
     return jsonError(
       "This invitation is restricted to an approved email domain.",
       403,
-      "room_invite_domain_restricted"
+      "room_invite_domain_restricted",
     );
   }
 
   const requireApproval =
-    typeof settings.inviteRequiresApproval === "boolean"
+    teen ||
+    minorSafety.requiresStaffApproval ||
+    (typeof settings.inviteRequiresApproval === "boolean"
       ? settings.inviteRequiresApproval
-      : defaults.inviteRequiresApproval;
+      : defaults.inviteRequiresApproval);
+
   if (requireApproval) {
     const application = await serviceSupabase.from("room_applications").upsert(
       {
         room_id: roomId,
         applicant_id: userId,
         state: "pending",
-        note: `Joined through invitation: ${asString(invite.label) || "Room invitation"}`,
+        note: teen
+          ? `Teen Safety approval required. Invitation: ${asString(invite.label) || "Room invitation"}`
+          : `Joined through invitation: ${asString(invite.label) || "Room invitation"}`,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "room_id,applicant_id" }
+      { onConflict: "room_id,applicant_id" },
     );
     if (application.error) {
       return jsonError("The Room join request could not be created.", 503);
@@ -162,12 +200,12 @@ export async function POST(request: NextRequest) {
       action: "room.invite.requested",
       target_type: "room_invite",
       target_id: inviteId,
-      metadata: { room_id: roomId },
+      metadata: { room_id: roomId, teen_safety: teen },
     });
 
     return NextResponse.json(
-      { ok: true, roomId, pendingApproval: true },
-      { headers: { "Cache-Control": "private, no-store" } }
+      { ok: true, roomId, pendingApproval: true, teenSafetyReview: teen },
+      { headers: { "Cache-Control": "private, no-store" } },
     );
   }
 
@@ -195,7 +233,7 @@ export async function POST(request: NextRequest) {
       joined_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     },
-    { onConflict: "room_id,user_id" }
+    { onConflict: "room_id,user_id" },
   );
   if (membership.error) {
     return jsonError("The Room membership could not be created.", 503);
@@ -217,6 +255,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(
     { ok: true, roomId },
-    { headers: { "Cache-Control": "private, no-store" } }
+    { headers: { "Cache-Control": "private, no-store" } },
   );
 }
