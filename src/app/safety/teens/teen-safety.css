@@ -1,0 +1,58 @@
+.teen-safety-page {
+  min-height: 100vh;
+  padding: 42px 18px 100px;
+  background: var(--background, #080808);
+  color: var(--foreground, #f7f2e4);
+}
+
+.teen-safety-shell { width: min(1040px, 100%); margin: 0 auto; }
+
+.teen-safety-hero {
+  padding: clamp(30px, 6vw, 64px);
+  border: 1px solid color-mix(in srgb, #cbab5b 30%, transparent);
+  border-radius: 30px;
+  background: radial-gradient(circle at top right, color-mix(in srgb, #cbab5b 18%, transparent), transparent 45%), color-mix(in srgb, var(--background, #080808) 95%, #cbab5b 5%);
+}
+
+.teen-safety-hero > p { margin: 0 0 10px; color: #cbab5b; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
+.teen-safety-hero h1 { margin: 0; font-size: clamp(42px, 8vw, 78px); line-height: 1; }
+.teen-safety-hero > span { display: block; max-width: 720px; margin-top: 20px; font-size: clamp(17px, 2vw, 21px); line-height: 1.55; opacity: .72; }
+.teen-safety-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.teen-safety-actions a { padding: 11px 17px; border-radius: 999px; border: 1px solid color-mix(in srgb, currentColor 18%, transparent); color: inherit; text-decoration: none; font-size: 14px; }
+.teen-safety-actions a:first-child { background: #cbab5b; border-color: #cbab5b; color: #171208; font-weight: 700; }
+
+.teen-safety-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+.teen-safety-grid article,
+.teen-safety-section { border: 1px solid color-mix(in srgb, currentColor 12%, transparent); border-radius: 24px; background: color-mix(in srgb, var(--background, #080808) 96%, white 4%); }
+.teen-safety-grid article { padding: 24px; }
+.teen-safety-grid svg { color: #cbab5b; }
+.teen-safety-grid h2 { margin: 16px 0 8px; font-size: 21px; }
+.teen-safety-grid p,
+.teen-safety-section p { margin: 0; line-height: 1.65; opacity: .7; }
+
+.teen-safety-section { margin-top: 16px; padding: clamp(22px, 4vw, 34px); }
+.teen-safety-section h2 { margin: 0 0 12px; font-size: clamp(23px, 3vw, 31px); }
+.teen-safety-section p + p { margin-top: 14px; }
+.teen-safety-section a { color: #cbab5b; }
+
+.teen-safety-report-heading { display: flex; align-items: flex-start; gap: 14px; }
+.teen-safety-report-heading > svg { color: #cbab5b; flex: 0 0 auto; margin-top: 3px; }
+.teen-safety-report form { display: grid; gap: 15px; margin-top: 22px; }
+.teen-safety-report label { display: grid; gap: 8px; }
+.teen-safety-report label span { font-size: 13px; font-weight: 650; }
+.teen-safety-report input,
+.teen-safety-report textarea { width: 100%; padding: 12px 14px; border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: 14px; background: var(--background, #080808); color: inherit; }
+.teen-safety-report textarea { resize: vertical; }
+.teen-safety-report button { width: fit-content; padding: 12px 18px; border: 0; border-radius: 999px; background: #cbab5b; color: #171208; font-weight: 700; cursor: pointer; }
+.teen-safety-report button:disabled { opacity: .56; cursor: wait; }
+.teen-safety-form-message { margin-top: 15px !important; padding: 13px 15px; border-radius: 14px; background: color-mix(in srgb, #cbab5b 10%, transparent); opacity: 1 !important; }
+
+@media (max-width: 720px) {
+  .teen-safety-page { padding: 20px 12px calc(100px + env(safe-area-inset-bottom)); }
+  .teen-safety-grid { grid-template-columns: 1fr; }
+  .teen-safety-report button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teen-safety-page * { transition: none !important; scroll-behavior: auto !important; }
+}
