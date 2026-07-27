@@ -7,6 +7,10 @@ import {
   hasBlockRelationship,
   requireMemberUser,
 } from "@/lib/member-privacy-server";
+import {
+  getAgeBandMap,
+  hasEstablishedRelationship,
+} from "@/lib/teen-safety-server";
 
 type ProfileAccess = {
   account_status: string | null;
@@ -19,7 +23,10 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function jsonError(message: string, status: number, extras: Record<string, unknown> = {}) {
-  return NextResponse.json({ error: message, ...extras }, { status });
+  return NextResponse.json(
+    { error: message, ...extras },
+    { status, headers: { "Cache-Control": "private, no-store" } },
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -37,13 +44,13 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     const enforcement = getAccountEnforcementResult(
-      (profile ?? null) as ProfileAccess | null
+      (profile ?? null) as ProfileAccess | null,
     );
     if (!enforcement.allowed) {
       return jsonError(
         enforcement.errorMessage ?? "This account cannot change follow relationships.",
         403,
-        { code: enforcement.code }
+        { code: enforcement.code },
       );
     }
 
@@ -60,7 +67,7 @@ export async function POST(request: NextRequest) {
     if (!targetProfile) return jsonError("Member not found.", 404);
 
     const cooldownSince = new Date(
-      Date.now() - ACTION_COOLDOWN_SECONDS * 1000
+      Date.now() - ACTION_COOLDOWN_SECONDS * 1000,
     ).toISOString();
     const { data: recentAction } = await service
       .from("action_rate_events")
@@ -85,21 +92,23 @@ export async function POST(request: NextRequest) {
       return jsonError("This follow relationship is unavailable.", 403);
     }
 
-    const [{ data: existingFollow }, { data: pendingRequest }] = await Promise.all([
-      service
-        .from("follows")
-        .select("id")
-        .eq("follower_id", user.id)
-        .eq("following_id", targetUserId)
-        .maybeSingle(),
-      service
-        .from("follow_requests")
-        .select("id")
-        .eq("requester_id", user.id)
-        .eq("target_id", targetUserId)
-        .eq("status", "pending")
-        .maybeSingle(),
-    ]);
+    const [{ data: existingFollow }, { data: pendingRequest }, ageBands] =
+      await Promise.all([
+        service
+          .from("follows")
+          .select("id")
+          .eq("follower_id", user.id)
+          .eq("following_id", targetUserId)
+          .maybeSingle(),
+        service
+          .from("follow_requests")
+          .select("id")
+          .eq("requester_id", user.id)
+          .eq("target_id", targetUserId)
+          .eq("status", "pending")
+          .maybeSingle(),
+        getAgeBandMap(service, [user.id, targetUserId]),
+      ]);
 
     if (existingFollow) {
       const { error: deleteError } = await service
@@ -116,11 +125,42 @@ export async function POST(request: NextRequest) {
           .eq("id", pendingRequest.id);
       }
 
-      return NextResponse.json({ following: false, requested: false });
+      return NextResponse.json(
+        { following: false, requested: false },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
+    }
+
+    const requesterBand = ageBands.get(user.id) ?? "unknown";
+    const targetBand = ageBands.get(targetUserId) ?? "unknown";
+    if (requesterBand === "under_13" || targetBand === "under_13") {
+      return jsonError("This follow relationship is unavailable.", 403);
+    }
+    if (requesterBand === "unknown") {
+      return jsonError("Complete Age Safety before following members.", 403, {
+        code: "age_gate_required",
+      });
     }
 
     const targetPrivacy = await getMemberPrivacy(service, targetUserId);
-    if (targetPrivacy.private_account) {
+    const requiresApproval = targetPrivacy.private_account || targetBand === "teen";
+
+    if (requiresApproval) {
+      if (requesterBand === "adult" && targetBand === "teen") {
+        const established = await hasEstablishedRelationship(
+          service,
+          user.id,
+          targetUserId,
+        );
+        if (!established) {
+          return jsonError(
+            "Adult members can request to follow a teen only after the teen follows them or both members share an active Room.",
+            403,
+            { code: "teen_follow_relationship_required" },
+          );
+        }
+      }
+
       if (pendingRequest) {
         const { error: cancelError } = await service
           .from("follow_requests")
@@ -128,7 +168,10 @@ export async function POST(request: NextRequest) {
           .eq("id", pendingRequest.id)
           .eq("status", "pending");
         if (cancelError) return jsonError(cancelError.message, 500);
-        return NextResponse.json({ following: false, requested: false });
+        return NextResponse.json(
+          { following: false, requested: false },
+          { headers: { "Cache-Control": "private, no-store" } },
+        );
       }
 
       const { data: requestRow, error: requestError } = await service
@@ -155,11 +198,14 @@ export async function POST(request: NextRequest) {
         }).catch(() => null);
       }
 
-      return NextResponse.json({
-        following: false,
-        requested: true,
-        followRequestId: requestRow.id,
-      });
+      return NextResponse.json(
+        {
+          following: false,
+          requested: true,
+          followRequestId: requestRow.id,
+        },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
     }
 
     const { error: followError } = await service.from("follows").insert({
@@ -185,7 +231,10 @@ export async function POST(request: NextRequest) {
       }).catch(() => null);
     }
 
-    return NextResponse.json({ following: true, requested: false });
+    return NextResponse.json(
+      { following: true, requested: false },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (error) {
     console.error("Follow toggle failed:", error);
     return jsonError("Unexpected server error.", 500);
