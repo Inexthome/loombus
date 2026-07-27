@@ -1,0 +1,97 @@
+.age-safety-page {
+  min-height: 100vh;
+  padding: 32px 18px 120px;
+  background: var(--background, #080808);
+  color: var(--foreground, #f6f1e4);
+}
+
+.age-safety-shell { width: min(900px, 100%); margin: 0 auto; }
+.age-safety-back { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 22px; color: color-mix(in srgb, currentColor 66%, transparent); text-decoration: none; font-size: 14px; }
+
+.age-safety-hero,
+.age-safety-card,
+.age-safety-metrics,
+.age-safety-state,
+.age-safety-message {
+  border: 1px solid color-mix(in srgb, #cbab5b 28%, transparent);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--background, #080808) 93%, #cbab5b 7%);
+}
+
+.age-safety-hero { display: flex; justify-content: space-between; gap: 24px; padding: 28px; }
+.age-safety-hero p { margin: 0 0 8px; color: #cbab5b; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; }
+.age-safety-hero h1 { margin: 0 0 10px; font-size: clamp(32px, 5vw, 50px); }
+.age-safety-hero span { max-width: 680px; color: color-mix(in srgb, currentColor 68%, transparent); line-height: 1.55; }
+.age-safety-hero > svg { width: 46px; height: 46px; color: #cbab5b; flex: 0 0 auto; }
+
+.age-safety-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 18px; overflow: hidden; }
+.age-safety-metrics article { display: grid; gap: 7px; padding: 20px; border-right: 1px solid color-mix(in srgb, currentColor 10%, transparent); }
+.age-safety-metrics article:last-child { border-right: 0; }
+.age-safety-metrics span { font-size: 12px; opacity: .62; }
+.age-safety-metrics strong { font-size: 18px; }
+
+.age-safety-card { margin-top: 18px; padding: 24px; }
+.age-safety-card.is-protected { border-color: color-mix(in srgb, #cbab5b 50%, transparent); }
+.age-safety-card-heading { display: flex; gap: 14px; align-items: flex-start; }
+.age-safety-card-heading > svg { color: #cbab5b; flex: 0 0 auto; }
+.age-safety-card h2 { margin: 0 0 8px; font-size: 22px; }
+.age-safety-card p { margin: 0; color: color-mix(in srgb, currentColor 68%, transparent); line-height: 1.6; }
+.age-safety-card ul { margin: 18px 0 0 22px; padding: 0; color: color-mix(in srgb, currentColor 74%, transparent); line-height: 1.7; }
+.age-safety-transition { display: flex; align-items: center; gap: 9px; margin-top: 18px; color: #cbab5b; font-size: 14px; }
+
+.age-safety-form { display: grid; gap: 16px; margin-top: 22px; }
+.age-safety-form label { display: grid; gap: 8px; }
+.age-safety-form label > span { font-size: 13px; font-weight: 650; }
+.age-safety-form input,
+.age-safety-form textarea {
+  width: 100%;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--background, #080808) 96%, white 4%);
+  color: inherit;
+  padding: 12px 14px;
+}
+.age-safety-form textarea { resize: vertical; }
+.age-safety-form button,
+.age-safety-open-request button {
+  width: fit-content;
+  border: 0;
+  border-radius: 999px;
+  background: #cbab5b;
+  color: #171208;
+  padding: 12px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.age-safety-form button:disabled,
+.age-safety-open-request button:disabled { opacity: .56; cursor: wait; }
+
+.age-safety-open-request { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 20px; padding: 18px; border-radius: 18px; background: color-mix(in srgb, #cbab5b 10%, transparent); }
+.age-safety-open-request > div { display: grid; gap: 5px; }
+.age-safety-open-request span { font-size: 13px; opacity: .68; }
+
+.age-safety-history { display: grid; gap: 10px; margin-top: 16px; }
+.age-safety-history article { padding: 16px; border: 1px solid color-mix(in srgb, currentColor 11%, transparent); border-radius: 16px; }
+.age-safety-history article > div { display: flex; justify-content: space-between; gap: 16px; }
+.age-safety-history article p { margin-top: 8px; }
+.age-safety-history article small { display: block; margin-top: 8px; opacity: .66; }
+
+.age-safety-state,
+.age-safety-message { margin-top: 18px; padding: 18px 20px; }
+.age-safety-resource { margin: 20px 4px 0; font-size: 14px; opacity: .7; }
+.age-safety-resource a { color: #cbab5b; }
+
+@media (max-width: 680px) {
+  .age-safety-page { padding: 20px 12px calc(120px + env(safe-area-inset-bottom)); }
+  .age-safety-hero { padding: 22px; }
+  .age-safety-metrics { grid-template-columns: 1fr; }
+  .age-safety-metrics article { border-right: 0; border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent); }
+  .age-safety-metrics article:last-child { border-bottom: 0; }
+  .age-safety-open-request { align-items: flex-start; flex-direction: column; }
+  .age-safety-form button,
+  .age-safety-open-request button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .age-safety-page * { transition: none !important; scroll-behavior: auto !important; }
+}
