@@ -1,0 +1,158 @@
+.room-minor-safety-page {
+  min-height: 100vh;
+  padding: 32px 18px 120px;
+  background: var(--background, #080808);
+  color: var(--foreground, #f7f2e4);
+}
+
+.room-minor-safety-shell {
+  width: min(860px, 100%);
+  margin: 0 auto;
+}
+
+.room-minor-safety-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 22px;
+  color: color-mix(in srgb, currentColor 68%, transparent);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.room-minor-safety-hero,
+.room-minor-safety-card,
+.room-minor-safety-summary,
+.room-minor-safety-state,
+.room-minor-safety-message {
+  border: 1px solid color-mix(in srgb, #cbab5b 28%, transparent);
+  background: color-mix(in srgb, var(--background, #080808) 92%, #cbab5b 8%);
+  border-radius: 24px;
+}
+
+.room-minor-safety-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+}
+
+.room-minor-safety-hero > svg {
+  width: 44px;
+  height: 44px;
+  color: #cbab5b;
+}
+
+.room-minor-safety-hero p {
+  margin: 0 0 8px;
+  color: #cbab5b;
+  font-size: 12px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.room-minor-safety-hero h1 {
+  margin: 0 0 10px;
+  font-size: clamp(30px, 5vw, 48px);
+}
+
+.room-minor-safety-hero span,
+.room-minor-safety-card p,
+.room-minor-safety-card small,
+.room-minor-safety-note {
+  color: color-mix(in srgb, currentColor 66%, transparent);
+  line-height: 1.55;
+}
+
+.room-minor-safety-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 18px;
+  overflow: hidden;
+}
+
+.room-minor-safety-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 20px;
+  background: color-mix(in srgb, var(--background, #080808) 96%, #cbab5b 4%);
+}
+
+.room-minor-safety-summary strong { font-size: 21px; }
+.room-minor-safety-summary span { font-size: 12px; opacity: .66; }
+
+.room-minor-safety-card {
+  margin-top: 18px;
+  padding: 24px;
+}
+
+.room-minor-safety-card-heading {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.room-minor-safety-card-heading > svg { color: #cbab5b; flex: 0 0 auto; }
+.room-minor-safety-card h2 { margin: 0 0 6px; font-size: 21px; }
+.room-minor-safety-card p { margin: 0; }
+
+.room-minor-safety-toggle,
+.room-minor-safety-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.room-minor-safety-toggle span { display: grid; gap: 4px; }
+.room-minor-safety-toggle input { width: 22px; height: 22px; accent-color: #cbab5b; }
+
+.room-minor-safety-select select {
+  min-width: 190px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--background, #080808);
+  color: inherit;
+}
+
+.room-minor-safety-note { margin-top: 16px !important; font-size: 13px; }
+.room-minor-safety-state,
+.room-minor-safety-message { margin-top: 18px; padding: 18px 20px; }
+
+.room-minor-safety-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 20px;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #cbab5b;
+  color: #16120a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.room-minor-safety-save:disabled { opacity: .58; cursor: wait; }
+
+@media (max-width: 640px) {
+  .room-minor-safety-page { padding: 20px 12px calc(120px + env(safe-area-inset-bottom)); }
+  .room-minor-safety-hero { padding: 22px; }
+  .room-minor-safety-summary { grid-template-columns: 1fr; }
+  .room-minor-safety-toggle,
+  .room-minor-safety-select { align-items: flex-start; flex-direction: column; }
+  .room-minor-safety-select select,
+  .room-minor-safety-save { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-minor-safety-page * { scroll-behavior: auto !important; transition: none !important; }
+}
