@@ -22,11 +22,37 @@ function response(payload: unknown, status = 200) {
 async function authorize(request: NextRequest, roomId: string) {
   const requestClient = createRequestSupabase(request);
   const accountAccess = await verifyRequestAccountAccess(requestClient);
-  if (!accountAccess.ok) return { response: response({ error: accountAccess.error }, accountAccess.status) };
+  if (!accountAccess.ok) {
+    return { response: response({ error: accountAccess.error }, accountAccess.status) };
+  }
   const service = createRoomServiceSupabase();
   const access = await getRoomAccess(service, roomId, accountAccess.user.id);
   if (!access) return { response: response({ error: "Room not found." }, 404) };
   return { service, access, userId: accountAccess.user.id };
+}
+
+async function activeTeenMemberCount(
+  service: ReturnType<typeof createRoomServiceSupabase>,
+  roomId: string,
+) {
+  const { data: members, error: memberError } = await service
+    .from("room_members")
+    .select("user_id")
+    .eq("room_id", roomId)
+    .not("status", "in", "(blocked,removed,inactive)")
+    .limit(5000);
+  if (memberError) throw memberError;
+
+  const userIds = [...new Set((members ?? []).map((row) => row.user_id).filter(Boolean))];
+  if (!userIds.length) return 0;
+
+  const { count, error } = await service
+    .from("profile_sensitive")
+    .select("id", { count: "exact", head: true })
+    .in("id", userIds)
+    .eq("age_band", "teen");
+  if (error) throw error;
+  return count ?? 0;
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
@@ -39,19 +65,16 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return response({ canManage: false, roomId }, 200);
     }
 
-    const settings = await getRoomMinorSafetySettings(authorized.service, roomId);
-    const { count } = await authorized.service
-      .from("room_members")
-      .select("id, profile_sensitive!inner(age_band)", { count: "exact", head: true })
-      .eq("room_id", roomId)
-      .eq("profile_sensitive.age_band", "teen")
-      .not("status", "in", "(blocked,removed,inactive)");
+    const [settings, teenCount] = await Promise.all([
+      getRoomMinorSafetySettings(authorized.service, roomId),
+      activeTeenMemberCount(authorized.service, roomId),
+    ]);
 
     return response({
       canManage: true,
       room: { id: roomId, name: authorized.access.room.name },
       settings,
-      activeTeenMemberCount: count ?? 0,
+      activeTeenMemberCount: teenCount,
     });
   } catch (error) {
     console.error("Room minor safety load failed:", error);
@@ -78,15 +101,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const adultContactMode =
       input.adultContactMode === "disabled" ? "disabled" : "teen_initiated";
 
-    const { data: teenRows, error: teenError } = await authorized.service
-      .from("room_members")
-      .select("id, user_id, profile_sensitive!inner(age_band)")
-      .eq("room_id", roomId)
-      .eq("profile_sensitive.age_band", "teen")
-      .not("status", "in", "(blocked,removed,inactive)")
-      .limit(1);
-    if (teenError) return response({ error: "Unable to verify current Room membership." }, 503);
-    if (!allowsMinors && (teenRows?.length ?? 0) > 0) {
+    const teenCount = await activeTeenMemberCount(authorized.service, roomId);
+    if (!allowsMinors && teenCount > 0) {
       return response(
         { error: "Remove or resolve active teen memberships before disabling minor participation." },
         409,
