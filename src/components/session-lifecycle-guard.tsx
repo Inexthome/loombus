@@ -6,7 +6,7 @@ import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { supabase } from "@/lib/supabase/client";
 
-const AUTHENTICATED_ROOT_DESTINATION = "/home";
+const AUTHENTICATED_ROOT_DESTINATION = "/discussions";
 const BACKGROUND_REVALIDATION_INTERVAL_MS = 5 * 60 * 1000;
 
 const PROTECTED_PATH_PREFIXES = [
@@ -50,10 +50,7 @@ function isAccountBootstrapPath(pathname: string) {
 }
 
 function getCurrentDestination(pathname: string) {
-  if (typeof window === "undefined") {
-    return pathname;
-  }
-
+  if (typeof window === "undefined") return pathname;
   return `${pathname}${window.location.search}${window.location.hash}`;
 }
 
@@ -94,16 +91,11 @@ export function SessionLifecycleGuard() {
       }
 
       if (validationInFlightRef.current) {
-        if (showBlockingScreen) {
-          setChecking(true);
-        }
-
+        if (showBlockingScreen) setChecking(true);
         return validationInFlightRef.current;
       }
 
-      if (showBlockingScreen) {
-        setChecking(true);
-      }
+      if (showBlockingScreen) setChecking(true);
 
       const validationPromise = (async () => {
         try {
@@ -120,18 +112,10 @@ export function SessionLifecycleGuard() {
             return false;
           }
 
-          if (rootPath) {
-            lastSuccessfulValidationAtRef.current = Date.now();
-            router.replace(AUTHENTICATED_ROOT_DESTINATION);
-            return false;
-          }
-
-          const { data: userData, error: userError } =
-            await supabase.auth.getUser();
-
+          const { data: userData, error: userError } = await supabase.auth.getUser();
           if (userError || !userData.user) {
             await supabase.auth.signOut({ scope: "local" });
-            router.replace(getLoginHref(pathname));
+            router.replace(rootPath ? "/login" : getLoginHref(pathname));
             return false;
           }
 
@@ -158,20 +142,23 @@ export function SessionLifecycleGuard() {
           }
 
           const enforcement = getAccountEnforcementResult(profile);
-
           if (!enforcement.allowed) {
-            const unverified =
-              enforcement.code === "account_access_unverified";
-
-            if (!unverified) {
-              await supabase.auth.signOut({ scope: "local" });
-            }
-
+            // Keep the authenticated session so a restricted member can open the
+            // dedicated decision-history and appeal route. Ordinary protected APIs
+            // continue to deny the account through their server-side access checks.
             router.replace(
               getAccountAccessHref(
-                unverified ? "account_access_unverified" : enforcement.status
+                enforcement.code === "account_access_unverified"
+                  ? "account_access_unverified"
+                  : enforcement.status
               )
             );
+            return false;
+          }
+
+          if (rootPath) {
+            lastSuccessfulValidationAtRef.current = Date.now();
+            router.replace(AUTHENTICATED_ROOT_DESTINATION);
             return false;
           }
 
@@ -180,9 +167,8 @@ export function SessionLifecycleGuard() {
           return true;
         } catch {
           if (rootPath) {
-            lastSuccessfulValidationAtRef.current = Date.now();
-            setChecking(false);
-            return true;
+            router.replace(getAccountAccessHref("verification_unavailable"));
+            return false;
           }
 
           router.replace(getAccountAccessHref("verification_unavailable"));
@@ -191,7 +177,6 @@ export function SessionLifecycleGuard() {
       })();
 
       validationInFlightRef.current = validationPromise;
-
       void validationPromise.finally(() => {
         if (validationInFlightRef.current === validationPromise) {
           validationInFlightRef.current = null;
@@ -209,21 +194,11 @@ export function SessionLifecycleGuard() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!shouldResolveSession) {
-        return;
-      }
-
-      if (rootPath) {
-        if (session) {
-          router.replace(AUTHENTICATED_ROOT_DESTINATION);
-        } else {
-          setChecking(false);
-        }
-        return;
-      }
+      if (!shouldResolveSession) return;
 
       if (event === "SIGNED_OUT" || !session) {
-        router.replace(getLoginHref(pathname));
+        if (rootPath) setChecking(false);
+        else router.replace(getLoginHref(pathname));
         return;
       }
 
@@ -254,9 +229,7 @@ export function SessionLifecycleGuard() {
     };
   }, [pathname, rootPath, router, shouldResolveSession, validateSession]);
 
-  if (!shouldResolveSession || !checking) {
-    return null;
-  }
+  if (!shouldResolveSession || !checking) return null;
 
   return (
     <div className="fixed inset-0 z-[9998] bg-black">
@@ -265,7 +238,7 @@ export function SessionLifecycleGuard() {
         title={rootPath ? "Restoring your Loombus..." : "Checking your session..."}
         message={
           rootPath
-            ? "Opening your signed-in Home when a saved session is available."
+            ? "Opening your signed-in Discussions when a saved session is available."
             : "Confirming your secure access before opening this page."
         }
       />
