@@ -1,0 +1,94 @@
+.admin-teen-page { min-height: 100vh; padding: 28px 18px 110px; background: var(--background, #080808); color: var(--foreground, #f7f2e4); }
+.admin-teen-shell { width: min(1320px, 100%); margin: 0 auto; }
+.admin-teen-hero,
+.admin-teen-metrics,
+.admin-teen-toolbar,
+.admin-teen-queue,
+.admin-teen-detail,
+.admin-teen-message,
+.admin-teen-state { border: 1px solid color-mix(in srgb, #cbab5b 24%, transparent); border-radius: 24px; background: color-mix(in srgb, var(--background, #080808) 94%, #cbab5b 6%); }
+.admin-teen-hero { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 26px; }
+.admin-teen-hero a { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 18px; color: inherit; opacity: .66; text-decoration: none; font-size: 13px; }
+.admin-teen-hero p { margin: 0 0 7px; color: #cbab5b; text-transform: uppercase; letter-spacing: .16em; font-size: 11px; }
+.admin-teen-hero h1 { margin: 0 0 9px; font-size: clamp(31px, 4vw, 49px); }
+.admin-teen-hero span { display: block; max-width: 760px; opacity: .68; line-height: 1.55; }
+.admin-teen-hero > button { display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px; border: 1px solid color-mix(in srgb, currentColor 15%, transparent); border-radius: 999px; background: transparent; color: inherit; cursor: pointer; }
+
+.admin-teen-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 16px; overflow: hidden; }
+.admin-teen-metrics article { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 7px 12px; padding: 18px; border-right: 1px solid color-mix(in srgb, currentColor 10%, transparent); }
+.admin-teen-metrics article:last-child { border-right: 0; }
+.admin-teen-metrics svg { color: #cbab5b; grid-row: 1 / span 2; }
+.admin-teen-metrics strong { font-size: 22px; }
+.admin-teen-metrics span { font-size: 12px; opacity: .62; }
+
+.admin-teen-message,
+.admin-teen-state { margin-top: 16px; padding: 16px 18px; }
+.admin-teen-state { width: min(760px, calc(100% - 24px)); margin: 80px auto; display: flex; justify-content: center; align-items: center; gap: 10px; }
+.admin-teen-spin { animation: admin-teen-spin 1s linear infinite; }
+@keyframes admin-teen-spin { to { transform: rotate(360deg); } }
+
+.admin-teen-toolbar { display: grid; grid-template-columns: minmax(240px, 1fr) 220px 170px; gap: 10px; margin-top: 16px; padding: 14px; }
+.admin-teen-toolbar label { display: flex; align-items: center; gap: 9px; padding: 0 12px; border: 1px solid color-mix(in srgb, currentColor 13%, transparent); border-radius: 14px; }
+.admin-teen-toolbar label svg { width: 17px; opacity: .6; }
+.admin-teen-toolbar input,
+.admin-teen-toolbar select { min-height: 44px; width: 100%; border: 1px solid color-mix(in srgb, currentColor 13%, transparent); border-radius: 14px; background: var(--background, #080808); color: inherit; padding: 0 12px; }
+.admin-teen-toolbar label input { border: 0; padding: 0; outline: 0; background: transparent; }
+
+.admin-teen-workspace { display: grid; grid-template-columns: minmax(300px, 390px) minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+.admin-teen-queue { max-height: 780px; overflow: auto; padding: 10px; }
+.admin-teen-queue > button { width: 100%; display: grid; gap: 5px; text-align: left; margin-bottom: 8px; padding: 15px; border: 1px solid color-mix(in srgb, currentColor 11%, transparent); border-radius: 16px; background: transparent; color: inherit; cursor: pointer; }
+.admin-teen-queue > button[data-selected="true"] { border-color: #cbab5b; background: color-mix(in srgb, #cbab5b 11%, transparent); }
+.admin-teen-queue strong { font-size: 15px; }
+.admin-teen-queue small { opacity: .68; }
+.admin-teen-queue em { font-style: normal; font-size: 11px; opacity: .52; }
+.admin-teen-kind { width: fit-content; padding: 4px 8px; border-radius: 999px; background: color-mix(in srgb, #cbab5b 13%, transparent); color: #cbab5b; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; }
+.admin-teen-kind.is-underage { color: #ffb3a8; background: color-mix(in srgb, #ff6b57 12%, transparent); }
+
+.admin-teen-detail { min-height: 600px; padding: 24px; }
+.admin-teen-detail-heading { display: flex; justify-content: space-between; gap: 20px; }
+.admin-teen-detail-heading span { color: #cbab5b; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; }
+.admin-teen-detail-heading h2 { margin: 7px 0 4px; font-size: 28px; }
+.admin-teen-detail-heading p { margin: 0; opacity: .6; }
+.admin-teen-detail-heading > svg { color: #cbab5b; width: 38px; height: 38px; }
+.admin-teen-context { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 20px; }
+.admin-teen-context > div { display: grid; gap: 5px; padding: 13px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); border-radius: 14px; }
+.admin-teen-context span { font-size: 10px; opacity: .55; text-transform: uppercase; letter-spacing: .08em; }
+.admin-teen-context strong { font-size: 13px; }
+.admin-teen-evidence { margin-top: 18px; padding: 18px; border-radius: 18px; background: color-mix(in srgb, currentColor 4%, transparent); }
+.admin-teen-evidence h3 { margin: 0 0 10px; }
+.admin-teen-evidence p { margin: 7px 0; line-height: 1.55; opacity: .72; }
+.admin-teen-evidence small { opacity: .52; }
+.admin-teen-note { display: grid; gap: 8px; margin-top: 18px; }
+.admin-teen-note span { font-size: 12px; font-weight: 650; }
+.admin-teen-note textarea { width: 100%; resize: vertical; padding: 12px 14px; border: 1px solid color-mix(in srgb, currentColor 14%, transparent); border-radius: 14px; background: var(--background, #080808); color: inherit; }
+.admin-teen-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
+.admin-teen-actions button { display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; border: 1px solid color-mix(in srgb, currentColor 15%, transparent); border-radius: 999px; background: transparent; color: inherit; cursor: pointer; }
+.admin-teen-actions button svg { width: 16px; }
+.admin-teen-actions button.is-positive { border-color: color-mix(in srgb, #69d58b 45%, transparent); color: #8ce3a6; }
+.admin-teen-actions button.is-negative { border-color: color-mix(in srgb, #ff7564 45%, transparent); color: #ff9b8e; }
+.admin-teen-actions button:disabled { opacity: .5; cursor: wait; }
+.admin-teen-empty { padding: 30px; text-align: center; opacity: .6; }
+
+@media (max-width: 900px) {
+  .admin-teen-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-teen-metrics article:nth-child(2) { border-right: 0; }
+  .admin-teen-toolbar { grid-template-columns: 1fr 1fr; }
+  .admin-teen-toolbar label { grid-column: 1 / -1; }
+  .admin-teen-workspace { grid-template-columns: 1fr; }
+  .admin-teen-queue { max-height: 360px; }
+}
+
+@media (max-width: 620px) {
+  .admin-teen-page { padding: 14px 10px calc(110px + env(safe-area-inset-bottom)); }
+  .admin-teen-hero { flex-direction: column; }
+  .admin-teen-hero > button { width: 100%; justify-content: center; }
+  .admin-teen-context { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-teen-toolbar { grid-template-columns: 1fr; }
+  .admin-teen-toolbar label { grid-column: auto; }
+  .admin-teen-actions button { width: 100%; justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-teen-spin { animation: none; }
+  .admin-teen-page * { transition: none !important; }
+}
