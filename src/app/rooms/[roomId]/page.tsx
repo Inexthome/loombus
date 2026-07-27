@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { RoomDiscussionsWorkspace } from "@/components/room-discussions-workspace";
+import { RoomMinorSafetyOwnerLink } from "@/components/room-minor-safety-owner-link";
 import LiveRoomWorkspaceClient from "./live-room-workspace-client";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default function RoomWorkspacePage() {
     <>
       <LiveRoomWorkspaceClient />
       <RoomDiscussionsWorkspace />
+      <RoomMinorSafetyOwnerLink />
     </>
   );
 }
