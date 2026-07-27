@@ -97,44 +97,6 @@ function appendFeatures(
   list.append(item);
 }
 
-function replaceButtonCopy(button: HTMLButtonElement, value: string) {
-  for (const node of Array.from(button.childNodes)) {
-    if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
-      node.textContent = value;
-      return;
-    }
-  }
-  button.append(document.createTextNode(value));
-}
-
-function updateReviewAction(
-  root: Element,
-  includedPlans: Partial<Record<RoomPlanKey, IncludedPlanStatus>>
-) {
-  const checkoutButton = Array.from(
-    root.querySelectorAll<HTMLButtonElement>("button")
-  ).find((button) =>
-    /continue to monthly checkout|create included room/i.test(
-      button.textContent?.trim() ?? ""
-    )
-  );
-  if (!checkoutButton) return;
-
-  const selectedPlan = PLAN_LABELS.find((plan) => {
-    const headings = Array.from(root.querySelectorAll("h2, h3"));
-    return headings.some((heading) => heading.textContent?.trim() === plan.label);
-  });
-  const included = selectedPlan ? includedPlans[selectedPlan.id] : undefined;
-
-  if (included?.available) {
-    replaceButtonCopy(checkoutButton, "Create included Room");
-    checkoutButton.title = "This Room is included in your active subscription.";
-  } else {
-    replaceButtonCopy(checkoutButton, "Continue to monthly checkout");
-    checkoutButton.removeAttribute("title");
-  }
-}
-
 export function RoomPlanFeatureEnhancer() {
   const [includedPlans, setIncludedPlans] = useState<
     Partial<Record<RoomPlanKey, IncludedPlanStatus>>
@@ -176,7 +138,6 @@ export function RoomPlanFeatureEnhancer() {
           appendFeatures(container, plan.features, includedPlans[plan.id]);
         }
       }
-      updateReviewAction(root, includedPlans);
     };
 
     const schedule = () => {

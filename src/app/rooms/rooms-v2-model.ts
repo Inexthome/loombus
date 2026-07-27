@@ -44,6 +44,9 @@ export type RoomPlan = {
   detail: string;
   features: string[];
   paid: boolean;
+  selfServe: boolean;
+  contactSales?: boolean;
+  segment: "single" | "organization";
 };
 
 const BUSINESS_MODEL = getRoomModelProfile("business");
@@ -130,55 +133,79 @@ export const ROOM_PLANS: RoomPlan[] = [
     id: "free",
     name: "Free Room",
     price: "$0",
-    members: "Up to 10 members",
+    members: "1 Room · Up to 10 members",
     detail: "Core private workspace with basic invitations and Room settings",
     features: [...ROOM_PLAN_ENTITLEMENTS.free.features],
     paid: false,
+    selfServe: false,
+    segment: "single",
   },
   {
     id: "starter",
     name: "Room Starter",
     price: "$19/mo",
-    members: "Up to 50 members",
+    members: "1 Room · Up to 50 members",
     detail: "Adds announcements, structured requests, and curated resources",
     features: [...ROOM_PLAN_ENTITLEMENTS.starter.features],
     paid: true,
+    selfServe: true,
+    segment: "single",
   },
   {
     id: "pro",
     name: "Room Pro",
     price: "$49/mo",
-    members: "Up to 250 members",
+    members: "1 Room · Up to 250 members",
     detail: "Adds inline video, larger uploads, and expanded Room management",
     features: [...ROOM_PLAN_ENTITLEMENTS.pro.features],
     paid: true,
+    selfServe: true,
+    segment: "single",
+  },
+  {
+    id: "business",
+    name: "Room Business",
+    price: "$79/mo",
+    members: "1 Room · Up to 750 members",
+    detail: "High-capacity single Room with audit history, advanced controls, and larger resources",
+    features: [...ROOM_PLAN_ENTITLEMENTS.business.features],
+    paid: true,
+    selfServe: true,
+    segment: "single",
   },
   {
     id: "organization",
     name: "Organization",
     price: "$99/mo",
-    members: "Up to 3 rooms · 500 members",
+    members: "Up to 3 Rooms · 500 members per Room",
     detail: "Multi-Room organization capacity, larger resources, and setup support",
     features: [...ROOM_PLAN_ENTITLEMENTS.organization.features],
     paid: true,
+    selfServe: true,
+    segment: "organization",
   },
   {
     id: "organization-plus",
     name: "Organization Plus",
-    price: "$149/mo",
-    members: "Up to 10 rooms · 2,000 members",
+    price: "$199/mo",
+    members: "Up to 10 Rooms · 2,000 members per Room",
     detail: "More Rooms, substantially larger storage, and priority support",
     features: [...ROOM_PLAN_ENTITLEMENTS["organization-plus"].features],
     paid: true,
+    selfServe: true,
+    segment: "organization",
   },
   {
     id: "enterprise",
     name: "Organization Enterprise",
-    price: "$199/mo",
-    members: "Custom rooms · Large membership",
-    detail: "Custom limits, enterprise storage, dedicated support, and onboarding",
+    price: "Custom",
+    members: "Custom Rooms · Custom member capacity",
+    detail: "Custom limits, enterprise controls, dedicated support, and onboarding",
     features: [...ROOM_PLAN_ENTITLEMENTS.enterprise.features],
     paid: true,
+    selfServe: false,
+    contactSales: true,
+    segment: "organization",
   },
 ];
 
@@ -228,7 +255,7 @@ export function buildRoomSetupSummary(input: {
   const lines = [
     `Room name: ${input.roomName.trim()}`,
     `Room model: ${input.model.title}`,
-    `Monthly tier: ${input.plan.name} (${input.plan.price})`,
+    `Room plan: ${input.plan.name} (${input.plan.price})`,
     `Member capacity: ${input.plan.members}`,
     `Purpose: ${input.description.trim()}`,
     `Default access: ${input.model.defaultAccessSummary}`,

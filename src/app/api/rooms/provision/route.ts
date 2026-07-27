@@ -4,6 +4,7 @@ import { createRequestSupabase } from "@/lib/room-operations";
 import {
   RoomBillingError,
   isPaidRoomPlanKey,
+  isSelfServeRoomPlanKey,
   provisionFreeRoom,
   startPaidRoomCheckout,
 } from "@/lib/room-billing";
@@ -152,12 +153,20 @@ export async function POST(request: NextRequest) {
       });
 
       if (includedRoom) {
-        return NextResponse.json(includedRoom, {
-          headers: { "Cache-Control": "private, no-store" },
-        });
-      }
+      return NextResponse.json(includedRoom, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
 
-      const storage = await getRoomCheckoutStorageReadiness();
+    if (!isSelfServeRoomPlanKey(planId)) {
+      return jsonError(
+        "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales.",
+        409,
+        "enterprise_contact_required"
+      );
+    }
+
+    const storage = await getRoomCheckoutStorageReadiness();
       if (!storage.ready) {
         return jsonError(
           getRoomCheckoutStorageMessage(storage.issue),

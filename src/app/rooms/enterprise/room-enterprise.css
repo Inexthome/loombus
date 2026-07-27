@@ -1,0 +1,229 @@
+.rooms-enterprise-page {
+  color: var(--loombus-text);
+}
+
+.rooms-enterprise-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.rooms-enterprise-private-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 999px;
+  background: var(--loombus-surface);
+  padding: 0.65rem 0.9rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.rooms-enterprise-hero {
+  background:
+    radial-gradient(circle at 88% 14%, color-mix(in srgb, var(--loombus-gold) 24%, transparent), transparent 35%),
+    var(--loombus-surface);
+}
+
+.rooms-enterprise-value-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.rooms-enterprise-value-grid article,
+.rooms-enterprise-form,
+.rooms-enterprise-summary {
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.5rem;
+  background: var(--loombus-surface);
+  box-shadow: var(--loombus-shadow-sm);
+}
+
+.rooms-enterprise-value-grid article {
+  padding: 1.25rem;
+}
+
+.rooms-enterprise-value-grid svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  color: var(--loombus-gold);
+}
+
+.rooms-enterprise-value-grid h2 {
+  margin: 0.8rem 0 0.4rem;
+  font-size: 1rem;
+}
+
+.rooms-enterprise-value-grid p,
+.rooms-enterprise-section-heading p,
+.rooms-enterprise-summary p {
+  margin: 0;
+  color: var(--loombus-text-muted);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.rooms-enterprise-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 0.75fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.rooms-enterprise-form,
+.rooms-enterprise-summary {
+  padding: clamp(1.1rem, 2vw, 1.75rem);
+}
+
+.rooms-enterprise-section-heading h2,
+.rooms-enterprise-summary h2 {
+  margin: 0.35rem 0 0.55rem;
+  font-size: clamp(1.35rem, 2vw, 2rem);
+}
+
+.rooms-enterprise-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.35rem;
+}
+
+.rooms-enterprise-fields label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.rooms-enterprise-fields label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.rooms-enterprise-fields label > span,
+.rooms-enterprise-checks legend {
+  color: var(--loombus-text);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.rooms-enterprise-fields input,
+.rooms-enterprise-fields select,
+.rooms-enterprise-fields textarea {
+  width: 100%;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1rem;
+  background: var(--loombus-page-bg);
+  padding: 0.85rem 0.95rem;
+  color: var(--loombus-text);
+  font: inherit;
+  outline: none;
+}
+
+.rooms-enterprise-fields textarea {
+  resize: vertical;
+}
+
+.rooms-enterprise-fields input:focus,
+.rooms-enterprise-fields select:focus,
+.rooms-enterprise-fields textarea:focus {
+  border-color: var(--loombus-gold);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--loombus-gold) 18%, transparent);
+}
+
+.rooms-enterprise-checks {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1.25rem 0 0;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.rooms-enterprise-checks label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.86rem;
+}
+
+.rooms-enterprise-checks input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--loombus-gold);
+}
+
+.rooms-enterprise-submit {
+  margin-top: 1.25rem;
+}
+
+.rooms-enterprise-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  border-radius: 0.9rem;
+  padding: 0.8rem 0.9rem;
+  font-size: 0.84rem;
+}
+
+.rooms-enterprise-message.is-success {
+  background: color-mix(in srgb, #22c55e 12%, var(--loombus-surface));
+  color: var(--loombus-text);
+}
+
+.rooms-enterprise-message.is-error {
+  background: color-mix(in srgb, #ef4444 12%, var(--loombus-surface));
+  color: var(--loombus-text);
+}
+
+.rooms-enterprise-summary {
+  position: sticky;
+  top: 1rem;
+}
+
+.rooms-enterprise-summary ul {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.2rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rooms-enterprise-summary li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  color: var(--loombus-text);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.rooms-enterprise-summary li svg {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.15rem;
+  color: var(--loombus-gold);
+}
+
+@media (max-width: 900px) {
+  .rooms-enterprise-value-grid,
+  .rooms-enterprise-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rooms-enterprise-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 620px) {
+  .rooms-enterprise-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .rooms-enterprise-fields label.is-wide {
+    grid-column: auto;
+  }
+}
