@@ -6,11 +6,12 @@ import {
   safePageNumber,
   safePageSize,
 } from "@/lib/member-privacy-server";
+import { canDiscoverTeenProfile } from "@/lib/teen-safety-server";
 
 function jsonError(message: string, status: number) {
   return NextResponse.json(
     { error: message },
-    { status, headers: { "Cache-Control": "private, no-store" } }
+    { status, headers: { "Cache-Control": "private, no-store" } },
   );
 }
 
@@ -65,61 +66,76 @@ export async function GET(request: NextRequest) {
   if (search.length >= 2) {
     const pattern = safeSearchPattern(search);
     query = query.or(
-      `full_name.ilike.${pattern},username.ilike.${pattern},bio.ilike.${pattern}`
+      `full_name.ilike.${pattern},username.ilike.${pattern},bio.ilike.${pattern}`,
     );
   }
 
   const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
-  const { data: profiles, error, count } = await query.range(from, to);
+  const to = from + pageSize * 2 - 1;
+  const { data: candidateProfiles, error, count } = await query.range(from, to);
   if (error) return jsonError(error.message, 500);
 
-  const profileIds = (profiles ?? []).map((profile) => profile.id);
+  const visibility = admin
+    ? (candidateProfiles ?? []).map(() => true)
+    : await Promise.all(
+        (candidateProfiles ?? []).map((profile) =>
+          canDiscoverTeenProfile(service, user.id, profile.id),
+        ),
+      );
+  const profiles = (candidateProfiles ?? [])
+    .filter((_, index) => visibility[index])
+    .slice(0, pageSize);
+
+  const profileIds = profiles.map((profile) => profile.id);
 
   if (profileIds.length === 0) {
-    return NextResponse.json({
-      members: [],
-      page,
-      pageSize,
-      total: count ?? 0,
-      hasMore: false,
-    });
+    return NextResponse.json(
+      {
+        members: [],
+        page,
+        pageSize,
+        total: 0,
+        hasMore: false,
+        teenSafetyFiltered: !admin && Boolean(candidateProfiles?.length),
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   }
 
-  const [privacyResult, followingResult, followerResult, requestResult, followerCountResult, followingCountResult] =
-    await Promise.all([
-      service
-        .from("member_privacy_settings")
-        .select("user_id, private_account")
-        .in("user_id", profileIds),
-      service
-        .from("follows")
-        .select("following_id")
-        .eq("follower_id", user.id)
-        .in("following_id", profileIds),
-      service
-        .from("follows")
-        .select("follower_id")
-        .eq("following_id", user.id)
-        .in("follower_id", profileIds),
-      service
-        .from("follow_requests")
-        .select("target_id")
-        .eq("requester_id", user.id)
-        .eq("status", "pending")
-        .in("target_id", profileIds),
-      service
-        .from("follows")
-        .select("following_id")
-        .in("following_id", profileIds),
-      service
-        .from("follows")
-        .select("follower_id")
-        .in("follower_id", profileIds),
-    ]);
+  const [
+    privacyResult,
+    followingResult,
+    followerResult,
+    requestResult,
+    followerCountResult,
+    followingCountResult,
+  ] = await Promise.all([
+    service
+      .from("member_privacy_settings")
+      .select("user_id, private_account")
+      .in("user_id", profileIds),
+    service
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", user.id)
+      .in("following_id", profileIds),
+    service
+      .from("follows")
+      .select("follower_id")
+      .eq("following_id", user.id)
+      .in("follower_id", profileIds),
+    service
+      .from("follow_requests")
+      .select("target_id")
+      .eq("requester_id", user.id)
+      .eq("status", "pending")
+      .in("target_id", profileIds),
+    service.from("follows").select("following_id").in("following_id", profileIds),
+    service.from("follows").select("follower_id").in("follower_id", profileIds),
+  ]);
 
   const privacyMap = new Map(
-    (privacyResult.data ?? []).map((row) => [row.user_id, Boolean(row.private_account)])
+    (privacyResult.data ?? []).map((row) => [row.user_id, Boolean(row.private_account)]),
   );
   const following = new Set((followingResult.data ?? []).map((row) => row.following_id));
   const followers = new Set((followerResult.data ?? []).map((row) => row.follower_id));
@@ -134,7 +150,7 @@ export async function GET(request: NextRequest) {
     followingCounts.set(row.follower_id, (followingCounts.get(row.follower_id) ?? 0) + 1);
   }
 
-  const members = (profiles ?? []).map((profile) => {
+  const members = profiles.map((profile) => {
     const privateAccount = privacyMap.get(profile.id) ?? false;
     const viewerFollows = following.has(profile.id);
     return {
@@ -159,10 +175,14 @@ export async function GET(request: NextRequest) {
       members,
       page,
       pageSize,
-      total: count ?? members.length,
-      hasMore: from + members.length < (count ?? 0),
+      total: Math.min(count ?? members.length, from + members.length + (profiles.length === pageSize ? 1 : 0)),
+      hasMore:
+        profiles.length === pageSize &&
+        (from + profiles.length < (count ?? from + profiles.length + 1) ||
+          (candidateProfiles?.length ?? 0) > profiles.length),
       adminVisibility: admin,
+      teenSafetyFiltered: !admin && (candidateProfiles?.length ?? 0) > profiles.length,
     },
-    { headers: { "Cache-Control": "private, no-store" } }
+    { headers: { "Cache-Control": "private, no-store" } },
   );
 }
