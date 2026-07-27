@@ -4,6 +4,7 @@ import { createAdminNotifications } from "@/lib/notifications";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
 
 function response(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -41,12 +42,13 @@ export async function POST(request: NextRequest) {
     }
 
     const input = body as Record<string, unknown>;
-    const reportedUserId = String(input.reportedUserId ?? "").trim();
+    const providedId = String(input.reportedUserId ?? "").trim();
+    const username = String(input.reportedUsername ?? "")
+      .replace(/^@+/, "")
+      .trim()
+      .toLowerCase();
     const details = String(input.details ?? "").trim().slice(0, 2000);
 
-    if (!UUID_PATTERN.test(reportedUserId) || reportedUserId === data.user.id) {
-      return response({ error: "Choose a valid member account." }, 400);
-    }
     if (details.length < 10) {
       return response(
         { error: "Provide enough context for Loombus to review the account safely." },
@@ -54,12 +56,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: target } = await service
-      .from("profiles")
-      .select("id")
-      .eq("id", reportedUserId)
-      .maybeSingle();
+    let targetQuery = service.from("profiles").select("id, username");
+    if (UUID_PATTERN.test(providedId)) {
+      targetQuery = targetQuery.eq("id", providedId);
+    } else if (USERNAME_PATTERN.test(username)) {
+      targetQuery = targetQuery.eq("username", username);
+    } else {
+      return response({ error: "Enter a valid Loombus username or member ID." }, 400);
+    }
+
+    const { data: target } = await targetQuery.maybeSingle();
     if (!target) return response({ error: "Member account not found." }, 404);
+    const reportedUserId = target.id;
+    if (reportedUserId === data.user.id) {
+      return response({ error: "Use Age Safety to correct your own age information." }, 400);
+    }
 
     const { data: existing } = await service
       .from("underage_account_reports")
