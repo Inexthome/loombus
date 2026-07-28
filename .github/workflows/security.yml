@@ -40,6 +40,15 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Upload failed Next.js build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build-log
+          path: /tmp/loombus-next-build.log
+          if-no-files-found: warn
+          retention-days: 3
+
   dependency-audit:
     name: npm dependency audit
     runs-on: ubuntu-latest

@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.teen-safety-verification/
 
 # next.js
 /.next/
