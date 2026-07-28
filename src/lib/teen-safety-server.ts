@@ -16,6 +16,12 @@ import {
 } from "@/lib/room-operations";
 
 export type LoombusAgeBand = "unknown" | "under_13" | "teen" | "adult";
+export type AgeSafetyRestrictionReason =
+  | "age_gate_required"
+  | "under_13"
+  | "teen"
+  | "age_safety_unavailable"
+  | null;
 
 export type MemberAgeSafety = {
   userId: string;
@@ -36,7 +42,7 @@ export type RequestAgeSafety =
       guardianRequired: false;
       personalizedRecommendationsEnabled: false;
       commerceDiscoveryEnabled: false;
-      lookupAvailable: boolean;
+      lookupAvailable: true;
     };
 
 export type RoomMinorSafetySettings = {
@@ -84,7 +90,10 @@ function normalizeAgeBand(value: unknown): LoombusAgeBand {
     : "unknown";
 }
 
-function privateJson(payload: Record<string, unknown>, status: number) {
+function privateJson(
+  payload: Record<string, unknown>,
+  status: number
+): NextResponse {
   return NextResponse.json(payload, {
     status,
     headers: { "Cache-Control": "private, no-store" },
@@ -95,7 +104,10 @@ export async function getMemberAgeSafety(
   service: SupabaseClient,
   userId: string
 ): Promise<MemberAgeSafety> {
-  const [sensitiveResult, settingsResult] = await Promise.all([
+  const [
+    { data: sensitive, error: sensitiveError },
+    { data: settings, error: settingsError },
+  ] = await Promise.all([
     service
       .from("profile_sensitive")
       .select("age_band, teen_safety_mode, guardian_required")
@@ -110,7 +122,7 @@ export async function getMemberAgeSafety(
       .maybeSingle(),
   ]);
 
-  if (sensitiveResult.error || settingsResult.error) {
+  if (sensitiveError || settingsError) {
     return {
       userId,
       ageBand: "unknown",
@@ -122,18 +134,16 @@ export async function getMemberAgeSafety(
     };
   }
 
-  const ageBand = normalizeAgeBand(sensitiveResult.data?.age_band);
+  const ageBand = normalizeAgeBand(sensitive?.age_band);
   return {
     userId,
     ageBand,
-    teenSafetyMode:
-      sensitiveResult.data?.teen_safety_mode === true || ageBand === "teen",
+    teenSafetyMode: sensitive?.teen_safety_mode === true || ageBand === "teen",
     guardianRequired:
-      sensitiveResult.data?.guardian_required === true || ageBand === "under_13",
+      sensitive?.guardian_required === true || ageBand === "under_13",
     personalizedRecommendationsEnabled:
-      settingsResult.data?.personalized_recommendations_enabled === true,
-    commerceDiscoveryEnabled:
-      settingsResult.data?.commerce_discovery_enabled === true,
+      settings?.personalized_recommendations_enabled === true,
+    commerceDiscoveryEnabled: settings?.commerce_discovery_enabled === true,
     lookupAvailable: true,
   };
 }
@@ -155,12 +165,13 @@ export async function resolveRequestAgeSafety(
       personalizedRecommendationsEnabled: false,
       commerceDiscoveryEnabled: false,
       lookupAvailable: false,
-    };
+    } as RequestAgeSafety;
   }
 
   const {
     data: { user },
   } = await requestClient.auth.getUser();
+
   if (!user) {
     return {
       userId: null,
@@ -176,13 +187,26 @@ export async function resolveRequestAgeSafety(
   return getMemberAgeSafety(serviceClient, user.id);
 }
 
+export function getDiscoveryRestrictionReason(
+  ageSafety: RequestAgeSafety
+): AgeSafetyRestrictionReason {
+  if (!ageSafety.userId) return null;
+  if (!ageSafety.lookupAvailable) return "age_safety_unavailable";
+  if (ageSafety.ageBand === "under_13" || ageSafety.guardianRequired) {
+    return "under_13";
+  }
+  if (ageSafety.ageBand === "unknown") return "age_gate_required";
+  if (ageSafety.ageBand === "teen") return "teen";
+  return null;
+}
+
 export async function enforceAdultOnlyAction(
   request: NextRequest,
   actionLabel: string
 ): Promise<NextResponse | null> {
   const ageSafety = await resolveRequestAgeSafety(request);
-  if (!ageSafety.userId) return null;
 
+  if (!ageSafety.userId) return null;
   if (!ageSafety.lookupAvailable) {
     return privateJson(
       {
@@ -244,6 +268,7 @@ export async function getRoomMinorSafetySettings(
     .maybeSingle();
 
   if (error) throw new Error(error.message);
+
   return {
     roomId,
     allowsMinors: data?.allows_minors === true,
@@ -263,64 +288,84 @@ export async function filterEverythingResultsForTeen(
   results: EverythingSearchResult[];
   limited: boolean;
   ageSafety: RequestAgeSafety;
+  reason: AgeSafetyRestrictionReason;
 }> {
   const ageSafety = await resolveRequestAgeSafety(request);
-  if (!ageSafety.userId || ageSafety.ageBand === "adult") {
-    return { results, limited: false, ageSafety };
+  const reason = getDiscoveryRestrictionReason(ageSafety);
+
+  if (!reason) {
+    return { results, limited: false, ageSafety, reason };
   }
 
-  if (ageSafety.ageBand === "under_13" || ageSafety.guardianRequired) {
-    return { results: [], limited: results.length > 0, ageSafety };
+  const hideCommerce =
+    reason !== "teen" || ageSafety.commerceDiscoveryEnabled !== true;
+  let filtered = hideCommerce
+    ? results.filter((result) => !TEEN_COMMERCE_RESULT_TYPES.has(result.type))
+    : results;
+
+  if (reason !== "teen") {
+    filtered = filtered.filter((result) => !ROOM_SCOPED_TYPES.has(result.type));
+    return {
+      results: filtered,
+      limited: filtered.length !== results.length,
+      ageSafety,
+      reason,
+    };
   }
 
-  const commerceAllowed =
-    ageSafety.lookupAvailable &&
-    ageSafety.ageBand === "teen" &&
-    ageSafety.commerceDiscoveryEnabled;
-  let filtered = commerceAllowed
-    ? results
-    : results.filter(
-        (result) => !TEEN_COMMERCE_RESULT_TYPES.has(result.type)
-      );
-
+  const roomResults = filtered.filter((result) =>
+    ROOM_SCOPED_TYPES.has(result.type)
+  );
   const roomIds = [
     ...new Set(
-      filtered
+      roomResults
         .map(roomIdForResult)
         .filter((value): value is string => Boolean(value))
     ),
   ];
 
-  if (roomIds.length > 0) {
+  if (roomResults.length > 0) {
     let service;
     try {
       service = createRoomServiceSupabase();
     } catch {
-      filtered = filtered.filter((result) => !roomIdForResult(result));
+      filtered = filtered.filter(
+        (result) => !ROOM_SCOPED_TYPES.has(result.type)
+      );
       return {
         results: filtered,
         limited: filtered.length !== results.length,
         ageSafety,
+        reason,
       };
     }
 
-    const { data, error } = await service
-      .from("room_minor_safety_settings")
-      .select("room_id, allows_minors")
-      .in("room_id", roomIds);
-
-    if (error) {
-      filtered = filtered.filter((result) => !roomIdForResult(result));
-    } else {
-      const eligibleRoomIds = new Set(
-        (data ?? [])
-          .filter((row) => row.allows_minors === true)
-          .map((row) => String(row.room_id))
+    if (roomIds.length === 0) {
+      filtered = filtered.filter(
+        (result) => !ROOM_SCOPED_TYPES.has(result.type)
       );
-      filtered = filtered.filter((result) => {
-        const roomId = roomIdForResult(result);
-        return !roomId || eligibleRoomIds.has(roomId);
-      });
+    } else {
+      const { data, error } = await service
+        .from("room_minor_safety_settings")
+        .select("room_id, allows_minors")
+        .in("room_id", roomIds);
+
+      if (error) {
+        filtered = filtered.filter(
+          (result) => !ROOM_SCOPED_TYPES.has(result.type)
+        );
+      } else {
+        const eligibleRoomIds = new Set(
+          (data ?? [])
+            .filter((row) => row.allows_minors === true)
+            .map((row) => String(row.room_id))
+        );
+        filtered = filtered.filter((result) => {
+          if (!ROOM_SCOPED_TYPES.has(result.type)) return true;
+          const roomId = roomIdForResult(result);
+          return Boolean(roomId && eligibleRoomIds.has(roomId));
+        });
+      }
     }
   }
 
@@ -328,32 +373,24 @@ export async function filterEverythingResultsForTeen(
     results: filtered,
     limited: filtered.length !== results.length,
     ageSafety,
+    reason,
   };
 }
 
 export async function filterLocalDiscoveryForTeen(
   request: NextRequest,
   response: LocalDiscoveryResponse
-): Promise<LocalDiscoveryResponse & { teenSafetyLimited?: boolean }> {
-  const ageSafety = await resolveRequestAgeSafety(request);
-  if (!ageSafety.userId || ageSafety.ageBand === "adult") return response;
-
-  if (ageSafety.ageBand === "under_13" || ageSafety.guardianRequired) {
-    return {
-      ...response,
-      results: [],
-      total: 0,
-      counts: {},
-      anchoredTotal: 0,
-      teenSafetyLimited: response.results.length > 0,
-    };
+): Promise<
+  LocalDiscoveryResponse & {
+    teenSafetyLimited?: boolean;
+    ageSafetyLimited?: boolean;
+    ageSafetyReason?: AgeSafetyRestrictionReason;
   }
+> {
+  const ageSafety = await resolveRequestAgeSafety(request);
+  const reason = getDiscoveryRestrictionReason(ageSafety);
 
-  if (
-    ageSafety.lookupAvailable &&
-    ageSafety.ageBand === "teen" &&
-    ageSafety.commerceDiscoveryEnabled
-  ) {
+  if (!reason || (reason === "teen" && ageSafety.commerceDiscoveryEnabled)) {
     return response;
   }
 
@@ -367,15 +404,17 @@ export async function filterLocalDiscoveryForTeen(
     },
     {}
   );
+  const limited = results.length !== response.results.length;
 
   return {
     ...response,
     results,
     total: results.length,
     counts,
-    anchoredTotal: results.filter(
-      (result) => result.distanceMiles !== null
-    ).length,
-    teenSafetyLimited: results.length !== response.results.length,
+    anchoredTotal: results.filter((result) => result.distanceMiles !== null)
+      .length,
+    teenSafetyLimited: reason === "teen" && limited,
+    ageSafetyLimited: limited,
+    ageSafetyReason: reason,
   };
 }
