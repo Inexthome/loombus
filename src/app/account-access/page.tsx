@@ -56,6 +56,7 @@ export default function AccountAccessPage() {
   return (
     <main
       data-loombus-auth-shell
+      data-loombus-account-access
       className="flex min-h-screen items-center justify-center bg-black px-4 py-12 text-white sm:px-6"
     >
       <section className="w-full max-w-xl rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30 sm:p-8">
@@ -73,7 +74,7 @@ export default function AccountAccessPage() {
           {showDecisionHistory ? (
             <Link
               href="/account/enforcement"
-              className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200"
+              className="account-access-primary inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition"
             >
               View decisions and appeals
             </Link>
