@@ -17,6 +17,7 @@ import {
   getRoomCheckoutStorageMessage,
   getRoomCheckoutStorageReadiness,
 } from "@/lib/room-checkout-readiness";
+import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
 import { ROOM_MODELS, ROOM_PLANS } from "@/app/rooms/rooms-v2-model";
 
 function jsonError(message: string, status: number, code?: string) {
@@ -82,6 +83,9 @@ export async function POST(request: NextRequest) {
       accountAccess.code
     );
   }
+
+  const ageRestriction = await enforceAdultOnlyAction(request, "Room creation and ownership");
+  if (ageRestriction) return ageRestriction;
 
   const body = (await request.json().catch(() => ({}))) as {
     modelId?: unknown;
@@ -153,20 +157,20 @@ export async function POST(request: NextRequest) {
       });
 
       if (includedRoom) {
-      return NextResponse.json(includedRoom, {
-        headers: { "Cache-Control": "private, no-store" },
-      });
-    }
+        return NextResponse.json(includedRoom, {
+          headers: { "Cache-Control": "private, no-store" },
+        });
+      }
 
-    if (!isSelfServeRoomPlanKey(planId)) {
-      return jsonError(
-        "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales.",
-        409,
-        "enterprise_contact_required"
-      );
-    }
+      if (!isSelfServeRoomPlanKey(planId)) {
+        return jsonError(
+          "Organization Enterprise uses a custom agreement. Contact Loombus Enterprise sales.",
+          409,
+          "enterprise_contact_required"
+        );
+      }
 
-    const storage = await getRoomCheckoutStorageReadiness();
+      const storage = await getRoomCheckoutStorageReadiness();
       if (!storage.ready) {
         return jsonError(
           getRoomCheckoutStorageMessage(storage.issue),

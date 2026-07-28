@@ -9,6 +9,7 @@ import {
   isAdmin,
   requireMemberUser,
 } from "@/lib/member-privacy-server";
+import { filterEverythingResultsForTeen } from "@/lib/teen-safety-server";
 
 function jsonError(message: string, status: number, code: string) {
   return NextResponse.json(
@@ -69,6 +70,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const teenFilter = await filterEverythingResultsForTeen(
+      request,
+      filteredResults
+    );
+    filteredResults = teenFilter.results;
+
     const counts = filteredResults.reduce<Record<string, number>>((next, item) => {
       const group = getEverythingSearchGroup(item.type);
       next[group] = (next[group] ?? 0) + 1;
@@ -76,7 +83,15 @@ export async function GET(request: NextRequest) {
     }, {});
 
     return NextResponse.json(
-      { ...result, results: filteredResults, counts },
+      {
+        ...result,
+        results: filteredResults,
+        counts,
+        brief: teenFilter.limited
+          ? "Results are ordered by relevance. Ineligible commercial or Room results were excluded by teen-safety settings."
+          : result.brief,
+        teenSafetyLimited: teenFilter.limited,
+      },
       {
         headers: { "Cache-Control": "private, no-store" },
       }

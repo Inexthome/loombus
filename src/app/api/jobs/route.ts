@@ -13,6 +13,9 @@ import {
   reviewJobReport,
   updateJob,
 } from "@/lib/jobs-directory-server";
+import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
+
+const ADULT_ONLY_ACTIONS = new Set(["create", "update", "reopen"]);
 
 function response(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -82,6 +85,14 @@ export async function POST(request: NextRequest) {
 
     const input = body as Record<string, unknown>;
     const action = String(input.action ?? "").trim();
+
+    if (ADULT_ONLY_ACTIONS.has(action)) {
+      const restriction = await enforceAdultOnlyAction(
+        request,
+        "Publishing or reopening a Job"
+      );
+      if (restriction) return restriction;
+    }
 
     if (action === "create") {
       return response({ job: await createJob(request, input) }, 201);

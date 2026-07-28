@@ -12,6 +12,9 @@ import {
   setEventLifecycle,
   updateEvent,
 } from "@/lib/events-server";
+import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
+
+const ADULT_ONLY_ACTIONS = new Set(["create", "update", "reopen", "respond"]);
 
 function response(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -51,6 +54,15 @@ export async function POST(request: NextRequest) {
     }
     const input = body as Record<string, unknown>;
     const action = String(input.action ?? "").trim();
+
+    if (ADULT_ONLY_ACTIONS.has(action)) {
+      const restriction = await enforceAdultOnlyAction(
+        request,
+        "Publishing, reopening, or responding to an Event"
+      );
+      if (restriction) return restriction;
+    }
+
     if (action === "create") return response(await createEvent(request, input), 201);
     if (action === "update") return response(await updateEvent(request, input));
     if (["cancel", "reopen", "complete", "remove"].includes(action)) {

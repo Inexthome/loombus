@@ -6,6 +6,10 @@ import {
   searchLocalDiscovery,
   setLocalDiscoveryLocation,
 } from "@/lib/local-discovery-server";
+import {
+  enforceAdultOnlyAction,
+  filterLocalDiscoveryForTeen,
+} from "@/lib/teen-safety-server";
 
 function response(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -34,18 +38,17 @@ export async function GET(request: NextRequest) {
     if (params.get("manage") === "1") {
       return response(await getLocalManageData(request));
     }
-    return response(
-      await searchLocalDiscovery({
-        query: params.get("q"),
-        entityTypes: params.getAll("type"),
-        location: params.get("location"),
-        includeRemote: params.get("includeRemote") !== "0",
-        dateFrom: params.get("dateFrom"),
-        dateTo: params.get("dateTo"),
-        page: params.get("page"),
-        pageSize: params.get("pageSize"),
-      }),
-    );
+    const result = await searchLocalDiscovery({
+      query: params.get("q"),
+      entityTypes: params.getAll("type"),
+      location: params.get("location"),
+      includeRemote: params.get("includeRemote") !== "0",
+      dateFrom: params.get("dateFrom"),
+      dateTo: params.get("dateTo"),
+      page: params.get("page"),
+      pageSize: params.get("pageSize"),
+    });
+    return response(await filterLocalDiscoveryForTeen(request, result));
   } catch (error) {
     return errorResponse(error);
   }
@@ -64,9 +67,15 @@ export async function POST(request: NextRequest) {
     const input = body as Record<string, unknown>;
     const action = String(input.action ?? "").trim();
     if (action === "search") {
-      return response(await searchLocalDiscovery(input));
+      const result = await searchLocalDiscovery(input);
+      return response(await filterLocalDiscoveryForTeen(request, result));
     }
     if (action === "set_location") {
+      const restriction = await enforceAdultOnlyAction(
+        request,
+        "Publishing a Local Discovery location"
+      );
+      if (restriction) return restriction;
       return response(await setLocalDiscoveryLocation(request, input));
     }
     if (action === "clear_location") {

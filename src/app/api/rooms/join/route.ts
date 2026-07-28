@@ -12,6 +12,10 @@ import {
   type RoomRow,
 } from "@/lib/room-operations";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
+import {
+  getMemberAgeSafety,
+  getRoomMinorSafetySettings,
+} from "@/lib/teen-safety-server";
 
 type JsonObject = Record<string, unknown>;
 
@@ -90,6 +94,29 @@ export async function POST(request: NextRequest) {
   }
 
   const userId = accountAccess.user.id;
+  const ageSafety = await getMemberAgeSafety(serviceSupabase, userId);
+  if (!ageSafety.lookupAvailable) {
+    return jsonError(
+      "Room age-safety eligibility could not be verified.",
+      503,
+      "room_age_safety_unavailable"
+    );
+  }
+  if (ageSafety.ageBand === "unknown") {
+    return jsonError(
+      "Complete age safety before joining a Room.",
+      403,
+      "age_gate_required"
+    );
+  }
+  if (ageSafety.ageBand === "under_13" || ageSafety.guardianRequired) {
+    return jsonError(
+      "This account is not eligible to use Loombus.",
+      403,
+      "under_13_not_allowed"
+    );
+  }
+
   const existingAccess = await getRoomAccess(
     serviceSupabase,
     roomId,
@@ -101,6 +128,29 @@ export async function POST(request: NextRequest) {
       { ok: true, roomId, alreadyMember: true },
       { headers: { "Cache-Control": "private, no-store" } }
     );
+  }
+
+  let teenRequiresApproval = false;
+  if (ageSafety.ageBand === "teen") {
+    const minorSafety = await getRoomMinorSafetySettings(
+      serviceSupabase,
+      roomId
+    ).catch(() => null);
+    if (!minorSafety) {
+      return jsonError(
+        "Room minor-safety settings could not be verified.",
+        503,
+        "room_age_safety_unavailable"
+      );
+    }
+    if (!minorSafety.allowsMinors) {
+      return jsonError(
+        "This Room is not configured to admit teen members.",
+        403,
+        "room_teen_admission_blocked"
+      );
+    }
+    teenRequiresApproval = true;
   }
 
   const entitlements = getRoomPlanEntitlements(
@@ -133,22 +183,35 @@ export async function POST(request: NextRequest) {
   }
 
   const requireApproval =
-    typeof settings.inviteRequiresApproval === "boolean"
+    teenRequiresApproval ||
+    (typeof settings.inviteRequiresApproval === "boolean"
       ? settings.inviteRequiresApproval
-      : defaults.inviteRequiresApproval;
+      : defaults.inviteRequiresApproval);
   if (requireApproval) {
     const application = await serviceSupabase.from("room_applications").upsert(
       {
         room_id: roomId,
         applicant_id: userId,
         state: "pending",
-        note: `Joined through invitation: ${asString(invite.label) || "Room invitation"}`,
+        note: teenRequiresApproval
+          ? `Teen admission review required. Invitation: ${
+              asString(invite.label) || "Room invitation"
+            }`
+          : `Joined through invitation: ${
+              asString(invite.label) || "Room invitation"
+            }`,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "room_id,applicant_id" }
     );
     if (application.error) {
-      return jsonError("The Room join request could not be created.", 503);
+      return jsonError(
+        application.error.message || "The Room join request could not be created.",
+        application.error.code === "42501" ? 403 : 503,
+        teenRequiresApproval
+          ? "room_teen_admission_request_failed"
+          : "room_join_request_failed"
+      );
     }
 
     await serviceSupabase
@@ -159,14 +222,21 @@ export async function POST(request: NextRequest) {
 
     await logAuditEvent({
       actor_id: userId,
-      action: "room.invite.requested",
+      action: teenRequiresApproval
+        ? "room.invite.teen_admission_requested"
+        : "room.invite.requested",
       target_type: "room_invite",
       target_id: inviteId,
-      metadata: { room_id: roomId },
+      metadata: { room_id: roomId, teen_admission: teenRequiresApproval },
     });
 
     return NextResponse.json(
-      { ok: true, roomId, pendingApproval: true },
+      {
+        ok: true,
+        roomId,
+        pendingApproval: true,
+        teenSafetyReview: teenRequiresApproval,
+      },
       { headers: { "Cache-Control": "private, no-store" } }
     );
   }
@@ -198,7 +268,11 @@ export async function POST(request: NextRequest) {
     { onConflict: "room_id,user_id" }
   );
   if (membership.error) {
-    return jsonError("The Room membership could not be created.", 503);
+    return jsonError(
+      membership.error.message || "The Room membership could not be created.",
+      membership.error.code === "42501" ? 403 : 503,
+      "room_membership_failed"
+    );
   }
 
   await serviceSupabase
