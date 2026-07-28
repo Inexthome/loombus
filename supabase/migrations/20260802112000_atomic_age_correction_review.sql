@@ -66,7 +66,7 @@ begin
     raise exception 'Invalid age-correction review payload.' using errcode = '22023';
   end if;
 
-  if p_action not in ('review', 'approve', 'deny') then
+  if coalesce(p_action, '') not in ('review', 'approve', 'deny') then
     raise exception 'Unsupported correction action.' using errcode = '22023';
   end if;
 
