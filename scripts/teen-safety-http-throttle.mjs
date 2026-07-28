@@ -74,6 +74,8 @@ function rateLimitedResponse(attempts) {
 }
 
 async function throttledFetch(input, init) {
+  if (persistentRateLimit) return rateLimitedResponse(0);
+
   for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
     const pacingDelay = Math.max(0, nextRequestAt - Date.now());
     if (pacingDelay > 0) await sleep(pacingDelay);
