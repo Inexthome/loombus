@@ -6,6 +6,28 @@ import { createNotification } from "@/lib/notifications";
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+type AgeCorrectionReviewResult = {
+  review_status: "reviewing" | "approved" | "denied";
+  member_id: string;
+  requested_age_band: "under_13" | "teen" | "adult";
+};
+
+function isAgeCorrectionReviewResult(value: unknown): value is AgeCorrectionReviewResult {
+  if (!value || typeof value !== "object") return false;
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    (candidate.review_status === "reviewing" ||
+      candidate.review_status === "approved" ||
+      candidate.review_status === "denied") &&
+    typeof candidate.member_id === "string" &&
+    UUID_PATTERN.test(candidate.member_id) &&
+    (candidate.requested_age_band === "under_13" ||
+      candidate.requested_age_band === "teen" ||
+      candidate.requested_age_band === "adult")
+  );
+}
+
 function getAuthClient(request: NextRequest) {
   const authorization = request.headers.get("authorization") ?? "";
   return createClient(
@@ -122,7 +144,7 @@ export async function POST(request: NextRequest) {
   const now = new Date().toISOString();
 
   if (workflow === "correction") {
-    const { data: correction, error: reviewError } = await service
+    const { data: correctionResult, error: reviewError } = await service
       .rpc("review_age_correction_request", {
         p_request_id: id,
         p_reviewer_id: admin.user.id,
@@ -130,6 +152,10 @@ export async function POST(request: NextRequest) {
         p_resolution_note: resolutionNote || null,
       })
       .single();
+
+    const correction = isAgeCorrectionReviewResult(correctionResult)
+      ? correctionResult
+      : null;
 
     if (reviewError || !correction) {
       const status =
