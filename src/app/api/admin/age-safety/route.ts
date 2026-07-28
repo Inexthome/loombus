@@ -122,48 +122,36 @@ export async function POST(request: NextRequest) {
   const now = new Date().toISOString();
 
   if (workflow === "correction") {
-    const { data: correction } = await service
-      .from("age_correction_requests")
-      .select("id, user_id, requested_date_of_birth, requested_age_band, status")
-      .eq("id", id)
-      .maybeSingle();
+    const { data: correction, error: reviewError } = await service
+      .rpc("review_age_correction_request", {
+        p_request_id: id,
+        p_reviewer_id: admin.user.id,
+        p_action: action,
+        p_resolution_note: resolutionNote || null,
+      })
+      .single();
 
-    if (!correction) return NextResponse.json({ error: "Correction request not found." }, { status: 404 });
+    if (reviewError || !correction) {
+      const status =
+        reviewError?.code === "P0002"
+          ? 404
+          : reviewError?.code === "42501"
+            ? 403
+            : reviewError?.code === "22023"
+              ? 400
+              : reviewError?.code === "55000"
+                ? 409
+                : 500;
 
-    if (action === "review") {
-      await service
-        .from("age_correction_requests")
-        .update({ status: "reviewing", reviewed_by: admin.user.id, reviewed_at: now })
-        .eq("id", id);
-    } else if (action === "approve") {
-      const { error: ageError } = await service
-        .from("profile_sensitive")
-        .update({ date_of_birth: correction.requested_date_of_birth })
-        .eq("id", correction.user_id);
-
-      if (ageError) return NextResponse.json({ error: ageError.message }, { status: 500 });
-
-      await service
-        .from("age_correction_requests")
-        .update({
-          status: "approved",
-          reviewed_by: admin.user.id,
-          reviewed_at: now,
-          resolution_note: resolutionNote || null,
-        })
-        .eq("id", id);
-    } else if (action === "deny") {
-      await service
-        .from("age_correction_requests")
-        .update({
-          status: "denied",
-          reviewed_by: admin.user.id,
-          reviewed_at: now,
-          resolution_note: resolutionNote || null,
-        })
-        .eq("id", id);
-    } else {
-      return NextResponse.json({ error: "Unsupported correction action." }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            status === 500
+              ? "Unable to update the age-correction review."
+              : reviewError?.message ?? "Unable to update the age-correction review.",
+        },
+        { status }
+      );
     }
 
     await logAuditEvent({
@@ -175,7 +163,7 @@ export async function POST(request: NextRequest) {
     });
 
     await createNotification({
-      user_id: correction.user_id,
+      user_id: correction.member_id,
       actor_id: admin.user.id,
       type: "age_correction_status",
       target_type: "age_correction_request",
@@ -188,7 +176,7 @@ export async function POST(request: NextRequest) {
             : "Your age correction is under review.",
     });
 
-    return NextResponse.json({ ok: true, status: action === "review" ? "reviewing" : action === "approve" ? "approved" : "denied" });
+    return NextResponse.json({ ok: true, status: correction.review_status });
   }
 
   if (workflow === "underage_report") {
