@@ -7,7 +7,10 @@ import { createClient } from "@supabase/supabase-js";
 
 const ROOT = process.cwd();
 const OUTPUT_DIR = resolve(ROOT, ".teen-safety-verification");
-const BASE_URL = (process.env.LOOMBUS_BASE_URL || "https://loombus.com").replace(/\/$/, "");
+const BASE_URL = (process.env.LOOMBUS_BASE_URL || "https://loombus.com").replace(
+  /\/$/,
+  ""
+);
 const SEARCH_QUERY =
   process.env.LOOMBUS_VERIFY_SEARCH_QUERY ||
   "business service job marketplace room event";
@@ -16,11 +19,14 @@ const ROLES = ["adult", "teen", "unknown", "under13"];
 
 function loadEnvFile(path) {
   if (!existsSync(path)) return;
+
   for (const raw of readFileSync(path, "utf8").split(/\r?\n/)) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
+
     const separator = line.indexOf("=");
     if (separator < 1) continue;
+
     const key = line.slice(0, separator).trim();
     let value = line.slice(separator + 1).trim();
     if (
@@ -29,7 +35,10 @@ function loadEnvFile(path) {
     ) {
       value = value.slice(1, -1);
     }
-    if (!(key in process.env)) process.env[key] = value.replace(/\\n/g, "\n");
+
+    if (!(key in process.env)) {
+      process.env[key] = value.replace(/\\n/g, "\n");
+    }
   }
 }
 
@@ -47,8 +56,9 @@ function text(value) {
 }
 
 function check(name, status, details, required = true) {
-  checks.push({ name, status, required, details: text(details) });
-  console.log(`${status.padEnd(4)} ${name} — ${text(details)}`);
+  const renderedDetails = text(details);
+  checks.push({ name, status, required, details: renderedDetails });
+  console.log(`${status.padEnd(4)} ${name} — ${renderedDetails}`);
 }
 
 function errorText(error) {
@@ -69,19 +79,30 @@ async function resolveAccount(role, anon) {
   try {
     if (token) {
       const { data, error } = await anon.auth.getUser(token);
-      if (error || !data.user) throw error ?? new Error("Token returned no user.");
+      if (error || !data.user) {
+        throw error ?? new Error("Token returned no user.");
+      }
       return { role, token, userId: data.user.id };
     }
+
     if (!email || !password) return null;
 
     const client = createClient(SUPABASE_URL, ANON_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    const { data, error } = await client.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (error || !data.session || !data.user) {
       throw error ?? new Error("Password sign-in returned no session.");
     }
-    return { role, token: data.session.access_token, userId: data.user.id };
+
+    return {
+      role,
+      token: data.session.access_token,
+      userId: data.user.id,
+    };
   } catch (error) {
     check(`account.${role}.authenticate`, "FAIL", errorText(error));
     return null;
@@ -92,6 +113,7 @@ async function api(path, { token, method = "GET", body } = {}) {
   const headers = { Accept: "application/json" };
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers["Content-Type"] = "application/json";
+
   const response = await fetch(`${BASE_URL}${path}`, {
     method,
     headers,
@@ -100,11 +122,13 @@ async function api(path, { token, method = "GET", body } = {}) {
   });
   const raw = await response.text();
   let payload;
+
   try {
     payload = raw ? JSON.parse(raw) : null;
   } catch {
     payload = { raw: raw.slice(0, 500) };
   }
+
   return { status: response.status, payload };
 }
 
@@ -157,6 +181,7 @@ async function accountState(service, account, role) {
     teenSafetyMode: sensitive?.teen_safety_mode === true,
     guardianRequired: sensitive?.guardian_required === true,
   };
+
   check(
     `account.${role}.age_state`,
     actual === expected ? "PASS" : "FAIL",
@@ -171,11 +196,13 @@ async function accountState(service, account, role) {
       settings?.allow_unsolicited_adult_contact === false &&
       settings?.personalized_recommendations_enabled === false &&
       settings?.commerce_discovery_enabled === false;
+
     check("account.teen.protective_defaults", pass ? "PASS" : "FAIL", {
       privateAccount: privacy?.private_account ?? null,
       discoverable: privacy?.discoverable ?? null,
       futureDiscussionAudience: settings?.future_discussion_audience ?? null,
-      unsolicitedAdultContact: settings?.allow_unsolicited_adult_contact ?? null,
+      unsolicitedAdultContact:
+        settings?.allow_unsolicited_adult_contact ?? null,
       personalizedRecommendations:
         settings?.personalized_recommendations_enabled ?? null,
       commerceDiscovery: settings?.commerce_discovery_enabled ?? null,
@@ -208,6 +235,7 @@ async function roomDatabase(service) {
     rows.length === (count ?? 0) ? "PASS" : "FAIL",
     `${rows.length} safety rows for ${count ?? 0} Rooms.`
   );
+
   const inconsistent = rows.filter(
     (row) =>
       (row.allows_minors === true &&
@@ -229,6 +257,7 @@ async function roomDatabase(service) {
     check("database.teen_room_roles", "FAIL", teenError.message);
     return;
   }
+
   const teenIds = (teenRows ?? []).map((row) => String(row.id));
   if (teenIds.length === 0) {
     check(
@@ -265,6 +294,7 @@ async function roomDatabase(service) {
     );
     return;
   }
+
   const elevated = (memberships ?? []).filter(
     (row) => String(row.role ?? "member").toLowerCase() !== "member"
   );
@@ -277,6 +307,7 @@ async function roomDatabase(service) {
 
 async function messagingContract(service, adult, teen) {
   if (!adult || !teen) return;
+
   const [forward, reverse, blocks, adultProfile, teenProfile, adultRpc, teenRpc] =
     await Promise.all([
       service
@@ -341,6 +372,7 @@ async function messagingContract(service, adult, teen) {
     statusesAllowed;
   const actualAdult = adultRpc.data === true;
   const actualTeen = teenRpc.data === true;
+
   check(
     "messaging.adult_teen_contract",
     actualAdult === expected && actualTeen === expected ? "PASS" : "FAIL",
@@ -362,10 +394,12 @@ async function notificationContext(service) {
     .in("type", types)
     .order("created_at", { ascending: false })
     .limit(500);
+
   if (error) {
     check("notifications.safety_destinations", "FAIL", error.message);
     return;
   }
+
   const rows = data ?? [];
   const roomRows = rows.filter((row) => row.type === "room_join_request_review");
   const missing = roomRows.filter((row) => !row.room_id);
@@ -374,6 +408,7 @@ async function notificationContext(service) {
     missing.length === 0 ? "PASS" : "FAIL",
     `${roomRows.length} Room admission notice(s); ${missing.length} missing room_id.`
   );
+
   const ageRows = rows.filter((row) => row.type !== "room_join_request_review");
   check(
     "notifications.age_safety_history",
@@ -429,13 +464,16 @@ function roomId(row) {
 
 async function invalidTeenRooms(service, rows) {
   if (rows.length === 0) return [];
+
   const ids = [...new Set(rows.map(roomId).filter(Boolean))];
   if (ids.length === 0) return rows;
+
   const { data, error } = await service
     .from("room_minor_safety_settings")
     .select("room_id, allows_minors")
     .in("room_id", ids);
   if (error) return rows;
+
   const allowed = new Set(
     (data ?? [])
       .filter((row) => row.allows_minors === true)
@@ -449,6 +487,7 @@ async function invalidTeenRooms(service, rows) {
 
 async function discovery(service, role, account) {
   if (!account || role === "adult") return;
+
   const everything = await api(
     `/api/search/everything?q=${encodeURIComponent(SEARCH_QUERY)}&limit=80`,
     { token: account.token }
@@ -465,7 +504,8 @@ async function discovery(service, role, account) {
       : [];
     const commerce = rowsOfTypes(rows, COMMERCE_TYPES);
     const rooms = rowsOfTypes(rows, ROOM_TYPES);
-    const invalidRooms = role === "teen" ? await invalidTeenRooms(service, rooms) : rooms;
+    const invalidRooms =
+      role === "teen" ? await invalidTeenRooms(service, rooms) : rooms;
     check(
       `discovery.${role}.everything_search`,
       commerce.length === 0 && invalidRooms.length === 0 ? "PASS" : "FAIL",
@@ -484,7 +524,9 @@ async function discovery(service, role, account) {
       `HTTP ${local.status}; code ${code(local) || "none"}.`
     );
   } else {
-    const rows = Array.isArray(local.payload?.results) ? local.payload.results : [];
+    const rows = Array.isArray(local.payload?.results)
+      ? local.payload.results
+      : [];
     const protectedRows = rowsOfTypes(rows, LOCAL_TYPES);
     check(
       `discovery.${role}.local`,
@@ -532,7 +574,8 @@ async function discovery(service, role, account) {
     : [];
   const commerce = rowsOfTypes(sources, COMMERCE_TYPES);
   const rooms = rowsOfTypes(sources, ROOM_TYPES);
-  const invalidRooms = role === "teen" ? await invalidTeenRooms(service, rooms) : rooms;
+  const invalidRooms =
+    role === "teen" ? await invalidTeenRooms(service, rooms) : rooms;
   check(
     `discovery.${role}.ask_ai`,
     commerce.length === 0 && invalidRooms.length === 0 ? "PASS" : "FAIL",
@@ -563,6 +606,7 @@ const MUTATIONS = [
 
 async function mutationBoundary(role, account) {
   if (!account) return;
+
   const expected = {
     teen: "teen_action_restricted",
     unknown: "age_gate_required",
@@ -582,6 +626,7 @@ async function mutationBoundary(role, account) {
       body,
     });
     const resultCode = code(result);
+
     if (role === "adult") {
       check(
         `mutation.${role}.${name}`,
@@ -600,6 +645,7 @@ async function mutationBoundary(role, account) {
 
 async function safeReportPath(teen) {
   if (!teen) return;
+
   const result = await api("/api/businesses", {
     token: teen.token,
     method: "POST",
@@ -625,8 +671,16 @@ async function safeReportPath(teen) {
   );
 }
 
+function markdownCell(value) {
+  return String(value)
+    .replaceAll("\\", "\\\\")
+    .replaceAll("|", "\\|")
+    .replace(/\r?\n/g, "<br>");
+}
+
 function writeReport() {
   mkdirSync(OUTPUT_DIR, { recursive: true });
+
   const failures = checks.filter((item) => item.status === "FAIL");
   const requiredSkips = checks.filter(
     (item) => item.status === "SKIP" && item.required
@@ -661,6 +715,7 @@ function writeReport() {
     OUTPUT_DIR,
     `teen-safety-verification-${stamp}.md`
   );
+
   writeFileSync(jsonPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   writeFileSync(
     markdownPath,
@@ -677,7 +732,7 @@ function writeReport() {
       "| --- | --- | --- | --- |",
       ...checks.map(
         (item) =>
-          `| ${item.status} | ${item.required ? "Yes" : "No"} | ${item.name} | ${item.details.replace(/\|/g, "\\|")} |`
+          `| ${markdownCell(item.status)} | ${item.required ? "Yes" : "No"} | ${markdownCell(item.name)} | ${markdownCell(item.details)} |`
       ),
       "",
       "No passwords, access tokens, service-role keys, or email addresses are written to this report.",
@@ -685,6 +740,7 @@ function writeReport() {
     ].join("\n"),
     "utf8"
   );
+
   console.log(`\nResult: ${summary.result}`);
   console.log(`JSON: ${jsonPath}`);
   console.log(`Markdown: ${markdownPath}`);
@@ -722,7 +778,9 @@ async function main() {
   await roomDatabase(service);
   await messagingContract(service, accounts.adult, accounts.teen);
   await notificationContext(service);
-  for (const role of ROLES) await mutationBoundary(role, accounts[role]);
+  for (const role of ROLES) {
+    await mutationBoundary(role, accounts[role]);
+  }
   for (const role of ["teen", "unknown", "under13"]) {
     await discovery(service, role, accounts[role]);
   }
