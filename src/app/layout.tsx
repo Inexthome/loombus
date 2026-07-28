@@ -13,6 +13,7 @@ import "./people-v2-shell.css";
 import "./discussion-detail-shell-polish.css";
 import "./loombus-brand-correction.css";
 import "./auth-account-v2.css";
+import "./trust-safety-appearance-fixes.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import ClientLayout from "./client-layout";
