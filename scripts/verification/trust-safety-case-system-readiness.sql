@@ -1,5 +1,7 @@
 -- Read-only production readiness checks for Issue #667 restricted case storage.
--- Run after applying 20260802120000_create_trust_safety_case_system.sql.
+-- Run after applying, in order:
+--   1. 20260802120000_create_trust_safety_case_system.sql
+--   2. 20260802120500_harden_trust_safety_case_invariants.sql
 -- Every returned row must have status = PASS.
 
 with
@@ -15,14 +17,18 @@ required_functions(name) as (
     ('set_trust_safety_case_updated_at'),
     ('log_trust_safety_case_change'),
     ('log_trust_safety_evidence_reference'),
-    ('prevent_trust_safety_event_mutation')
+    ('prevent_trust_safety_event_mutation'),
+    ('normalize_trust_safety_case_closure'),
+    ('validate_trust_safety_case_event_evidence')
 ),
 required_triggers(name) as (
   values
     ('trust_safety_cases_set_updated_at'),
     ('trust_safety_cases_log_change'),
     ('trust_safety_evidence_log_insert'),
-    ('trust_safety_events_append_only')
+    ('trust_safety_events_append_only'),
+    ('trust_safety_cases_normalize_closure'),
+    ('trust_safety_events_validate_evidence')
 ),
 checks as (
   select
@@ -125,6 +131,36 @@ checks as (
   where namespace_row.nspname = 'public'
     and class_row.relname = 'trust_safety_case_events'
     and trigger_row.tgname = 'trust_safety_events_append_only'
+    and trigger_row.tgenabled <> 'D'
+    and not trigger_row.tgisinternal
+
+  union all
+
+  select
+    'same_case_evidence_trigger_enabled',
+    count(*)::bigint,
+    1::bigint
+  from pg_trigger trigger_row
+  join pg_class class_row on class_row.oid = trigger_row.tgrelid
+  join pg_namespace namespace_row on namespace_row.oid = class_row.relnamespace
+  where namespace_row.nspname = 'public'
+    and class_row.relname = 'trust_safety_case_events'
+    and trigger_row.tgname = 'trust_safety_events_validate_evidence'
+    and trigger_row.tgenabled <> 'D'
+    and not trigger_row.tgisinternal
+
+  union all
+
+  select
+    'closure_normalization_trigger_enabled',
+    count(*)::bigint,
+    1::bigint
+  from pg_trigger trigger_row
+  join pg_class class_row on class_row.oid = trigger_row.tgrelid
+  join pg_namespace namespace_row on namespace_row.oid = class_row.relnamespace
+  where namespace_row.nspname = 'public'
+    and class_row.relname = 'trust_safety_cases'
+    and trigger_row.tgname = 'trust_safety_cases_normalize_closure'
     and trigger_row.tgenabled <> 'D'
     and not trigger_row.tgisinternal
 )
