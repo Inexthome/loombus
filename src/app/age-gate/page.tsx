@@ -105,6 +105,7 @@ export default function AgeGatePage() {
   return (
     <main
       data-loombus-auth-shell
+      data-loombus-age-gate
       className="min-h-screen bg-black px-6 py-16 text-white"
     >
       <div className="mx-auto max-w-xl">
@@ -146,7 +147,7 @@ export default function AgeGatePage() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full rounded-full bg-white px-6 py-3 text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="age-gate-primary w-full rounded-full bg-white px-6 py-3 text-black transition disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving ? "Saving..." : "Continue"}
             </button>

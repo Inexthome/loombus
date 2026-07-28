@@ -1,0 +1,142 @@
+/*
+ * Trust, Safety, and account-operation appearance bridge.
+ *
+ * The Loombus appearance controller sets --loombus-* variables from the
+ * explicit Light, Dark, or System preference. Some newer operational pages
+ * used generic design tokens that were still tied only to the operating
+ * system preference. Keep the generic tokens synchronized with the selected
+ * Loombus appearance so route-level CSS and Tailwind arbitrary values resolve
+ * consistently in all three modes.
+ */
+html[data-loombus-theme] {
+  --background: var(--loombus-page-bg);
+  --foreground: var(--loombus-text);
+  --card: var(--loombus-surface);
+  --card-foreground: var(--loombus-text);
+  --popover: var(--loombus-surface);
+  --popover-foreground: var(--loombus-text);
+  --muted: var(--loombus-surface-muted);
+  --muted-foreground: var(--loombus-text-muted);
+  --border: var(--loombus-border);
+  --input: var(--loombus-border);
+  --ring: #cbab5b;
+  --loombus-trust-accent-text: #e2cb88;
+  --loombus-trust-positive-text: #8be0ad;
+  --loombus-trust-attention-text: #ffc084;
+  --loombus-trust-warning-text: #ead889;
+}
+
+html[data-loombus-theme="light"] {
+  --loombus-trust-accent-text: #6f5512;
+  --loombus-trust-positive-text: #176b3b;
+  --loombus-trust-attention-text: #8a4300;
+  --loombus-trust-warning-text: #675000;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] {
+    --loombus-trust-accent-text: #6f5512;
+    --loombus-trust-positive-text: #176b3b;
+    --loombus-trust-attention-text: #8a4300;
+    --loombus-trust-warning-text: #675000;
+  }
+}
+
+/* Small gold labels need a darker gold in Light and System-on-light modes. */
+.account-enforcement-eyebrow,
+.account-enforcement-detail-head p,
+.account-enforcement-section-title span,
+.account-enforcement-summary span,
+.account-enforcement-explanation span,
+.admin-enforcement-eyebrow,
+.admin-enforcement-detail-head p,
+.admin-enforcement-copy-block > span,
+.admin-enforcement-member-card span,
+.admin-enforcement-actions label > span,
+.admin-enforcement-restoration span,
+.admin-enforcement-queue button > span,
+.admin-enforcement-state a,
+.account-enforcement-state a,
+.settings-enforcement-link {
+  color: var(--loombus-trust-accent-text) !important;
+}
+
+/* Status text that was optimized for a dark canvas must remain readable on a
+ * light card without changing the underlying semantic color family. */
+.account-enforcement-status.is-success {
+  color: var(--loombus-trust-positive-text) !important;
+}
+
+.account-enforcement-status.is-attention {
+  color: var(--loombus-trust-attention-text) !important;
+}
+
+.account-enforcement-status.is-warning {
+  color: var(--loombus-trust-warning-text) !important;
+}
+
+/* Keep the new account and age-safety controls visually connected to the
+ * selected appearance rather than to the device preference. */
+.account-enforcement-page,
+.admin-enforcement-page {
+  background-color: var(--loombus-page-bg) !important;
+  color: var(--loombus-text) !important;
+}
+
+/* Explicitly theme native fields. Safari can otherwise retain a mismatched
+ * fill when switching appearance without a full page reload. */
+.account-enforcement-page textarea,
+.admin-enforcement-page textarea,
+.admin-enforcement-page select,
+[data-loombus-age-safety] input,
+[data-loombus-age-safety] textarea,
+[data-loombus-age-safety] select,
+[data-loombus-admin-age-safety] input,
+[data-loombus-admin-age-safety] textarea,
+[data-loombus-admin-age-safety] select {
+  background-color: var(--loombus-surface) !important;
+  border-color: var(--loombus-border) !important;
+  color: var(--loombus-text) !important;
+  -webkit-text-fill-color: var(--loombus-text);
+}
+
+[data-loombus-age-safety] input::placeholder,
+[data-loombus-age-safety] textarea::placeholder,
+[data-loombus-admin-age-safety] input::placeholder,
+[data-loombus-admin-age-safety] textarea::placeholder {
+  color: var(--loombus-text-subtle) !important;
+  opacity: 1;
+  -webkit-text-fill-color: var(--loombus-text-subtle);
+}
+
+.account-enforcement-page :focus-visible,
+.admin-enforcement-page :focus-visible,
+[data-loombus-age-safety] :focus-visible,
+[data-loombus-admin-age-safety] :focus-visible,
+[data-loombus-account-access] :focus-visible,
+[data-loombus-age-gate] :focus-visible {
+  outline: 2px solid #cbab5b;
+  outline-offset: 3px;
+}
+
+/* The original hover:bg-zinc-200 utility becomes a light fill while its
+ * text is remapped to white in explicit Light mode. These scoped controls use
+ * brightness instead, preserving contrast in every appearance. */
+[data-loombus-account-access] .account-access-primary:hover,
+[data-loombus-age-gate] .age-gate-primary:hover {
+  filter: brightness(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-enforcement-page *,
+  .admin-enforcement-page *,
+  [data-loombus-age-safety] *,
+  [data-loombus-admin-age-safety] *,
+  [data-loombus-account-access] *,
+  [data-loombus-age-gate] * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
