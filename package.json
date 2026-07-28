@@ -7,7 +7,7 @@
     "build": "bash -o pipefail -c 'next build > /tmp/loombus-next-build.log 2>&1 || { tail -160 /tmp/loombus-next-build.log; exit 1; }'",
     "start": "next start",
     "lint": "eslint",
-    "verify:teen-safety": "node scripts/verify-teen-safety-production.mjs",
+    "verify:teen-safety": "node --import ./scripts/teen-safety-http-throttle.mjs scripts/verify-teen-safety-production.mjs",
     "cap": "cap",
     "cap:sync": "cap sync",
     "cap:add:ios": "cap add ios",
