@@ -42,7 +42,7 @@ export type RequestAgeSafety =
       guardianRequired: false;
       personalizedRecommendationsEnabled: false;
       commerceDiscoveryEnabled: false;
-      lookupAvailable: true;
+      lookupAvailable: boolean;
     };
 
 export type RoomMinorSafetySettings = {
@@ -153,6 +153,7 @@ export async function resolveRequestAgeSafety(
 ): Promise<RequestAgeSafety> {
   let requestClient;
   let serviceClient;
+
   try {
     requestClient = createRequestSupabase(request);
     serviceClient = createRoomServiceSupabase();
@@ -165,7 +166,7 @@ export async function resolveRequestAgeSafety(
       personalizedRecommendationsEnabled: false,
       commerceDiscoveryEnabled: false,
       lookupAvailable: false,
-    } as RequestAgeSafety;
+    };
   }
 
   const {
@@ -190,8 +191,8 @@ export async function resolveRequestAgeSafety(
 export function getDiscoveryRestrictionReason(
   ageSafety: RequestAgeSafety
 ): AgeSafetyRestrictionReason {
-  if (!ageSafety.userId) return null;
   if (!ageSafety.lookupAvailable) return "age_safety_unavailable";
+  if (!ageSafety.userId) return null;
   if (ageSafety.ageBand === "under_13" || ageSafety.guardianRequired) {
     return "under_13";
   }
@@ -206,7 +207,6 @@ export async function enforceAdultOnlyAction(
 ): Promise<NextResponse | null> {
   const ageSafety = await resolveRequestAgeSafety(request);
 
-  if (!ageSafety.userId) return null;
   if (!ageSafety.lookupAvailable) {
     return privateJson(
       {
@@ -216,6 +216,7 @@ export async function enforceAdultOnlyAction(
       503
     );
   }
+  if (!ageSafety.userId) return null;
   if (ageSafety.ageBand === "under_13" || ageSafety.guardianRequired) {
     return privateJson(
       {
