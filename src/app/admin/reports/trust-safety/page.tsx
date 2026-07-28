@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import TrustSafetyCasesClient from "./trust-safety-cases-client";
+import "./trust-safety-appearance.css";
 
 export const metadata: Metadata = {
   title: "Trust and Safety Cases | Loombus Admin",
@@ -11,5 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default function TrustSafetyCasesPage() {
-  return <TrustSafetyCasesClient />;
+  return (
+    <div data-trust-safety-workspace>
+      <TrustSafetyCasesClient />
+    </div>
+  );
 }
