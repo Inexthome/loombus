@@ -3,7 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { getTeenSafetyFlags } from "@/lib/age-safety";
 
 function jsonError(message: string, status: number, code?: string) {
-  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
+  return NextResponse.json(code ? { error: message, code } : { error: message }, {
+    status,
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }
 
 function getSupabaseForRequest(request: NextRequest) {
@@ -84,6 +87,33 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
+  const { data: existingAge, error: existingAgeError } = await serviceSupabase
+    .from("profile_sensitive")
+    .select("date_of_birth, age_band")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (existingAgeError) {
+    return jsonError("Unable to verify the current age record.", 500);
+  }
+
+  if (existingAge?.date_of_birth) {
+    const storedDateOfBirth = String(existingAge.date_of_birth).slice(0, 10);
+
+    if (storedDateOfBirth !== dateOfBirth) {
+      return jsonError(
+        "Your date of birth is already on file. Use the protected correction request instead of replacing it here.",
+        409,
+        "age_correction_required"
+      );
+    }
+
+    return NextResponse.json(
+      { ok: true, ageBand: existingAge.age_band, alreadyRecorded: true },
+      { headers: { "Cache-Control": "private, no-store" } }
+    );
+  }
+
   const { error: upsertError } = await serviceSupabase
     .from("profile_sensitive")
     .upsert({
@@ -98,5 +128,8 @@ export async function POST(request: NextRequest) {
     return jsonError("Unable to save age verification.", 500);
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(
+    { ok: true, ageBand: flags.ageBand, alreadyRecorded: false },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
 }
