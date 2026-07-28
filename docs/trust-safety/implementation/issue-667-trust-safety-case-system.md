@@ -2,6 +2,7 @@
 
 Status: implementation pending production verification  
 Prepared: July 28, 2026  
+Validation refresh requested: July 28, 2026  
 Public ready: no  
 Owner: Internal Trust and Safety Lead
 
