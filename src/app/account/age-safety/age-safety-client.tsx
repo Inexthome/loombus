@@ -162,20 +162,27 @@ export default function AgeSafetyClient() {
     setWorking(false);
   }
 
+  const surfaceClass =
+    "rounded-3xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)]";
+  const mutedClass = "text-[color:var(--loombus-text-muted)]";
+
   return (
-    <main className="min-h-screen bg-[var(--background)] px-4 py-8 text-[var(--foreground)] sm:px-6 sm:py-12">
+    <main
+      data-loombus-age-safety
+      className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 py-8 text-[color:var(--loombus-text)] sm:px-6 sm:py-12"
+    >
       <div className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-3xl border border-black/10 bg-[var(--card)] p-6 shadow-sm dark:border-white/10 sm:p-8">
-          <Link href="/privacy-security" className="text-sm text-[var(--muted-foreground)] hover:underline">
+        <header className={`${surfaceClass} p-6 shadow-sm sm:p-8`}>
+          <Link href="/privacy-security" className={`text-sm ${mutedClass} hover:underline`}>
             ← Privacy & Security
           </Link>
-          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
+          <p className={`mt-6 text-xs font-semibold uppercase tracking-[0.24em] ${mutedClass}`}>
             Age safety
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
             Privacy first, especially for teens.
           </h1>
-          <p className="mt-4 max-w-3xl leading-7 text-[var(--muted-foreground)]">
+          <p className={`mt-4 max-w-3xl leading-7 ${mutedClass}`}>
             Loombus is available to people age 13 and older. Teen accounts receive stricter privacy and interaction defaults without giving parents or other members secret access to private conversations.
           </p>
         </header>
@@ -187,24 +194,30 @@ export default function AgeSafetyClient() {
         ) : null}
 
         {loading ? (
-          <section className="rounded-3xl border border-black/10 bg-[var(--card)] p-6 dark:border-white/10">
+          <section className={`${surfaceClass} p-6`}>
             Loading age-safety protections...
           </section>
         ) : (
           <>
             <section className="grid gap-4 md:grid-cols-2">
-              <article className="rounded-3xl border border-black/10 bg-[var(--card)] p-6 dark:border-white/10">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Current age state</p>
-                <h2 className="mt-3 text-2xl font-semibold capitalize">{data?.ageBand.replace("_", " ") ?? "Unknown"}</h2>
-                <p className="mt-3 text-sm leading-6 text-[var(--muted-foreground)]">
+              <article className={`${surfaceClass} p-6`}>
+                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedClass}`}>
+                  Current age state
+                </p>
+                <h2 className="mt-3 text-2xl font-semibold capitalize">
+                  {data?.ageBand.replace("_", " ") ?? "Unknown"}
+                </h2>
+                <p className={`mt-3 text-sm leading-6 ${mutedClass}`}>
                   Teen Safety Mode: {data?.teenSafetyMode ? "On" : "Off"}. Guardian-required state: {data?.guardianRequired ? "Yes" : "No"}.
                 </p>
               </article>
 
-              <article className="rounded-3xl border border-black/10 bg-[var(--card)] p-6 dark:border-white/10">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">Teen defaults</p>
+              <article className={`${surfaceClass} p-6`}>
+                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedClass}`}>
+                  Teen defaults
+                </p>
                 <h2 className="mt-3 text-2xl font-semibold">Protected by default</h2>
-                <ul className="mt-3 space-y-2 text-sm leading-6 text-[var(--muted-foreground)]">
+                <ul className={`mt-3 space-y-2 text-sm leading-6 ${mutedClass}`}>
                   <li>Future Discussion audience: {data?.defaults?.future_discussion_audience ?? "Not recorded"}</li>
                   <li>Unsolicited adult contact: {data?.defaults?.allow_unsolicited_adult_contact ? "Allowed" : "Blocked"}</li>
                   <li>Personalized recommendations: {data?.defaults?.personalized_recommendations_enabled ? "Enabled" : "Limited"}</li>
@@ -213,9 +226,9 @@ export default function AgeSafetyClient() {
               </article>
             </section>
 
-            <section className="rounded-3xl border border-black/10 bg-[var(--card)] p-6 dark:border-white/10 sm:p-8">
+            <section className={`${surfaceClass} p-6 sm:p-8`}>
               <h2 className="text-2xl font-semibold">Request an age correction</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
+              <p className={`mt-2 text-sm leading-6 ${mutedClass}`}>
                 A stored date of birth cannot be silently replaced. Submit the accurate date and explain the correction. This phase does not collect an identity document or biometric estimate.
               </p>
               <form onSubmit={submitCorrection} className="mt-6 grid gap-4">
@@ -232,9 +245,12 @@ export default function AgeSafetyClient() {
                   maxLength={1000}
                   required
                   placeholder="Explain why the date on file needs to be corrected."
-                  className="min-h-32 rounded-2xl border border-black/10 bg-transparent p-4 dark:border-white/10"
+                  className="min-h-32 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4"
                 />
-                <button disabled={working} className="w-fit rounded-full bg-[#CBAB5B] px-5 py-3 font-semibold text-black disabled:opacity-50">
+                <button
+                  disabled={working}
+                  className="w-fit rounded-full bg-[#CBAB5B] px-5 py-3 font-semibold text-black transition hover:brightness-105 disabled:opacity-50"
+                >
                   {working ? "Submitting..." : "Submit correction request"}
                 </button>
               </form>
@@ -243,21 +259,28 @@ export default function AgeSafetyClient() {
                 <div className="mt-8 space-y-3">
                   <h3 className="font-semibold">Recent correction requests</h3>
                   {data.correctionRequests.map((request) => (
-                    <article key={request.id} className="rounded-2xl border border-black/10 p-4 text-sm dark:border-white/10">
+                    <article
+                      key={request.id}
+                      className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface-strong)] p-4 text-sm"
+                    >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <strong className="capitalize">{request.status.replace("_", " ")}</strong>
-                        <span className="text-[var(--muted-foreground)]">{formatDate(request.created_at)}</span>
+                        <span className={mutedClass}>{formatDate(request.created_at)}</span>
                       </div>
-                      <p className="mt-2 text-[var(--muted-foreground)]">Requested age band: {request.requested_age_band}</p>
+                      <p className={`mt-2 ${mutedClass}`}>
+                        Requested age band: {request.requested_age_band}
+                      </p>
                     </article>
                   ))}
                 </div>
               ) : null}
             </section>
 
-            <section className="rounded-3xl border border-black/10 bg-[var(--card)] p-6 dark:border-white/10 sm:p-8">
-              <h2 className="text-2xl font-semibold">Report an account that may belong to a child under 13</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
+            <section className={`${surfaceClass} p-6 sm:p-8`}>
+              <h2 className="text-2xl font-semibold">
+                Report an account that may belong to a child under 13
+              </h2>
+              <p className={`mt-2 text-sm leading-6 ${mutedClass}`}>
                 Submit only what is necessary. Do not publicly investigate, post private information, or ask the child for proof.
               </p>
               <form onSubmit={submitUnderageReport} className="mt-6 grid gap-4">
@@ -266,12 +289,12 @@ export default function AgeSafetyClient() {
                   onChange={(event) => setReportedUserId(event.target.value)}
                   required
                   placeholder="Reported member ID"
-                  className="rounded-2xl border border-black/10 bg-transparent px-4 py-3 dark:border-white/10"
+                  className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 py-3"
                 />
                 <select
                   value={underageReason}
                   onChange={(event) => setUnderageReason(event.target.value)}
-                  className="rounded-2xl border border-black/10 bg-[var(--card)] px-4 py-3 dark:border-white/10"
+                  className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 py-3"
                 >
                   {UNDERAGE_REASONS.map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
@@ -282,9 +305,12 @@ export default function AgeSafetyClient() {
                   onChange={(event) => setUnderageContext(event.target.value)}
                   maxLength={2000}
                   placeholder="Optional context. Do not include passwords, government IDs, or unnecessary private information."
-                  className="min-h-32 rounded-2xl border border-black/10 bg-transparent p-4 dark:border-white/10"
+                  className="min-h-32 rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-4"
                 />
-                <button disabled={working} className="w-fit rounded-full border border-[#CBAB5B] px-5 py-3 font-semibold disabled:opacity-50">
+                <button
+                  disabled={working}
+                  className="w-fit rounded-full border border-[#CBAB5B] px-5 py-3 font-semibold text-[color:var(--loombus-trust-accent-text)] transition hover:bg-[#CBAB5B]/10 disabled:opacity-50"
+                >
                   {working ? "Submitting..." : "Submit private report"}
                 </button>
               </form>
