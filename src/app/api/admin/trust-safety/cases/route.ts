@@ -72,7 +72,7 @@ function requiredText(value: unknown, minLength: number, maxLength: number) {
 }
 
 function nullableUuid(value: unknown): string | null | undefined {
-  if (value === null || value === "") return null;
+  if (value === undefined || value === null || value === "") return null;
   if (typeof value === "string" && UUID_PATTERN.test(value)) return value;
   return undefined;
 }
