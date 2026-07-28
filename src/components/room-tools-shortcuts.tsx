@@ -128,6 +128,12 @@ export default function RoomToolsShortcuts() {
           </Link>
         ) : null}
         {manager ? (
+          <Link href={`/rooms/${encodeURIComponent(roomId)}/age-safety`}>
+            <ShieldCheck aria-hidden="true" />
+            Minor safety
+          </Link>
+        ) : null}
+        {manager ? (
           <Link href={`/rooms/${encodeURIComponent(roomId)}/governance`}>
             <ShieldCheck aria-hidden="true" />
             Governance

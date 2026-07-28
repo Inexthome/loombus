@@ -17,6 +17,16 @@ import {
   updateServiceRequest,
   withdrawServiceRequestResponse,
 } from "@/lib/service-requests-server";
+import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
+
+const ADULT_ONLY_ACTIONS = new Set([
+  "create",
+  "update",
+  "reopen",
+  "respond",
+  "select_response",
+  "save",
+]);
 
 function response(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -57,6 +67,15 @@ export async function POST(request: NextRequest) {
     }
     const input = body as Record<string, unknown>;
     const action = String(input.action ?? "").trim();
+
+    if (ADULT_ONLY_ACTIONS.has(action)) {
+      const restriction = await enforceAdultOnlyAction(
+        request,
+        "Publishing, saving, or responding to a Request"
+      );
+      if (restriction) return restriction;
+    }
+
     if (action === "create") return response(await createServiceRequest(request, input), 201);
     if (action === "update") return response(await updateServiceRequest(request, input));
     if (["reviewing", "in_progress", "resolved", "closed", "reopen", "remove"].includes(action)) {

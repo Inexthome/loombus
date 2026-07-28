@@ -11,6 +11,15 @@ import {
   setAppointmentServiceStatus,
   updateAppointmentService,
 } from "@/lib/appointments-server";
+import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
+
+const ADULT_ONLY_ACTIONS = new Set([
+  "create_service",
+  "update_service",
+  "set_service_status",
+  "request",
+  "provider_response",
+]);
 
 function response(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -55,6 +64,15 @@ export async function POST(request: NextRequest) {
     }
     const input = body as Record<string, unknown>;
     const action = String(input.action ?? "").trim();
+
+    if (ADULT_ONLY_ACTIONS.has(action)) {
+      const restriction = await enforceAdultOnlyAction(
+        request,
+        "Publishing an appointment service or requesting an Appointment"
+      );
+      if (restriction) return restriction;
+    }
+
     if (action === "create_service") {
       return response(await createAppointmentService(request, input), 201);
     }

@@ -18,6 +18,16 @@ import {
   unsaveProviderService,
   updateProviderService,
 } from "@/lib/provider-services-server";
+import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
+
+const ADULT_ONLY_ACTIONS = new Set([
+  "create",
+  "update",
+  "activate",
+  "reopen",
+  "inquire",
+  "save",
+]);
 
 function response(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -69,6 +79,15 @@ export async function POST(request: NextRequest) {
     }
     const input = body as Record<string, unknown>;
     const action = String(input.action ?? "").trim();
+
+    if (ADULT_ONLY_ACTIONS.has(action)) {
+      const restriction = await enforceAdultOnlyAction(
+        request,
+        "Publishing, saving, or contacting a Service provider"
+      );
+      if (restriction) return restriction;
+    }
+
     if (action === "create") {
       return response(await createProviderService(request, input), 201);
     }

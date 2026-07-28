@@ -7,6 +7,7 @@ import {
 } from "@/lib/everything-search-server";
 import type { EverythingSearchResult } from "@/lib/everything-search";
 import { getOpenAiUsageMetadata, logAiUsage } from "@/lib/premium-ai";
+import { filterEverythingResultsForTeen } from "@/lib/teen-safety-server";
 
 const SEARCH_AI_MODEL =
   process.env.OPENAI_SEARCH_AI_MODEL ||
@@ -96,7 +97,7 @@ function compactContext(results: EverythingSearchResult[]) {
     .slice(0, MAX_CONTEXT_CHARS);
 }
 
-async function getCurrentUserAndAccess(supabase: any) {
+async function getCurrentUserAndAccess(supabase: ReturnType<typeof getSupabaseForRequest>) {
   const {
     data: { user },
     error: userError,
@@ -219,8 +220,8 @@ export async function POST(request: NextRequest) {
   const supabase = getSupabaseForRequest(request);
   const { user, error } = await getCurrentUserAndAccess(supabase);
 
-  if (error) {
-    return error;
+  if (error || !user) {
+    return error ?? jsonError("Unauthorized.", 401);
   }
 
   const body = await request.json().catch(() => null);
@@ -244,7 +245,11 @@ export async function POST(request: NextRequest) {
       query,
       limit: 24,
     });
-    const eligibleResults = search.results.filter(
+    const teenFilter = await filterEverythingResultsForTeen(
+      request,
+      search.results
+    );
+    const eligibleResults = teenFilter.results.filter(
       (result) =>
         result.visibility !== "member" && result.visibility !== "private"
     );
@@ -252,7 +257,9 @@ export async function POST(request: NextRequest) {
 
     if (!context) {
       return jsonError(
-        "No public, member-directory, or Premium sources are available for AI organization. Private Room and saved-item content stays private.",
+        teenFilter.limited
+          ? "No sources eligible under the current teen-safety settings are available for AI organization. Private Room, saved-item, and restricted commercial material stays excluded."
+          : "No public, member-directory, or Premium sources are available for AI organization. Private Room and saved-item content stays private.",
         409,
         { code: "no_ai_eligible_search_context" }
       );
@@ -276,7 +283,10 @@ export async function POST(request: NextRequest) {
       {
         answer: generated.answer,
         modelName: SEARCH_AI_MODEL,
-        brief: search.brief,
+        brief: teenFilter.limited
+          ? "Ineligible commercial or Room sources were excluded before AI processing."
+          : search.brief,
+        teenSafetyLimited: teenFilter.limited,
         sources: eligibleResults.slice(0, 10).map((result, index) => ({
           number: index + 1,
           type: result.type,

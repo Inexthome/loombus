@@ -12,6 +12,9 @@ import {
   reviewBusinessReport,
   updateBusiness,
 } from "@/lib/business-directory-server";
+import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
+
+const ADULT_ONLY_ACTIONS = new Set(["create", "update", "claim"]);
 
 function response(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -69,6 +72,14 @@ export async function POST(request: NextRequest) {
 
     const input = body as Record<string, unknown>;
     const action = String(input.action ?? "").trim();
+
+    if (ADULT_ONLY_ACTIONS.has(action)) {
+      const restriction = await enforceAdultOnlyAction(
+        request,
+        "Creating, claiming, or publishing a Business"
+      );
+      if (restriction) return restriction;
+    }
 
     if (action === "create") {
       return response({ business: await createBusiness(request, input) }, 201);
