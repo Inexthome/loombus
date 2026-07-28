@@ -57,14 +57,20 @@
   border-color: var(--loombus-border) !important;
 }
 
-html[data-loombus-theme="light"] [data-trust-safety-workspace],
+html[data-loombus-theme="light"] [data-trust-safety-workspace] {
+  color-scheme: light;
+}
+
+html[data-loombus-theme="dark"] [data-trust-safety-workspace] {
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: light) {
   html[data-loombus-theme="system"] [data-trust-safety-workspace] {
     color-scheme: light;
   }
 }
 
-html[data-loombus-theme="dark"] [data-trust-safety-workspace],
 @media (prefers-color-scheme: dark) {
   html[data-loombus-theme="system"] [data-trust-safety-workspace] {
     color-scheme: dark;
