@@ -25,6 +25,10 @@ export default function RoomsLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  if (process.env.VERCEL_ENV === "preview") {
+    return <>{children}</>;
+  }
+
   return (
     <>
       <RoomPlanFeatureEnhancer />
