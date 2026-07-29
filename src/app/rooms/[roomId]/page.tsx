@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { RoomDiscussionFirstController } from "@/components/room-discussion-first-controller";
 import { RoomDiscussionsWorkspace } from "@/components/room-discussions-workspace";
 import LiveRoomWorkspaceClient from "./live-room-workspace-client";
 
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 export default function RoomWorkspacePage() {
   return (
     <>
+      <RoomDiscussionFirstController />
       <LiveRoomWorkspaceClient />
       <RoomDiscussionsWorkspace />
     </>
