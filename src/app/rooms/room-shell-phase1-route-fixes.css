@@ -1,0 +1,142 @@
+/* Phase 1 compatibility corrections for nested Room routes.
+   These aliases keep older route clients readable inside the dedicated shell
+   until their markup is migrated to canonical Room components. */
+.rooms-phase1-content {
+  --background: var(--rooms-shell-panel-strong);
+  --foreground: var(--rooms-shell-text);
+  --surface: var(--rooms-shell-panel);
+  --text: var(--rooms-shell-text);
+  --muted: var(--rooms-shell-muted);
+  --border: var(--rooms-shell-border);
+  --rooms-live-bg: var(--rooms-shell-page);
+  --rooms-live-surface: var(--rooms-shell-panel);
+  --rooms-live-surface-strong: var(--rooms-shell-panel-strong);
+  --rooms-live-surface-muted: var(--rooms-shell-panel-muted);
+  --rooms-live-text: var(--rooms-shell-text);
+  --rooms-live-muted: var(--rooms-shell-muted);
+  --rooms-live-faint: var(--rooms-shell-subtle);
+  --rooms-live-border: var(--rooms-shell-border);
+  --rooms-live-border-strong: var(--rooms-shell-border-strong);
+  color: var(--rooms-shell-text);
+}
+
+/* Notifications and Moderation are standalone nested clients that currently
+   render a rooms-live-shell without the legacy rooms-live-page variable host. */
+.rooms-phase1-content > main.rooms-live-shell {
+  color: var(--rooms-shell-text);
+}
+
+.rooms-phase1-content > main.rooms-live-shell :is(input, textarea, select) {
+  color: var(--rooms-shell-text);
+}
+
+.rooms-phase1-content > main.rooms-live-shell :is(input, textarea)::placeholder {
+  color: var(--rooms-shell-subtle);
+}
+
+/* Governance previously reused the full-page state card for policy/member
+   entries. Remove page-level sizing so cards stay inside their panel grid. */
+.rooms-phase1-content .room-workspace-panel .room-workspace-overview-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.rooms-phase1-content
+  .room-workspace-panel
+  .room-workspace-overview-grid
+  > .rooms-live-state-card {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: none;
+}
+
+.rooms-phase1-content
+  .room-workspace-panel
+  .room-workspace-overview-grid
+  > .rooms-live-state-card
+  > p {
+  margin-top: 9px;
+  color: var(--rooms-shell-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.rooms-phase1-content
+  .room-workspace-panel
+  .room-workspace-overview-grid
+  > label.rooms-live-state-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 12px;
+  cursor: pointer;
+}
+
+.rooms-phase1-content
+  .room-workspace-panel
+  .room-workspace-overview-grid
+  > label.rooms-live-state-card
+  > input {
+  grid-row: 1 / span 2;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.rooms-phase1-content
+  .room-workspace-panel
+  .room-workspace-overview-grid
+  > label.rooms-live-state-card
+  > strong,
+.rooms-phase1-content
+  .room-workspace-panel
+  .room-workspace-overview-grid
+  > label.rooms-live-state-card
+  > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rooms-phase1-content
+  .room-workspace-panel
+  .room-workspace-overview-grid
+  > label.rooms-live-state-card
+  > span {
+  color: var(--rooms-shell-muted);
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.rooms-phase1-content .room-workspace-section-heading,
+.rooms-phase1-content .room-workspace-section-heading > div {
+  min-width: 0;
+}
+
+.rooms-phase1-content .rooms-live-access-form {
+  display: grid;
+  gap: 14px;
+  max-width: 100%;
+}
+
+.rooms-phase1-content .rooms-live-access-form > label {
+  min-width: 0;
+  margin: 0;
+}
+
+.rooms-phase1-content .rooms-live-access-form > .rooms-live-primary-action {
+  width: fit-content;
+  max-width: 100%;
+}
+
+@media (max-width: 720px) {
+  .rooms-phase1-content .room-workspace-panel .room-workspace-overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rooms-phase1-content .room-workspace-section-heading {
+    gap: 14px;
+  }
+}

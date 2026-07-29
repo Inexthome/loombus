@@ -16,9 +16,10 @@ import "./auth-account-v2.css";
 import "./trust-safety-appearance-fixes.css";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import ClientLayout from "./client-layout";
+import RouteClientLayout from "./route-client-layout";
 import { AdaptiveFloatingUtilityLauncher } from "@/components/adaptive-floating-utility-launcher";
 import { AdaptiveMobileDockController } from "@/components/adaptive-mobile-dock-controller";
+import { AppChromeBoundary } from "@/components/app-chrome-boundary";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
 import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
@@ -109,11 +110,15 @@ export default function RootLayout({
             `,
           }}
         />
-        <DesktopTopNavbar />
-        <MobileNavigationShell />
-        <AdaptiveMobileDockController />
-        <ClientLayout>{children}</ClientLayout>
-        <AdaptiveFloatingUtilityLauncher />
+        <AppChromeBoundary>
+          <DesktopTopNavbar />
+          <MobileNavigationShell />
+          <AdaptiveMobileDockController />
+        </AppChromeBoundary>
+        <RouteClientLayout>{children}</RouteClientLayout>
+        <AppChromeBoundary>
+          <AdaptiveFloatingUtilityLauncher />
+        </AppChromeBoundary>
         <CanonicalAppHomeLinks />
         <AuthSessionCleanup />
         <SessionLifecycleGuard />
