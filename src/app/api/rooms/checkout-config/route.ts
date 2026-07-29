@@ -12,6 +12,16 @@ function jsonError(message: string, status: number, code?: string) {
   });
 }
 
+const ADMIN_INCLUDED_PLANS = {
+  free: { available: true, usedRooms: 0, roomLimit: null },
+  starter: { available: true, usedRooms: 0, roomLimit: null },
+  pro: { available: true, usedRooms: 0, roomLimit: null },
+  business: { available: true, usedRooms: 0, roomLimit: null },
+  organization: { available: true, usedRooms: 0, roomLimit: null },
+  "organization-plus": { available: true, usedRooms: 0, roomLimit: null },
+  enterprise: { available: true, usedRooms: 0, roomLimit: null },
+};
+
 export async function GET(request: NextRequest) {
   let requestSupabase;
 
@@ -30,23 +40,31 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const administrator = accountAccess.profile.is_admin === true;
   const [config, storage, includedPlans] = await Promise.all([
     Promise.resolve(getRoomCheckoutConfiguration()),
     getRoomCheckoutStorageReadiness(),
-    getIncludedRoomPlans(accountAccess.user.id).catch(() => ({})),
+    administrator
+      ? Promise.resolve(ADMIN_INCLUDED_PLANS)
+      : getIncludedRoomPlans(accountAccess.user.id).catch(() => ({})),
   ]);
   const coreReady =
-    config.stripeSecretKey &&
-    config.stripeWebhookSecret &&
-    config.supabaseServiceRole &&
-    storage.ready;
+    administrator ||
+    (config.stripeSecretKey &&
+      config.stripeWebhookSecret &&
+      config.supabaseServiceRole &&
+      storage.ready);
+  const plans = administrator
+    ? Object.fromEntries(Object.keys(config.plans).map((planKey) => [planKey, true]))
+    : config.plans;
 
   return NextResponse.json(
     {
       coreReady,
       monthlyOnly: true,
-      plans: config.plans,
+      plans,
       includedPlans,
+      adminComped: administrator,
       storage: {
         ready: storage.ready,
         checkoutIntentsReady: storage.checkoutIntentsReady,

@@ -9,6 +9,10 @@ import {
   setRoomCancellation,
   startExistingRoomUpgrade,
 } from "@/lib/room-billing-management";
+import {
+  administratorRoomIsComped,
+  changeAdministratorRoomPlan,
+} from "@/lib/admin-room-provisioning";
 import { createRequestSupabase } from "@/lib/room-operations";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 
@@ -42,7 +46,11 @@ async function authorize(request: NextRequest) {
       ),
     };
   }
-  return { ok: true as const, user: account.user };
+  return {
+    ok: true as const,
+    user: account.user,
+    profile: account.profile,
+  };
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
@@ -54,9 +62,29 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
   try {
     const overview = await getRoomBillingOverview(roomId, authorized.user.id);
-    return NextResponse.json(overview, {
-      headers: { "Cache-Control": "private, no-store" },
-    });
+    const adminComped =
+      authorized.profile.is_admin === true &&
+      (await administratorRoomIsComped(roomId, authorized.user.id));
+
+    if (adminComped) {
+      overview.currentPlan.priceLabel = "Administrator included";
+      overview.availablePlans = overview.availablePlans.map((plan) => ({
+        ...plan,
+        priceLabel: "Administrator included",
+        selfServe: true,
+        contactSales: false,
+      }));
+      overview.billingConfigured = false;
+      overview.hasStripeSubscription = false;
+      overview.invoices = [];
+    }
+
+    return NextResponse.json(
+      { ...overview, adminComped },
+      {
+        headers: { "Cache-Control": "private, no-store" },
+      }
+    );
   } catch (error) {
     return jsonError(error);
   }
@@ -74,6 +102,33 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "https://loombus.com";
 
   try {
+    const adminComped =
+      authorized.profile.is_admin === true &&
+      (await administratorRoomIsComped(roomId, authorized.user.id));
+
+    if (adminComped) {
+      if (action === "upgrade" || action === "change_plan") {
+        return NextResponse.json(
+          await changeAdministratorRoomPlan(
+            roomId,
+            authorized.user.id,
+            String(body?.planKey ?? "")
+          ),
+          { headers: { "Cache-Control": "private, no-store" } }
+        );
+      }
+
+      if (["portal", "schedule_cancel", "resume"].includes(action)) {
+        return NextResponse.json(
+          {
+            error: "Administrator-included Rooms do not use Stripe billing.",
+            code: "admin_room_not_billed",
+          },
+          { status: 409, headers: { "Cache-Control": "private, no-store" } }
+        );
+      }
+    }
+
     if (action === "portal") {
       return NextResponse.json(
         await createRoomBillingPortal(roomId, authorized.user.id, origin),

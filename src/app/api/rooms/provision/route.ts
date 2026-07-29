@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 import { createRequestSupabase } from "@/lib/room-operations";
+import { provisionAdministratorRoom } from "@/lib/admin-room-provisioning";
 import {
   RoomBillingError,
   isPaidRoomPlanKey,
@@ -135,6 +136,13 @@ export async function POST(request: NextRequest) {
       planKey: planId,
       origin: getOrigin(request),
     };
+
+    if (accountAccess.profile.is_admin === true) {
+      const result = await provisionAdministratorRoom(input);
+      return NextResponse.json(result, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
 
     if (planId === "free") {
       const available = await freeRoomIsAvailable(input.userId);
