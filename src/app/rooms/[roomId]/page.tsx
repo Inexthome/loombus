@@ -12,5 +12,6 @@ export const metadata: Metadata = {
 };
 
 export default function RoomWorkspacePage() {
+  // The base Room route intentionally lands on Discussions.
   return <RoomWorkspaceSectionClient section="discussions" />;
 }
