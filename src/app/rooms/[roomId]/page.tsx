@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { RoomDiscussionsWorkspace } from "@/components/room-discussions-workspace";
 import ClassicRoomPreviewClient from "../classic/[roomId]/classic-room-preview-client";
+import "../classic/[roomId]/classic-room-preview.css";
 import LiveRoomWorkspaceClient from "./live-room-workspace-client";
 
 export const metadata: Metadata = {
