@@ -74,7 +74,10 @@ export function RoomUnifiedMenu() {
 
     for (const button of tierButtons()) {
       const label = cleanLabel(button.textContent);
-      if (!label || label.toLowerCase() === "overview") continue;
+      const lowered = label.toLowerCase();
+      if (!label || lowered === "overview" || lowered.includes("discussion")) {
+        continue;
+      }
       const key = itemKey("module", label);
       if (seen.has(key)) continue;
       seen.add(key);
@@ -136,15 +139,7 @@ export function RoomUnifiedMenu() {
     };
   }, [sync]);
 
-  const discussionLabel = useMemo(
-    () =>
-      items.find(
-        (item) =>
-          item.kind === "module" &&
-          item.label.toLowerCase().includes("discussion")
-      )?.label ?? "Discussions",
-    [items]
-  );
+  const discussionLabel = useMemo(() => "Discussions", []);
 
   const activate = useCallback((item: ProxyItem) => {
     const candidates =
@@ -168,8 +163,8 @@ export function RoomUnifiedMenu() {
 
   return (
     <>
-      <nav className="room-unified-menu" aria-label="Room menu">
-        <p>Room menu</p>
+      <nav className="room-unified-menu" aria-label="Room modules">
+        <p>Modules</p>
         {items.length > 0 ? (
           items.map((item) => (
             <button
@@ -182,7 +177,7 @@ export function RoomUnifiedMenu() {
             </button>
           ))
         ) : (
-          <span className="room-unified-menu-loading">Loading Room menu…</span>
+          <span className="room-unified-menu-loading">Loading Room modules…</span>
         )}
       </nav>
 
