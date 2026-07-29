@@ -1,0 +1,339 @@
+.room-simple-loading {
+  min-height: 55vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  color: var(--loombus-text-muted);
+}
+
+.room-simple-loading svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.room-simple-page {
+  width: min(100%, 1540px);
+  margin: 0 auto;
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: minmax(15rem, 17rem) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text);
+}
+
+.room-simple-sidebar {
+  min-width: 0;
+}
+
+.room-simple-sidebar-sticky {
+  position: sticky;
+  top: calc(1rem + env(safe-area-inset-top));
+  display: grid;
+  gap: 1rem;
+}
+
+.room-simple-all-rooms,
+.room-simple-route-menu a,
+.room-unified-menu button {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 0.9rem;
+  background: var(--loombus-surface);
+  color: var(--loombus-text);
+  text-decoration: none;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.room-simple-all-rooms {
+  padding: 0 0.9rem;
+}
+
+.room-simple-all-rooms svg,
+.room-simple-route-menu svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.room-simple-room-context {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.1rem;
+  background: var(--loombus-surface);
+}
+
+.room-simple-room-context > svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+  flex: 0 0 auto;
+}
+
+.room-simple-room-context div {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.room-simple-room-context strong,
+.room-simple-room-context span {
+  overflow-wrap: anywhere;
+}
+
+.room-simple-room-context strong {
+  font-size: 1rem;
+}
+
+.room-simple-room-context span {
+  color: var(--loombus-text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.room-unified-menu,
+.room-simple-route-menu {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.room-unified-menu > p,
+.room-simple-route-menu > p {
+  margin: 0.35rem 0.65rem 0.15rem;
+  color: var(--loombus-text-subtle);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.room-unified-menu button,
+.room-simple-route-menu a {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  cursor: pointer;
+}
+
+.room-unified-menu button:hover,
+.room-simple-route-menu a:hover,
+.room-simple-all-rooms:hover,
+.room-unified-menu button[aria-current="page"],
+.room-simple-route-menu a[aria-current="page"] {
+  border-color: color-mix(in srgb, #d6a84f 62%, var(--loombus-border));
+  background: color-mix(in srgb, #d6a84f 12%, var(--loombus-surface));
+}
+
+.room-simple-route-menu a span,
+.room-unified-menu button span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.room-simple-route-menu a strong {
+  margin-left: auto;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #d6a84f;
+  color: #111;
+  font-size: 0.7rem;
+}
+
+.room-unified-menu-loading {
+  padding: 0.75rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.8rem;
+}
+
+.room-simple-content {
+  min-width: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.room-simple-header {
+  min-height: 4.5rem;
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 1.2rem;
+  background: var(--loombus-surface);
+}
+
+.room-simple-header h1 {
+  margin: 0;
+  min-width: 0;
+  font-size: clamp(1.55rem, 3vw, 2.4rem);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+/* The old shell remains the data and permission source, but no longer presents a
+   second banner, toolbar, navigation bar, or dashboard beneath the new frame. */
+.room-simple-content > .rooms-live-page {
+  min-height: 0;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.room-simple-content .rooms-live-shell {
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.room-simple-content .rooms-live-shell:not([data-room-discussion-ready="true"]) {
+  min-height: 42vh;
+  visibility: hidden;
+}
+
+.room-simple-content .rooms-live-back-link,
+.room-simple-content .room-workspace-hero,
+.room-simple-content .room-workspace-tabs,
+.room-simple-content [data-loombus-tier-navigation-host="true"],
+.room-simple-content .room-foundation-toolbar,
+.room-simple-content .room-operations-trigger,
+.room-simple-content .room-expansion-toolbar {
+  display: none !important;
+}
+
+.room-simple-content .room-workspace-discussions {
+  margin: 0 !important;
+}
+
+.room-simple-content .room-workspace-discussions > .room-workspace-section-heading {
+  display: none !important;
+}
+
+.room-simple-content [data-room-threaded-discussions="true"] {
+  margin-top: 0 !important;
+}
+
+/* Paid modules and operational workspaces open above the current discussion
+   instead of increasing the document height and pushing the Room downward. */
+.room-simple-content .rooms-live-shell.is-room-tier-module-active
+  [data-loombus-tier-module-host="true"],
+.room-simple-content [data-loombus-room-expansion-host="true"] .room-expansion-panel,
+.room-simple-content [data-loombus-room-operations-host="true"] .room-operations-panel,
+.room-simple-content [data-loombus-room-foundation-host="true"] .room-foundation-panel {
+  position: fixed !important;
+  inset: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom))
+    min(19rem, 22vw);
+  z-index: 120;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1.1rem;
+  border: 1px solid var(--loombus-border) !important;
+  border-radius: 1.25rem !important;
+  background: var(--loombus-surface) !important;
+  box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 0.24) !important;
+}
+
+.room-simple-content [data-loombus-tier-module-host="true"] {
+  display: none;
+}
+
+.room-simple-content .rooms-live-shell.is-room-tier-module-active
+  [data-loombus-tier-module-host="true"] {
+  display: block;
+}
+
+.room-simple-content .room-tier-module-panel,
+.room-simple-content .room-expansion-panel,
+.room-simple-content .room-operations-panel,
+.room-simple-content .room-foundation-panel {
+  width: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+}
+
+.room-module-overlay-close {
+  position: fixed;
+  right: max(2rem, env(safe-area-inset-right));
+  bottom: max(2rem, env(safe-area-inset-bottom));
+  z-index: 140;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid color-mix(in srgb, #d6a84f 65%, var(--loombus-border));
+  border-radius: 999px;
+  background: #d6a84f;
+  color: #111;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 900;
+  box-shadow: 0 0.8rem 2rem rgb(0 0 0 / 0.22);
+  cursor: pointer;
+}
+
+.room-module-overlay-close svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+@media (max-width: 900px) {
+  .room-simple-page {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.75rem;
+  }
+
+  .room-simple-sidebar-sticky {
+    position: static;
+  }
+
+  .room-unified-menu,
+  .room-simple-route-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .room-unified-menu > p,
+  .room-simple-route-menu > p,
+  .room-unified-menu-loading {
+    grid-column: 1 / -1;
+  }
+
+  .room-simple-content .rooms-live-shell.is-room-tier-module-active
+    [data-loombus-tier-module-host="true"],
+  .room-simple-content [data-loombus-room-expansion-host="true"] .room-expansion-panel,
+  .room-simple-content [data-loombus-room-operations-host="true"] .room-operations-panel,
+  .room-simple-content [data-loombus-room-foundation-host="true"] .room-foundation-panel {
+    inset: 0;
+    border-radius: 0 !important;
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(5rem, calc(1rem + env(safe-area-inset-bottom)));
+  }
+
+  .room-module-overlay-close {
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 540px) {
+  .room-unified-menu,
+  .room-simple-route-menu {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
