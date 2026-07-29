@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { RoomDiscussionsWorkspace } from "@/components/room-discussions-workspace";
+import ClassicRoomPreviewClient from "../classic/[roomId]/classic-room-preview-client";
 import LiveRoomWorkspaceClient from "./live-room-workspace-client";
 
 export const metadata: Metadata = {
@@ -13,6 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default function RoomWorkspacePage() {
+  if (process.env.VERCEL_ENV === "preview") {
+    return <ClassicRoomPreviewClient />;
+  }
+
   return (
     <>
       <LiveRoomWorkspaceClient />
