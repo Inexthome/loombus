@@ -73,12 +73,9 @@ export function RoomUnifiedMenu() {
     const next: ProxyItem[] = [];
     const seen = new Set<string>();
 
-    for (const button of tierButtons()) {
+    for (const [index, button] of tierButtons().entries()) {
       const label = cleanLabel(button.textContent);
-      const lowered = label.toLowerCase();
-      if (!label || lowered === "overview" || lowered.includes("discussion")) {
-        continue;
-      }
+      if (!label || index <= 2) continue;
       const key = itemKey("module", label);
       if (seen.has(key)) continue;
       seen.add(key);
