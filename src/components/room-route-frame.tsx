@@ -69,6 +69,9 @@ type NavItem = {
 
 type ShellState = "loading" | "ready" | "restricted" | "not-found" | "error";
 
+const SHELL_LOADING_MESSAGE =
+  "Membership and Room permissions are being verified before private content is shown.";
+
 function roleLabel(value: string | null) {
   if (value === "owner") return "Owner";
   if (value === "administrator") return "Administrator";
@@ -80,6 +83,11 @@ function routeIsActive(pathname: string, href: string, roomBase: string) {
   const target = href.split("?")[0];
   if (target === roomBase) return pathname === roomBase || pathname === `${roomBase}/`;
   return pathname === target || pathname.startsWith(`${target}/`);
+}
+
+function currentRouteDestination(roomId: string) {
+  if (typeof window === "undefined") return `/rooms/${roomId}`;
+  return `${window.location.pathname}${window.location.search}` || `/rooms/${roomId}`;
 }
 
 function RoomShellState({
@@ -136,9 +144,7 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
   const checkoutReturn = pathname.endsWith("/billing/success");
   const [payload, setPayload] = useState<ShellPayload | null>(null);
   const [shellState, setShellState] = useState<ShellState>("loading");
-  const [shellMessage, setShellMessage] = useState(
-    "Membership and Room permissions are being verified before private content is shown."
-  );
+  const [shellMessage, setShellMessage] = useState(SHELL_LOADING_MESSAGE);
   const [refreshing, setRefreshing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const requestSequence = useRef(0);
@@ -148,15 +154,19 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
       if (!roomId || checkoutReturn) return;
       const sequence = requestSequence.current + 1;
       requestSequence.current = sequence;
-      if (initial) setShellState("loading");
-      else setRefreshing(true);
+      if (initial) {
+        setShellState("loading");
+        setShellMessage(SHELL_LOADING_MESSAGE);
+      } else {
+        setRefreshing(true);
+      }
 
       try {
         const session = await supabase.auth.getSession();
         const token = session.data.session?.access_token;
         if (!token) {
           window.location.href = `/login?next=${encodeURIComponent(
-            pathname || `/rooms/${roomId}`
+            currentRouteDestination(roomId)
           )}`;
           return;
         }
@@ -170,7 +180,7 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
 
         if (response.status === 401) {
           window.location.href = `/login?next=${encodeURIComponent(
-            pathname || `/rooms/${roomId}`
+            currentRouteDestination(roomId)
           )}`;
           return;
         }
@@ -208,12 +218,11 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
         if (requestSequence.current === sequence) setRefreshing(false);
       }
     },
-    [checkoutReturn, pathname, roomId]
+    [checkoutReturn, roomId]
   );
 
   useEffect(() => {
     setPayload(null);
-    setSidebarOpen(false);
     if (checkoutReturn) return;
 
     void load(true);
@@ -229,6 +238,10 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
       window.removeEventListener("loombus:room-activity-changed", refresh);
     };
   }, [checkoutReturn, load]);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!sidebarOpen) return;
