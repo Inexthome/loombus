@@ -2,7 +2,7 @@ import { RoomExpansionWorkspace } from "@/components/room-expansion-workspace";
 import { RoomFoundationWorkspace } from "@/components/room-foundation-workspace";
 import { RoomOperationsWorkspace } from "@/components/room-operations-workspace";
 import { RoomResourcesWorkspace } from "@/components/room-resources-workspace";
-import RoomRouteFrame from "@/components/room-route-frame";
+import RoomRouteFrameV2 from "@/components/room-route-frame-v2";
 import { RoomTierModulesRouteBoundary } from "@/components/room-tier-modules-route-boundary";
 
 export default function RoomRouteLayout({
@@ -17,7 +17,7 @@ export default function RoomRouteLayout({
       <RoomExpansionWorkspace />
       <RoomTierModulesRouteBoundary />
       <RoomResourcesWorkspace />
-      <RoomRouteFrame>{children}</RoomRouteFrame>
+      <RoomRouteFrameV2>{children}</RoomRouteFrameV2>
     </>
   );
 }
