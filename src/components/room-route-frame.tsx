@@ -5,16 +5,13 @@ import {
   ArrowLeft,
   BarChart3,
   Bell,
-  CalendarDays,
   CreditCard,
   FileClock,
   Flag,
-  House,
+  Loader2,
   LockKeyhole,
-  Megaphone,
   Search,
   ShieldCheck,
-  Users,
 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import {
@@ -25,6 +22,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { RoomUnifiedMenu } from "@/components/room-unified-menu";
 import { supabase } from "@/lib/supabase/client";
 
 type ShellPayload = {
@@ -47,32 +45,16 @@ type ShellPayload = {
     operationsEnabled: boolean;
   };
   metrics: {
-    members: number;
-    discussions: number;
-    upcomingEvents: number;
-    announcements: number;
     pendingApplications: number;
   };
-  nextEvent: {
-    id: string;
-    title: string;
-    startsAt: string;
-    endsAt: string | null;
-    location: string | null;
-  } | null;
-  pinnedAnnouncement: {
-    id: string;
-    title: string;
-    priority: string;
-    createdAt: string | null;
-  } | null;
   error?: string;
 };
 
-type NavItem = {
+type RouteItem = {
   href: string;
   label: string;
-  Icon: typeof House;
+  Icon: typeof Search;
+  badge?: number;
 };
 
 function roleLabel(value: string | null) {
@@ -82,22 +64,8 @@ function roleLabel(value: string | null) {
   return "Member";
 }
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return "Date not available";
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "Date not available";
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function routeIsActive(pathname: string, href: string, roomBase: string) {
+function routeIsActive(pathname: string, href: string) {
   const target = href.split("?")[0];
-  if (target === roomBase) return pathname === roomBase || pathname === `${roomBase}/`;
   return pathname === target || pathname.startsWith(`${target}/`);
 }
 
@@ -110,7 +78,9 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
     [rawRoomId]
   );
   const [payload, setPayload] = useState<ShellPayload | null>(null);
-  const [shellState, setShellState] = useState<"loading" | "ready" | "unavailable">("loading");
+  const [shellState, setShellState] = useState<
+    "loading" | "ready" | "unavailable"
+  >("loading");
   const requestSequence = useRef(0);
 
   const load = useCallback(async () => {
@@ -120,7 +90,9 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
     const session = await supabase.auth.getSession();
     const token = session.data.session?.access_token;
     if (!token) {
-      window.location.href = `/login?next=${encodeURIComponent(pathname || `/rooms/${roomId}`)}`;
+      window.location.href = `/login?next=${encodeURIComponent(
+        pathname || `/rooms/${roomId}`
+      )}`;
       return;
     }
 
@@ -131,7 +103,7 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
     const result = (await response.json().catch(() => ({}))) as ShellPayload;
     if (requestSequence.current !== sequence) return;
     if (!response.ok || !result.room || !result.access) {
-      setShellState((current) => (current === "loading" ? "unavailable" : current));
+      setShellState("unavailable");
       return;
     }
     setPayload(result);
@@ -154,12 +126,19 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
     };
   }, [load]);
 
-  if (!roomId || shellState !== "ready" || !payload) return <>{children}</>;
+  if (!roomId || shellState === "loading") {
+    return (
+      <main className="room-simple-loading" aria-busy="true" aria-live="polite">
+        <Loader2 aria-hidden="true" className="is-spinning" />
+        <strong>Opening Room…</strong>
+      </main>
+    );
+  }
+
+  if (shellState === "unavailable" || !payload) return <>{children}</>;
 
   const roomBase = `/rooms/${encodeURIComponent(roomId)}`;
-  const primary: NavItem[] = [
-    { href: roomBase, label: "Room home", Icon: House },
-    { href: `${roomBase}/calendar`, label: "Calendar", Icon: CalendarDays },
+  const routes: RouteItem[] = [
     {
       href: `${roomBase}/tools`,
       label: payload.access.isOwner ? "Search and lifecycle" : "Search Room",
@@ -173,140 +152,69 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
     },
   ];
 
-  const management: NavItem[] = [];
   if (payload.access.canManage && payload.access.operationsEnabled) {
-    management.push({ href: `${roomBase}/analytics`, label: "Analytics", Icon: BarChart3 });
+    routes.push({ href: `${roomBase}/analytics`, label: "Analytics", Icon: BarChart3 });
   }
   if (payload.access.canManage) {
-    management.push({ href: `${roomBase}/governance`, label: "Governance", Icon: ShieldCheck });
+    routes.push({
+      href: `${roomBase}/governance`,
+      label: "Governance",
+      Icon: ShieldCheck,
+      badge: payload.metrics.pendingApplications,
+    });
   }
   if (payload.access.isOwner) {
-    management.push({ href: `${roomBase}/retention`, label: "Retention", Icon: FileClock });
-    management.push({ href: `${roomBase}/billing`, label: "Billing", Icon: CreditCard });
+    routes.push({ href: `${roomBase}/retention`, label: "Retention", Icon: FileClock });
+    routes.push({ href: `${roomBase}/billing`, label: "Billing", Icon: CreditCard });
   }
 
   return (
-    <div className="room-route-page">
-      <a href="#room-route-content" className="room-route-skip-link">
+    <div className="room-simple-page">
+      <a href="#room-simple-content" className="room-route-skip-link">
         Skip to Room content
       </a>
-      <div className="room-route-layout">
-        <aside className="room-route-left" aria-label="Room navigation">
-          <div className="room-route-left-sticky">
-            <Link href="/rooms" className="room-route-all-rooms">
-              <ArrowLeft aria-hidden="true" /> All Rooms
-            </Link>
 
-            <section className="room-route-identity">
-              <span className="room-route-identity-icon">
-                <LockKeyhole aria-hidden="true" />
+      <aside className="room-simple-sidebar" aria-label="Room navigation">
+        <div className="room-simple-sidebar-sticky">
+          <Link href="/rooms" className="room-simple-all-rooms">
+            <ArrowLeft aria-hidden="true" />
+            All Rooms
+          </Link>
+
+          <section className="room-simple-room-context">
+            <LockKeyhole aria-hidden="true" />
+            <div>
+              <strong>{payload.room.name}</strong>
+              <span>
+                {roleLabel(payload.access.role)} · {payload.room.plan.label}
               </span>
-              <p>{payload.room.roomType.replaceAll("_", " ") || "Private Room"}</p>
-              <h2>{payload.room.name}</h2>
-              {payload.room.description ? <span>{payload.room.description}</span> : null}
-            </section>
+            </div>
+          </section>
 
-            <nav className="room-route-nav" aria-label="Room workspace">
-              <p>Workspace</p>
-              {primary.map(({ href, label, Icon }) => {
-                const active = routeIsActive(pathname, href, roomBase);
-                return (
-                  <Link key={href} href={href} aria-current={active ? "page" : undefined}>
-                    <Icon aria-hidden="true" />
-                    <span>{label}</span>
-                  </Link>
-                );
-              })}
+          <RoomUnifiedMenu />
 
-              {management.length > 0 ? <p>Management</p> : null}
-              {management.map(({ href, label, Icon }) => {
-                const active = routeIsActive(pathname, href, roomBase);
-                return (
-                  <Link key={href} href={href} aria-current={active ? "page" : undefined}>
-                    <Icon aria-hidden="true" />
-                    <span>{label}</span>
-                    {label === "Governance" && payload.metrics.pendingApplications > 0 ? (
-                      <strong>{payload.metrics.pendingApplications}</strong>
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        </aside>
-
-        <div id="room-route-content" className="room-route-content">
-          {children}
+          <nav className="room-simple-route-menu" aria-label="Room tools">
+            <p>Tools</p>
+            {routes.map(({ href, label, Icon, badge }) => {
+              const active = routeIsActive(pathname, href);
+              return (
+                <Link key={href} href={href} aria-current={active ? "page" : undefined}>
+                  <Icon aria-hidden="true" />
+                  <span>{label}</span>
+                  {badge && badge > 0 ? <strong>{badge}</strong> : null}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
+      </aside>
 
-        <aside className="room-route-right" aria-label="Room context">
-          <div className="room-route-right-sticky">
-            <section className="room-route-card">
-              <div className="room-route-card-heading">
-                <div>
-                  <p>Room snapshot</p>
-                  <h2>Current activity</h2>
-                </div>
-                <Users aria-hidden="true" />
-              </div>
-              <div className="room-route-metrics">
-                <span><strong>{payload.metrics.members}</strong>Members</span>
-                <span><strong>{payload.metrics.discussions}</strong>Discussions</span>
-                <span><strong>{payload.metrics.upcomingEvents}</strong>Upcoming</span>
-                <span><strong>{payload.metrics.announcements}</strong>Updates</span>
-              </div>
-            </section>
-
-            {payload.nextEvent ? (
-              <section className="room-route-card">
-                <div className="room-route-card-heading">
-                  <div>
-                    <p>Next date</p>
-                    <h2>{payload.nextEvent.title}</h2>
-                  </div>
-                  <CalendarDays aria-hidden="true" />
-                </div>
-                <span className="room-route-card-detail">
-                  {formatDateTime(payload.nextEvent.startsAt)}
-                </span>
-                {payload.nextEvent.location ? (
-                  <span className="room-route-card-detail">{payload.nextEvent.location}</span>
-                ) : null}
-                <Link href={`${roomBase}/calendar`}>Open calendar</Link>
-              </section>
-            ) : null}
-
-            {payload.pinnedAnnouncement ? (
-              <section className="room-route-card">
-                <div className="room-route-card-heading">
-                  <div>
-                    <p>Pinned update</p>
-                    <h2>{payload.pinnedAnnouncement.title}</h2>
-                  </div>
-                  <Megaphone aria-hidden="true" />
-                </div>
-                <span className="room-route-card-detail">
-                  {payload.pinnedAnnouncement.priority.replaceAll("_", " ")}
-                </span>
-                <Link href={roomBase}>View Room home</Link>
-              </section>
-            ) : null}
-
-            <section className="room-route-card room-route-security-card">
-              <LockKeyhole aria-hidden="true" />
-              <div>
-                <strong>Private Room</strong>
-                <span>
-                  {roleLabel(payload.access.role)} · {payload.room.plan.label || "Room plan"}
-                </span>
-                <small>
-                  Access and tool permissions remain enforced by the existing Room APIs.
-                </small>
-              </div>
-            </section>
-          </div>
-        </aside>
-      </div>
+      <main id="room-simple-content" className="room-simple-content">
+        <header className="room-simple-header">
+          <h1>{payload.room.name}</h1>
+        </header>
+        {children}
+      </main>
     </div>
   );
 }
