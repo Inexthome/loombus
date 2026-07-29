@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type ProxyItem = {
   key: string;
@@ -67,6 +67,7 @@ function itemsMatch(current: ProxyItem[], next: ProxyItem[]) {
 export function RoomUnifiedMenu() {
   const [items, setItems] = useState<ProxyItem[]>([]);
   const [moduleOpen, setModuleOpen] = useState(false);
+  const [settled, setSettled] = useState(false);
 
   const sync = useCallback(() => {
     const next: ProxyItem[] = [];
@@ -116,6 +117,7 @@ export function RoomUnifiedMenu() {
 
   useEffect(() => {
     let frame = 0;
+    const settleTimer = window.setTimeout(() => setSettled(true), 2500);
     const schedule = () => {
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
@@ -135,11 +137,10 @@ export function RoomUnifiedMenu() {
 
     return () => {
       observer.disconnect();
+      window.clearTimeout(settleTimer);
       if (frame) window.cancelAnimationFrame(frame);
     };
   }, [sync]);
-
-  const discussionLabel = useMemo(() => "Discussions", []);
 
   const activate = useCallback((item: ProxyItem) => {
     const candidates =
@@ -163,30 +164,34 @@ export function RoomUnifiedMenu() {
 
   return (
     <>
-      <nav className="room-unified-menu" aria-label="Room modules">
-        <p>Modules</p>
-        {items.length > 0 ? (
-          items.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              aria-current={item.active ? "page" : undefined}
-              onClick={() => activate(item)}
-            >
-              <span>{item.label}</span>
-            </button>
-          ))
-        ) : (
-          <span className="room-unified-menu-loading">Loading Room modules…</span>
-        )}
-      </nav>
+      {items.length > 0 || !settled ? (
+        <nav className="room-unified-menu" aria-label="Room modules">
+          <p>Modules</p>
+          {items.length > 0 ? (
+            items.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                aria-current={item.active ? "page" : undefined}
+                onClick={() => activate(item)}
+              >
+                <span>{item.label}</span>
+              </button>
+            ))
+          ) : (
+            <span className="room-unified-menu-loading">
+              Loading Room modules…
+            </span>
+          )}
+        </nav>
+      ) : null}
 
       {moduleOpen ? (
         <button
           type="button"
           className="room-module-overlay-close"
           onClick={closeModule}
-          aria-label={`Close Room module and return to ${discussionLabel}`}
+          aria-label="Close Room module and return to Discussions"
         >
           <X aria-hidden="true" />
           <span>Back to discussions</span>
