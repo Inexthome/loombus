@@ -17,6 +17,7 @@ import "./room-content-overflow-hardening.css";
 import "./room-subscription-refresh.css";
 import "./room-shell-tokens.css";
 import "./room-shell-phase1.css";
+import "./room-shell-phase1-route-fixes.css";
 
 export default function RoomsLayout({
   children,
