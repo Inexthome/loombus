@@ -10,15 +10,22 @@ type ProxyItem = {
   kind: "module" | "tool";
 };
 
-const TOOL_LABELS = new Set([
+const TOOL_LABELS = [
   "Room Operations",
   "Report Room Content",
   "Room Studio",
   "Organization Console",
-]);
+] as const;
 
 function cleanLabel(value: string | null | undefined) {
   return (value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function recognizedToolLabel(value: string | null | undefined) {
+  const cleaned = cleanLabel(value);
+  const known = TOOL_LABELS.find((label) => cleaned.startsWith(label));
+  if (known) return known;
+  return cleaned.endsWith(" Organization") ? cleaned : "";
 }
 
 function tierButtons() {
@@ -37,14 +44,24 @@ function toolControls() {
 
   return Array.from(
     shell.querySelectorAll<HTMLButtonElement | HTMLAnchorElement>("button, a")
-  ).filter((control) => {
-    const label = cleanLabel(control.textContent);
-    return TOOL_LABELS.has(label) || label.endsWith(" Organization");
-  });
+  ).filter((control) => Boolean(recognizedToolLabel(control.textContent)));
 }
 
 function itemKey(kind: ProxyItem["kind"], label: string) {
   return `${kind}:${label.toLowerCase()}`;
+}
+
+function itemsMatch(current: ProxyItem[], next: ProxyItem[]) {
+  return (
+    current.length === next.length &&
+    current.every(
+      (item, index) =>
+        item.key === next[index]?.key &&
+        item.label === next[index]?.label &&
+        item.active === next[index]?.active &&
+        item.kind === next[index]?.kind
+    )
+  );
 }
 
 export function RoomUnifiedMenu() {
@@ -70,7 +87,7 @@ export function RoomUnifiedMenu() {
     }
 
     for (const control of toolControls()) {
-      const label = cleanLabel(control.textContent);
+      const label = recognizedToolLabel(control.textContent);
       const key = itemKey("tool", label);
       if (!label || seen.has(key)) continue;
       seen.add(key);
@@ -84,7 +101,7 @@ export function RoomUnifiedMenu() {
       });
     }
 
-    setItems(next);
+    setItems((current) => (itemsMatch(current, next) ? current : next));
     setModuleOpen(
       Boolean(
         document.querySelector(
@@ -132,9 +149,13 @@ export function RoomUnifiedMenu() {
   const activate = useCallback((item: ProxyItem) => {
     const candidates =
       item.kind === "module" ? tierButtons() : toolControls();
-    const target = candidates.find(
-      (candidate) => cleanLabel(candidate.textContent) === item.label
-    );
+    const target = candidates.find((candidate) => {
+      const label =
+        item.kind === "module"
+          ? cleanLabel(candidate.textContent)
+          : recognizedToolLabel(candidate.textContent);
+      return label === item.label;
+    });
     target?.click();
   }, []);
 
