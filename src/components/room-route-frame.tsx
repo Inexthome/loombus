@@ -5,11 +5,13 @@ import {
   ArrowLeft,
   BarChart3,
   Bell,
+  CalendarDays,
   CreditCard,
   FileClock,
   Flag,
   Loader2,
   LockKeyhole,
+  MessageSquareText,
   Search,
   ShieldCheck,
 } from "lucide-react";
@@ -64,8 +66,9 @@ function roleLabel(value: string | null) {
   return "Member";
 }
 
-function routeIsActive(pathname: string, href: string) {
+function routeIsActive(pathname: string, href: string, roomBase: string) {
   const target = href.split("?")[0];
+  if (target === roomBase) return pathname === roomBase || pathname === `${roomBase}/`;
   return pathname === target || pathname.startsWith(`${target}/`);
 }
 
@@ -139,6 +142,8 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
 
   const roomBase = `/rooms/${encodeURIComponent(roomId)}`;
   const routes: RouteItem[] = [
+    { href: roomBase, label: "Discussions", Icon: MessageSquareText },
+    { href: `${roomBase}/calendar`, label: "Calendar", Icon: CalendarDays },
     {
       href: `${roomBase}/tools`,
       label: payload.access.isOwner ? "Search and lifecycle" : "Search Room",
@@ -193,10 +198,10 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
 
           <RoomUnifiedMenu />
 
-          <nav className="room-simple-route-menu" aria-label="Room tools">
-            <p>Tools</p>
+          <nav className="room-simple-route-menu" aria-label="Room workspace">
+            <p>Workspace</p>
             {routes.map(({ href, label, Icon, badge }) => {
-              const active = routeIsActive(pathname, href);
+              const active = routeIsActive(pathname, href, roomBase);
               return (
                 <Link key={href} href={href} aria-current={active ? "page" : undefined}>
                   <Icon aria-hidden="true" />
