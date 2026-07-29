@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { RoomDiscussionsWorkspace } from "@/components/room-discussions-workspace";
-import LiveRoomWorkspaceClient from "./live-room-workspace-client";
+import RoomHomeWorkspaceClient from "./room-home-workspace-client";
 
 export const metadata: Metadata = {
   title: "Private Room | Loombus",
   description:
-    "A private Loombus room for verified members, structured discussions, announcements, roles, and shared calendar events.",
+    "A private Loombus Room for verified members, structured discussions, announcements, roles, and shared events.",
   robots: {
     index: false,
     follow: false,
@@ -13,10 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function RoomWorkspacePage() {
-  return (
-    <>
-      <LiveRoomWorkspaceClient />
-      <RoomDiscussionsWorkspace />
-    </>
-  );
+  return <RoomHomeWorkspaceClient />;
 }
