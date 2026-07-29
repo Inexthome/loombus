@@ -259,8 +259,10 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
 
   if (checkoutReturn || !roomId) return <>{children}</>;
 
-  if (shellState === "loading") {
-    return <RoomShellState state="loading" message={shellMessage} />;
+  const payloadMatchesRoom = payload?.room.id === roomId;
+
+  if (shellState === "loading" || (shellState === "ready" && !payloadMatchesRoom)) {
+    return <RoomShellState state="loading" message={SHELL_LOADING_MESSAGE} />;
   }
 
   if (shellState === "not-found") {
@@ -303,7 +305,7 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!payload) {
+  if (!payload || !payloadMatchesRoom) {
     return (
       <RoomShellState
         state="error"
