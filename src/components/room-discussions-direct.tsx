@@ -31,6 +31,12 @@ import {
   useState,
 } from "react";
 import {
+  RoomAttachmentList,
+  RoomAttachmentPicker,
+  type PendingRoomAttachment,
+  uploadRoomAttachments,
+} from "@/components/room-discussion-attachments";
+import {
   ProfileAvatar,
   getProfileDisplayName,
 } from "@/components/profile-avatar";
@@ -124,6 +130,12 @@ type ThreadResponse = {
   error?: string;
 };
 
+type ActionResult = {
+  ok?: boolean;
+  id?: string;
+  error?: string;
+};
+
 type FilterKey = "all" | "unread" | "resolved";
 
 const MODE_ICONS: Record<DiscussionMode, LucideIcon> = {
@@ -172,6 +184,7 @@ export function RoomDiscussionsDirect() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [workingKey, setWorkingKey] = useState<string | null>(null);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [messageIsError, setMessageIsError] = useState(false);
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -181,10 +194,15 @@ export function RoomDiscussionsDirect() {
   const [body, setBody] = useState("");
   const [mode, setMode] = useState<DiscussionMode>("open_discussion");
   const [metadata, setMetadata] = useState<DiscussionMetadata>({});
+  const [threadFiles, setThreadFiles] = useState<PendingRoomAttachment[]>([]);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replyFiles, setReplyFiles] = useState<
+    Record<string, PendingRoomAttachment[]>
+  >({});
   const [participantSelections, setParticipantSelections] = useState<
     Record<string, string>
   >({});
+  const [attachmentVersion, setAttachmentVersion] = useState(0);
   const requestSequence = useRef(0);
   const reloadTimer = useRef<number | null>(null);
 
@@ -195,8 +213,6 @@ export function RoomDiscussionsDirect() {
       requestSequence.current = sequence;
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
-      setMessage("");
-      setMessageIsError(false);
 
       try {
         const { data: sessionData } = await supabase.auth.getSession();
@@ -236,6 +252,8 @@ export function RoomDiscussionsDirect() {
     setData(null);
     setExpandedPostId(null);
     setComposerOpen(false);
+    setThreadFiles([]);
+    setReplyFiles({});
     void loadThreads(false);
     return () => {
       requestSequence.current += 1;
@@ -255,33 +273,26 @@ export function RoomDiscussionsDirect() {
       .channel(`room-direct-discussions:${roomId}`)
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "room_posts",
-          filter: `room_id=eq.${roomId}`,
-        },
+        { event: "*", schema: "public", table: "room_posts", filter: `room_id=eq.${roomId}` },
         scheduleReload
       )
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "room_post_replies",
-          filter: `room_id=eq.${roomId}`,
-        },
+        { event: "*", schema: "public", table: "room_post_replies", filter: `room_id=eq.${roomId}` },
         scheduleReload
       )
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "room_post_participants",
-          filter: `room_id=eq.${roomId}`,
-        },
+        { event: "*", schema: "public", table: "room_post_participants", filter: `room_id=eq.${roomId}` },
         scheduleReload
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "room_post_attachments", filter: `room_id=eq.${roomId}` },
+        () => {
+          setAttachmentVersion((current) => current + 1);
+          scheduleReload();
+        }
       )
       .subscribe();
     const fallback = window.setInterval(() => void loadThreads(true), 30_000);
@@ -298,8 +309,8 @@ export function RoomDiscussionsDirect() {
     key: string,
     successMessage?: string,
     reload = true
-  ) {
-    if (!roomId || workingKey) return false;
+  ): Promise<ActionResult | null> {
+    if (!roomId || workingKey || uploadingKey) return null;
     setWorkingKey(key);
     setMessage("");
     setMessageIsError(false);
@@ -318,16 +329,14 @@ export function RoomDiscussionsDirect() {
           body: JSON.stringify({ action, ...payload }),
         }
       );
-      const result = (await response.json().catch(() => ({}))) as {
-        error?: string;
-      };
+      const result = (await response.json().catch(() => ({}))) as ActionResult;
       if (!response.ok) {
         throw new Error(result.error ?? "The Room discussion action failed.");
       }
       if (successMessage) setMessage(successMessage);
       if (reload) await loadThreads(true);
       window.dispatchEvent(new Event("loombus:room-activity-changed"));
-      return true;
+      return result;
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -335,7 +344,7 @@ export function RoomDiscussionsDirect() {
           : "The Room discussion action failed."
       );
       setMessageIsError(true);
-      return false;
+      return null;
     } finally {
       setWorkingKey(null);
     }
@@ -343,7 +352,7 @@ export function RoomDiscussionsDirect() {
 
   async function createThread(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const completed = await performAction(
+    const created = await performAction(
       "create_post",
       {
         title,
@@ -352,16 +361,42 @@ export function RoomDiscussionsDirect() {
         discussionMetadata: metadata,
       },
       "create-post",
-      "Room discussion created."
+      undefined,
+      false
     );
-    if (completed) {
-      setTitle("");
-      setBody("");
-      setMode("open_discussion");
-      setMetadata({});
-      setFilter("all");
-      setComposerOpen(false);
+    if (!created?.id) return;
+
+    if (threadFiles.length) {
+      setUploadingKey("upload:post");
+      try {
+        await uploadRoomAttachments({
+          roomId,
+          targetType: "post",
+          targetId: created.id,
+          files: threadFiles,
+        });
+      } catch (error) {
+        setMessage(
+          `Discussion created, but ${
+            error instanceof Error ? error.message : "attachments could not be uploaded."
+          }`
+        );
+        setMessageIsError(true);
+      } finally {
+        setUploadingKey(null);
+      }
     }
+
+    setTitle("");
+    setBody("");
+    setMode("open_discussion");
+    setMetadata({});
+    setThreadFiles([]);
+    setFilter("all");
+    setComposerOpen(false);
+    setMessage((current) => current || "Room discussion created.");
+    setAttachmentVersion((current) => current + 1);
+    await loadThreads(true);
   }
 
   async function createReply(
@@ -370,16 +405,43 @@ export function RoomDiscussionsDirect() {
   ) {
     event.preventDefault();
     const replyBody = replyDrafts[postId] ?? "";
-    const completed = await performAction(
+    const created = await performAction(
       "create_reply",
       { postId, body: replyBody },
       `reply:${postId}`,
-      "Reply posted."
+      undefined,
+      false
     );
-    if (completed) {
-      setReplyDrafts((current) => ({ ...current, [postId]: "" }));
-      setExpandedPostId(postId);
+    if (!created?.id) return;
+
+    const files = replyFiles[postId] ?? [];
+    if (files.length) {
+      setUploadingKey(`upload:reply:${postId}`);
+      try {
+        await uploadRoomAttachments({
+          roomId,
+          targetType: "reply",
+          targetId: created.id,
+          files,
+        });
+      } catch (error) {
+        setMessage(
+          `Reply posted, but ${
+            error instanceof Error ? error.message : "attachments could not be uploaded."
+          }`
+        );
+        setMessageIsError(true);
+      } finally {
+        setUploadingKey(null);
+      }
     }
+
+    setReplyDrafts((current) => ({ ...current, [postId]: "" }));
+    setReplyFiles((current) => ({ ...current, [postId]: [] }));
+    setExpandedPostId(postId);
+    setMessage((current) => current || "Reply posted.");
+    setAttachmentVersion((current) => current + 1);
+    await loadThreads(true);
   }
 
   async function addParticipant(postId: string) {
@@ -413,11 +475,7 @@ export function RoomDiscussionsDirect() {
             ...current,
             posts: current.posts?.map((post) =>
               post.id === postId
-                ? {
-                    ...post,
-                    isUnread: false,
-                    lastReadAt: new Date().toISOString(),
-                  }
+                ? { ...post, isUnread: false, lastReadAt: new Date().toISOString() }
                 : post
             ),
           }
@@ -445,6 +503,7 @@ export function RoomDiscussionsDirect() {
     data?.room?.requiredBehaviors?.includes("private_support_threads") ||
       data?.room?.threadVisibilityScope === "author_and_staff"
   );
+  const busy = Boolean(workingKey || uploadingKey);
 
   return (
     <div className="space-y-5" data-room-direct-discussions="true">
@@ -455,8 +514,8 @@ export function RoomDiscussionsDirect() {
             Focused conversation for this Room
           </h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--loombus-text-muted)]">
-            Structured threads stay separate from the public Discussions feed and are
-            visible only within this verified Room boundary.
+            Structured threads, replies, and private attachments remain inside this
+            verified Room boundary.
           </p>
         </div>
         {data?.permissions?.canPost ? (
@@ -491,8 +550,8 @@ export function RoomDiscussionsDirect() {
           <div>
             <strong className="font-black">Private Customer Support cases</strong>
             <p className="mt-1 leading-6">
-              Each case is visible only to its author, active Room support staff,
-              and participants explicitly added by staff.
+              Each case and its attachments are visible only to its author, active
+              Room support staff, and participants explicitly added by staff.
             </p>
           </div>
         </div>
@@ -553,8 +612,7 @@ export function RoomDiscussionsDirect() {
               {selectedMode.fields.map((field) => (
                 <label key={field.key} className="block">
                   <span className="mb-2 block text-sm font-black text-[var(--loombus-text)]">
-                    {field.label}
-                    {field.required ? " *" : ""}
+                    {field.label}{field.required ? " *" : ""}
                   </span>
                   {field.multiline ? (
                     <textarea
@@ -611,17 +669,18 @@ export function RoomDiscussionsDirect() {
             />
           </label>
 
-          <div className="flex justify-end">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <RoomAttachmentPicker
+              value={threadFiles}
+              onChange={setThreadFiles}
+              disabled={busy}
+            />
             <button
               type="submit"
-              disabled={
-                workingKey === "create-post" ||
-                title.trim().length < 4 ||
-                !body.trim()
-              }
-              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#cbab5b] px-5 text-sm font-black text-[#17120a] disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={busy || title.trim().length < 4 || !body.trim()}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#cbab5b] px-5 text-sm font-black text-[#17120a] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {workingKey === "create-post" ? (
+              {workingKey === "create-post" || uploadingKey === "upload:post" ? (
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               ) : (
                 <Send className="size-4" aria-hidden="true" />
@@ -730,8 +789,7 @@ export function RoomDiscussionsDirect() {
                         ) : null}
                         {thread.isUnread ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200">
-                            <Eye className="size-3" aria-hidden="true" />
-                            Unread
+                            <Eye className="size-3" aria-hidden="true" /> Unread
                           </span>
                         ) : null}
                       </div>
@@ -780,22 +838,26 @@ export function RoomDiscussionsDirect() {
                     <p className="whitespace-pre-wrap text-sm leading-7 text-[var(--loombus-text)]">
                       {thread.body}
                     </p>
+                    <RoomAttachmentList
+                      roomId={roomId}
+                      targetType="post"
+                      targetId={thread.id}
+                      refreshKey={attachmentVersion}
+                    />
 
                     {privateSupportThreads ? (
                       <section className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <h4 className="flex items-center gap-2 text-sm font-black text-[var(--loombus-text)]">
-                              <LockKeyhole className="size-4" aria-hidden="true" />
-                              Case access
+                              <LockKeyhole className="size-4" aria-hidden="true" /> Case access
                             </h4>
                             <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">
                               The author and active Room support staff always have access.
                             </p>
                           </div>
                           <span className="text-xs font-bold text-[var(--loombus-text-subtle)]">
-                            {thread.participants.length} added participant
-                            {thread.participants.length === 1 ? "" : "s"}
+                            {thread.participants.length} added participant{thread.participants.length === 1 ? "" : "s"}
                           </span>
                         </div>
 
@@ -810,20 +872,10 @@ export function RoomDiscussionsDirect() {
                                 {thread.canManageParticipants ? (
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      void removeParticipant(
-                                        thread.id,
-                                        participant.userId
-                                      )
-                                    }
-                                    disabled={
-                                      workingKey ===
-                                      `remove-participant:${thread.id}:${participant.userId}`
-                                    }
+                                    onClick={() => void removeParticipant(thread.id, participant.userId)}
+                                    disabled={workingKey === `remove-participant:${thread.id}:${participant.userId}`}
                                     className="grid size-5 place-items-center rounded-full text-red-600 hover:bg-red-50 dark:text-red-300"
-                                    aria-label={`Remove ${getProfileDisplayName(
-                                      participant.profile
-                                    )} from this support case`}
+                                    aria-label={`Remove ${getProfileDisplayName(participant.profile)} from this support case`}
                                   >
                                     <X className="size-3" aria-hidden="true" />
                                   </button>
@@ -856,15 +908,11 @@ export function RoomDiscussionsDirect() {
                                     !candidate.isStaff &&
                                     candidate.userId !== thread.authorId &&
                                     !thread.participants.some(
-                                      (participant) =>
-                                        participant.userId === candidate.userId
+                                      (participant) => participant.userId === candidate.userId
                                     )
                                 )
                                 .map((candidate) => (
-                                  <option
-                                    key={candidate.userId}
-                                    value={candidate.userId}
-                                  >
+                                  <option key={candidate.userId} value={candidate.userId}>
                                     {getProfileDisplayName(candidate.profile)}
                                   </option>
                                 ))}
@@ -878,8 +926,7 @@ export function RoomDiscussionsDirect() {
                               }
                               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-xs font-black text-[var(--loombus-text)] disabled:opacity-50"
                             >
-                              <UserPlus className="size-4" aria-hidden="true" />
-                              Add participant
+                              <UserPlus className="size-4" aria-hidden="true" /> Add participant
                             </button>
                           </div>
                         ) : null}
@@ -892,14 +939,10 @@ export function RoomDiscussionsDirect() {
                           type="button"
                           onClick={() =>
                             void performAction(
-                              thread.status === "resolved"
-                                ? "reopen_post"
-                                : "resolve_post",
+                              thread.status === "resolved" ? "reopen_post" : "resolve_post",
                               { postId: thread.id },
                               `status:${thread.id}`,
-                              thread.status === "resolved"
-                                ? "Discussion reopened."
-                                : "Discussion resolved."
+                              thread.status === "resolved" ? "Discussion reopened." : "Discussion resolved."
                             )
                           }
                           disabled={workingKey === `status:${thread.id}`}
@@ -928,8 +971,7 @@ export function RoomDiscussionsDirect() {
                           disabled={workingKey === `delete-post:${thread.id}`}
                           className="inline-flex items-center gap-2 rounded-full border border-red-200 px-3 py-2 text-xs font-black text-red-700 dark:border-red-900/60 dark:text-red-300"
                         >
-                          <Trash2 className="size-4" aria-hidden="true" />
-                          Remove
+                          <Trash2 className="size-4" aria-hidden="true" /> Remove
                         </button>
                       ) : null}
                     </div>
@@ -952,6 +994,12 @@ export function RoomDiscussionsDirect() {
                               <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--loombus-text)]">
                                 {reply.body}
                               </p>
+                              <RoomAttachmentList
+                                roomId={roomId}
+                                targetType="reply"
+                                targetId={reply.id}
+                                refreshKey={attachmentVersion}
+                              />
                             </div>
                             {reply.canDelete ? (
                               <button
@@ -983,9 +1031,9 @@ export function RoomDiscussionsDirect() {
                       {data?.permissions?.canReply && thread.status === "open" ? (
                         <form
                           onSubmit={(event) => createReply(event, thread.id)}
-                          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+                          className="room-thread-reply-composer"
                         >
-                          <label className="min-w-0 flex-1">
+                          <label className="min-w-0">
                             <span className="sr-only">Reply</span>
                             <textarea
                               value={replyDrafts[thread.id] ?? ""}
@@ -1005,18 +1053,26 @@ export function RoomDiscussionsDirect() {
                           <button
                             type="submit"
                             disabled={
-                              !(replyDrafts[thread.id] ?? "").trim() ||
-                              workingKey === `reply:${thread.id}`
+                              busy || !(replyDrafts[thread.id] ?? "").trim()
                             }
                             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#cbab5b] px-5 text-sm font-black text-[#17120a] disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            {workingKey === `reply:${thread.id}` ? (
+                            {workingKey === `reply:${thread.id}` ||
+                            uploadingKey === `upload:reply:${thread.id}` ? (
                               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                             ) : (
                               <Send className="size-4" aria-hidden="true" />
                             )}
                             Reply
                           </button>
+                          <RoomAttachmentPicker
+                            value={replyFiles[thread.id] ?? []}
+                            onChange={(files) =>
+                              setReplyFiles((current) => ({ ...current, [thread.id]: files }))
+                            }
+                            disabled={busy}
+                            compact
+                          />
                         </form>
                       ) : thread.status === "resolved" ? (
                         <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
