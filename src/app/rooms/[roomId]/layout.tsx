@@ -3,6 +3,7 @@ import RoomRouteFrameV3 from "@/components/room-route-frame-v3";
 import { RoomTopbarActions } from "@/components/room-topbar-actions";
 import { RoomWorkspaceProvider } from "@/components/room-workspace-context";
 import "../room-phase4-corrections.css";
+import "../room-operations-phase4.css";
 import "../room-thread-attachments.css";
 
 export default function RoomRouteLayout({
