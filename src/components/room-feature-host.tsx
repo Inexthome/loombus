@@ -10,9 +10,19 @@ import { RoomResourcesFeature } from "@/components/room-resources-feature";
 import { RoomTierFeature } from "@/components/room-tier-feature";
 import { useRoomWorkspace } from "@/components/room-workspace-context";
 
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(",");
+
 export function RoomFeatureHost() {
   const { activeFeature, closeFeature } = useRoomWorkspace();
   const [mounted, setMounted] = useState(false);
+  const surfaceRef = useRef<HTMLElement | null>(null);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
   useEffect(() => setMounted(true), []);
@@ -23,11 +33,39 @@ export function RoomFeatureHost() {
     document.body.style.overflow = "hidden";
     document.body.classList.add("room-phase3-feature-open");
     window.requestAnimationFrame(() => headingRef.current?.focus());
+
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      closeFeature();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeFeature();
+        return;
+      }
+      if (event.key !== "Tab" || !surfaceRef.current) return;
+      const focusable = Array.from(
+        surfaceRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+      ).filter(
+        (element) =>
+          !element.hasAttribute("disabled") &&
+          element.getAttribute("aria-hidden") !== "true" &&
+          element.getClientRects().length > 0
+      );
+      if (focusable.length === 0) {
+        event.preventDefault();
+        headingRef.current?.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const current = document.activeElement;
+      if (event.shiftKey && (current === first || !surfaceRef.current.contains(current))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && current === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
+
     window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -70,6 +108,7 @@ export function RoomFeatureHost() {
         onClick={() => closeFeature()}
       />
       <section
+        ref={surfaceRef}
         className="room-phase3-feature-surface"
         role="dialog"
         aria-modal="true"
