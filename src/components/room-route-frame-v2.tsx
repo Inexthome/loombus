@@ -5,20 +5,38 @@ import {
   ArrowLeft,
   BarChart3,
   Bell,
+  BookOpen,
+  Building2,
   CalendarDays,
+  ClipboardList,
+  ContactRound,
   CreditCard,
   FileClock,
   Flag,
+  FolderLock,
+  LayoutDashboard,
+  Link2,
+  ListTodo,
   Loader2,
   LockKeyhole,
+  MailOpen,
   Megaphone,
   Menu,
   MessageSquareText,
+  Network,
   RefreshCw,
+  ScrollText,
   Search,
+  Settings,
   ShieldCheck,
+  SlidersHorizontal,
+  Store,
   TriangleAlert,
+  UserPlus,
   Users,
+  Vote,
+  Workflow,
+  Wrench,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -31,7 +49,22 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  ROOM_FEATURE_CLOSED_EVENT,
+  launchRoomFeature,
+  type RoomFeatureLaunch,
+} from "@/components/room-feature-events";
 import { RoomsAppearanceControl } from "@/components/rooms-shell";
+import {
+  getRoomModelModuleDefinition,
+  getRoomModelProfile,
+} from "@/lib/room-model-profiles";
+import {
+  ROOM_MODULE_DEFINITIONS,
+  getRoomPlanEntitlements,
+  type RoomModuleDefinition,
+  type RoomModuleKey,
+} from "@/lib/room-plan-entitlements";
 import { supabase } from "@/lib/supabase/client";
 
 type ShellPayload = {
@@ -63,21 +96,106 @@ type ShellPayload = {
   error?: string;
 };
 
-type NavItem = {
+type RouteNavItem = {
+  kind: "route";
+  id: string;
   href: string;
   label: string;
   Icon: LucideIcon;
   badge?: number;
 };
 
+type FeatureNavItem = {
+  kind: "feature";
+  id: string;
+  label: string;
+  Icon: LucideIcon;
+  badge?: number;
+  feature: RoomFeatureLaunch;
+};
+
+type NavItem = RouteNavItem | FeatureNavItem;
 type ShellState = "loading" | "ready" | "restricted" | "not-found" | "error";
 
 const SHELL_LOADING_MESSAGE =
   "Membership and Room permissions are being verified before private content is shown.";
 
+const WORKSPACE_MODULE_KEYS: RoomModuleKey[] = [
+  "overview",
+  "discussions",
+  "calendar",
+  "announcements",
+  "members",
+];
+
+const WORK_MODULE_KEYS: RoomModuleKey[] = [
+  "requests",
+  "resources",
+  "tasks",
+  "polls",
+  "directory",
+  "knowledge",
+  "files",
+  "forms",
+  "services",
+];
+
+const MANAGEMENT_MODULE_KEYS: RoomModuleKey[] = [
+  "settings",
+  "invites",
+  "activity",
+  "advanced-controls",
+  "admin-tools",
+  "operations",
+  "member-workflows",
+  "enterprise-controls",
+  "high-capacity",
+  "community-operations",
+];
+
+const STUDIO_PLAN_KEYS = new Set([
+  "pro",
+  "organization",
+  "organization-plus",
+  "enterprise",
+]);
+
+const ORGANIZATION_PLAN_KEYS = new Set([
+  "organization",
+  "organization-plus",
+  "enterprise",
+]);
+
+const MODULE_ICONS: Record<RoomModuleKey, LucideIcon> = {
+  overview: LayoutDashboard,
+  discussions: MessageSquareText,
+  calendar: CalendarDays,
+  announcements: Megaphone,
+  members: Users,
+  requests: Wrench,
+  resources: Link2,
+  settings: Settings,
+  tasks: ListTodo,
+  polls: Vote,
+  directory: ContactRound,
+  knowledge: BookOpen,
+  files: FolderLock,
+  forms: ClipboardList,
+  services: Store,
+  invites: UserPlus,
+  activity: ScrollText,
+  "advanced-controls": SlidersHorizontal,
+  "admin-tools": ShieldCheck,
+  operations: BarChart3,
+  "member-workflows": Workflow,
+  "enterprise-controls": Building2,
+  "high-capacity": Network,
+  "community-operations": LockKeyhole,
+};
+
 function roleLabel(value: string | null) {
   if (value === "owner") return "Owner";
-  if (value === "administrator") return "Administrator";
+  if (value === "administrator" || value === "admin") return "Administrator";
   if (value === "moderator") return "Moderator";
   return "Member";
 }
@@ -90,6 +208,15 @@ function routeIsActive(pathname: string, href: string, roomBase: string) {
 function currentRouteDestination(roomId: string) {
   if (typeof window === "undefined") return `/rooms/${roomId}`;
   return `${window.location.pathname}${window.location.search}` || `/rooms/${roomId}`;
+}
+
+function roleCanOpenModule(
+  definition: RoomModuleDefinition,
+  access: ShellPayload["access"]
+) {
+  if (definition.minimumRole === "member") return access.allowed;
+  if (definition.minimumRole === "manager") return access.canManage;
+  return access.isOwner;
 }
 
 function RoomShellState({
@@ -149,6 +276,7 @@ export default function RoomRouteFrameV2({ children }: { children: ReactNode }) 
   const [shellMessage, setShellMessage] = useState(SHELL_LOADING_MESSAGE);
   const [refreshing, setRefreshing] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeFeatureId, setActiveFeatureId] = useState<string | null>(null);
   const requestSequence = useRef(0);
 
   const load = useCallback(
@@ -240,7 +368,21 @@ export default function RoomRouteFrameV2({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     setSidebarOpen(false);
+    setActiveFeatureId(null);
   }, [pathname]);
+
+  useEffect(() => {
+    const closeFeature = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: string }>).detail?.id;
+      setActiveFeatureId((current) => (!id || current === id ? null : current));
+    };
+    window.addEventListener(ROOM_FEATURE_CLOSED_EVENT, closeFeature as EventListener);
+    return () =>
+      window.removeEventListener(
+        ROOM_FEATURE_CLOSED_EVENT,
+        closeFeature as EventListener
+      );
+  }, []);
 
   useEffect(() => {
     if (!sidebarOpen) return;
@@ -310,62 +452,267 @@ export default function RoomRouteFrameV2({ children }: { children: ReactNode }) 
   }
 
   const roomBase = `/rooms/${encodeURIComponent(roomId)}`;
-  const roomNavigation: NavItem[] = [
-    { href: roomBase, label: "Discussions", Icon: MessageSquareText, badge: payload.metrics.discussions },
-    { href: `${roomBase}/members`, label: "Members", Icon: Users, badge: payload.metrics.pendingApplications },
-    { href: `${roomBase}/announcements`, label: "Announcements", Icon: Megaphone, badge: payload.metrics.announcements },
-    { href: `${roomBase}/events`, label: "Events", Icon: CalendarDays, badge: payload.metrics.upcomingEvents },
-  ];
+  const profile = getRoomModelProfile(payload.room.roomType);
+  const plan = getRoomPlanEntitlements(
+    payload.room.subscriptionPlan,
+    payload.room.subscriptionStatus
+  );
+  const moduleDefinitions = new Map(
+    plan.modules
+      .map((moduleKey) =>
+        getRoomModelModuleDefinition(
+          payload.room.roomType,
+          moduleKey,
+          ROOM_MODULE_DEFINITIONS[moduleKey]
+        )
+      )
+      .filter((definition) => roleCanOpenModule(definition, payload.access))
+      .map((definition) => [definition.id, definition] as const)
+  );
+
+  const badgeForModule = (moduleKey: RoomModuleKey) => {
+    if (moduleKey === "discussions") return payload.metrics.discussions;
+    if (moduleKey === "calendar") return payload.metrics.upcomingEvents;
+    if (moduleKey === "announcements") return payload.metrics.announcements;
+    if (moduleKey === "members") return payload.metrics.members;
+    if (moduleKey === "invites") return payload.metrics.pendingApplications;
+    return undefined;
+  };
+
+  const itemForModule = (moduleKey: RoomModuleKey): NavItem | null => {
+    const definition = moduleDefinitions.get(moduleKey);
+    if (!definition) return null;
+    const Icon = MODULE_ICONS[moduleKey];
+    const badge = badgeForModule(moduleKey);
+    const routeByModule: Partial<Record<RoomModuleKey, string>> = {
+      overview: `${roomBase}/overview`,
+      discussions: roomBase,
+      calendar: `${roomBase}/calendar`,
+      announcements: `${roomBase}/announcements`,
+      members: `${roomBase}/members`,
+    };
+    const href = routeByModule[moduleKey];
+    if (href) {
+      return {
+        kind: "route",
+        id: `route:${moduleKey}`,
+        href,
+        label: definition.label,
+        Icon,
+        badge,
+      };
+    }
+    const feature: RoomFeatureLaunch = {
+      id: `module:${moduleKey}`,
+      kind: "module",
+      moduleKey,
+      label: definition.label,
+    };
+    return {
+      kind: "feature",
+      id: feature.id,
+      label: definition.label,
+      Icon,
+      badge,
+      feature,
+    };
+  };
+
+  const workspace = WORKSPACE_MODULE_KEYS.map(itemForModule).filter(
+    (item): item is NavItem => Boolean(item)
+  );
+  const workAndResources = WORK_MODULE_KEYS.map(itemForModule).filter(
+    (item): item is NavItem => Boolean(item)
+  );
+  const managementModules = MANAGEMENT_MODULE_KEYS.map(itemForModule).filter(
+    (item): item is NavItem => Boolean(item)
+  );
+
   const roomTools: NavItem[] = [
     {
-      href: `${roomBase}/tools`,
-      label: payload.access.isOwner ? "Search and controls" : "Search Room",
+      kind: "feature",
+      id: "foundation:search",
+      label: "Search this Room",
       Icon: Search,
+      feature: {
+        id: "foundation:search",
+        kind: "foundation",
+        panel: "search",
+        label: "Search this Room",
+      },
     },
-    { href: `${roomBase}/notifications`, label: "Notifications", Icon: Bell },
     {
+      kind: "feature",
+      id: "foundation:inbox",
+      label: "Room Inbox",
+      Icon: MailOpen,
+      feature: {
+        id: "foundation:inbox",
+        kind: "foundation",
+        panel: "inbox",
+        label: "Room Inbox",
+      },
+    },
+    ...(payload.access.canManage
+      ? [
+          {
+            kind: "route" as const,
+            id: "route:tools",
+            href: `${roomBase}/tools`,
+            label: "Search & lifecycle controls",
+            Icon: SlidersHorizontal,
+          },
+        ]
+      : []),
+    ...(STUDIO_PLAN_KEYS.has(plan.id)
+      ? [
+          {
+            kind: "feature" as const,
+            id: "workspace:studio",
+            label: "Room Studio",
+            Icon: Wrench,
+            feature: {
+              id: "workspace:studio",
+              kind: "studio" as const,
+              label: "Room Studio",
+            },
+          },
+        ]
+      : []),
+    ...(ORGANIZATION_PLAN_KEYS.has(plan.id)
+      ? [
+          {
+            kind: "feature" as const,
+            id: "workspace:organization",
+            label: "Organization Console",
+            Icon: Building2,
+            feature: {
+              id: "workspace:organization",
+              kind: "organization" as const,
+              label: "Organization Console",
+            },
+          },
+        ]
+      : []),
+    ...(payload.access.canManage || payload.access.canModerate
+      ? [
+          {
+            kind: "feature" as const,
+            id: "workspace:operations",
+            label: "Room Operations",
+            Icon: ShieldCheck,
+            feature: {
+              id: "workspace:operations",
+              kind: "operations" as const,
+              label: "Room Operations",
+            },
+          },
+        ]
+      : []),
+    {
+      kind: "route",
+      id: "route:notifications",
+      href: `${roomBase}/notifications`,
+      label: "Notifications",
+      Icon: Bell,
+    },
+    {
+      kind: "route",
+      id: "route:moderation",
       href: `${roomBase}/moderation`,
       label: payload.access.canModerate ? "Moderation" : "Report issue",
       Icon: Flag,
     },
   ];
-  const management: NavItem[] = [];
+
+  const managementRoutes: NavItem[] = [];
   if (payload.access.canManage && payload.access.operationsEnabled) {
-    management.push({ href: `${roomBase}/analytics`, label: "Analytics", Icon: BarChart3 });
+    managementRoutes.push({
+      kind: "route",
+      id: "route:analytics",
+      href: `${roomBase}/analytics`,
+      label: "Analytics",
+      Icon: BarChart3,
+    });
   }
   if (payload.access.canManage) {
-    management.push({
+    managementRoutes.push({
+      kind: "route",
+      id: "route:governance",
       href: `${roomBase}/governance`,
-      label: "Governance",
+      label: "Ownership & Governance",
       Icon: ShieldCheck,
       badge: payload.metrics.pendingApplications,
     });
-    management.push({
+    managementRoutes.push({
+      kind: "route",
+      id: "route:age-safety",
       href: `${roomBase}/age-safety`,
       label: "Minor safety",
       Icon: ShieldCheck,
     });
   }
   if (payload.access.isOwner) {
-    management.push({ href: `${roomBase}/retention`, label: "Retention", Icon: FileClock });
-    management.push({ href: `${roomBase}/billing`, label: "Billing", Icon: CreditCard });
+    managementRoutes.push({
+      kind: "route",
+      id: "route:retention",
+      href: `${roomBase}/retention`,
+      label: "Retention",
+      Icon: FileClock,
+    });
+    managementRoutes.push({
+      kind: "route",
+      id: "route:billing",
+      href: `${roomBase}/billing`,
+      label: "Billing",
+      Icon: CreditCard,
+    });
   }
+  const management = [...managementModules, ...managementRoutes];
 
   const renderNavigation = (items: NavItem[]) =>
-    items.map(({ href, label, Icon, badge }) => {
-      const active = routeIsActive(pathname, href, roomBase);
+    items.map((item) => {
+      const { id, label, Icon, badge } = item;
+      if (item.kind === "route") {
+        const active = routeIsActive(pathname, item.href, roomBase);
+        return (
+          <Link
+            key={id}
+            href={item.href}
+            aria-current={active ? "page" : undefined}
+            className="rooms-phase1-nav-link"
+            title={label}
+            onClick={() => {
+              setActiveFeatureId(null);
+              setSidebarOpen(false);
+            }}
+          >
+            <Icon aria-hidden="true" />
+            <span>{label}</span>
+            {badge && badge > 0 ? <strong>{badge}</strong> : null}
+          </Link>
+        );
+      }
+
+      const active = activeFeatureId === item.id;
       return (
-        <Link
-          key={`${href}-${label}`}
-          href={href}
-          aria-current={active ? "page" : undefined}
+        <button
+          key={id}
+          type="button"
           className="rooms-phase1-nav-link"
-          onClick={() => setSidebarOpen(false)}
+          data-feature-active={active ? "true" : "false"}
+          aria-pressed={active}
+          title={label}
+          onClick={() => {
+            setActiveFeatureId(item.id);
+            launchRoomFeature(item.feature);
+            setSidebarOpen(false);
+          }}
         >
           <Icon aria-hidden="true" />
           <span>{label}</span>
           {badge && badge > 0 ? <strong>{badge}</strong> : null}
-        </Link>
+        </button>
       );
     });
 
@@ -396,7 +743,7 @@ export default function RoomRouteFrameV2({ children }: { children: ReactNode }) 
         </div>
 
         <section className="rooms-phase1-room-identity">
-          <p>{payload.room.roomType.replaceAll("_", " ") || "Private Room"}</p>
+          <p>{profile.shortTitle}</p>
           <h1>{payload.room.name}</h1>
           {payload.room.description ? <span>{payload.room.description}</span> : null}
           <div className="rooms-phase1-room-metrics" aria-label="Room summary">
@@ -408,10 +755,20 @@ export default function RoomRouteFrameV2({ children }: { children: ReactNode }) 
         </section>
 
         <div className="rooms-phase1-nav-scroll">
-          <section className="rooms-phase1-nav-section">
-            <p>Room</p>
-            <nav aria-label="Room workspace">{renderNavigation(roomNavigation)}</nav>
-          </section>
+          {workspace.length > 0 ? (
+            <section className="rooms-phase1-nav-section">
+              <p>Room</p>
+              <nav aria-label="Room workspace">{renderNavigation(workspace)}</nav>
+            </section>
+          ) : null}
+          {workAndResources.length > 0 ? (
+            <section className="rooms-phase1-nav-section">
+              <p>Work & resources</p>
+              <nav aria-label="Room work and resources">
+                {renderNavigation(workAndResources)}
+              </nav>
+            </section>
+          ) : null}
           <section className="rooms-phase1-nav-section">
             <p>Room tools</p>
             <nav aria-label="Room tools">{renderNavigation(roomTools)}</nav>
@@ -451,7 +808,7 @@ export default function RoomRouteFrameV2({ children }: { children: ReactNode }) 
             </button>
             <div className="rooms-phase1-room-header-copy">
               <strong>{payload.room.name}</strong>
-              <span>{roleLabel(payload.access.role)} · {payload.room.plan.label || "Room plan"}</span>
+              <span>{roleLabel(payload.access.role)} · {plan.label}</span>
             </div>
           </div>
           <div className="rooms-phase1-header-actions">

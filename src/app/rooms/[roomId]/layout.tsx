@@ -1,4 +1,5 @@
 import { RoomExpansionWorkspace } from "@/components/room-expansion-workspace";
+import { RoomFeatureBridge } from "@/components/room-feature-bridge";
 import { RoomFoundationWorkspace } from "@/components/room-foundation-workspace";
 import { RoomOperationsWorkspace } from "@/components/room-operations-workspace";
 import { RoomResourcesWorkspace } from "@/components/room-resources-workspace";
@@ -12,6 +13,7 @@ export default function RoomRouteLayout({
 }>) {
   return (
     <>
+      <RoomFeatureBridge />
       <RoomFoundationWorkspace />
       <RoomOperationsWorkspace />
       <RoomExpansionWorkspace />
