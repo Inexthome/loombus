@@ -28,9 +28,31 @@
 }
 
 @media (orientation: landscape) and (max-height: 600px) {
+  .rooms-phase1-room-header {
+    min-height: calc(64px + env(safe-area-inset-top));
+    padding-top: calc(8px + env(safe-area-inset-top));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-left: max(14px, env(safe-area-inset-left));
+  }
+
+  .room-phase4-topbar-actions {
+    top: calc(8px + env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+  }
+
   .rooms-phase1-sidebar {
     height: 100dvh;
     max-height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .rooms-phase1-sidebar-head,
+  .rooms-phase1-room-identity,
+  .rooms-phase1-nav-scroll,
+  .rooms-phase1-sidebar-footer {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
   }
 
   .rooms-phase1-sidebar-head {
