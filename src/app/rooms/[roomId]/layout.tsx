@@ -1,11 +1,12 @@
 import { RoomFeatureHost } from "@/components/room-feature-host";
-import RoomRouteFrameV3 from "@/components/room-route-frame-v3";
+import RoomRouteFrameV4 from "@/components/room-route-frame-v4";
 import { RoomTopbarActions } from "@/components/room-topbar-actions";
 import { RoomWorkspaceProvider } from "@/components/room-workspace-context";
 import "../room-phase4-corrections.css";
 import "../room-operations-phase4.css";
 import "../room-thread-attachments.css";
 import "../room-mobile-safe-area-hotfix.css";
+import "../room-secondary-rail.css";
 
 export default function RoomRouteLayout({
   children,
@@ -14,7 +15,7 @@ export default function RoomRouteLayout({
 }>) {
   return (
     <RoomWorkspaceProvider>
-      <RoomRouteFrameV3>{children}</RoomRouteFrameV3>
+      <RoomRouteFrameV4>{children}</RoomRouteFrameV4>
       <RoomTopbarActions />
       <RoomFeatureHost />
     </RoomWorkspaceProvider>

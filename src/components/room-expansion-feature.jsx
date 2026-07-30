@@ -32,7 +32,10 @@ async function token() {
   return data.session?.access_token ?? null;
 }
 
-export function RoomExpansionFeature({ initialView = "tasks" }) {
+export function RoomExpansionFeature({
+  initialView = "tasks",
+  hideNavigation = false,
+}) {
   const params = useParams();
   const rawRoomId = params?.roomId;
   const roomId = useMemo(
@@ -244,41 +247,43 @@ export function RoomExpansionFeature({ initialView = "tasks" }) {
         </button>
       </div>
 
-      <nav
-        className="room-expansion-tabs"
-        aria-label="Room Studio areas"
-        role="tablist"
-      >
-        {STUDIO_VIEWS.map(([value, label, Icon]) => (
-          <button
-            key={value}
-            id={`room-studio-tab-${value}`}
-            type="button"
-            role="tab"
-            aria-selected={activeView === value}
-            aria-controls="room-studio-panel"
-            tabIndex={activeView === value ? 0 : -1}
-            onClick={() => selectView(value)}
-          >
-            <Icon aria-hidden="true" />
-            {label}
-          </button>
-        ))}
-        {manifest?.capabilities?.organization ? (
-          <button
-            id="room-studio-tab-organization"
-            type="button"
-            role="tab"
-            aria-selected={activeView === "organization"}
-            aria-controls="room-studio-panel"
-            tabIndex={activeView === "organization" ? 0 : -1}
-            onClick={() => selectView("organization")}
-          >
-            <Building2 aria-hidden="true" />
-            Organization
-          </button>
-        ) : null}
-      </nav>
+      {!hideNavigation ? (
+        <nav
+          className="room-expansion-tabs"
+          aria-label="Room Studio areas"
+          role="tablist"
+        >
+          {STUDIO_VIEWS.map(([value, label, Icon]) => (
+            <button
+              key={value}
+              id={`room-studio-tab-${value}`}
+              type="button"
+              role="tab"
+              aria-selected={activeView === value}
+              aria-controls="room-studio-panel"
+              tabIndex={activeView === value ? 0 : -1}
+              onClick={() => selectView(value)}
+            >
+              <Icon aria-hidden="true" />
+              {label}
+            </button>
+          ))}
+          {manifest?.capabilities?.organization ? (
+            <button
+              id="room-studio-tab-organization"
+              type="button"
+              role="tab"
+              aria-selected={activeView === "organization"}
+              aria-controls="room-studio-panel"
+              tabIndex={activeView === "organization" ? 0 : -1}
+              onClick={() => selectView("organization")}
+            >
+              <Building2 aria-hidden="true" />
+              Organization
+            </button>
+          ) : null}
+        </nav>
+      ) : null}
 
       {notice ? (
         <div
@@ -301,7 +306,8 @@ export function RoomExpansionFeature({ initialView = "tasks" }) {
           ref={resultsRef}
           className="room-expansion-results"
           role="tabpanel"
-          aria-labelledby={`room-studio-tab-${activeView}`}
+          aria-labelledby={hideNavigation ? undefined : `room-studio-tab-${activeView}`}
+          aria-label={hideNavigation ? activeView.replaceAll("_", " ") : undefined}
           aria-busy={working}
           tabIndex={-1}
         >

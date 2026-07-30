@@ -1,0 +1,150 @@
+/* React-owned secondary navigation for grouped Room destinations. */
+
+.rooms-secondary-rail-trigger .rooms-secondary-rail-chevron {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  margin-left: 2px;
+  color: #8d8676;
+}
+
+.rooms-secondary-rail-trigger:hover .rooms-secondary-rail-chevron,
+.rooms-secondary-rail-trigger:focus-visible .rooms-secondary-rail-chevron {
+  color: var(--rooms-shell-gold);
+}
+
+.rooms-secondary-rail {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.rooms-secondary-rail-back {
+  display: inline-flex;
+  min-height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgb(203 171 91 / 0.2);
+  border-radius: 12px;
+  background: rgb(254 251 236 / 0.045);
+  padding: 8px 11px;
+  color: #d4cebf;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 780;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rooms-secondary-rail-back:hover,
+.rooms-secondary-rail-back:focus-visible {
+  border-color: rgb(203 171 91 / 0.45);
+  color: #fefbec;
+}
+
+.rooms-secondary-rail-back svg {
+  width: 17px;
+  height: 17px;
+}
+
+.rooms-secondary-rail-heading {
+  flex: 0 0 auto;
+  padding: 20px 8px 14px;
+  border-bottom: 1px solid rgb(203 171 91 / 0.16);
+}
+
+.rooms-secondary-rail-heading p,
+.rooms-secondary-rail-heading h2,
+.rooms-secondary-rail-heading span {
+  margin: 0;
+}
+
+.rooms-secondary-rail-heading p {
+  color: var(--rooms-shell-gold);
+  font-size: 0.62rem;
+  font-weight: 880;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.rooms-secondary-rail-heading h2 {
+  margin-top: 6px;
+  color: #fefbec;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.rooms-secondary-rail-heading span {
+  display: block;
+  margin-top: 7px;
+  color: #aaa391;
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+
+.rooms-secondary-rail-nav {
+  display: grid;
+  min-height: 0;
+  gap: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 0 16px;
+}
+
+.rooms-secondary-rail .rooms-phase1-nav-link {
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+/* Phase 4 hid these legacy main-rail entries. They are valid inside Settings. */
+.rooms-secondary-rail .rooms-phase1-nav-link[href$="/governance"],
+.rooms-secondary-rail .rooms-phase1-nav-link[href$="/age-safety"],
+.rooms-secondary-rail .rooms-phase1-nav-link[href$="/retention"],
+.rooms-secondary-rail .rooms-phase1-nav-link[href$="/billing"],
+.rooms-secondary-rail .rooms-phase1-nav-link[title*="Activity"][title*="Audit"],
+.rooms-secondary-rail .rooms-phase1-nav-link[title*="Advanced"][title*="Control"] {
+  display: flex;
+}
+
+@media (max-width: 899px) {
+  .rooms-secondary-rail {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .rooms-secondary-rail {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  .rooms-secondary-rail-back {
+    min-height: 34px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .rooms-secondary-rail-heading {
+    padding-top: 10px;
+    padding-bottom: 9px;
+  }
+
+  .rooms-secondary-rail-heading h2 {
+    margin-top: 3px;
+    font-size: 1rem;
+  }
+
+  .rooms-secondary-rail-heading span {
+    display: none;
+  }
+
+  .rooms-secondary-rail-nav {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+}
