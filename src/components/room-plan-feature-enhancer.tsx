@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import {
@@ -98,11 +99,14 @@ function appendFeatures(
 }
 
 export function RoomPlanFeatureEnhancer() {
+  const pathname = usePathname();
+  const builderRoute = pathname === "/rooms/new";
   const [includedPlans, setIncludedPlans] = useState<
     Partial<Record<RoomPlanKey, IncludedPlanStatus>>
   >({});
 
   useEffect(() => {
+    if (!builderRoute) return;
     let cancelled = false;
 
     async function loadIncludedPlans() {
@@ -122,9 +126,10 @@ export function RoomPlanFeatureEnhancer() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [builderRoute]);
 
   useEffect(() => {
+    if (!builderRoute) return;
     let scheduled = false;
 
     const apply = () => {
@@ -150,7 +155,7 @@ export function RoomPlanFeatureEnhancer() {
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [includedPlans]);
+  }, [builderRoute, includedPlans]);
 
   return null;
 }
