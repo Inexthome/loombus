@@ -2,11 +2,19 @@
 
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  Component,
+  type ErrorInfo,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { RoomExpansionFeature } from "@/components/room-expansion-feature";
 import { RoomFoundationFeature } from "@/components/room-foundation-feature";
 import { RoomOperationsFeature } from "@/components/room-operations-feature";
 import { RoomResourcesFeature } from "@/components/room-resources-feature";
+import { RoomSettingsDirectory } from "@/components/room-settings-directory";
 import { RoomTierParityFeature } from "@/components/room-tier-parity-feature";
 import { useRoomWorkspace } from "@/components/room-workspace-context";
 
@@ -18,6 +26,58 @@ const FOCUSABLE_SELECTOR = [
   "textarea:not([disabled])",
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
+
+type FeatureBoundaryProps = {
+  resetKey: string;
+  children: ReactNode;
+  onClose: () => void;
+};
+
+type FeatureBoundaryState = {
+  failed: boolean;
+};
+
+class RoomFeatureErrorBoundary extends Component<
+  FeatureBoundaryProps,
+  FeatureBoundaryState
+> {
+  state: FeatureBoundaryState = { failed: false };
+
+  static getDerivedStateFromError(): FeatureBoundaryState {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("Room feature workspace failed:", error, info.componentStack);
+  }
+
+  componentDidUpdate(previousProps: FeatureBoundaryProps) {
+    if (
+      previousProps.resetKey !== this.props.resetKey &&
+      this.state.failed
+    ) {
+      this.setState({ failed: false });
+    }
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <div className="room-phase4-feature-error" role="alert">
+        <div>
+          <h3>This Room workspace could not finish loading</h3>
+          <p>
+            The rest of the Room remains available. Close this workspace and try
+            again instead of losing the entire Room route.
+          </p>
+          <button type="button" onClick={this.props.onClose}>
+            Close workspace
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
 
 export function RoomFeatureHost() {
   const { activeFeature, closeFeature } = useRoomWorkspace();
@@ -57,7 +117,10 @@ export function RoomFeatureHost() {
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       const current = document.activeElement;
-      if (event.shiftKey && (current === first || !surfaceRef.current.contains(current))) {
+      if (
+        event.shiftKey &&
+        (current === first || !surfaceRef.current.contains(current))
+      ) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && current === last) {
@@ -89,6 +152,14 @@ export function RoomFeatureHost() {
     content =
       activeFeature.moduleKey === "files" ? (
         <RoomResourcesFeature />
+      ) : activeFeature.moduleKey === "settings" ? (
+        <div className="room-phase3-tier-panel">
+          <RoomSettingsDirectory />
+          <RoomTierParityFeature
+            moduleKey={activeFeature.moduleKey}
+            label={activeFeature.label}
+          />
+        </div>
       ) : (
         <RoomTierParityFeature
           moduleKey={activeFeature.moduleKey}
@@ -130,7 +201,14 @@ export function RoomFeatureHost() {
             <X aria-hidden="true" />
           </button>
         </header>
-        <div className="room-phase3-feature-body">{content}</div>
+        <div className="room-phase3-feature-body">
+          <RoomFeatureErrorBoundary
+            resetKey={activeFeature.id}
+            onClose={() => closeFeature()}
+          >
+            {content}
+          </RoomFeatureErrorBoundary>
+        </div>
       </section>
     </div>,
     document.body
