@@ -1,0 +1,139 @@
+/* Capability-driven Room rail and transitional controller bridge. */
+.rooms-phase1-nav-link:is(button) {
+  width: 100%;
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.rooms-phase1-nav-link[data-feature-active="true"] {
+  border-color: rgb(203 171 91 / 0.28);
+  background: color-mix(in srgb, var(--rooms-shell-gold) 16%, #11100d);
+  color: #fefbec;
+}
+
+.rooms-phase1-nav-link > span {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.room-feature-compatibility-tabs,
+.room-tier-navigation,
+.room-foundation-toolbar,
+.room-expansion-toolbar,
+.room-operations-trigger {
+  display: none !important;
+}
+
+body.room-tier-overlay-open {
+  overflow: hidden;
+}
+
+.room-tier-overlay-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  border: 0;
+  background: rgb(5 5 4 / 0.72);
+  backdrop-filter: blur(8px);
+  cursor: default;
+}
+
+.room-tier-overlay-label {
+  position: fixed;
+  top: 24px;
+  right: 78px;
+  z-index: 132;
+  max-width: min(56vw, 32rem);
+  overflow: hidden;
+  color: #fefbec;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-tier-overlay-close {
+  position: fixed;
+  top: 14px;
+  right: 22px;
+  z-index: 133;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid rgb(203 171 91 / 0.35);
+  border-radius: 999px;
+  background: #171510;
+  color: #fefbec;
+  cursor: pointer;
+  box-shadow: 0 18px 50px rgb(0 0 0 / 0.32);
+}
+
+.room-tier-overlay-close:hover,
+.room-tier-overlay-close:focus-visible {
+  border-color: #cbab5b;
+  color: #cbab5b;
+}
+
+.room-tier-overlay-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+body.room-tier-overlay-open .room-tier-module-panel {
+  position: fixed;
+  top: 68px;
+  right: 22px;
+  bottom: 22px;
+  left: calc(clamp(242px, 24vw, 286px) + 22px);
+  z-index: 125;
+  display: grid;
+  align-content: start;
+  overflow: auto;
+  margin: 0;
+  border: 1px solid var(--rooms-shell-border-strong);
+  border-radius: 24px;
+  background: var(--rooms-shell-page);
+  padding: clamp(16px, 2.5vw, 28px);
+  color: var(--rooms-shell-text);
+  box-shadow: 0 28px 90px rgb(0 0 0 / 0.38);
+  overscroll-behavior: contain;
+}
+
+body.room-tier-overlay-open .room-tier-module-panel > .room-tier-module-heading {
+  padding-right: 3.25rem;
+}
+
+@media (max-width: 899px) {
+  .room-tier-overlay-label {
+    top: calc(env(safe-area-inset-top, 0px) + 20px);
+    right: 70px;
+    max-width: calc(100vw - 112px);
+  }
+
+  .room-tier-overlay-close {
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    right: 12px;
+  }
+
+  body.room-tier-overlay-open .room-tier-module-panel {
+    inset: 0;
+    z-index: 125;
+    border: 0;
+    border-radius: 0;
+    padding:
+      calc(env(safe-area-inset-top, 0px) + 68px)
+      14px
+      calc(env(safe-area-inset-bottom, 0px) + 20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-tier-overlay-backdrop {
+    backdrop-filter: none;
+  }
+}

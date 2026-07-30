@@ -18,6 +18,7 @@ import "./room-subscription-refresh.css";
 import "./room-shell-tokens.css";
 import "./room-shell-phase1.css";
 import "./room-shell-phase1-route-fixes.css";
+import "./room-feature-rail.css";
 
 export default function RoomsLayout({
   children,
