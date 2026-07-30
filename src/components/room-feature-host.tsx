@@ -7,7 +7,7 @@ import { RoomExpansionFeature } from "@/components/room-expansion-feature";
 import { RoomFoundationFeature } from "@/components/room-foundation-feature";
 import { RoomOperationsFeature } from "@/components/room-operations-feature";
 import { RoomResourcesFeature } from "@/components/room-resources-feature";
-import { RoomTierFeature } from "@/components/room-tier-feature";
+import { RoomTierParityFeature } from "@/components/room-tier-parity-feature";
 import { useRoomWorkspace } from "@/components/room-workspace-context";
 
 const FOCUSABLE_SELECTOR = [
@@ -90,7 +90,7 @@ export function RoomFeatureHost() {
       activeFeature.moduleKey === "files" ? (
         <RoomResourcesFeature />
       ) : (
-        <RoomTierFeature
+        <RoomTierParityFeature
           moduleKey={activeFeature.moduleKey}
           label={activeFeature.label}
         />
