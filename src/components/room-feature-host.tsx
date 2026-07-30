@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { RoomExpansionFeature } from "@/components/room-expansion-feature";
 import { RoomFoundationFeature } from "@/components/room-foundation-feature";
 import { RoomOperationsFeature } from "@/components/room-operations-feature";
@@ -38,7 +38,7 @@ export function RoomFeatureHost() {
 
   if (!mounted || !activeFeature) return null;
 
-  let content: React.ReactNode;
+  let content: ReactNode;
   if (activeFeature.kind === "foundation") {
     content = <RoomFoundationFeature panel={activeFeature.panel} />;
   } else if (activeFeature.kind === "operations") {
@@ -47,15 +47,18 @@ export function RoomFeatureHost() {
     content = <RoomExpansionFeature initialView="tasks" />;
   } else if (activeFeature.kind === "organization") {
     content = <RoomExpansionFeature initialView="organization" />;
-  } else if (activeFeature.moduleKey === "files") {
-    content = <RoomResourcesFeature />;
+  } else if (activeFeature.kind === "module") {
+    content =
+      activeFeature.moduleKey === "files" ? (
+        <RoomResourcesFeature />
+      ) : (
+        <RoomTierFeature
+          moduleKey={activeFeature.moduleKey}
+          label={activeFeature.label}
+        />
+      );
   } else {
-    content = (
-      <RoomTierFeature
-        moduleKey={activeFeature.moduleKey}
-        label={activeFeature.label}
-      />
-    );
+    content = null;
   }
 
   return createPortal(
