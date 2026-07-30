@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { readRoomVideoDuration } from "@/lib/room-video-duration";
 import {
   NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES,
   VIDEO_CONTEXT_ALLOWED_MIME_TYPES,
@@ -60,48 +61,6 @@ function formatBytes(value: number | null) {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function readVideoDuration(file: File) {
-  return new Promise<number>((resolve, reject) => {
-    const video = document.createElement("video");
-    const objectUrl = URL.createObjectURL(file);
-    let settled = false;
-
-    const cleanup = () => {
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      video.removeEventListener("error", handleError);
-      video.pause();
-      video.removeAttribute("src");
-      video.load();
-      URL.revokeObjectURL(objectUrl);
-    };
-
-    const finish = (callback: () => void) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      callback();
-    };
-
-    const handleLoadedMetadata = () => {
-      const duration = video.duration;
-      if (!Number.isFinite(duration) || duration <= 0) {
-        finish(() => reject(new Error("Unable to read the selected video duration.")));
-        return;
-      }
-      finish(() => resolve(Math.ceil(duration)));
-    };
-
-    const handleError = () => {
-      finish(() => reject(new Error("Unable to read the selected video.")));
-    };
-
-    video.preload = "metadata";
-    video.addEventListener("loadedmetadata", handleLoadedMetadata, { once: true });
-    video.addEventListener("error", handleError, { once: true });
-    video.src = objectUrl;
-  });
-}
-
 export function RoomAttachmentPicker({
   value,
   onChange,
@@ -148,7 +107,7 @@ export function RoomAttachmentPicker({
           file,
           kind,
           videoDurationSeconds:
-            kind === "video" ? await readVideoDuration(file) : null,
+            kind === "video" ? await readRoomVideoDuration(file) : null,
         });
       }
       onChange(next);
