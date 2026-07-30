@@ -25,15 +25,19 @@ const RoomWorkspaceContext = createContext<RoomWorkspaceContextValue | null>(nul
 
 export function RoomWorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeFeature, setActiveFeature] = useState<RoomFeatureLaunch | null>(null);
+  const activeFeatureRef = useRef<RoomFeatureLaunch | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
 
   const openFeature = useCallback(
     (feature: RoomFeatureLaunch, trigger?: HTMLElement | null) => {
-      triggerRef.current =
-        trigger ??
-        (document.activeElement instanceof HTMLElement
-          ? document.activeElement
-          : null);
+      if (trigger || !activeFeatureRef.current) {
+        triggerRef.current =
+          trigger ??
+          (document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null);
+      }
+      activeFeatureRef.current = feature;
       setActiveFeature(feature);
     },
     []
@@ -41,6 +45,7 @@ export function RoomWorkspaceProvider({ children }: { children: ReactNode }) {
 
   const closeFeature = useCallback((options: CloseFeatureOptions = {}) => {
     const restoreFocus = options.restoreFocus !== false;
+    activeFeatureRef.current = null;
     setActiveFeature(null);
     if (restoreFocus) {
       window.requestAnimationFrame(() => triggerRef.current?.focus());
