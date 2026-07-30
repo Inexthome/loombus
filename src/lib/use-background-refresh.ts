@@ -37,7 +37,6 @@ export function useBackgroundRefresh({
   refreshOnVisible = true,
   refreshOnOnline = true,
 }: BackgroundRefreshOptions) {
-  const refreshRef = useRef(refresh);
   const mountedRef = useRef(false);
   const inFlightRef = useRef(false);
   const queuedRef = useRef(false);
@@ -46,8 +45,6 @@ export function useBackgroundRefresh({
     typeof navigator !== "undefined" && navigator.onLine === false ? "offline" : "idle"
   );
   const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null);
-
-  refreshRef.current = refresh;
 
   const runRefresh = useCallback(
     async (force = false) => {
@@ -71,7 +68,7 @@ export function useBackgroundRefresh({
       if (mountedRef.current) setState("refreshing");
 
       try {
-        await refreshRef.current();
+        await refresh();
         if (mountedRef.current) setLastUpdatedAt(new Date());
       } finally {
         inFlightRef.current = false;
@@ -89,7 +86,7 @@ export function useBackgroundRefresh({
         }
       }
     },
-    [enabled]
+    [enabled, refresh]
   );
 
   const requestRefresh = useCallback(
