@@ -13,11 +13,28 @@ async function token() {
   return data.session?.access_token ?? null;
 }
 
-function initialView(access) {
+function defaultView(access) {
   return access?.canModerate ? "moderation" : "report";
 }
 
-export function RoomOperationsFeature() {
+function authorizedView(requested, access) {
+  if (requested === "overview" || requested === "members") {
+    return access?.canManage ? requested : defaultView(access);
+  }
+  if (requested === "moderation") {
+    return access?.canModerate ? requested : defaultView(access);
+  }
+  if (requested === "lifecycle") {
+    return access?.isOwner ? requested : defaultView(access);
+  }
+  if (requested === "report") return requested;
+  return defaultView(access);
+}
+
+export function RoomOperationsFeature({
+  initialView,
+  hideNavigation = false,
+}) {
   const params = useParams();
   const rawRoomId = params?.roomId;
   const roomId = useMemo(
@@ -67,7 +84,7 @@ export function RoomOperationsFeature() {
     try {
       const result = await request("summary");
       setSummary(result);
-      setActiveView((current) => current || initialView(result.access));
+      setActiveView((current) => current || authorizedView(initialView, result.access));
     } catch (cause) {
       setNotice(
         cause instanceof Error
@@ -76,7 +93,7 @@ export function RoomOperationsFeature() {
       );
       setNoticeError(true);
     }
-  }, [request, roomId]);
+  }, [initialView, request, roomId]);
 
   const loadView = useCallback(
     async (view, page = 1, focus = false) => {
@@ -125,6 +142,10 @@ export function RoomOperationsFeature() {
   );
 
   useEffect(() => {
+    requestAbortRef.current?.abort();
+    setSummary(null);
+    setPayloads({});
+    setActiveView(null);
     void loadSummary();
     const interval = window.setInterval(() => void loadSummary(), 60_000);
     const refresh = () => void loadSummary();
@@ -134,7 +155,7 @@ export function RoomOperationsFeature() {
       window.clearInterval(interval);
       window.removeEventListener("loombus:room-operations-changed", refresh);
     };
-  }, [loadSummary]);
+  }, [initialView, loadSummary, roomId]);
 
   useEffect(() => {
     if (!activeView || payloads[activeView]) return;
@@ -261,6 +282,7 @@ export function RoomOperationsFeature() {
             const page = payload?.pageInfo?.page ?? 1;
             return loadView(activeView, page, true);
           }}
+          hideNavigation={hideNavigation}
         />
       </div>
       {loadingView && !payload ? (
