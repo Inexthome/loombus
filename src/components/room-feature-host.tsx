@@ -14,7 +14,6 @@ import { RoomExpansionFeature } from "@/components/room-expansion-feature";
 import { RoomFoundationFeature } from "@/components/room-foundation-feature";
 import { RoomOperationsFeature } from "@/components/room-operations-feature";
 import { RoomResourcesFeature } from "@/components/room-resources-feature";
-import { RoomSettingsDirectory } from "@/components/room-settings-directory";
 import { RoomTierParityFeature } from "@/components/room-tier-parity-feature";
 import { useRoomWorkspace } from "@/components/room-workspace-context";
 
@@ -143,23 +142,30 @@ export function RoomFeatureHost() {
   if (activeFeature.kind === "foundation") {
     content = <RoomFoundationFeature panel={activeFeature.panel} />;
   } else if (activeFeature.kind === "operations") {
-    content = <RoomOperationsFeature />;
+    content = (
+      <RoomOperationsFeature
+        initialView={activeFeature.initialView}
+        hideNavigation={activeFeature.hideNavigation}
+      />
+    );
   } else if (activeFeature.kind === "studio") {
-    content = <RoomExpansionFeature initialView="tasks" />;
+    content = (
+      <RoomExpansionFeature
+        initialView={activeFeature.initialView ?? "tasks"}
+        hideNavigation={activeFeature.hideNavigation}
+      />
+    );
   } else if (activeFeature.kind === "organization") {
-    content = <RoomExpansionFeature initialView="organization" />;
+    content = (
+      <RoomExpansionFeature
+        initialView={activeFeature.initialView ?? "organization"}
+        hideNavigation={activeFeature.hideNavigation}
+      />
+    );
   } else if (activeFeature.kind === "module") {
     content =
       activeFeature.moduleKey === "files" ? (
         <RoomResourcesFeature />
-      ) : activeFeature.moduleKey === "settings" ? (
-        <div className="room-phase3-tier-panel">
-          <RoomSettingsDirectory />
-          <RoomTierParityFeature
-            moduleKey={activeFeature.moduleKey}
-            label={activeFeature.label}
-          />
-        </div>
       ) : (
         <RoomTierParityFeature
           moduleKey={activeFeature.moduleKey}
