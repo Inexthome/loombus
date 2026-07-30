@@ -29,6 +29,7 @@ export type LoombusNavigationIcon =
   | "settings"
   | "signal-board"
   | "support"
+  | "the-floor"
   | "topics"
   | "usage";
 
@@ -83,6 +84,12 @@ export const EXPLORE_NAVIGATION_SECTIONS: readonly LoombusNavigationSection[] = 
         label: "Rooms",
         description: "Open private spaces for coordination, files, calendars, and conversation.",
         icon: "rooms",
+      },
+      {
+        href: "/the-floor",
+        label: "The Floor",
+        description: "Post accountable investing theses scored on argument quality and track record, never house ratings.",
+        icon: "the-floor",
       },
       {
         href: "/labs",
