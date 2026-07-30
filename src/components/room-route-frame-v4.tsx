@@ -556,7 +556,7 @@ export default function RoomRouteFrameV4({ children }: { children: ReactNode }) 
     };
   };
 
-  const settingsItems: NavItem[] = [
+  const settingsItems = [
     moduleDefinitions.has("settings")
       ? {
           kind: "feature" as const,
@@ -585,7 +585,7 @@ export default function RoomRouteFrameV4({ children }: { children: ReactNode }) 
     payload.access.isOwner
       ? { kind: "route" as const, id: "route:billing", href: `${roomBase}/billing`, label: "Billing", Icon: CreditCard }
       : null,
-  ].filter((item): item is NavItem => Boolean(item));
+  ].filter(Boolean) as NavItem[];
 
   const studioChild = (
     view: RoomStudioView,
@@ -611,7 +611,7 @@ export default function RoomRouteFrameV4({ children }: { children: ReactNode }) 
     };
   };
 
-  const studioItems: NavItem[] = [
+  const studioItems = [
     studioChild("tasks", "tasks", "Tasks", ListTodo),
     studioChild("polls", "polls", "Decisions", Vote),
     studioChild("forms", "forms", "Forms", ClipboardList),
@@ -633,7 +633,7 @@ export default function RoomRouteFrameV4({ children }: { children: ReactNode }) 
           },
         }
       : null,
-  ].filter((item): item is NavItem => Boolean(item));
+  ].filter(Boolean) as NavItem[];
 
   const operationsChild = (
     view: RoomOperationsView,
@@ -653,13 +653,13 @@ export default function RoomRouteFrameV4({ children }: { children: ReactNode }) 
     },
   });
 
-  const operationsItems: NavItem[] = [
+  const operationsItems = [
     payload.access.canManage ? operationsChild("overview", "Overview", LayoutDashboard) : null,
     operationsChild("report", "Report", Flag),
     payload.access.canManage ? operationsChild("members", "Members", Users) : null,
     payload.access.canModerate ? operationsChild("moderation", "Moderation", ShieldCheck) : null,
     payload.access.isOwner ? operationsChild("lifecycle", "Lifecycle", FileClock) : null,
-  ].filter((item): item is NavItem => Boolean(item));
+  ].filter(Boolean) as NavItem[];
 
   const secondaryConfig: Record<
     SecondaryRailKey,
