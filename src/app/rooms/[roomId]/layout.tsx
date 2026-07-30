@@ -7,6 +7,7 @@ import "../room-operations-phase4.css";
 import "../room-thread-attachments.css";
 import "../room-mobile-safe-area-hotfix.css";
 import "../room-secondary-rail.css";
+import "../room-refresh-policy.css";
 
 export default function RoomRouteLayout({
   children,
