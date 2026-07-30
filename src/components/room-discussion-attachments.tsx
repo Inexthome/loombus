@@ -54,34 +54,51 @@ function attachmentKind(file: File): PendingRoomAttachment["kind"] | null {
 
 function formatBytes(value: number | null) {
   if (!value) return "File";
-  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  if (value < 1024 * 1024) {
+    return `${Math.max(1, Math.round(value / 1024))} KB`;
+  }
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function readVideoDuration(file: File) {
   return new Promise<number>((resolve, reject) => {
     const video = document.createElement("video");
-    const url = URL.createObjectURL(file);
+    const objectUrl = URL.createObjectURL(file);
+    let settled = false;
+
     const cleanup = () => {
-      URL.revokeObjectURL(url);
+      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      video.removeEventListener("error", handleError);
+      video.pause();
       video.removeAttribute("src");
       video.load();
+      URL.revokeObjectURL(objectUrl);
     };
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      const duration = video.duration;
+
+    const finish = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
       cleanup();
+      callback();
+    };
+
+    const handleLoadedMetadata = () => {
+      const duration = video.duration;
       if (!Number.isFinite(duration) || duration <= 0) {
-        reject(new Error("Unable to read the selected video duration."));
+        finish(() => reject(new Error("Unable to read the selected video duration.")));
         return;
       }
-      resolve(Math.ceil(duration));
+      finish(() => resolve(Math.ceil(duration)));
     };
-    video.onerror = () => {
-      cleanup();
-      reject(new Error("Unable to read the selected video."));
+
+    const handleError = () => {
+      finish(() => reject(new Error("Unable to read the selected video.")));
     };
-    video.src = url;
+
+    video.preload = "metadata";
+    video.addEventListener("loadedmetadata", handleLoadedMetadata, { once: true });
+    video.addEventListener("error", handleError, { once: true });
+    video.src = objectUrl;
   });
 }
 
@@ -112,7 +129,10 @@ export function RoomAttachmentPicker({
         if (!kind) {
           throw new Error("Choose an image, PDF, MP4, MOV, or WebM file.");
         }
-        const maxSize = kind === "video" ? MAX_CLIENT_VIDEO_SIZE : NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES;
+        const maxSize =
+          kind === "video"
+            ? MAX_CLIENT_VIDEO_SIZE
+            : NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES;
         if (file.size <= 0 || file.size > maxSize) {
           throw new Error(
             kind === "video"
@@ -120,19 +140,24 @@ export function RoomAttachmentPicker({
               : "Images and PDFs must be 10 MB or less."
           );
         }
-        if (next.some((item) => item.kind === "video") && kind === "video") {
+        if (kind === "video" && next.some((item) => item.kind === "video")) {
           throw new Error("A discussion or reply can include only one video.");
         }
         next.push({
           id: crypto.randomUUID(),
           file,
           kind,
-          videoDurationSeconds: kind === "video" ? await readVideoDuration(file) : null,
+          videoDurationSeconds:
+            kind === "video" ? await readVideoDuration(file) : null,
         });
       }
       onChange(next);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "The attachment could not be selected.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "The attachment could not be selected."
+      );
     } finally {
       setReading(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -157,26 +182,43 @@ export function RoomAttachmentPicker({
         onClick={() => inputRef.current?.click()}
         aria-label="Add attachments or video"
       >
-        {reading ? <Loader2 className="is-spinning" aria-hidden="true" /> : <Plus aria-hidden="true" />}
+        {reading ? (
+          <Loader2 className="is-spinning" aria-hidden="true" />
+        ) : (
+          <Plus aria-hidden="true" />
+        )}
         <span>{compact ? "Attach" : "Add attachment or video"}</span>
       </button>
-      <small>{value.length}/{MAX_ATTACHMENTS}</small>
+      <small>
+        {value.length}/{MAX_ATTACHMENTS}
+      </small>
       {value.length > 0 ? (
         <div className="room-thread-attachment-drafts">
           {value.map((item) => {
-            const Icon = item.kind === "video" ? Video : item.kind === "image" ? ImageIcon : FileText;
+            const Icon =
+              item.kind === "video"
+                ? Video
+                : item.kind === "image"
+                  ? ImageIcon
+                  : FileText;
             return (
               <span key={item.id}>
                 <Icon aria-hidden="true" />
                 <b>{item.file.name}</b>
                 <small>
                   {formatBytes(item.file.size)}
-                  {item.videoDurationSeconds ? ` · ${item.videoDurationSeconds}s` : ""}
+                  {item.videoDurationSeconds
+                    ? ` · ${item.videoDurationSeconds}s`
+                    : ""}
                 </small>
                 <button
                   type="button"
                   aria-label={`Remove ${item.file.name}`}
-                  onClick={() => onChange(value.filter((candidate) => candidate.id !== item.id))}
+                  onClick={() =>
+                    onChange(
+                      value.filter((candidate) => candidate.id !== item.id)
+                    )
+                  }
                 >
                   <X aria-hidden="true" />
                 </button>
@@ -233,16 +275,23 @@ export async function uploadRoomAttachments({
     );
     const prepared = await prepareResponse.json().catch(() => ({}));
     if (!prepareResponse.ok || !prepared.storagePath || !prepared.uploadToken) {
-      throw new Error(prepared.error ?? `Upload could not start for ${item.file.name}.`);
+      throw new Error(
+        prepared.error ?? `Upload could not start for ${item.file.name}.`
+      );
     }
 
     const uploadResult = await supabase.storage
       .from(prepared.bucket)
-      .uploadToSignedUrl(prepared.storagePath, prepared.uploadToken, item.file, {
-        contentType: item.file.type || "application/octet-stream",
-      });
+      .uploadToSignedUrl(
+        prepared.storagePath,
+        prepared.uploadToken,
+        item.file,
+        { contentType: item.file.type || "application/octet-stream" }
+      );
     if (uploadResult.error) {
-      throw new Error(`Upload failed for ${item.file.name}: ${uploadResult.error.message}`);
+      throw new Error(
+        `Upload failed for ${item.file.name}: ${uploadResult.error.message}`
+      );
     }
 
     const completeResponse = await fetch(
@@ -269,8 +318,12 @@ export async function uploadRoomAttachments({
     );
     const completed = await completeResponse.json().catch(() => ({}));
     if (!completeResponse.ok) {
-      await supabase.storage.from(prepared.bucket).remove([prepared.storagePath]);
-      throw new Error(completed.error ?? `Attachment record failed for ${item.file.name}.`);
+      await supabase.storage
+        .from(prepared.bucket)
+        .remove([prepared.storagePath]);
+      throw new Error(
+        completed.error ?? `Attachment record failed for ${item.file.name}.`
+      );
     }
   }
 }
@@ -305,7 +358,11 @@ export function RoomAttachmentList({
       );
       const result = await response.json().catch(() => ({}));
       if (live) {
-        setAttachments(response.ok && Array.isArray(result.attachments) ? result.attachments : []);
+        setAttachments(
+          response.ok && Array.isArray(result.attachments)
+            ? result.attachments
+            : []
+        );
         setLoading(false);
       }
     })();
@@ -328,18 +385,34 @@ export function RoomAttachmentList({
       {attachments.map((attachment) => {
         if (attachment.kind === "image") {
           return (
-            <a key={attachment.id} href={attachment.signedUrl} target="_blank" rel="noreferrer">
-              <img src={attachment.signedUrl} alt={attachment.fileName} loading="lazy" />
+            <a
+              key={attachment.id}
+              href={attachment.signedUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <img
+                src={attachment.signedUrl}
+                alt={attachment.fileName}
+                loading="lazy"
+              />
             </a>
           );
         }
         if (attachment.kind === "video") {
           return (
             <figure key={attachment.id}>
-              <video src={attachment.signedUrl} controls playsInline preload="metadata" />
+              <video
+                src={attachment.signedUrl}
+                controls
+                playsInline
+                preload="metadata"
+              />
               <figcaption>
                 <Video aria-hidden="true" /> {attachment.fileName}
-                {attachment.videoDurationSeconds ? ` · ${attachment.videoDurationSeconds}s` : ""}
+                {attachment.videoDurationSeconds
+                  ? ` · ${attachment.videoDurationSeconds}s`
+                  : ""}
               </figcaption>
             </figure>
           );
@@ -353,7 +426,10 @@ export function RoomAttachmentList({
             className="room-thread-file-attachment"
           >
             <Paperclip aria-hidden="true" />
-            <span><strong>{attachment.fileName}</strong><small>{formatBytes(attachment.fileSize)}</small></span>
+            <span>
+              <strong>{attachment.fileName}</strong>
+              <small>{formatBytes(attachment.fileSize)}</small>
+            </span>
           </a>
         );
       })}
