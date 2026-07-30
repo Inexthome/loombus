@@ -1,0 +1,110 @@
+/* Mobile Room shell hotfix: respect iOS safe areas and keep landscape navigation reachable. */
+
+@media (max-width: 899px) {
+  .rooms-phase1-room-header {
+    min-height: calc(72px + env(safe-area-inset-top));
+    padding-top: calc(11px + env(safe-area-inset-top));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .room-phase4-topbar-actions {
+    top: calc(8px + env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+  }
+
+  .rooms-phase1-sidebar {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .rooms-phase1-sidebar-head,
+  .rooms-phase1-room-identity,
+  .rooms-phase1-nav-scroll,
+  .rooms-phase1-sidebar-footer {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .rooms-phase1-sidebar {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  .rooms-phase1-sidebar-head {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .rooms-phase1-sidebar-head .rooms-phase1-brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .rooms-phase1-sidebar-head .rooms-phase1-brand-mark img {
+    width: 25px;
+    height: 25px;
+  }
+
+  .rooms-phase1-all-rooms {
+    margin-top: 6px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
+  .rooms-phase1-room-identity {
+    padding-top: 9px;
+    padding-bottom: 7px;
+  }
+
+  .rooms-phase1-room-identity h1 {
+    margin-top: 3px;
+    font-size: 1rem;
+  }
+
+  .rooms-phase1-room-identity > span,
+  .rooms-phase1-room-metrics {
+    display: none;
+  }
+
+  .rooms-phase1-nav-scroll {
+    min-height: 0;
+    overscroll-behavior: contain;
+    padding-top: 0;
+    padding-bottom: 8px;
+  }
+
+  .rooms-phase1-nav-section + .rooms-phase1-nav-section {
+    margin-top: 8px;
+  }
+
+  .rooms-phase1-nav-section > p {
+    margin-top: 5px;
+    margin-bottom: 3px;
+  }
+
+  .rooms-phase1-nav-link {
+    min-height: 36px;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  .rooms-phase1-sidebar-footer {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+
+  .rooms-phase1-sidebar-footer .rooms-phase1-appearance {
+    padding: 3px;
+  }
+
+  .rooms-phase1-sidebar-footer .rooms-phase1-appearance button {
+    min-height: 31px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 0.65rem;
+  }
+}
