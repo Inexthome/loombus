@@ -1,0 +1,240 @@
+.room-thread-attachment-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
+.room-thread-attach-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--loombus-border);
+  border-radius: 999px;
+  background: var(--loombus-surface);
+  padding: 8px 14px;
+  color: var(--loombus-text);
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.room-thread-attach-button:hover,
+.room-thread-attach-button:focus-visible {
+  border-color: #cbab5b;
+  color: #9a701c;
+}
+
+.room-thread-attach-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.room-thread-attach-button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.room-thread-attachment-picker > small {
+  color: var(--loombus-text-subtle);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.room-thread-attachment-picker > p {
+  flex-basis: 100%;
+  margin: 0;
+  color: #b42318;
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.room-thread-attachment-drafts {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.room-thread-attachment-drafts > span {
+  display: grid;
+  min-width: 0;
+  max-width: min(100%, 310px);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--loombus-border);
+  border-radius: 12px;
+  background: var(--loombus-page-bg);
+  padding: 8px 9px;
+  color: var(--loombus-text);
+}
+
+.room-thread-attachment-drafts > span > svg {
+  width: 16px;
+  height: 16px;
+  color: #9a701c;
+}
+
+.room-thread-attachment-drafts b,
+.room-thread-attachment-drafts small {
+  grid-column: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-thread-attachment-drafts b {
+  font-size: 0.75rem;
+}
+
+.room-thread-attachment-drafts small {
+  color: var(--loombus-text-subtle);
+  font-size: 0.66rem;
+}
+
+.room-thread-attachment-drafts button {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #b42318;
+  cursor: pointer;
+}
+
+.room-thread-attachment-drafts button:hover,
+.room-thread-attachment-drafts button:focus-visible {
+  background: rgb(180 35 24 / 0.1);
+}
+
+.room-thread-attachment-drafts button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.room-thread-attachments {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.room-thread-attachments > a,
+.room-thread-attachments > figure {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--loombus-border);
+  border-radius: 15px;
+  background: var(--loombus-page-bg);
+}
+
+.room-thread-attachments img,
+.room-thread-attachments video {
+  display: block;
+  width: 100%;
+  max-height: 430px;
+  object-fit: contain;
+  background: #050505;
+}
+
+.room-thread-attachments figure {
+  margin: 0;
+}
+
+.room-thread-attachments figcaption {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 11px;
+  color: var(--loombus-text-muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.room-thread-attachments figcaption svg {
+  width: 15px;
+  height: 15px;
+}
+
+.room-thread-file-attachment {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  color: var(--loombus-text);
+}
+
+.room-thread-file-attachment > svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  color: #9a701c;
+}
+
+.room-thread-file-attachment > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.room-thread-file-attachment strong,
+.room-thread-file-attachment small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-thread-file-attachment strong {
+  font-size: 0.78rem;
+}
+
+.room-thread-file-attachment small {
+  color: var(--loombus-text-subtle);
+  font-size: 0.68rem;
+}
+
+.room-thread-attachment-loading {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--loombus-text-subtle);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.room-thread-attachment-loading svg {
+  width: 15px;
+  height: 15px;
+}
+
+.room-thread-reply-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.room-thread-reply-composer .room-thread-attachment-picker {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 700px) {
+  .room-thread-attachments,
+  .room-thread-reply-composer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .room-thread-reply-composer > button {
+    width: 100%;
+  }
+}

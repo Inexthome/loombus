@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { TasksView } from "@/components/room-expansion-view-tasks";
 import { PollsView } from "@/components/room-expansion-view-polls";
 import { FormsView } from "@/components/room-expansion-view-forms";
@@ -19,6 +20,15 @@ const ITEM_LABELS = {
 };
 
 export function ExpansionBody(props) {
+  if (!props.manifest) {
+    return (
+      <div className="room-phase3-loading" role="status" aria-live="polite">
+        <Loader2 className="is-spinning" aria-hidden="true" />
+        Preparing the authorized Room workspace
+      </div>
+    );
+  }
+
   const paged = PAGED_VIEWS.has(props.view);
   const viewData =
     paged && props.view !== "files" && Array.isArray(props.data?.items)

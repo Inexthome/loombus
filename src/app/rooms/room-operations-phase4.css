@@ -1,0 +1,57 @@
+.room-phase3-operations button,
+.room-phase3-operations input,
+.room-phase3-operations select,
+.room-phase3-operations textarea {
+  min-width: 0;
+  font: inherit;
+}
+
+.room-phase3-operations input,
+.room-phase3-operations select,
+.room-phase3-operations textarea {
+  width: 100%;
+  border: 1px solid var(--rooms-shell-border);
+  border-radius: 12px;
+  background: var(--rooms-shell-panel);
+  padding: 10px 11px;
+  color: var(--rooms-shell-text);
+}
+
+.room-phase3-operations textarea {
+  resize: vertical;
+}
+
+.room-phase3-operations button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.room-phase3-operations .room-operation-stack,
+.room-phase3-operations .room-operation-grid {
+  max-width: 100%;
+  overflow: visible;
+}
+
+.room-phase3-operations .room-operation-member-controls {
+  width: 100%;
+}
+
+.room-phase3-operations .room-operation-report,
+.room-phase3-operations .room-operation-member,
+.room-phase3-operations .room-operation-removed,
+.room-phase3-operations .room-operation-card,
+.room-phase3-operations .room-operation-form {
+  overflow-wrap: anywhere;
+}
+
+.room-phase3-operations .room-operation-actions,
+.room-phase3-operations .room-operation-inline-actions,
+.room-phase3-operations .room-operation-report > div {
+  max-width: 100%;
+}
+
+@media (max-width: 899px) {
+  .room-phase3-operations .room-operation-tabs {
+    position: static;
+  }
+}
