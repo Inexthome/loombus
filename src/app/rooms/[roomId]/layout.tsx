@@ -5,6 +5,7 @@ import { RoomWorkspaceProvider } from "@/components/room-workspace-context";
 import "../room-phase4-corrections.css";
 import "../room-operations-phase4.css";
 import "../room-thread-attachments.css";
+import "../room-mobile-safe-area-hotfix.css";
 
 export default function RoomRouteLayout({
   children,
