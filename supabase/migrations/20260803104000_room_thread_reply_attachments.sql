@@ -66,9 +66,13 @@ alter table public.room_post_attachments
     check (
       (
         kind = 'video'
-        and video_duration_seconds is not null
-        and video_duration_seconds > 0
-        and video_duration_seconds <= 180
+        and (
+          video_duration_seconds is null
+          or (
+            video_duration_seconds > 0
+            and video_duration_seconds <= 180
+          )
+        )
       )
       or
       (
@@ -83,17 +87,20 @@ alter table public.room_post_attachments
     ),
   add constraint room_post_attachments_kind_mime_alignment_check
     check (
-      (kind = 'image' and mime_type in ('image/jpeg', 'image/png', 'image/webp', 'image/gif'))
+      mime_type is null
+      or (kind = 'image' and mime_type in ('image/jpeg', 'image/png', 'image/webp', 'image/gif'))
       or (kind = 'file' and mime_type = 'application/pdf')
       or (kind = 'video' and mime_type in ('video/mp4', 'video/quicktime', 'video/webm'))
     ),
   add constraint room_post_attachments_file_size_check
     check (
-      file_size is not null
-      and file_size > 0
-      and (
-        (kind = 'video' and file_size <= 262144000)
-        or (kind <> 'video' and file_size <= 10485760)
+      file_size is null
+      or (
+        file_size > 0
+        and (
+          (kind = 'video' and file_size <= 262144000)
+          or (kind <> 'video' and file_size <= 10485760)
+        )
       )
     );
 
@@ -149,6 +156,8 @@ comment on table public.room_video_upload_events is
   'Monthly usage ledger for private Room video attachments. Rows remain after attachment deletion so deleted videos still count against the monthly Video Context quota.';
 comment on column public.room_post_attachments.reply_id is
   'Optional Room reply parent. Exactly one of post_id or reply_id must be present.';
+comment on column public.room_post_attachments.video_duration_seconds is
+  'Duration is required by the new server upload path. Null remains permitted only for legacy Room videos created before duration tracking.';
 
 notify pgrst, 'reload schema';
 
