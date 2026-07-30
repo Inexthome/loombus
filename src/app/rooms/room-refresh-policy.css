@@ -1,0 +1,12 @@
+/* Room data already uses Supabase Realtime with scheduled fallback refreshes. */
+.rooms-live-shell
+  > .mb-4.flex.flex-wrap.items-center.justify-between.gap-3
+  > .rooms-live-secondary-action {
+  display: none;
+}
+
+[data-room-direct-discussions="true"]
+  > .flex.flex-col.gap-3.sm\:flex-row.sm\:items-center.sm\:justify-between
+  > button:last-child {
+  display: none;
+}

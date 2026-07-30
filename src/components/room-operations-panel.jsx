@@ -17,7 +17,6 @@ export function RoomOperationsPanel({
   onPageChange,
   onAction,
   onExport,
-  onRefresh,
   hideNavigation = false,
 }) {
   const access = summary.access;
@@ -75,9 +74,7 @@ export function RoomOperationsPanel({
           </div>
         ) : null}
 
-        {selected === "overview" && payload ? (
-          <Overview payload={payload} loading={loading} onRefresh={onRefresh} />
-        ) : null}
+        {selected === "overview" && payload ? <Overview payload={payload} /> : null}
 
         {selected === "report" && payload ? (
           <ReportView
