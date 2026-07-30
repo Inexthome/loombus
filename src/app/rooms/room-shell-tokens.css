@@ -36,6 +36,8 @@
   --text: var(--rooms-shell-text);
   --muted: var(--rooms-shell-muted);
   --border: var(--rooms-shell-border);
+
+  /* Legacy Room-live modules: Operations, Foundation, tier modules, and Files. */
   --rooms-live-bg: var(--rooms-shell-page);
   --rooms-live-surface: var(--rooms-shell-panel);
   --rooms-live-surface-strong: var(--rooms-shell-panel-strong);
@@ -46,6 +48,16 @@
   --rooms-live-border: var(--rooms-shell-border);
   --rooms-live-border-strong: var(--rooms-shell-border-strong);
   --rooms-live-accent: var(--rooms-shell-gold);
+
+  /* Legacy Studio and Organization workspace namespace. */
+  --rooms-bg: var(--rooms-shell-page);
+  --rooms-panel: var(--rooms-shell-panel);
+  --rooms-input: var(--rooms-shell-panel-muted);
+  --rooms-text: var(--rooms-shell-text);
+  --rooms-muted: var(--rooms-shell-muted);
+  --rooms-border: var(--rooms-shell-border);
+  --rooms-accent: var(--rooms-shell-gold);
+
   color: var(--rooms-shell-text);
 }
 
