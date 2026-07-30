@@ -278,8 +278,9 @@ as $$
   select exists (
     select 1
     from public.profiles p
+    left join public.profile_sensitive ps on ps.id = p.id
     where p.id = auth.uid()
-      and coalesce(p.age_band, 'unknown') = 'adult'
+      and coalesce(ps.age_band, 'unknown') = 'adult'
       and coalesce(p.account_status, 'active') not in ('suspended', 'banned', 'deleted')
   );
 $$;
