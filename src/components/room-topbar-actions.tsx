@@ -10,7 +10,7 @@ import {
   Settings,
   UserRound,
 } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ProfileAvatar,
@@ -27,25 +27,47 @@ type ViewerProfile = {
 
 export function RoomTopbarActions() {
   const params = useParams();
+  const pathname = usePathname();
   const rawRoomId = params?.roomId;
   const roomId = useMemo(
     () => (Array.isArray(rawRoomId) ? rawRoomId[0] : rawRoomId ?? ""),
     [rawRoomId]
   );
   const { openFeature } = useRoomWorkspace();
+  const [authorized, setAuthorized] = useState(false);
   const [profile, setProfile] = useState<ViewerProfile | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const loadViewer = useCallback(async () => {
+    if (!roomId) {
+      setAuthorized(false);
+      return;
+    }
     const { data: sessionData } = await supabase.auth.getSession();
-    const user = sessionData.session?.user;
-    if (!user) {
+    const session = sessionData.session;
+    const user = session?.user;
+    if (!user || !session?.access_token) {
+      setAuthorized(false);
       setProfile(null);
       setUnreadCount(0);
       return;
     }
+
+    const shellResponse = await fetch(
+      `/api/rooms/${encodeURIComponent(roomId)}/shell`,
+      {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: "no-store",
+      }
+    );
+    if (!shellResponse.ok) {
+      setAuthorized(false);
+      setMenuOpen(false);
+      return;
+    }
+    setAuthorized(true);
 
     const [profileResult, notificationResult] = await Promise.all([
       supabase
@@ -66,15 +88,18 @@ export function RoomTopbarActions() {
     if (!notificationResult.error) {
       setUnreadCount(notificationResult.count ?? 0);
     }
-  }, []);
+  }, [roomId]);
 
   useEffect(() => {
+    setAuthorized(false);
     void loadViewer();
     const refresh = () => void loadViewer();
     window.addEventListener("loombus:notifications-changed", refresh);
+    window.addEventListener("loombus:room-activity-changed", refresh);
     const interval = window.setInterval(refresh, 60_000);
     return () => {
       window.removeEventListener("loombus:notifications-changed", refresh);
+      window.removeEventListener("loombus:room-activity-changed", refresh);
       window.clearInterval(interval);
     };
   }, [loadViewer]);
@@ -95,7 +120,7 @@ export function RoomTopbarActions() {
     };
   }, [menuOpen]);
 
-  if (!roomId) return null;
+  if (!roomId || !authorized || pathname.endsWith("/billing/success")) return null;
 
   async function signOut() {
     await supabase.auth.signOut();
