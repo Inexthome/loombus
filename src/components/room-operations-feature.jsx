@@ -5,8 +5,10 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RoomOperationsPanel } from "@/components/room-operations-panel";
 import { supabase } from "@/lib/supabase/client";
+import { useBackgroundRefresh } from "@/lib/use-background-refresh";
 
 const PAGE_SIZE = 24;
+const ROOM_OPERATIONS_REFRESH_EVENTS = ["loombus:room-operations-changed"];
 
 async function token() {
   const { data } = await supabase.auth.getSession();
@@ -96,14 +98,16 @@ export function RoomOperationsFeature({
   }, [initialView, request, roomId]);
 
   const loadView = useCallback(
-    async (view, page = 1, focus = false) => {
+    async (view, page = 1, focus = false, silent = false) => {
       if (!view) return;
       requestAbortRef.current?.abort();
       const controller = new AbortController();
       requestAbortRef.current = controller;
-      setLoadingView(view);
-      setNotice("");
-      setNoticeError(false);
+      if (!silent) {
+        setLoadingView(view);
+        setNotice("");
+        setNoticeError(false);
+      }
       try {
         const queryParams = new URLSearchParams({
           page: String(Math.max(1, page)),
@@ -126,7 +130,7 @@ export function RoomOperationsFeature({
           window.requestAnimationFrame(() => resultsRef.current?.focus());
         }
       } catch (cause) {
-        if (cause?.name !== "AbortError") {
+        if (cause?.name !== "AbortError" && !silent) {
           setNotice(
             cause instanceof Error
               ? cause.message
@@ -135,11 +139,26 @@ export function RoomOperationsFeature({
           setNoticeError(true);
         }
       } finally {
-        if (requestAbortRef.current === controller) setLoadingView("");
+        if (!silent && requestAbortRef.current === controller) setLoadingView("");
       }
     },
     [request]
   );
+
+  const refreshOperations = useCallback(async () => {
+    if (loadingView || working) return;
+    await loadSummary();
+    if (!activeView) return;
+    const page = payloads[activeView]?.pageInfo?.page ?? 1;
+    await loadView(activeView, page, false, true);
+  }, [activeView, loadSummary, loadView, loadingView, payloads, working]);
+
+  useBackgroundRefresh({
+    refresh: refreshOperations,
+    enabled: Boolean(roomId && summary?.access),
+    intervalMs: 60_000,
+    events: ROOM_OPERATIONS_REFRESH_EVENTS,
+  });
 
   useEffect(() => {
     requestAbortRef.current?.abort();
@@ -147,13 +166,8 @@ export function RoomOperationsFeature({
     setPayloads({});
     setActiveView(null);
     void loadSummary();
-    const interval = window.setInterval(() => void loadSummary(), 60_000);
-    const refresh = () => void loadSummary();
-    window.addEventListener("loombus:room-operations-changed", refresh);
     return () => {
       requestAbortRef.current?.abort();
-      window.clearInterval(interval);
-      window.removeEventListener("loombus:room-operations-changed", refresh);
     };
   }, [initialView, loadSummary, roomId]);
 
@@ -278,10 +292,6 @@ export function RoomOperationsFeature({
           onPageChange={(page) => void loadView(activeView, page, true)}
           onAction={action}
           onExport={exportRoom}
-          onRefresh={() => {
-            const page = payload?.pageInfo?.page ?? 1;
-            return loadView(activeView, page, true);
-          }}
           hideNavigation={hideNavigation}
         />
       </div>
