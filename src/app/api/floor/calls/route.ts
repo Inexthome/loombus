@@ -3,6 +3,7 @@ import { createFloorRequestSupabase } from "@/lib/floor-operations";
 import {
   FLOOR_PREDICTION_MAX,
   FLOOR_TICKER_MAX,
+  formatFloorCallPrediction,
   isFloorComparator,
 } from "@/lib/floor-shared";
 
@@ -55,7 +56,6 @@ export async function POST(request: NextRequest) {
   if (!validUuid(thesisId)) return jsonError("A valid thesis is required.", 400);
 
   const ticker = asString(payload.ticker).toUpperCase().slice(0, FLOOR_TICKER_MAX);
-  const prediction = asString(payload.prediction).slice(0, FLOOR_PREDICTION_MAX);
   const comparator = payload.comparator;
   const targetValue = asNumber(payload.targetValue);
   const targetValueHigh = asNumber(payload.targetValueHigh);
@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
   const resolvesByDate = resolvesByRaw ? new Date(resolvesByRaw) : null;
 
   if (!ticker) return jsonError("A ticker is required.", 400);
-  if (!prediction) return jsonError("A falsifiable prediction is required.", 400);
   if (!isFloorComparator(comparator)) return jsonError("Choose a valid comparator.", 400);
   if (targetValue === null) return jsonError("A target value is required.", 400);
   if (comparator === "range" && (targetValueHigh === null || targetValueHigh <= targetValue)) {
@@ -79,6 +78,22 @@ export async function POST(request: NextRequest) {
     return jsonError("The resolution date must be in the future.", 400);
   }
 
+  // The prediction sentence is always derived server-side from the structured
+  // claim below -- never taken from the client -- so the human-readable text
+  // and the fields the resolver scores can never disagree.
+  const resolvesByIso = resolvesByDate.toISOString();
+  const prediction = formatFloorCallPrediction(
+    ticker,
+    comparator,
+    targetValue,
+    targetValueHigh,
+    resolvesByIso
+  ).slice(0, FLOOR_PREDICTION_MAX);
+
+  if (!prediction) {
+    return jsonError("Unable to build a falsifiable prediction from these fields.", 400);
+  }
+
   const { data, error } = await supabase
     .from("floor_calls")
     .insert({
@@ -89,7 +104,7 @@ export async function POST(request: NextRequest) {
       comparator,
       target_value: targetValue,
       target_value_high: comparator === "range" ? targetValueHigh : null,
-      resolves_by: resolvesByDate.toISOString(),
+      resolves_by: resolvesByIso,
     })
     .select("id")
     .single();
