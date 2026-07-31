@@ -29,6 +29,9 @@ export const FLOOR_THESIS_MAX = 4000;
 export const FLOOR_CATALYSTS_MAX = 1000;
 export const FLOOR_RISKS_MAX = 800;
 export const FLOOR_PREDICTION_MAX = 500;
+export const FLOOR_POST_TITLE_MAX = 160;
+export const FLOOR_POST_BODY_MAX = 5000;
+export const FLOOR_REPLY_BODY_MAX = 3000;
 
 export function isFloorStance(value: unknown): value is FloorStance {
   return typeof value === "string" && FLOOR_STANCE_OPTIONS.some((option) => option.value === value);

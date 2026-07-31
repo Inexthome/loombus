@@ -21,7 +21,7 @@ import {
 } from "@/lib/floor-shared";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
-import { Loader2, Plus, ScrollText, Send, Trophy, X } from "lucide-react";
+import { Loader2, MessagesSquare, Plus, ScrollText, Send, Trophy, X } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 type FloorAuthorEmbed = { username: string | null; full_name: string | null } | null;
@@ -246,6 +246,13 @@ export default function TheFloorPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/the-floor/discussion"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-5 text-sm font-black text-[var(--loombus-text-muted)] hover:border-amber-300"
+              >
+                <MessagesSquare className="size-4" aria-hidden="true" />
+                Discussion
+              </Link>
               <Link
                 href="/the-floor/leaderboard"
                 className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-5 text-sm font-black text-[var(--loombus-text-muted)] hover:border-amber-300"
