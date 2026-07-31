@@ -11,6 +11,10 @@
     {
       "path": "/api/rooms/deletion/process",
       "schedule": "17 13 * * *"
+    },
+    {
+      "path": "/api/floor/calls/resolve",
+      "schedule": "0 14 * * 1-5"
     }
   ]
 }
