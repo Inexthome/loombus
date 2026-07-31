@@ -2,7 +2,10 @@ import Link from "next/link";
 import {
   BarChart3,
   Building2,
+  Compass,
   GraduationCap,
+  GitFork,
+  LayoutDashboard,
   MessagesSquare,
   ScrollText,
   Trophy,
@@ -15,6 +18,9 @@ import TheFloorOpeningBell from "@/components/the-floor-opening-bell";
 const navigation = [
   { href: "#opening-bell", label: "Opening Bell", icon: BarChart3 },
   { href: "#research-feed", label: "Research", icon: ScrollText },
+  { href: "/the-floor/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/the-floor/discover", label: "Discover", icon: Compass },
+  { href: "/the-floor/knowledge-graph", label: "Knowledge Graph", icon: GitFork },
   { href: "/the-floor/companies", label: "Companies", icon: Building2, pending: true },
   { href: "/the-floor/analysts", label: "Analysts", icon: UserRoundCheck, pending: true },
   { href: "/the-floor/leaderboard", label: "Leaderboard", icon: Trophy },
