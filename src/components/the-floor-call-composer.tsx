@@ -2,17 +2,15 @@
 
 import {
   FLOOR_COMPARATOR_OPTIONS,
-  FLOOR_PREDICTION_MAX,
+  formatFloorCallPrediction,
   type FloorComparator,
 } from "@/lib/floor-shared";
 import { supabase } from "@/lib/supabase/client";
 import { Loader2, Plus, Send, X } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 
 const inputClass =
   "min-h-11 w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 text-sm text-[var(--loombus-text)] outline-none placeholder:text-[var(--loombus-text-subtle)] focus:border-amber-400 focus:ring-4 focus:ring-amber-100/20";
-const textareaClass =
-  "w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 py-3 text-sm leading-6 text-[var(--loombus-text)] outline-none placeholder:text-[var(--loombus-text-subtle)] focus:border-amber-400 focus:ring-4 focus:ring-amber-100/20";
 const labelClass = "mb-1.5 block text-xs font-black text-[var(--loombus-text-muted)]";
 
 export function FloorCallComposer({
@@ -28,20 +26,37 @@ export function FloorCallComposer({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const [prediction, setPrediction] = useState("");
   const [comparator, setComparator] = useState<FloorComparator>("gte");
   const [targetValue, setTargetValue] = useState("");
   const [targetValueHigh, setTargetValueHigh] = useState("");
   const [resolvesBy, setResolvesBy] = useState("");
 
   function reset() {
-    setPrediction("");
     setComparator("gte");
     setTargetValue("");
     setTargetValueHigh("");
     setResolvesBy("");
     setError("");
   }
+
+  const parsedTargetValue = targetValue.trim() ? Number(targetValue) : null;
+  const parsedTargetValueHigh =
+    comparator === "range" && targetValueHigh.trim() ? Number(targetValueHigh) : null;
+  const resolvesByIso = resolvesBy ? new Date(resolvesBy).toISOString() : null;
+
+  const predictionPreview = useMemo(() => {
+    if (parsedTargetValue === null || !Number.isFinite(parsedTargetValue)) return "";
+    if (comparator === "range" && (parsedTargetValueHigh === null || !Number.isFinite(parsedTargetValueHigh))) {
+      return "";
+    }
+    return formatFloorCallPrediction(
+      thesisTicker,
+      comparator,
+      parsedTargetValue,
+      parsedTargetValueHigh,
+      resolvesByIso
+    );
+  }, [comparator, parsedTargetValue, parsedTargetValueHigh, resolvesByIso, thesisTicker]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,11 +76,10 @@ export function FloorCallComposer({
         body: JSON.stringify({
           thesisId,
           ticker: thesisTicker,
-          prediction,
           comparator,
           targetValue,
           targetValueHigh: comparator === "range" ? targetValueHigh : null,
-          resolvesBy: resolvesBy ? new Date(resolvesBy).toISOString() : "",
+          resolvesBy: resolvesByIso ?? "",
         }),
       });
       const result = (await response.json().catch(() => ({}))) as { error?: string };
@@ -118,19 +132,6 @@ export function FloorCallComposer({
           {error}
         </p>
       ) : null}
-
-      <label className="block">
-        <span className={labelClass}>Prediction</span>
-        <textarea
-          value={prediction}
-          onChange={(event) => setPrediction(event.target.value.slice(0, FLOOR_PREDICTION_MAX))}
-          rows={2}
-          required
-          maxLength={FLOOR_PREDICTION_MAX}
-          placeholder={`${thesisTicker} closes above 150 by the end of Q3`}
-          className={textareaClass}
-        />
-      </label>
 
       <div className="grid gap-2 sm:grid-cols-3">
         <label className="block">
@@ -201,10 +202,20 @@ export function FloorCallComposer({
         </label>
       ) : null}
 
+      <div>
+        <span className={labelClass}>This call will read</span>
+        <p
+          aria-live="polite"
+          className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-sm font-bold leading-6 text-[var(--loombus-text)]"
+        >
+          {predictionPreview || "Fill in the fields above to preview your falsifiable claim."}
+        </p>
+      </div>
+
       <div className="flex justify-end">
         <button
           type="submit"
-          disabled={submitting || !prediction.trim() || !targetValue || !resolvesBy}
+          disabled={submitting || !predictionPreview || !resolvesBy}
           className="inline-flex min-h-9 items-center justify-center gap-2 rounded-full bg-[#cbab5b] px-4 text-xs font-black text-[#17120a] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? (

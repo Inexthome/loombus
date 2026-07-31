@@ -73,3 +73,43 @@ export function floorDisplayName(
 ) {
   return fullName || username || fallback;
 }
+
+function formatFloorCallResolvesByLabel(resolvesByIso: string) {
+  const date = new Date(resolvesByIso);
+  if (Number.isNaN(date.getTime())) return null;
+  // Pinned locale AND timeZone so the stored sentence is identical regardless
+  // of the client's or server's runtime locale/timezone -- it's the source of
+  // truth, not just a display string. resolves_by is stored as UTC midnight
+  // for a date-only pick (per the date-only parsing rule), so formatting in
+  // anything other than UTC silently shows the wrong calendar day to anyone
+  // west of it -- the same "sentence disagrees with the claim" bug this fix
+  // exists to prevent.
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * The prediction sentence is derived from the structured claim, never typed
+ * freehand -- this is what keeps the human-readable text and the fields the
+ * resolver actually scores from ever disagreeing. Both the composer's live
+ * preview and the API route that inserts the row call this same function.
+ */
+export function formatFloorCallPrediction(
+  ticker: string,
+  comparator: string,
+  targetValue: number | null,
+  targetValueHigh: number | null,
+  resolvesByIso: string | null
+) {
+  const target = formatFloorCallTarget(comparator, targetValue, targetValueHigh);
+  if (!ticker.trim() || !target) return "";
+
+  const dateLabel = resolvesByIso ? formatFloorCallResolvesByLabel(resolvesByIso) : null;
+  return dateLabel
+    ? `${ticker} closes ${target} by ${dateLabel}.`
+    : `${ticker} closes ${target}.`;
+}
