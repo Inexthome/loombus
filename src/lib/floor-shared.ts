@@ -65,3 +65,11 @@ export function formatFloorCallTarget(
   if (targetValue === null) return "";
   return `${floorComparatorLabel(comparator).toLowerCase()} ${targetValue}`;
 }
+
+export function floorDisplayName(
+  fullName: string | null | undefined,
+  username: string | null | undefined,
+  fallback = "A Loombus member"
+) {
+  return fullName || username || fallback;
+}

@@ -14,11 +14,13 @@ import {
   FLOOR_STANCE_OPTIONS,
   FLOOR_THESIS_MAX,
   FLOOR_TICKER_MAX,
+  floorDisplayName,
   type FloorHorizon,
   type FloorStance,
 } from "@/lib/floor-shared";
 import { supabase } from "@/lib/supabase/client";
-import { Loader2, Plus, ScrollText, Send, X } from "lucide-react";
+import Link from "next/link";
+import { Loader2, Plus, ScrollText, Send, Trophy, X } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 type FloorAuthorEmbed = { username: string | null; full_name: string | null } | null;
@@ -43,7 +45,7 @@ type FloorThesisRow = {
 
 function authorName(author: FloorThesisRow["author"]) {
   const profile = Array.isArray(author) ? author[0] ?? null : author;
-  return profile?.full_name || profile?.username || "A Loombus member";
+  return floorDisplayName(profile?.full_name, profile?.username);
 }
 
 function toCardData(row: FloorThesisRow): FloorThesisCardData {
@@ -235,15 +237,24 @@ export default function TheFloorPage() {
                 recommendation.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setComposerOpen((open) => !open)}
-              aria-expanded={composerOpen}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#cbab5b] px-5 text-sm font-black text-[#17120a]"
-            >
-              {composerOpen ? <X className="size-4" /> : <Plus className="size-4" />}
-              {composerOpen ? "Close composer" : "Post a thesis"}
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/the-floor/leaderboard"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-5 text-sm font-black text-[var(--loombus-text-muted)] hover:border-amber-300"
+              >
+                <Trophy className="size-4" aria-hidden="true" />
+                Leaderboard
+              </Link>
+              <button
+                type="button"
+                onClick={() => setComposerOpen((open) => !open)}
+                aria-expanded={composerOpen}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#cbab5b] px-5 text-sm font-black text-[#17120a]"
+              >
+                {composerOpen ? <X className="size-4" /> : <Plus className="size-4" />}
+                {composerOpen ? "Close composer" : "Post a thesis"}
+              </button>
+            </div>
           </div>
         </header>
 
