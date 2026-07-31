@@ -1,6 +1,7 @@
 "use client";
 
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import type { FloorAnalysisData } from "@/components/the-floor-analysis-section";
 import {
   FloorThesisCard,
   type FloorCallCardData,
@@ -41,6 +42,7 @@ type FloorThesisRow = {
   created_at: string;
   author: FloorAuthorEmbed | FloorAuthorEmbed[] | null;
   floor_calls: FloorCallCardData[] | null;
+  floor_thesis_analyses: FloorAnalysisData[] | null;
 };
 
 function authorName(author: FloorThesisRow["author"]) {
@@ -66,6 +68,7 @@ function toCardData(row: FloorThesisRow): FloorThesisCardData {
     calls: [...(row.floor_calls ?? [])].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     ),
+    analysis: row.floor_thesis_analyses?.[0] ?? null,
   };
 }
 
@@ -101,7 +104,7 @@ export default function TheFloorPage() {
     const { data, error } = await supabase
       .from("floor_theses")
       .select(
-        "id, author_id, ticker, stance, conviction, horizon, entry_zone_low, entry_zone_high, exit_plan, thesis, catalysts, risks, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, comparator, target_value, target_value_high, resolves_by, status, outcome, outcome_note, resolved_value, created_at)"
+        "id, author_id, ticker, stance, conviction, horizon, entry_zone_low, entry_zone_high, exit_plan, thesis, catalysts, risks, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, comparator, target_value, target_value_high, resolves_by, status, outcome, outcome_note, resolved_value, created_at), floor_thesis_analyses(id, steelman, redteam, blind_spots, model, created_at)"
       )
       .order("created_at", { ascending: false })
       .limit(50);
@@ -148,6 +151,11 @@ export default function TheFloorPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "floor_calls" },
+        scheduleReload
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "floor_thesis_analyses" },
         scheduleReload
       )
       .subscribe();
@@ -462,6 +470,8 @@ export default function TheFloorPage() {
                 thesis={toCardData(row)}
                 canAddCall={row.author_id === userId}
                 onCallPosted={loadTheses}
+                canRequestAnalysis={row.author_id === userId}
+                onAnalysisGenerated={loadTheses}
               />
             ))}
           </div>
