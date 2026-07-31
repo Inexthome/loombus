@@ -1,7 +1,11 @@
 "use client";
 
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
-import { FloorThesisCard, type FloorThesisCardData } from "@/components/the-floor-thesis-card";
+import {
+  FloorThesisCard,
+  type FloorCallCardData,
+  type FloorThesisCardData,
+} from "@/components/the-floor-thesis-card";
 import {
   FLOOR_CATALYSTS_MAX,
   FLOOR_EXIT_PLAN_MAX,
@@ -21,6 +25,7 @@ type FloorAuthorEmbed = { username: string | null; full_name: string | null } | 
 
 type FloorThesisRow = {
   id: string;
+  author_id: string;
   ticker: string;
   stance: FloorStance;
   conviction: number;
@@ -33,6 +38,7 @@ type FloorThesisRow = {
   risks: string;
   created_at: string;
   author: FloorAuthorEmbed | FloorAuthorEmbed[] | null;
+  floor_calls: FloorCallCardData[] | null;
 };
 
 function authorName(author: FloorThesisRow["author"]) {
@@ -55,6 +61,9 @@ function toCardData(row: FloorThesisRow): FloorThesisCardData {
     risks: row.risks,
     created_at: row.created_at,
     author_name: authorName(row.author),
+    calls: [...(row.floor_calls ?? [])].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    ),
   };
 }
 
@@ -66,6 +75,7 @@ const labelClass = "mb-2 block text-sm font-black text-[var(--loombus-text)]";
 
 export default function TheFloorPage() {
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [theses, setTheses] = useState<FloorThesisRow[]>([]);
   const [composerOpen, setComposerOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -89,7 +99,7 @@ export default function TheFloorPage() {
     const { data, error } = await supabase
       .from("floor_theses")
       .select(
-        "id, ticker, stance, conviction, horizon, entry_zone_low, entry_zone_high, exit_plan, thesis, catalysts, risks, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name)"
+        "id, author_id, ticker, stance, conviction, horizon, entry_zone_low, entry_zone_high, exit_plan, thesis, catalysts, risks, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, comparator, target_value, target_value_high, resolves_by, status, outcome, outcome_note, resolved_value, created_at)"
       )
       .order("created_at", { ascending: false })
       .limit(50);
@@ -107,7 +117,10 @@ export default function TheFloorPage() {
         window.location.replace("/login?next=%2Fthe-floor");
         return;
       }
-      if (mounted) await loadTheses();
+      if (mounted) {
+        setUserId(auth.user.id);
+        await loadTheses();
+      }
     }
     void guardAndLoad();
     return () => {
@@ -128,6 +141,11 @@ export default function TheFloorPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "floor_theses" },
+        scheduleReload
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "floor_calls" },
         scheduleReload
       )
       .subscribe();
@@ -428,7 +446,12 @@ export default function TheFloorPage() {
         ) : (
           <div className="flex flex-col gap-4">
             {theses.map((row) => (
-              <FloorThesisCard key={row.id} thesis={toCardData(row)} />
+              <FloorThesisCard
+                key={row.id}
+                thesis={toCardData(row)}
+                canAddCall={row.author_id === userId}
+                onCallPosted={loadTheses}
+              />
             ))}
           </div>
         )}
