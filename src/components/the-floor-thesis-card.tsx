@@ -1,4 +1,5 @@
 import { FloorCallComposer } from "@/components/the-floor-call-composer";
+import { FloorAnalysisSection, type FloorAnalysisData } from "@/components/the-floor-analysis-section";
 import { normalizePublicText } from "@/lib/public-text";
 import {
   floorComparatorLabel,
@@ -39,6 +40,7 @@ export type FloorThesisCardData = {
   created_at: string;
   author_name: string;
   calls: FloorCallCardData[];
+  analysis: FloorAnalysisData | null;
 };
 
 const STANCE_STYLES: Record<FloorStance, string> = {
@@ -96,10 +98,14 @@ export function FloorThesisCard({
   thesis,
   canAddCall,
   onCallPosted,
+  canRequestAnalysis,
+  onAnalysisGenerated,
 }: {
   thesis: FloorThesisCardData;
   canAddCall: boolean;
   onCallPosted: () => void | Promise<void>;
+  canRequestAnalysis: boolean;
+  onAnalysisGenerated: () => void | Promise<void>;
 }) {
   const entryZone = formatEntryZone(thesis.entry_zone_low, thesis.entry_zone_high);
 
@@ -189,6 +195,13 @@ export function FloorThesisCard({
           </div>
         ) : null}
       </div>
+
+      <FloorAnalysisSection
+        thesisId={thesis.id}
+        analysis={thesis.analysis}
+        canRequestAnalysis={canRequestAnalysis}
+        onAnalysisGenerated={onAnalysisGenerated}
+      />
 
       <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-[var(--loombus-border-muted)] pt-4 text-xs font-bold text-[var(--loombus-text-muted)]">
         <span>{thesis.author_name}</span>
