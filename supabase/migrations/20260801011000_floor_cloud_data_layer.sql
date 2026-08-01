@@ -17,12 +17,15 @@ create index if not exists floor_cloud_items_owner_kind_idx
 create table if not exists public.floor_research_rooms (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
+  client_id text not null,
   name text not null check (char_length(name) between 1 and 120),
   focus text not null default '',
   objective text not null default '',
   visibility text not null default 'private' check (visibility in ('private', 'unlisted')),
+  seed_data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (owner_id, client_id)
 );
 
 create table if not exists public.floor_room_members (
