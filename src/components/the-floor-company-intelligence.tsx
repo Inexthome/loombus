@@ -115,13 +115,13 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
           <ArrowLeft className="size-4" aria-hidden="true" /> Back to Opening Bell
         </Link>
 
-        <header className="mt-4 overflow-hidden rounded-[2rem] border border-[var(--loombus-border)] bg-[radial-gradient(circle_at_top_left,color-mix(in_srgb,var(--loombus-gold)_20%,transparent),transparent_42%),var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-7">
+        <header className="mt-4 overflow-hidden rounded-xl border border-[var(--loombus-border)] bg-[linear-gradient(115deg,#141719_0%,#0d0f10_65%,#211b0d_100%)] p-5 shadow-2xl shadow-black/20 sm:p-7">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <span className="grid size-14 place-items-center rounded-2xl bg-[var(--loombus-gold-surface)] text-lg font-black text-[var(--loombus-gold)]">{ticker.slice(0, 2)}</span>
+                <span className="grid size-14 place-items-center rounded-lg border border-[#6f5b2a] bg-[var(--loombus-gold-surface)] font-mono text-lg font-black text-[var(--loombus-gold)]">{ticker.slice(0, 2)}</span>
                 <div>
-                  <p className="text-sm font-black text-[var(--loombus-gold)]">{ticker}</p>
+                  <p className="font-mono text-sm font-black tracking-[0.14em] text-[var(--loombus-gold)]">{ticker} · COMPANY INTELLIGENCE</p>
                   <h1 className="text-3xl font-black tracking-tight sm:text-4xl">{company.name}</h1>
                 </div>
               </div>
@@ -134,7 +134,7 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
                 {company.description ?? "This company intelligence page is being built from accountable research published by members of The Floor."}
               </p>
             </div>
-            <div className="min-w-52 rounded-3xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_40%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] p-5">
+            <div className="min-w-52 rounded-lg border border-[color:color-mix(in_srgb,var(--loombus-gold)_40%,var(--loombus-border))] bg-[#17150f] p-5">
               <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--loombus-gold)]">Research Confidence</p>
               <div className="mt-2 flex items-end gap-2"><span className="text-5xl font-black">{confidence}</span><span className="pb-1 text-sm font-black text-[var(--loombus-text-muted)]">{confidenceLabel(confidence)}</span></div>
               <p className="mt-2 text-xs leading-5 text-[var(--loombus-text-muted)]">Measures the depth, transparency, viewpoint breadth, and resolved accountability of the research ecosystem. It is not a buy or sell rating.</p>
@@ -150,9 +150,9 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
           <Link href="/the-floor/workspace" className="shrink-0 rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-xs font-black text-black">Open Research Workspace</Link>
         </div>
 
-        <nav className="mt-4 flex gap-2 overflow-x-auto pb-2" aria-label={`${ticker} intelligence sections`}>
+        <nav className="mt-4 flex gap-1 overflow-x-auto border-b border-[var(--loombus-border)] pb-0" aria-label={`${ticker} intelligence sections`}>
           {tabs.map((item) => (
-            <button key={item.id} type="button" onClick={() => setTab(item.id)} className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-black ${tab === item.id ? "border-[var(--loombus-gold)] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]" : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)]"}`}>{item.label}</button>
+            <button key={item.id} type="button" onClick={() => setTab(item.id)} className={`whitespace-nowrap border-b-2 px-4 py-3 text-xs font-black uppercase tracking-wide ${tab === item.id ? "border-[var(--loombus-gold)] text-[var(--loombus-gold)]" : "border-transparent text-[var(--loombus-text-muted)]"}`}>{item.label}</button>
           ))}
         </nav>
 
