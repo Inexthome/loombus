@@ -29,8 +29,14 @@ export async function getFloorMarketData() {
   if (!response.ok) throw new Error(`Twelve Data quote request failed: ${response.status}`);
   const raw = await response.json() as Quote | Record<string, Quote>;
   const quotes = new Map<string, Quote>();
-  if ("symbol" in raw && raw.symbol) quotes.set(raw.symbol, raw as Quote);
-  else for (const [symbol, value] of Object.entries(raw)) quotes.set(symbol, value);
+  const single = raw as Quote;
+  if (typeof single.symbol === "string" && single.symbol) {
+    quotes.set(single.symbol, single);
+  } else {
+    for (const [symbol, value] of Object.entries(raw as Record<string, Quote>)) {
+      quotes.set(symbol, value);
+    }
+  }
 
   return FLOOR_MARKETS.map((market) => {
     const quote = quotes.get(market.symbol);
