@@ -27,6 +27,7 @@ import {
   ScrollText,
   Search,
   ShieldCheck,
+  Settings,
   Trophy,
   UserRoundCheck,
   Users,
@@ -79,6 +80,7 @@ const researchNavigation: NavItem[] = [
   { href: "/the-floor/discussion", label: "Discussion", icon: MessageSquareText },
   { href: "/the-floor/academy", label: "Academy", icon: GraduationCap },
   { href: "/the-floor/contributors", label: "Contributors", icon: UserRoundCheck },
+  { href: "/the-floor/settings", label: "Settings", icon: Settings },
 ];
 
 const routeNames = [...marketNavigation, ...researchNavigation].sort(
@@ -172,6 +174,8 @@ export default function TheFloorShell({ children }: { children: ReactNode }) {
   const openThesisComposer = () => {
     if (pathname === "/the-floor") window.dispatchEvent(new Event("loombus:floor-open-thesis-composer"));
   };
+
+  if (pathname === "/the-floor/subscribe") return <>{children}</>;
 
   return (
     <div className="floor-terminal-shell" data-floor-route={pathname}>

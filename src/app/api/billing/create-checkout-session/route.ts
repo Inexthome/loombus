@@ -173,10 +173,10 @@ export async function POST(request: NextRequest) {
         },
       ],
       success_url: requestedPlanKey.startsWith("floor_")
-        ? `${origin}/the-floor?checkout=success&plan=${requestedPlanKey}&session_id={CHECKOUT_SESSION_ID}`
+        ? `${origin}/the-floor/subscribe?checkout=success&plan=${requestedPlanKey}&session_id={CHECKOUT_SESSION_ID}`
         : `${origin}/premium?checkout=success&plan=${requestedPlanKey}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: requestedPlanKey.startsWith("floor_")
-        ? `${origin}/the-floor?checkout=cancelled&plan=${requestedPlanKey}`
+        ? `${origin}/the-floor/subscribe?checkout=cancelled&plan=${requestedPlanKey}`
         : `${origin}/premium?checkout=cancelled&plan=${requestedPlanKey}`,
       client_reference_id: user.id,
       customer_email: user.email ?? undefined,
