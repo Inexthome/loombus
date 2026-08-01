@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   BarChart3,
+  Bell,
   BookOpen,
   Building2,
   Compass,
@@ -28,7 +29,7 @@ const navigation = [
   { href: "/the-floor/research-assistant", label: "AI Assistant", icon: BookOpen },
   { href: "/the-floor/discover", label: "Discover", icon: Compass },
   { href: "/the-floor/knowledge-graph", label: "Knowledge Graph", icon: GitFork },
-  { href: "/the-floor/companies", label: "Companies", icon: Building2, pending: true },
+  { href: "/the-floor/companies", label: "Companies", icon: Building2 },
   { href: "/the-floor/academy", label: "Analysts", icon: UserRoundCheck },
   { href: "/the-floor/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/the-floor/discussion", label: "Discussion", icon: MessagesSquare },
@@ -63,7 +64,7 @@ export default function TheFloorExperience({ children }: { children: ReactNode }
             {navigation.map((item) => {
               const Icon = item.icon;
               const classes = "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-sm font-black transition hover:border-[color:color-mix(in_srgb,var(--loombus-gold)_55%,var(--loombus-border))]";
-              if (item.pending) {
+              if ("pending" in item && item.pending) {
                 return (
                   <span key={item.label} className={`${classes} cursor-default text-[var(--loombus-text-subtle)]`} title={`${item.label} is coming in a future milestone`}>
                     <Icon className="size-4" aria-hidden="true" />
