@@ -96,6 +96,10 @@ function getNotificationHref(
     return `/messages?conversation=${encodeURIComponent(notification.target_id)}`;
   }
 
+  if (notification.target_type === "floor_live_program") {
+    return "/the-floor/live";
+  }
+
   if (notification.target_type === "identity_verification") {
     return "/profile";
   }
@@ -120,6 +124,10 @@ function getNotificationActionLabel(notification: Notification) {
 
   if (notification.target_type === "conversation") {
     return "Open message";
+  }
+
+  if (notification.target_type === "floor_live_program") {
+    return "Open live schedule";
   }
 
   if (notification.target_type === "identity_verification") {
