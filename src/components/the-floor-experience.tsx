@@ -25,6 +25,7 @@ const navigation = [
   { href: "/the-floor/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/the-floor/intelligence", label: "Market Intelligence", icon: Globe2 },
   { href: "/the-floor/hub", label: "Research Hub", icon: LibraryBig },
+  { href: "/the-floor/rooms", label: "Research Rooms", icon: Users },
   { href: "/the-floor/workspace", label: "Workspace", icon: ScrollText },
   { href: "/the-floor/research-assistant", label: "AI Assistant", icon: BookOpen },
   { href: "/the-floor/discover", label: "Discover", icon: Compass },
