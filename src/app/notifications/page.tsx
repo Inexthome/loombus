@@ -16,7 +16,7 @@ export default async function NotificationsPage({
   return (
     <>
       <NotificationsV2Client roomId={roomId} />
-      <TeenSafetyNotificationDestinations />
+      {!roomId ? <TeenSafetyNotificationDestinations /> : null}
     </>
   );
 }
