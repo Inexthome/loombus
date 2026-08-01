@@ -1,6 +1,7 @@
 "use client";
 
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { mergeFloorLocalWithCloud, replaceFloorCloudItems } from "@/lib/floor-cloud-data";
 import { companyPath } from "@/lib/floor-companies";
 import {
   FLOOR_WORKSPACE_DRAFTS_KEY,
@@ -42,6 +43,8 @@ function readLocal<T>(key: string, fallback: T): T {
 
 export default function TheFloorResearchWorkspace() {
   const [loading, setLoading] = useState(true);
+  const [ownerId, setOwnerId] = useState("");
+  const [cloudSynced, setCloudSynced] = useState(false);
   const [drafts, setDrafts] = useState<WorkspaceDraft[]>([]);
   const [revisions, setRevisions] = useState<WorkspaceRevision[]>([]);
   const [activeId, setActiveId] = useState("");
@@ -55,11 +58,26 @@ export default function TheFloorResearchWorkspace() {
     void (async () => {
       const { data } = await supabase.auth.getUser();
       if (!data.user) { window.location.replace("/login?next=%2Fthe-floor%2Fworkspace"); return; }
+      setOwnerId(data.user.id);
       const storedDrafts = readLocal<WorkspaceDraft[]>(FLOOR_WORKSPACE_DRAFTS_KEY, []);
-      const initial = storedDrafts.length ? storedDrafts : [createWorkspaceDraft()];
-      setDrafts(initial);
-      setRevisions(readLocal<WorkspaceRevision[]>(FLOOR_WORKSPACE_REVISIONS_KEY, []));
-      setActiveId(initial[0].id);
+      const storedRevisions = readLocal<WorkspaceRevision[]>(FLOOR_WORKSPACE_REVISIONS_KEY, []);
+      const localDrafts = storedDrafts.length ? storedDrafts : [createWorkspaceDraft()];
+      try {
+        const [cloudDrafts, cloudRevisions] = await Promise.all([
+          mergeFloorLocalWithCloud(data.user.id, "workspace_draft", localDrafts),
+          mergeFloorLocalWithCloud(data.user.id, "workspace_revision", storedRevisions),
+        ]);
+        setDrafts(cloudDrafts);
+        setRevisions(cloudRevisions);
+        setActiveId(cloudDrafts[0].id);
+        window.localStorage.setItem(FLOOR_WORKSPACE_DRAFTS_KEY, JSON.stringify(cloudDrafts));
+        window.localStorage.setItem(FLOOR_WORKSPACE_REVISIONS_KEY, JSON.stringify(cloudRevisions));
+        setCloudSynced(true);
+      } catch {
+        setDrafts(localDrafts);
+        setRevisions(storedRevisions);
+        setActiveId(localDrafts[0].id);
+      }
       setLoading(false);
     })();
   }, []);
@@ -79,7 +97,13 @@ export default function TheFloorResearchWorkspace() {
     window.localStorage.setItem(FLOOR_WORKSPACE_DRAFTS_KEY, JSON.stringify(drafts));
     window.localStorage.setItem(FLOOR_WORKSPACE_REVISIONS_KEY, JSON.stringify(nextRevisions));
     setRevisions(nextRevisions);
-    setSavedMessage("Draft and revision saved privately in this browser.");
+    if (ownerId) {
+      void Promise.all([
+        replaceFloorCloudItems(ownerId, "workspace_draft", drafts),
+        replaceFloorCloudItems(ownerId, "workspace_revision", nextRevisions),
+      ]).then(() => setCloudSynced(true)).catch(() => setCloudSynced(false));
+    }
+    setSavedMessage("Draft and revision saved privately.");
     window.setTimeout(() => setSavedMessage(""), 2500);
   }
 
@@ -124,7 +148,7 @@ export default function TheFloorResearchWorkspace() {
 
         <section className="space-y-5">
           <header className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
-            <div className="flex flex-wrap items-start justify-between gap-4"><div><div className="flex items-center gap-2"><BookOpen className="size-6 text-[var(--loombus-gold)]" /><h1 className="text-2xl font-black">Research Workspace</h1></div><p className="mt-2 text-sm text-[var(--loombus-text-muted)]">Structured, private research with evidence and permanent local revisions.</p></div><button onClick={persist} className="inline-flex items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-sm font-black text-black"><Save className="size-4" /> Save revision</button></div>
+            <div className="flex flex-wrap items-start justify-between gap-4"><div><div className="flex items-center gap-2"><BookOpen className="size-6 text-[var(--loombus-gold)]" /><h1 className="text-2xl font-black">Research Workspace</h1></div><p className="mt-2 text-sm text-[var(--loombus-text-muted)]">Structured, private research with evidence and permanent revisions.</p><p className={`mt-2 text-[10px] font-black uppercase ${cloudSynced ? "text-emerald-400" : "text-[var(--loombus-text-subtle)]"}`}>{cloudSynced ? "Cloud synced" : "Local fallback"}</p></div><button onClick={persist} className="inline-flex items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-sm font-black text-black"><Save className="size-4" /> Save revision</button></div>
             {savedMessage ? <p className="mt-3 text-xs font-bold text-emerald-400">{savedMessage}</p> : null}
             <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_150px]"><input value={active.title} onChange={(event) => update("title", event.target.value)} className="rounded-2xl border border-[var(--loombus-border)] bg-transparent px-4 py-3 font-black" placeholder="Research title" /><input value={active.ticker} onChange={(event) => update("ticker", normalizeWorkspaceTicker(event.target.value))} className="rounded-2xl border border-[var(--loombus-border)] bg-transparent px-4 py-3 font-black uppercase" placeholder="Ticker" /></div>
           </header>
