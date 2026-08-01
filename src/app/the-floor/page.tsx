@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import TheFloorExperience from "@/components/the-floor-experience";
+import TheFloorOpeningBell from "@/components/the-floor-opening-bell";
 import TheFloorPage from "@/components/the-floor-page";
 
 export const metadata: Metadata = {
@@ -10,8 +10,9 @@ export const metadata: Metadata = {
 
 export default function TheFloorRoute() {
   return (
-    <TheFloorExperience>
+    <>
+      <TheFloorOpeningBell />
       <TheFloorPage />
-    </TheFloorExperience>
+    </>
   );
 }

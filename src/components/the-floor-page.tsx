@@ -137,6 +137,17 @@ export default function TheFloorPage() {
   }, [loadTheses]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const openComposer = () => setComposerOpen(true);
+    const timer = params.get("compose") === "1" ? window.setTimeout(openComposer, 0) : null;
+    window.addEventListener("loombus:floor-open-thesis-composer", openComposer);
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+      window.removeEventListener("loombus:floor-open-thesis-composer", openComposer);
+    };
+  }, []);
+
+  useEffect(() => {
     const scheduleReload = () => {
       if (reloadTimer.current !== null) window.clearTimeout(reloadTimer.current);
       reloadTimer.current = window.setTimeout(() => {
@@ -238,7 +249,7 @@ export default function TheFloorPage() {
   return (
     <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-3xl flex-col gap-5">
-        <header className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/10">
+        <header id="post-thesis" className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-black sm:text-3xl">The Floor</h1>
