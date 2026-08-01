@@ -14,6 +14,8 @@ export const FLOOR_MARKETS = [
 type Quote = { symbol?: string; close?: string; previous_close?: string; change?: string; percent_change?: string; datetime?: string; status?: string; message?: string };
 type Earnings = { symbol?: string; name?: string; date?: string; time?: string; eps_estimate?: number | string | null; revenue_estimate?: number | string | null };
 
+const EARNINGS_UNAVAILABLE_MESSAGE = "Live earnings data is temporarily unavailable. Your Floor research and coverage remain accessible.";
+
 function key() {
   const value = process.env.TWELVE_DATA_API_KEY;
   if (!value) throw new Error("TWELVE_DATA_API_KEY is not configured");
@@ -58,7 +60,16 @@ export async function getFloorEarnings() {
   const end = new Date(start.getTime() + 14 * 86400000);
   const response = await fetch(`${TWELVE_BASE}/earnings_calendar?start_date=${date(start)}&end_date=${date(end)}&country=United%20States&apikey=${encodeURIComponent(key())}`, { next: { revalidate: 21600 } });
   const raw = await response.json() as { data?: Earnings[]; status?: string; message?: string };
-  if (!response.ok || raw.status === "error") return { available: false, message: raw.message ?? "Earnings calendar is unavailable on the current plan.", events: [] };
+  // Provider errors can contain plan, account, or endpoint details that should
+  // remain server-side rather than being rendered in the customer experience.
+  if (!response.ok || raw.status === "error") {
+    console.warn("Twelve Data earnings calendar unavailable", {
+      status: response.status,
+      providerStatus: raw.status ?? null,
+      providerMessage: raw.message ?? null,
+    });
+    return { available: false, message: EARNINGS_UNAVAILABLE_MESSAGE, events: [] };
+  }
   return {
     available: true,
     message: null,

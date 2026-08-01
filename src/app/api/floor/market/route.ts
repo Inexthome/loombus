@@ -12,7 +12,7 @@ export async function GET() {
     const markets = marketsResult.status === "fulfilled" ? marketsResult.value : [];
     const earnings = earningsResult.status === "fulfilled"
       ? earningsResult.value
-      : { available: false, message: "Earnings calendar is temporarily unavailable.", events: [] };
+      : { available: false, message: "Live earnings data is temporarily unavailable. Your Floor research and coverage remain accessible.", events: [] };
     const configured = Boolean(process.env.TWELVE_DATA_API_KEY);
     return NextResponse.json(
       {
@@ -25,9 +25,9 @@ export async function GET() {
       },
       { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=900" } },
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
-      { provider: "Twelve Data", configured: Boolean(process.env.TWELVE_DATA_API_KEY), markets: [], earnings: { available: false, events: [] }, error: error instanceof Error ? error.message : "Market data unavailable" },
+      { provider: "Twelve Data", configured: Boolean(process.env.TWELVE_DATA_API_KEY), markets: [], earnings: { available: false, message: "Live earnings data is temporarily unavailable. Your Floor research and coverage remain accessible.", events: [] }, error: "Market data unavailable" },
       { status: 503 },
     );
   }
