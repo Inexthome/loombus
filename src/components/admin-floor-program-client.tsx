@@ -483,6 +483,27 @@ export default function AdminFloorProgramClient() {
     if (writeError) return fail(writeError.message);
     finish(`Contributor marked ${status}.`);
   }
+  async function updateContributorCadence(
+    userId: string,
+    targetCadence: string,
+  ) {
+    start();
+    const { error: writeError } = await supabase
+      .from("floor_contributor_profiles")
+      .update({ target_cadence: targetCadence })
+      .eq("user_id", userId);
+    if (writeError) return fail(writeError.message);
+    finish(`Contributor cadence changed to ${targetCadence}.`);
+  }
+  async function updateAssignmentStatus(id: string, status: string) {
+    start();
+    const { error: writeError } = await supabase
+      .from("floor_contributor_assignments")
+      .update({ status })
+      .eq("id", id);
+    if (writeError) return fail(writeError.message);
+    finish(`Assignment marked ${status.replaceAll("_", " ")}.`);
+  }
   async function createAssignment(event: FormEvent) {
     event.preventDefault();
     start();
@@ -1064,6 +1085,26 @@ export default function AdminFloorProgramClient() {
                       <p className="mt-2 text-xs leading-5 text-[var(--loombus-text-muted)]">
                         {c.disclosure || "No disclosure supplied."}
                       </p>
+                      {c.status === "active" ? (
+                        <label className="mt-3 grid gap-1 text-[10px] font-black uppercase text-[var(--loombus-text-subtle)]">
+                          Publishing cadence
+                          <select
+                            value={c.target_cadence}
+                            disabled={working}
+                            onChange={(event) =>
+                              void updateContributorCadence(
+                                c.user_id,
+                                event.target.value,
+                              )
+                            }
+                            className="min-h-9 rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-3 text-xs font-black normal-case text-[var(--loombus-text)]"
+                          >
+                            <option value="weekly">Weekly</option>
+                            <option value="biweekly">Every two weeks</option>
+                            <option value="monthly">Monthly</option>
+                          </select>
+                        </label>
+                      ) : null}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {c.status !== "active" ? (
@@ -1100,17 +1141,47 @@ export default function AdminFloorProgramClient() {
                       ) : null}
                     </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 space-y-2">
                     {assignments
                       .filter((a) => a.contributor_id === c.user_id)
                       .map((a) => (
-                        <span
+                        <div
                           key={a.id}
-                          className="rounded-full bg-[var(--loombus-surface-muted)] px-3 py-1 text-xs font-bold"
+                          className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--loombus-surface-muted)] px-3 py-2 text-xs font-bold"
                         >
-                          {a.title} · {a.status} · due{" "}
-                          {new Date(a.due_at).toLocaleDateString()}
-                        </span>
+                          <span>
+                            {a.title} · {a.status.replaceAll("_", " ")} · due{" "}
+                            {new Date(a.due_at).toLocaleDateString()}
+                          </span>
+                          <span className="flex flex-wrap gap-1">
+                            {a.status === "submitted" ? (
+                              <button
+                                type="button"
+                                disabled={working}
+                                onClick={() =>
+                                  void updateAssignmentStatus(a.id, "published")
+                                }
+                                className="rounded-full bg-[var(--loombus-gold)] px-2.5 py-1 text-[10px] font-black text-black"
+                              >
+                                Mark published
+                              </button>
+                            ) : null}
+                            {["assigned", "in_progress", "submitted"].includes(
+                              a.status,
+                            ) ? (
+                              <button
+                                type="button"
+                                disabled={working}
+                                onClick={() =>
+                                  void updateAssignmentStatus(a.id, "cancelled")
+                                }
+                                className="rounded-full border border-[var(--loombus-border)] px-2.5 py-1 text-[10px] font-black"
+                              >
+                                Cancel
+                              </button>
+                            ) : null}
+                          </span>
+                        </div>
                       ))}
                   </div>
                 </article>

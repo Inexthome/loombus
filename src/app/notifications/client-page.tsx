@@ -46,15 +46,14 @@ type AiEntitlement = {
 
 function hasAdvancedNotificationAccess(
   entitlement: AiEntitlement,
-  isAdmin: boolean
+  isAdmin: boolean,
 ) {
   if (isAdmin) {
     return true;
   }
 
   return (
-    entitlement?.ai_assisted_enabled === true &&
-    entitlement.tier === "premium"
+    entitlement?.ai_assisted_enabled === true && entitlement.tier === "premium"
   );
 }
 
@@ -64,7 +63,7 @@ function getProfileName(profile: Profile | undefined) {
 
 function getNotificationMessage(
   notification: Notification,
-  profiles: Record<string, Profile>
+  profiles: Record<string, Profile>,
 ) {
   const actorProfile = notification.actor_id
     ? profiles[notification.actor_id]
@@ -86,7 +85,7 @@ function getNotificationMessage(
 
 function getNotificationHref(
   notification: Notification,
-  profiles: Record<string, Profile>
+  profiles: Record<string, Profile>,
 ) {
   if (notification.target_type === "discussion" && notification.target_id) {
     return `/discussions/${notification.target_id}`;
@@ -98,6 +97,10 @@ function getNotificationHref(
 
   if (notification.target_type === "floor_live_program") {
     return "/the-floor/live";
+  }
+
+  if (notification.target_type === "floor_contributor_assignment") {
+    return "/the-floor/contributors";
   }
 
   if (notification.target_type === "identity_verification") {
@@ -130,6 +133,10 @@ function getNotificationActionLabel(notification: Notification) {
     return "Open live schedule";
   }
 
+  if (notification.target_type === "floor_contributor_assignment") {
+    return "Open assignment";
+  }
+
   if (notification.target_type === "identity_verification") {
     return "Open verification";
   }
@@ -157,7 +164,7 @@ export default function NotificationsClientPage() {
 
   const canUseAdvancedControls = hasAdvancedNotificationAccess(
     aiEntitlement,
-    isAdmin
+    isAdmin,
   );
 
   async function markNotificationIdsRead(ids: string[], userId: string) {
@@ -183,8 +190,8 @@ export default function NotificationsClientPage() {
       current.map((notification) =>
         ids.includes(notification.id)
           ? { ...notification, read_at: readAt }
-          : notification
-      )
+          : notification,
+      ),
     );
 
     window.dispatchEvent(new Event("loombus:notifications-changed"));
@@ -201,8 +208,10 @@ export default function NotificationsClientPage() {
         return;
       }
 
-      setMessage((current) =>
-        current || "Alerts took too long to load. Please refresh if the list looks incomplete."
+      setMessage(
+        (current) =>
+          current ||
+          "Alerts took too long to load. Please refresh if the list looks incomplete.",
       );
       setLoading(false);
     }, 10000);
@@ -282,7 +291,9 @@ export default function NotificationsClientPage() {
           getBlockedRelationshipUserIds(supabase, userId),
           supabase
             .from("notifications")
-            .select("id, actor_id, type, target_type, target_id, message, read_at, created_at")
+            .select(
+              "id, actor_id, type, target_type, target_id, message, read_at, created_at",
+            )
             .eq("user_id", userId)
             .order("created_at", { ascending: false }),
         ]);
@@ -303,7 +314,7 @@ export default function NotificationsClientPage() {
 
         const loadedNotifications = filterBlockedActorNotifications(
           (alertsResult.data ?? []) as Notification[],
-          blockedRelationshipUserIds
+          blockedRelationshipUserIds,
         );
 
         setNotifications(loadedNotifications);
@@ -313,7 +324,7 @@ export default function NotificationsClientPage() {
           ...new Set(
             loadedNotifications
               .map((notification) => notification.actor_id)
-              .filter((id): id is string => Boolean(id))
+              .filter((id): id is string => Boolean(id)),
           ),
         ];
 
@@ -381,7 +392,7 @@ export default function NotificationsClientPage() {
     }
 
     setNotifications((current) =>
-      current.filter((notification) => notification.id !== id)
+      current.filter((notification) => notification.id !== id),
     );
 
     window.dispatchEvent(new Event("loombus:notifications-changed"));
@@ -444,7 +455,7 @@ export default function NotificationsClientPage() {
     }
 
     setNotifications((current) =>
-      current.filter((notification) => !readIds.includes(notification.id))
+      current.filter((notification) => !readIds.includes(notification.id)),
     );
 
     setMessage("Read alerts cleared.");
@@ -452,7 +463,7 @@ export default function NotificationsClientPage() {
   }
 
   const unreadCount = alerts.filter(
-    (notification) => !notification.read_at
+    (notification) => !notification.read_at,
   ).length;
 
   const readCount = alerts.length - unreadCount;
@@ -493,13 +504,7 @@ export default function NotificationsClientPage() {
 
       return activeSortMode === "oldest" ? aTime - bTime : bTime - aTime;
     });
-  }, [
-    alerts,
-    filterMode,
-    typeFilter,
-    sortMode,
-    canUseAdvancedControls,
-  ]);
+  }, [alerts, filterMode, typeFilter, sortMode, canUseAdvancedControls]);
 
   const filterOptions: {
     label: string;
@@ -559,468 +564,483 @@ export default function NotificationsClientPage() {
       <div className="mx-auto max-w-[46rem]">
         <div className="alerts-shell-grid">
           <div className="min-w-0">
-        <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-8 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
-                Alerts
-              </p>
+            <section className="mb-5 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 shadow-2xl shadow-black/20 sm:mb-8 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="mb-2 text-sm uppercase tracking-[0.25em] text-zinc-500">
+                    Alerts
+                  </p>
 
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
-                Alerts inbox
-              </h1>
+                  <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+                    Alerts inbox
+                  </h1>
 
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
-                Updates from replies, follows, mentions, messages, and conversations connected to you.
-              </p>
-            </div>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-500 sm:text-base">
+                    Updates from replies, follows, mentions, messages, and
+                    conversations connected to you.
+                  </p>
+                </div>
+
+                {!loading && alerts.length > 0 && (
+                  <div className="flex flex-col gap-2 sm:items-end">
+                    <span className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500">
+                      {unreadCount === 0
+                        ? "All caught up"
+                        : `${unreadCount} unread`}
+                    </span>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={markAllRead}
+                        disabled={working || unreadCount === 0}
+                        className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        Mark all read
+                      </button>
+
+                      <button
+                        onClick={clearReadNotifications}
+                        disabled={working || readCount === 0}
+                        className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      >
+                        Clear read
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
 
             {!loading && alerts.length > 0 && (
-              <div className="flex flex-col gap-2 sm:items-end">
-                <span className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500">
-                  {unreadCount === 0
-                    ? "All caught up"
-                    : `${unreadCount} unread`}
-                </span>
-
-                <div className="flex flex-wrap gap-2">
+              <section className="mb-4 xl:hidden">
+                <div
+                  className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+                  aria-label="Alerts tools rail"
+                >
                   <button
-                    onClick={markAllRead}
-                    disabled={working || unreadCount === 0}
-                    className="rounded-full border border-zinc-700 px-4 py-2 text-center text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    type="button"
+                    onClick={showAllAlerts}
+                    className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                      filterMode === "all" && typeFilter === "all"
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    }`}
                   >
-                    Mark all read
+                    All
                   </button>
 
                   <button
-                    onClick={clearReadNotifications}
-                    disabled={working || readCount === 0}
-                    className="rounded-full border border-zinc-800 px-4 py-2 text-center text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    type="button"
+                    onClick={showUnreadAlerts}
+                    className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                      filterMode === "unread"
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    }`}
                   >
-                    Clear read
+                    Unread
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => showTypeAlerts("reply")}
+                    disabled={!canUseAdvancedControls}
+                    className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                      canUseAdvancedControls && typeFilter === "reply"
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    }`}
+                  >
+                    Replies
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => showTypeAlerts("follow")}
+                    disabled={!canUseAdvancedControls}
+                    className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                      canUseAdvancedControls && typeFilter === "follow"
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    }`}
+                  >
+                    Follows
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => showTypeAlerts("mention")}
+                    disabled={!canUseAdvancedControls}
+                    className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                      canUseAdvancedControls && typeFilter === "mention"
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    }`}
+                  >
+                    Mentions
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => showTypeAlerts("messages")}
+                    disabled={!canUseAdvancedControls}
+                    className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
+                      canUseAdvancedControls && typeFilter === "messages"
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                    }`}
+                  >
+                    Messages
+                  </button>
+
+                  <Link
+                    href="/settings"
+                    className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-4 py-2.5 text-base text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Settings
+                  </Link>
                 </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                    {activeMobileAlertsView}
+                  </span>
+
+                  <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
+                    {filteredNotifications.length} of {alerts.length} alerts
+                  </span>
+
+                  {!canUseAdvancedControls && (
+                    <Link
+                      href="/premium"
+                      className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
+                    >
+                      Unlock type filters
+                    </Link>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {message && (
+              <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
+                {message}
               </div>
             )}
-          </div>
-        </section>
 
-        {!loading && alerts.length > 0 && (
-          <section className="mb-4 xl:hidden">
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Alerts tools rail">
-              <button
-                type="button"
-                onClick={showAllAlerts}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  filterMode === "all" && typeFilter === "all"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-              >
-                All
-              </button>
-
-              <button
-                type="button"
-                onClick={showUnreadAlerts}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  filterMode === "unread"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white"
-                }`}
-              >
-                Unread
-              </button>
-
-              <button
-                type="button"
-                onClick={() => showTypeAlerts("reply")}
-                disabled={!canUseAdvancedControls}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  canUseAdvancedControls && typeFilter === "reply"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                }`}
-              >
-                Replies
-              </button>
-
-              <button
-                type="button"
-                onClick={() => showTypeAlerts("follow")}
-                disabled={!canUseAdvancedControls}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  canUseAdvancedControls && typeFilter === "follow"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                }`}
-              >
-                Follows
-              </button>
-
-              <button
-                type="button"
-                onClick={() => showTypeAlerts("mention")}
-                disabled={!canUseAdvancedControls}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  canUseAdvancedControls && typeFilter === "mention"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                }`}
-              >
-                Mentions
-              </button>
-
-              <button
-                type="button"
-                onClick={() => showTypeAlerts("messages")}
-                disabled={!canUseAdvancedControls}
-                className={`shrink-0 rounded-full px-4 py-2.5 text-base transition ${
-                  canUseAdvancedControls && typeFilter === "messages"
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-black/40 text-zinc-400 hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                }`}
-              >
-                Messages
-              </button>
-
-              <Link
-                href="/settings"
-                className="shrink-0 rounded-full border border-zinc-800 bg-black/40 px-4 py-2.5 text-base text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-              >
-                Settings
-              </Link>
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                {activeMobileAlertsView}
-              </span>
-
-              <span className="rounded-full border border-zinc-900 bg-black px-3 py-1.5 text-xs text-zinc-600">
-                {filteredNotifications.length} of {alerts.length} alerts
-              </span>
-
-              {!canUseAdvancedControls && (
-                <Link
-                  href="/premium"
-                  className="rounded-full border border-zinc-800 px-3 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-600 hover:text-white"
-                >
-                  Unlock type filters
-                </Link>
-              )}
-            </div>
-          </section>
-        )}
-
-        {message && (
-          <div className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
-            {message}
-          </div>
-        )}
-
-        {!loading && alerts.length > 0 && (
-          <div className="mb-5 hidden grid-cols-3 gap-2 sm:mb-8 sm:flex sm:flex-wrap sm:gap-3 xl:flex">
-            {filterOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setFilterMode(option.value)}
-                className={`rounded-full px-4 py-2 text-sm transition ${
-                  filterMode === option.value
-                    ? "bg-white text-black"
-                    : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
-                }`}
-              >
-                {option.label}
-                <span className="ml-2 opacity-70">
-                  {option.count}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {!loading && alerts.length > 0 && (
-          <section className="mb-5 hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6 md:block">
-            <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
-                  Advanced notification controls
-                </p>
-
-                <h2 className="text-xl font-medium sm:text-2xl">
-                  Filter alerts by signal
-                </h2>
-              </div>
-
-              {!canUseAdvancedControls && (
-                <Link
-                  href="/premium"
-                  className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
-                >
-                  Unlock with Premium
-                </Link>
-              )}
-            </div>
-
-            <div className="mb-5">
-              <p className="mb-3 text-sm text-zinc-500">
-                Type filter
-              </p>
-
-              <div className="flex flex-wrap gap-2 sm:gap-3">
-                {[
-                  ["all", "All types"],
-                  ["reply", "Replies"],
-                  ["mention", "Mentions"],
-                  ["follow", "Follows"],
-                  ["followed_discussion", "Followed discussions"],
-                  ["followed_reply", "Followed replies"],
-                  ["messages", "Messages"],
-                ].map(([value, label]) => (
+            {!loading && alerts.length > 0 && (
+              <div className="mb-5 hidden grid-cols-3 gap-2 sm:mb-8 sm:flex sm:flex-wrap sm:gap-3 xl:flex">
+                {filterOptions.map((option) => (
                   <button
-                    key={value}
+                    key={option.value}
                     type="button"
-                    onClick={() => setTypeFilter(value as NotificationTypeFilter)}
-                    disabled={!canUseAdvancedControls && value !== "all"}
-                    className={`rounded-full border px-3 py-2 text-xs transition sm:px-4 sm:text-sm ${
-                      typeFilter === value
-                        ? "border-zinc-400 text-white"
-                        : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
-                    } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
+                    onClick={() => setFilterMode(option.value)}
+                    className={`rounded-full px-4 py-2 text-sm transition ${
+                      filterMode === option.value
+                        ? "bg-white text-black"
+                        : "border border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white"
+                    }`}
                   >
-                    {label}
+                    {option.label}
+                    <span className="ml-2 opacity-70">{option.count}</span>
                   </button>
                 ))}
               </div>
-            </div>
+            )}
 
-            <div>
-              <p className="mb-3 text-sm text-zinc-500">
-                Sort order
-              </p>
+            {!loading && alerts.length > 0 && (
+              <section className="mb-5 hidden rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:mb-8 sm:p-6 md:block">
+                <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="mb-2 text-sm uppercase tracking-wide text-zinc-500">
+                      Advanced notification controls
+                    </p>
 
-              <div className="flex flex-wrap gap-2 sm:gap-3">
-                {[
-                  ["newest", "Newest first"],
-                  ["oldest", "Oldest first"],
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setSortMode(value as NotificationSortMode)}
-                    disabled={!canUseAdvancedControls && value !== "newest"}
-                    className={`rounded-full border px-3 py-2 text-xs transition sm:px-4 sm:text-sm ${
-                      sortMode === value
-                        ? "border-zinc-400 text-white"
-                        : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
-                    } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                    <h2 className="text-xl font-medium sm:text-2xl">
+                      Filter alerts by signal
+                    </h2>
+                  </div>
 
-            <p className="mt-5 text-xs leading-relaxed text-zinc-600">
-              Premium controls let you isolate replies, mentions, follows, and
-              review alerts from newest or oldest first.
-            </p>
-          </section>
-        )}
-
-        {loading && (
-          <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
-            Loading alerts...
-          </p>
-        )}
-
-        {!loading && alerts.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
-            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
-              No alerts yet.
-            </h2>
-
-            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
-              Alerts appear when people reply, mention you, follow you, or
-              interact with activity connected to your contributions. The best way
-              to make this page useful is to participate where people can respond.
-            </p>
-
-            <div className="mb-5 hidden gap-3 md:grid md:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Start a discussion
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Create a focused thread so other members have something clear to reply to.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Join conversations
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  Reply with context, examples, experience, or a useful counterpoint.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-900 bg-black p-4">
-                <p className="mb-2 text-sm font-medium text-zinc-300">
-                  Make yourself recognizable
-                </p>
-
-                <p className="text-sm leading-relaxed text-zinc-600">
-                  A complete profile helps people recognize and follow your contributions.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Link
-                href="/create"
-                className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
-              >
-                Create a discussion
-              </Link>
-
-              <Link
-                href="/discussions"
-                className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-              >
-                Browse discussions
-              </Link>
-
-              <Link
-                href="/profile"
-                className="inline-flex justify-center rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
-              >
-                Review profile
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {!loading && alerts.length > 0 && filteredNotifications.length === 0 && (
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
-            <h2 className="mb-3 text-xl font-medium sm:text-2xl">
-              No alerts found.
-            </h2>
-
-            <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
-              No alerts match the current filters. Broaden the view or
-              return to all alerts to review everything connected to you.
-            </p>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterMode("all");
-                  setTypeFilter("all");
-                  setSortMode("newest");
-                }}
-                className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
-              >
-                Clear filters
-              </button>
-
-              <Link
-                href="/discussions"
-                className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-              >
-                Browse discussions
-              </Link>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-3 pb-4 sm:space-y-4 sm:pb-0">
-          {filteredNotifications.map((notification) => {
-            const href = getNotificationHref(notification, profiles);
-            const actorProfile = notification.actor_id
-              ? profiles[notification.actor_id]
-              : undefined;
-
-            return (
-              <article
-                key={notification.id}
-                data-alert-state={notification.read_at ? "read" : "unread"}
-                className={`loombus-alert-card group rounded-2xl border p-4 shadow-2xl shadow-black/15 transition hover:border-zinc-700 sm:p-5 ${
-                  notification.read_at
-                    ? "border-zinc-900 bg-zinc-950/80"
-                    : "border-zinc-700 bg-zinc-950"
-                }`}
-              >
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  {!notification.read_at && (
-                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-black">
-                      New
-                    </span>
+                  {!canUseAdvancedControls && (
+                    <Link
+                      href="/premium"
+                      className="w-fit rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                    >
+                      Unlock with Premium
+                    </Link>
                   )}
-
-                  <span className="rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500">
-                    {notification.type}
-                  </span>
-
-                  <span className="ml-auto text-xs text-zinc-700">
-                    {new Date(notification.created_at).toLocaleString()}
-                  </span>
                 </div>
 
-                <div className="mb-4 flex items-start gap-3">
-                  <ProfileAvatar profile={actorProfile} size="md" />
+                <div className="mb-5">
+                  <p className="mb-3 text-sm text-zinc-500">Type filter</p>
 
-                  <div className="min-w-0 flex-1">
-                    <p className={`text-sm leading-relaxed sm:text-base ${
-                      notification.read_at ? "text-zinc-500" : "text-zinc-300"
-                    }`}>
-                      {getNotificationMessage(notification, profiles)}
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                    {[
+                      ["all", "All types"],
+                      ["reply", "Replies"],
+                      ["mention", "Mentions"],
+                      ["follow", "Follows"],
+                      ["followed_discussion", "Followed discussions"],
+                      ["followed_reply", "Followed replies"],
+                      ["messages", "Messages"],
+                    ].map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() =>
+                          setTypeFilter(value as NotificationTypeFilter)
+                        }
+                        disabled={!canUseAdvancedControls && value !== "all"}
+                        className={`rounded-full border px-3 py-2 text-xs transition sm:px-4 sm:text-sm ${
+                          typeFilter === value
+                            ? "border-zinc-400 text-white"
+                            : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
+                        } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-3 text-sm text-zinc-500">Sort order</p>
+
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                    {[
+                      ["newest", "Newest first"],
+                      ["oldest", "Oldest first"],
+                    ].map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() =>
+                          setSortMode(value as NotificationSortMode)
+                        }
+                        disabled={!canUseAdvancedControls && value !== "newest"}
+                        className={`rounded-full border px-3 py-2 text-xs transition sm:px-4 sm:text-sm ${
+                          sortMode === value
+                            ? "border-zinc-400 text-white"
+                            : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-white"
+                        } disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="mt-5 text-xs leading-relaxed text-zinc-600">
+                  Premium controls let you isolate replies, mentions, follows,
+                  and review alerts from newest or oldest first.
+                </p>
+              </section>
+            )}
+
+            {loading && (
+              <p className="text-sm leading-relaxed text-zinc-500 sm:text-base">
+                Loading alerts...
+              </p>
+            )}
+
+            {!loading && alerts.length === 0 && (
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
+                <h2 className="mb-3 text-xl font-medium sm:text-2xl">
+                  No alerts yet.
+                </h2>
+
+                <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
+                  Alerts appear when people reply, mention you, follow you, or
+                  interact with activity connected to your contributions. The
+                  best way to make this page useful is to participate where
+                  people can respond.
+                </p>
+
+                <div className="mb-5 hidden gap-3 md:grid md:grid-cols-3">
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-2 text-sm font-medium text-zinc-300">
+                      Start a discussion
+                    </p>
+
+                    <p className="text-sm leading-relaxed text-zinc-600">
+                      Create a focused thread so other members have something
+                      clear to reply to.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-2 text-sm font-medium text-zinc-300">
+                      Join conversations
+                    </p>
+
+                    <p className="text-sm leading-relaxed text-zinc-600">
+                      Reply with context, examples, experience, or a useful
+                      counterpoint.
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-900 bg-black p-4">
+                    <p className="mb-2 text-sm font-medium text-zinc-300">
+                      Make yourself recognizable
+                    </p>
+
+                    <p className="text-sm leading-relaxed text-zinc-600">
+                      A complete profile helps people recognize and follow your
+                      contributions.
                     </p>
                   </div>
                 </div>
 
-                <div className="border-t border-zinc-900 pt-4">
-                  <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" aria-label="Alert card action rail">
-                    {href && (
-                      <button
-                        type="button"
-                        onClick={() => openNotification(notification, href)}
-                        className="shrink-0 rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
-                      >
-                        {getNotificationActionLabel(notification)}
-                      </button>
-                    )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link
+                    href="/create"
+                    className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
+                  >
+                    Create a discussion
+                  </Link>
 
-                    {!notification.read_at && (
-                      <button
-                        type="button"
-                        onClick={() => markRead(notification.id)}
-                        disabled={working}
-                        className="shrink-0 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
-                      >
-                        Mark read
-                      </button>
-                    )}
+                  <Link
+                    href="/discussions"
+                    className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                  >
+                    Browse discussions
+                  </Link>
 
+                  <Link
+                    href="/profile"
+                    className="inline-flex justify-center rounded-full border border-zinc-800 px-5 py-3 text-sm text-zinc-400 transition hover:border-zinc-600 hover:text-white"
+                  >
+                    Review profile
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {!loading &&
+              alerts.length > 0 &&
+              filteredNotifications.length === 0 && (
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl shadow-black/30 sm:rounded-3xl sm:p-8">
+                  <h2 className="mb-3 text-xl font-medium sm:text-2xl">
+                    No alerts found.
+                  </h2>
+
+                  <p className="mb-5 max-w-3xl text-sm leading-relaxed text-zinc-400 sm:mb-6 sm:text-base">
+                    No alerts match the current filters. Broaden the view or
+                    return to all alerts to review everything connected to you.
+                  </p>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                     <button
                       type="button"
-                      onClick={() => deleteNotification(notification.id)}
-                      disabled={working}
-                      className="shrink-0 rounded-full border border-zinc-900 px-4 py-2 text-sm text-red-300 transition hover:border-red-900 hover:bg-red-950/20 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                      onClick={() => {
+                        setFilterMode("all");
+                        setTypeFilter("all");
+                        setSortMode("newest");
+                      }}
+                      className="inline-flex justify-center rounded-full bg-white px-5 py-3 text-sm text-black transition hover:bg-zinc-200"
                     >
-                      Delete
+                      Clear filters
                     </button>
+
+                    <Link
+                      href="/discussions"
+                      className="inline-flex justify-center rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                    >
+                      Browse discussions
+                    </Link>
                   </div>
                 </div>
-              </article>
-            );
-          })}
-        </div>
+              )}
+
+            <div className="space-y-3 pb-4 sm:space-y-4 sm:pb-0">
+              {filteredNotifications.map((notification) => {
+                const href = getNotificationHref(notification, profiles);
+                const actorProfile = notification.actor_id
+                  ? profiles[notification.actor_id]
+                  : undefined;
+
+                return (
+                  <article
+                    key={notification.id}
+                    data-alert-state={notification.read_at ? "read" : "unread"}
+                    className={`loombus-alert-card group rounded-2xl border p-4 shadow-2xl shadow-black/15 transition hover:border-zinc-700 sm:p-5 ${
+                      notification.read_at
+                        ? "border-zinc-900 bg-zinc-950/80"
+                        : "border-zinc-700 bg-zinc-950"
+                    }`}
+                  >
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      {!notification.read_at && (
+                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-black">
+                          New
+                        </span>
+                      )}
+
+                      <span className="rounded-full border border-zinc-800 bg-black px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-500">
+                        {notification.type}
+                      </span>
+
+                      <span className="ml-auto text-xs text-zinc-700">
+                        {new Date(notification.created_at).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="mb-4 flex items-start gap-3">
+                      <ProfileAvatar profile={actorProfile} size="md" />
+
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`text-sm leading-relaxed sm:text-base ${
+                            notification.read_at
+                              ? "text-zinc-500"
+                              : "text-zinc-300"
+                          }`}
+                        >
+                          {getNotificationMessage(notification, profiles)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-zinc-900 pt-4">
+                      <div
+                        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+                        aria-label="Alert card action rail"
+                      >
+                        {href && (
+                          <button
+                            type="button"
+                            onClick={() => openNotification(notification, href)}
+                            className="shrink-0 rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                          >
+                            {getNotificationActionLabel(notification)}
+                          </button>
+                        )}
+
+                        {!notification.read_at && (
+                          <button
+                            type="button"
+                            onClick={() => markRead(notification.id)}
+                            disabled={working}
+                            className="shrink-0 rounded-full border border-zinc-800 px-4 py-2 text-sm text-zinc-500 transition hover:border-zinc-600 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                          >
+                            Mark read
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => deleteNotification(notification.id)}
+                          disabled={working}
+                          className="shrink-0 rounded-full border border-zinc-900 px-4 py-2 text-sm text-red-300 transition hover:border-red-900 hover:bg-red-950/20 disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
 
           <aside className="loombus-right-rail fixed inset-y-0 right-0 z-30 hidden overflow-y-auto border-l border-zinc-900 bg-black/95 px-4 py-6 backdrop-blur-xl lg:block">
@@ -1036,7 +1056,8 @@ export default function NotificationsClientPage() {
                   </h2>
 
                   <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-                    Alerts should help you return to meaningful activity, not pull you away from deeper discussions.
+                    Alerts should help you return to meaningful activity, not
+                    pull you away from deeper discussions.
                   </p>
                 </div>
 
@@ -1089,9 +1110,7 @@ export default function NotificationsClientPage() {
                     <p className="text-xs uppercase tracking-[0.18em] text-zinc-700">
                       View
                     </p>
-                    <p className="mt-1 text-sm text-zinc-300">
-                      {filterMode}
-                    </p>
+                    <p className="mt-1 text-sm text-zinc-300">{filterMode}</p>
                   </div>
 
                   <div className="rounded-2xl border border-zinc-900 bg-black p-3">
@@ -1140,7 +1159,9 @@ export default function NotificationsClientPage() {
                 </p>
 
                 <p className="text-sm leading-relaxed text-zinc-500">
-                  A useful alert inbox is not a place to live. Use it as a return path, then go back to reading, replying, saving, or creating.
+                  A useful alert inbox is not a place to live. Use it as a
+                  return path, then go back to reading, replying, saving, or
+                  creating.
                 </p>
 
                 <div className="mt-4 grid gap-2">
