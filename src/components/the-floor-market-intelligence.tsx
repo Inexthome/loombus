@@ -158,7 +158,7 @@ export default function TheFloorMarketIntelligence() {
               ].map(([label, value]) => <div key={String(label)} className={card}><p className="text-xs font-black uppercase text-[var(--loombus-text-subtle)]">{label}</p><p className="mt-2 text-2xl font-black">{value}</p></div>)}
             </section>
             <section className={card}>
-              <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Company earnings research</h2><p className="mt-1 text-sm text-[var(--loombus-text-muted)]">The newest thesis, disclosed catalysts, and risks for each covered company.</p></div><span className="rounded-full bg-[var(--loombus-gold-surface)] px-3 py-1 text-xs font-black text-[var(--loombus-gold)]">Calendar feed pending</span></div>
+              <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-black">Company earnings research</h2><p className="mt-1 text-sm text-[var(--loombus-text-muted)]">The newest thesis, disclosed catalysts, and risks for each covered company.</p></div><Link href="/the-floor/earnings" className="rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-xs font-black text-black">Open live Earnings Center</Link></div>
               <div className="mt-5 grid gap-3 md:grid-cols-2">
                 {companies.map((company) => (
                   <Link key={company.ticker} href={`/the-floor/company/${company.ticker}`} className="rounded-2xl border border-[var(--loombus-border)] p-4 transition hover:border-[var(--loombus-gold)]">
