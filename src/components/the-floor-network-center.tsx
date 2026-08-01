@@ -1,6 +1,7 @@
 "use client";
 
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { mergeFloorLocalWithCloud, replaceFloorCloudItems } from "@/lib/floor-cloud-data";
 import { FLOOR_WATCHLIST_KEY, FloorWatchItem } from "@/lib/floor-research-hub";
 import { getFloorCompany } from "@/lib/floor-companies";
 import { supabase } from "@/lib/supabase/client";
@@ -49,6 +50,7 @@ function readLocal<T>(key: string): T[] {
 
 export default function TheFloorNetworkCenter({ initialView = "companies" }: { initialView?: View }) {
   const [loading, setLoading] = useState(true);
+  const [ownerId, setOwnerId] = useState("");
   const [view, setView] = useState<View>(initialView);
   const [query, setQuery] = useState("");
   const [theses, setTheses] = useState<Thesis[]>([]);
@@ -65,9 +67,17 @@ export default function TheFloorNetworkCenter({ initialView = "companies" }: { i
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) { window.location.replace("/login?next=%2Fthe-floor%2Fnetwork"); return; }
       const { data } = await supabase.from("floor_theses").select("id, ticker, stance, conviction, thesis, catalysts, risks, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name)").order("created_at", { ascending: false }).limit(400);
+      setOwnerId(auth.user.id);
       setTheses((data ?? []) as unknown as Thesis[]);
       setWatches(readLocal<FloorWatchItem>(FLOOR_WATCHLIST_KEY));
-      setSessions(readLocal<Session>(SESSION_KEY));
+      const localSessions = readLocal<Session>(SESSION_KEY);
+      try {
+        const cloudSessions = await mergeFloorLocalWithCloud(auth.user.id, "session", localSessions);
+        setSessions(cloudSessions);
+        window.localStorage.setItem(SESSION_KEY, JSON.stringify(cloudSessions));
+      } catch {
+        setSessions(localSessions);
+      }
       setLoading(false);
     })();
   }, []);
@@ -103,6 +113,7 @@ export default function TheFloorNetworkCenter({ initialView = "companies" }: { i
     if (!title.trim()) return;
     const next = [{ id: crypto.randomUUID(), title: title.trim(), focus: focus.trim(), scheduledAt, replayUrl: replayUrl.trim(), summary: summary.trim() }, ...sessions];
     setSessions(next); window.localStorage.setItem(SESSION_KEY, JSON.stringify(next));
+    if (ownerId) void replaceFloorCloudItems(ownerId, "session", next);
     setTitle(""); setFocus(""); setScheduledAt(""); setReplayUrl(""); setSummary("");
   }
 
