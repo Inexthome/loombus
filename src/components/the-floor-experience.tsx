@@ -10,6 +10,7 @@ import {
   GitFork,
   LayoutDashboard,
   LibraryBig,
+  ListChecks,
   MessagesSquare,
   ScrollText,
   Trophy,
