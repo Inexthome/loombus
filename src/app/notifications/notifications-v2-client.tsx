@@ -1,6 +1,9 @@
 "use client";
 
-import { ProfileAvatar, getProfileDisplayName } from "@/components/profile-avatar";
+import {
+  ProfileAvatar,
+  getProfileDisplayName,
+} from "@/components/profile-avatar";
 import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
@@ -60,11 +63,12 @@ const FILTERS: { value: InboxFilter; label: string }[] = [
 
 function hasAdvancedNotificationAccess(
   entitlement: AiEntitlement,
-  isAdmin: boolean
+  isAdmin: boolean,
 ) {
   return (
     isAdmin ||
-    (entitlement?.ai_assisted_enabled === true && entitlement.tier === "premium")
+    (entitlement?.ai_assisted_enabled === true &&
+      entitlement.tier === "premium")
   );
 }
 
@@ -114,7 +118,7 @@ function getProfileName(profile: Profile | undefined) {
 
 function getNotificationMessage(
   notification: Notification,
-  profiles: Record<string, Profile>
+  profiles: Record<string, Profile>,
 ) {
   if (notification.type === "follow") {
     const actor = notification.actor_id
@@ -128,7 +132,7 @@ function getNotificationMessage(
 
 function getNotificationHref(
   notification: Notification,
-  profiles: Record<string, Profile>
+  profiles: Record<string, Profile>,
 ) {
   if (notification.room_id) {
     if (notification.target_type === "room_moderation_item") {
@@ -145,7 +149,10 @@ function getNotificationHref(
     return `/messages?conversation=${encodeURIComponent(notification.target_id)}`;
   }
 
-  if (notification.target_type === "floor_live_program") return "/the-floor/live";
+  if (notification.target_type === "floor_live_program")
+    return "/the-floor/live";
+  if (notification.target_type === "floor_contributor_assignment")
+    return "/the-floor/contributors";
 
   if (notification.target_type === "identity_verification") return "/profile";
 
@@ -169,7 +176,10 @@ function getActionLabel(notification: Notification) {
   }
   if (notification.target_type === "discussion") return "Open discussion";
   if (notification.target_type === "conversation") return "Open message";
-  if (notification.target_type === "floor_live_program") return "Open live schedule";
+  if (notification.target_type === "floor_live_program")
+    return "Open live schedule";
+  if (notification.target_type === "floor_contributor_assignment")
+    return "Open assignment";
   if (notification.target_type === "identity_verification") {
     return "Open verification";
   }
@@ -187,7 +197,11 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export default function NotificationsV2Client({ roomId = null }: { roomId?: string | null }) {
+export default function NotificationsV2Client({
+  roomId = null,
+}: {
+  roomId?: string | null;
+}) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
@@ -205,7 +219,7 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
 
   const canUseAdvancedControls = hasAdvancedNotificationAccess(
     entitlement,
-    isAdmin
+    isAdmin,
   );
 
   useEffect(() => {
@@ -216,7 +230,7 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
     const timeout = window.setTimeout(() => {
       if (!loadingRef.current) return;
       setNotice(
-        "Signal Inbox took too long to load. Refresh if the list looks incomplete."
+        "Signal Inbox took too long to load. Refresh if the list looks incomplete.",
       );
       setLoading(false);
     }, 10000);
@@ -243,8 +257,8 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
       if (!alive) return;
       setProfiles(
         Object.fromEntries(
-          ((data ?? []) as Profile[]).map((profile) => [profile.id, profile])
-        )
+          ((data ?? []) as Profile[]).map((profile) => [profile.id, profile]),
+        ),
       );
     }
 
@@ -282,10 +296,11 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
           // before and after the manually applied Room migration adds room_id.
           (() => {
             let notificationQuery = supabase
-            .from("notifications")
-            .select("*")
-            .eq("user_id", user.id);
-            if (roomId) notificationQuery = notificationQuery.eq("room_id", roomId);
+              .from("notifications")
+              .select("*")
+              .eq("user_id", user.id);
+            if (roomId)
+              notificationQuery = notificationQuery.eq("room_id", roomId);
             return notificationQuery.order("created_at", { ascending: false });
           })(),
         ]);
@@ -298,7 +313,7 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
 
         const visible = filterBlockedActorNotifications(
           (notificationResult.data ?? []) as Notification[],
-          blockedIds
+          blockedIds,
         ) as Notification[];
 
         if (!alive) return;
@@ -311,7 +326,7 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
                 full_name: profileData.full_name,
                 avatar_url: profileData.avatar_url,
               }
-            : null
+            : null,
         );
         setIsAdmin(Boolean(profileData?.is_admin));
         setEntitlement((entitlementResult.data ?? null) as AiEntitlement);
@@ -322,7 +337,7 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
           ...new Set(
             visible
               .map((notification) => notification.actor_id)
-              .filter((id): id is string => Boolean(id))
+              .filter((id): id is string => Boolean(id)),
           ),
         ];
         void loadActorProfiles(actorIds);
@@ -342,7 +357,7 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
   }, [roomId]);
 
   const unreadCount = notifications.filter(
-    (notification) => !notification.read_at
+    (notification) => !notification.read_at,
   ).length;
   const readCount = notifications.length - unreadCount;
 
@@ -426,8 +441,8 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
       current.map((notification) =>
         ids.includes(notification.id)
           ? { ...notification, read_at: readAt }
-          : notification
-      )
+          : notification,
+      ),
     );
     window.dispatchEvent(new Event("loombus:notifications-changed"));
     return true;
@@ -477,7 +492,7 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
     }
 
     setNotifications((current) =>
-      current.filter((notification) => notification.id !== notificationId)
+      current.filter((notification) => notification.id !== notificationId),
     );
     window.dispatchEvent(new Event("loombus:notifications-changed"));
   }
@@ -508,7 +523,7 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
     }
 
     setNotifications((current) =>
-      current.filter((notification) => !ids.includes(notification.id))
+      current.filter((notification) => !ids.includes(notification.id)),
     );
     setNotice("Read notifications cleared.");
     window.dispatchEvent(new Event("loombus:notifications-changed"));
@@ -546,7 +561,11 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
             <p className="notifications-v2-eyebrow">
               {roomId ? "Room notifications" : "Signal Inbox"}
             </p>
-            <h1>{roomId ? "Live notices from this Room." : "Attention without the noise."}</h1>
+            <h1>
+              {roomId
+                ? "Live notices from this Room."
+                : "Attention without the noise."}
+            </h1>
             <p>
               {roomId
                 ? "Review announcements, events, discussions, replies, and other activity connected to this Room."
@@ -585,7 +604,13 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
           >
             Clear read
           </button>
-          <Link href={roomId ? `/rooms/${encodeURIComponent(roomId)}/notifications` : "/settings"}>
+          <Link
+            href={
+              roomId
+                ? `/rooms/${encodeURIComponent(roomId)}/notifications`
+                : "/settings"
+            }
+          >
             {roomId ? "Room notification settings" : "Notification settings"}
           </Link>
         </section>
@@ -634,9 +659,7 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
                 <span>Sort</span>
                 <select
                   value={sort}
-                  onChange={(event) =>
-                    setSort(event.target.value as SortMode)
-                  }
+                  onChange={(event) => setSort(event.target.value as SortMode)}
                   disabled={!canUseAdvancedControls}
                 >
                   <option value="newest">Newest first</option>
@@ -692,8 +715,9 @@ export default function NotificationsV2Client({ roomId = null }: { roomId?: stri
             <p>Signal Inbox</p>
             <h2>You are all caught up.</h2>
             <span>
-              New replies, follows, discussion updates, messages, Room activity, and account
-              notices will appear here when they need your attention.
+              New replies, follows, discussion updates, messages, Room activity,
+              and account notices will appear here when they need your
+              attention.
             </span>
             <div>
               <Link className="is-primary" href="/discussions">
