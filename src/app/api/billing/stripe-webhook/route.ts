@@ -11,6 +11,7 @@ import {
 } from "@/lib/billing-entitlements";
 import { fulfillRoomCheckoutSession } from "@/lib/room-billing";
 import { syncRoomSubscriptionEvent } from "@/lib/room-subscription-events";
+import { isFloorPlanKey, syncFloorSubscription } from "@/lib/floor-billing";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
@@ -179,6 +180,17 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   if (subscriptionId) {
     const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
 
+    if (session.metadata?.product === "loombus_floor" && isFloorPlanKey(planKey)) {
+      await syncFloorSubscription(userId, planKey, subscription.status, {
+        stripeCustomerId: getCustomerIdFromSubscription(subscription) ?? checkoutCustomerId,
+        stripeSubscriptionId: subscription.id,
+        stripePriceId: getSubscriptionPriceId(subscription),
+        stripeCurrentPeriodEnd: getSubscriptionPeriodEnd(subscription),
+        stripeSubscriptionStatus: subscription.status,
+      });
+      return;
+    }
+
     if (["active", "trialing"].includes(subscription.status)) {
       await activatePremiumForUser(
         userId,
@@ -234,6 +246,11 @@ async function handleSubscriptionChanged(subscription: Stripe.Subscription) {
     stripeCurrentPeriodEnd: getSubscriptionPeriodEnd(subscription),
     stripeSubscriptionStatus: subscription.status,
   };
+
+  if (subscription.metadata?.product === "loombus_floor" && isFloorPlanKey(planKey)) {
+    await syncFloorSubscription(userId, planKey, subscription.status, billingIdentity);
+    return;
+  }
 
   if (["active", "trialing"].includes(subscription.status)) {
     await activatePremiumForUser(

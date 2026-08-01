@@ -20,6 +20,19 @@ function isAdminPath(pathname: string) {
   return pathname === "/admin" || pathname.startsWith("/admin/");
 }
 
+function isPaidFloorPath(pathname: string) {
+  return pathname.startsWith("/the-floor/");
+}
+
+function redirectToFloorOverview(request: NextRequest, response: NextResponse) {
+  const destination = request.nextUrl.clone();
+  destination.pathname = "/the-floor";
+  destination.search = "";
+  destination.searchParams.set("access", "subscribe");
+  destination.searchParams.set("next", request.nextUrl.pathname);
+  return copyResponseCookies(response, NextResponse.redirect(destination));
+}
+
 function getNextResponse(request: NextRequest) {
   return NextResponse.next({
     request: {
@@ -102,12 +115,28 @@ export async function updateSession(request: NextRequest) {
     return !error && user ? redirectToDefaultAppLanding(request, response) : response;
   }
 
-  if (!isProtectedPath(pathname)) {
+  if (!isProtectedPath(pathname) && !isPaidFloorPath(pathname)) {
     return response;
   }
 
   if (error || !user) {
     return redirectToLogin(request);
+  }
+
+  if (isPaidFloorPath(pathname)) {
+    const [{ data: profile }, { data: floorSubscription }] = await Promise.all([
+      supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle(),
+      supabase
+        .from("floor_subscriptions")
+        .select("status")
+        .eq("user_id", user.id)
+        .in("status", ["active", "trialing"])
+        .maybeSingle(),
+    ]);
+
+    if (profile?.is_admin !== true && !floorSubscription) {
+      return redirectToFloorOverview(request, response);
+    }
   }
 
   if (!isAdminPath(pathname)) {

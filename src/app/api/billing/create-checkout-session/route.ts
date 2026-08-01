@@ -42,6 +42,20 @@ const CHECKOUT_PLANS = {
     priceEnvVar: "STRIPE_EXTRA_AI_PACK_PRICE_ID",
     credits: 25,
   },
+  floor_monthly: {
+    label: "The Floor Monthly",
+    tier: "floor",
+    interval: "monthly",
+    mode: "subscription",
+    priceEnvVar: "STRIPE_FLOOR_MONTHLY_PRICE_ID",
+  },
+  floor_annual: {
+    label: "The Floor Annual",
+    tier: "floor",
+    interval: "annual",
+    mode: "subscription",
+    priceEnvVar: "STRIPE_FLOOR_ANNUAL_PRICE_ID",
+  },
 } as const;
 
 type CheckoutPlanKey = keyof typeof CHECKOUT_PLANS;
@@ -105,8 +119,8 @@ export async function POST(request: NextRequest) {
     if (!isCheckoutPlanKey(requestedPlanKey)) {
       return NextResponse.json(
         {
-          error: "Invalid Premium plan selected.",
-          code: "invalid_premium_plan",
+          error: "Invalid subscription plan selected.",
+          code: "invalid_subscription_plan",
         },
         { status: 400 }
       );
@@ -119,7 +133,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Premium checkout is not configured yet. Stripe keys and the selected plan price ID are required.",
+            "Checkout is not configured yet. Stripe keys and the selected plan price ID are required.",
           code: "stripe_not_configured",
           detail: `Missing Stripe configuration for ${selectedPlan.label}.`,
         },
@@ -136,8 +150,9 @@ export async function POST(request: NextRequest) {
 
     const metadata = {
       user_id: user.id,
-      product:
-        requestedPlanKey === "extra_ai_pack"
+      product: requestedPlanKey.startsWith("floor_")
+        ? "loombus_floor"
+        : requestedPlanKey === "extra_ai_pack"
           ? "loombus_extra_ai_pack"
           : "loombus_premium_ai",
       plan_key: requestedPlanKey,
@@ -157,8 +172,12 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/premium?checkout=success&plan=${requestedPlanKey}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/premium?checkout=cancelled&plan=${requestedPlanKey}`,
+      success_url: requestedPlanKey.startsWith("floor_")
+        ? `${origin}/the-floor?checkout=success&plan=${requestedPlanKey}&session_id={CHECKOUT_SESSION_ID}`
+        : `${origin}/premium?checkout=success&plan=${requestedPlanKey}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: requestedPlanKey.startsWith("floor_")
+        ? `${origin}/the-floor?checkout=cancelled&plan=${requestedPlanKey}`
+        : `${origin}/premium?checkout=cancelled&plan=${requestedPlanKey}`,
       client_reference_id: user.id,
       customer_email: user.email ?? undefined,
       metadata,
@@ -166,6 +185,9 @@ export async function POST(request: NextRequest) {
         ? {
             subscription_data: {
               metadata,
+              ...(requestedPlanKey.startsWith("floor_")
+                ? { trial_period_days: 7 }
+                : {}),
             },
           }
         : {}),
