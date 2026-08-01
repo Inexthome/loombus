@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createFloorRequestSupabase } from "@/lib/floor-operations";
+import { createFloorRequestSupabase, hasActiveFloorAccess } from "@/lib/floor-operations";
 import { FLOOR_POST_BODY_MAX, FLOOR_POST_TITLE_MAX } from "@/lib/floor-shared";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 
@@ -24,6 +24,9 @@ export async function POST(request: NextRequest) {
 
   if (authError || !auth.user) {
     return jsonError("Sign in to start a discussion.", 401);
+  }
+  if (!(await hasActiveFloorAccess(supabase, auth.user.id))) {
+    return jsonError("An active Floor membership is required.", 403);
   }
 
   const body = await request.json().catch(() => null);
