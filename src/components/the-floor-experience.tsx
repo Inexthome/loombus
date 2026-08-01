@@ -35,7 +35,7 @@ const navigation = [
   { href: "/the-floor/discover", label: "Discover", icon: Compass },
   { href: "/the-floor/knowledge-graph", label: "Knowledge Graph", icon: GitFork },
   { href: "/the-floor/companies", label: "Companies", icon: Building2 },
-  { href: "/the-floor/academy", label: "Analysts", icon: UserRoundCheck },
+  { href: "/the-floor/analysts", label: "Analysts", icon: UserRoundCheck },
   { href: "/the-floor/network", label: "Network Center", icon: Bell },
   { href: "/the-floor/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/the-floor/discussion", label: "Discussion", icon: MessagesSquare },

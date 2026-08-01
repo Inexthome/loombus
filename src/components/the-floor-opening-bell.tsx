@@ -1,82 +1,87 @@
 "use client";
 
-import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
 import {
   Activity,
-  BellRing,
-  CalendarDays,
+  BarChart3,
   CheckCircle2,
-  Clock3,
+  CircleDot,
   Radio,
-  ScrollText,
-  Sparkles,
   Target,
   TrendingUp,
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { getFloorCompany } from "@/lib/floor-companies";
+import { normalizePublicText } from "@/lib/public-text";
+import { supabase } from "@/lib/supabase/client";
 
-type ThesisActivity = {
+type Thesis = {
   id: string;
+  author_id: string;
   ticker: string;
   stance: string;
   conviction: number;
+  horizon: string;
   thesis: string;
+  catalysts: string;
+  risks: string;
   created_at: string;
   author: { username: string | null; full_name: string | null } | { username: string | null; full_name: string | null }[] | null;
 };
 
-type MarketData = { provider: string; delayed: boolean; markets: Array<{ key:string; name:string; symbol:string; note:string; price:number|null; change:number|null; percentChange:number|null; asOf:string|null; available:boolean }>; earnings:{ available:boolean; message:string|null; events:Array<{symbol:string;name:string;date:string;time:string|null;epsEstimate:number|null;revenueEstimate:number|null}> } };
-
-type ResolvedCall = {
-  id: string;
-  outcome: string | null;
-  resolved_value: number | null;
-  created_at: string;
-  thesis: { ticker: string } | { ticker: string }[] | null;
+type ResolvedCall = { id: string; outcome: string | null; created_at: string; thesis: { ticker: string } | { ticker: string }[] | null };
+type ResearchRoom = { id: string; name: string; focus: string; updated_at: string; floor_room_members?: { user_id: string }[] };
+type MarketItem = { key:string; name:string; price:number|null; percentChange:number|null; available:boolean };
+type HistorySeries = { key: string; name: string; points: { time: string; close: number; percent: number }[] };
+type MarketData = {
+  provider: string;
+  delayed: boolean;
+  markets: MarketItem[];
+  history?: HistorySeries[];
+  earnings:{ available:boolean; message:string|null; events:Array<{symbol:string;name:string;date:string;time:string|null;epsEstimate:number|null}> };
 };
 
-function authorLabel(author: ThesisActivity["author"]) {
+const chartColors: Record<string, string> = { SPX: "#35c96f", IXIC: "#4f8ee8", DJI: "#d3a928", RUT: "#e5e7eb" };
+
+function authorLabel(author: Thesis["author"]) {
   const profile = Array.isArray(author) ? author[0] : author;
   return profile?.full_name?.trim() || profile?.username?.trim() || "Floor member";
 }
 
-function easternMarketState(now: Date) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(now);
-  const weekday = parts.find((part) => part.type === "weekday")?.value ?? "";
-  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? 0);
-  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
-  const total = hour * 60 + minute;
-  const businessDay = !["Sat", "Sun"].includes(weekday);
-  const open = businessDay && total >= 570 && total < 960;
-  const premarket = businessDay && total >= 240 && total < 570;
-  const afterHours = businessDay && total >= 960 && total < 1200;
-  return open ? "Market open" : premarket ? "Pre-market" : afterHours ? "After hours" : "Market closed";
+function relativeTime(value: string) {
+  const delta = Date.now() - new Date(value).getTime();
+  if (!Number.isFinite(delta)) return "Recently";
+  const minutes = Math.max(1, Math.floor(delta / 60_000));
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
 }
 
-const marketTiles = [
-  ["S&P 500", "SPX"],
-  ["Nasdaq", "IXIC"],
-  ["Dow", "DJI"],
-  ["Russell 2000", "RUT"],
-  ["VIX", "VIX"],
-  ["Gold", "XAU"],
-  ["Oil", "WTI"],
-  ["10Y Treasury", "US10Y"],
-];
+function chartPath(points: HistorySeries["points"], min: number, max: number) {
+  const range = Math.max(max - min, 0.01);
+  return points.map((point, index) => {
+    const x = points.length === 1 ? 0 : (index / (points.length - 1)) * 100;
+    const y = 92 - ((point.percent - min) / range) * 84;
+    return `${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(" ");
+}
+
+function stanceTone(stance: string) {
+  if (stance === "long") return "bullish";
+  if (stance === "short") return "bearish";
+  return "neutral";
+}
 
 export default function TheFloorOpeningBell() {
   const [now, setNow] = useState(() => new Date());
-  const [theses, setTheses] = useState<ThesisActivity[]>([]);
+  const [theses, setTheses] = useState<Thesis[]>([]);
   const [resolvedCalls, setResolvedCalls] = useState<ResolvedCall[]>([]);
+  const [rooms, setRooms] = useState<ResearchRoom[]>([]);
   const [marketData, setMarketData] = useState<MarketData | null>(null);
+  const [counts, setCounts] = useState({ theses: 0, rooms: 0 });
+  const [memberName, setMemberName] = useState("");
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
@@ -87,10 +92,8 @@ export default function TheFloorOpeningBell() {
     let mounted = true;
     async function loadMarketData() {
       try {
-        const response = await fetch("/api/floor/market");
-        if (!response.ok) return;
-        const value = (await response.json()) as MarketData;
-        if (mounted) setMarketData(value);
+        const response = await fetch("/api/floor/market", { cache: "no-store" });
+        if (response.ok && mounted) setMarketData((await response.json()) as MarketData);
       } catch {}
     }
     void loadMarketData();
@@ -101,103 +104,120 @@ export default function TheFloorOpeningBell() {
   useEffect(() => {
     let mounted = true;
     async function load() {
-      const [thesisResult, callsResult] = await Promise.all([
-        supabase
-          .from("floor_theses")
-          .select("id, ticker, stance, conviction, thesis, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name)")
-          .order("created_at", { ascending: false })
-          .limit(12),
-        supabase
-          .from("floor_calls")
-          .select("id, outcome, resolved_value, created_at, thesis:floor_theses!floor_calls_thesis_id_fkey(ticker)")
-          .eq("status", "resolved")
-          .order("created_at", { ascending: false })
-          .limit(6),
+      const [thesisResult, callsResult, roomsResult, thesisCount, roomCount, auth] = await Promise.all([
+        supabase.from("floor_theses").select("id,author_id,ticker,stance,conviction,horizon,thesis,catalysts,risks,created_at,author:profiles!floor_theses_author_id_fkey(username,full_name)").or("lifecycle_status.is.null,lifecycle_status.eq.active").order("created_at", { ascending: false }).limit(30),
+        supabase.from("floor_calls").select("id,outcome,created_at,thesis:floor_theses!floor_calls_thesis_id_fkey(ticker)").eq("status", "resolved").order("created_at", { ascending: false }).limit(8),
+        supabase.from("floor_research_rooms").select("id,name,focus,updated_at,floor_room_members(user_id)").order("updated_at", { ascending: false }).limit(8),
+        supabase.from("floor_theses").select("id", { count: "exact", head: true }).or("lifecycle_status.is.null,lifecycle_status.neq.deleted"),
+        supabase.from("floor_research_rooms").select("id", { count: "exact", head: true }),
+        supabase.auth.getUser(),
       ]);
       if (!mounted) return;
-      if (thesisResult.data) setTheses(thesisResult.data as unknown as ThesisActivity[]);
+      if (thesisResult.data) setTheses(thesisResult.data as unknown as Thesis[]);
       if (callsResult.data) setResolvedCalls(callsResult.data as unknown as ResolvedCall[]);
+      if (roomsResult.data) setRooms(roomsResult.data as unknown as ResearchRoom[]);
+      setCounts({ theses: thesisCount.count ?? 0, rooms: roomCount.count ?? 0 });
+      if (auth.data.user) {
+        const { data: profile } = await supabase.from("profiles").select("full_name,username").eq("id", auth.data.user.id).maybeSingle();
+        if (mounted) setMemberName(profile?.full_name?.trim()?.split(/\s+/)[0] || profile?.username || "");
+      }
     }
     void load();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
-  const highConviction = useMemo(() => theses.filter((item) => item.conviction >= 4).slice(0, 4), [theses]);
-  const dateLabel = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  }).format(now);
+  const highConviction = useMemo(() => theses.filter((item) => item.conviction >= 4).slice(0, 5), [theses]);
+  const analystCount = useMemo(() => new Set(theses.map((item) => item.author_id)).size, [theses]);
+  const history = marketData?.history ?? [];
+  const historyValues = history.flatMap((series) => series.points.map((point) => point.percent));
+  const chartMin = historyValues.length ? Math.min(...historyValues, -0.1) : -1;
+  const chartMax = historyValues.length ? Math.max(...historyValues, 0.1) : 1;
+
+  const sectors = useMemo(() => {
+    const groups = new Map<string, Thesis[]>();
+    for (const thesis of theses) {
+      const sector = getFloorCompany(thesis.ticker).sector ?? "Unclassified";
+      groups.set(sector, [...(groups.get(sector) ?? []), thesis]);
+    }
+    return [...groups.entries()].map(([name, items]) => {
+      const score = items.reduce((sum, item) => sum + (item.stance === "long" ? item.conviction : item.stance === "short" ? -item.conviction : 0), 0) / items.length;
+      return { name, score, count: items.length };
+    }).sort((a, b) => b.count - a.count).slice(0, 8);
+  }, [theses]);
+
+  const briefing = [
+    theses.length ? `${theses.length} recent theses are available for review.` : "New research will appear as members publish it.",
+    highConviction.length ? `${highConviction.length} recent ideas carry conviction of four or higher.` : "No recent high-conviction thesis is published yet.",
+    resolvedCalls.length ? `${resolvedCalls.length} recent calls have reached a recorded outcome.` : "Resolved calls will appear as deadlines are reached.",
+  ];
 
   return (
-    <section id="opening-bell" className="px-4 py-7 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl space-y-5">
-        <div className="grid gap-4 lg:grid-cols-[1.45fr_0.55fr]">
-          <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-6 shadow-xl shadow-black/10">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-[var(--loombus-gold-surface)] px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[var(--loombus-gold)]">
-                  <BellRing className="size-3.5" /> Opening Bell
-                </div>
-                <h2 className="mt-4 text-3xl font-black tracking-tight">Your market command center</h2>
-                <p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">{dateLabel}. Start with accountable research, recent outcomes, and the market questions that deserve attention.</p>
-              </div>
-              <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 py-3 text-right">
-                <p className="text-xs font-black uppercase tracking-wide text-[var(--loombus-text-subtle)]">Eastern time</p>
-                <p className="mt-1 text-lg font-black">{now.toLocaleTimeString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" })}</p>
-                <p className="mt-1 text-xs font-bold text-[var(--loombus-gold)]">{easternMarketState(now)}</p>
-              </div>
-            </div>
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-[var(--loombus-surface-muted)] p-4"><ScrollText className="size-5 text-[var(--loombus-gold)]" /><p className="mt-3 text-2xl font-black">{theses.length}</p><p className="text-xs font-bold text-[var(--loombus-text-muted)]">Recent theses reviewed</p></div>
-              <div className="rounded-2xl bg-[var(--loombus-surface-muted)] p-4"><Target className="size-5 text-[var(--loombus-gold)]" /><p className="mt-3 text-2xl font-black">{highConviction.length}</p><p className="text-xs font-bold text-[var(--loombus-text-muted)]">High-conviction ideas</p></div>
-              <div className="rounded-2xl bg-[var(--loombus-surface-muted)] p-4"><CheckCircle2 className="size-5 text-[var(--loombus-gold)]" /><p className="mt-3 text-2xl font-black">{resolvedCalls.length}</p><p className="text-xs font-bold text-[var(--loombus-text-muted)]">Recent resolved calls</p></div>
-            </div>
-          </article>
-
-          <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
-            <div className="flex items-center gap-2"><Radio className="size-5 text-[var(--loombus-gold)]" /><h3 className="font-black">Live Floor</h3></div>
-            <div className="mt-4 rounded-2xl border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-5 text-center">
-              <Clock3 className="mx-auto size-7 text-[var(--loombus-text-subtle)]" />
-              <p className="mt-3 text-sm font-black">No live session scheduled</p>
-              <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">Upcoming sessions and replay summaries will appear here.</p>
-            </div>
-          </article>
+    <section id="opening-bell" className="floor-overview">
+      <header className="floor-overview-briefing">
+        <div>
+          <p>The Floor briefing</p>
+          <h1>Good {now.getHours() < 12 ? "morning" : now.getHours() < 18 ? "afternoon" : "evening"}{memberName ? `, ${memberName}` : ""}</h1>
+          <span>Accountable research, observable conviction, and market context in one workspace.</span>
         </div>
+        <ul>{briefing.map((item) => <li key={item}><CircleDot />{item}</li>)}</ul>
+      </header>
 
-        <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
-          <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--loombus-gold)]">Market snapshot</p><h3 className="mt-1 text-xl font-black">Core markets</h3></div><span className="text-xs font-bold text-[var(--loombus-text-subtle)]">{marketData ? `${marketData.provider} · delayed/cached` : "Connecting to market data"}</span></div>
-          <div className="mt-4 grid gap-3 grid-cols-2 md:grid-cols-4">
-            {(marketData?.markets.length ? marketData.markets : marketTiles.map(([name,key]) => ({ name, key, symbol:key, note:"", price:null, change:null, percentChange:null, asOf:null, available:false }))).map((market) => <div key={market.key} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4"><div className="flex items-center justify-between gap-2"><p className="text-xs font-black text-[var(--loombus-text-subtle)]">{market.key}</p>{market.available && market.percentChange !== null ? <span className={`text-xs font-black ${market.percentChange >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{market.percentChange >= 0 ? "+" : ""}{market.percentChange.toFixed(2)}%</span> : null}</div><p className="mt-2 text-sm font-black">{market.name}</p>{market.available && market.price !== null ? <><p className="mt-3 text-xl font-black">{market.price.toLocaleString(undefined,{maximumFractionDigits:2})}</p><p className="mt-1 text-[10px] font-bold text-[var(--loombus-text-subtle)]">{market.note} · delayed/cached</p></> : <p className="mt-3 text-xs font-bold text-[var(--loombus-text-muted)]">Temporarily unavailable</p>}</div>)}
+      <section className="floor-overview-chart">
+        <div className="floor-overview-section-title"><div><BarChart3 /><span>Market overview</span></div><small>{marketData ? `${marketData.provider} · delayed/cached` : "Connecting to market history"}</small></div>
+        {history.length ? (
+          <div className="floor-overview-chart-grid">
+            <div className="floor-overview-chart-canvas">
+              <span className="floor-chart-zero" style={{ top: `${92 - ((0 - chartMin) / Math.max(chartMax - chartMin, .01)) * 84}%` }} />
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Intraday percentage performance for major market proxies">
+                {history.map((series) => <path key={series.key} d={chartPath(series.points, chartMin, chartMax)} stroke={chartColors[series.key] ?? "#c9a951"} />)}
+              </svg>
+              <div><span>{chartMax.toFixed(2)}%</span><span>{chartMin.toFixed(2)}%</span></div>
+            </div>
+            <div className="floor-overview-chart-legend">
+              {history.map((series) => {
+                const last = series.points.at(-1);
+                return <div key={series.key}><i style={{ background: chartColors[series.key] }} /><span><b>{series.key}</b><small>{series.name}</small></span><strong data-up={(last?.percent ?? 0) >= 0 ? "true" : "false"}>{(last?.percent ?? 0) >= 0 ? "+" : ""}{last?.percent.toFixed(2)}%</strong></div>;
+              })}
+            </div>
           </div>
-        </article>
+        ) : <div className="floor-overview-chart-empty"><BarChart3 /><strong>Intraday history is temporarily unavailable</strong><span>Current delayed quotes remain available in Market Watch and Market Intelligence.</span></div>}
+      </section>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
-            <div className="flex items-center gap-2"><Sparkles className="size-5 text-[var(--loombus-gold)]" /><h3 className="font-black">High-conviction research</h3></div>
-            <div className="mt-4 space-y-3">
-              {highConviction.length ? highConviction.map((item) => <a key={item.id} href="#research-feed" className="block rounded-2xl bg-[var(--loombus-page-bg)] p-4"><div className="flex items-center justify-between gap-3"><span className="font-black">{item.ticker}</span><span className="text-xs font-black text-[var(--loombus-gold)]">{item.conviction}/5 conviction</span></div><p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--loombus-text-muted)]">{item.thesis}</p></a>) : <p className="rounded-2xl border border-dashed border-[var(--loombus-border)] p-5 text-sm text-[var(--loombus-text-muted)]">High-conviction theses will appear here as members publish them.</p>}
-            </div>
-          </article>
+      <div className="floor-overview-middle">
+        <section className="floor-overview-activity">
+          <div className="floor-overview-section-title"><div><Activity /><span>Today on The Floor</span></div><Link href="/the-floor/discussion">View all</Link></div>
+          <div>{theses.slice(0, 6).map((item) => <Link key={item.id} href={`/the-floor/company/${encodeURIComponent(item.ticker)}`}><span>{item.ticker}</span><p><b>{authorLabel(item.author)}</b> published a {stanceTone(item.stance)} thesis</p><time>{relativeTime(item.created_at)}</time></Link>)}{!theses.length ? <p className="floor-overview-empty">New research activity will appear here.</p> : null}</div>
+        </section>
 
-          <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
-            <div className="flex items-center gap-2"><Users className="size-5 text-[var(--loombus-gold)]" /><h3 className="font-black">Analyst activity</h3></div>
-            <div className="mt-4 space-y-3">
-              {theses.slice(0, 5).map((item) => <div key={item.id} className="flex gap-3 rounded-2xl bg-[var(--loombus-page-bg)] p-4"><Activity className="mt-0.5 size-4 shrink-0 text-[var(--loombus-gold)]" /><div><p className="text-sm font-black">{authorLabel(item.author)} published {item.ticker} research</p><p className="mt-1 text-xs text-[var(--loombus-text-muted)]">{item.stance} thesis · conviction {item.conviction}/5</p></div></div>)}
-            </div>
-          </article>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><CalendarDays className="size-5 text-[var(--loombus-gold)]" /><h3 className="font-black">Upcoming earnings</h3></div><div className="mt-4 space-y-2">{marketData?.earnings.available && marketData.earnings.events.length ? marketData.earnings.events.slice(0,6).map((event) => <div key={`${event.symbol}-${event.date}`} className="flex items-center justify-between rounded-2xl bg-[var(--loombus-page-bg)] p-3"><div><p className="text-sm font-black">{event.symbol || event.name}</p><p className="text-xs text-[var(--loombus-text-muted)]">{event.name}</p></div><p className="text-xs font-black">{event.date}{event.time ? ` · ${event.time}` : ""}</p></div>) : <p className="rounded-2xl border border-dashed border-[var(--loombus-border)] p-5 text-sm leading-6 text-[var(--loombus-text-muted)]">{marketData?.earnings.message ?? "Earnings calendar is loading or unavailable on the current Twelve Data plan."}</p>}</div></article>
-          <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><TrendingUp className="size-5 text-[var(--loombus-gold)]" /><h3 className="font-black">Recent outcomes</h3></div><div className="mt-4 space-y-3">{resolvedCalls.length ? resolvedCalls.map((call) => { const thesis = Array.isArray(call.thesis) ? call.thesis[0] : call.thesis; return <div key={call.id} className="rounded-2xl bg-[var(--loombus-page-bg)] p-4"><p className="text-sm font-black">{thesis?.ticker ?? "Market call"} resolved</p><p className="mt-1 text-xs text-[var(--loombus-text-muted)]">Outcome: {call.outcome ?? "recorded"}{call.resolved_value !== null ? ` · value ${call.resolved_value}` : ""}</p></div>; }) : <p className="rounded-2xl border border-dashed border-[var(--loombus-border)] p-5 text-sm text-[var(--loombus-text-muted)]">Resolved predictions will appear here.</p>}</div></article>
-        </div>
-
-        <div className="flex justify-center"><Link href="#research-feed" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-[#cbab5b] px-6 text-sm font-black text-[#17120a]"><ScrollText className="size-4" />Explore all research</Link></div>
+        <section className="floor-overview-conviction">
+          <div className="floor-overview-section-title"><div><Target /><span>Highest conviction theses</span></div><Link href="/the-floor/my-theses">View all</Link></div>
+          <div className="floor-overview-thesis-row">
+            {highConviction.map((item) => <Link key={item.id} href={`/the-floor/company/${encodeURIComponent(item.ticker)}`} data-tone={stanceTone(item.stance)}>
+              <small>{stanceTone(item.stance)}</small><strong>{item.ticker}</strong><span>{getFloorCompany(item.ticker).name}</span><p>{normalizePublicText(item.thesis)}</p><dl><div><dt>Horizon</dt><dd>{item.horizon}</dd></div><div><dt>Conviction</dt><dd>{item.conviction}/5</dd></div></dl><footer>{authorLabel(item.author)} · {relativeTime(item.created_at)}</footer>
+            </Link>)}
+            {!highConviction.length ? <p className="floor-overview-empty">High-conviction theses will appear here as members publish them.</p> : null}
+          </div>
+        </section>
       </div>
+
+      <div className="floor-overview-bottom">
+        <section className="floor-overview-sectors">
+          <div className="floor-overview-section-title"><div><TrendingUp /><span>Sector research pulse</span></div><Link href="/the-floor/intelligence">Open intelligence</Link></div>
+          <p className="floor-overview-caption">Research stance and disclosed conviction, not market performance.</p>
+          <div>{sectors.map((sector) => <article key={sector.name} data-tone={sector.score > .4 ? "bullish" : sector.score < -.4 ? "bearish" : "neutral"}><span>{sector.name}</span><strong>{sector.score > .4 ? "Bullish" : sector.score < -.4 ? "Bearish" : "Mixed"}</strong><small>{sector.count} {sector.count === 1 ? "thesis" : "theses"}</small></article>)}{!sectors.length ? <p className="floor-overview-empty">Sector coverage will appear as company research is published.</p> : null}</div>
+        </section>
+
+        <section className="floor-overview-rooms">
+          <div className="floor-overview-section-title"><div><Users /><span>Active research rooms</span></div><Link href="/the-floor/rooms">View all</Link></div>
+          <div className="floor-overview-room-table"><header><span>Room</span><span>Focus</span><span>Analysts</span><span>Updated</span></header>{rooms.slice(0, 6).map((room) => <Link key={room.id} href="/the-floor/rooms"><span>{room.name}</span><span>{room.focus || "General research"}</span><strong>{room.floor_room_members?.length ?? 0}</strong><time>{relativeTime(room.updated_at)}</time></Link>)}{!rooms.length ? <p className="floor-overview-empty">Create or join a Research Room to begin.</p> : null}</div>
+        </section>
+      </div>
+
+      <section className="floor-overview-community">
+        <div><Radio /><span>Floor community</span></div>
+        <dl><div><dt>Covered analysts</dt><dd>{analystCount}</dd></div><div><dt>Published theses</dt><dd>{counts.theses}</dd></div><div><dt>Research rooms</dt><dd>{counts.rooms}</dd></div><div><dt>Recent outcomes</dt><dd>{resolvedCalls.length}</dd></div></dl>
+        <Link href="/the-floor/leaderboard"><CheckCircle2 /> Study track records</Link>
+      </section>
     </section>
   );
 }
