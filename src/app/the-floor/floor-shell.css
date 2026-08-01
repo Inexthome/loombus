@@ -1,0 +1,20 @@
+/* The Floor is a dedicated market workspace. Its visual system deliberately
+   stays dark in every Loombus appearance mode so charts, price movement, and
+   research status retain one predictable financial-data language. */
+[data-floor-shell] {
+  font-variant-numeric: tabular-nums;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+[data-floor-shell] article,
+[data-floor-shell] section {
+  scroll-margin-top: 9rem;
+}
+
+[data-floor-shell] ::selection {
+  background: #d6b866;
+  color: #111111;
+}
