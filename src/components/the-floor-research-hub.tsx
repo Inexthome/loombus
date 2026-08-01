@@ -13,7 +13,7 @@ import {
   normalizeFloorSymbol,
   splitFloorList,
 } from "@/lib/floor-research-hub";
-import { mergeFloorLocalWithCloud, replaceFloorCloudItems, type FloorCloudKind } from "@/lib/floor-cloud-data";
+import { mergeFloorLocalWithCloud, mergeFloorRooms, replaceFloorCloudItems, replaceFloorRooms, type FloorCloudKind } from "@/lib/floor-cloud-data";
 import { supabase } from "@/lib/supabase/client";
 import {
   ArrowLeft,
@@ -82,20 +82,24 @@ export default function TheFloorResearchHub() {
       setOwnerId(data.user.id);
       const localWatches = readStored<FloorWatchItem>(FLOOR_WATCHLIST_KEY);
       const localJournal = readStored<FloorJournalEntry>(FLOOR_JOURNAL_KEY);
-      setRooms(readStored<FloorRoom>(FLOOR_ROOMS_KEY));
+      const localRooms = readStored<FloorRoom>(FLOOR_ROOMS_KEY);
       try {
-        const [cloudWatches, cloudJournal] = await Promise.all([
+        const [cloudWatches, cloudJournal, cloudRooms] = await Promise.all([
           mergeFloorLocalWithCloud(data.user.id, "watch", localWatches),
           mergeFloorLocalWithCloud(data.user.id, "journal", localJournal),
+          mergeFloorRooms(data.user.id, localRooms),
         ]);
         setWatchItems(cloudWatches);
         setJournal(cloudJournal);
+        setRooms(cloudRooms);
         window.localStorage.setItem(FLOOR_WATCHLIST_KEY, JSON.stringify(cloudWatches));
         window.localStorage.setItem(FLOOR_JOURNAL_KEY, JSON.stringify(cloudJournal));
+        window.localStorage.setItem(FLOOR_ROOMS_KEY, JSON.stringify(cloudRooms));
         setCloudStatus("synced");
       } catch {
         setWatchItems(localWatches);
         setJournal(localJournal);
+        setRooms(localRooms);
         setCloudStatus("local");
       }
       setLoading(false);
@@ -107,11 +111,12 @@ export default function TheFloorResearchHub() {
     window.localStorage.setItem(key, JSON.stringify(values));
     const kind: FloorCloudKind | null =
       key === FLOOR_WATCHLIST_KEY ? "watch" : key === FLOOR_JOURNAL_KEY ? "journal" : null;
-    if (ownerId && kind) {
+    if (ownerId && (kind || key === FLOOR_ROOMS_KEY)) {
       setCloudStatus("syncing");
-      void replaceFloorCloudItems(ownerId, kind, values)
-        .then(() => setCloudStatus("synced"))
-        .catch(() => setCloudStatus("local"));
+      const sync = kind
+        ? replaceFloorCloudItems(ownerId, kind, values)
+        : replaceFloorRooms(ownerId, values as unknown as FloorRoom[]);
+      void sync.then(() => setCloudStatus("synced")).catch(() => setCloudStatus("local"));
     }
   }
 
