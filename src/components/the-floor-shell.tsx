@@ -12,6 +12,7 @@ import {
   CalendarDays,
   ChevronRight,
   Compass,
+  FileSearch,
   GraduationCap,
   GitFork,
   Globe2,
@@ -22,6 +23,7 @@ import {
   MessageSquareText,
   Network,
   Plus,
+  Radio,
   ScrollText,
   Search,
   ShieldCheck,
@@ -61,11 +63,13 @@ const marketNavigation: NavItem[] = [
   { href: "/the-floor/rooms", label: "Research Rooms", icon: Users },
   { href: "/the-floor/analysts", label: "Analysts", icon: UserRoundCheck },
   { href: "/the-floor/network", label: "Network Center", icon: Network },
+  { href: "/the-floor/live", label: "Live Programming", icon: Radio },
 ];
 
 const researchNavigation: NavItem[] = [
   { href: "/the-floor/dashboard", label: "Research Dashboard", icon: BarChart3 },
   { href: "/the-floor/hub", label: "Research Hub", icon: LibraryBig },
+  { href: "/the-floor/research-desk", label: "Research Desk", icon: FileSearch },
   { href: "/the-floor/workspace", label: "Workspace", icon: ScrollText },
   { href: "/the-floor/research-assistant", label: "AI Assistant", icon: BookOpen },
   { href: "/the-floor/discover", label: "Discover", icon: Compass },
@@ -74,6 +78,7 @@ const researchNavigation: NavItem[] = [
   { href: "/the-floor/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/the-floor/discussion", label: "Discussion", icon: MessageSquareText },
   { href: "/the-floor/academy", label: "Academy", icon: GraduationCap },
+  { href: "/the-floor/contributors", label: "Contributors", icon: UserRoundCheck },
 ];
 
 const routeNames = [...marketNavigation, ...researchNavigation].sort(
