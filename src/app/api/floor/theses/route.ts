@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createFloorRequestSupabase } from "@/lib/floor-operations";
+import { createFloorRequestSupabase, hasActiveFloorAccess } from "@/lib/floor-operations";
 import {
   FLOOR_CATALYSTS_MAX,
   FLOOR_EXIT_PLAN_MAX,
@@ -37,6 +37,9 @@ export async function POST(request: NextRequest) {
 
   if (authError || !auth.user) {
     return jsonError("Sign in to post on The Floor.", 401);
+  }
+  if (!(await hasActiveFloorAccess(supabase, auth.user.id))) {
+    return jsonError("An active Floor membership is required.", 403);
   }
 
   const body = await request.json().catch(() => null);
