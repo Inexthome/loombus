@@ -79,6 +79,7 @@ export function RoomTopbarActions() {
         .from("notifications")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
+        .eq("room_id", roomId)
         .is("read_at", null),
     ]);
 
@@ -150,7 +151,7 @@ export function RoomTopbarActions() {
       </button>
 
       <Link
-        href={`/rooms/${encodeURIComponent(roomId)}/notifications`}
+        href={`/notifications?room=${encodeURIComponent(roomId)}`}
         className="room-phase4-icon-action"
         aria-label={
           unreadCount > 0

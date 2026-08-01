@@ -4,10 +4,18 @@ import TeenSafetyNotificationDestinations from "./teen-safety-notification-desti
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default function NotificationsPage() {
+export default async function NotificationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ room?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const roomParam = Array.isArray(params.room) ? params.room[0] : params.room;
+  const roomId = roomParam?.trim() || null;
+
   return (
     <>
-      <NotificationsV2Client />
+      <NotificationsV2Client roomId={roomId} />
       <TeenSafetyNotificationDestinations />
     </>
   );

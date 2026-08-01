@@ -501,7 +501,7 @@ export default function RoomRouteFrameV3({ children }: { children: ReactNode }) 
     ...(payload.access.canManage || payload.access.canModerate
       ? [{ kind: "feature" as const, id: "workspace:operations", label: "Room Operations", Icon: ShieldCheck, feature: { id: "workspace:operations", kind: "operations" as const, label: "Room Operations" } }]
       : []),
-    { kind: "route", id: "route:notifications", href: `${roomBase}/notifications`, label: "Notifications", Icon: Bell },
+    { kind: "route", id: "route:notifications", href: `/notifications?room=${encodeURIComponent(roomId)}`, label: "Notifications", Icon: Bell },
     { kind: "route", id: "route:moderation", href: `${roomBase}/moderation`, label: payload.access.canModerate ? "Moderation" : "Report issue", Icon: Flag },
   ];
 

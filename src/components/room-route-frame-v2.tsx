@@ -612,7 +612,7 @@ export default function RoomRouteFrameV2({ children }: { children: ReactNode }) 
     {
       kind: "route",
       id: "route:notifications",
-      href: `${roomBase}/notifications`,
+      href: `/notifications?room=${encodeURIComponent(roomId)}`,
       label: "Notifications",
       Icon: Bell,
     },

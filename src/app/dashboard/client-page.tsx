@@ -677,7 +677,7 @@ export default function DashboardClientPage() {
         <section className="dashboard-v2-section">
           <DashboardSectionHeading
             eyebrow="Attention center"
-            title="Handle what matters before adding more noise."
+            title="Focus on what matters. Keep your signal clear."
             description="These recommendations come from your actual profile, notifications, discussions, replies, and saved activity."
             action={{ href: "/notifications", label: "All notifications" }}
           />

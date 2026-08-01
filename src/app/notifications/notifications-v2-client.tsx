@@ -184,7 +184,7 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export default function NotificationsV2Client() {
+export default function NotificationsV2Client({ roomId = null }: { roomId?: string | null }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
@@ -277,11 +277,14 @@ export default function NotificationsV2Client() {
           getBlockedRelationshipUserIds(supabase, user.id),
           // Selecting all notification columns keeps the inbox compatible both
           // before and after the manually applied Room migration adds room_id.
-          supabase
+          (() => {
+            let notificationQuery = supabase
             .from("notifications")
             .select("*")
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false }),
+            .eq("user_id", user.id);
+            if (roomId) notificationQuery = notificationQuery.eq("room_id", roomId);
+            return notificationQuery.order("created_at", { ascending: false });
+          })(),
         ]);
 
         const firstError =
@@ -333,7 +336,7 @@ export default function NotificationsV2Client() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [roomId]);
 
   const unreadCount = notifications.filter(
     (notification) => !notification.read_at
@@ -537,11 +540,14 @@ export default function NotificationsV2Client() {
       <div className="notifications-v2-shell">
         <header className="notifications-v2-hero">
           <div className="notifications-v2-hero-copy">
-            <p className="notifications-v2-eyebrow">Signal Inbox</p>
-            <h1>Attention without the noise.</h1>
+            <p className="notifications-v2-eyebrow">
+              {roomId ? "Room notifications" : "Signal Inbox"}
+            </p>
+            <h1>{roomId ? "Live notices from this Room." : "Attention without the noise."}</h1>
             <p>
-              Review replies, discussions, follows, messages, Room activity, and account updates
-              connected to you, then return to the Signal that matters.
+              {roomId
+                ? "Review announcements, events, discussions, replies, and other activity connected to this Room."
+                : "Review replies, discussions, follows, messages, Room activity, and account updates connected to you, then return to the Signal that matters."}
             </p>
           </div>
 
@@ -576,7 +582,9 @@ export default function NotificationsV2Client() {
           >
             Clear read
           </button>
-          <Link href="/settings">Notification settings</Link>
+          <Link href={roomId ? `/rooms/${encodeURIComponent(roomId)}/notifications` : "/settings"}>
+            {roomId ? "Room notification settings" : "Notification settings"}
+          </Link>
         </section>
 
         <section
