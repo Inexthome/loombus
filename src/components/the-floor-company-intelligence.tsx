@@ -73,6 +73,7 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
         .from("floor_theses")
         .select("id, ticker, stance, conviction, horizon, thesis, catalysts, risks, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, status, outcome, resolves_by, created_at)")
         .eq("ticker", ticker)
+        .neq("lifecycle_status", "deleted")
         .order("created_at", { ascending: false });
       if (mounted && !error) setTheses((data ?? []) as unknown as ThesisRow[]);
       if (mounted) setLoading(false);

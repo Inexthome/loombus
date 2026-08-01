@@ -40,6 +40,7 @@ type FloorThesisRow = {
   catalysts: string;
   risks: string;
   created_at: string;
+  lifecycle_status: "active" | "withdrawn" | "deleted";
   author: FloorAuthorEmbed | FloorAuthorEmbed[] | null;
   floor_calls: FloorCallCardData[] | null;
   floor_thesis_analyses: FloorAnalysisData[] | null;
@@ -64,6 +65,7 @@ function toCardData(row: FloorThesisRow): FloorThesisCardData {
     catalysts: row.catalysts,
     risks: row.risks,
     created_at: row.created_at,
+    lifecycle_status: row.lifecycle_status === "withdrawn" ? "withdrawn" : "active",
     author_name: authorName(row.author),
     calls: [...(row.floor_calls ?? [])].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -104,8 +106,9 @@ export default function TheFloorPage() {
     const { data, error } = await supabase
       .from("floor_theses")
       .select(
-        "id, author_id, ticker, stance, conviction, horizon, entry_zone_low, entry_zone_high, exit_plan, thesis, catalysts, risks, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, comparator, target_value, target_value_high, resolves_by, status, outcome, outcome_note, resolved_value, created_at), floor_thesis_analyses(id, steelman, redteam, blind_spots, model, created_at)"
+        "id, author_id, ticker, stance, conviction, horizon, entry_zone_low, entry_zone_high, exit_plan, thesis, catalysts, risks, created_at, lifecycle_status, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, comparator, target_value, target_value_high, resolves_by, status, outcome, outcome_note, resolved_value, created_at), floor_thesis_analyses(id, steelman, redteam, blind_spots, model, created_at)"
       )
+      .neq("lifecycle_status", "deleted")
       .order("created_at", { ascending: false })
       .limit(50);
     if (!error && data) {
@@ -475,9 +478,11 @@ export default function TheFloorPage() {
               <FloorThesisCard
                 key={row.id}
                 thesis={toCardData(row)}
-                canAddCall={row.author_id === userId}
+                canManage={row.author_id === userId}
+                onManaged={loadTheses}
+                canAddCall={row.author_id === userId && row.lifecycle_status === "active"}
                 onCallPosted={loadTheses}
-                canRequestAnalysis={row.author_id === userId}
+                canRequestAnalysis={row.author_id === userId && row.lifecycle_status === "active"}
                 onAnalysisGenerated={loadTheses}
               />
             ))}
