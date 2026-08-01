@@ -1,5 +1,7 @@
 begin;
 
+create extension if not exists pg_cron;
+
 create table if not exists public.floor_live_reminder_deliveries (
   program_id uuid not null references public.floor_live_programs(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -99,10 +101,6 @@ as $$
 declare
   delivery_count integer := 0;
 begin
-  if auth.role() <> 'service_role' then
-    raise exception 'Service role required';
-  end if;
-
   with due as (
     select
       registration.program_id,
@@ -151,6 +149,14 @@ $$;
 
 revoke all on function public.dispatch_due_floor_live_reminders(integer) from public, anon, authenticated;
 grant execute on function public.dispatch_due_floor_live_reminders(integer) to service_role;
+
+-- Schedule inside Supabase rather than Vercel. Vercel Hobby only permits
+-- daily cron expressions, while live reminders require minute-level timing.
+select cron.schedule(
+  'floor-live-reminders',
+  '*/5 * * * *',
+  $command$select public.dispatch_due_floor_live_reminders(500);$command$
+);
 
 notify pgrst, 'reload schema';
 commit;

@@ -15,10 +15,6 @@
     {
       "path": "/api/floor/calls/resolve",
       "schedule": "0 14 * * 1-5"
-    },
-    {
-      "path": "/api/floor/live/reminders",
-      "schedule": "*/5 * * * *"
     }
   ]
 }
