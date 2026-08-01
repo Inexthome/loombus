@@ -27,6 +27,8 @@ type ThesisActivity = {
   author: { username: string | null; full_name: string | null } | { username: string | null; full_name: string | null }[] | null;
 };
 
+type MarketData = { provider: string; delayed: boolean; markets: Array<{ key:string; name:string; symbol:string; note:string; price:number|null; change:number|null; percentChange:number|null; asOf:string|null; available:boolean }>; earnings:{ available:boolean; message:string|null; events:Array<{symbol:string;name:string;date:string;time:string|null;epsEstimate:number|null;revenueEstimate:number|null}> } };
+
 type ResolvedCall = {
   id: string;
   outcome: string | null;
@@ -74,10 +76,26 @@ export default function TheFloorOpeningBell() {
   const [now, setNow] = useState(() => new Date());
   const [theses, setTheses] = useState<ThesisActivity[]>([]);
   const [resolvedCalls, setResolvedCalls] = useState<ResolvedCall[]>([]);
+  const [marketData, setMarketData] = useState<MarketData | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadMarketData() {
+      try {
+        const response = await fetch("/api/floor/market");
+        if (!response.ok) return;
+        const value = (await response.json()) as MarketData;
+        if (mounted) setMarketData(value);
+      } catch {}
+    }
+    void loadMarketData();
+    const timer = window.setInterval(loadMarketData, 300_000);
+    return () => { mounted = false; window.clearInterval(timer); };
   }, []);
 
   useEffect(() => {
@@ -151,9 +169,9 @@ export default function TheFloorOpeningBell() {
         </div>
 
         <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
-          <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--loombus-gold)]">Market snapshot</p><h3 className="mt-1 text-xl font-black">Core markets</h3></div><span className="text-xs font-bold text-[var(--loombus-text-subtle)]">Live market-data integration ready</span></div>
+          <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--loombus-gold)]">Market snapshot</p><h3 className="mt-1 text-xl font-black">Core markets</h3></div><span className="text-xs font-bold text-[var(--loombus-text-subtle)]">{marketData ? `${marketData.provider} · delayed/cached` : "Connecting to market data"}</span></div>
           <div className="mt-4 grid gap-3 grid-cols-2 md:grid-cols-4">
-            {marketTiles.map(([name, symbol]) => <div key={symbol} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4"><p className="text-xs font-black text-[var(--loombus-text-subtle)]">{symbol}</p><p className="mt-2 text-sm font-black">{name}</p><p className="mt-3 text-xs font-bold text-[var(--loombus-text-muted)]">Data source pending</p></div>)}
+            {(marketData?.markets.length ? marketData.markets : marketTiles.map(([name,key]) => ({ name, key, symbol:key, note:"", price:null, change:null, percentChange:null, asOf:null, available:false }))).map((market) => <div key={market.key} className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4"><div className="flex items-center justify-between gap-2"><p className="text-xs font-black text-[var(--loombus-text-subtle)]">{market.key}</p>{market.available && market.percentChange !== null ? <span className={`text-xs font-black ${market.percentChange >= 0 ? "text-emerald-400" : "text-rose-400"}`}>{market.percentChange >= 0 ? "+" : ""}{market.percentChange.toFixed(2)}%</span> : null}</div><p className="mt-2 text-sm font-black">{market.name}</p>{market.available && market.price !== null ? <><p className="mt-3 text-xl font-black">{market.price.toLocaleString(undefined,{maximumFractionDigits:2})}</p><p className="mt-1 text-[10px] font-bold text-[var(--loombus-text-subtle)]">{market.note} · delayed/cached</p></> : <p className="mt-3 text-xs font-bold text-[var(--loombus-text-muted)]">Temporarily unavailable</p>}</div>)}
           </div>
         </article>
 
@@ -174,7 +192,7 @@ export default function TheFloorOpeningBell() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><CalendarDays className="size-5 text-[var(--loombus-gold)]" /><h3 className="font-black">Today&apos;s calendar</h3></div><p className="mt-4 rounded-2xl border border-dashed border-[var(--loombus-border)] p-5 text-sm leading-6 text-[var(--loombus-text-muted)]">Economic events, earnings, Fed events, dividends, and splits will populate here when the calendar feed is connected.</p></article>
+          <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><CalendarDays className="size-5 text-[var(--loombus-gold)]" /><h3 className="font-black">Upcoming earnings</h3></div><div className="mt-4 space-y-2">{marketData?.earnings.available && marketData.earnings.events.length ? marketData.earnings.events.slice(0,6).map((event) => <div key={`${event.symbol}-${event.date}`} className="flex items-center justify-between rounded-2xl bg-[var(--loombus-page-bg)] p-3"><div><p className="text-sm font-black">{event.symbol || event.name}</p><p className="text-xs text-[var(--loombus-text-muted)]">{event.name}</p></div><p className="text-xs font-black">{event.date}{event.time ? ` · ${event.time}` : ""}</p></div>) : <p className="rounded-2xl border border-dashed border-[var(--loombus-border)] p-5 text-sm leading-6 text-[var(--loombus-text-muted)]">{marketData?.earnings.message ?? "Earnings calendar is loading or unavailable on the current Twelve Data plan."}</p>}</div></article>
           <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><TrendingUp className="size-5 text-[var(--loombus-gold)]" /><h3 className="font-black">Recent outcomes</h3></div><div className="mt-4 space-y-3">{resolvedCalls.length ? resolvedCalls.map((call) => { const thesis = Array.isArray(call.thesis) ? call.thesis[0] : call.thesis; return <div key={call.id} className="rounded-2xl bg-[var(--loombus-page-bg)] p-4"><p className="text-sm font-black">{thesis?.ticker ?? "Market call"} resolved</p><p className="mt-1 text-xs text-[var(--loombus-text-muted)]">Outcome: {call.outcome ?? "recorded"}{call.resolved_value !== null ? ` · value ${call.resolved_value}` : ""}</p></div>; }) : <p className="rounded-2xl border border-dashed border-[var(--loombus-border)] p-5 text-sm text-[var(--loombus-text-muted)]">Resolved predictions will appear here.</p>}</div></article>
         </div>
 
