@@ -64,7 +64,7 @@ export default function TheFloorExperience({ children }: { children: ReactNode }
             {navigation.map((item) => {
               const Icon = item.icon;
               const classes = "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 text-sm font-black transition hover:border-[color:color-mix(in_srgb,var(--loombus-gold)_55%,var(--loombus-border))]";
-              if (item.pending) {
+              if ("pending" in item && item.pending) {
                 return (
                   <span key={item.label} className={`${classes} cursor-default text-[var(--loombus-text-subtle)]`} title={`${item.label} is coming in a future milestone`}>
                     <Icon className="size-4" aria-hidden="true" />
