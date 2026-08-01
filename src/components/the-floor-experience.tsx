@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   BarChart3,
+  Bell,
   BookOpen,
   Building2,
   Compass,
@@ -28,7 +29,7 @@ const navigation = [
   { href: "/the-floor/research-assistant", label: "AI Assistant", icon: BookOpen },
   { href: "/the-floor/discover", label: "Discover", icon: Compass },
   { href: "/the-floor/knowledge-graph", label: "Knowledge Graph", icon: GitFork },
-  { href: "/the-floor/companies", label: "Companies", icon: Building2, pending: true },
+  { href: "/the-floor/companies", label: "Companies", icon: Building2 },
   { href: "/the-floor/academy", label: "Analysts", icon: UserRoundCheck },
   { href: "/the-floor/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/the-floor/discussion", label: "Discussion", icon: MessagesSquare },
