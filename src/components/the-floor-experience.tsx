@@ -1,11 +1,13 @@
 import Link from "next/link";
 import {
   BarChart3,
+  BookOpen,
   Building2,
   Compass,
   GraduationCap,
   GitFork,
   LayoutDashboard,
+  LibraryBig,
   MessagesSquare,
   ScrollText,
   Trophy,
@@ -19,6 +21,9 @@ const navigation = [
   { href: "#opening-bell", label: "Opening Bell", icon: BarChart3 },
   { href: "#research-feed", label: "Research", icon: ScrollText },
   { href: "/the-floor/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/the-floor/hub", label: "Research Hub", icon: LibraryBig },
+  { href: "/the-floor/workspace", label: "Workspace", icon: ScrollText },
+  { href: "/the-floor/research-assistant", label: "AI Assistant", icon: BookOpen },
   { href: "/the-floor/discover", label: "Discover", icon: Compass },
   { href: "/the-floor/knowledge-graph", label: "Knowledge Graph", icon: GitFork },
   { href: "/the-floor/companies", label: "Companies", icon: Building2, pending: true },
