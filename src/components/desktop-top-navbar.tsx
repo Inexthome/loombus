@@ -49,6 +49,7 @@ import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
+import { normalizePublicText } from "@/lib/public-text";
 import { supabase } from "@/lib/supabase/client";
 
 type DesktopTopNavProfile = {
@@ -57,6 +58,45 @@ type DesktopTopNavProfile = {
   avatar_url: string | null;
   is_admin: boolean | null;
 };
+
+type TopNavNotification = {
+  id: string;
+  actor_id: string | null;
+  type: string;
+  target_type: string;
+  target_id: string | null;
+  room_id?: string | null;
+  message: string;
+  created_at: string;
+};
+
+function topNavNotificationHref(notification: TopNavNotification) {
+  if (notification.room_id) {
+    return notification.target_type === "room_moderation_item"
+      ? `/rooms/${encodeURIComponent(notification.room_id)}/moderation`
+      : `/rooms/${encodeURIComponent(notification.room_id)}`;
+  }
+  if (notification.target_type === "discussion" && notification.target_id) {
+    return `/discussions/${notification.target_id}`;
+  }
+  if (notification.target_type === "conversation" && notification.target_id) {
+    return `/messages?conversation=${encodeURIComponent(notification.target_id)}`;
+  }
+  if (notification.target_type === "profile") return "/people";
+  if (notification.target_type === "identity_verification") return "/profile";
+  return "/notifications";
+}
+
+function topNavNotificationTime(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "New";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
 
 const centerLinks = [
   { href: "/discussions", label: "Discussions" },
@@ -231,9 +271,12 @@ export function DesktopTopNavbar() {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<DesktopTopNavProfile | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [notifications, setNotifications] = useState<TopNavNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const exploreRef = useRef<HTMLDivElement | null>(null);
+  const notificationsRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -257,14 +300,18 @@ export function DesktopTopNavbar() {
 
       const { data: notificationRows } = await supabase
         .from("notifications")
-        .select("id, actor_id")
+        .select("id, actor_id, type, target_type, target_id, room_id, message, created_at")
         .eq("user_id", nextUserId)
-        .is("read_at", null);
+        .is("read_at", null)
+        .order("created_at", { ascending: false });
 
       if (isMounted) {
-        setNotificationCount(
-          filterBlockedActorNotifications(notificationRows ?? [], blockedIds).length
-        );
+        const visibleNotifications = filterBlockedActorNotifications(
+          notificationRows ?? [],
+          blockedIds
+        ) as TopNavNotification[];
+        setNotificationCount(visibleNotifications.length);
+        setNotifications(visibleNotifications.slice(0, 5));
       }
     }
 
@@ -282,6 +329,7 @@ export function DesktopTopNavbar() {
       if (!nextUser?.id) {
         setProfile(null);
         setNotificationCount(0);
+        setNotifications([]);
         return;
       }
 
@@ -302,6 +350,7 @@ export function DesktopTopNavbar() {
       if (!nextUserId) {
         setProfile(null);
         setNotificationCount(0);
+        setNotifications([]);
         return;
       }
 
@@ -334,12 +383,17 @@ export function DesktopTopNavbar() {
       if (!profileRef.current?.contains(target)) {
         setProfileOpen(false);
       }
+
+      if (!notificationsRef.current?.contains(target)) {
+        setNotificationsOpen(false);
+      }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setExploreOpen(false);
         setProfileOpen(false);
+        setNotificationsOpen(false);
       }
     }
 
@@ -352,9 +406,22 @@ export function DesktopTopNavbar() {
     };
   }, []);
 
+  async function markTopNavNotificationRead(notificationId: string) {
+    if (!userId) return;
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", notificationId)
+      .eq("user_id", userId);
+    setNotifications((current) => current.filter((item) => item.id !== notificationId));
+    setNotificationCount((current) => Math.max(0, current - 1));
+    window.dispatchEvent(new Event("loombus:notifications-changed"));
+  }
+
   useEffect(() => {
     setExploreOpen(false);
     setProfileOpen(false);
+    setNotificationsOpen(false);
   }, [pathname]);
 
   async function handleLogout() {
@@ -498,19 +565,70 @@ export function DesktopTopNavbar() {
             <Search aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
           </Link>
 
-          <Link
-            href="/notifications"
-            aria-label="Notifications"
-            title="Notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
-          >
-            <Bell aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
-            {notificationCount > 0 && (
-              <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[var(--loombus-primary-bg)] px-1 text-[10px] font-bold text-[var(--loombus-primary-text)] ring-2 ring-[var(--loombus-surface)]">
-                {notificationCount > 9 ? "9+" : notificationCount}
-              </span>
-            )}
-          </Link>
+          <div ref={notificationsRef} className="relative">
+            <button
+              type="button"
+              aria-label="Notifications"
+              aria-haspopup="menu"
+              aria-expanded={notificationsOpen}
+              title="Notifications"
+              onClick={() => {
+                setNotificationsOpen((current) => !current);
+                setExploreOpen(false);
+                setProfileOpen(false);
+              }}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+            >
+              <Bell aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+              {notificationCount > 0 && (
+                <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[var(--loombus-primary-bg)] px-1 text-[10px] font-bold text-[var(--loombus-primary-text)] ring-2 ring-[var(--loombus-surface)]">
+                  {notificationCount > 9 ? "9+" : notificationCount}
+                </span>
+              )}
+            </button>
+
+            {notificationsOpen ? (
+              <div className="absolute right-0 top-[calc(100%+0.65rem)] z-[160] grid w-[min(390px,calc(100vw-24px))] overflow-hidden rounded-[1.25rem] border border-[var(--loombus-border-strong)] bg-[var(--loombus-surface)] shadow-2xl" role="menu">
+                <div className="flex items-center justify-between gap-4 border-b border-[var(--loombus-border)] px-4 py-3.5">
+                  <div className="grid gap-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">Notifications</span>
+                    <strong className="text-sm text-[var(--loombus-text)]">New activity</strong>
+                  </div>
+                  <small className="text-xs text-[var(--loombus-text-muted)]">{notificationCount} unread</small>
+                </div>
+
+                {notifications.length > 0 ? (
+                  <div className="grid">
+                    {notifications.map((notification) => (
+                      <Link
+                        key={notification.id}
+                        href={topNavNotificationHref(notification)}
+                        role="menuitem"
+                        className="grid gap-1 border-b border-[var(--loombus-border)] px-4 py-3 text-sm leading-5 text-[var(--loombus-text)] transition hover:bg-[var(--loombus-surface-muted)]"
+                        onClick={() => {
+                          setNotificationsOpen(false);
+                          void markTopNavNotificationRead(notification.id);
+                        }}
+                      >
+                        <span>{normalizePublicText(notification.message)}</span>
+                        <time className="text-xs text-[var(--loombus-text-muted)]">{topNavNotificationTime(notification.created_at)}</time>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="m-0 px-4 py-6 text-center text-sm text-[var(--loombus-text-muted)]">You are all caught up.</p>
+                )}
+
+                <Link
+                  href="/notifications"
+                  className="flex min-h-12 items-center justify-center px-4 py-3 text-sm font-bold text-[var(--loombus-gold)] transition hover:bg-[var(--loombus-surface-muted)]"
+                  onClick={() => setNotificationsOpen(false)}
+                >
+                  View all notifications
+                </Link>
+              </div>
+            ) : null}
+          </div>
 
           <div ref={profileRef} className="relative">
             <button
@@ -518,6 +636,7 @@ export function DesktopTopNavbar() {
               onClick={() => {
                 setProfileOpen((current) => !current);
                 setExploreOpen(false);
+                setNotificationsOpen(false);
               }}
               aria-label="Open account menu"
               aria-expanded={profileOpen}

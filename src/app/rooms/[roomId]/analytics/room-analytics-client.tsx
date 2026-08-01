@@ -637,7 +637,7 @@ export default function RoomAnalyticsClient() {
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <Link href={`/rooms/${encodeURIComponent(roomId)}/moderation`} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm font-semibold text-[var(--text)]">Moderation center</Link>
-                  <Link href={`/rooms/${encodeURIComponent(roomId)}/notifications`} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm font-semibold text-[var(--text)]">Notification delivery</Link>
+                  <Link href={`/rooms/${encodeURIComponent(roomId)}/notifications`} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm font-semibold text-[var(--text)]">Notification preferences</Link>
                   <Link href={`/rooms/${encodeURIComponent(roomId)}/governance`} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm font-semibold text-[var(--text)]">Governance controls</Link>
                   <Link href={`/rooms/${encodeURIComponent(roomId)}/retention`} className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm font-semibold text-[var(--text)]">Retention staging</Link>
                 </div>

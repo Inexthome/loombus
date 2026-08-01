@@ -529,7 +529,7 @@ export default function RoomRouteFrameV4({ children }: { children: ReactNode }) 
     ...(payload.access.canManage || payload.access.canModerate
       ? [{ kind: "group" as const, id: "group:operations", label: "Room Operations", Icon: ShieldCheck, group: "operations" as const }]
       : []),
-    { kind: "route", id: "route:notifications", href: `${roomBase}/notifications`, label: "Notifications", Icon: Bell },
+    { kind: "route", id: "route:notifications", href: `/notifications?room=${encodeURIComponent(roomId)}`, label: "Notifications", Icon: Bell },
     { kind: "route", id: "route:moderation", href: `${roomBase}/moderation`, label: payload.access.canModerate ? "Moderation" : "Report issue", Icon: Flag },
   ];
 
@@ -557,6 +557,13 @@ export default function RoomRouteFrameV4({ children }: { children: ReactNode }) 
   };
 
   const settingsItems = [
+    {
+      kind: "route" as const,
+      id: "route:notification-preferences",
+      href: `${roomBase}/notifications`,
+      label: "Notification preferences",
+      Icon: Bell,
+    },
     moduleDefinitions.has("settings")
       ? {
           kind: "feature" as const,

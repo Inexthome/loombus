@@ -324,7 +324,7 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
       label: payload.access.isOwner ? "Search and controls" : "Search Room",
       Icon: Search,
     },
-    { href: `${roomBase}/notifications`, label: "Notifications", Icon: Bell },
+    { href: `/notifications?room=${encodeURIComponent(roomId)}`, label: "Notifications", Icon: Bell },
     {
       href: `${roomBase}/moderation`,
       label: payload.access.canModerate ? "Moderation" : "Report issue",

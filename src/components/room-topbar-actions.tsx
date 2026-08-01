@@ -17,6 +17,7 @@ import {
   getProfileDisplayName,
 } from "@/components/profile-avatar";
 import { useRoomWorkspace } from "@/components/room-workspace-context";
+import { normalizePublicText } from "@/lib/public-text";
 import { supabase } from "@/lib/supabase/client";
 
 type ViewerProfile = {
@@ -24,6 +25,24 @@ type ViewerProfile = {
   username: string | null;
   avatar_url: string | null;
 };
+
+type RoomNotification = {
+  id: string;
+  message: string;
+  created_at: string;
+  target_type: string;
+};
+
+function notificationTime(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "New";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
 
 export function RoomTopbarActions() {
   const params = useParams();
@@ -37,7 +56,10 @@ export function RoomTopbarActions() {
   const [authorized, setAuthorized] = useState(false);
   const [profile, setProfile] = useState<ViewerProfile | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [roomNotifications, setRoomNotifications] = useState<RoomNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   const loadViewer = useCallback(async () => {
@@ -52,6 +74,7 @@ export function RoomTopbarActions() {
       setAuthorized(false);
       setProfile(null);
       setUnreadCount(0);
+      setRoomNotifications([]);
       return;
     }
 
@@ -77,9 +100,12 @@ export function RoomTopbarActions() {
         .maybeSingle(),
       supabase
         .from("notifications")
-        .select("id", { count: "exact", head: true })
+        .select("id, message, created_at, target_type", { count: "exact" })
         .eq("user_id", user.id)
-        .is("read_at", null),
+        .eq("room_id", roomId)
+        .is("read_at", null)
+        .order("created_at", { ascending: false })
+        .limit(5),
     ]);
 
     if (!profileResult.error) {
@@ -87,6 +113,7 @@ export function RoomTopbarActions() {
     }
     if (!notificationResult.error) {
       setUnreadCount(notificationResult.count ?? 0);
+      setRoomNotifications((notificationResult.data ?? []) as RoomNotification[]);
     }
   }, [roomId]);
 
@@ -120,11 +147,42 @@ export function RoomTopbarActions() {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    const close = (event: MouseEvent) => {
+      if (!notificationsRef.current?.contains(event.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setNotificationsOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [notificationsOpen]);
+
   if (!roomId || !authorized || pathname.endsWith("/billing/success")) return null;
 
   async function signOut() {
     await supabase.auth.signOut();
     window.location.href = "/login";
+  }
+
+  async function markRoomNotificationRead(notificationId: string) {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return;
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", notificationId)
+      .eq("user_id", data.user.id);
+    setRoomNotifications((current) => current.filter((item) => item.id !== notificationId));
+    setUnreadCount((current) => Math.max(0, current - 1));
+    window.dispatchEvent(new Event("loombus:notifications-changed"));
   }
 
   return (
@@ -149,20 +207,68 @@ export function RoomTopbarActions() {
         <kbd>⌘ K</kbd>
       </button>
 
-      <Link
-        href={`/rooms/${encodeURIComponent(roomId)}/notifications`}
-        className="room-phase4-icon-action"
-        aria-label={
-          unreadCount > 0
-            ? `${unreadCount} unread Room notifications`
-            : "Room notifications"
-        }
-      >
-        <Bell aria-hidden="true" />
-        {unreadCount > 0 ? (
-          <strong>{unreadCount > 99 ? "99+" : unreadCount}</strong>
+      <div className="room-phase4-notifications" ref={notificationsRef}>
+        <button
+          type="button"
+          className="room-phase4-icon-action"
+          aria-haspopup="menu"
+          aria-expanded={notificationsOpen}
+          aria-label={
+            unreadCount > 0
+              ? `${unreadCount} unread Room notifications`
+              : "Room notifications"
+          }
+          onClick={() => {
+            setMenuOpen(false);
+            setNotificationsOpen((current) => !current);
+          }}
+        >
+          <Bell aria-hidden="true" />
+          {unreadCount > 0 ? (
+            <strong>{unreadCount > 99 ? "99+" : unreadCount}</strong>
+          ) : null}
+        </button>
+
+        {notificationsOpen ? (
+          <div className="room-phase4-notification-menu" role="menu">
+            <div className="room-phase4-notification-head">
+              <div><span>Room notifications</span><strong>New activity</strong></div>
+              <small>{unreadCount} unread</small>
+            </div>
+            {roomNotifications.length > 0 ? (
+              <div className="room-phase4-notification-list">
+                {roomNotifications.map((notification) => (
+                  <Link
+                    key={notification.id}
+                    href={
+                      notification.target_type === "room_moderation_item"
+                        ? `/rooms/${encodeURIComponent(roomId)}/moderation`
+                        : `/rooms/${encodeURIComponent(roomId)}`
+                    }
+                    role="menuitem"
+                    onClick={() => {
+                      setNotificationsOpen(false);
+                      void markRoomNotificationRead(notification.id);
+                    }}
+                  >
+                    <span>{normalizePublicText(notification.message)}</span>
+                    <time>{notificationTime(notification.created_at)}</time>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="room-phase4-notification-empty">You are all caught up.</p>
+            )}
+            <Link
+              href={`/notifications?room=${encodeURIComponent(roomId)}`}
+              className="room-phase4-notification-all"
+              onClick={() => setNotificationsOpen(false)}
+            >
+              View all Room notifications
+            </Link>
+          </div>
         ) : null}
-      </Link>
+      </div>
 
       <div className="room-phase4-account" ref={menuRef}>
         <button
@@ -170,7 +276,10 @@ export function RoomTopbarActions() {
           className="room-phase4-account-trigger"
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((current) => !current)}
+          onClick={() => {
+            setNotificationsOpen(false);
+            setMenuOpen((current) => !current);
+          }}
         >
           <ProfileAvatar profile={profile} size="md" />
           <ChevronDown aria-hidden="true" />

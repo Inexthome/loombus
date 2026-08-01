@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { AppleLogoMark, GoogleLogoMark } from "@/components/auth-provider-icons";
 import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { supabase } from "@/lib/supabase/client";
 import { isIosNativeApp, isNativeApp } from "@/lib/native-app";
@@ -382,8 +383,9 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => void handleOAuthLogin("apple")}
                 disabled={loading || Boolean(oauthLoading)}
-                className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mb-3 flex w-full items-center justify-center gap-3 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
+                <AppleLogoMark />
                 {oauthLoading === "apple" ? "Opening Apple..." : "Continue with Apple"}
               </button>
 
@@ -391,8 +393,9 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => void handleOAuthLogin("google")}
                 disabled={loading || Boolean(oauthLoading)}
-                className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-3 rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
+                <GoogleLogoMark />
                 {oauthLoading === "google" ? "Opening Google..." : "Continue with Google"}
               </button>
 
