@@ -141,6 +141,13 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
           </div>
         </header>
 
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1" aria-label={`${ticker} research tools`}>
+          <Link href="/the-floor/intelligence" className="shrink-0 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-xs font-black">Market Intelligence</Link>
+          <Link href={`/the-floor/knowledge-graph?query=${encodeURIComponent(ticker)}`} className="shrink-0 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-xs font-black">Knowledge Graph</Link>
+          <Link href={`/the-floor/research-assistant?ticker=${encodeURIComponent(ticker)}`} className="shrink-0 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-xs font-black">Ask AI Assistant</Link>
+          <Link href="/the-floor/workspace" className="shrink-0 rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-xs font-black text-black">Open Research Workspace</Link>
+        </div>
+
         <nav className="mt-4 flex gap-2 overflow-x-auto pb-2" aria-label={`${ticker} intelligence sections`}>
           {tabs.map((item) => (
             <button key={item.id} type="button" onClick={() => setTab(item.id)} className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-black ${tab === item.id ? "border-[var(--loombus-gold)] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]" : "border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text-muted)]"}`}>{item.label}</button>
