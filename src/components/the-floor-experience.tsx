@@ -29,10 +29,10 @@ const navigation = [
   { href: "/the-floor/discover", label: "Discover", icon: Compass },
   { href: "/the-floor/knowledge-graph", label: "Knowledge Graph", icon: GitFork },
   { href: "/the-floor/companies", label: "Companies", icon: Building2, pending: true },
-  { href: "/the-floor/analysts", label: "Analysts", icon: UserRoundCheck, pending: true },
+  { href: "/the-floor/academy", label: "Analysts", icon: UserRoundCheck },
   { href: "/the-floor/leaderboard", label: "Leaderboard", icon: Trophy },
   { href: "/the-floor/discussion", label: "Discussion", icon: MessagesSquare },
-  { href: "/the-floor/academy", label: "Academy", icon: GraduationCap, pending: true },
+  { href: "/the-floor/academy", label: "Academy", icon: GraduationCap },
 ];
 
 export default function TheFloorExperience({ children }: { children: ReactNode }) {
