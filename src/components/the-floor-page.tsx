@@ -104,9 +104,9 @@ export default function TheFloorPage() {
     const { data, error } = await supabase
       .from("floor_theses")
       .select(
-        "id, author_id, ticker, stance, conviction, horizon, entry_zone_low, entry_zone_high, exit_plan, thesis, catalysts, risks, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, comparator, target_value, target_value_high, resolves_by, status, outcome, outcome_note, resolved_value, created_at), floor_thesis_analyses(id, steelman, redteam, blind_spots, model, created_at)"
+        "id, author_id, ticker, stance, conviction, horizon, entry_zone_low, entry_zone_high, exit_plan, thesis, catalysts, risks, created_at, lifecycle_status, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, comparator, target_value, target_value_high, resolves_by, status, outcome, outcome_note, resolved_value, created_at), floor_thesis_analyses(id, steelman, redteam, blind_spots, model, created_at)"
       )
-      .order("created_at", { ascending: false })
+      .neq("lifecycle_status", "deleted")\n      .order("created_at", { ascending: false })
       .limit(50);
     if (!error && data) {
       setTheses(data as unknown as FloorThesisRow[]);
