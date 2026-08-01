@@ -21,12 +21,12 @@ function isAdminPath(pathname: string) {
 }
 
 function isPaidFloorPath(pathname: string) {
-  return pathname.startsWith("/the-floor/");
+  return pathname.startsWith("/the-floor/") && pathname !== "/the-floor/subscribe";
 }
 
-function redirectToFloorOverview(request: NextRequest, response: NextResponse) {
+function redirectToFloorSubscription(request: NextRequest, response: NextResponse) {
   const destination = request.nextUrl.clone();
-  destination.pathname = "/the-floor";
+  destination.pathname = "/the-floor/subscribe";
   destination.search = "";
   destination.searchParams.set("access", "subscribe");
   destination.searchParams.set("next", request.nextUrl.pathname);
@@ -115,15 +115,22 @@ export async function updateSession(request: NextRequest) {
     return !error && user ? redirectToDefaultAppLanding(request, response) : response;
   }
 
-  if (!isProtectedPath(pathname) && !isPaidFloorPath(pathname)) {
+  const isFloorOverview = pathname === "/the-floor";
+  const isFloorSubscription = pathname === "/the-floor/subscribe";
+
+  if (!isProtectedPath(pathname) && !isPaidFloorPath(pathname) && !isFloorOverview) {
     return response;
+  }
+
+  if ((error || !user) && isFloorOverview) {
+    return redirectToFloorSubscription(request, response);
   }
 
   if (error || !user) {
     return redirectToLogin(request);
   }
 
-  if (isPaidFloorPath(pathname)) {
+  if (isPaidFloorPath(pathname) || isFloorOverview || isFloorSubscription) {
     const [{ data: profile }, { data: floorSubscription }] = await Promise.all([
       supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle(),
       supabase
@@ -134,8 +141,15 @@ export async function updateSession(request: NextRequest) {
         .maybeSingle(),
     ]);
 
-    if (profile?.is_admin !== true && !floorSubscription) {
-      return redirectToFloorOverview(request, response);
+    const hasFloorAccess = profile?.is_admin === true || Boolean(floorSubscription);
+    if (!hasFloorAccess && (isPaidFloorPath(pathname) || isFloorOverview)) {
+      return redirectToFloorSubscription(request, response);
+    }
+    if (hasFloorAccess && isFloorSubscription) {
+      const overview = request.nextUrl.clone();
+      overview.pathname = "/the-floor";
+      overview.search = "";
+      return copyResponseCookies(response, NextResponse.redirect(overview));
     }
   }
 
