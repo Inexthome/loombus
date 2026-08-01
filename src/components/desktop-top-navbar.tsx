@@ -82,6 +82,7 @@ function topNavNotificationHref(notification: TopNavNotification) {
   if (notification.target_type === "conversation" && notification.target_id) {
     return `/messages?conversation=${encodeURIComponent(notification.target_id)}`;
   }
+  if (notification.target_type === "floor_live_program") return "/the-floor/live";
   if (notification.target_type === "profile") return "/people";
   if (notification.target_type === "identity_verification") return "/profile";
   return "/notifications";
