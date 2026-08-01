@@ -16,6 +16,7 @@ import {
   LineChart,
   ListChecks,
   RefreshCw,
+  Radio,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
@@ -214,6 +215,14 @@ const MODULE_GROUPS: AdminModuleGroup[] = [
           "Approve or reject the calls resolver's proposed outcomes before they stamp a member's public track record.",
         action: "Open Floor resolutions",
         Icon: LineChart,
+      },
+      {
+        href: "/admin/floor-program",
+        title: "Floor Operations Desk",
+        description:
+          "Schedule live programming, publish reviewed Research Desk issues, review contributor applications, and create editorial assignments.",
+        action: "Operate The Floor",
+        Icon: Radio,
       },
     ],
   },
