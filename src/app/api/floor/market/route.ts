@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
-import { getFloorEarnings, getFloorMarketData } from "@/lib/floor-twelve-data";
+import { getFloorEarnings, getFloorMarketData, getFloorMarketHistory } from "@/lib/floor-twelve-data";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const [marketsResult, earningsResult] = await Promise.allSettled([
+    const [marketsResult, earningsResult, historyResult] = await Promise.allSettled([
       getFloorMarketData(),
       getFloorEarnings(),
+      getFloorMarketHistory(),
     ]);
     const markets = marketsResult.status === "fulfilled" ? marketsResult.value : [];
     const earnings = earningsResult.status === "fulfilled"
       ? earningsResult.value
       : { available: false, message: "Live earnings data is temporarily unavailable. Your Floor research and coverage remain accessible.", events: [] };
+    const history = historyResult.status === "fulfilled" ? historyResult.value : [];
     const configured = Boolean(process.env.TWELVE_DATA_API_KEY);
     return NextResponse.json(
       {
@@ -20,6 +22,7 @@ export async function GET() {
         configured,
         markets,
         earnings,
+        history,
         generatedAt: new Date().toISOString(),
         delayed: true,
       },
@@ -27,7 +30,7 @@ export async function GET() {
     );
   } catch {
     return NextResponse.json(
-      { provider: "Twelve Data", configured: Boolean(process.env.TWELVE_DATA_API_KEY), markets: [], earnings: { available: false, message: "Live earnings data is temporarily unavailable. Your Floor research and coverage remain accessible.", events: [] }, error: "Market data unavailable" },
+      { provider: "Twelve Data", configured: Boolean(process.env.TWELVE_DATA_API_KEY), markets: [], history: [], earnings: { available: false, message: "Live earnings data is temporarily unavailable. Your Floor research and coverage remain accessible.", events: [] }, error: "Market data unavailable" },
       { status: 503 },
     );
   }
