@@ -18,3 +18,135 @@
   background: #d6b866;
   color: #111111;
 }
+
+/* Internal desks share a denser research-terminal language. Existing route
+   components keep their data and behavior while the shell supplies the visual
+   grammar: squared panels, compact controls, ticker numerics, and scan lines. */
+[data-floor-shell] main {
+  background: transparent !important;
+}
+
+[data-floor-shell] main > div {
+  max-width: 1500px !important;
+}
+
+[data-floor-shell] main header {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem !important;
+  border-color: #34383c !important;
+  background:
+    linear-gradient(110deg, rgba(214, 184, 102, 0.08), transparent 34%),
+    linear-gradient(180deg, #151719 0%, #101214 100%) !important;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22) !important;
+}
+
+[data-floor-shell] main header::after {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  content: "";
+  background: linear-gradient(90deg, #d6b866, rgba(214, 184, 102, 0.05) 62%, transparent);
+}
+
+[data-floor-shell] main header h1 {
+  letter-spacing: -0.025em;
+}
+
+[data-floor-shell] main header h1::after {
+  display: inline-block;
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-left: 0.65rem;
+  border-radius: 999px;
+  background: #d6b866;
+  box-shadow: 0 0 14px rgba(214, 184, 102, 0.65);
+  content: "";
+  vertical-align: middle;
+}
+
+[data-floor-shell] main article,
+[data-floor-shell] main section > article,
+[data-floor-shell] main aside,
+[data-floor-shell] main [class*="rounded-[1.5rem]"],
+[data-floor-shell] main [class*="rounded-[1.75rem]"],
+[data-floor-shell] main [class*="rounded-[2rem]"],
+[data-floor-shell] main [class*="rounded-3xl"] {
+  border-radius: 0.65rem !important;
+}
+
+[data-floor-shell] main article,
+[data-floor-shell] main aside {
+  border-color: #2d3236 !important;
+  box-shadow: none !important;
+}
+
+[data-floor-shell] main article:hover {
+  border-color: #65562f !important;
+}
+
+[data-floor-shell] main input,
+[data-floor-shell] main select,
+[data-floor-shell] main textarea {
+  font-variant-numeric: tabular-nums;
+  border-radius: 0.45rem !important;
+}
+
+[data-floor-shell] main button,
+[data-floor-shell] main a[class*="rounded-full"] {
+  border-radius: 0.45rem !important;
+}
+
+[data-floor-shell] main nav button {
+  border-radius: 0 !important;
+  border-width: 0 0 2px !important;
+  background: transparent !important;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+[data-floor-shell] main [class*="text-2xl"],
+[data-floor-shell] main [class*="text-3xl"],
+[data-floor-shell] main [class*="text-4xl"],
+[data-floor-shell] main [class*="text-5xl"] {
+  font-variant-numeric: tabular-nums;
+}
+
+[data-floor-shell] main [class*="bg-[var(--loombus-surface-muted)]"] {
+  background-color: #171a1d !important;
+}
+
+[data-floor-shell] main [class*="bg-[var(--loombus-gold-surface)]"] {
+  border: 1px solid rgba(214, 184, 102, 0.18);
+}
+
+[data-floor-shell] main table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-floor-shell] main th {
+  color: #858b91;
+  font-size: 0.65rem;
+  letter-spacing: 0.09em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+[data-floor-shell] main th,
+[data-floor-shell] main td {
+  border-bottom: 1px solid #292d31;
+  padding: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  [data-floor-shell] main {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  [data-floor-shell] main header {
+    padding: 1rem !important;
+  }
+}
