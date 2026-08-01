@@ -13,6 +13,7 @@ import {
   normalizeFloorSymbol,
   splitFloorList,
 } from "@/lib/floor-research-hub";
+import { mergeFloorLocalWithCloud, replaceFloorCloudItems, type FloorCloudKind } from "@/lib/floor-cloud-data";
 import { supabase } from "@/lib/supabase/client";
 import {
   ArrowLeft,
@@ -49,6 +50,8 @@ const buttonClass =
 
 export default function TheFloorResearchHub() {
   const [loading, setLoading] = useState(true);
+  const [ownerId, setOwnerId] = useState("");
+  const [cloudStatus, setCloudStatus] = useState<"syncing" | "synced" | "local">("syncing");
   const [tab, setTab] = useState<Tab>("watchlists");
   const [watchItems, setWatchItems] = useState<FloorWatchItem[]>([]);
   const [journal, setJournal] = useState<FloorJournalEntry[]>([]);
@@ -76,16 +79,40 @@ export default function TheFloorResearchHub() {
         window.location.replace("/login?next=%2Fthe-floor%2Fhub");
         return;
       }
-      setWatchItems(readStored<FloorWatchItem>(FLOOR_WATCHLIST_KEY));
-      setJournal(readStored<FloorJournalEntry>(FLOOR_JOURNAL_KEY));
+      setOwnerId(data.user.id);
+      const localWatches = readStored<FloorWatchItem>(FLOOR_WATCHLIST_KEY);
+      const localJournal = readStored<FloorJournalEntry>(FLOOR_JOURNAL_KEY);
       setRooms(readStored<FloorRoom>(FLOOR_ROOMS_KEY));
+      try {
+        const [cloudWatches, cloudJournal] = await Promise.all([
+          mergeFloorLocalWithCloud(data.user.id, "watch", localWatches),
+          mergeFloorLocalWithCloud(data.user.id, "journal", localJournal),
+        ]);
+        setWatchItems(cloudWatches);
+        setJournal(cloudJournal);
+        window.localStorage.setItem(FLOOR_WATCHLIST_KEY, JSON.stringify(cloudWatches));
+        window.localStorage.setItem(FLOOR_JOURNAL_KEY, JSON.stringify(cloudJournal));
+        setCloudStatus("synced");
+      } catch {
+        setWatchItems(localWatches);
+        setJournal(localJournal);
+        setCloudStatus("local");
+      }
       setLoading(false);
     })();
   }, []);
 
-  function persist<T>(key: string, values: T[], setter: (values: T[]) => void) {
+  function persist<T extends { id: string }>(key: string, values: T[], setter: (values: T[]) => void) {
     setter(values);
     window.localStorage.setItem(key, JSON.stringify(values));
+    const kind: FloorCloudKind | null =
+      key === FLOOR_WATCHLIST_KEY ? "watch" : key === FLOOR_JOURNAL_KEY ? "journal" : null;
+    if (ownerId && kind) {
+      setCloudStatus("syncing");
+      void replaceFloorCloudItems(ownerId, kind, values)
+        .then(() => setCloudStatus("synced"))
+        .catch(() => setCloudStatus("local"));
+    }
   }
 
   function addWatch(event: FormEvent) {
@@ -166,7 +193,7 @@ export default function TheFloorResearchHub() {
           <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--loombus-gold)]">Private research operating system</p>
-              <h1 className="mt-1 text-3xl font-black">Research Hub</h1>
+              <div className="mt-1 flex flex-wrap items-center gap-3"><h1 className="text-3xl font-black">Research Hub</h1><span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase ${cloudStatus === "synced" ? "bg-emerald-500/15 text-emerald-400" : cloudStatus === "syncing" ? "bg-amber-500/15 text-amber-400" : "bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)]"}`}>{cloudStatus === "synced" ? "Cloud synced" : cloudStatus === "syncing" ? "Syncing" : "Local fallback"}</span></div>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
                 Monitor companies and ideas, preserve your reasoning over time, and organize structured research rooms.
               </p>
@@ -292,7 +319,7 @@ export default function TheFloorResearchHub() {
         ) : null}
 
         <section className={cardClass}>
-          <p className="flex items-start gap-2 text-xs leading-5 text-[var(--loombus-text-muted)]"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-[var(--loombus-gold)]" /> This release stores private watchlists, journal entries, and room structures in the authenticated member's current browser. Nothing is published, shared, or treated as financial advice.</p>
+          <p className="flex items-start gap-2 text-xs leading-5 text-[var(--loombus-text-muted)]"><ShieldCheck className="mt-0.5 size-4 shrink-0 text-[var(--loombus-gold)]" /> Watchlists and journal entries sync privately to the member's cloud account after the Floor migration is applied. Browser storage remains as a safe fallback. Research Rooms remain private and use role-based access in the new cloud schema.</p>
         </section>
       </div>
     </main>
