@@ -158,7 +158,7 @@ export function FloorThesisCard({
   }
 
   return (
-    <article className={`rounded-3xl border bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/10 transition ${thesis.lifecycle_status === "withdrawn" ? "border-amber-500/40 opacity-80" : "border-[var(--loombus-border)] hover:border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))]"}`}>
+    <article id={`thesis-${thesis.id}`} className={`scroll-mt-6 rounded-3xl border bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/10 transition ${thesis.lifecycle_status === "withdrawn" ? "border-amber-500/40 opacity-80" : "border-[var(--loombus-border)] hover:border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))]"}`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-[var(--loombus-gold-surface)] px-3 py-1 text-xs font-black text-[var(--loombus-gold)]">{thesis.ticker}</span>
         <span className={`rounded-full px-3 py-1 text-xs font-black ${STANCE_STYLES[thesis.stance]}`}>{floorStanceLabel(thesis.stance)}</span>
