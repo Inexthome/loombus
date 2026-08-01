@@ -143,6 +143,7 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
         </header>
 
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1" aria-label={`${ticker} research tools`}>
+          <Link href={`/the-floor/earnings?query=${encodeURIComponent(ticker)}`} className="shrink-0 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-xs font-black">Earnings Center</Link>
           <Link href="/the-floor/intelligence" className="shrink-0 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-xs font-black">Market Intelligence</Link>
           <Link href={`/the-floor/knowledge-graph?query=${encodeURIComponent(ticker)}`} className="shrink-0 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-xs font-black">Knowledge Graph</Link>
           <Link href={`/the-floor/research-assistant?ticker=${encodeURIComponent(ticker)}`} className="shrink-0 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-2 text-xs font-black">Ask AI Assistant</Link>
