@@ -73,6 +73,14 @@ type Contributor = {
   disclosure: string;
   target_cadence: string;
 };
+type Assignment = {
+  id: string;
+  title: string;
+  focus: string;
+  due_at: string;
+  status: string;
+  publication_id: string | null;
+};
 type View = "live" | "research" | "analysts" | "track";
 
 const card =
@@ -109,6 +117,7 @@ export default function TheFloorProgramCenter({
   const [activity, setActivity] = useState<Activity[]>([]);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [contributor, setContributor] = useState<Contributor | null>(null);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
@@ -126,6 +135,7 @@ export default function TheFloorProgramCenter({
       activityResult,
       trackResult,
       contributorResult,
+      assignmentResult,
     ] = await Promise.all([
       supabase
         .from("floor_live_programs")
@@ -165,6 +175,11 @@ export default function TheFloorProgramCenter({
         .select("status,specialties,disclosure,target_cadence")
         .eq("user_id", user.id)
         .maybeSingle(),
+      supabase
+        .from("floor_contributor_assignments")
+        .select("id,title,focus,due_at,status,publication_id")
+        .eq("contributor_id", user.id)
+        .order("due_at", { ascending: true }),
     ]);
     setPrograms((programResult.data ?? []) as unknown as Program[]);
     setRegistrations(
@@ -174,6 +189,7 @@ export default function TheFloorProgramCenter({
     setActivity((activityResult.data ?? []) as unknown as Activity[]);
     setTracks((trackResult.data ?? []) as Track[]);
     setContributor((contributorResult.data as Contributor | null) ?? null);
+    setAssignments((assignmentResult.data ?? []) as Assignment[]);
     setLoading(false);
   }, []);
   // Loading remote program state is the effect's external synchronization boundary.
@@ -243,6 +259,29 @@ export default function TheFloorProgramCenter({
         "Application received. Editorial review is required before assignments begin.",
       );
     }
+  }
+  async function updateAssignment(
+    id: string,
+    status: "in_progress" | "submitted",
+  ) {
+    const { error } = await supabase
+      .from("floor_contributor_assignments")
+      .update({ status })
+      .eq("id", id);
+    if (error) {
+      setNotice(error.message);
+      return;
+    }
+    setAssignments((current) =>
+      current.map((assignment) =>
+        assignment.id === id ? { ...assignment, status } : assignment,
+      ),
+    );
+    setNotice(
+      status === "submitted"
+        ? "Assignment submitted for editorial review."
+        : "Assignment marked in progress.",
+    );
   }
   if (loading)
     return (
@@ -482,14 +521,98 @@ export default function TheFloorProgramCenter({
                 is never backfilled.
               </p>
               {contributor ? (
-                <div className="mt-4 rounded-xl bg-[var(--loombus-surface-muted)] p-3">
-                  <p className={label}>Your status</p>
-                  <p className="mt-1 font-black capitalize">
-                    {contributor.status}
-                  </p>
-                  <p className="mt-1 text-xs">
-                    Target: {contributor.target_cadence}
-                  </p>
+                <div className="mt-4 space-y-3">
+                  <div className="rounded-xl bg-[var(--loombus-surface-muted)] p-3">
+                    <p className={label}>Your status</p>
+                    <p className="mt-1 font-black capitalize">
+                      {contributor.status}
+                    </p>
+                    <p className="mt-1 text-xs">
+                      Target: {contributor.target_cadence}
+                    </p>
+                  </div>
+                  {assignments.length ? (
+                    <div className="space-y-2">
+                      <p className={label}>Your assignments</p>
+                      {assignments.slice(0, 6).map((assignment) => {
+                        const overdue =
+                          Date.parse(assignment.due_at) < Date.now() &&
+                          !["published", "cancelled", "missed"].includes(
+                            assignment.status,
+                          );
+                        return (
+                          <div
+                            key={assignment.id}
+                            className="rounded-xl border border-[var(--loombus-border)] p-3"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-black">
+                                  {assignment.title}
+                                </p>
+                                <p className="mt-1 text-[11px] font-bold text-[var(--loombus-text-muted)]">
+                                  Due{" "}
+                                  {new Date(
+                                    assignment.due_at,
+                                  ).toLocaleDateString()}{" "}
+                                  ·{" "}
+                                  <span
+                                    className={
+                                      overdue || assignment.status === "missed"
+                                        ? "text-rose-400"
+                                        : ""
+                                    }
+                                  >
+                                    {overdue
+                                      ? "overdue"
+                                      : assignment.status.replaceAll("_", " ")}
+                                  </span>
+                                </p>
+                              </div>
+                            </div>
+                            {assignment.focus ? (
+                              <p className="mt-2 text-xs leading-5 text-[var(--loombus-text-muted)]">
+                                {assignment.focus}
+                              </p>
+                            ) : null}
+                            {assignment.status === "assigned" ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void updateAssignment(
+                                    assignment.id,
+                                    "in_progress",
+                                  )
+                                }
+                                className="mt-3 rounded-full border border-[var(--loombus-border)] px-3 py-1.5 text-xs font-black"
+                              >
+                                Start assignment
+                              </button>
+                            ) : null}
+                            {assignment.status === "in_progress" ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  void updateAssignment(
+                                    assignment.id,
+                                    "submitted",
+                                  )
+                                }
+                                className="mt-3 rounded-full bg-[var(--loombus-gold)] px-3 py-1.5 text-xs font-black text-black"
+                              >
+                                Submit for review
+                              </button>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : contributor.status === "active" ? (
+                    <p className="text-xs leading-5 text-[var(--loombus-text-muted)]">
+                      Your next recurring assignment will appear after the daily
+                      cadence run.
+                    </p>
+                  ) : null}
                 </div>
               ) : (
                 <button
