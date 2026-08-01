@@ -39,3 +39,19 @@ export function createFloorServiceSupabase() {
     },
   });
 }
+
+export async function hasActiveFloorAccess(
+  supabase: ReturnType<typeof createFloorRequestSupabase>,
+  userId: string
+) {
+  const [{ data: profile }, { data: subscription }] = await Promise.all([
+    supabase.from("profiles").select("is_admin").eq("id", userId).maybeSingle(),
+    supabase
+      .from("floor_subscriptions")
+      .select("status")
+      .eq("user_id", userId)
+      .in("status", ["active", "trialing"])
+      .maybeSingle(),
+  ]);
+  return profile?.is_admin === true || Boolean(subscription);
+}
