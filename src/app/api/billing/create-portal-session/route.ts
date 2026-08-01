@@ -242,7 +242,9 @@ export async function POST(request: NextRequest) {
     }
 
     const origin = getSafeOrigin(request);
-    const returnUrl = `${origin}/settings?section=plan&billing=returned`;
+    const returnUrl = ownership.scope === "floor"
+      ? `${origin}/the-floor/settings?billing=returned`
+      : `${origin}/settings?section=plan&billing=returned`;
     const params: Stripe.BillingPortal.SessionCreateParams = {
       customer: ownership.customerId,
       return_url: returnUrl,

@@ -142,6 +142,36 @@ export default function TheFloorShell({ children }: { children: ReactNode }) {
   const [market, setMarket] = useState<MarketPayload | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [memberName, setMemberName] = useState("Member");
+  const [accessReady, setAccessReady] = useState(pathname === "/the-floor/subscribe");
+
+  useEffect(() => {
+    let mounted = true;
+    async function verifyFloorAccess() {
+      if (pathname === "/the-floor/subscribe") {
+        if (mounted) setAccessReady(true);
+        return;
+      }
+      setAccessReady(false);
+      const { data: auth } = await supabase.auth.getUser();
+      const user = auth.user;
+      if (!user) {
+        window.location.replace("/the-floor/subscribe?access=subscribe");
+        return;
+      }
+      const [profileResult, subscriptionResult] = await Promise.all([
+        supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle(),
+        supabase.from("floor_subscriptions").select("status").eq("user_id", user.id).in("status", ["active", "trialing"]).maybeSingle(),
+      ]);
+      if (!mounted) return;
+      if (profileResult.data?.is_admin === true || subscriptionResult.data) {
+        setAccessReady(true);
+        return;
+      }
+      window.location.replace("/the-floor/subscribe?access=subscribe");
+    }
+    void verifyFloorAccess();
+    return () => { mounted = false; };
+  }, [pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -176,6 +206,7 @@ export default function TheFloorShell({ children }: { children: ReactNode }) {
   };
 
   if (pathname === "/the-floor/subscribe") return <>{children}</>;
+  if (!accessReady) return <main className="floor-access-check">Checking Floor membership…</main>;
 
   return (
     <div className="floor-terminal-shell" data-floor-route={pathname}>

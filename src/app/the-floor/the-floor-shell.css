@@ -303,6 +303,8 @@ html[data-loombus-theme="light"] .floor-terminal-shell { --floor-panel: #f7f4eb;
 .floor-settings-plans article > strong { font-size: 25px; }
 .floor-settings-plans article > small, .floor-settings-plans article > p { color: var(--loombus-text-muted); font-size: 10px; }
 .floor-settings-plans article > b { width: fit-content; margin-top: 6px; border-radius: 999px; background: color-mix(in srgb,var(--floor-gold) 15%,transparent); padding: 5px 9px; color: var(--floor-gold); font-size: 9px; text-transform: uppercase; }
+.floor-settings-plans article > a { width: fit-content; margin-top: 7px; border-radius: 999px; background: var(--floor-gold); padding: 8px 12px; color: #111; font-size: 10px; font-weight: 900; }
+.floor-access-check { display: grid; min-height: 100dvh; place-items: center; background: var(--loombus-page-bg); color: var(--loombus-text-muted); font-size: 13px; }
 
 @media (max-width: 900px) {
   .floor-subscription-landing { padding: 14px; }
