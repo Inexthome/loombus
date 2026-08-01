@@ -70,3 +70,69 @@ export async function mergeFloorLocalWithCloud<T extends { id: string }>(
   await replaceFloorCloudItems(ownerId, kind, values);
   return values;
 }
+
+
+export type FloorCloudRoomSeed = {
+  id: string;
+  name: string;
+  focus: string;
+  objective: string;
+  watchlist: string[];
+  tasks: string[];
+  createdAt: string;
+};
+
+export async function mergeFloorRooms(ownerId: string, localRooms: FloorCloudRoomSeed[]) {
+  const { data, error } = await supabase
+    .from("floor_research_rooms")
+    .select("id, client_id, name, focus, objective, seed_data, created_at")
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+
+  const merged = new Map<string, FloorCloudRoomSeed>();
+  for (const row of data ?? []) {
+    const seed = (row.seed_data ?? {}) as { watchlist?: string[]; tasks?: string[]; createdAt?: string };
+    merged.set(row.client_id, {
+      id: row.client_id,
+      name: row.name,
+      focus: row.focus,
+      objective: row.objective,
+      watchlist: seed.watchlist ?? [],
+      tasks: seed.tasks ?? [],
+      createdAt: seed.createdAt ?? row.created_at,
+    });
+  }
+  for (const room of localRooms) if (!merged.has(room.id)) merged.set(room.id, room);
+  const rooms = [...merged.values()];
+  await replaceFloorRooms(ownerId, rooms);
+  return rooms;
+}
+
+export async function replaceFloorRooms(ownerId: string, rooms: FloorCloudRoomSeed[]) {
+  if (rooms.length) {
+    const { error } = await supabase.from("floor_research_rooms").upsert(
+      rooms.map((room) => ({
+        owner_id: ownerId,
+        client_id: room.id,
+        name: room.name,
+        focus: room.focus,
+        objective: room.objective,
+        seed_data: { watchlist: room.watchlist, tasks: room.tasks, createdAt: room.createdAt },
+      })),
+      { onConflict: "owner_id,client_id" },
+    );
+    if (error) throw error;
+  }
+
+  const { data, error } = await supabase
+    .from("floor_research_rooms")
+    .select("id, client_id")
+    .eq("owner_id", ownerId);
+  if (error) throw error;
+  const keep = new Set(rooms.map((room) => room.id));
+  const stale = (data ?? []).filter((room) => !keep.has(room.client_id)).map((room) => room.id);
+  if (stale.length) {
+    const { error: deleteError } = await supabase.from("floor_research_rooms").delete().in("id", stale);
+    if (deleteError) throw deleteError;
+  }
+}
