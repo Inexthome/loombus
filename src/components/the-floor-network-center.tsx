@@ -47,9 +47,9 @@ function readLocal<T>(key: string): T[] {
   try { return JSON.parse(window.localStorage.getItem(key) ?? "[]") as T[]; } catch { return []; }
 }
 
-export default function TheFloorNetworkCenter() {
+export default function TheFloorNetworkCenter({ initialView = "companies" }: { initialView?: View }) {
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<View>("companies");
+  const [view, setView] = useState<View>(initialView);
   const [query, setQuery] = useState("");
   const [theses, setTheses] = useState<Thesis[]>([]);
   const [watches, setWatches] = useState<FloorWatchItem[]>([]);
