@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronRight, LayoutDashboard, Search, Users } from "lucide-react";
+import { BarChart3, Bell, BookOpen, Building2, CalendarDays, ChevronRight, LayoutDashboard, MessageSquareText, Search, UserRoundCheck, Users } from "lucide-react";
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from "react";
 
 type MarketData = { generatedAt?: string; markets?: Array<{ key: string; name: string; price: number | null; percentChange: number | null; available: boolean }> };
@@ -15,6 +15,8 @@ const desks = [
   { href: "/the-floor/my-theses", label: "My Theses", icon: BookOpen },
   { href: "/the-floor/rooms", label: "Rooms", icon: Users },
   { href: "/the-floor/network", label: "Network", icon: Bell },
+  { href: "/the-floor/discussion", label: "Calls", icon: MessageSquareText },
+  { href: "/the-floor/analysts", label: "Analysts", icon: UserRoundCheck },
 ];
 
 function marketState(now: Date) {
