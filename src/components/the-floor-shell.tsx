@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  ArrowLeft,
   Bell,
   BookOpen,
   Building2,
@@ -185,7 +186,11 @@ export default function TheFloorShell({ children }: { children: ReactNode }) {
       <div className="floor-terminal-grid">
         <aside className="floor-terminal-sidebar" data-open={sidebarOpen ? "true" : "false"}>
           <div className="floor-terminal-brand">
-            <Link href="/home" aria-label="Loombus home"><Image src="/assets/brand/loombus-wordmark-wide.png" alt="Loombus" width={174} height={42} priority /></Link>
+            <Link href="/the-floor" className="floor-terminal-brand-identity" aria-label="The Floor overview">
+              <span><Image src="/assets/brand/loombus-mark-transparent.png" alt="" width={44} height={44} priority /></span>
+              <span><strong>Loombus</strong><small>The Floor</small></span>
+            </Link>
+            <Link href="/home" className="floor-terminal-back"><ArrowLeft aria-hidden="true" /> Back to Loombus</Link>
             <button type="button" onClick={() => setSidebarOpen(false)} aria-label="Close Floor navigation"><X /></button>
           </div>
           <Link className="floor-terminal-identity" href="/the-floor" onClick={closeSidebar}>
