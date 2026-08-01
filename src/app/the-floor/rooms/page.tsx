@@ -1,0 +1,1 @@
+import type { Metadata } from "next";import FloorCollaborativeRooms from "@/components/the-floor-collaborative-rooms";export const metadata:Metadata={title:"Research Rooms | The Floor",description:"Collaborative, role-protected research rooms."};export default function Page(){return <FloorCollaborativeRooms/>}
