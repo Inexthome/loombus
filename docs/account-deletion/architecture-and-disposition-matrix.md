@@ -41,7 +41,8 @@ This matrix identifies the currently evidenced behavior. `Unverified` means the 
 | Data class | Production resource | Current behavior | Required disposition | Exceptions to evaluate | Evidence | Status / gap |
 |---|---|---|---|---|---|---|
 | Account identity | Supabase Auth `auth.users` | Hard deletion intentionally deferred | Manual review, then delete or retain a minimal tombstone | ban evasion, security, legal hold | `database/account/20260524_account_deactivation_deletion_setup.sql` | Auth deletion procedure unverified |
-| Profile and settings | `public.profiles` and profile-linked settings | Profile is restricted through `account_status` | Anonymize or delete fields according to dependency map | enforcement, fraud, legal hold | `src/app/api/account/delete-request/route.ts` | Field-level map required |
+| Public profile identity | `public.profiles` | Profile is restricted through `account_status`; public identity supplies attribution across content, Rooms, commerce, local discovery, and search | Anonymize public identity and presentation fields only after ownership, safety, Storage, search, Auth, and legal-hold prerequisites clear | ownership, enforcement, fraud, legal hold | migration `20260804006000` | Field-level map defined; manual-review only; handler not approved |
+| Protected profile safety state | `profile_sensitive` | Date of birth and derived age-safety state are isolated from the public profile | Decide deletion versus minimum safety retention after reports, corrections, legal hold, and Auth sequencing are reviewed | underage report, correction evidence, enforcement, legal hold | migration `20260804006000` and teen-safety migrations | Separate manual-review resource; retention period not approved |
 | Private personalization and relationships | `sticky_items`, `bookmarks`, `discussion_views`, `profile_views`, `follow_requests`, `follows`, `user_blocks`, `member_privacy_settings` | Member-private state is stored in first-party tables | Delete member-owned and member-linked rows | none identified for these eight resources | migration `20260803233000` | Handler verified statically; live enablement pending controlled test |
 | Private drafts and activity | `discussion_drafts`, `floor_academy_progress`, `floor_pulse_event_reads`, `floor_live_registrations` | Unpublished or member-private participation state is stored in first-party tables | Delete member-owned rows | none identified for these four resources | migration `20260803234500` | Handler verified statically; live enablement pending controlled test |
 | Private goals and saved folders | `user_purpose_goals`, `bookmark_collections` | Member-private goals, notes, folder names, and descriptions are stored in first-party tables | Delete member-owned rows | none identified for these two resources | migration `20260803235500` | Handler verified statically; live enablement pending controlled test |
@@ -70,6 +71,22 @@ This matrix identifies the currently evidenced behavior. `Unverified` means the 
 3. Verify Room ownership and staged-deletion behavior separately from member deletion.
 4. Verify search, caches, backups, replicas, and each external processor through production configuration or contractual evidence.
 5. Implement a processor that cannot mark a request completed while a disposition is pending or failed.
+
+## Profile anonymization field map
+
+Profile anonymization is deliberately not an automatic handler yet. The profile row is a shared attribution anchor, and running it before ownership and evidence decisions could irreversibly change other resources while the request remains blocked.
+
+| Field group | Intended handling | Current gate |
+|---|---|---|
+| Public identity | `username`, `full_name`, `bio`, `avatar_url`, and `perspective_marker` are candidates for irreversible anonymization | Manual review until public-content attribution, avatar Storage deletion, search propagation, and Auth sequencing are approved |
+| Creator and support links | `creator_website_url`, `creator_support_url`, and `creator_support_label` are candidates for clearing | Manual review until subscription and commerce dependencies are resolved |
+| Local discovery presentation | Public local-location and presentation fields are candidates for clearing | Manual review until authored local and commerce resources are dispositioned |
+| Stable profile key | `id` remains temporarily as the foreign-key anchor | Remove or tombstone only in the approved Auth and dependency sequence |
+| Access and administrator state | `account_status` must remain `deletion_requested`; `is_admin` cannot change until administrator and ownership-transfer checks pass | Required prerequisite |
+| Enforcement and verification state | Enforcement, verification, fraud, and restriction fields are not part of public-profile anonymization | Trust-and-safety, legal-hold, and minimum-retention decision required |
+| Protected age-safety state | `profile_sensitive` is handled as a separate resource | Underage-report, age-correction, legal-hold, and minimum-safety-evidence review required |
+
+Migration `20260804006000` records these rules in the executable registry without adding a worker dispatch or anonymization function. Deployment cannot anonymize a profile, even if the destructive-handler environment flag is enabled for previously approved handlers.
 
 ## Processor rollout state
 
