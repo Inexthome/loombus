@@ -30,6 +30,15 @@ type ExistingDisposition = {
   status: "pending" | "in_progress" | "completed" | "excepted" | "failed" | "not_applicable";
   reviewed_at: string | null;
   verification_evidence: Record<string, unknown> | null;
+  irreversible: boolean;
+};
+
+type DispositionResult = {
+  status: "completed" | "excepted" | "failed";
+  exception_code: string | null;
+  detail: Record<string, unknown>;
+  verification_evidence?: Record<string, unknown>;
+  irreversible?: boolean;
 };
 
 type ProcessResult = {
@@ -61,7 +70,7 @@ async function verifyAccountRestriction(
   supabase: SupabaseClient,
   request: ClaimedRequest,
   resource: RegistryRow
-) {
+): Promise<DispositionResult> {
   const { data, error } = await supabase
     .from("profiles")
     .select("account_status")
@@ -98,16 +107,61 @@ async function verifyAccountRestriction(
   };
 }
 
+function destructiveHandlersEnabled() {
+  return process.env.ACCOUNT_DELETION_DESTRUCTIVE_HANDLERS_ENABLED === "true";
+}
+
+async function deleteFirstPartyNotifications(
+  supabase: SupabaseClient,
+  request: ClaimedRequest,
+  resource: RegistryRow
+): Promise<DispositionResult> {
+  if (!destructiveHandlersEnabled()) {
+    return {
+      status: "excepted",
+      exception_code: "destructive_handlers_disabled",
+      detail: {
+        message: "The first-party notification deletion handler is deployed but not enabled.",
+        handler_key: resource.handler_key,
+      },
+    };
+  }
+
+  const { data, error } = await supabase.rpc("delete_account_notification_data", {
+    p_request_id: request.request_id,
+  });
+  if (error) throw error;
+
+  const evidence = (data ?? {}) as Record<string, unknown>;
+  return {
+    status: "completed",
+    exception_code: null,
+    detail: {
+      message: "First-party notification data deleted.",
+      deleted_rows: evidence.deleted_rows ?? {},
+    },
+    verification_evidence: evidence,
+    irreversible: true,
+  };
+}
+
 async function dispositionFor(
   supabase: SupabaseClient,
   request: ClaimedRequest,
   resource: RegistryRow
-) {
+): Promise<DispositionResult> {
   if (
     resource.execution_mode === "automatic" &&
     resource.handler_key === "verify_account_restriction"
   ) {
     return verifyAccountRestriction(supabase, request, resource);
+  }
+
+  if (
+    resource.execution_mode === "automatic" &&
+    resource.handler_key === "delete_first_party_notifications"
+  ) {
+    return deleteFirstPartyNotifications(supabase, request, resource);
   }
 
   return {
@@ -161,24 +215,31 @@ async function processRequest(
   try {
     const { data: existingData, error: existingError } = await supabase
       .from("account_deletion_dispositions")
-      .select("resource_key, status, reviewed_at, verification_evidence")
+      .select("resource_key, status, reviewed_at, verification_evidence, irreversible")
       .eq("request_id", request.request_id);
     if (existingError) throw existingError;
 
-    const reviewedDispositions = new Set(
-      ((existingData ?? []) as ExistingDisposition[])
-        .filter(
-          (item) =>
-            item.reviewed_at &&
-            item.verification_evidence &&
-            (item.status === "completed" || item.status === "not_applicable")
-        )
-        .map((item) => item.resource_key)
+    const existingDispositions = new Map(
+      ((existingData ?? []) as ExistingDisposition[]).map((item) => [
+        item.resource_key,
+        item,
+      ])
     );
 
     for (const resource of registry) {
-      // Keep evidence-backed operator decisions durable across retries.
-      if (reviewedDispositions.has(resource.resource_key)) continue;
+      const existing = existingDispositions.get(resource.resource_key);
+      const terminalWithEvidence =
+        existing?.verification_evidence &&
+        (existing.status === "completed" || existing.status === "not_applicable");
+      const durable =
+        terminalWithEvidence &&
+        (resource.execution_mode === "automatic"
+          ? existing.irreversible
+          : Boolean(existing.reviewed_at));
+
+      // Automatic resources require automatic irreversible evidence. Older manual
+      // reviews cannot satisfy a handler that was enabled after the review.
+      if (durable) continue;
 
       const result = await dispositionFor(supabase, request, resource);
       const { error } = await supabase.from("account_deletion_dispositions").upsert(
@@ -191,6 +252,8 @@ async function processRequest(
           status: result.status,
           exception_code: result.exception_code,
           detail: result.detail,
+          verification_evidence: result.verification_evidence ?? null,
+          irreversible: result.irreversible ?? false,
           verified_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
