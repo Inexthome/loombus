@@ -41,7 +41,7 @@ type Publication = {
   excerpt: string;
   body: string;
   tickers: string[];
-  sources: unknown[];
+  sources: Array<{ label?: string; url?: string }>;
   author_id: string | null;
   reviewer_id: string | null;
   public_byline: string;
@@ -1058,6 +1058,39 @@ export default function AdminFloorProgramClient() {
                   <p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">
                     {p.excerpt}
                   </p>
+                  <details className="mt-4 rounded-xl border border-[var(--loombus-border)] p-4">
+                    <summary className="cursor-pointer text-sm font-black text-[var(--loombus-gold)]">
+                      Review full report and sources
+                    </summary>
+                    <div className="mt-4 whitespace-pre-wrap border-t border-[var(--loombus-border)] pt-4 text-sm leading-7">
+                      {p.body}
+                    </div>
+                    <div className="mt-4 border-t border-[var(--loombus-border)] pt-4">
+                      <p className="text-xs font-black uppercase tracking-[.12em] text-[var(--loombus-text-muted)]">
+                        Primary sources
+                      </p>
+                      <ul className="mt-2 space-y-2">
+                        {p.sources.map((source, index) => (
+                          <li key={`${p.id}-source-${index}`}>
+                            {source.url ? (
+                              <a
+                                href={source.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="break-all text-sm font-bold text-[var(--loombus-gold)] underline underline-offset-4"
+                              >
+                                {source.label || source.url}
+                              </a>
+                            ) : (
+                              <span className="text-sm text-[var(--loombus-text-muted)]">
+                                Source details are unavailable.
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </details>
                 </article>
               ))}
               {!publications.length ? (
