@@ -315,6 +315,41 @@ async function deleteFloorCloudData(
   };
 }
 
+async function deleteDiscussionAudiencePreferencesData(
+  supabase: SupabaseClient,
+  request: ClaimedRequest,
+  resource: RegistryRow
+): Promise<DispositionResult> {
+  if (!destructiveHandlersEnabled()) {
+    return {
+      status: "excepted",
+      exception_code: "destructive_handlers_disabled",
+      detail: {
+        message: "The Discussion audience preferences deletion handler is deployed but not enabled.",
+        handler_key: resource.handler_key,
+      },
+    };
+  }
+
+  const { data, error } = await supabase.rpc(
+    "delete_account_discussion_audience_preferences_data",
+    { p_request_id: request.request_id }
+  );
+  if (error) throw error;
+
+  const evidence = (data ?? {}) as Record<string, unknown>;
+  return {
+    status: "completed",
+    exception_code: null,
+    detail: {
+      message: "Member-private Discussion audience defaults deleted.",
+      deleted_rows: evidence.deleted_rows ?? {},
+    },
+    verification_evidence: evidence,
+    irreversible: true,
+  };
+}
+
 async function dispositionFor(
   supabase: SupabaseClient,
   request: ClaimedRequest,
@@ -367,6 +402,13 @@ async function dispositionFor(
     resource.handler_key === "delete_floor_cloud_data"
   ) {
     return deleteFloorCloudData(supabase, request, resource);
+  }
+
+  if (
+    resource.execution_mode === "automatic" &&
+    resource.handler_key === "delete_discussion_audience_preferences_data"
+  ) {
+    return deleteDiscussionAudiencePreferencesData(supabase, request, resource);
   }
 
   return {
