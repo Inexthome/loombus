@@ -16,9 +16,15 @@ import {
   FLOOR_THESIS_MAX,
   FLOOR_TICKER_MAX,
   floorDisplayName,
+  isFloorHorizon,
+  isFloorStance,
   type FloorHorizon,
   type FloorStance,
 } from "@/lib/floor-shared";
+import {
+  FLOOR_WORKSPACE_THESIS_HANDOFF_KEY,
+  type WorkspaceThesisHandoff,
+} from "@/lib/floor-workspace";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Loader2, MessagesSquare, Plus, ScrollText, Send, Trophy, X } from "lucide-react";
@@ -99,6 +105,7 @@ export default function TheFloorPage({ composerOnly = false }: { composerOnly?: 
   const [thesisText, setThesisText] = useState("");
   const [catalysts, setCatalysts] = useState("");
   const [risks, setRisks] = useState("");
+  const [workspaceSource, setWorkspaceSource] = useState(false);
 
   const reloadTimer = useRef<number | null>(null);
 
@@ -139,7 +146,34 @@ export default function TheFloorPage({ composerOnly = false }: { composerOnly?: 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const openComposer = () => setComposerOpen(true);
-    const timer = params.get("compose") === "1" ? window.setTimeout(openComposer, 0) : null;
+    const sourceDraftId = params.get("fromWorkspace");
+    let workspaceHandoff: WorkspaceThesisHandoff | null = null;
+    if (sourceDraftId) {
+      try {
+        const raw = window.localStorage.getItem(FLOOR_WORKSPACE_THESIS_HANDOFF_KEY);
+        const handoff = raw ? (JSON.parse(raw) as WorkspaceThesisHandoff) : null;
+        if (handoff?.sourceDraftId === sourceDraftId) {
+          workspaceHandoff = handoff;
+          window.localStorage.removeItem(FLOOR_WORKSPACE_THESIS_HANDOFF_KEY);
+        }
+      } catch {
+        window.localStorage.removeItem(FLOOR_WORKSPACE_THESIS_HANDOFF_KEY);
+      }
+    }
+    const timer = params.get("compose") === "1" ? window.setTimeout(() => {
+      if (workspaceHandoff) {
+        setTicker(workspaceHandoff.ticker.slice(0, FLOOR_TICKER_MAX));
+        if (isFloorStance(workspaceHandoff.stance)) setStance(workspaceHandoff.stance);
+        setConviction(Math.max(1, Math.min(5, Number(workspaceHandoff.conviction) || 3)));
+        if (isFloorHorizon(workspaceHandoff.horizon)) setHorizon(workspaceHandoff.horizon);
+        setExitPlan(workspaceHandoff.exitPlan.slice(0, FLOOR_EXIT_PLAN_MAX));
+        setThesisText(workspaceHandoff.thesis.slice(0, FLOOR_THESIS_MAX));
+        setCatalysts(workspaceHandoff.catalysts.slice(0, FLOOR_CATALYSTS_MAX));
+        setRisks(workspaceHandoff.risks.slice(0, FLOOR_RISKS_MAX));
+        setWorkspaceSource(true);
+      }
+      openComposer();
+    }, 0) : null;
     window.addEventListener("loombus:floor-open-thesis-composer", openComposer);
     return () => {
       if (timer !== null) window.clearTimeout(timer);
@@ -192,6 +226,7 @@ export default function TheFloorPage({ composerOnly = false }: { composerOnly?: 
     setThesisText("");
     setCatalysts("");
     setRisks("");
+    setWorkspaceSource(false);
   }
 
   async function submitThesis(event: FormEvent<HTMLFormElement>) {
@@ -308,6 +343,13 @@ export default function TheFloorPage({ composerOnly = false }: { composerOnly?: 
             onSubmit={submitThesis}
             className={composerOnly ? "floor-thesis-composer-form space-y-4" : "space-y-4 rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-sm sm:p-5"}
           >
+            {workspaceSource ? (
+              <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-[var(--loombus-text-muted)]">
+                <p className="font-black text-[var(--loombus-text)]">Prepared from your private Workspace</p>
+                <p className="mt-1">Review every field before publishing. Your Workspace remains private.</p>
+                <Link href="/the-floor/workspace" className="mt-2 inline-flex font-black text-[var(--loombus-gold)]">Return to Workspace</Link>
+              </div>
+            ) : null}
             {composerOnly ? (
               <div className="floor-thesis-composer-heading">
                 <div><p>New research</p><h2>Post a thesis</h2><span>Build a falsifiable case with an exit plan and disclosed risks.</span></div>
