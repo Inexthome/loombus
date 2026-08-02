@@ -80,8 +80,8 @@ const textareaClass =
   "w-full rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] px-4 py-3 text-sm leading-6 text-[var(--loombus-text)] outline-none placeholder:text-[var(--loombus-text-subtle)] focus:border-amber-400 focus:ring-4 focus:ring-amber-100/20";
 const labelClass = "mb-2 block text-sm font-black text-[var(--loombus-text)]";
 
-export default function TheFloorPage() {
-  const [loading, setLoading] = useState(true);
+export default function TheFloorPage({ composerOnly = false }: { composerOnly?: boolean }) {
+  const [loading, setLoading] = useState(!composerOnly);
   const [userId, setUserId] = useState<string | null>(null);
   const [theses, setTheses] = useState<FloorThesisRow[]>([]);
   const [composerOpen, setComposerOpen] = useState(false);
@@ -127,14 +127,14 @@ export default function TheFloorPage() {
       }
       if (mounted) {
         setUserId(auth.user.id);
-        await loadTheses();
+        if (!composerOnly) await loadTheses();
       }
     }
     void guardAndLoad();
     return () => {
       mounted = false;
     };
-  }, [loadTheses]);
+  }, [composerOnly, loadTheses]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -227,6 +227,10 @@ export default function TheFloorPage() {
       if (!response.ok) throw new Error(result.error ?? "Unable to post your thesis.");
       resetComposer();
       setComposerOpen(false);
+      if (composerOnly) {
+        window.location.assign("/the-floor/my-theses?created=1");
+        return;
+      }
       setMessage("Your thesis is live on The Floor.");
       await loadTheses();
     } catch (error) {
@@ -247,9 +251,9 @@ export default function TheFloorPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
+    <main className={composerOnly ? (composerOpen ? "floor-thesis-composer-layer" : "hidden") : "min-h-screen bg-[color:var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8"}>
       <div className="mx-auto flex max-w-3xl flex-col gap-5">
-        <header id="post-thesis" className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/10">
+        <header id="post-thesis" className={composerOnly ? "hidden" : "rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/10"}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 className="text-2xl font-black sm:text-3xl">The Floor</h1>
@@ -302,8 +306,14 @@ export default function TheFloorPage() {
         {composerOpen ? (
           <form
             onSubmit={submitThesis}
-            className="space-y-4 rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-sm sm:p-5"
+            className={composerOnly ? "floor-thesis-composer-form space-y-4" : "space-y-4 rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-sm sm:p-5"}
           >
+            {composerOnly ? (
+              <div className="floor-thesis-composer-heading">
+                <div><p>New research</p><h2>Post a thesis</h2><span>Build a falsifiable case with an exit plan and disclosed risks.</span></div>
+                <button type="button" onClick={() => setComposerOpen(false)} aria-label="Close thesis form"><X aria-hidden="true" /></button>
+              </div>
+            ) : null}
             <div className="grid gap-3 sm:grid-cols-3">
               <label className="block">
                 <span className={labelClass}>Ticker</span>
@@ -476,6 +486,7 @@ export default function TheFloorPage() {
           </form>
         ) : null}
 
+        <div className={composerOnly ? "hidden" : "contents"}>
         {theses.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-[1.75rem] border border-dashed border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-10 text-center">
             <ScrollText className="size-8 text-[var(--loombus-text-subtle)]" aria-hidden="true" />
@@ -499,6 +510,7 @@ export default function TheFloorPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </main>
   );
