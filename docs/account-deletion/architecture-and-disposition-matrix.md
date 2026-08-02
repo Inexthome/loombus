@@ -27,6 +27,10 @@ Quarterly review owner: Loombus Privacy and Trust Operations
 | `request_account_deletion()` | Atomic submission | Creates the request, restricts the profile, and records the event in one transaction |
 | `cancel_account_deletion_request()` | Explicit cancellation | Requires a reason, records the actor, cancels the request, then restores access |
 | Profile restoration trigger | Invariant enforcement | Blocks every route from changing `deletion_requested` while an open request remains |
+| `account_deletion_resource_registry` | Executable resource inventory | Defines each required resource group, intended disposition, handler, and execution mode |
+| `claim_account_deletion_requests()` | Concurrency-safe work claiming | Uses row locks with `skip locked`, increments attempts, and records processing events |
+| Account deletion worker | Orchestration and exception reporting | Verifies restriction, records every registered disposition, and blocks unapproved actions |
+| `finalize_account_deletion_request()` | Completion invariant | Completes only when every enabled resource is terminal and no exception or failure remains |
 
 ## Initial disposition matrix
 
@@ -55,6 +59,10 @@ This matrix identifies the currently evidenced behavior. `Unverified` means the 
 3. Verify Room ownership and staged-deletion behavior separately from member deletion.
 4. Verify search, caches, backups, replicas, and each external processor through production configuration or contractual evidence.
 5. Implement a processor that cannot mark a request completed while a disposition is pending or failed.
+
+## Processor rollout state
+
+The processor is now fail-closed. It claims work safely, verifies that the account remains restricted, creates a disposition for every enabled registry resource, and writes a structured exception report. Content erasure, Auth deletion, vendor deletion, and anonymization remain disabled until their resource-level rules are approved and their handlers are separately verified. Requests with any such unresolved resource move to `blocked`, never `completed`.
 6. Reconcile export, Privacy, Retention, Room, Reporting, Teen Safety, Search, and AI disclosures against the verified register.
 
 ## Change process
