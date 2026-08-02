@@ -213,6 +213,40 @@ async function deletePrivateActivityData(
   };
 }
 
+async function deletePrivateGoalsData(
+  supabase: SupabaseClient,
+  request: ClaimedRequest,
+  resource: RegistryRow
+): Promise<DispositionResult> {
+  if (!destructiveHandlersEnabled()) {
+    return {
+      status: "excepted",
+      exception_code: "destructive_handlers_disabled",
+      detail: {
+        message: "The private goals deletion handler is deployed but not enabled.",
+        handler_key: resource.handler_key,
+      },
+    };
+  }
+
+  const { data, error } = await supabase.rpc("delete_account_private_goals_data", {
+    p_request_id: request.request_id,
+  });
+  if (error) throw error;
+
+  const evidence = (data ?? {}) as Record<string, unknown>;
+  return {
+    status: "completed",
+    exception_code: null,
+    detail: {
+      message: "Private goals, notes, and saved-folder metadata deleted.",
+      deleted_rows: evidence.deleted_rows ?? {},
+    },
+    verification_evidence: evidence,
+    irreversible: true,
+  };
+}
+
 async function dispositionFor(
   supabase: SupabaseClient,
   request: ClaimedRequest,
@@ -244,6 +278,13 @@ async function dispositionFor(
     resource.handler_key === "delete_private_activity_data"
   ) {
     return deletePrivateActivityData(supabase, request, resource);
+  }
+
+  if (
+    resource.execution_mode === "automatic" &&
+    resource.handler_key === "delete_private_goals_data"
+  ) {
+    return deletePrivateGoalsData(supabase, request, resource);
   }
 
   return {
