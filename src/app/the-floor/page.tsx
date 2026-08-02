@@ -12,7 +12,7 @@ export default function TheFloorRoute() {
   return (
     <>
       <TheFloorOpeningBell />
-      <TheFloorPage />
+      <TheFloorPage composerOnly />
     </>
   );
 }
