@@ -1,3 +1,5 @@
+import type { FloorHorizon, FloorStance } from "@/lib/floor-shared";
+
 export type WorkspaceEvidenceType =
   | "sec_filing"
   | "earnings_report"
@@ -21,6 +23,9 @@ export type WorkspaceDraft = {
   id: string;
   title: string;
   ticker: string;
+  stance: FloorStance;
+  researchGoal: string;
+  researchQuestion: string;
   thesis: string;
   businessOverview: string;
   valuation: string;
@@ -46,6 +51,19 @@ export type WorkspaceRevision = {
 
 export const FLOOR_WORKSPACE_DRAFTS_KEY = "loombus.floor.workspace.drafts.v1";
 export const FLOOR_WORKSPACE_REVISIONS_KEY = "loombus.floor.workspace.revisions.v1";
+export const FLOOR_WORKSPACE_THESIS_HANDOFF_KEY = "loombus.floor.workspace.thesis-handoff.v1";
+
+export type WorkspaceThesisHandoff = {
+  sourceDraftId: string;
+  ticker: string;
+  stance: FloorStance;
+  conviction: number;
+  horizon: FloorHorizon;
+  exitPlan: string;
+  thesis: string;
+  catalysts: string;
+  risks: string;
+};
 
 export function createWorkspaceDraft(): WorkspaceDraft {
   const now = new Date().toISOString();
@@ -53,6 +71,9 @@ export function createWorkspaceDraft(): WorkspaceDraft {
     id: crypto.randomUUID(),
     title: "Untitled research",
     ticker: "",
+    stance: "neutral",
+    researchGoal: "",
+    researchQuestion: "",
     thesis: "",
     businessOverview: "",
     valuation: "",
@@ -66,6 +87,29 @@ export function createWorkspaceDraft(): WorkspaceDraft {
     evidence: [],
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+function workspaceHorizon(value: string): FloorHorizon {
+  const normalized = value.toLowerCase();
+  if (normalized.includes("day")) return "days";
+  if (normalized.includes("week")) return "weeks";
+  if (normalized.includes("quarter")) return "quarters";
+  if (normalized.includes("year")) return "years";
+  return "months";
+}
+
+export function createWorkspaceThesisHandoff(draft: WorkspaceDraft): WorkspaceThesisHandoff {
+  return {
+    sourceDraftId: draft.id,
+    ticker: normalizeWorkspaceTicker(draft.ticker),
+    stance: draft.stance ?? "neutral",
+    conviction: Math.max(1, Math.min(5, Math.round((draft.confidence || 50) / 20))),
+    horizon: workspaceHorizon(draft.timeHorizon),
+    exitPlan: draft.exitConditions.trim(),
+    thesis: draft.thesis.trim(),
+    catalysts: draft.catalysts.trim(),
+    risks: draft.risks.trim(),
   };
 }
 
