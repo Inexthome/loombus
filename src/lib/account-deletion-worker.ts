@@ -25,6 +25,13 @@ type RegistryRow = {
   detail: Record<string, unknown> | null;
 };
 
+type ExistingDisposition = {
+  resource_key: string;
+  status: "pending" | "in_progress" | "completed" | "excepted" | "failed" | "not_applicable";
+  reviewed_at: string | null;
+  verification_evidence: Record<string, unknown> | null;
+};
+
 type ProcessResult = {
   requestId: string;
   status: string;
@@ -152,7 +159,27 @@ async function processRequest(
   registry: RegistryRow[]
 ): Promise<ProcessResult> {
   try {
+    const { data: existingData, error: existingError } = await supabase
+      .from("account_deletion_dispositions")
+      .select("resource_key, status, reviewed_at, verification_evidence")
+      .eq("request_id", request.request_id);
+    if (existingError) throw existingError;
+
+    const reviewedDispositions = new Set(
+      ((existingData ?? []) as ExistingDisposition[])
+        .filter(
+          (item) =>
+            item.reviewed_at &&
+            item.verification_evidence &&
+            (item.status === "completed" || item.status === "not_applicable")
+        )
+        .map((item) => item.resource_key)
+    );
+
     for (const resource of registry) {
+      // Keep evidence-backed operator decisions durable across retries.
+      if (reviewedDispositions.has(resource.resource_key)) continue;
+
       const result = await dispositionFor(supabase, request, resource);
       const { error } = await supabase.from("account_deletion_dispositions").upsert(
         {

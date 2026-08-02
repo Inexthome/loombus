@@ -31,6 +31,8 @@ Quarterly review owner: Loombus Privacy and Trust Operations
 | `claim_account_deletion_requests()` | Concurrency-safe work claiming | Uses row locks with `skip locked`, increments attempts, and records processing events |
 | Account deletion worker | Orchestration and exception reporting | Verifies restriction, records every registered disposition, and blocks unapproved actions |
 | `finalize_account_deletion_request()` | Completion invariant | Completes only when every enabled resource is terminal and no exception or failure remains |
+| Disposition review RPC | Manual/external evidence gate | Requires an administrator, structured evidence, a review note, and an irreversible-action declaration; automatic handlers cannot be overridden |
+| Requeue RPC | Controlled retry | Requires at least one reviewed disposition and writes an auditable requeue event |
 
 ## Initial disposition matrix
 
@@ -62,7 +64,7 @@ This matrix identifies the currently evidenced behavior. `Unverified` means the 
 
 ## Processor rollout state
 
-The processor is now fail-closed. It claims work safely, verifies that the account remains restricted, creates a disposition for every enabled registry resource, and writes a structured exception report. Content erasure, Auth deletion, vendor deletion, and anonymization remain disabled until their resource-level rules are approved and their handlers are separately verified. Requests with any such unresolved resource move to `blocked`, never `completed`.
+The processor is now fail-closed. It claims work safely, verifies that the account remains restricted, creates a disposition for every enabled registry resource, and writes a structured exception report. Administrators can record evidence-backed outcomes for manual or external resources and requeue a reviewed request; automatic handlers cannot be manually overridden. Reviewed outcomes remain durable across retries. Once a reviewed completed outcome is marked irreversible, cancellation and account restoration are blocked at the database layer. Content erasure, Auth deletion, vendor deletion, and anonymization remain disabled until their resource-level rules are approved and their handlers are separately verified. Requests with any unresolved resource move to `blocked`, never `completed`.
 6. Reconcile export, Privacy, Retention, Room, Reporting, Teen Safety, Search, and AI disclosures against the verified register.
 
 ## Change process
