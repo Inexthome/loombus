@@ -344,7 +344,7 @@ export default function TheFloorProgramCenter({
               </div>
               {upcoming.length ? (
                 upcoming.map((p) => (
-                  <article key={p.id} className={card}>
+                  <article id={`program-${p.id}`} key={p.id} className={`${card} scroll-mt-24`}>
                     <div className="flex flex-wrap justify-between gap-3">
                       <div>
                         <p className={label}>
@@ -432,7 +432,7 @@ export default function TheFloorProgramCenter({
             </div>
             {publications.length ? (
               publications.map((p) => (
-                <article key={p.id} className={card}>
+                <article id={`publication-${p.id}`} key={p.id} className={`${card} scroll-mt-24`}>
                   <p className={label}>
                     {p.publication_type.replaceAll("_", " ")}
                   </p>

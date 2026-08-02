@@ -18,6 +18,13 @@ function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function asUuid(value: unknown) {
+  const candidate = asString(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(candidate)
+    ? candidate
+    : null;
+}
+
 export async function POST(request: NextRequest) {
   const supabase = createFloorRequestSupabase(request);
   const { data: auth, error: authError } = await supabase.auth.getUser();
@@ -37,6 +44,7 @@ export async function POST(request: NextRequest) {
 
   const title = asString(payload.title).slice(0, FLOOR_POST_TITLE_MAX) || null;
   const postBody = asString(payload.body).slice(0, FLOOR_POST_BODY_MAX);
+  const pulseEventId = asUuid(payload.pulse_event_id);
 
   if (!postBody) {
     return jsonError("Say something before posting.", 400);
@@ -63,11 +71,26 @@ export async function POST(request: NextRequest) {
       author_id: auth.user.id,
       title,
       body: postBody,
+      pulse_event_id: pulseEventId,
     })
     .select("id")
     .single();
 
   if (error) {
+    if (error.code === "23505" && pulseEventId) {
+      const { data: existing } = await supabase
+        .from("floor_posts")
+        .select("id")
+        .eq("pulse_event_id", pulseEventId)
+        .maybeSingle();
+      return json(
+        {
+          error: "A discussion has already started for this Floor update.",
+          discussion_id: existing?.id ?? null,
+        },
+        409
+      );
+    }
     if (error.code === "42501") {
       return jsonError(
         "You need to be a verified adult member in good standing to post on The Floor.",

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import TheFloorOpeningBell from "@/components/the-floor-opening-bell";
-import TheFloorPage from "@/components/the-floor-page";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "The Floor | Loombus",
@@ -9,10 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function TheFloorRoute() {
-  return (
-    <>
-      <TheFloorOpeningBell />
-      <TheFloorPage composerOnly />
-    </>
-  );
+  redirect("/the-floor/discussion");
 }
