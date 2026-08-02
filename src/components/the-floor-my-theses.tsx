@@ -78,7 +78,12 @@ export default function TheFloorMyTheses() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("created") === "1") {
+      setMessage("Your thesis was published and is now available in My Theses.");
+    }
+    void load();
+  }, [load]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
