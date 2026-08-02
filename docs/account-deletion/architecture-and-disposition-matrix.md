@@ -52,7 +52,8 @@ This matrix identifies the currently evidenced behavior. `Unverified` means the 
 | Member product feedback | `labs_feature_request_votes`, `ai_output_ratings` | Member-submitted votes and helpfulness ratings are first-party metadata; requests, prompts, and outputs are separate resources | Delete member-owned rows | none identified for these two resources | migration `20260804004000` | Handler verified statically; live enablement pending controlled test |
 | Private commerce and local saves | `marketplace_saved_listings`, `provider_service_saves`, `service_request_saves` | Member-private saved-item rows reference public listings, provider services, and service requests | Delete member-owned rows without changing the referenced records | none identified for these three resources | migration `20260804005000` | Handler verified statically; live enablement pending controlled test |
 | Deletion workflow | `account_deletion_requests`, events, dispositions | Request and audit metadata retained for processing | Retain minimum workflow proof under approved schedule | disputes, legal hold, security | migration `20260803180000` | Duration not approved |
-| Public Discussions and Replies | `discussions`, `replies`, summaries, metrics | Existing content deletion/anonymization behavior varies by module | Decide delete versus author anonymization per resource | reports, evidence, public integrity | Discussion APIs and migrations | Full FK and trigger inventory required |
+| Public Discussions and Replies | `discussions`, `replies` | Self-service and administrator removal soft-delete rows; deleted content remains available to authorized administrators and participates in audit and moderation context | Preserve content and stable IDs; remove public author attribution through profile anonymization only after all prerequisites clear | reports, enforcement evidence, legal hold, thread integrity | migration `20260804007000`, Discussion and Reply delete APIs, deleted-content admin APIs | Disposition defined; manual-review only; no content handler approved |
+| Discussion attachments and derived data | `discussion_attachments`, Storage objects, `discussion_summaries`, AI outputs, metrics, search documents, caches | Attachments and derivatives are coupled to source Discussions but have separate storage, vendor, index, and evidence lifecycles | Review separately; do not cascade from account deletion until Storage, AI, search, moderation, and retention rules are approved | reports, evidence, vendor copies, legal hold | migration `20260804007000`, attachment and search migrations | Explicitly excluded from public-content disposition; separate reviews required |
 | Private messages | conversation, participant, message, attachment tables | User removal does not currently hard-delete moderation evidence | Remove member access; delete/anonymize content unless excepted | reports, safety, legal hold | `database/messages/20260603_private_messages_phase1.sql` | Attachment and evidence rules required |
 | Rooms | Room tables, memberships, files, calendars, audit and lifecycle records | Room deletion uses a staged lifecycle | Preserve staged deletion and separately disposition member-owned data | ownership, billing, reports, legal hold | Room lifecycle migrations and service | Ownership-transfer matrix required |
 | Commerce and local modules | Marketplace, Businesses, Services, Requests, Jobs, Events, Appointments, Local | Multiple profile FKs and module-specific deletion rules | Per-table delete, anonymize, retain, or transfer | transaction dispute, fraud, billing | module migrations | Full resource inventory required |
@@ -87,6 +88,16 @@ Profile anonymization is deliberately not an automatic handler yet. The profile 
 | Protected age-safety state | `profile_sensitive` is handled as a separate resource | Underage-report, age-correction, legal-hold, and minimum-safety-evidence review required |
 
 Migration `20260804006000` records these rules in the executable registry without adding a worker dispatch or anonymization function. Deployment cannot anonymize a profile, even if the destructive-handler environment flag is enabled for previously approved handlers.
+
+## Public Discussions and Replies disposition
+
+Migration `20260804007000_account_deletion_public_content_disposition.sql` records the public-content policy without adding a handler or worker dispatch.
+
+- Published Discussion and Reply text, stable IDs, timestamps, thread relationships, and existing soft-deletion state are preserved.
+- Public attribution is removed later through the approved profile anonymization path, rather than by rewriting every authored row.
+- Already soft-deleted content remains restricted and available to authorized administrators for moderation and audit review.
+- Discussion attachments, Storage objects, summaries, AI outputs, metrics, search documents, caches, reports, and enforcement evidence remain separate resources.
+- An account request cannot automatically hard-delete or rewrite public content under this phase.
 
 ## Processor rollout state
 
