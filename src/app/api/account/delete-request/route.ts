@@ -41,19 +41,6 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-async function wouldRemoveOnlyAdmin(
-  supabase: ReturnType<typeof getSupabaseForRequest>,
-  userId: string
-) {
-  const { count } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true })
-    .eq("is_admin", true)
-    .neq("id", userId);
-
-  return (count ?? 0) === 0;
-}
-
 export async function POST(request: NextRequest) {
   let supabase;
 
@@ -96,30 +83,10 @@ export async function POST(request: NextRequest) {
     return jsonError("Profile not found.", 404);
   }
 
-  if (profile.is_admin && (await wouldRemoveOnlyAdmin(supabase, user.id))) {
-    return jsonError("You cannot request deletion for the only admin account.", 403);
-  }
-
-  const { data: existingRequest } = await supabase
-    .from("account_deletion_requests")
-    .select("id, status")
-    .eq("user_id", user.id)
-    .in("status", ["requested", "reviewing"])
-    .maybeSingle();
-
-  if (existingRequest) {
-    return jsonError("You already have an open account deletion request.", 409);
-  }
-
-  const { data: requestRow, error: requestError } = await supabase
-    .from("account_deletion_requests")
-    .insert({
-      user_id: user.id,
-      reason: reason || null,
-      status: "requested",
-    })
-    .select("id, requested_at")
-    .single();
+  const { data: requestRows, error: requestError } = await supabase.rpc(
+    "request_account_deletion",
+    { p_reason: reason || null }
+  );
 
   if (requestError) {
     if (requestError.code === "23505") {
@@ -129,22 +96,9 @@ export async function POST(request: NextRequest) {
     return jsonError(requestError.message || "Unable to request account deletion.", 400);
   }
 
-  const now = new Date().toISOString();
-
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({
-      account_status: "deletion_requested",
-      enforcement_reason: "Self-requested account deletion",
-      enforcement_note: reason || null,
-      enforced_by: user.id,
-      enforced_at: now,
-      suspended_until: null,
-    })
-    .eq("id", user.id);
-
-  if (profileError) {
-    return jsonError(profileError.message || "Unable to update account status.", 400);
+  const requestRow = Array.isArray(requestRows) ? requestRows[0] : requestRows;
+  if (!requestRow?.request_id || !requestRow?.requested_at) {
+    return jsonError("Unable to create account deletion request.", 500);
   }
 
   await logAuditEvent({
@@ -153,9 +107,9 @@ export async function POST(request: NextRequest) {
     target_type: "profile",
     target_id: user.id,
     metadata: {
-      previous_status: profile.account_status,
+      previous_status: requestRow.previous_account_status ?? profile.account_status,
       account_status: "deletion_requested",
-      deletion_request_id: requestRow.id,
+      deletion_request_id: requestRow.request_id,
       has_reason: Boolean(reason),
       self_service: true,
     },
@@ -164,7 +118,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     accountStatus: "deletion_requested",
-    deletionRequestId: requestRow.id,
+    deletionRequestId: requestRow.request_id,
     requestedAt: requestRow.requested_at,
   });
 }
