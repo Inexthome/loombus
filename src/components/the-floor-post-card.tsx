@@ -68,7 +68,7 @@ export function FloorPostCard({
   }
 
   return (
-    <article className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/10 transition hover:border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))]">
+    <article id={`post-${post.id}`} className="scroll-mt-24 rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/10 transition hover:border-[color:color-mix(in_srgb,var(--loombus-gold)_45%,var(--loombus-border))]">
       {post.title ? (
         <h3 className="text-base font-black text-[var(--loombus-text)]">
           {normalizePublicText(post.title)}

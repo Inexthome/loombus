@@ -2,6 +2,7 @@
 
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { FloorPostCard, type FloorPostCardData } from "@/components/the-floor-post-card";
+import TheFloorPulse, { type PulseEvent } from "@/components/the-floor-pulse";
 import {
   FLOOR_POST_BODY_MAX,
   FLOOR_POST_TITLE_MAX,
@@ -73,6 +74,8 @@ export default function TheFloorDiscussionPage() {
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [pulseEventId, setPulseEventId] = useState<string | null>(null);
+  const [pulseContext, setPulseContext] = useState("");
 
   const reloadTimer = useRef<number | null>(null);
 
@@ -152,12 +155,21 @@ export default function TheFloorDiscussionPage() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ title, body }),
+        body: JSON.stringify({ title, body, pulse_event_id: pulseEventId }),
       });
-      const result = (await response.json().catch(() => ({}))) as { error?: string };
+      const result = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        discussion_id?: string | null;
+      };
+      if (response.status === 409 && result.discussion_id) {
+        window.location.assign(`/the-floor/discussion#post-${result.discussion_id}`);
+        return;
+      }
       if (!response.ok) throw new Error(result.error ?? "Unable to post your discussion.");
       setTitle("");
       setBody("");
+      setPulseEventId(null);
+      setPulseContext("");
       setComposerOpen(false);
       setMessage("Your discussion is live on The Floor.");
       await loadPosts();
@@ -167,6 +179,17 @@ export default function TheFloorDiscussionPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function discussPulseEvent(event: PulseEvent) {
+    setPulseEventId(event.id);
+    setPulseContext(event.title);
+    setTitle(event.title.replace(/^(New research|New thesis|Live now|Replay available|Upcoming on The Floor):\s*/i, ""));
+    setBody("");
+    setComposerOpen(true);
+    window.setTimeout(() => {
+      document.getElementById("floor-discussion-composer")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 0);
   }
 
   if (loading) {
@@ -183,11 +206,11 @@ export default function TheFloorDiscussionPage() {
       <div className="mx-auto flex max-w-3xl flex-col gap-5">
         <header className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5 shadow-xl shadow-black/10">
           <Link
-            href="/the-floor"
+            href="/the-floor/overview"
             className="inline-flex items-center gap-1.5 text-xs font-black text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"
           >
             <ArrowLeft className="size-3.5" aria-hidden="true" />
-            Back to The Floor
+            Open Floor overview
           </Link>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -223,11 +246,33 @@ export default function TheFloorDiscussionPage() {
           </div>
         ) : null}
 
+        <TheFloorPulse onDiscuss={discussPulseEvent} />
+
         {composerOpen ? (
           <form
+            id="floor-discussion-composer"
             onSubmit={submitPost}
-            className="space-y-4 rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-sm sm:p-5"
+            className="scroll-mt-24 space-y-4 rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-sm sm:p-5"
           >
+            {pulseContext ? (
+              <div className="flex items-start justify-between gap-3 rounded-2xl bg-[var(--loombus-gold-surface)] px-4 py-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[.12em] text-[var(--loombus-gold)]">Discussing a Floor update</p>
+                  <p className="mt-1 text-xs font-bold text-[var(--loombus-text-muted)]">{pulseContext}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPulseEventId(null);
+                    setPulseContext("");
+                  }}
+                  aria-label="Remove Floor update from discussion"
+                  className="grid size-7 shrink-0 place-items-center rounded-full border border-[var(--loombus-border)]"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+            ) : null}
             <label className="block">
               <span className={labelClass}>Title (optional)</span>
               <input
@@ -252,7 +297,7 @@ export default function TheFloorDiscussionPage() {
                 rows={5}
                 required
                 maxLength={FLOOR_POST_BODY_MAX}
-                placeholder="Start the conversation..."
+                placeholder={pulseContext ? "What stands out to you about this update?" : "Start the conversation..."}
                 className={textareaClass}
               />
             </label>

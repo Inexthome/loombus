@@ -56,7 +56,7 @@ type MarketPayload = {
 type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean };
 
 const marketNavigation: NavItem[] = [
-  { href: "/the-floor", label: "Overview", icon: House, exact: true },
+  { href: "/the-floor/overview", label: "Overview", icon: House, exact: true },
   { href: "/the-floor/intelligence", label: "Market Intelligence", icon: Globe2 },
   { href: "/the-floor/companies", label: "Companies", icon: Building2 },
   { href: "/the-floor/earnings", label: "Earnings", icon: CalendarDays },
@@ -202,7 +202,7 @@ export default function TheFloorShell({ children }: { children: ReactNode }) {
   const tickerItems = market?.markets.filter((item) => item.available).slice(0, 5) ?? [];
   const closeSidebar = () => setSidebarOpen(false);
   const openThesisComposer = () => {
-    if (pathname === "/the-floor") window.dispatchEvent(new Event("loombus:floor-open-thesis-composer"));
+    if (pathname === "/the-floor/overview") window.dispatchEvent(new Event("loombus:floor-open-thesis-composer"));
   };
 
   if (pathname === "/the-floor/subscribe") return <>{children}</>;
@@ -226,7 +226,7 @@ export default function TheFloorShell({ children }: { children: ReactNode }) {
       <div className="floor-terminal-grid">
         <aside className="floor-terminal-sidebar" data-open={sidebarOpen ? "true" : "false"}>
           <div className="floor-terminal-brand">
-            <Link href="/the-floor" className="floor-terminal-brand-identity" aria-label="The Floor overview">
+            <Link href="/the-floor" className="floor-terminal-brand-identity" aria-label="The Floor discussion">
               <span><Image src="/assets/brand/loombus-mark-transparent.png" alt="" width={44} height={44} priority /></span>
               <span><strong>Loombus</strong><small>The Floor</small></span>
             </Link>
@@ -256,11 +256,11 @@ export default function TheFloorShell({ children }: { children: ReactNode }) {
           <div className="floor-terminal-mobile-head">
             <button type="button" onClick={() => setSidebarOpen(true)} aria-label="Open Floor navigation"><Menu /></button>
             <div><span>The Floor</span><strong>{currentTitle(pathname)}</strong></div>
-            <Link href="/the-floor?compose=1" aria-label="Post a thesis" onClick={openThesisComposer}><Plus /></Link>
+            <Link href="/the-floor/overview?compose=1" aria-label="Post a thesis" onClick={openThesisComposer}><Plus /></Link>
           </div>
           <header className="floor-terminal-context">
             <div><span>The Floor</span><strong>{currentTitle(pathname)}</strong></div>
-            <Link href="/the-floor?compose=1" onClick={openThesisComposer}><Plus /> Post a thesis</Link>
+            <Link href="/the-floor/overview?compose=1" onClick={openThesisComposer}><Plus /> Post a thesis</Link>
           </header>
           <div className="floor-terminal-content">{children}</div>
         </main>
