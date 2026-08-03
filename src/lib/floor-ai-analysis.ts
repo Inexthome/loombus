@@ -80,27 +80,38 @@ export async function generateFloorThesisAnalysis(
     throw new Error("AI analysis is not configured yet.");
   }
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: FLOOR_ANALYSIS_MODEL,
-      // Thinking is on by default on Claude Opus 5 and shares max_tokens
-      // with the response text -- for this bounded, well-specified critique
-      // task we don't need it, and leaving it on risks the JSON output
-      // getting truncated mid-string by the thinking budget (which throws
-      // exactly the "not valid JSON" error this fixes). Disabling it is
-      // valid at the default effort ("high"), so this doesn't 400.
-      thinking: { type: "disabled" },
-      max_tokens: 3000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserPrompt(thesis) }],
-    }),
-  });
+  const timeout = AbortSignal.timeout(30_000);
+
+  let response: Response;
+  try {
+    response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: FLOOR_ANALYSIS_MODEL,
+        // Thinking is on by default on Claude Opus 5 and shares max_tokens
+        // with the response text -- for this bounded, well-specified critique
+        // task we don't need it, and leaving it on risks the JSON output
+        // getting truncated mid-string by the thinking budget (which throws
+        // exactly the "not valid JSON" error this fixes). Disabling it is
+        // valid at the default effort ("high"), so this doesn't 400.
+        thinking: { type: "disabled" },
+        max_tokens: 3000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: buildUserPrompt(thesis) }],
+      }),
+      signal: timeout,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError") {
+      throw new Error("The analysis took too long to generate. Try again.");
+    }
+    throw error;
+  }
 
   const payload = await response.json();
 

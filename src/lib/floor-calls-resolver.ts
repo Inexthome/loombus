@@ -1,9 +1,16 @@
 import "server-only";
 
 import { createFloorServiceSupabase } from "@/lib/floor-operations";
-import { fetchDailyCloseOnOrBefore } from "@/lib/floor-market-data";
+import { fetchDailyCloseOnOrBefore, type FloorMarketClose } from "@/lib/floor-market-data";
 
-const BATCH_LIMIT = 25;
+// Parameterized rather than hardcoded so a backlog bigger than the default
+// doesn't take days to drain -- override via env without a code change.
+const DEFAULT_BATCH_LIMIT = 200;
+
+function resolveBatchLimit() {
+  const configured = Number(process.env.FLOOR_CALLS_RESOLVER_BATCH_LIMIT);
+  return Number.isInteger(configured) && configured > 0 ? configured : DEFAULT_BATCH_LIMIT;
+}
 
 type DueCall = {
   id: string;
@@ -61,11 +68,26 @@ export async function runFloorCallsResolver(): Promise<FloorCallsResolverSummary
     .eq("status", "pending")
     .lte("resolves_by", new Date().toISOString())
     .order("resolves_by", { ascending: true })
-    .limit(BATCH_LIMIT);
+    .limit(resolveBatchLimit());
 
   if (error) {
     summary.errors.push(`Unable to load due calls: ${error.message}`);
     return summary;
+  }
+
+  // Multiple calls sharing a ticker and resolves-by date (common -- several
+  // members calling the same catalyst) previously re-fetched the same daily
+  // close once per call. Caching per (ticker, date) within this run cuts
+  // that down to one fetch per unique pair.
+  const closeCache = new Map<string, Promise<FloorMarketClose | null>>();
+  function cachedDailyClose(ticker: string, onOrBefore: Date) {
+    const key = `${ticker}|${onOrBefore.toISOString().slice(0, 10)}`;
+    let pending = closeCache.get(key);
+    if (!pending) {
+      pending = fetchDailyCloseOnOrBefore(ticker, onOrBefore);
+      closeCache.set(key, pending);
+    }
+    return pending;
   }
 
   for (const call of (dueCalls ?? []) as DueCall[]) {
@@ -82,7 +104,7 @@ export async function runFloorCallsResolver(): Promise<FloorCallsResolverSummary
         continue;
       }
 
-      const close = await fetchDailyCloseOnOrBefore(call.ticker, new Date(call.resolves_by));
+      const close = await cachedDailyClose(call.ticker, new Date(call.resolves_by));
       if (!close) {
         summary.errors.push(`No market data for ${call.ticker} (call ${call.id}).`);
         continue;

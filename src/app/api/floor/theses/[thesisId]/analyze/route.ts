@@ -1,6 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { generateFloorThesisAnalysis } from "@/lib/floor-ai-analysis";
-import { createFloorRequestSupabase, createFloorServiceSupabase } from "@/lib/floor-operations";
+import {
+  createFloorRequestSupabase,
+  createFloorServiceSupabase,
+  hasActiveFloorAccess,
+} from "@/lib/floor-operations";
+
+const PLACEHOLDER = "Generating...";
 
 type RouteContext = { params: Promise<{ thesisId: string }> };
 
@@ -23,6 +29,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (authError || !auth.user) {
     return jsonError("Sign in to request an analysis.", 401);
   }
+  if (!(await hasActiveFloorAccess(supabase, auth.user.id))) {
+    return jsonError("An active Floor membership is required.", 403);
+  }
 
   const { data: thesis, error: thesisError } = await supabase
     .from("floor_theses")
@@ -39,38 +48,51 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return jsonError("Only the thesis author can request an analysis.", 403);
   }
 
-  const { count, error: countError } = await supabase
-    .from("floor_thesis_analyses")
-    .select("id", { count: "exact", head: true })
-    .eq("thesis_id", thesisId);
+  const service = createFloorServiceSupabase();
 
-  if (countError) {
-    return jsonError("Unable to check for an existing analysis.", 500);
-  }
-  if (count && count > 0) {
-    return jsonError("This thesis already has an analysis.", 409);
+  // Claim the (thesis_id) slot before spending on a model call. The unique
+  // index on floor_thesis_analyses(thesis_id) makes this atomic -- a
+  // concurrent request loses here with 23505, before it ever calls the
+  // model, instead of racing past a count() check and paying for a
+  // duplicate generation.
+  const { data: claim, error: claimError } = await service
+    .from("floor_thesis_analyses")
+    .insert({
+      thesis_id: thesisId,
+      steelman: PLACEHOLDER,
+      redteam: PLACEHOLDER,
+      blind_spots: PLACEHOLDER,
+    })
+    .select("id")
+    .single();
+
+  if (claimError) {
+    if (claimError.code === "23505") {
+      return jsonError("This thesis already has an analysis.", 409);
+    }
+    return jsonError(claimError.message || "Unable to start the analysis.", 500);
   }
 
   let analysis;
   try {
     analysis = await generateFloorThesisAnalysis(thesis);
   } catch (error) {
+    await service.from("floor_thesis_analyses").delete().eq("id", claim.id);
     return jsonError(
       error instanceof Error ? error.message : "Unable to generate the analysis.",
       502
     );
   }
 
-  const service = createFloorServiceSupabase();
   const { data, error } = await service
     .from("floor_thesis_analyses")
-    .insert({
-      thesis_id: thesisId,
+    .update({
       steelman: analysis.steelman,
       redteam: analysis.redteam,
       blind_spots: analysis.blindSpots,
       model: analysis.model,
     })
+    .eq("id", claim.id)
     .select("id, steelman, redteam, blind_spots, model, created_at")
     .single();
 

@@ -139,7 +139,7 @@ export default function TheFloorAnalystPage({ memberId }: { memberId: string }) 
             This score is computed from published work and resolved outcomes. It cannot be purchased or manually edited, and it is not a rating of any security.
           </p>
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Metric label="Accuracy" value={credibility.accuracy} explanation="Weighted resolved-call outcomes with a sample-size confidence adjustment." />
+            <Metric label="Accuracy" value={credibility.accuracy} explanation="Correct resolved calls as a share of correct plus incorrect -- the same formula as the leaderboard." />
             <Metric label="Transparency" value={credibility.transparency} explanation="Entry zones, exit plans, catalysts, risks, and falsifiable calls disclosed before outcomes." />
             <Metric label="Consistency" value={credibility.consistency} explanation="Sustained publishing across time rather than isolated bursts of activity." />
             <Metric label="Research depth" value={credibility.researchDepth} explanation="Completeness of the thesis, supporting factors, risks, and decision framework." />

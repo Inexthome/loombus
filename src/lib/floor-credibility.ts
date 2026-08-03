@@ -45,10 +45,12 @@ export function calculateFloorCredibility(theses: CredibilityThesis[]): Credibil
   const partial = resolved.filter((call) => call.outcome === "partial").length;
   const incorrect = resolved.filter((call) => call.outcome === "incorrect").length;
 
-  const weightedCorrect = correct + partial * 0.5;
-  const rawAccuracy = resolved.length > 0 ? (weightedCorrect / resolved.length) * 100 : 0;
-  const accuracyConfidence = Math.min(1, resolved.length / 20);
-  const accuracy = clamp(rawAccuracy * accuracyConfidence + 50 * (1 - accuracyConfidence));
+  // Matches public.floor_member_credibility exactly: correct / (correct +
+  // incorrect), partial calls excluded from both sides (not half-credited),
+  // 50 (neutral) only in the no-data case the view would return null for --
+  // this and the view must never disagree on the same member's accuracy.
+  const accuracyEligible = correct + incorrect;
+  const accuracy = clamp(accuracyEligible > 0 ? (correct / accuracyEligible) * 100 : 50);
 
   const transparencyFields = theses.flatMap((thesis) => [
     thesis.entry_zone_low !== null || thesis.entry_zone_high !== null,
@@ -86,10 +88,15 @@ export function calculateFloorCredibility(theses: CredibilityThesis[]): Credibil
       : 0
   );
 
+  // An admin void (bad market data, ambiguous target) isn't the author's
+  // fault -- it shouldn't dent accountability the way a call that simply
+  // never got resolved would, so voided calls are excluded from this rate's
+  // denominator entirely rather than counted as unresolved.
+  const resolvableCalls = calls.filter((call) => call.status !== "void");
   const callParticipation = theses.length > 0
     ? Math.min(1, calls.length / Math.max(theses.length, 1))
     : 0;
-  const resolutionRate = calls.length > 0 ? resolved.length / calls.length : 0;
+  const resolutionRate = resolvableCalls.length > 0 ? resolved.length / resolvableCalls.length : 0;
   const accountability = clamp((callParticipation * 0.45 + resolutionRate * 0.55) * 100);
 
   const overall = clamp(
