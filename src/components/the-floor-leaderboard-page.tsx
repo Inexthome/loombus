@@ -2,7 +2,7 @@
 
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { analystPath } from "@/lib/floor-credibility";
-import { floorDisplayName } from "@/lib/floor-shared";
+import { floorLeaderboardDisplayName } from "@/lib/floor-shared";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
 import { ArrowLeft, Medal, ShieldCheck, Trophy } from "lucide-react";
@@ -19,6 +19,7 @@ type FloorCredibilityRow = {
   partial_calls: number;
   accuracy_pct: number | string | null;
   last_resolved_at: string | null;
+  leaderboard_display: string | null;
 };
 
 function accuracyValue(value: FloorCredibilityRow["accuracy_pct"]) {
@@ -41,7 +42,7 @@ export default function TheFloorLeaderboardPage() {
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from("floor_member_credibility")
-      .select("member_id, username, full_name, pending_calls, resolved_calls, correct_calls, incorrect_calls, partial_calls, accuracy_pct, last_resolved_at")
+      .select("member_id, username, full_name, pending_calls, resolved_calls, correct_calls, incorrect_calls, partial_calls, accuracy_pct, last_resolved_at, leaderboard_display")
       .order("accuracy_pct", { ascending: false, nullsFirst: false })
       .order("resolved_calls", { ascending: false })
       .limit(50);
@@ -104,7 +105,7 @@ export default function TheFloorLeaderboardPage() {
                   <Link href={analystPath(row.member_id)} className="flex items-center gap-4 rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 shadow-xl shadow-black/10 transition hover:border-[var(--loombus-gold)]">
                     <span className={`w-8 shrink-0 text-center text-lg font-black ${RANK_STYLES[index] ?? "text-[var(--loombus-text-subtle)]"}`}>#{index + 1}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-black text-[var(--loombus-text)]">{floorDisplayName(row.full_name, row.username)}</p>
+                      <p className="truncate text-sm font-black text-[var(--loombus-text)]">{floorLeaderboardDisplayName(row)}</p>
                       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-bold text-[var(--loombus-text-muted)]">
                         <span>{row.resolved_calls} resolved</span>
                         <span className="text-emerald-400">{row.correct_calls} correct</span>

@@ -3,7 +3,7 @@
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { supabase } from "@/lib/supabase/client";
 import { analystPath } from "@/lib/floor-credibility";
-import { floorDisplayName } from "@/lib/floor-shared";
+import { floorDisplayName, floorLeaderboardDisplayName } from "@/lib/floor-shared";
 import {
   BookOpenCheck,
   CheckCircle2,
@@ -66,6 +66,7 @@ type Track = {
   partial_calls: number;
   pending_calls: number;
   accuracy_pct: number | string | null;
+  leaderboard_display: string | null;
 };
 type Contributor = {
   status: string;
@@ -166,7 +167,7 @@ export default function TheFloorProgramCenter({
       supabase
         .from("floor_member_credibility")
         .select(
-          "member_id,full_name,username,resolved_calls,correct_calls,incorrect_calls,partial_calls,pending_calls,accuracy_pct",
+          "member_id,full_name,username,resolved_calls,correct_calls,incorrect_calls,partial_calls,pending_calls,accuracy_pct,leaderboard_display",
         )
         .order("resolved_calls", { ascending: false })
         .limit(50),
@@ -652,7 +653,7 @@ export default function TheFloorProgramCenter({
                 >
                   <div>
                     <h3 className="font-black">
-                      {floorDisplayName(r.full_name, r.username)}
+                      {floorLeaderboardDisplayName(r)}
                     </h3>
                     <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">
                       {r.pending_calls} pending calls remain unresolved

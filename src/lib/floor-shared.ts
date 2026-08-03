@@ -77,6 +77,26 @@ export function floorDisplayName(
   return fullName || username || fallback;
 }
 
+/**
+ * floor_member_credibility exposes each member's own leaderboard_display
+ * preference (via a security-definer helper, since RLS on
+ * floor_member_preferences would otherwise only resolve the viewer's own
+ * row) -- this respects it instead of always preferring full_name.
+ */
+export function floorLeaderboardDisplayName(
+  row: {
+    full_name: string | null | undefined;
+    username: string | null | undefined;
+    leaderboard_display?: string | null;
+  },
+  fallback = "A Loombus member"
+) {
+  if (row.leaderboard_display === "full_name") {
+    return row.full_name || row.username || fallback;
+  }
+  return row.username || row.full_name || fallback;
+}
+
 function formatFloorCallResolvesByLabel(resolvesByIso: string) {
   const date = new Date(resolvesByIso);
   if (Number.isNaN(date.getTime())) return null;
