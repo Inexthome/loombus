@@ -42,7 +42,11 @@ type MarketData = {
   earnings:{ available:boolean; message:string|null; events:Array<{symbol:string;name:string;date:string;time:string|null;epsEstimate:number|null}> };
 };
 
-const chartColors: Record<string, string> = { SPX: "#35c96f", IXIC: "#4f8ee8", DJI: "#d3a928", RUT: "#e5e7eb" };
+// On-brand (black/gold/cream) line identities. No blue -- off-brand. No
+// green -- reserved strictly for the +/- delta figures in the legend
+// (data-up), which would otherwise visually collide with a "line is green"
+// meaning nothing to do with performance.
+const chartColors: Record<string, string> = { SPX: "#2c2c2a", IXIC: "#b9872f", DJI: "#cda04a", RUT: "#888780" };
 
 function authorLabel(author: Thesis["author"]) {
   const profile = Array.isArray(author) ? author[0] : author;
@@ -59,11 +63,27 @@ function relativeTime(value: string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function chartPath(points: HistorySeries["points"], min: number, max: number) {
+// Wide viewBox matching the rendered container's aspect ratio -- a square
+// 100x100 viewBox stretched with preserveAspectRatio="none" exaggerated
+// slopes and rendered stroke widths unevenly. Margins keep lines and their
+// end-labels off the top/bottom edges.
+const CHART_WIDTH = 320;
+const CHART_HEIGHT = 120;
+const CHART_Y_MARGIN = 12;
+
+function chartPointY(percent: number, min: number, max: number) {
   const range = Math.max(max - min, 0.01);
+  return (CHART_HEIGHT - CHART_Y_MARGIN) - ((percent - min) / range) * (CHART_HEIGHT - CHART_Y_MARGIN * 2);
+}
+
+function chartPointX(index: number, total: number) {
+  return total <= 1 ? 0 : (index / (total - 1)) * CHART_WIDTH;
+}
+
+function chartPath(points: HistorySeries["points"], min: number, max: number) {
   return points.map((point, index) => {
-    const x = points.length === 1 ? 0 : (index / (points.length - 1)) * 100;
-    const y = 92 - ((point.percent - min) / range) * 84;
+    const x = chartPointX(index, points.length);
+    const y = chartPointY(point.percent, min, max);
     return `${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
   }).join(" ");
 }
@@ -167,9 +187,39 @@ export default function TheFloorOpeningBell() {
         {history.length ? (
           <div className="floor-overview-chart-grid">
             <div className="floor-overview-chart-canvas">
-              <span className="floor-chart-zero" style={{ top: `${92 - ((0 - chartMin) / Math.max(chartMax - chartMin, .01)) * 84}%` }} />
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Intraday percentage performance for major market proxies">
-                {history.map((series) => <path key={series.key} d={chartPath(series.points, chartMin, chartMax)} stroke={chartColors[series.key] ?? "#c9a951"} />)}
+              <span className="floor-chart-zero" style={{ top: `${(chartPointY(0, chartMin, chartMax) / CHART_HEIGHT) * 100}%` }} />
+              <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label="Intraday percentage performance for major market proxies">
+                {history.map((series) => (
+                  <path
+                    key={series.key}
+                    d={chartPath(series.points, chartMin, chartMax)}
+                    stroke={chartColors[series.key] ?? "#c9a951"}
+                    fill="none"
+                    vectorEffect="non-scaling-stroke"
+                    strokeWidth={2}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                ))}
+                {history.map((series) => {
+                  const last = series.points.at(-1);
+                  if (!last) return null;
+                  const x = chartPointX(series.points.length - 1, series.points.length);
+                  const y = chartPointY(last.percent, chartMin, chartMax);
+                  return (
+                    <text
+                      key={`${series.key}-label`}
+                      x={x + 4}
+                      y={y}
+                      fill={chartColors[series.key] ?? "#c9a951"}
+                      fontSize={9}
+                      fontWeight={800}
+                      dominantBaseline="middle"
+                    >
+                      {series.key}
+                    </text>
+                  );
+                })}
               </svg>
               <div><span>{chartMax.toFixed(2)}%</span><span>{chartMin.toFixed(2)}%</span></div>
             </div>
