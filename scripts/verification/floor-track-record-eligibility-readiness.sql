@@ -2,8 +2,10 @@
 --
 -- Proves a minor cannot read floor_calls or floor_member_credibility (the
 -- Floor's track-record/scoreboard surface) while an eligible adult member
--- still can. Runs inside a transaction and rolls back at the end. Every
--- returned row must have status = PASS.
+-- still can. Runs inside a transaction and rolls back at the end. Look at
+-- the Messages/Notices output (not the results grid -- some SQL editors,
+-- including Supabase Studio, only render the LAST statement's result set,
+-- and this script ends on ROLLBACK). Every line should end PASS.
 
 begin;
 
@@ -35,12 +37,6 @@ begin
   values
     (thesis_id, author_id, 'XYZ', 'XYZ above 50', 'gte', 50, now() - interval '1 day', 'resolved', 'correct', 55, now(), author_id);
 
-  create temporary table floor_eligibility_checks (
-    check_name text,
-    observed boolean,
-    expected boolean
-  ) on commit drop;
-
   perform set_config('request.jwt.claim.sub', minor_id::text, true);
   set local role authenticated;
   minor_sees_calls := exists (select 1 from public.floor_calls limit 1);
@@ -55,20 +51,15 @@ begin
 
   perform set_config('request.jwt.claim.sub', '', true);
 
-  insert into floor_eligibility_checks values
-    ('minor_cannot_see_floor_calls', minor_sees_calls, false),
-    ('minor_cannot_see_credibility', minor_sees_credibility, false),
-    ('adult_can_see_floor_calls', adult_sees_calls, true),
-    ('adult_can_see_credibility', adult_sees_credibility, true);
+  raise notice '% | minor_cannot_see_floor_calls (observed=%, expected=false)',
+    case when minor_sees_calls = false then 'PASS' else 'FAIL' end, minor_sees_calls;
+  raise notice '% | minor_cannot_see_credibility (observed=%, expected=false)',
+    case when minor_sees_credibility = false then 'PASS' else 'FAIL' end, minor_sees_credibility;
+  raise notice '% | adult_can_see_floor_calls (observed=%, expected=true)',
+    case when adult_sees_calls = true then 'PASS' else 'FAIL' end, adult_sees_calls;
+  raise notice '% | adult_can_see_credibility (observed=%, expected=true)',
+    case when adult_sees_credibility = true then 'PASS' else 'FAIL' end, adult_sees_credibility;
 end;
 $$;
-
-select
-  check_name,
-  observed,
-  expected,
-  case when observed = expected then 'PASS' else 'FAIL' end as status
-from floor_eligibility_checks
-order by check_name;
 
 rollback;

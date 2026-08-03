@@ -8,8 +8,10 @@
 --
 -- Runs inside a transaction and rolls back at the end, so it is safe to run
 -- against a live database, but is intended for a local `supabase db reset`
--- instance seeded with two throwaway profiles. Every returned row must have
--- status = PASS.
+-- instance seeded with two throwaway profiles. Look at the Messages/Notices
+-- output (not the results grid -- some SQL editors, including Supabase
+-- Studio, only render the LAST statement's result set, and this script ends
+-- on ROLLBACK). Every line should end PASS.
 
 begin;
 
@@ -59,12 +61,6 @@ begin
     (deleted_thesis_id, author_id, 'GHI', 'GHI above 100 by year end', 'gte', 100, now() - interval '1 day', 'resolved', 'correct', 105, now(), admin_id)
   returning id into call_id;
 
-  create temporary table floor_lifecycle_checks (
-    check_name text,
-    observed boolean,
-    expected boolean
-  ) on commit drop;
-
   perform set_config('request.jwt.claim.sub', viewer_id::text, true);
   set local role authenticated;
 
@@ -85,27 +81,15 @@ begin
   reset role;
   perform set_config('request.jwt.claim.sub', '', true);
 
-  insert into floor_lifecycle_checks values
-    ('other_member_sees_active_thesis', sees_active, true),
-    ('other_member_sees_withdrawn_thesis_in_feed', sees_withdrawn, true),
-    ('other_member_cannot_see_deleted_thesis', sees_deleted, false);
-
-  insert into floor_lifecycle_checks values (
-    'resolved_call_on_deleted_thesis_still_counts_toward_credibility',
-    credibility_correct_calls = 1,
-    true
-  );
-
-  raise notice 'floor_lifecycle_checks populated';
+  raise notice '% | other_member_sees_active_thesis (observed=%, expected=true)',
+    case when sees_active = true then 'PASS' else 'FAIL' end, sees_active;
+  raise notice '% | other_member_sees_withdrawn_thesis_in_feed (observed=%, expected=true)',
+    case when sees_withdrawn = true then 'PASS' else 'FAIL' end, sees_withdrawn;
+  raise notice '% | other_member_cannot_see_deleted_thesis (observed=%, expected=false)',
+    case when sees_deleted = false then 'PASS' else 'FAIL' end, sees_deleted;
+  raise notice '% | resolved_call_on_deleted_thesis_still_counts_toward_credibility (observed=%, expected=1)',
+    case when credibility_correct_calls = 1 then 'PASS' else 'FAIL' end, credibility_correct_calls;
 end;
 $$;
-
-select
-  check_name,
-  observed,
-  expected,
-  case when observed = expected then 'PASS' else 'FAIL' end as status
-from floor_lifecycle_checks
-order by check_name;
 
 rollback;
