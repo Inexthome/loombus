@@ -80,8 +80,8 @@ jobs:
         with:
           version: latest
 
-      - name: Reset local database (replays supabase/migrations from empty)
-        run: supabase db reset
+      - name: Start local stack (applies supabase/migrations from empty)
+        run: supabase start
 
   codeql:
     name: CodeQL analysis
