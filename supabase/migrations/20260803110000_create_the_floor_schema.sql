@@ -21,40 +21,13 @@ begin;
 create extension if not exists pgcrypto with schema extensions;
 
 -- ---------------------------------------------------------------------------
--- floor_theses: member thesis card
+-- floor_theses: member thesis card. Base table created in
+-- 20260801020000_create_floor_theses.sql (which runs first so the
+-- lifecycle-column ALTERs in 20260801030000 and 20260801040000 have
+-- something to alter); lifecycle_status and withdrawn_at were added there.
+-- Indexes for it live here since they only need the columns, not creation
+-- order.
 -- ---------------------------------------------------------------------------
-
-create table if not exists public.floor_theses (
-  id uuid primary key default gen_random_uuid(),
-  author_id uuid not null references public.profiles(id) on delete cascade,
-  ticker text not null,
-  stance text not null,
-  conviction smallint not null,
-  horizon text not null,
-  entry_zone_low numeric(18, 6),
-  entry_zone_high numeric(18, 6),
-  exit_plan text not null,
-  thesis text not null,
-  catalysts text not null default '',
-  risks text not null default '',
-  status text not null default 'open',
-  deleted_at timestamptz,
-  deleted_by uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint floor_theses_ticker_length_check check (char_length(ticker) between 1 and 16),
-  constraint floor_theses_stance_check check (stance in ('long', 'short', 'neutral')),
-  constraint floor_theses_conviction_check check (conviction between 1 and 5),
-  constraint floor_theses_horizon_check check (
-    horizon in ('days', 'weeks', 'months', 'quarters', 'years')
-  ),
-  constraint floor_theses_entry_zone_order_check check (
-    entry_zone_low is null or entry_zone_high is null or entry_zone_high >= entry_zone_low
-  ),
-  constraint floor_theses_exit_plan_length_check check (char_length(exit_plan) >= 1),
-  constraint floor_theses_thesis_length_check check (char_length(thesis) >= 1),
-  constraint floor_theses_status_check check (status in ('open', 'closed'))
-);
 
 create index if not exists floor_theses_author_created_idx
   on public.floor_theses (author_id, created_at desc);

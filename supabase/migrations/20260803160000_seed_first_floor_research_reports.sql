@@ -15,8 +15,14 @@ begin
   order by created_at asc
   limit 1;
 
+  -- No admin yet means an empty/fresh database (supabase db reset, CI,
+  -- a new preview branch) rather than a real deployment missing an
+  -- admin -- skip the seed instead of hard-failing so the migration set
+  -- still replays cleanly from empty. Production already has an admin by
+  -- the time this runs, so this is a no-op there.
   if seed_admin_id is null then
-    raise exception 'An administrator profile is required to seed Floor research reports.';
+    raise notice 'Skipping Floor research report seed: no administrator profile exists yet.';
+    return;
   end if;
 
   insert into public.floor_research_publications (

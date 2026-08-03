@@ -68,6 +68,21 @@ jobs:
       - name: Audit production dependency vulnerabilities
         run: npm audit --omit=dev --audit-level=high
 
+  migrations-reset:
+    name: supabase db reset (migrations replay from empty)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local stack (applies supabase/migrations from empty)
+        run: supabase start
+
   codeql:
     name: CodeQL analysis
     runs-on: ubuntu-latest
