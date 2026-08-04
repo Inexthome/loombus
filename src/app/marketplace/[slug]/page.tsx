@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import MarketplaceListingPage from "@/components/marketplace-listing-page";
+import MarketplacePickupScheduler from "@/components/marketplace-pickup-scheduler";
 import MarketplaceTrustActions from "@/components/marketplace-trust-actions";
 import { findPublicMarketplaceListingBySlug } from "@/lib/marketplace-public-server";
 
@@ -97,6 +98,15 @@ export default async function ListingPage({
   return (
     <>
       <MarketplaceListingPage />
+      {listing ? (
+        <MarketplacePickupScheduler
+          listingId={listing.id}
+          listingTitle={listing.title}
+          listingSlug={listing.slug}
+          pickupAvailable={listing.pickupAvailable}
+          businessBacked={Boolean(listing.businessId)}
+        />
+      ) : null}
       <MarketplaceTrustActions slug={slug} />
       {structuredData ? (
         <script
