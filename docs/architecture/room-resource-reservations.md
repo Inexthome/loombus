@@ -43,6 +43,6 @@ The shared presentation contract is:
 ## Deployment order
 
 1. Deploy the application support for Room reservations.
-2. Apply `20260803220000_create_room_resource_reservations.sql`.
+2. Apply `20260803221000_create_room_resource_reservations.sql`.
 3. Verify resource creation, member requests, manager decisions, overlap rejection, cancellation, and Room access removal.
 4. Enable `/appointments` aggregation only after the Room reservation API is live.
