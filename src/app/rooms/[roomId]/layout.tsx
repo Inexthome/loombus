@@ -11,6 +11,7 @@ import "../room-thread-attachments.css";
 import "../room-mobile-safe-area-hotfix.css";
 import "../room-secondary-rail.css";
 import "../room-refresh-policy.css";
+import "../room-documents-polish.css";
 
 export default function RoomRouteLayout({
   children,
