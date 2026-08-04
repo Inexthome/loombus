@@ -1,6 +1,7 @@
 import { RoomDocumentsNavigationBridge } from "@/components/room-documents-navigation-bridge";
 import { RoomFeatureHost } from "@/components/room-feature-host";
 import { RoomMaintenanceNavigationBridge } from "@/components/room-maintenance-navigation-bridge";
+import { RoomPollsNavigationBridge } from "@/components/room-polls-navigation-bridge";
 import { RoomReservationsNavigationBridge } from "@/components/room-reservations-navigation-bridge";
 import RoomRouteFrameV4 from "@/components/room-route-frame-v4";
 import { RoomTopbarActions } from "@/components/room-topbar-actions";
@@ -23,6 +24,7 @@ export default function RoomRouteLayout({
       <RoomRouteFrameV4>{children}</RoomRouteFrameV4>
       <RoomDocumentsNavigationBridge />
       <RoomMaintenanceNavigationBridge />
+      <RoomPollsNavigationBridge />
       <RoomReservationsNavigationBridge />
       <RoomTopbarActions />
       <RoomFeatureHost />
