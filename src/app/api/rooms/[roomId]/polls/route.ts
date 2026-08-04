@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createNotification, createNotifications } from "@/lib/notifications";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
-import { createRequestSupabase, createRoomServiceSupabase, getRoomAccess } from "@/lib/room-operations";
+import { createRequestSupabase, createRoomServiceSupabase, getRoomAccess, type RoomAccess } from "@/lib/room-operations";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +55,7 @@ function pollState(row: Record<string, unknown>) {
   return "open";
 }
 
-async function loadPolls(service: ReturnType<typeof createRoomServiceSupabase>, roomId: string, userId: string, access: Awaited<ReturnType<typeof getRoomAccess>>) {
+async function loadPolls(service: ReturnType<typeof createRoomServiceSupabase>, roomId: string, userId: string, access: RoomAccess) {
   const pollsResult = await service.from("room_polls").select("*").eq("room_id", roomId).order("created_at", { ascending: false }).limit(100);
   if (pollsResult.error) {
     if (missingTable(pollsResult.error)) return { migrationRequired: true, message: "Room Polls require the pending database migration." };
@@ -118,8 +118,7 @@ async function loadPolls(service: ReturnType<typeof createRoomServiceSupabase>, 
 }
 
 async function notifyEligibleMembers(service: ReturnType<typeof createRoomServiceSupabase>, roomId: string, actorId: string, pollId: string, title: string, requirement: string) {
-  let query = service.from("room_members").select("user_id,role").eq("room_id", roomId).eq("status", "active");
-  const result = await query;
+  const result = await service.from("room_members").select("user_id,role").eq("room_id", roomId).eq("status", "active");
   if (result.error) return;
   const recipients = (result.data ?? []).filter((member) => {
     const role = String(member.role ?? "member");
@@ -127,6 +126,7 @@ async function notifyEligibleMembers(service: ReturnType<typeof createRoomServic
     if (requirement === "board") return role === "owner" || role === "administrator" || role === "moderator";
     return true;
   }).map((member) => String(member.user_id)).filter((id) => id && id !== actorId);
+  if (!recipients.length) return;
   await createNotifications(recipients.map((userId) => ({ user_id: userId, actor_id: actorId, type: "room_poll_opened", message: `A new Room poll is open: ${title}`, target_type: "room_poll", target_id: pollId, room_id: roomId }))).catch(() => null);
 }
 
