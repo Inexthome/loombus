@@ -85,6 +85,7 @@ export async function notifyRoomReservationLifecycle(options: {
   const { service, access, actorId, action, input, reservation } = options;
   const reservationId = text(reservation?.id);
   const requesterId = text(reservation?.requesterId);
+  const reservationStatus = text(reservation?.status);
   if (!reservationId || !requesterId) return;
 
   const roomId = access.room.id;
@@ -103,7 +104,7 @@ export async function notifyRoomReservationLifecycle(options: {
   };
 
   if (action === "request") {
-    if (reservation.status === "accepted") {
+    if (reservationStatus === "accepted") {
       await createNotification({
         ...target,
         user_id: requesterId,
