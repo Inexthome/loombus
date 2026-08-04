@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import RoomPollsClient from "./room-polls-client";
+import styles from "./polls-page.module.css";
 
 export const metadata: Metadata = {
   title: "Room Polls",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function RoomPollsPage() {
-  return <RoomPollsClient />;
+  return (
+    <div className={styles.pollsPage}>
+      <RoomPollsClient />
+    </div>
+  );
 }
