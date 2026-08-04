@@ -1,3 +1,5 @@
+import type { BookingSourceType } from "@/lib/booking-source";
+
 export type PublicEventStatus =
   | "pending"
   | "published"
@@ -70,7 +72,14 @@ export type EventsManageResponse = {
   isAdmin: boolean;
 };
 
-export type AppointmentService = {
+export type AppointmentBookingSourceFields = {
+  sourceType?: BookingSourceType;
+  sourceId?: string | null;
+  sourceLabel?: string | null;
+  sourceHref?: string | null;
+};
+
+export type AppointmentService = AppointmentBookingSourceFields & {
   id: string;
   businessId: string;
   businessName: string;
@@ -88,7 +97,7 @@ export type AppointmentService = {
   updatedAt: string;
 };
 
-export type AppointmentRequest = {
+export type AppointmentRequest = AppointmentBookingSourceFields & {
   id: string;
   serviceId: string;
   serviceName: string;
