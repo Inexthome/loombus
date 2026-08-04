@@ -1,0 +1,42 @@
+.pollsPage :global(.room-expansion-form) > :global(.grid.gap-3) {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.75rem !important;
+  width: 100%;
+}
+
+.pollsPage :global(.room-expansion-form) > :global(.grid.gap-3) > label {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.625rem !important;
+  min-width: 0;
+  min-height: 3rem;
+  margin: 0 !important;
+  padding: 0.75rem 0.875rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.pollsPage :global(.room-expansion-form) > :global(.grid.gap-3) > label > input[type="checkbox"] {
+  display: block !important;
+  flex: 0 0 auto;
+  width: 1rem !important;
+  min-width: 1rem !important;
+  height: 1rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 1023px) {
+  .pollsPage :global(.room-expansion-form) > :global(.grid.gap-3) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .pollsPage :global(.room-expansion-form) > :global(.grid.gap-3) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
