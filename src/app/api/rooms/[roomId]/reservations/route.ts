@@ -5,6 +5,7 @@ import {
   createRoomServiceSupabase,
   getRoomAccess,
 } from "@/lib/room-operations";
+import { notifyRoomReservationLifecycle } from "@/lib/room-reservation-notifications";
 import {
   RoomReservationError,
   cancelOwnRoomReservation,
@@ -51,6 +52,24 @@ async function authorize(request: NextRequest, roomId: string) {
     throw new RoomReservationError("Room not found.", 404, "room_not_found");
   }
   return { service, access, userId: account.user.id };
+}
+
+async function notifyLifecycle(
+  authorized: Awaited<ReturnType<typeof authorize>>,
+  action: "request" | "manager_action" | "cancel_own",
+  input: Record<string, unknown>,
+  result: { reservation?: Record<string, unknown> }
+) {
+  await notifyRoomReservationLifecycle({
+    service: authorized.service,
+    access: authorized.access,
+    actorId: authorized.userId,
+    action,
+    input,
+    reservation: result.reservation,
+  }).catch((error) => {
+    console.error("Room reservation notification delivery failed:", error);
+  });
 }
 
 export async function GET(request: NextRequest, context: Context) {
@@ -101,35 +120,34 @@ export async function POST(request: NextRequest, context: Context) {
       );
     }
     if (action === "request") {
-      return json(
-        await requestRoomReservation(
-          authorized.service,
-          authorized.access,
-          authorized.userId,
-          input
-        ),
-        201
+      const result = await requestRoomReservation(
+        authorized.service,
+        authorized.access,
+        authorized.userId,
+        input
       );
+      await notifyLifecycle(authorized, "request", input, result);
+      return json(result, 201);
     }
     if (action === "manager_action") {
-      return json(
-        await managerReservationAction(
-          authorized.service,
-          authorized.access,
-          authorized.userId,
-          input
-        )
+      const result = await managerReservationAction(
+        authorized.service,
+        authorized.access,
+        authorized.userId,
+        input
       );
+      await notifyLifecycle(authorized, "manager_action", input, result);
+      return json(result);
     }
     if (action === "cancel_own") {
-      return json(
-        await cancelOwnRoomReservation(
-          authorized.service,
-          authorized.access,
-          authorized.userId,
-          input
-        )
+      const result = await cancelOwnRoomReservation(
+        authorized.service,
+        authorized.access,
+        authorized.userId,
+        input
       );
+      await notifyLifecycle(authorized, "cancel_own", input, result);
+      return json(result);
     }
 
     throw new RoomReservationError(
