@@ -1,3 +1,4 @@
+import { RoomDashboardNavigationBridge } from "@/components/room-dashboard-navigation-bridge";
 import { RoomDocumentsNavigationBridge } from "@/components/room-documents-navigation-bridge";
 import { RoomFeatureHost } from "@/components/room-feature-host";
 import { RoomFinanceNavigationBridge } from "@/components/room-finance-navigation-bridge";
@@ -24,6 +25,7 @@ export default function RoomRouteLayout({
   return (
     <RoomWorkspaceProvider>
       <RoomRouteFrameV4>{children}</RoomRouteFrameV4>
+      <RoomDashboardNavigationBridge />
       <RoomDocumentsNavigationBridge />
       <RoomFinanceNavigationBridge />
       <RoomGuestsNavigationBridge />
