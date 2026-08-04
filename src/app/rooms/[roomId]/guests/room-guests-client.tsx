@@ -27,6 +27,17 @@ type Payload = {
   error?: string;
 };
 
+type GuestDraft = {
+  guestName: string;
+  visitType: string;
+  startsAt: string;
+  endsAt: string;
+  vehicleMake: string;
+  vehicleModel: string;
+  licensePlate: string;
+  notes: string;
+};
+
 async function accessToken() {
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token ?? null;
@@ -37,16 +48,30 @@ function formatDate(value: string) {
     ? new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(date)
     : value;
 }
-function localInput(date: Date) {
+function localInput(timestamp: number) {
+  const date = new Date(timestamp);
   const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  return new Date(timestamp - offset).toISOString().slice(0, 16);
+}
+function initialGuestDraft(): GuestDraft {
+  const timestamp = Date.now();
+  return {
+    guestName: "",
+    visitType: "guest",
+    startsAt: localInput(timestamp + 3_600_000),
+    endsAt: localInput(timestamp + 7_200_000),
+    vehicleMake: "",
+    vehicleModel: "",
+    licensePlate: "",
+    notes: "",
+  };
 }
 
 export default function RoomGuestsClient() {
   const params = useParams();
   const rawRoomId = params?.roomId;
   const roomId = useMemo(() => (Array.isArray(rawRoomId) ? rawRoomId[0] : rawRoomId ?? ""), [rawRoomId]);
-  const now = new Date();
+  const [filterTimestamp] = useState(() => Date.now());
   const [payload, setPayload] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState("");
@@ -54,10 +79,7 @@ export default function RoomGuestsClient() {
   const [isError, setIsError] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("upcoming");
-  const [draft, setDraft] = useState({
-    guestName: "", visitType: "guest", startsAt: localInput(new Date(now.getTime() + 3_600_000)),
-    endsAt: localInput(new Date(now.getTime() + 7_200_000)), vehicleMake: "", vehicleModel: "", licensePlate: "", notes: "",
-  });
+  const [draft, setDraft] = useState<GuestDraft>(initialGuestDraft);
 
   const request = useCallback(async (init?: RequestInit) => {
     const token = await accessToken();
@@ -86,16 +108,15 @@ export default function RoomGuestsClient() {
 
   const passes = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const timestamp = Date.now();
     return (payload?.passes ?? []).filter((pass) => {
       if (filter === "pending" && pass.status !== "pending") return false;
       if (filter === "active" && !["active", "checked_in"].includes(pass.status)) return false;
-      if (filter === "upcoming" && (new Date(pass.ends_at).getTime() < timestamp || ["cancelled", "denied", "checked_out", "expired"].includes(pass.status))) return false;
-      if (filter === "history" && !(["cancelled", "denied", "checked_out", "expired"].includes(pass.status) || new Date(pass.ends_at).getTime() < timestamp)) return false;
+      if (filter === "upcoming" && (new Date(pass.ends_at).getTime() < filterTimestamp || ["cancelled", "denied", "checked_out", "expired"].includes(pass.status))) return false;
+      if (filter === "history" && !(["cancelled", "denied", "checked_out", "expired"].includes(pass.status) || new Date(pass.ends_at).getTime() < filterTimestamp)) return false;
       if (!term) return true;
       return [pass.guest_name, pass.license_plate, pass.vehicle_make, pass.vehicle_model, pass.visit_type].filter(Boolean).some((value) => String(value).toLowerCase().includes(term));
     });
-  }, [filter, payload?.passes, query]);
+  }, [filter, filterTimestamp, payload?.passes, query]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -164,7 +185,7 @@ export default function RoomGuestsClient() {
                     {payload?.access?.canManage && pass.status === "pending" ? <><button type="button" className="room-resources-button" onClick={() => void act(pass.id, "approve", "Guest pass approved.")}><Check aria-hidden="true" /> Approve</button><button type="button" className="room-resources-button is-quiet" onClick={() => void act(pass.id, "deny", "Guest pass denied.")}><X aria-hidden="true" /> Deny</button></> : null}
                     {payload?.access?.canManage && ["approved", "active"].includes(pass.status) ? <button type="button" className="room-resources-button" onClick={() => void act(pass.id, "check_in", "Guest checked in.")}><LogIn aria-hidden="true" /> Check in</button> : null}
                     {payload?.access?.canManage && pass.status === "checked_in" ? <button type="button" className="room-resources-button" onClick={() => void act(pass.id, "check_out", "Guest checked out.")}><LogOut aria-hidden="true" /> Check out</button> : null}
-                    {! ["cancelled", "denied", "checked_out", "expired"].includes(pass.status) ? <button type="button" className="room-resources-button is-quiet" onClick={() => void act(pass.id, "cancel", "Guest pass cancelled.")}><X aria-hidden="true" /> Cancel</button> : null}
+                    {!["cancelled", "denied", "checked_out", "expired"].includes(pass.status) ? <button type="button" className="room-resources-button is-quiet" onClick={() => void act(pass.id, "cancel", "Guest pass cancelled.")}><X aria-hidden="true" /> Cancel</button> : null}
                   </div>
                 </article>
               ))}
