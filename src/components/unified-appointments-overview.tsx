@@ -71,6 +71,7 @@ export default function UnifiedAppointmentsOverview() {
   const [filter, setFilter] = useState<Filter>("upcoming");
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
+  const [loadedAt, setLoadedAt] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,6 +87,7 @@ export default function UnifiedAppointmentsOverview() {
         throw new Error(payload.error || "Unable to load your Loombus schedule.");
       }
       setItems(Array.isArray(payload.items) ? payload.items : []);
+      setLoadedAt(Date.now());
     } catch (error) {
       setNotice(
         error instanceof Error
@@ -101,12 +103,11 @@ export default function UnifiedAppointmentsOverview() {
     void load();
   }, [load]);
 
-  const now = Date.now();
   const visibleItems = useMemo(() => {
     return items.filter((item) => {
       const startsAt = new Date(item.startsAt).getTime();
       if (filter === "upcoming") {
-        return startsAt >= now && !["declined", "cancelled", "completed"].includes(item.status);
+        return startsAt >= loadedAt && !["declined", "cancelled", "completed"].includes(item.status);
       }
       if (filter === "pending") return isPending(item.status);
       if (filter === "business" || filter === "marketplace" || filter === "room") {
@@ -114,7 +115,7 @@ export default function UnifiedAppointmentsOverview() {
       }
       return true;
     });
-  }, [filter, items, now]);
+  }, [filter, items, loadedAt]);
 
   const filters: Array<{ key: Filter; label: string }> = [
     { key: "upcoming", label: "Upcoming" },
