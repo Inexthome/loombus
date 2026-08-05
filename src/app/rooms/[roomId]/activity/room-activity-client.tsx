@@ -56,9 +56,10 @@ function icon(module: ModuleKey): ReactNode {
   return <Landmark aria-hidden="true" />;
 }
 
-function relativeTime(value: string, now: number) {
+function relativeTime(value: string, now: number | null) {
   const time = new Date(value).getTime();
   if (!Number.isFinite(time)) return "Recently";
+  if (now === null) return new Date(value).toLocaleDateString();
   const seconds = Math.max(0, Math.floor((now - time) / 1000));
   if (seconds < 60) return "Just now";
   const minutes = Math.floor(seconds / 60);
@@ -78,7 +79,7 @@ export default function RoomActivityClient() {
   const [filter, setFilter] = useState<"all" | ModuleKey>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [loadedAt, setLoadedAt] = useState(() => Date.now());
+  const [loadedAt, setLoadedAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     if (!roomId) return;
