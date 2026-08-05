@@ -1,0 +1,542 @@
+/* Phase 4 Room shell corrections. Keep all selectors inside the dedicated Room shell. */
+
+.rooms-phase1-refresh {
+  display: none;
+}
+
+.room-phase4-topbar-actions {
+  position: fixed;
+  top: 10px;
+  right: 18px;
+  z-index: 145;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.room-phase4-topbar-actions button,
+.room-phase4-topbar-actions a {
+  font: inherit;
+}
+
+.room-phase4-search-action {
+  display: flex;
+  width: clamp(230px, 28vw, 520px);
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--rooms-shell-border);
+  border-radius: 13px;
+  background: var(--rooms-shell-panel);
+  padding: 0 12px;
+  color: var(--rooms-shell-muted);
+  box-shadow: 0 8px 26px rgb(0 0 0 / 0.08);
+  cursor: pointer;
+}
+
+.room-phase4-search-action:hover,
+.room-phase4-search-action:focus-visible {
+  border-color: var(--rooms-shell-gold);
+  color: var(--rooms-shell-text);
+}
+
+.room-phase4-search-action svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.room-phase4-search-action span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-phase4-search-action kbd {
+  border: 1px solid var(--rooms-shell-border);
+  border-radius: 7px;
+  background: var(--rooms-shell-panel-muted);
+  padding: 3px 7px;
+  color: var(--rooms-shell-subtle);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.room-phase4-icon-action,
+.room-phase4-account-trigger {
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--rooms-shell-border);
+  border-radius: 999px;
+  background: var(--rooms-shell-panel);
+  color: var(--rooms-shell-text);
+  cursor: pointer;
+}
+
+.room-phase4-icon-action:hover,
+.room-phase4-icon-action:focus-visible,
+.room-phase4-account-trigger:hover,
+.room-phase4-account-trigger:focus-visible {
+  border-color: var(--rooms-shell-gold);
+}
+
+.room-phase4-icon-action svg {
+  width: 21px;
+  height: 21px;
+}
+
+.room-phase4-icon-action strong {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  border: 2px solid var(--rooms-shell-page);
+  border-radius: 999px;
+  background: #b42318;
+  padding: 0 4px;
+  color: #fff;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+
+.room-phase4-account {
+  position: relative;
+}
+
+.room-phase4-notifications {
+  position: relative;
+}
+
+.room-phase4-notification-menu {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  display: grid;
+  width: min(390px, calc(100vw - 24px));
+  overflow: hidden;
+  border: 1px solid var(--rooms-shell-border-strong);
+  border-radius: 18px;
+  background: var(--rooms-shell-panel);
+  box-shadow: 0 22px 55px rgb(0 0 0 / 0.24);
+}
+
+.room-phase4-notification-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--rooms-shell-border);
+  padding: 14px 16px;
+}
+
+.room-phase4-notification-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.room-phase4-notification-head span,
+.room-phase4-notification-head small,
+.room-phase4-notification-list time {
+  color: var(--rooms-shell-muted);
+  font-size: 0.72rem;
+}
+
+.room-phase4-notification-head strong {
+  color: var(--rooms-shell-text);
+}
+
+.room-phase4-notification-list {
+  display: grid;
+}
+
+.room-phase4-notification-list > a {
+  display: grid;
+  gap: 5px;
+  border-bottom: 1px solid var(--rooms-shell-border);
+  padding: 13px 16px;
+  color: var(--rooms-shell-text);
+  line-height: 1.4;
+}
+
+.room-phase4-notification-list > a:hover,
+.room-phase4-notification-list > a:focus-visible {
+  background: var(--rooms-shell-panel-muted);
+}
+
+.room-phase4-notification-empty {
+  margin: 0;
+  padding: 24px 16px;
+  color: var(--rooms-shell-muted);
+  text-align: center;
+}
+
+.room-phase4-notification-all {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  color: var(--rooms-shell-gold);
+  font-weight: 800;
+}
+
+.room-phase4-notification-all:hover,
+.room-phase4-notification-all:focus-visible {
+  background: var(--rooms-shell-panel-muted);
+}
+
+.room-phase4-account-trigger {
+  width: auto;
+  min-width: 52px;
+  grid-template-columns: auto auto;
+  gap: 2px;
+  padding: 1px 5px 1px 1px;
+}
+
+.room-phase4-account-trigger > svg {
+  width: 14px;
+  height: 14px;
+  color: var(--rooms-shell-muted);
+}
+
+.room-phase4-account-menu {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  display: grid;
+  width: min(280px, calc(100vw - 24px));
+  overflow: hidden;
+  border: 1px solid var(--rooms-shell-border-strong);
+  border-radius: 18px;
+  background: var(--rooms-shell-panel);
+  box-shadow: 0 22px 55px rgb(0 0 0 / 0.24);
+}
+
+.room-phase4-account-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--rooms-shell-border);
+  padding: 14px;
+}
+
+.room-phase4-account-summary > div:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.room-phase4-account-summary strong,
+.room-phase4-account-summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-phase4-account-summary span {
+  margin-top: 2px;
+  color: var(--rooms-shell-muted);
+  font-size: 0.75rem;
+}
+
+.room-phase4-account-menu > a,
+.room-phase4-account-menu > button {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-bottom: 1px solid var(--rooms-shell-border);
+  background: transparent;
+  padding: 10px 14px;
+  color: var(--rooms-shell-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.room-phase4-account-menu > a:hover,
+.room-phase4-account-menu > a:focus-visible,
+.room-phase4-account-menu > button:hover,
+.room-phase4-account-menu > button:focus-visible {
+  background: var(--rooms-shell-panel-muted);
+  color: var(--rooms-shell-gold);
+}
+
+.room-phase4-account-menu > a svg,
+.room-phase4-account-menu > button svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* Management destinations are consolidated inside Settings. Deep links remain valid. */
+.rooms-phase1-nav-link[href$="/governance"],
+.rooms-phase1-nav-link[href$="/age-safety"],
+.rooms-phase1-nav-link[href$="/retention"],
+.rooms-phase1-nav-link[href$="/billing"],
+.rooms-phase1-nav-link[title*="Activity"][title*="Audit"],
+.rooms-phase1-nav-link[title*="Advanced"][title*="Control"] {
+  display: none;
+}
+
+.room-phase4-settings-directory {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--rooms-shell-border);
+  border-radius: 18px;
+  background: var(--rooms-shell-panel-muted);
+  padding: 16px;
+}
+
+.room-phase4-settings-directory p,
+.room-phase4-settings-directory h3,
+.room-phase4-settings-directory span {
+  margin: 0;
+}
+
+.room-phase4-settings-directory > div:first-child > p {
+  color: var(--rooms-shell-gold);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.room-phase4-settings-directory > div:first-child > h3 {
+  margin-top: 3px;
+  color: var(--rooms-shell-text);
+  font-size: 1rem;
+}
+
+.room-phase4-settings-directory > div:first-child > span {
+  display: block;
+  margin-top: 5px;
+  color: var(--rooms-shell-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.room-phase4-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.room-phase4-settings-grid > a,
+.room-phase4-settings-grid > button {
+  display: flex;
+  min-width: 0;
+  min-height: 76px;
+  align-items: flex-start;
+  gap: 11px;
+  border: 1px solid var(--rooms-shell-border);
+  border-radius: 14px;
+  background: var(--rooms-shell-panel);
+  padding: 12px;
+  color: var(--rooms-shell-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.room-phase4-settings-grid > a:hover,
+.room-phase4-settings-grid > a:focus-visible,
+.room-phase4-settings-grid > button:hover,
+.room-phase4-settings-grid > button:focus-visible {
+  border-color: var(--rooms-shell-gold);
+}
+
+.room-phase4-settings-grid > a > svg,
+.room-phase4-settings-grid > button > svg {
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+  color: var(--rooms-shell-gold);
+}
+
+.room-phase4-settings-grid > a > span,
+.room-phase4-settings-grid > button > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.room-phase4-settings-grid strong {
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+}
+
+.room-phase4-settings-grid small {
+  color: var(--rooms-shell-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+/* Keep Operations fully usable inside the unified V3 feature surface. */
+.room-phase3-feature-body .room-phase3-operations,
+.room-phase3-feature-body .room-core-results-region,
+.room-phase3-feature-body .room-operation-tabpanel,
+.room-phase3-feature-body .room-operation-stack,
+.room-phase3-feature-body .room-operation-grid,
+.room-phase3-feature-body .room-operation-member,
+.room-phase3-feature-body .room-operation-member-controls {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.room-phase3-feature-body .room-phase3-operations {
+  display: grid;
+  gap: 12px;
+  overflow: visible;
+  color: var(--rooms-shell-text);
+}
+
+.room-phase3-feature-body .room-operation-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  max-width: 100%;
+  gap: 7px;
+  overflow-x: auto;
+  border: 1px solid var(--rooms-shell-border);
+  border-radius: 14px;
+  background: var(--rooms-shell-panel);
+  padding: 10px;
+  scrollbar-width: thin;
+}
+
+.room-phase3-feature-body .room-operation-tabs button {
+  color: var(--rooms-shell-muted);
+}
+
+.room-phase3-feature-body .room-operation-tabs button[aria-selected="true"] {
+  border-color: var(--rooms-shell-gold);
+  background: color-mix(in srgb, var(--rooms-shell-gold) 14%, var(--rooms-shell-panel));
+  color: var(--rooms-shell-text);
+}
+
+.room-phase3-feature-body .room-operation-tabpanel {
+  overflow: visible;
+  border: 1px solid var(--rooms-shell-border);
+  border-radius: 16px;
+  background: var(--rooms-shell-panel);
+}
+
+.room-phase3-feature-body .room-operation-grid > *,
+.room-phase3-feature-body .room-operation-stack > *,
+.room-phase3-feature-body .room-operation-member > * {
+  min-width: 0;
+}
+
+.room-phase4-feature-error {
+  display: grid;
+  min-height: 15rem;
+  place-items: center;
+  border: 1px solid var(--rooms-shell-border);
+  border-radius: 18px;
+  background: var(--rooms-shell-panel-muted);
+  padding: 24px;
+  text-align: center;
+}
+
+.room-phase4-feature-error > div {
+  max-width: 34rem;
+}
+
+.room-phase4-feature-error h3,
+.room-phase4-feature-error p {
+  margin: 0;
+}
+
+.room-phase4-feature-error p {
+  margin-top: 8px;
+  color: var(--rooms-shell-muted);
+  line-height: 1.55;
+}
+
+.room-phase4-feature-error button {
+  margin-top: 16px;
+  border: 1px solid var(--rooms-shell-gold);
+  border-radius: 999px;
+  background: var(--rooms-shell-gold);
+  padding: 9px 16px;
+  color: #17120a;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+@media (min-width: 900px) {
+  .rooms-phase1-room-header {
+    padding-right: clamp(390px, 38vw, 630px);
+  }
+}
+
+@media (max-width: 899px) {
+  .room-phase4-topbar-actions {
+    top: 8px;
+    right: 10px;
+    gap: 7px;
+  }
+
+  .room-phase4-search-action {
+    width: 42px;
+    min-height: 42px;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 0;
+  }
+
+  .room-phase4-search-action span,
+  .room-phase4-search-action kbd,
+  .room-phase4-account-trigger > svg {
+    display: none;
+  }
+
+  .room-phase4-icon-action,
+  .room-phase4-account-trigger {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    padding: 0;
+  }
+
+  .rooms-phase1-room-header-copy span {
+    display: none;
+  }
+
+  .room-phase4-settings-grid,
+  .room-phase3-feature-body .room-operation-grid,
+  .room-phase3-feature-body .room-operation-member,
+  .room-phase3-feature-body .room-operation-member-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .room-phase4-topbar-actions {
+    gap: 5px;
+  }
+
+  .room-phase4-search-action,
+  .room-phase4-icon-action,
+  .room-phase4-account-trigger {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+  }
+
+  .room-phase4-account-trigger span.inline-flex {
+    width: 36px;
+    height: 36px;
+  }
+}

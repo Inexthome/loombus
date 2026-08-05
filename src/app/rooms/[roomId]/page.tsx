@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { RoomDiscussionsWorkspace } from "@/components/room-discussions-workspace";
-import LiveRoomWorkspaceClient from "./live-room-workspace-client";
+import RoomWorkspaceSectionClient from "./room-workspace-section-client";
 
 export const metadata: Metadata = {
-  title: "Private Room | Loombus",
+  title: "Room Discussions | Loombus",
   description:
-    "A private Loombus room for verified members, structured discussions, announcements, roles, and shared calendar events.",
+    "Private structured discussions for verified members of a Loombus Room.",
   robots: {
     index: false,
     follow: false,
@@ -13,10 +12,6 @@ export const metadata: Metadata = {
 };
 
 export default function RoomWorkspacePage() {
-  return (
-    <>
-      <LiveRoomWorkspaceClient />
-      <RoomDiscussionsWorkspace />
-    </>
-  );
+  // The base Room route intentionally lands on Discussions.
+  return <RoomWorkspaceSectionClient section="discussions" />;
 }

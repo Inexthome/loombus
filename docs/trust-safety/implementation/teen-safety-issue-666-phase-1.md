@@ -1,6 +1,6 @@
 # Issue #666 Phase 1: Teen Age-State Foundation
 
-Status: implementation draft
+Status: production verification in progress
 Prepared: July 27, 2026
 
 ## Purpose
@@ -47,6 +47,12 @@ A scheduled age refresh may change `age_band` from `teen` to `adult` and disable
 
 A member cannot silently replace a stored date of birth through the normal age gate. A correction request records only the member ID, requested date of birth, derived requested age band, reason, workflow state, and timestamps. No identity document or biometric estimate is collected by this phase.
 
+### Protected administrator review
+
+Administrator review uses the database function `review_age_correction_request`. The function validates the reviewer, locks the correction request, enforces valid workflow transitions, and performs an approval's protected date-of-birth update and request resolution in one transaction.
+
+The date-of-birth trigger accepts a changed stored date only while that function has authorized the exact member row. A general service credential or direct table update does not by itself bypass the protected correction workflow.
+
 ### Underage-account reports
 
 An authenticated member may report an account believed to belong to a child under 13. The report does not publicly expose the reporter or target and does not automatically change the target account.
@@ -66,15 +72,17 @@ Tracked follow-on: #680.
 ## Deployment order
 
 1. Deploy the application changes.
-2. Apply `supabase/migrations/20260802100000_teen_age_state_foundation.sql`.
-3. Verify the migration backfill summary.
-4. Test initial age declaration for adult, teen, and under-13 dates.
-5. Test age-correction request creation and duplicate-open-request rejection.
-6. Test underage-account reporting.
-7. Test adult-to-teen and teen-to-adult conversation creation with and without mutual following.
-8. Confirm existing teen accounts are private and non-discoverable.
-9. Run the age-refresh function against a controlled test member turning 18 and confirm privacy remains unchanged.
+2. Apply `supabase/migrations/20260802100000_teen_age_state_foundation.sql` if it is not already applied.
+3. Apply `supabase/migrations/20260802112000_atomic_age_correction_review.sql`.
+4. Run `scripts/verification/teen-safety-production-readiness.sql` and require every row to pass.
+5. Test initial age declaration for adult, teen, and under-13 dates.
+6. Test age-correction request creation and duplicate-open-request rejection.
+7. Test administrator review, approval, denial, terminal-state rejection, and member notification delivery.
+8. Test underage-account reporting.
+9. Test adult-to-teen and teen-to-adult conversation creation with and without mutual following.
+10. Confirm existing teen accounts are private and non-discoverable.
+11. Run the age-refresh function against a controlled test member turning 18 and confirm privacy remains unchanged.
 
 ## Production completion gate
 
-Phase 1 is complete only after the migration and tests pass. Issue #666 remains open until #680 and the full acceptance criteria are complete.
+Phase 1 is complete only after the migrations and all dedicated Issue #679 tests pass. Issue #666 remains open until the remaining acceptance criteria, public Teen Safety Overview workflow, and supporting policy review are complete.

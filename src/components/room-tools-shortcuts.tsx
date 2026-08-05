@@ -110,7 +110,7 @@ export default function RoomToolsShortcuts() {
           </Link>
         ) : null}
         {allowed ? (
-          <Link href={`/rooms/${encodeURIComponent(roomId)}/notifications`}>
+          <Link href={`/notifications?room=${encodeURIComponent(roomId)}`}>
             <Bell aria-hidden="true" />
             Notifications
           </Link>

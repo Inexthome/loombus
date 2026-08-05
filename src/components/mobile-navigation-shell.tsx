@@ -20,6 +20,7 @@ import {
   Home,
   LayoutDashboard,
   LifeBuoy,
+  LineChart,
   LogOut,
   MapPin,
   MessageCircle,
@@ -88,6 +89,7 @@ const navigationIcons: Record<LoombusNavigationIcon, LucideIcon> = {
   settings: Settings,
   "signal-board": StickyNote,
   support: LifeBuoy,
+  "the-floor": LineChart,
   topics: Tags,
   usage: Bot,
 };

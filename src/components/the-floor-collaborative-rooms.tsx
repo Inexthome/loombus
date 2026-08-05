@@ -1,0 +1,29 @@
+"use client";
+import { supabase } from "@/lib/supabase/client";
+import { ArrowLeft, CheckCircle2, Plus, ShieldCheck, Users } from "lucide-react";
+import Link from "next/link";
+import { FormEvent, useEffect, useState } from "react";
+
+type Room={id:string;name:string;focus:string;objective:string;owner_id:string;floor_room_members?:Member[]};
+type Member={user_id:string;role:string};
+type Item={id:string;kind:string;title:string;status:string;content:Record<string,unknown>;created_at:string};
+const card="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5";
+const field="min-h-11 w-full rounded-2xl border border-[var(--loombus-border)] bg-transparent px-3 text-sm";
+
+export default function FloorCollaborativeRooms(){
+ const [uid,setUid]=useState("");const [rooms,setRooms]=useState<Room[]>([]);const [active,setActive]=useState("");const [items,setItems]=useState<Item[]>([]);
+ const [title,setTitle]=useState("");const [body,setBody]=useState("");const [kind,setKind]=useState("note");const [status,setStatus]=useState("active");
+ async function loadRooms(){const {data}=await supabase.from("floor_research_rooms").select("id,name,focus,objective,owner_id,floor_room_members(user_id,role)").order("updated_at",{ascending:false});setRooms((data??[]) as Room[]);if(!active&&data?.[0])setActive(data[0].id)}
+ async function loadItems(room=active){if(!room)return;const {data}=await supabase.from("floor_room_items").select("id,kind,title,status,content,created_at").eq("room_id",room).order("created_at",{ascending:false});setItems((data??[]) as Item[])}
+ useEffect(()=>{void(async()=>{const {data}=await supabase.auth.getUser();if(!data.user){location.replace("/login?next=%2Fthe-floor%2Frooms");return}setUid(data.user.id);await loadRooms()})()},[]);
+ useEffect(()=>{void loadItems()},[active]);
+ async function addItem(e:FormEvent){e.preventDefault();if(!active||!title.trim())return;await supabase.from("floor_room_items").insert({room_id:active,author_id:uid,kind,title:title.trim(),status,content:{body:body.trim()}});setTitle("");setBody("");await loadItems()}
+ async function advance(item:Item){const next=item.status==="active"?"in_review":item.status==="in_review"?"approved":"completed";await supabase.from("floor_room_items").update({status:next}).eq("id",item.id);await loadItems()}
+ const room=rooms.find(r=>r.id===active);
+ return <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 py-5 text-[var(--loombus-text)]"><div className="mx-auto max-w-7xl space-y-5">
+  <header className={card}><Link href="/the-floor/hub" className="inline-flex items-center gap-2 text-xs font-black"><ArrowLeft className="size-4"/>Research Hub</Link><h1 className="mt-4 text-3xl font-black">Collaborative Research Rooms</h1><p className="mt-2 text-sm text-[var(--loombus-text-muted)]">Shared evidence, tasks, notes, theses, reviews, sessions, and replay knowledge with role-based access.</p></header>
+  <div className="grid gap-5 lg:grid-cols-[280px_1fr_330px]"><aside className={card}><h2 className="font-black">My rooms</h2><div className="mt-3 space-y-2">{rooms.map(r=><button key={r.id} onClick={()=>setActive(r.id)} className={`w-full rounded-2xl border p-3 text-left ${active===r.id?"border-[var(--loombus-gold)]":"border-[var(--loombus-border)]"}`}><p className="font-black">{r.name}</p><p className="text-xs text-[var(--loombus-text-muted)]">{r.focus||"General research"}</p></button>)}</div><Link href="/the-floor/hub" className="mt-4 inline-flex text-xs font-black text-[var(--loombus-gold)]">Create a room in Research Hub</Link></aside>
+  <section className="space-y-4">{room?<><div className={card}><p className="text-xs font-black uppercase text-[var(--loombus-gold)]">{room.focus}</p><h2 className="mt-1 text-2xl font-black">{room.name}</h2><p className="mt-2 text-sm text-[var(--loombus-text-muted)]">{room.objective}</p><div className="mt-4 flex gap-2"><Users className="size-4"/><span className="text-xs font-black">{room.floor_room_members?.length??0} members</span></div></div>{items.map(i=><article key={i.id} className={card}><div className="flex justify-between gap-3"><div><p className="text-xs font-black uppercase text-[var(--loombus-gold)]">{i.kind}</p><h3 className="mt-1 font-black">{i.title}</h3></div><span className="rounded-full bg-[var(--loombus-surface-muted)] px-3 py-1 text-xs font-black">{i.status.replaceAll("_"," ")}</span></div><p className="mt-3 whitespace-pre-wrap text-sm text-[var(--loombus-text-muted)]">{String(i.content?.body??"")}</p><button onClick={()=>advance(i)} className="mt-4 inline-flex items-center gap-2 text-xs font-black"><CheckCircle2 className="size-4"/>Advance workflow</button></article>)}</>:<div className={card}>Create or join a Research Room to begin.</div>}</section>
+  <form onSubmit={addItem} className={card}><Plus className="size-5 text-[var(--loombus-gold)]"/><h2 className="mt-3 font-black">Add shared research</h2><div className="mt-4 space-y-3"><select value={kind} onChange={e=>setKind(e.target.value)} className={field}>{["evidence","task","note","thesis","review","session","replay"].map(x=><option key={x}>{x}</option>)}</select><input value={title} onChange={e=>setTitle(e.target.value)} className={field} placeholder="Title"/><textarea value={body} onChange={e=>setBody(e.target.value)} className={`${field} py-3`} rows={6} placeholder="Research content"/><select value={status} onChange={e=>setStatus(e.target.value)} className={field}>{["active","in_review","approved","completed"].map(x=><option key={x}>{x}</option>)}</select><button className="rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-sm font-black text-black">Add to room</button></div><p className="mt-4 flex gap-2 text-xs text-[var(--loombus-text-muted)]"><ShieldCheck className="size-4"/>RLS enforces room roles and membership.</p></form></div>
+ </div></main>
+}

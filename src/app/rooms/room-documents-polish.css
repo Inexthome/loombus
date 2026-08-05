@@ -1,0 +1,62 @@
+/* Focused layout corrections for the Room Documents route. */
+
+.room-expansion-form > .flex.flex-wrap.gap-4 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+  width: 100%;
+}
+
+.room-expansion-form > .flex.flex-wrap.gap-4 > label {
+  display: flex !important;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 0.875rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.room-expansion-form > .flex.flex-wrap.gap-4 > label > input[type="checkbox"] {
+  width: 1.125rem !important;
+  height: 1.125rem !important;
+  min-width: 1.125rem;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.room-expansion > .room-expansion-form-grid > label:first-child > .relative {
+  position: relative;
+  width: 100%;
+}
+
+.room-expansion > .room-expansion-form-grid > label:first-child > .relative > svg {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  z-index: 1;
+  width: 1rem;
+  height: 1rem;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.room-expansion > .room-expansion-form-grid > label:first-child > .relative > input {
+  width: 100%;
+  padding-left: 2.625rem !important;
+}
+
+@media (max-width: 640px) {
+  .room-expansion-form > .flex.flex-wrap.gap-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .room-expansion-form > .flex.flex-wrap.gap-4 > label {
+    white-space: normal;
+  }
+}

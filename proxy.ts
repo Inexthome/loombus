@@ -58,6 +58,8 @@ export const config = {
     "/notifications/:path*",
     "/admin",
     "/admin/:path*",
+    "/the-floor",
+    "/the-floor/:path*",
     "/api/discussions/create",
     "/api/replies/create",
     "/api/businesses",

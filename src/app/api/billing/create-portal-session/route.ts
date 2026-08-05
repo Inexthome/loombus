@@ -12,7 +12,7 @@ const STRIPE_BILLING_PORTAL_ROOM_CONFIGURATION_ID =
   process.env.STRIPE_BILLING_PORTAL_ROOM_CONFIGURATION_ID;
 
 type PortalAction = "manage" | "cancel" | "update";
-type PortalScope = "membership" | "room";
+type PortalScope = "membership" | "floor" | "room";
 
 type BillingRow = {
   stripe_customer_id: string | null;
@@ -54,7 +54,7 @@ function isPortalAction(value: unknown): value is PortalAction {
 }
 
 function getPortalConfiguration(scope: PortalScope, action: PortalAction) {
-  if (scope === "membership") {
+  if (scope === "membership" || scope === "floor") {
     return (
       STRIPE_BILLING_PORTAL_MEMBERSHIP_CONFIGURATION_ID ??
       STRIPE_BILLING_PORTAL_CONFIGURATION_ID ??
@@ -81,6 +81,29 @@ async function resolveBillingOwnership({
   subscriptionId?: string | null;
 }): Promise<BillingOwnership | null> {
   const admin = getBillingSupabaseAdmin();
+  const { data: floorSubscription, error: floorError } = await admin
+    .from("floor_subscriptions")
+    .select("stripe_customer_id, stripe_subscription_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (floorError) {
+    throw new Error(`Unable to verify The Floor billing: ${floorError.message}`);
+  }
+
+  const floor = (floorSubscription ?? null) as BillingRow | null;
+  if (
+    floor?.stripe_customer_id &&
+    subscriptionId &&
+    floor.stripe_subscription_id === subscriptionId
+  ) {
+    return {
+      customerId: floor.stripe_customer_id,
+      subscriptionId: floor.stripe_subscription_id,
+      scope: "floor",
+    };
+  }
+
   const { data: entitlement, error: entitlementError } = await admin
     .from("user_ai_entitlements")
     .select("stripe_customer_id, stripe_subscription_id")
@@ -219,7 +242,9 @@ export async function POST(request: NextRequest) {
     }
 
     const origin = getSafeOrigin(request);
-    const returnUrl = `${origin}/settings?section=plan&billing=returned`;
+    const returnUrl = ownership.scope === "floor"
+      ? `${origin}/the-floor/settings?billing=returned`
+      : `${origin}/settings?section=plan&billing=returned`;
     const params: Stripe.BillingPortal.SessionCreateParams = {
       customer: ownership.customerId,
       return_url: returnUrl,

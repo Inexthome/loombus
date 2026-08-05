@@ -22,6 +22,7 @@ import {
   Home,
   LayoutDashboard,
   LifeBuoy,
+  LineChart,
   LogOut,
   MapPin,
   MessageCircle,
@@ -48,6 +49,7 @@ import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
+import { normalizePublicText } from "@/lib/public-text";
 import { supabase } from "@/lib/supabase/client";
 
 type DesktopTopNavProfile = {
@@ -56,6 +58,49 @@ type DesktopTopNavProfile = {
   avatar_url: string | null;
   is_admin: boolean | null;
 };
+
+type TopNavNotification = {
+  id: string;
+  actor_id: string | null;
+  type: string;
+  target_type: string;
+  target_id: string | null;
+  room_id?: string | null;
+  message: string;
+  created_at: string;
+};
+
+function topNavNotificationHref(notification: TopNavNotification) {
+  if (notification.room_id) {
+    return notification.target_type === "room_moderation_item"
+      ? `/rooms/${encodeURIComponent(notification.room_id)}/moderation`
+      : `/rooms/${encodeURIComponent(notification.room_id)}`;
+  }
+  if (notification.target_type === "discussion" && notification.target_id) {
+    return `/discussions/${notification.target_id}`;
+  }
+  if (notification.target_type === "conversation" && notification.target_id) {
+    return `/messages?conversation=${encodeURIComponent(notification.target_id)}`;
+  }
+  if (notification.target_type === "floor_live_program")
+    return "/the-floor/live";
+  if (notification.target_type === "floor_contributor_assignment")
+    return "/the-floor/contributors";
+  if (notification.target_type === "profile") return "/people";
+  if (notification.target_type === "identity_verification") return "/profile";
+  return "/notifications";
+}
+
+function topNavNotificationTime(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "New";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
 
 const centerLinks = [
   { href: "/discussions", label: "Discussions" },
@@ -94,11 +139,15 @@ const navigationIcons: Record<LoombusNavigationIcon, LucideIcon> = {
   settings: Settings,
   "signal-board": StickyNote,
   support: LifeBuoy,
+  "the-floor": LineChart,
   topics: Tags,
   usage: Bot,
 };
 
-function getInitial(profile: DesktopTopNavProfile | null, email: string | null) {
+function getInitial(
+  profile: DesktopTopNavProfile | null,
+  email: string | null,
+) {
   return (
     profile?.full_name?.trim() ||
     profile?.username?.trim() ||
@@ -109,7 +158,10 @@ function getInitial(profile: DesktopTopNavProfile | null, email: string | null) 
     .toUpperCase();
 }
 
-function getDisplayName(profile: DesktopTopNavProfile | null, email: string | null) {
+function getDisplayName(
+  profile: DesktopTopNavProfile | null,
+  email: string | null,
+) {
   return (
     profile?.full_name?.trim() ||
     profile?.username?.trim() ||
@@ -209,7 +261,11 @@ function ExploreLink({
             : "border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] text-[var(--loombus-text-muted)] group-hover:text-[var(--loombus-text)]"
         }`}
       >
-        <Icon aria-hidden="true" className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.05} />
+        <Icon
+          aria-hidden="true"
+          className="h-[1.125rem] w-[1.125rem]"
+          strokeWidth={2.05}
+        />
       </span>
       <span className="min-w-0">
         <strong className="block text-sm font-semibold text-[var(--loombus-text)]">
@@ -229,9 +285,12 @@ export function DesktopTopNavbar() {
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<DesktopTopNavProfile | null>(null);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [notifications, setNotifications] = useState<TopNavNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [exploreOpen, setExploreOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const exploreRef = useRef<HTMLDivElement | null>(null);
+  const notificationsRef = useRef<HTMLDivElement | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -255,14 +314,20 @@ export function DesktopTopNavbar() {
 
       const { data: notificationRows } = await supabase
         .from("notifications")
-        .select("id, actor_id")
+        .select(
+          "id, actor_id, type, target_type, target_id, room_id, message, created_at",
+        )
         .eq("user_id", nextUserId)
-        .is("read_at", null);
+        .is("read_at", null)
+        .order("created_at", { ascending: false });
 
       if (isMounted) {
-        setNotificationCount(
-          filterBlockedActorNotifications(notificationRows ?? [], blockedIds).length
-        );
+        const visibleNotifications = filterBlockedActorNotifications(
+          notificationRows ?? [],
+          blockedIds,
+        ) as TopNavNotification[];
+        setNotificationCount(visibleNotifications.length);
+        setNotifications(visibleNotifications.slice(0, 5));
       }
     }
 
@@ -280,6 +345,7 @@ export function DesktopTopNavbar() {
       if (!nextUser?.id) {
         setProfile(null);
         setNotificationCount(0);
+        setNotifications([]);
         return;
       }
 
@@ -300,6 +366,7 @@ export function DesktopTopNavbar() {
       if (!nextUserId) {
         setProfile(null);
         setNotificationCount(0);
+        setNotifications([]);
         return;
       }
 
@@ -312,11 +379,17 @@ export function DesktopTopNavbar() {
       }
     }
 
-    window.addEventListener("loombus:notifications-changed", handleNotificationsChanged);
+    window.addEventListener(
+      "loombus:notifications-changed",
+      handleNotificationsChanged,
+    );
 
     return () => {
       isMounted = false;
-      window.removeEventListener("loombus:notifications-changed", handleNotificationsChanged);
+      window.removeEventListener(
+        "loombus:notifications-changed",
+        handleNotificationsChanged,
+      );
       subscription.unsubscribe();
     };
   }, [userId]);
@@ -332,12 +405,17 @@ export function DesktopTopNavbar() {
       if (!profileRef.current?.contains(target)) {
         setProfileOpen(false);
       }
+
+      if (!notificationsRef.current?.contains(target)) {
+        setNotificationsOpen(false);
+      }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setExploreOpen(false);
         setProfileOpen(false);
+        setNotificationsOpen(false);
       }
     }
 
@@ -350,9 +428,24 @@ export function DesktopTopNavbar() {
     };
   }, []);
 
+  async function markTopNavNotificationRead(notificationId: string) {
+    if (!userId) return;
+    await supabase
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", notificationId)
+      .eq("user_id", userId);
+    setNotifications((current) =>
+      current.filter((item) => item.id !== notificationId),
+    );
+    setNotificationCount((current) => Math.max(0, current - 1));
+    window.dispatchEvent(new Event("loombus:notifications-changed"));
+  }
+
   useEffect(() => {
     setExploreOpen(false);
     setProfileOpen(false);
+    setNotificationsOpen(false);
   }, [pathname]);
 
   async function handleLogout() {
@@ -428,7 +521,11 @@ export function DesktopTopNavbar() {
               aria-controls="loombus-desktop-explore-menu"
               className="flex h-10 items-center gap-2 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] px-3 text-sm font-semibold text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
             >
-              <Layers3 aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+              <Layers3
+                aria-hidden="true"
+                className="h-4 w-4"
+                strokeWidth={2.1}
+              />
               <span className="hidden lg:inline">Explore Loombus</span>
               <ChevronDown
                 aria-hidden="true"
@@ -449,12 +546,17 @@ export function DesktopTopNavbar() {
                 <div className="flex items-center justify-between gap-4 border-b border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-5 py-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-[color:color-mix(in_srgb,var(--loombus-gold)_35%,var(--loombus-border))] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]">
-                      <Compass aria-hidden="true" className="h-5 w-5" strokeWidth={2.05} />
+                      <Compass
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        strokeWidth={2.05}
+                      />
                     </span>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold">Explore Loombus</p>
                       <p className="mt-0.5 text-xs text-[var(--loombus-text-muted)]">
-                        Move between knowledge, local opportunities, and the tools that organize your activity.
+                        Move between knowledge, local opportunities, and the
+                        tools that organize your activity.
                       </p>
                     </div>
                   </div>
@@ -477,7 +579,11 @@ export function DesktopTopNavbar() {
                       </p>
                       <div className="grid gap-1">
                         {section.items.map((item) => (
-                          <ExploreLink key={item.href} item={item} pathname={pathname} />
+                          <ExploreLink
+                            key={item.href}
+                            item={item}
+                            pathname={pathname}
+                          />
                         ))}
                       </div>
                     </section>
@@ -496,19 +602,83 @@ export function DesktopTopNavbar() {
             <Search aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
           </Link>
 
-          <Link
-            href="/notifications"
-            aria-label="Notifications"
-            title="Notifications"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
-          >
-            <Bell aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
-            {notificationCount > 0 && (
-              <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[var(--loombus-primary-bg)] px-1 text-[10px] font-bold text-[var(--loombus-primary-text)] ring-2 ring-[var(--loombus-surface)]">
-                {notificationCount > 9 ? "9+" : notificationCount}
-              </span>
-            )}
-          </Link>
+          <div ref={notificationsRef} className="relative">
+            <button
+              type="button"
+              aria-label="Notifications"
+              aria-haspopup="menu"
+              aria-expanded={notificationsOpen}
+              title="Notifications"
+              onClick={() => {
+                setNotificationsOpen((current) => !current);
+                setExploreOpen(false);
+                setProfileOpen(false);
+              }}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-text-subtle)] hover:text-[var(--loombus-text)]"
+            >
+              <Bell aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+              {notificationCount > 0 && (
+                <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[var(--loombus-primary-bg)] px-1 text-[10px] font-bold text-[var(--loombus-primary-text)] ring-2 ring-[var(--loombus-surface)]">
+                  {notificationCount > 9 ? "9+" : notificationCount}
+                </span>
+              )}
+            </button>
+
+            {notificationsOpen ? (
+              <div
+                className="absolute right-0 top-[calc(100%+0.65rem)] z-[160] grid w-[min(390px,calc(100vw-24px))] overflow-hidden rounded-[1.25rem] border border-[var(--loombus-border-strong)] bg-[var(--loombus-surface)] shadow-2xl"
+                role="menu"
+              >
+                <div className="flex items-center justify-between gap-4 border-b border-[var(--loombus-border)] px-4 py-3.5">
+                  <div className="grid gap-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--loombus-gold)]">
+                      Notifications
+                    </span>
+                    <strong className="text-sm text-[var(--loombus-text)]">
+                      New activity
+                    </strong>
+                  </div>
+                  <small className="text-xs text-[var(--loombus-text-muted)]">
+                    {notificationCount} unread
+                  </small>
+                </div>
+
+                {notifications.length > 0 ? (
+                  <div className="grid">
+                    {notifications.map((notification) => (
+                      <Link
+                        key={notification.id}
+                        href={topNavNotificationHref(notification)}
+                        role="menuitem"
+                        className="grid gap-1 border-b border-[var(--loombus-border)] px-4 py-3 text-sm leading-5 text-[var(--loombus-text)] transition hover:bg-[var(--loombus-surface-muted)]"
+                        onClick={() => {
+                          setNotificationsOpen(false);
+                          void markTopNavNotificationRead(notification.id);
+                        }}
+                      >
+                        <span>{normalizePublicText(notification.message)}</span>
+                        <time className="text-xs text-[var(--loombus-text-muted)]">
+                          {topNavNotificationTime(notification.created_at)}
+                        </time>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="m-0 px-4 py-6 text-center text-sm text-[var(--loombus-text-muted)]">
+                    You are all caught up.
+                  </p>
+                )}
+
+                <Link
+                  href="/notifications"
+                  className="flex min-h-12 items-center justify-center px-4 py-3 text-sm font-bold text-[var(--loombus-gold)] transition hover:bg-[var(--loombus-surface-muted)]"
+                  onClick={() => setNotificationsOpen(false)}
+                >
+                  View all notifications
+                </Link>
+              </div>
+            ) : null}
+          </div>
 
           <div ref={profileRef} className="relative">
             <button
@@ -516,6 +686,7 @@ export function DesktopTopNavbar() {
               onClick={() => {
                 setProfileOpen((current) => !current);
                 setExploreOpen(false);
+                setNotificationsOpen(false);
               }}
               aria-label="Open account menu"
               aria-expanded={profileOpen}
@@ -523,7 +694,11 @@ export function DesktopTopNavbar() {
             >
               <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] text-sm font-semibold">
                 {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                  <img
+                    src={profile.avatar_url}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <span>{getInitial(profile, email)}</span>
                 )}
@@ -540,9 +715,13 @@ export function DesktopTopNavbar() {
             {profileOpen && (
               <div className="absolute right-0 mt-3 flex max-h-[calc(100vh-6rem)] w-80 flex-col overflow-hidden rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-2xl shadow-black/15">
                 <div className="shrink-0 border-b border-[var(--loombus-border)] px-4 py-3">
-                  <p className="truncate text-sm font-semibold">{displayName}</p>
+                  <p className="truncate text-sm font-semibold">
+                    {displayName}
+                  </p>
                   <p className="mt-1 truncate text-xs text-[var(--loombus-text-muted)]">
-                    {profile?.username ? `@${profile.username}` : email ?? "Loombus account"}
+                    {profile?.username
+                      ? `@${profile.username}`
+                      : (email ?? "Loombus account")}
                   </p>
                 </div>
 
@@ -598,7 +777,11 @@ export function DesktopTopNavbar() {
                       onClick={handleLogout}
                       className="flex w-full items-center gap-3 rounded-2xl px-4 py-2.5 text-left text-sm text-[var(--loombus-text-muted)] transition hover:bg-red-500/10 hover:text-red-500"
                     >
-                      <LogOut aria-hidden="true" className="h-4 w-4" strokeWidth={2.1} />
+                      <LogOut
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                        strokeWidth={2.1}
+                      />
                       Logout
                     </button>
                   </div>

@@ -1,9 +1,5 @@
-import { RoomExpansionWorkspace } from "@/components/room-expansion-workspace";
-import { RoomFoundationWorkspace } from "@/components/room-foundation-workspace";
-import { RoomOperationsWorkspace } from "@/components/room-operations-workspace";
 import { RoomPlanFeatureEnhancer } from "@/components/room-plan-feature-enhancer";
-import { RoomResourcesWorkspace } from "@/components/room-resources-workspace";
-import { RoomTierModulesWorkspace } from "@/components/room-tier-modules-workspace";
+import RoomsShell from "@/components/rooms-shell";
 import "./rooms-v2.css";
 import "./rooms-v2-route-states.css";
 import "./rooms-live.css";
@@ -19,6 +15,12 @@ import "./room-foundation-operations-hardening.css";
 import "./room-shell-v3.css";
 import "./room-content-overflow-hardening.css";
 import "./room-subscription-refresh.css";
+import "./room-shell-tokens.css";
+import "./room-shell-phase1.css";
+import "./room-shell-phase1-route-fixes.css";
+import "./room-feature-rail.css";
+import "./room-feature-host.css";
+import "./room-mobile-safe-area.css";
 
 export default function RoomsLayout({
   children,
@@ -28,12 +30,7 @@ export default function RoomsLayout({
   return (
     <>
       <RoomPlanFeatureEnhancer />
-      <RoomFoundationWorkspace />
-      <RoomOperationsWorkspace />
-      <RoomExpansionWorkspace />
-      <RoomTierModulesWorkspace />
-      <RoomResourcesWorkspace />
-      {children}
+      <RoomsShell>{children}</RoomsShell>
     </>
   );
 }

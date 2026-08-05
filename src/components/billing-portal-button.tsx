@@ -26,9 +26,13 @@ async function openAppleSubscriptionManagement() {
 export function BillingPortalButton({
   children = "Manage billing",
   variant = "primary",
+  subscriptionId,
+  action = "manage",
 }: {
   children?: React.ReactNode;
   variant?: "primary" | "secondary";
+  subscriptionId?: string | null;
+  action?: "manage" | "update" | "cancel";
 }) {
   const [openingPortal, setOpeningPortal] = useState(false);
   const [message, setMessage] = useState("");
@@ -74,7 +78,9 @@ export function BillingPortalButton({
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ subscriptionId: subscriptionId ?? null, action }),
       });
 
       const result = await response.json().catch(() => ({}));

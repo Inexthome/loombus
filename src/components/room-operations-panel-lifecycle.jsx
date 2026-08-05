@@ -220,7 +220,7 @@ export function Lifecycle({ payload, working, onAction, onExport }) {
   );
 }
 
-export function Overview({ payload, loading, onRefresh }) {
+export function Overview({ payload }) {
   const usage = payload.usage;
   if (!usage) return null;
   return (
@@ -246,15 +246,6 @@ export function Overview({ payload, loading, onRefresh }) {
           detail={`${usage.pendingRequests} pending requests · ${usage.discussionCount} discussions`}
         />
       </section>
-      <button
-        type="button"
-        className="room-operation-refresh"
-        onClick={onRefresh}
-        disabled={loading}
-      >
-        <RefreshCw aria-hidden="true" />
-        Refresh usage
-      </button>
     </div>
   );
 }

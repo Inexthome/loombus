@@ -10,11 +10,14 @@ import {
   FileClock,
   Flag,
   House,
+  Loader2,
   LockKeyhole,
-  Megaphone,
+  Menu,
+  RefreshCw,
   Search,
   ShieldCheck,
-  Users,
+  TriangleAlert,
+  X,
 } from "lucide-react";
 import { useParams, usePathname } from "next/navigation";
 import {
@@ -25,6 +28,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { RoomsAppearanceControl } from "@/components/rooms-shell";
 import { supabase } from "@/lib/supabase/client";
 
 type ShellPayload = {
@@ -53,19 +57,6 @@ type ShellPayload = {
     announcements: number;
     pendingApplications: number;
   };
-  nextEvent: {
-    id: string;
-    title: string;
-    startsAt: string;
-    endsAt: string | null;
-    location: string | null;
-  } | null;
-  pinnedAnnouncement: {
-    id: string;
-    title: string;
-    priority: string;
-    createdAt: string | null;
-  } | null;
   error?: string;
 };
 
@@ -73,7 +64,13 @@ type NavItem = {
   href: string;
   label: string;
   Icon: typeof House;
+  badge?: number;
 };
+
+type ShellState = "loading" | "ready" | "restricted" | "not-found" | "error";
+
+const SHELL_LOADING_MESSAGE =
+  "Membership and Room permissions are being verified before private content is shown.";
 
 function roleLabel(value: string | null) {
   if (value === "owner") return "Owner";
@@ -82,23 +79,58 @@ function roleLabel(value: string | null) {
   return "Member";
 }
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return "Date not available";
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "Date not available";
-  return new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date);
-}
-
 function routeIsActive(pathname: string, href: string, roomBase: string) {
   const target = href.split("?")[0];
   if (target === roomBase) return pathname === roomBase || pathname === `${roomBase}/`;
   return pathname === target || pathname.startsWith(`${target}/`);
+}
+
+function currentRouteDestination(roomId: string) {
+  if (typeof window === "undefined") return `/rooms/${roomId}`;
+  return `${window.location.pathname}${window.location.search}` || `/rooms/${roomId}`;
+}
+
+function RoomShellState({
+  state,
+  message,
+  onRetry,
+}: {
+  state: Exclude<ShellState, "ready" | "restricted">;
+  message: string;
+  onRetry?: () => void;
+}) {
+  const loading = state === "loading";
+  const notFound = state === "not-found";
+  const Icon = loading ? Loader2 : notFound ? LockKeyhole : TriangleAlert;
+  const title = loading
+    ? "Preparing your private Room"
+    : notFound
+      ? "Room unavailable"
+      : "The Room could not be opened";
+
+  return (
+    <div className="rooms-phase1-state-page" role={loading ? "status" : undefined}>
+      <section className="rooms-phase1-state-card">
+        <span className="rooms-phase1-state-mark">
+          <Icon aria-hidden="true" className={loading ? "is-spinning" : undefined} />
+        </span>
+        <h1>{title}</h1>
+        <p>{message}</p>
+        {!loading ? (
+          <div className="rooms-phase1-state-actions">
+            {onRetry ? (
+              <button type="button" className="is-primary" onClick={onRetry}>
+                <RefreshCw aria-hidden="true" size={16} />
+                Try again
+              </button>
+            ) : null}
+            <Link href="/rooms">Back to Rooms</Link>
+            <Link href="/home">Back to Loombus</Link>
+          </div>
+        ) : null}
+      </section>
+    </div>
+  );
 }
 
 export default function RoomRouteFrame({ children }: { children: ReactNode }) {
@@ -109,52 +141,179 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
     () => (Array.isArray(rawRoomId) ? rawRoomId[0] : rawRoomId ?? ""),
     [rawRoomId]
   );
+  const checkoutReturn = pathname.endsWith("/billing/success");
   const [payload, setPayload] = useState<ShellPayload | null>(null);
-  const [shellState, setShellState] = useState<"loading" | "ready" | "unavailable">("loading");
+  const [shellState, setShellState] = useState<ShellState>("loading");
+  const [shellMessage, setShellMessage] = useState(SHELL_LOADING_MESSAGE);
+  const [refreshing, setRefreshing] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const requestSequence = useRef(0);
 
-  const load = useCallback(async () => {
-    if (!roomId) return;
-    const sequence = requestSequence.current + 1;
-    requestSequence.current = sequence;
-    const session = await supabase.auth.getSession();
-    const token = session.data.session?.access_token;
-    if (!token) {
-      window.location.href = `/login?next=${encodeURIComponent(pathname || `/rooms/${roomId}`)}`;
-      return;
-    }
+  const load = useCallback(
+    async (initial = false) => {
+      if (!roomId || checkoutReturn) return;
+      const sequence = requestSequence.current + 1;
+      requestSequence.current = sequence;
+      if (initial) {
+        setShellState("loading");
+        setShellMessage(SHELL_LOADING_MESSAGE);
+      } else {
+        setRefreshing(true);
+      }
 
-    const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/shell`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    const result = (await response.json().catch(() => ({}))) as ShellPayload;
-    if (requestSequence.current !== sequence) return;
-    if (!response.ok || !result.room || !result.access) {
-      setShellState((current) => (current === "loading" ? "unavailable" : current));
-      return;
-    }
-    setPayload(result);
-    setShellState("ready");
-  }, [pathname, roomId]);
+      try {
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token;
+        if (!token) {
+          window.location.href = `/login?next=${encodeURIComponent(
+            currentRouteDestination(roomId)
+          )}`;
+          return;
+        }
+
+        const response = await fetch(`/api/rooms/${encodeURIComponent(roomId)}/shell`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        const result = (await response.json().catch(() => ({}))) as ShellPayload;
+        if (requestSequence.current !== sequence) return;
+
+        if (response.status === 401) {
+          window.location.href = `/login?next=${encodeURIComponent(
+            currentRouteDestination(roomId)
+          )}`;
+          return;
+        }
+
+        if (response.status === 403) {
+          setPayload(null);
+          setShellMessage(result.error || "Approved Room membership is required.");
+          setShellState("restricted");
+          return;
+        }
+
+        if (response.status === 404) {
+          setPayload(null);
+          setShellMessage("This Room does not exist or is no longer available to this account.");
+          setShellState("not-found");
+          return;
+        }
+
+        if (!response.ok || !result.room || !result.access) {
+          setPayload(null);
+          setShellMessage(result.error || "The Rooms service did not return a usable workspace.");
+          setShellState("error");
+          return;
+        }
+
+        setPayload(result);
+        setShellMessage("");
+        setShellState("ready");
+      } catch {
+        if (requestSequence.current !== sequence) return;
+        setPayload(null);
+        setShellMessage("The Rooms service could not be reached. Your private content was not rendered.");
+        setShellState("error");
+      } finally {
+        if (requestSequence.current === sequence) setRefreshing(false);
+      }
+    },
+    [checkoutReturn, roomId]
+  );
 
   useEffect(() => {
     setPayload(null);
-    setShellState("loading");
-    void load();
-    const refresh = () => void load();
+    if (checkoutReturn) return;
+
+    void load(true);
+    const refresh = () => void load(false);
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") refresh();
     }, 60_000);
     window.addEventListener("loombus:room-activity-changed", refresh);
+
     return () => {
       requestSequence.current += 1;
       window.clearInterval(interval);
       window.removeEventListener("loombus:room-activity-changed", refresh);
     };
-  }, [load]);
+  }, [checkoutReturn, load]);
 
-  if (!roomId || shellState !== "ready" || !payload) return <>{children}</>;
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSidebarOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [sidebarOpen]);
+
+  if (checkoutReturn || !roomId) return <>{children}</>;
+
+  const payloadMatchesRoom = payload?.room.id === roomId;
+
+  if (shellState === "loading" || (shellState === "ready" && !payloadMatchesRoom)) {
+    return <RoomShellState state="loading" message={SHELL_LOADING_MESSAGE} />;
+  }
+
+  if (shellState === "not-found") {
+    return <RoomShellState state="not-found" message={shellMessage} />;
+  }
+
+  if (shellState === "error") {
+    return (
+      <RoomShellState
+        state="error"
+        message={shellMessage}
+        onRetry={() => void load(true)}
+      />
+    );
+  }
+
+  if (shellState === "restricted") {
+    return (
+      <div className="rooms-phase1-restricted-shell">
+        <header className="rooms-phase1-restricted-header">
+          <Link href="/rooms" className="rooms-phase1-brand">
+            <span className="rooms-phase1-brand-mark" aria-hidden="true">
+              <img src="/assets/brand/loombus-mark-transparent.png" alt="" />
+            </span>
+            <span>
+              <strong>Loombus</strong>
+              <small>Private Room</small>
+            </span>
+          </Link>
+          <div className="rooms-phase1-hub-actions">
+            <RoomsAppearanceControl compact />
+            <Link href="/rooms" className="rooms-phase1-back-link">
+              <ArrowLeft aria-hidden="true" />
+              Back to Rooms
+            </Link>
+          </div>
+        </header>
+        <div className="rooms-phase1-restricted-content">{children}</div>
+      </div>
+    );
+  }
+
+  if (!payload || !payloadMatchesRoom) {
+    return (
+      <RoomShellState
+        state="error"
+        message="The Room shell completed without a verified workspace."
+        onRetry={() => void load(true)}
+      />
+    );
+  }
 
   const roomBase = `/rooms/${encodeURIComponent(roomId)}`;
   const primary: NavItem[] = [
@@ -162,10 +321,10 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
     { href: `${roomBase}/calendar`, label: "Calendar", Icon: CalendarDays },
     {
       href: `${roomBase}/tools`,
-      label: payload.access.isOwner ? "Search and lifecycle" : "Search Room",
+      label: payload.access.isOwner ? "Search and controls" : "Search Room",
       Icon: Search,
     },
-    { href: `${roomBase}/notifications`, label: "Notifications", Icon: Bell },
+    { href: `/notifications?room=${encodeURIComponent(roomId)}`, label: "Notifications", Icon: Bell },
     {
       href: `${roomBase}/moderation`,
       label: payload.access.canModerate ? "Moderation" : "Report issue",
@@ -178,134 +337,142 @@ export default function RoomRouteFrame({ children }: { children: ReactNode }) {
     management.push({ href: `${roomBase}/analytics`, label: "Analytics", Icon: BarChart3 });
   }
   if (payload.access.canManage) {
-    management.push({ href: `${roomBase}/governance`, label: "Governance", Icon: ShieldCheck });
+    management.push({
+      href: `${roomBase}/governance`,
+      label: "Governance",
+      Icon: ShieldCheck,
+      badge: payload.metrics.pendingApplications,
+    });
+    management.push({
+      href: `${roomBase}/age-safety`,
+      label: "Minor safety",
+      Icon: ShieldCheck,
+    });
   }
   if (payload.access.isOwner) {
     management.push({ href: `${roomBase}/retention`, label: "Retention", Icon: FileClock });
     management.push({ href: `${roomBase}/billing`, label: "Billing", Icon: CreditCard });
   }
 
+  const renderNavigation = (items: NavItem[]) =>
+    items.map(({ href, label, Icon, badge }) => {
+      const active = routeIsActive(pathname, href, roomBase);
+      return (
+        <Link
+          key={`${href}-${label}`}
+          href={href}
+          aria-current={active ? "page" : undefined}
+          className="rooms-phase1-nav-link"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <Icon aria-hidden="true" />
+          <span>{label}</span>
+          {badge && badge > 0 ? <strong>{badge}</strong> : null}
+        </Link>
+      );
+    });
+
   return (
-    <div className="room-route-page">
-      <a href="#room-route-content" className="room-route-skip-link">
+    <div className="rooms-phase1-shell">
+      <a href="#rooms-phase1-content" className="room-route-skip-link">
         Skip to Room content
       </a>
-      <div className="room-route-layout">
-        <aside className="room-route-left" aria-label="Room navigation">
-          <div className="room-route-left-sticky">
-            <Link href="/rooms" className="room-route-all-rooms">
-              <ArrowLeft aria-hidden="true" /> All Rooms
-            </Link>
 
-            <section className="room-route-identity">
-              <span className="room-route-identity-icon">
-                <LockKeyhole aria-hidden="true" />
-              </span>
-              <p>{payload.room.roomType.replaceAll("_", " ") || "Private Room"}</p>
-              <h2>{payload.room.name}</h2>
-              {payload.room.description ? <span>{payload.room.description}</span> : null}
-            </section>
-
-            <nav className="room-route-nav" aria-label="Room workspace">
-              <p>Workspace</p>
-              {primary.map(({ href, label, Icon }) => {
-                const active = routeIsActive(pathname, href, roomBase);
-                return (
-                  <Link key={href} href={href} aria-current={active ? "page" : undefined}>
-                    <Icon aria-hidden="true" />
-                    <span>{label}</span>
-                  </Link>
-                );
-              })}
-
-              {management.length > 0 ? <p>Management</p> : null}
-              {management.map(({ href, label, Icon }) => {
-                const active = routeIsActive(pathname, href, roomBase);
-                return (
-                  <Link key={href} href={href} aria-current={active ? "page" : undefined}>
-                    <Icon aria-hidden="true" />
-                    <span>{label}</span>
-                    {label === "Governance" && payload.metrics.pendingApplications > 0 ? (
-                      <strong>{payload.metrics.pendingApplications}</strong>
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        </aside>
-
-        <div id="room-route-content" className="room-route-content">
-          {children}
+      <aside
+        className="rooms-phase1-sidebar"
+        data-open={sidebarOpen ? "true" : "false"}
+        aria-label="Room navigation"
+      >
+        <div className="rooms-phase1-sidebar-head">
+          <Link href="/home" className="rooms-phase1-brand" aria-label="Loombus home">
+            <span className="rooms-phase1-brand-mark" aria-hidden="true">
+              <img src="/assets/brand/loombus-mark-transparent.png" alt="" />
+            </span>
+            <span>
+              <strong>Loombus</strong>
+              <small>Rooms</small>
+            </span>
+          </Link>
+          <Link href="/rooms" className="rooms-phase1-all-rooms">
+            <ArrowLeft aria-hidden="true" />
+            All Rooms
+          </Link>
         </div>
 
-        <aside className="room-route-right" aria-label="Room context">
-          <div className="room-route-right-sticky">
-            <section className="room-route-card">
-              <div className="room-route-card-heading">
-                <div>
-                  <p>Room snapshot</p>
-                  <h2>Current activity</h2>
-                </div>
-                <Users aria-hidden="true" />
-              </div>
-              <div className="room-route-metrics">
-                <span><strong>{payload.metrics.members}</strong>Members</span>
-                <span><strong>{payload.metrics.discussions}</strong>Discussions</span>
-                <span><strong>{payload.metrics.upcomingEvents}</strong>Upcoming</span>
-                <span><strong>{payload.metrics.announcements}</strong>Updates</span>
-              </div>
-            </section>
-
-            {payload.nextEvent ? (
-              <section className="room-route-card">
-                <div className="room-route-card-heading">
-                  <div>
-                    <p>Next date</p>
-                    <h2>{payload.nextEvent.title}</h2>
-                  </div>
-                  <CalendarDays aria-hidden="true" />
-                </div>
-                <span className="room-route-card-detail">
-                  {formatDateTime(payload.nextEvent.startsAt)}
-                </span>
-                {payload.nextEvent.location ? (
-                  <span className="room-route-card-detail">{payload.nextEvent.location}</span>
-                ) : null}
-                <Link href={`${roomBase}/calendar`}>Open calendar</Link>
-              </section>
-            ) : null}
-
-            {payload.pinnedAnnouncement ? (
-              <section className="room-route-card">
-                <div className="room-route-card-heading">
-                  <div>
-                    <p>Pinned update</p>
-                    <h2>{payload.pinnedAnnouncement.title}</h2>
-                  </div>
-                  <Megaphone aria-hidden="true" />
-                </div>
-                <span className="room-route-card-detail">
-                  {payload.pinnedAnnouncement.priority.replaceAll("_", " ")}
-                </span>
-                <Link href={roomBase}>View Room home</Link>
-              </section>
-            ) : null}
-
-            <section className="room-route-card room-route-security-card">
-              <LockKeyhole aria-hidden="true" />
-              <div>
-                <strong>Private Room</strong>
-                <span>
-                  {roleLabel(payload.access.role)} · {payload.room.plan.label || "Room plan"}
-                </span>
-                <small>
-                  Access and tool permissions remain enforced by the existing Room APIs.
-                </small>
-              </div>
-            </section>
+        <section className="rooms-phase1-room-identity">
+          <p>{payload.room.roomType.replaceAll("_", " ") || "Private Room"}</p>
+          <h1>{payload.room.name}</h1>
+          {payload.room.description ? <span>{payload.room.description}</span> : null}
+          <div className="rooms-phase1-room-metrics" aria-label="Room summary">
+            <span><strong>{payload.metrics.members}</strong>Members</span>
+            <span><strong>{payload.metrics.discussions}</strong>Discussions</span>
+            <span><strong>{payload.metrics.upcomingEvents}</strong>Upcoming</span>
+            <span><strong>{payload.metrics.announcements}</strong>Updates</span>
           </div>
-        </aside>
+        </section>
+
+        <div className="rooms-phase1-nav-scroll">
+          <section className="rooms-phase1-nav-section">
+            <p>Room</p>
+            <nav aria-label="Room workspace">{renderNavigation(primary)}</nav>
+          </section>
+          {management.length > 0 ? (
+            <section className="rooms-phase1-nav-section">
+              <p>Management</p>
+              <nav aria-label="Room management">{renderNavigation(management)}</nav>
+            </section>
+          ) : null}
+        </div>
+
+        <div className="rooms-phase1-sidebar-footer">
+          <RoomsAppearanceControl />
+        </div>
+      </aside>
+
+      <button
+        type="button"
+        className="rooms-phase1-sidebar-backdrop"
+        data-open={sidebarOpen ? "true" : "false"}
+        aria-label="Close Room navigation"
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      <div className="rooms-phase1-main-column">
+        <header className="rooms-phase1-room-header">
+          <div className="rooms-phase1-room-header-main">
+            <button
+              type="button"
+              className="rooms-phase1-menu-button"
+              aria-label={sidebarOpen ? "Close Room navigation" : "Open Room navigation"}
+              aria-expanded={sidebarOpen}
+              onClick={() => setSidebarOpen((current) => !current)}
+            >
+              {sidebarOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+            </button>
+            <div className="rooms-phase1-room-header-copy">
+              <strong>{payload.room.name}</strong>
+              <span>
+                {roleLabel(payload.access.role)} · {payload.room.plan.label || "Room plan"}
+              </span>
+            </div>
+          </div>
+
+          <div className="rooms-phase1-header-actions">
+            <button
+              type="button"
+              className="rooms-phase1-refresh"
+              onClick={() => void load(false)}
+              disabled={refreshing}
+            >
+              <RefreshCw aria-hidden="true" className={refreshing ? "is-spinning" : undefined} />
+              <span>{refreshing ? "Refreshing" : "Refresh"}</span>
+            </button>
+          </div>
+        </header>
+
+        <div id="rooms-phase1-content" className="rooms-phase1-content">
+          {children}
+        </div>
       </div>
     </div>
   );

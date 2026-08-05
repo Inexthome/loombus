@@ -1,0 +1,94 @@
+.loombus-rooms-scope,
+.room-phase3-feature-host {
+  --rooms-shell-gold: var(--loombus-gold, #cbab5b);
+  --rooms-shell-cream: var(--loombus-cream, #fefbec);
+  --rooms-shell-page: #050505;
+  --rooms-shell-sidebar: #090907;
+  --rooms-shell-panel: #11110e;
+  --rooms-shell-panel-strong: #181711;
+  --rooms-shell-panel-muted: #211f17;
+  --rooms-shell-text: #fefbec;
+  --rooms-shell-muted: #bdb6a5;
+  --rooms-shell-subtle: #827b6d;
+  --rooms-shell-border: color-mix(in srgb, var(--rooms-shell-gold) 24%, #2b2922);
+  --rooms-shell-border-strong: color-mix(in srgb, var(--rooms-shell-gold) 48%, #39352a);
+  --rooms-shell-shadow: 0 24px 70px rgb(0 0 0 / 0.28);
+  --rooms-shell-danger: #ef6b6b;
+  color-scheme: dark;
+}
+
+.loombus-rooms-scope {
+  min-height: 100svh;
+  background: var(--rooms-shell-page);
+  color: var(--rooms-shell-text);
+}
+
+/*
+ * Feature workspaces render through a portal attached to document.body, outside
+ * .loombus-rooms-scope. Re-publish the canonical Room tokens and legacy aliases
+ * at the portal root so every React-owned workspace follows Light, Dark, and
+ * System without inheriting transparent or dark-only surfaces.
+ */
+.room-phase3-feature-host {
+  --background: var(--rooms-shell-panel-strong);
+  --foreground: var(--rooms-shell-text);
+  --surface: var(--rooms-shell-panel);
+  --text: var(--rooms-shell-text);
+  --muted: var(--rooms-shell-muted);
+  --border: var(--rooms-shell-border);
+
+  /* Legacy Room-live modules: Operations, Foundation, tier modules, and Files. */
+  --rooms-live-bg: var(--rooms-shell-page);
+  --rooms-live-surface: var(--rooms-shell-panel);
+  --rooms-live-surface-strong: var(--rooms-shell-panel-strong);
+  --rooms-live-surface-muted: var(--rooms-shell-panel-muted);
+  --rooms-live-text: var(--rooms-shell-text);
+  --rooms-live-muted: var(--rooms-shell-muted);
+  --rooms-live-faint: var(--rooms-shell-subtle);
+  --rooms-live-border: var(--rooms-shell-border);
+  --rooms-live-border-strong: var(--rooms-shell-border-strong);
+  --rooms-live-accent: var(--rooms-shell-gold);
+
+  /* Legacy Studio and Organization workspace namespace. */
+  --rooms-bg: var(--rooms-shell-page);
+  --rooms-panel: var(--rooms-shell-panel);
+  --rooms-input: var(--rooms-shell-panel-muted);
+  --rooms-text: var(--rooms-shell-text);
+  --rooms-muted: var(--rooms-shell-muted);
+  --rooms-border: var(--rooms-shell-border);
+  --rooms-accent: var(--rooms-shell-gold);
+
+  color: var(--rooms-shell-text);
+}
+
+html[data-loombus-theme="light"] :is(.loombus-rooms-scope, .room-phase3-feature-host) {
+  --rooms-shell-page: #fefbec;
+  --rooms-shell-sidebar: #17150f;
+  --rooms-shell-panel: #fffdf5;
+  --rooms-shell-panel-strong: #ffffff;
+  --rooms-shell-panel-muted: #f5eedc;
+  --rooms-shell-text: #1a1812;
+  --rooms-shell-muted: #635d50;
+  --rooms-shell-subtle: #817969;
+  --rooms-shell-border: color-mix(in srgb, var(--rooms-shell-gold) 34%, #e5ddc9);
+  --rooms-shell-border-strong: color-mix(in srgb, var(--rooms-shell-gold) 60%, #cfc4a8);
+  --rooms-shell-shadow: 0 24px 70px rgb(82 67 32 / 0.12);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] :is(.loombus-rooms-scope, .room-phase3-feature-host) {
+    --rooms-shell-page: #fefbec;
+    --rooms-shell-sidebar: #17150f;
+    --rooms-shell-panel: #fffdf5;
+    --rooms-shell-panel-strong: #ffffff;
+    --rooms-shell-panel-muted: #f5eedc;
+    --rooms-shell-text: #1a1812;
+    --rooms-shell-muted: #635d50;
+    --rooms-shell-subtle: #817969;
+    --rooms-shell-border: color-mix(in srgb, var(--rooms-shell-gold) 34%, #e5ddc9);
+    --rooms-shell-border-strong: color-mix(in srgb, var(--rooms-shell-gold) 60%, #cfc4a8);
+    --rooms-shell-shadow: 0 24px 70px rgb(82 67 32 / 0.12);
+    color-scheme: light;
+  }
+}

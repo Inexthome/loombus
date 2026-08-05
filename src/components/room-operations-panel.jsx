@@ -17,7 +17,7 @@ export function RoomOperationsPanel({
   onPageChange,
   onAction,
   onExport,
-  onRefresh,
+  hideNavigation = false,
 }) {
   const access = summary.access;
   const tabs = useMemo(
@@ -36,32 +36,35 @@ export function RoomOperationsPanel({
 
   return (
     <>
-      <nav className="room-operation-tabs" role="tablist" aria-label="Room Operations sections">
-        {tabs.map(([value, label, Icon]) => (
-          <button
-            type="button"
-            key={value}
-            role="tab"
-            id={`room-operation-tab-${value}`}
-            aria-selected={selected === value}
-            aria-controls={`room-operation-panel-${value}`}
-            tabIndex={0}
-            onClick={() => onTabChange(value)}
-          >
-            <Icon aria-hidden="true" />
-            {label}
-            {value === "moderation" && summary.pendingReportCount ? (
-              <strong>{summary.pendingReportCount}</strong>
-            ) : null}
-          </button>
-        ))}
-      </nav>
+      {!hideNavigation ? (
+        <nav className="room-operation-tabs" role="tablist" aria-label="Room Operations sections">
+          {tabs.map(([value, label, Icon]) => (
+            <button
+              type="button"
+              key={value}
+              role="tab"
+              id={`room-operation-tab-${value}`}
+              aria-selected={selected === value}
+              aria-controls={`room-operation-panel-${value}`}
+              tabIndex={0}
+              onClick={() => onTabChange(value)}
+            >
+              <Icon aria-hidden="true" />
+              {label}
+              {value === "moderation" && summary.pendingReportCount ? (
+                <strong>{summary.pendingReportCount}</strong>
+              ) : null}
+            </button>
+          ))}
+        </nav>
+      ) : null}
 
       <div
         id={panelId}
         className="room-operation-tabpanel"
         role="tabpanel"
-        aria-labelledby={selected ? `room-operation-tab-${selected}` : undefined}
+        aria-labelledby={hideNavigation || !selected ? undefined : `room-operation-tab-${selected}`}
+        aria-label={hideNavigation && selected ? selected : undefined}
         tabIndex={-1}
       >
         {loading && !payload ? (
@@ -71,9 +74,7 @@ export function RoomOperationsPanel({
           </div>
         ) : null}
 
-        {selected === "overview" && payload ? (
-          <Overview payload={payload} loading={loading} onRefresh={onRefresh} />
-        ) : null}
+        {selected === "overview" && payload ? <Overview payload={payload} /> : null}
 
         {selected === "report" && payload ? (
           <ReportView

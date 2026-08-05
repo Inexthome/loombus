@@ -1,5 +1,5 @@
--- Read-only production readiness checks for Issues #666, #680, and #683.
--- Run in Supabase SQL Editor after PRs #681 and #685 migrations are applied.
+-- Read-only production readiness checks for Issues #666, #679, #680, and #683.
+-- Run in Supabase SQL Editor after all teen-safety migrations are applied.
 -- This is intentionally one SQL statement so Supabase displays every check
 -- in a single result table rather than only displaying the final SELECT.
 -- Every row with status = FAIL is a release blocker.
@@ -17,6 +17,7 @@ required_functions(name) as (
     ('refresh_age_bands_and_preserve_privacy'),
     ('can_start_private_conversation'),
     ('enforce_profile_sensitive_age_state'),
+    ('review_age_correction_request'),
     ('enforce_private_conversation_age_eligibility')
 ),
 required_triggers(name) as (

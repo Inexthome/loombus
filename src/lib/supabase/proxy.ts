@@ -20,6 +20,19 @@ function isAdminPath(pathname: string) {
   return pathname === "/admin" || pathname.startsWith("/admin/");
 }
 
+function isPaidFloorPath(pathname: string) {
+  return pathname.startsWith("/the-floor/") && pathname !== "/the-floor/subscribe";
+}
+
+function redirectToFloorSubscription(request: NextRequest, response: NextResponse) {
+  const destination = request.nextUrl.clone();
+  destination.pathname = "/the-floor/subscribe";
+  destination.search = "";
+  destination.searchParams.set("access", "subscribe");
+  destination.searchParams.set("next", request.nextUrl.pathname);
+  return copyResponseCookies(response, NextResponse.redirect(destination));
+}
+
 function getNextResponse(request: NextRequest) {
   return NextResponse.next({
     request: {
@@ -102,12 +115,42 @@ export async function updateSession(request: NextRequest) {
     return !error && user ? redirectToDefaultAppLanding(request, response) : response;
   }
 
-  if (!isProtectedPath(pathname)) {
+  const isFloorOverview = pathname === "/the-floor";
+  const isFloorSubscription = pathname === "/the-floor/subscribe";
+
+  if (!isProtectedPath(pathname) && !isPaidFloorPath(pathname) && !isFloorOverview) {
     return response;
+  }
+
+  if ((error || !user) && isFloorOverview) {
+    return redirectToFloorSubscription(request, response);
   }
 
   if (error || !user) {
     return redirectToLogin(request);
+  }
+
+  if (isPaidFloorPath(pathname) || isFloorOverview || isFloorSubscription) {
+    const [{ data: profile }, { data: floorSubscription }] = await Promise.all([
+      supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle(),
+      supabase
+        .from("floor_subscriptions")
+        .select("status")
+        .eq("user_id", user.id)
+        .in("status", ["active", "trialing"])
+        .maybeSingle(),
+    ]);
+
+    const hasFloorAccess = profile?.is_admin === true || Boolean(floorSubscription);
+    if (!hasFloorAccess && (isPaidFloorPath(pathname) || isFloorOverview)) {
+      return redirectToFloorSubscription(request, response);
+    }
+    if (hasFloorAccess && isFloorSubscription) {
+      const overview = request.nextUrl.clone();
+      overview.pathname = "/the-floor";
+      overview.search = "";
+      return copyResponseCookies(response, NextResponse.redirect(overview));
+    }
   }
 
   if (!isAdminPath(pathname)) {

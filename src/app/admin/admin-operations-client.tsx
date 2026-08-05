@@ -13,8 +13,10 @@ import {
   Gauge,
   HeartPulse,
   LifeBuoy,
+  LineChart,
   ListChecks,
   RefreshCw,
+  Radio,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
@@ -205,6 +207,22 @@ const MODULE_GROUPS: AdminModuleGroup[] = [
           "Review recurring topics, Reality Lenses, tags, and AI idea coverage through the current Admin tool.",
         action: "Open Topic Memory",
         Icon: Sparkles,
+      },
+      {
+        href: "/admin/floor-resolutions",
+        title: "Floor Call Resolutions",
+        description:
+          "Approve or reject the calls resolver's proposed outcomes before they stamp a member's public track record.",
+        action: "Open Floor resolutions",
+        Icon: LineChart,
+      },
+      {
+        href: "/admin/floor-program",
+        title: "Floor Operations Desk",
+        description:
+          "Schedule live programming, publish reviewed Research Desk issues, review contributor applications, and create editorial assignments.",
+        action: "Operate The Floor",
+        Icon: Radio,
       },
     ],
   },
