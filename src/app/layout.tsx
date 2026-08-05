@@ -3,6 +3,8 @@ import "./loombus-brand-accent.css";
 import "./desktop-top-navbar.css";
 import "./mobile-navigation-shell.css";
 import "./adaptive-shell-controls.css";
+import "./persistent-mobile-primary-dock.css";
+import "./persistent-quick-rail.css";
 import "./legacy-right-rail-cleanup.css";
 import "./create-v2-shell.css";
 import "./discussion-audience-controls.css";
@@ -18,7 +20,6 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import RouteClientLayout from "./route-client-layout";
 import { AdaptiveFloatingUtilityLauncher } from "@/components/adaptive-floating-utility-launcher";
-import { AdaptiveMobileDockController } from "@/components/adaptive-mobile-dock-controller";
 import { AppChromeBoundary } from "@/components/app-chrome-boundary";
 import { AuthSessionCleanup } from "@/components/auth-session-cleanup";
 import { CanonicalAppHomeLinks } from "@/components/canonical-app-home-links";
@@ -26,6 +27,7 @@ import { DesktopTopNavbar } from "@/components/desktop-top-navbar";
 import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
+import { PersistentMobilePrimaryDock } from "@/components/persistent-mobile-primary-dock";
 import { SessionLifecycleGuard } from "@/components/session-lifecycle-guard";
 
 const siteUrl = "https://loombus.com";
@@ -113,7 +115,7 @@ export default function RootLayout({
         <AppChromeBoundary>
           <DesktopTopNavbar />
           <MobileNavigationShell />
-          <AdaptiveMobileDockController />
+          <PersistentMobilePrimaryDock />
         </AppChromeBoundary>
         <RouteClientLayout>{children}</RouteClientLayout>
         <AppChromeBoundary>

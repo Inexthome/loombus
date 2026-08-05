@@ -1,11 +1,17 @@
 "use client";
 
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import {
+  FLOOR_CONVICTION_PROBABILITY,
+  floorCalibrationFromBucketCounts,
+  floorCalibrationVerdictCopy,
+  type FloorCalibrationResult,
+} from "@/lib/floor-calibration";
 import { calculateFloorCredibility, type CredibilityThesis } from "@/lib/floor-credibility";
 import { floorDisplayName } from "@/lib/floor-shared";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
-import { ArrowLeft, Award, BarChart3, Building2, CalendarDays, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Award, BarChart3, Building2, CalendarDays, Gauge, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type Profile = {
@@ -18,6 +24,75 @@ type AnalystThesis = CredibilityThesis & {
   id: string;
   stance: "long" | "short" | "neutral";
 };
+
+type CalibrationBucketRow = {
+  conviction: number;
+  correct_calls: number;
+  incorrect_calls: number;
+  resolved_binary_calls: number;
+};
+
+// Wide viewBox, on-brand colors -- matches the same non-scaling-stroke
+// SVG pattern already used for the market-overview chart. Green/red are
+// deliberately not used here: this is self-assessment, not a
+// buy/sell/direction signal, so the chart identity stays ink/gold.
+const CALIBRATION_CHART_WIDTH = 300;
+const CALIBRATION_CHART_HEIGHT = 140;
+const CALIBRATION_CHART_MARGIN = 16;
+
+function calibrationPoint(conviction: number, valuePct: number) {
+  const x = CALIBRATION_CHART_MARGIN + ((conviction - 1) / 4) * (CALIBRATION_CHART_WIDTH - CALIBRATION_CHART_MARGIN * 2);
+  const y = (CALIBRATION_CHART_HEIGHT - CALIBRATION_CHART_MARGIN) - (valuePct / 100) * (CALIBRATION_CHART_HEIGHT - CALIBRATION_CHART_MARGIN * 2);
+  return { x, y };
+}
+
+function calibrationPath(values: Array<number | null>) {
+  return values
+    .map((value, index) => {
+      if (value === null) return null;
+      const { x, y } = calibrationPoint(index + 1, value);
+      return `${index === 0 || values[index - 1] === null ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .filter((segment): segment is string => segment !== null)
+    .join(" ");
+}
+
+function CalibrationCurve({ calibration }: { calibration: FloorCalibrationResult }) {
+  const hitRateValues = calibration.buckets.map((bucket) => bucket.hitRate);
+  const statedValues = calibration.buckets.map((bucket) => FLOOR_CONVICTION_PROBABILITY[bucket.conviction] * 100);
+
+  return (
+    <svg
+      viewBox={`0 0 ${CALIBRATION_CHART_WIDTH} ${CALIBRATION_CHART_HEIGHT}`}
+      role="img"
+      aria-label="Hit rate versus stated confidence by conviction level"
+      className="w-full"
+    >
+      <path
+        d={calibrationPath(statedValues)}
+        fill="none"
+        stroke="var(--loombus-text-subtle)"
+        strokeWidth={1.5}
+        strokeDasharray="4 3"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d={calibrationPath(hitRateValues)}
+        fill="none"
+        stroke="var(--loombus-gold)"
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+      />
+      {calibration.buckets.map((bucket) => {
+        if (bucket.hitRate === null) return null;
+        const { x, y } = calibrationPoint(bucket.conviction, bucket.hitRate);
+        return <circle key={bucket.conviction} cx={x} cy={y} r={3} fill="var(--loombus-gold)" />;
+      })}
+    </svg>
+  );
+}
 
 function scoreLabel(score: number) {
   if (score >= 85) return "Excellent";
@@ -47,6 +122,7 @@ export default function TheFloorAnalystPage({ memberId }: { memberId: string }) 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [theses, setTheses] = useState<AnalystThesis[]>([]);
+  const [calibrationRows, setCalibrationRows] = useState<CalibrationBucketRow[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -57,7 +133,7 @@ export default function TheFloorAnalystPage({ memberId }: { memberId: string }) 
         return;
       }
 
-      const [{ data: profileData }, { data: thesisData }] = await Promise.all([
+      const [{ data: profileData }, { data: thesisData }, { data: calibrationData }] = await Promise.all([
         supabase.from("profiles").select("id, username, full_name").eq("id", memberId).maybeSingle(),
         supabase
           .from("floor_theses")
@@ -67,11 +143,20 @@ export default function TheFloorAnalystPage({ memberId }: { memberId: string }) 
           .eq("author_id", memberId)
           .order("created_at", { ascending: false })
           .limit(250),
+        // Read through the privacy-gated view, not raw floor_calls, even
+        // for a member's own page -- floor_member_calibration already
+        // encodes "always visible to yourself, opt-out respected for
+        // everyone else" so there's no separate "is this me" branch here.
+        supabase
+          .from("floor_member_calibration")
+          .select("conviction, correct_calls, incorrect_calls, resolved_binary_calls")
+          .eq("member_id", memberId),
       ]);
 
       if (!mounted) return;
       setProfile((profileData as Profile | null) ?? null);
       setTheses((thesisData as AnalystThesis[] | null) ?? []);
+      setCalibrationRows((calibrationData as CalibrationBucketRow[] | null) ?? []);
       setLoading(false);
     }
     void load();
@@ -81,6 +166,17 @@ export default function TheFloorAnalystPage({ memberId }: { memberId: string }) 
   }, [memberId]);
 
   const credibility = useMemo(() => calculateFloorCredibility(theses), [theses]);
+  const calibration = useMemo(
+    () =>
+      floorCalibrationFromBucketCounts(
+        calibrationRows.map((row) => ({
+          conviction: row.conviction,
+          correct: row.correct_calls,
+          incorrect: row.incorrect_calls,
+        }))
+      ),
+    [calibrationRows]
+  );
   const coverage = useMemo(() => {
     const counts = new Map<string, number>();
     for (const thesis of theses) counts.set(thesis.ticker, (counts.get(thesis.ticker) ?? 0) + 1);
@@ -145,6 +241,72 @@ export default function TheFloorAnalystPage({ memberId }: { memberId: string }) 
             <Metric label="Research depth" value={credibility.researchDepth} explanation="Completeness of the thesis, supporting factors, risks, and decision framework." />
             <Metric label="Accountability" value={credibility.accountability} explanation="Use of falsifiable calls and the share of those calls that reached a recorded resolution." />
           </div>
+        </section>
+
+        <section className="rounded-[1.75rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
+          <div className="flex items-center gap-2">
+            <Gauge className="size-5 text-[var(--loombus-gold)]" />
+            <h2 className="text-xl font-black">Calibration</h2>
+          </div>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--loombus-text-muted)]">
+            How well stated conviction matched results -- not a judgment of whether any call was a good trade, and never a recommendation.
+          </p>
+
+          {calibration.verdict === "building" ? (
+            <p className="mt-5 rounded-2xl bg-[var(--loombus-page-bg)] p-4 text-sm font-bold text-[var(--loombus-text-muted)]">
+              Building -- {calibration.resolvedBinaryCount} of 10 resolved calls needed before a calibration read appears.
+            </p>
+          ) : (
+            <>
+              <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+                <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4">
+                  <CalibrationCurve calibration={calibration} />
+                  <div className="mt-3 flex flex-wrap gap-4 text-[11px] font-bold text-[var(--loombus-text-muted)]">
+                    <span className="inline-flex items-center gap-1.5"><i className="inline-block h-0.5 w-4 rounded-full bg-[var(--loombus-gold)]" /> Your hit rate</span>
+                    <span className="inline-flex items-center gap-1.5"><i className="inline-block h-0.5 w-4 rounded-full border border-dashed border-[var(--loombus-text-subtle)]" /> Stated confidence (house convention)</span>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-4 text-center">
+                  <p className="text-xs font-black uppercase tracking-wide text-[var(--loombus-text-subtle)]">Brier score</p>
+                  <p className="mt-1 text-4xl font-black text-[var(--loombus-gold)]">{calibration.brier?.toFixed(3)}</p>
+                  <p className="mt-1 text-[10px] text-[var(--loombus-text-subtle)]">Lower is better. 0 = perfect, 0.25 = coin flip.</p>
+                  <p className="mt-4 text-sm font-black capitalize">{calibration.verdict.replace("-", " ")}</p>
+                  <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">{floorCalibrationVerdictCopy(calibration.verdict)}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 overflow-x-auto">
+                <table className="w-full min-w-[420px] text-left text-xs">
+                  <thead>
+                    <tr className="text-[10px] font-black uppercase tracking-wide text-[var(--loombus-text-subtle)]">
+                      <th className="pb-2">Conviction</th>
+                      <th className="pb-2">Resolved calls</th>
+                      <th className="pb-2">Hit rate</th>
+                      <th className="pb-2">95% range</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calibration.buckets.map((bucket) => (
+                      <tr key={bucket.conviction} className="border-t border-[var(--loombus-border)]">
+                        <td className="py-2 font-black">{bucket.conviction}/5</td>
+                        <td className="py-2 font-bold text-[var(--loombus-text-muted)]">{bucket.n}</td>
+                        <td className="py-2 font-bold">{bucket.hitRate === null ? "—" : `${bucket.hitRate.toFixed(0)}%`}</td>
+                        <td className="py-2 text-[var(--loombus-text-muted)]">
+                          {bucket.wilsonLow === null || bucket.wilsonHigh === null
+                            ? "—"
+                            : `${bucket.wilsonLow.toFixed(0)}%–${bucket.wilsonHigh.toFixed(0)}%`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          <p className="mt-4 text-[10px] leading-5 text-[var(--loombus-text-subtle)]">
+            Brier score uses a house convention mapping stated conviction to a probability of being correct (1/5 = 55%, 2/5 = 62.5%, 3/5 = 70%, 4/5 = 77.5%, 5/5 = 85%) -- a modeling choice, not a fact, disclosed here so the number is checkable.
+          </p>
         </section>
 
         <div className="grid gap-5 lg:grid-cols-2">
