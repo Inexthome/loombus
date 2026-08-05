@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type MouseEvent, useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
 import {
   filterBlockedActorNotifications,
   getBlockedRelationshipUserIds,
@@ -46,6 +46,10 @@ const DOCK_ITEMS: readonly DockItem[] = [
   },
   { href: "/inbox", label: "Inbox", icon: Inbox },
 ];
+
+const TOP_VISIBILITY_THRESHOLD = 88;
+const DOWNWARD_HIDE_DISTANCE = 28;
+const DIRECTION_CHANGE_THRESHOLD = 6;
 
 function isPathActive(pathname: string, href: string) {
   if (href === "/discussions") {
@@ -96,13 +100,32 @@ export function PersistentMobilePrimaryDock() {
   const [userId, setUserId] = useState<string | null>(null);
   const [inboxCount, setInboxCount] = useState(0);
   const [suppressed, setSuppressed] = useState(false);
+  const [dockHidden, setDockHidden] = useState(false);
+  const dockRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     document.body.dataset.persistentMobileDock = "true";
     return () => {
       delete document.body.dataset.persistentMobileDock;
+      delete document.body.dataset.mobileDockHidden;
     };
   }, []);
+
+  useEffect(() => {
+    if (dockHidden && userId && !suppressed) {
+      document.body.dataset.mobileDockHidden = "true";
+    } else {
+      delete document.body.dataset.mobileDockHidden;
+    }
+
+    return () => {
+      delete document.body.dataset.mobileDockHidden;
+    };
+  }, [dockHidden, suppressed, userId]);
+
+  useEffect(() => {
+    setDockHidden(false);
+  }, [pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -208,7 +231,9 @@ export function PersistentMobilePrimaryDock() {
     function syncSuppression() {
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
-        setSuppressed(composerIsOpen(pathname));
+        const nextSuppressed = composerIsOpen(pathname);
+        setSuppressed(nextSuppressed);
+        if (nextSuppressed) setDockHidden(false);
       });
     }
 
@@ -231,11 +256,57 @@ export function PersistentMobilePrimaryDock() {
     };
   }, [pathname]);
 
+  useEffect(() => {
+    if (!userId || suppressed) {
+      setDockHidden(false);
+      return;
+    }
+
+    let lastScrollY = Math.max(window.scrollY, 0);
+    let downwardDistance = 0;
+    let frame = 0;
+
+    function updateDockVisibility() {
+      const currentScrollY = Math.max(window.scrollY, 0);
+      const delta = currentScrollY - lastScrollY;
+
+      if (currentScrollY <= TOP_VISIBILITY_THRESHOLD) {
+        downwardDistance = 0;
+        setDockHidden(false);
+      } else if (delta <= -DIRECTION_CHANGE_THRESHOLD) {
+        downwardDistance = 0;
+        setDockHidden(false);
+      } else if (delta > 0) {
+        downwardDistance += delta;
+        if (downwardDistance >= DOWNWARD_HIDE_DISTANCE) {
+          setDockHidden(true);
+        }
+      }
+
+      lastScrollY = currentScrollY;
+      frame = 0;
+    }
+
+    function handleScroll() {
+      if (frame) return;
+      frame = window.requestAnimationFrame(updateDockVisibility);
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [pathname, suppressed, userId]);
+
   function handleNavigation(
     event: MouseEvent<HTMLAnchorElement>,
     item: DockItem,
     active: boolean
   ) {
+    setDockHidden(false);
+
     if (!active || item.primary) return;
 
     event.preventDefault();
@@ -246,8 +317,11 @@ export function PersistentMobilePrimaryDock() {
 
   return (
     <nav
+      ref={dockRef}
       className="loombus-persistent-mobile-dock"
       aria-label="Mobile primary navigation"
+      data-hidden={dockHidden ? "true" : "false"}
+      onFocusCapture={() => setDockHidden(false)}
     >
       <div>
         {DOCK_ITEMS.map((item) => {
