@@ -9,17 +9,21 @@ begin;
 
 insert into public.account_deletion_resource_registry (
   resource_key,
-  resource_label,
+  data_class,
+  system_of_record,
   disposition,
   handler_key,
+  execution_mode,
   sort_order,
-  metadata
+  detail
 )
 values (
   'infrastructure_security_and_incident_records',
-  'Infrastructure, security, fraud, access, and incident records',
+  'Infrastructure, security, fraud, access, abuse-prevention, incident, diagnostic, queue, cache, backup, replica, export, and vendor-copy records',
+  'Supabase, Vercel, application runtime, observability, security, fraud, incident-management, support, queue, backup, and infrastructure providers',
   'manual_review',
   'infrastructure_security_and_incident_records',
+  'manual_review',
   120,
   jsonb_build_object(
     'issue', 668,
@@ -93,11 +97,14 @@ values (
 )
 on conflict (resource_key) do update
 set
-  resource_label = excluded.resource_label,
+  data_class = excluded.data_class,
+  system_of_record = excluded.system_of_record,
   disposition = excluded.disposition,
   handler_key = excluded.handler_key,
+  execution_mode = excluded.execution_mode,
+  enabled = true,
   sort_order = excluded.sort_order,
-  metadata = excluded.metadata,
+  detail = excluded.detail,
   updated_at = now();
 
 commit;
