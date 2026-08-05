@@ -3,6 +3,7 @@
 import { createPortal } from "react-dom";
 import {
   Globe2,
+  HeartHandshake,
   LockKeyhole,
   SlidersHorizontal,
   UserCheck,
@@ -17,6 +18,7 @@ import { supabase } from "@/lib/supabase/client";
 type AudienceType =
   | "public"
   | "followers"
+  | "supporters"
   | "connections"
   | "exclude_selected"
   | "selected"
@@ -31,6 +33,7 @@ type AudienceRow = {
 const LABELS: Record<AudienceType, string> = {
   public: "Public",
   followers: "Followers",
+  supporters: "Supporters",
   connections: "Connections",
   exclude_selected: "Don't show to",
   selected: "Only show to",
@@ -38,9 +41,10 @@ const LABELS: Record<AudienceType, string> = {
   custom: "Custom audience",
 };
 
-const ICONS = {
+const ICONS: Record<AudienceType, typeof Globe2> = {
   public: Globe2,
   followers: UsersRound,
+  supporters: HeartHandshake,
   connections: UserRoundCheck,
   exclude_selected: UserMinus,
   selected: UserCheck,

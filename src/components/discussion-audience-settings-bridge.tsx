@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import {
   Check,
   Globe2,
+  HeartHandshake,
   LockKeyhole,
   Save,
   Search,
@@ -20,6 +21,7 @@ import { supabase } from "@/lib/supabase/client";
 type AudienceType =
   | "public"
   | "followers"
+  | "supporters"
   | "connections"
   | "exclude_selected"
   | "selected"
@@ -66,6 +68,13 @@ const AUDIENCE_OPTIONS: AudienceOption[] = [
     Icon: UsersRound,
   },
   {
+    type: "supporters",
+    label: "Supporters",
+    description:
+      "Only active members of your free Creator Supporter program can read them.",
+    Icon: HeartHandshake,
+  },
+  {
     type: "connections",
     label: "Connections",
     description: "Only people you mutually follow can read them.",
@@ -101,6 +110,7 @@ function isAudienceType(value: unknown): value is AudienceType {
   return [
     "public",
     "followers",
+    "supporters",
     "connections",
     "exclude_selected",
     "selected",
@@ -574,6 +584,12 @@ export function DiscussionAudienceSettingsBridge() {
               emptyMessage="No connected people are available."
             />
           </details>
+        </div>
+      ) : null}
+
+      {audienceType === "supporters" ? (
+        <div className="discussion-audience-settings-notice">
+          Manage your free supporter tiers and linked private Room from the Creator Hub.
         </div>
       ) : null}
 
