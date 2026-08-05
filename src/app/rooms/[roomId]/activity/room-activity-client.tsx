@@ -83,8 +83,13 @@ export default function RoomActivityClient() {
 
   const load = useCallback(async () => {
     if (!roomId) return;
+
+    // Keep state updates after an async boundary so the initial effect does not
+    // synchronously cascade renders. Manual refreshes use the same safe path.
+    await Promise.resolve();
     setLoading(true);
     setError("");
+
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
