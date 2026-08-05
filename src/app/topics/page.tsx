@@ -1,8 +1,8 @@
-import TopicsV2Client from "./topics-v2-client";
+import SignalDirectoryClient from "./signal-directory-client";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default function TopicsPage() {
-  return <TopicsV2Client />;
+  return <SignalDirectoryClient />;
 }
