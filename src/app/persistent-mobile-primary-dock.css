@@ -1,0 +1,168 @@
+.loombus-persistent-mobile-dock {
+  display: none;
+}
+
+@media (max-width: 767.98px) {
+  body[data-persistent-mobile-dock="true"] .loombus-mobile-v2-bottom-nav,
+  body[data-persistent-mobile-dock="true"] .loombus-adaptive-dock-launcher {
+    display: none !important;
+  }
+
+  .loombus-persistent-mobile-dock {
+    position: fixed;
+    inset-inline: 0.65rem;
+    bottom: calc(env(safe-area-inset-bottom) + 0.45rem);
+    z-index: 68;
+    display: block;
+    border: 1px solid color-mix(in srgb, var(--loombus-gold) 20%, var(--loombus-border));
+    border-radius: 1.7rem;
+    padding: 0.38rem 0.42rem 0.42rem;
+    background: color-mix(in srgb, var(--loombus-surface) 94%, transparent);
+    color: var(--loombus-text);
+    box-shadow: 0 1rem 3.25rem rgb(0 0 0 / 0.22);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+
+  .loombus-persistent-mobile-dock > div {
+    width: min(100%, 32rem);
+    min-height: 4.15rem;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+    gap: 0.12rem;
+  }
+
+  .loombus-persistent-mobile-dock a {
+    min-width: 0;
+    min-height: 3.78rem;
+    border: 1px solid transparent;
+    border-radius: 1.22rem;
+    padding: 0.42rem 0.18rem 0.34rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-direction: column;
+    gap: 0.25rem;
+    color: var(--loombus-text-subtle);
+    text-decoration: none;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease,
+      transform 150ms ease;
+  }
+
+  .loombus-persistent-mobile-dock a:active {
+    transform: scale(0.96);
+  }
+
+  .loombus-persistent-mobile-dock a[data-active="true"]:not([data-primary="true"]) {
+    border-color: color-mix(in srgb, var(--loombus-gold) 35%, var(--loombus-border));
+    background: var(--loombus-gold-surface);
+    color: var(--loombus-text);
+  }
+
+  .loombus-persistent-mobile-dock-icon {
+    position: relative;
+    width: 1.8rem;
+    height: 1.8rem;
+    display: grid;
+    place-items: center;
+  }
+
+  .loombus-persistent-mobile-dock a[data-active="true"]:not([data-primary="true"]) .loombus-persistent-mobile-dock-icon {
+    color: var(--loombus-gold);
+  }
+
+  .loombus-persistent-mobile-dock-label {
+    width: 100%;
+    overflow: hidden;
+    font-size: 0.57rem;
+    font-weight: 780;
+    line-height: 1;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .loombus-persistent-mobile-dock a[data-primary="true"] {
+    position: relative;
+    padding-top: 0;
+    color: var(--loombus-text);
+  }
+
+  .loombus-persistent-mobile-dock a[data-primary="true"] .loombus-persistent-mobile-dock-icon {
+    width: 3.35rem;
+    height: 3.35rem;
+    margin-top: -1.08rem;
+    border: 4px solid var(--loombus-surface);
+    border-radius: 999px;
+    background: var(--loombus-primary-bg);
+    color: var(--loombus-primary-text);
+    box-shadow: 0 0.85rem 2.1rem rgb(0 0 0 / 0.24);
+    transition: transform 150ms ease, filter 150ms ease;
+  }
+
+  .loombus-persistent-mobile-dock a[data-primary="true"]:active .loombus-persistent-mobile-dock-icon {
+    transform: scale(0.94);
+  }
+
+  .loombus-persistent-mobile-dock a[data-primary="true"]:hover .loombus-persistent-mobile-dock-icon,
+  .loombus-persistent-mobile-dock a[data-primary="true"]:focus-visible .loombus-persistent-mobile-dock-icon {
+    filter: brightness(1.05);
+  }
+
+  .loombus-persistent-mobile-dock a[data-primary="true"] .loombus-persistent-mobile-dock-label {
+    margin-top: -0.05rem;
+    color: var(--loombus-text);
+    font-weight: 850;
+  }
+
+  .loombus-persistent-mobile-dock-badge {
+    position: absolute;
+    top: -0.42rem;
+    right: -0.58rem;
+    min-width: 1.18rem;
+    height: 1.18rem;
+    border: 2px solid var(--loombus-surface);
+    border-radius: 999px;
+    padding-inline: 0.18rem;
+    display: grid;
+    place-items: center;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.53rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  body[data-loombus-mobile-menu-open] .loombus-persistent-mobile-dock {
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  .loombus-persistent-mobile-dock a:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--loombus-gold) 58%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+@media (max-width: 374px) {
+  .loombus-persistent-mobile-dock {
+    inset-inline: 0.42rem;
+  }
+
+  .loombus-persistent-mobile-dock-label {
+    font-size: 0.52rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loombus-persistent-mobile-dock,
+  .loombus-persistent-mobile-dock * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
