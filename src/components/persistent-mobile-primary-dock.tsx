@@ -28,6 +28,13 @@ type MessageConversation = {
   hasUnread?: boolean;
 };
 
+type NotificationRow = {
+  id: string;
+  actor_id: string | null;
+  type: string;
+  target_type: string;
+};
+
 const DOCK_ITEMS: readonly DockItem[] = [
   { href: "/discussions", label: "Discussions", icon: MessageCircle },
   { href: "/rooms", label: "Rooms", icon: DoorOpen },
@@ -76,6 +83,14 @@ function composerIsOpen(pathname: string) {
   );
 }
 
+function isMessageNotification(notification: NotificationRow) {
+  return (
+    notification.target_type === "conversation" ||
+    notification.type === "new_message" ||
+    notification.type === "message_reply"
+  );
+}
+
 export function PersistentMobilePrimaryDock() {
   const pathname = usePathname();
   const [userId, setUserId] = useState<string | null>(null);
@@ -101,7 +116,7 @@ export function PersistentMobilePrimaryDock() {
 
       const { data: notificationRows } = await supabase
         .from("notifications")
-        .select("id, actor_id")
+        .select("id, actor_id, type, target_type")
         .eq("user_id", nextUserId)
         .is("read_at", null);
 
@@ -129,9 +144,9 @@ export function PersistentMobilePrimaryDock() {
       if (!mounted || activeUserId !== nextUserId) return;
 
       const notificationUnreadCount = filterBlockedActorNotifications(
-        notificationRows ?? [],
+        (notificationRows ?? []) as NotificationRow[],
         blockedIds
-      ).length;
+      ).filter((notification) => !isMessageNotification(notification)).length;
 
       setInboxCount(notificationUnreadCount + messageUnreadCount);
     }
