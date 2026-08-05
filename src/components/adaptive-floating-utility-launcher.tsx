@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import {
-  HelpCircle,
-  MessageCircle,
+  Bookmark,
+  Bot,
   Palette,
   Sparkles,
   StickyNote,
@@ -14,10 +14,13 @@ import { useEffect, useRef, useState } from "react";
 
 type AppearanceMode = "system" | "dark" | "light";
 
+const QUICK_RAIL_STORAGE_KEY = "loombus:quick-rail-open";
+
 function composerIsOpen(pathname: string) {
   return (
     pathname === "/create" ||
     Boolean(document.querySelector("[data-discussions-create-modal]")) ||
+    document.body.dataset.discussionsCreateOpen === "true" ||
     document.body.dataset.createFocus === "true"
   );
 }
@@ -33,22 +36,39 @@ function readStoredAppearance(): AppearanceMode {
   }
 }
 
+function readStoredQuickRailState() {
+  try {
+    return window.sessionStorage.getItem(QUICK_RAIL_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export function AdaptiveFloatingUtilityLauncher() {
   const pathname = usePathname();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [available, setAvailable] = useState(false);
   const [open, setOpen] = useState(false);
+  const [storageReady, setStorageReady] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [appearance, setAppearance] = useState<AppearanceMode>("system");
-  const [helpHref, setHelpHref] = useState("/support");
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [messagesOpen, setMessagesOpen] = useState(false);
   const [suppressed, setSuppressed] = useState(false);
-  const originalMessageButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     setAppearance(readStoredAppearance());
+    setOpen(readStoredQuickRailState());
+    setStorageReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
+
+    try {
+      window.sessionStorage.setItem(QUICK_RAIL_STORAGE_KEY, String(open));
+    } catch {
+      // The rail still remains open for the current rendered page.
+    }
+  }, [open, storageReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,25 +77,18 @@ export function AdaptiveFloatingUtilityLauncher() {
 
     function sync() {
       if (cancelled) return;
-      const stack = document.querySelector<HTMLElement>(".loombus-floating-utility-stack");
-      const messageButton = stack?.nextElementSibling;
-      const originalMessageButton =
-        messageButton instanceof HTMLButtonElement ? messageButton : null;
-      const helpLink = stack?.querySelector<HTMLAnchorElement>(
-        'a[aria-label="Open help for this page"]'
-      );
-      const badge = originalMessageButton?.querySelector<HTMLElement>("span span");
-      const parsedUnread = Number.parseInt(badge?.textContent?.replace("+", "") ?? "0", 10);
 
-      originalMessageButtonRef.current = originalMessageButton;
-      setAvailable(Boolean(stack && originalMessageButton));
-      setHelpHref(helpLink?.getAttribute("href") || "/support");
-      setUnreadCount(Number.isFinite(parsedUnread) ? parsedUnread : 0);
-      setMessagesOpen(Boolean(document.querySelector('aside[aria-label="Messages preview"]')));
+      const legacyStack = document.querySelector<HTMLElement>(
+        ".loombus-floating-utility-stack"
+      );
+
+      setAvailable(Boolean(legacyStack));
       setSuppressed(composerIsOpen(pathname));
 
-      if (stack && originalMessageButton) {
+      if (legacyStack) {
         document.body.dataset.adaptiveUtilities = "true";
+      } else {
+        delete document.body.dataset.adaptiveUtilities;
       }
     }
 
@@ -86,7 +99,7 @@ export function AdaptiveFloatingUtilityLauncher() {
 
     function locate() {
       sync();
-      if (!originalMessageButtonRef.current && !cancelled) {
+      if (!document.querySelector(".loombus-floating-utility-stack") && !cancelled) {
         locateTimer = window.setTimeout(locate, 120);
       }
     }
@@ -95,9 +108,11 @@ export function AdaptiveFloatingUtilityLauncher() {
     observer.observe(document.body, {
       childList: true,
       subtree: true,
-      characterData: true,
       attributes: true,
-      attributeFilter: ["data-create-focus", "aria-expanded"],
+      attributeFilter: [
+        "data-create-focus",
+        "data-discussions-create-open",
+      ],
     });
 
     locate();
@@ -112,19 +127,7 @@ export function AdaptiveFloatingUtilityLauncher() {
   }, [pathname]);
 
   useEffect(() => {
-    setOpen(false);
-    setAppearanceOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     if (!open) return;
-
-    function handlePointer(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-        setAppearanceOpen(false);
-      }
-    }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -133,89 +136,100 @@ export function AdaptiveFloatingUtilityLauncher() {
       }
     }
 
-    function handleScroll() {
-      if (window.matchMedia("(max-width: 767.98px)").matches) {
-        setOpen(false);
-        setAppearanceOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointer, true);
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    const timer = window.matchMedia("(max-width: 767.98px)").matches
-      ? window.setTimeout(() => {
-          setOpen(false);
-          setAppearanceOpen(false);
-        }, 5600)
-      : 0;
-
-    return () => {
-      document.removeEventListener("pointerdown", handlePointer, true);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("scroll", handleScroll);
-      if (timer) window.clearTimeout(timer);
-    };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open]);
-
-  function closeMenu() {
-    setOpen(false);
-    setAppearanceOpen(false);
-  }
 
   function applyAppearance(mode: AppearanceMode) {
     setAppearance(mode);
+
     try {
       window.localStorage.setItem("loombus:appearance", mode);
     } catch {
       // The selected appearance still applies for this session.
     }
+
     document.documentElement.dataset.loombusTheme = mode;
     window.dispatchEvent(
       new CustomEvent("loombus:appearance-changed", { detail: { mode } })
     );
-    closeMenu();
   }
 
-  function openMessages() {
-    originalMessageButtonRef.current?.click();
-    closeMenu();
+  function openAskLoombus() {
+    window.dispatchEvent(
+      new CustomEvent("loombus:open-global-search", {
+        detail: { mode: "ask" },
+      })
+    );
   }
 
-  if (!available || suppressed || messagesOpen) return null;
+  if (!available || suppressed) return null;
 
   return (
     <div
       ref={rootRef}
-      className="loombus-adaptive-utility-root"
+      className="loombus-persistent-quick-rail"
       data-open={open ? "true" : "false"}
     >
       {open ? (
-        <div className="loombus-adaptive-utility-menu" role="menu" aria-label="Loombus quick tools">
-          <Link
-            href={helpHref}
+        <div
+          className="loombus-persistent-quick-rail-menu"
+          role="menu"
+          aria-label="Loombus quick tools"
+        >
+          <button
+            type="button"
             role="menuitem"
-            onClick={closeMenu}
-            className="loombus-adaptive-utility-item"
+            className="loombus-persistent-quick-rail-item"
+            onClick={openAskLoombus}
           >
-            <span><HelpCircle size={19} strokeWidth={2.1} aria-hidden="true" /></span>
-            <strong>Help</strong>
+            <span>
+              <Bot size={19} strokeWidth={2.1} aria-hidden="true" />
+            </span>
+            <strong>Ask Loombus</strong>
+          </button>
+
+          <Link
+            href="/saved"
+            role="menuitem"
+            className="loombus-persistent-quick-rail-item"
+          >
+            <span>
+              <Bookmark size={19} strokeWidth={2.1} aria-hidden="true" />
+            </span>
+            <strong>Saved</strong>
           </Link>
 
-          <div className="loombus-adaptive-utility-appearance-wrap">
+          <Link
+            href="/stickies"
+            role="menuitem"
+            className="loombus-persistent-quick-rail-item"
+          >
+            <span>
+              <StickyNote size={19} strokeWidth={2.1} aria-hidden="true" />
+            </span>
+            <strong>Stickies</strong>
+          </Link>
+
+          <div className="loombus-persistent-quick-rail-appearance">
             <button
               type="button"
               role="menuitem"
-              className="loombus-adaptive-utility-item"
+              className="loombus-persistent-quick-rail-item"
               onClick={() => setAppearanceOpen((current) => !current)}
               aria-expanded={appearanceOpen}
             >
-              <span><Palette size={19} strokeWidth={2.1} aria-hidden="true" /></span>
+              <span>
+                <Palette size={19} strokeWidth={2.1} aria-hidden="true" />
+              </span>
               <strong>Appearance</strong>
             </button>
+
             {appearanceOpen ? (
-              <div className="loombus-adaptive-appearance-options" aria-label="Choose appearance">
+              <div
+                className="loombus-persistent-quick-rail-appearance-options"
+                aria-label="Choose appearance"
+              >
                 {(["light", "system", "dark"] as const).map((mode) => (
                   <button
                     key={mode}
@@ -230,37 +244,12 @@ export function AdaptiveFloatingUtilityLauncher() {
               </div>
             ) : null}
           </div>
-
-          <Link
-            href="/stickies"
-            role="menuitem"
-            onClick={closeMenu}
-            className="loombus-adaptive-utility-item"
-          >
-            <span><StickyNote size={19} strokeWidth={2.1} aria-hidden="true" /></span>
-            <strong>Stickies</strong>
-          </Link>
-
-          <button
-            type="button"
-            role="menuitem"
-            onClick={openMessages}
-            className="loombus-adaptive-utility-item"
-          >
-            <span className="loombus-adaptive-utility-message-icon">
-              <MessageCircle size={19} strokeWidth={2.1} aria-hidden="true" />
-              {unreadCount > 0 ? (
-                <em>{unreadCount > 9 ? "9+" : unreadCount}</em>
-              ) : null}
-            </span>
-            <strong>Messages</strong>
-          </button>
         </div>
       ) : null}
 
       <button
         type="button"
-        className="loombus-adaptive-utility-launcher"
+        className="loombus-persistent-quick-rail-launcher"
         onClick={() => {
           setOpen((current) => !current);
           if (open) setAppearanceOpen(false);
@@ -268,12 +257,11 @@ export function AdaptiveFloatingUtilityLauncher() {
         aria-label={open ? "Close Loombus quick tools" : "Open Loombus quick tools"}
         aria-expanded={open}
       >
-        {open ? <X size={21} strokeWidth={2.2} aria-hidden="true" /> : <Sparkles size={21} strokeWidth={2.1} aria-hidden="true" />}
-        {unreadCount > 0 && !open ? (
-          <span className="loombus-adaptive-utility-launcher-badge">
-            {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
-        ) : null}
+        {open ? (
+          <X size={21} strokeWidth={2.2} aria-hidden="true" />
+        ) : (
+          <Sparkles size={21} strokeWidth={2.1} aria-hidden="true" />
+        )}
       </button>
     </div>
   );

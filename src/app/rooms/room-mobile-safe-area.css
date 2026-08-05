@@ -1,0 +1,31 @@
+@media (max-width: 899px) {
+  .loombus-rooms-scope {
+    /* iOS reports the notch/status inset through env(). Some Android
+       WebViews draw edge-to-edge while reporting zero, so retain a small
+       native status-bar fallback instead of using an iPhone-only value. */
+    --rooms-mobile-safe-top: max(env(safe-area-inset-top, 0px), 24px);
+  }
+
+  .loombus-rooms-scope .rooms-phase1-hub-header,
+  .loombus-rooms-scope .rooms-phase1-room-header,
+  .loombus-rooms-scope .rooms-phase1-restricted-header {
+    padding-top: calc(var(--rooms-mobile-safe-top) + 9px);
+  }
+
+  .loombus-rooms-scope .rooms-phase1-sidebar {
+    padding-top: var(--rooms-mobile-safe-top);
+  }
+
+  .loombus-rooms-scope .rooms-phase1-sidebar-backdrop {
+    inset-block-start: var(--rooms-mobile-safe-top);
+  }
+}
+
+@media (max-width: 640px) {
+  .loombus-rooms-scope .rooms-phase1-hub-header {
+    padding-top: calc(var(--rooms-mobile-safe-top) + 9px);
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+    padding-bottom: 9px;
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+  }
+}
