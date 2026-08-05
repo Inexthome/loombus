@@ -20,6 +20,7 @@ import "./room-shell-phase1.css";
 import "./room-shell-phase1-route-fixes.css";
 import "./room-feature-rail.css";
 import "./room-feature-host.css";
+import "./room-mobile-safe-area.css";
 
 export default function RoomsLayout({
   children,
