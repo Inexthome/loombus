@@ -56,10 +56,10 @@ function icon(module: ModuleKey): ReactNode {
   return <Landmark aria-hidden="true" />;
 }
 
-function relativeTime(value: string) {
+function relativeTime(value: string, now: number) {
   const time = new Date(value).getTime();
   if (!Number.isFinite(time)) return "Recently";
-  const seconds = Math.max(0, Math.floor((Date.now() - time) / 1000));
+  const seconds = Math.max(0, Math.floor((now - time) / 1000));
   if (seconds < 60) return "Just now";
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes} min ago`;
@@ -78,6 +78,7 @@ export default function RoomActivityClient() {
   const [filter, setFilter] = useState<"all" | ModuleKey>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [loadedAt, setLoadedAt] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     if (!roomId) return;
@@ -94,6 +95,7 @@ export default function RoomActivityClient() {
       const result = (await response.json().catch(() => ({}))) as Payload;
       if (!response.ok) throw new Error(result.error || "Room activity could not load.");
       setPayload(result);
+      setLoadedAt(Date.now());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Room activity could not load.");
     } finally {
@@ -156,7 +158,7 @@ export default function RoomActivityClient() {
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold text-[var(--text)]">{entry.title}</span>
                 {entry.detail ? <span className="mt-1 block truncate text-sm text-[var(--muted)]">{entry.detail}</span> : null}
-                <span className="mt-2 block text-xs text-[var(--muted)]">{relativeTime(entry.occurredAt)}</span>
+                <span className="mt-2 block text-xs text-[var(--muted)]">{relativeTime(entry.occurredAt, loadedAt)}</span>
               </span>
             </Link>
           ))}
