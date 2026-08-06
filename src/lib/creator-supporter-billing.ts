@@ -846,7 +846,7 @@ async function disputePaymentIntentId(dispute: Stripe.Dispute) {
     typeof chargeValue === "string"
       ? await stripe().charges.retrieve(chargeValue)
       : chargeValue;
-  if (!charge || charge.deleted) return null;
+  if (!charge) return null;
   return idOf(charge.payment_intent);
 }
 
