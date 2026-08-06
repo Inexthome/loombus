@@ -31,6 +31,10 @@ type BillingPayload = {
     stripeReady: boolean;
     serviceReady: boolean;
     feeBps: number | null;
+    approvedFeeBps: number;
+    minimumPriceCents: number;
+    maximumPriceCents: number;
+    platformFeeApproved: boolean;
     ready: boolean;
   };
   payout: {
@@ -218,10 +222,9 @@ export function CreatorPaidSupporterManager() {
   const payoutReady = Boolean(
     payload.payout?.details_submitted && payload.payout?.payouts_enabled
   );
-  const feePercent =
-    payload.configuration.feeBps === null
-      ? null
-      : payload.configuration.feeBps / 100;
+  const approvedFeePercent = payload.configuration.approvedFeeBps / 100;
+  const minimumMonthlyPrice = payload.configuration.minimumPriceCents / 100;
+  const maximumMonthlyPrice = payload.configuration.maximumPriceCents / 100;
 
   return (
     <section className="creator-paid-supporter-manager">
@@ -230,7 +233,7 @@ export function CreatorPaidSupporterManager() {
           <p>Creator Supporters · Phase 2B</p>
           <h3>Paid monthly supporter subscriptions</h3>
           <span>
-            Web checkout uses Stripe Connect. Loombus retains the configured platform fee and transfers the remaining subscription revenue to the creator payout account.
+            Web checkout uses Stripe Connect. Loombus retains the approved 15% platform fee and transfers the remaining subscription revenue to the creator payout account.
           </span>
         </div>
         <div className={payload.configuration.ready ? "is-ready" : ""}>
@@ -258,15 +261,17 @@ export function CreatorPaidSupporterManager() {
           <span data-ready={payload.configuration.stripeReady}>Stripe key and webhook</span>
           <span data-ready={payload.configuration.serviceReady}>Supabase service role</span>
           <span data-ready={payload.configuration.automaticTaxEnabled}>Stripe automatic tax decision</span>
-          <span data-ready={payload.configuration.feeBps !== null}>Loombus platform fee</span>
+          <span data-ready={payload.configuration.platformFeeApproved}>
+            Approved 15% Loombus platform fee
+          </span>
         </div>
       ) : null}
 
       <div className="creator-paid-supporter-summary">
         <article>
           <BadgeDollarSign aria-hidden="true" />
-          <strong>{feePercent === null ? "Not set" : `${feePercent}%`}</strong>
-          <span>Loombus platform fee</span>
+          <strong>{approvedFeePercent}%</strong>
+          <span>Approved Loombus platform fee</span>
         </article>
         <article>
           <Banknote aria-hidden="true" />
@@ -323,7 +328,7 @@ export function CreatorPaidSupporterManager() {
           <div>
             <strong>Tier pricing</strong>
             <span>
-              The controlled beta supports USD monthly prices from $1 to $1,000. Existing paid subscriptions must be cancelled before changing their billing contract.
+              The controlled beta supports USD monthly prices from $5 to $1,000. Free tiers remain available. Existing paid subscriptions must be cancelled before changing their billing contract.
             </span>
           </div>
         </div>
@@ -360,8 +365,8 @@ export function CreatorPaidSupporterManager() {
                   <span>$</span>
                   <input
                     type="number"
-                    min="1"
-                    max="1000"
+                    min={minimumMonthlyPrice}
+                    max={maximumMonthlyPrice}
                     step="0.01"
                     value={prices[tier.id] ?? ""}
                     disabled={
