@@ -31,7 +31,7 @@
     "stripe": "^22.2.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.4.2",
+    "@capacitor/cli": "^8.5.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^25",
     "@types/react": "^19",
