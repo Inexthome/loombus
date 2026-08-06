@@ -1,0 +1,287 @@
+.creator-supporter-public-panel {
+  --supporter-page: var(--loombus-page-bg, var(--loombus-bg, #fefbec));
+  --supporter-panel: var(--loombus-surface, #fffdf4);
+  --supporter-text: var(--loombus-text, #201b13);
+  --supporter-muted: var(--loombus-text-muted, #736a5b);
+  --supporter-border: var(--loombus-border, rgba(81, 67, 39, 0.18));
+  width: min(1120px, calc(100% - 2rem));
+  margin: -1rem auto 2rem;
+  border: 1px solid var(--supporter-border);
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, #cbab5b 16%, transparent), transparent 42%),
+    var(--supporter-panel);
+  color: var(--supporter-text);
+}
+
+.creator-supporter-public-panel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.creator-supporter-public-panel > header p {
+  margin: 0 0 0.5rem;
+  color: #a07c28;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.creator-supporter-public-panel h2 {
+  margin: 0;
+  color: var(--supporter-text);
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  letter-spacing: -0.03em;
+}
+
+.creator-supporter-public-panel > header > div:first-child > span {
+  display: block;
+  max-width: 48rem;
+  margin-top: 0.55rem;
+  color: var(--supporter-muted);
+  line-height: 1.6;
+}
+
+.creator-supporter-public-count {
+  display: grid;
+  min-width: 6.5rem;
+  place-items: center;
+  border: 1px solid var(--supporter-border);
+  border-radius: 1rem;
+  padding: 0.7rem;
+  background: color-mix(in srgb, #cbab5b 10%, var(--supporter-page));
+}
+
+.creator-supporter-public-count svg {
+  width: 1rem;
+  height: 1rem;
+  color: #a07c28;
+}
+
+.creator-supporter-public-count strong {
+  margin-top: 0.25rem;
+  color: var(--supporter-text);
+  font-size: 1.2rem;
+}
+
+.creator-supporter-public-count span {
+  color: var(--supporter-muted);
+  font-size: 0.72rem;
+}
+
+.creator-supporter-public-tiers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.creator-supporter-public-tiers > button {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  gap: 0.55rem;
+  border: 1px solid var(--supporter-border);
+  border-radius: 1.1rem;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--supporter-page) 78%, var(--supporter-panel));
+  color: var(--supporter-text);
+  text-align: left;
+}
+
+.creator-supporter-public-tiers > button.is-selected {
+  border-color: #cbab5b;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #cbab5b 14%, transparent);
+}
+
+.creator-supporter-public-tier-check {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: grid;
+  width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border: 1px solid var(--supporter-border);
+  border-radius: 999px;
+}
+
+.creator-supporter-public-tier-check svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.creator-supporter-public-tiers strong {
+  padding-right: 1.7rem;
+  font-size: 1rem;
+}
+
+.creator-supporter-public-tiers p {
+  margin: 0;
+  color: var(--supporter-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.creator-supporter-public-tiers ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.creator-supporter-public-tiers li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  color: var(--supporter-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.creator-supporter-public-tiers li svg,
+.creator-supporter-public-room svg {
+  flex: 0 0 auto;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: 0.12rem;
+  color: #a07c28;
+}
+
+.creator-supporter-public-tiers small.is-current,
+.creator-supporter-public-room {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.3rem 0.5rem;
+  background: color-mix(in srgb, #cbab5b 13%, transparent);
+  color: var(--supporter-text);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.creator-supporter-public-room {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.creator-supporter-public-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.creator-supporter-public-actions button,
+.creator-supporter-public-owner a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.creator-supporter-public-actions button svg,
+.creator-supporter-public-owner svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.creator-supporter-public-actions button.is-primary {
+  border: 0;
+  background: #cbab5b;
+  color: #111;
+}
+
+.creator-supporter-public-actions button.is-secondary {
+  border: 1px solid var(--supporter-border);
+  background: transparent;
+  color: var(--supporter-muted);
+}
+
+.creator-supporter-public-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.creator-supporter-public-owner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  border: 1px solid var(--supporter-border);
+  border-radius: 1rem;
+  padding: 0.8rem;
+  background: color-mix(in srgb, #cbab5b 9%, var(--supporter-page));
+}
+
+.creator-supporter-public-owner span {
+  flex: 1;
+  color: var(--supporter-muted);
+}
+
+.creator-supporter-public-owner a {
+  min-height: auto;
+  border: 1px solid var(--supporter-border);
+  color: var(--supporter-text);
+}
+
+.creator-supporter-public-boundary,
+.creator-supporter-public-message {
+  margin: 0.85rem 0 0;
+  color: var(--supporter-muted);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+.creator-supporter-public-message {
+  color: var(--supporter-text);
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .creator-supporter-public-panel {
+    width: min(100% - 1rem, 1120px);
+    margin-top: -0.5rem;
+    padding: 1rem;
+  }
+
+  .creator-supporter-public-panel > header,
+  .creator-supporter-public-owner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .creator-supporter-public-count {
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.4rem;
+  }
+
+  .creator-supporter-public-count strong {
+    margin: 0;
+  }
+
+  .creator-supporter-public-tiers {
+    grid-template-columns: 1fr;
+  }
+
+  .creator-supporter-public-actions {
+    display: grid;
+  }
+
+  .creator-supporter-public-actions button,
+  .creator-supporter-public-owner a {
+    width: 100%;
+  }
+}

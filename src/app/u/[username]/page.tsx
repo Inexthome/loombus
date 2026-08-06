@@ -1,4 +1,5 @@
 import MarketplacePublicListingsSection from "@/components/marketplace-public-listings-section";
+import { CreatorSupporterPublicPanel } from "@/components/creator-supporter-public-panel";
 import { PublicProfilePrivacyBridge } from "@/components/public-profile-privacy-bridge";
 import PublicRequestsSection from "@/components/public-requests-section";
 import PublicServicesSection from "@/components/public-services-section";
@@ -17,6 +18,7 @@ export default async function UserProfilePage({
     <>
       <PublicProfilePrivacyBridge />
       <div data-public-profile-content>
+        <CreatorSupporterPublicPanel username={username} />
         <PublicServicesSection providerUsername={username} heading="Services" />
         <PublicRequestsSection requesterUsername={username} heading="Open Requests" />
         <MarketplacePublicListingsSection
