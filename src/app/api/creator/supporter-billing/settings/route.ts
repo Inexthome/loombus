@@ -22,6 +22,9 @@ type ProfileAccess = {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const APPROVED_PLATFORM_FEE_BPS = 1500;
+const MINIMUM_PAID_TIER_CENTS = 500;
+const MAXIMUM_PAID_TIER_CENTS = 100000;
 
 function jsonError(message: string, status: number, code?: string) {
   return NextResponse.json(code ? { error: message, code } : { error: message }, {
@@ -45,6 +48,21 @@ function requestOrigin(request: NextRequest) {
 function requestIp(request: NextRequest) {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   return forwarded || request.headers.get("x-real-ip")?.trim() || null;
+}
+
+function approvedBillingConfiguration() {
+  const configuration = getCreatorSupporterBillingConfiguration();
+  const platformFeeApproved =
+    configuration.feeBps === APPROVED_PLATFORM_FEE_BPS;
+
+  return {
+    ...configuration,
+    approvedFeeBps: APPROVED_PLATFORM_FEE_BPS,
+    minimumPriceCents: MINIMUM_PAID_TIER_CENTS,
+    maximumPriceCents: MAXIMUM_PAID_TIER_CENTS,
+    platformFeeApproved,
+    ready: configuration.ready && platformFeeApproved,
+  };
 }
 
 async function authorizedCreator(request: NextRequest) {
@@ -132,7 +150,7 @@ async function ownerPayload(
   const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
 
   return {
-    configuration: getCreatorSupporterBillingConfiguration(),
+    configuration: approvedBillingConfiguration(),
     payout: payoutResult.data ?? null,
     tiers: tierResult.data ?? [],
     subscriptions: (subscriptionResult.data ?? []).map((subscription) => ({
@@ -160,6 +178,14 @@ export async function POST(request: NextRequest) {
 
   try {
     if (action === "start_onboarding") {
+      const configuration = approvedBillingConfiguration();
+      if (!configuration.ready) {
+        return jsonError(
+          "Paid creator subscriptions require the approved 15% Loombus platform fee and completed production billing configuration.",
+          503,
+          "creator_supporter_paid_beta_unavailable"
+        );
+      }
       const result = await createCreatorPayoutOnboarding({
         creatorId: authorized.user.id,
         email: authorized.user.email ?? null,
@@ -192,6 +218,30 @@ export async function POST(request: NextRequest) {
       if (!UUID_PATTERN.test(tierId)) return jsonError("Invalid supporter tier.", 400);
       const priceCents =
         accessMode === "paid" ? Math.round(Number(body.priceCents)) : null;
+
+      if (accessMode === "paid") {
+        const configuration = approvedBillingConfiguration();
+        if (!configuration.ready) {
+          return jsonError(
+            "Paid creator subscriptions require the approved 15% Loombus platform fee and completed production billing configuration.",
+            503,
+            "creator_supporter_paid_beta_unavailable"
+          );
+        }
+        if (
+          !Number.isInteger(priceCents) ||
+          priceCents === null ||
+          priceCents < MINIMUM_PAID_TIER_CENTS ||
+          priceCents > MAXIMUM_PAID_TIER_CENTS
+        ) {
+          return jsonError(
+            "Choose a monthly price between $5 and $1,000.",
+            400,
+            "creator_supporter_price_invalid"
+          );
+        }
+      }
+
       await saveCreatorSupporterTierPricing({
         creatorId: authorized.user.id,
         tierId,
