@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCreatorSupporterBillingConfiguration } from "@/lib/creator-supporter-billing";
 import {
   createMemberPrivacyServiceClient,
   hasBlockRelationship,
@@ -41,42 +42,73 @@ export async function GET(request: NextRequest) {
   if (!creator || !isActiveAccountStatus(creator.account_status)) {
     return jsonError("Creator profile not found.", 404);
   }
-
   if (await hasBlockRelationship(service, creator.id, user.id)) {
     return jsonError("Creator profile not found.", 404);
   }
 
-  const [{ data: entitlement }, { data: program }, { data: tiers }, { data: membership }, supporterCountResult] =
-    await Promise.all([
-      service
-        .from("user_ai_entitlements")
-        .select("tier, ai_assisted_enabled, monthly_summary_limit")
-        .eq("user_id", creator.id)
-        .maybeSingle(),
-      service
-        .from("creator_supporter_programs")
-        .select("creator_id, enabled, headline, welcome_message")
-        .eq("creator_id", creator.id)
-        .eq("enabled", true)
-        .maybeSingle(),
-      service
-        .from("creator_supporter_tiers")
-        .select("id, name, description, benefits, room_id, position")
-        .eq("creator_id", creator.id)
-        .eq("is_active", true)
-        .order("position", { ascending: true }),
-      service
-        .from("creator_supporter_memberships")
-        .select("id, tier_id, status, joined_at")
-        .eq("creator_id", creator.id)
-        .eq("supporter_id", user.id)
-        .maybeSingle(),
-      service
-        .from("creator_supporter_memberships")
-        .select("id", { count: "exact", head: true })
-        .eq("creator_id", creator.id)
-        .eq("status", "active"),
-    ]);
+  const [
+    { data: entitlement },
+    { data: program },
+    { data: tiers },
+    { data: membership },
+    { data: subscription },
+    { data: payout },
+    supporterCountResult,
+    refundResult,
+  ] = await Promise.all([
+    service
+      .from("user_ai_entitlements")
+      .select("tier, ai_assisted_enabled, monthly_summary_limit")
+      .eq("user_id", creator.id)
+      .maybeSingle(),
+    service
+      .from("creator_supporter_programs")
+      .select(
+        "creator_id, enabled, headline, welcome_message, accepting_new_supporters, billing_hold, billing_hold_reason"
+      )
+      .eq("creator_id", creator.id)
+      .eq("enabled", true)
+      .maybeSingle(),
+    service
+      .from("creator_supporter_tiers")
+      .select(
+        "id, name, description, benefits, room_id, position, access_mode, price_cents, currency, billing_interval"
+      )
+      .eq("creator_id", creator.id)
+      .eq("is_active", true)
+      .order("position", { ascending: true }),
+    service
+      .from("creator_supporter_memberships")
+      .select("id, tier_id, status, joined_at")
+      .eq("creator_id", creator.id)
+      .eq("supporter_id", user.id)
+      .maybeSingle(),
+    service
+      .from("creator_supporter_subscriptions")
+      .select(
+        "id, tier_id, status, billing_hold, billing_hold_reason, cancel_at_period_end, current_period_end, amount_cents, currency, last_payment_status"
+      )
+      .eq("creator_id", creator.id)
+      .eq("supporter_id", user.id)
+      .maybeSingle(),
+    service
+      .from("creator_payout_accounts")
+      .select("details_submitted, payouts_enabled")
+      .eq("creator_id", creator.id)
+      .maybeSingle(),
+    service
+      .from("creator_supporter_memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("creator_id", creator.id)
+      .eq("status", "active"),
+    service
+      .from("creator_supporter_refund_requests")
+      .select("id, status")
+      .eq("creator_id", creator.id)
+      .eq("supporter_id", user.id)
+      .eq("status", "pending_review")
+      .maybeSingle(),
+  ]);
 
   const creatorEligible =
     Boolean(creator.is_admin) ||
@@ -99,6 +131,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const billing = getCreatorSupporterBillingConfiguration();
   return NextResponse.json(
     {
       active: true,
@@ -112,6 +145,9 @@ export async function GET(request: NextRequest) {
       program: {
         headline: program.headline,
         welcomeMessage: program.welcome_message,
+        acceptingNewSupporters: program.accepting_new_supporters,
+        billingHold: program.billing_hold,
+        billingHoldReason: program.billing_hold_reason,
       },
       tiers: tiers ?? [],
       membership:
@@ -122,7 +158,31 @@ export async function GET(request: NextRequest) {
               joinedAt: membership.joined_at,
             }
           : null,
+      subscription: subscription
+        ? {
+            id: subscription.id,
+            tierId: subscription.tier_id,
+            status: subscription.status,
+            billingHold: subscription.billing_hold,
+            billingHoldReason: subscription.billing_hold_reason,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            currentPeriodEnd: subscription.current_period_end,
+            amountCents: subscription.amount_cents,
+            currency: subscription.currency,
+            lastPaymentStatus: subscription.last_payment_status,
+          }
+        : null,
       supporterCount: supporterCountResult.count ?? 0,
+      refundRequestPending: Boolean(refundResult.data),
+      paidCheckout: {
+        ready:
+          billing.ready &&
+          Boolean(payout?.details_submitted) &&
+          Boolean(payout?.payouts_enabled) &&
+          program.accepting_new_supporters &&
+          !program.billing_hold,
+        webOnly: true,
+      },
     },
     { headers: { "Cache-Control": "private, no-store" } }
   );

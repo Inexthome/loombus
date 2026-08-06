@@ -17,6 +17,10 @@
       "schedule": "47 13 * * *"
     },
     {
+      "path": "/api/creator/supporter-billing/reconcile",
+      "schedule": "37 13 * * *"
+    },
+    {
       "path": "/api/floor/calls/resolve",
       "schedule": "0 14 * * 1-5"
     }
