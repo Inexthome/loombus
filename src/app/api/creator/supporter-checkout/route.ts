@@ -3,6 +3,7 @@ import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import {
   CreatorSupporterBillingError,
   completeCreatorSupporterCheckoutSession,
+  getCreatorSupporterBillingConfiguration,
   startCreatorSupporterCheckout,
 } from "@/lib/creator-supporter-billing";
 import {
@@ -20,6 +21,9 @@ type ProfileAccess = {
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const APPROVED_PLATFORM_FEE_BPS = 1500;
+const MINIMUM_PAID_TIER_CENTS = 500;
+const MAXIMUM_PAID_TIER_CENTS = 100000;
 
 function jsonError(message: string, status: number, code?: string) {
   return NextResponse.json(code ? { error: message, code } : { error: message }, {
@@ -80,13 +84,47 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid creator subscription selection.", 400);
   }
 
-  const { data: creator } = await authorized.service
-    .from("profiles")
-    .select("id, username, account_status")
-    .eq("id", creatorId)
-    .maybeSingle();
+  const configuration = getCreatorSupporterBillingConfiguration();
+  if (
+    !configuration.ready ||
+    configuration.feeBps !== APPROVED_PLATFORM_FEE_BPS
+  ) {
+    return jsonError(
+      "Paid creator subscriptions are not enabled with the approved 15% Loombus platform fee.",
+      503,
+      "creator_supporter_paid_beta_unavailable"
+    );
+  }
+
+  const [{ data: creator }, { data: tier }] = await Promise.all([
+    authorized.service
+      .from("profiles")
+      .select("id, username, account_status")
+      .eq("id", creatorId)
+      .maybeSingle(),
+    authorized.service
+      .from("creator_supporter_tiers")
+      .select("id, creator_id, access_mode, price_cents, is_active")
+      .eq("id", tierId)
+      .eq("creator_id", creatorId)
+      .maybeSingle(),
+  ]);
+
   if (!creator || !creator.username || !isActiveAccountStatus(creator.account_status)) {
     return jsonError("Creator profile not found.", 404);
+  }
+  if (
+    !tier?.is_active ||
+    tier.access_mode !== "paid" ||
+    !Number.isInteger(tier.price_cents) ||
+    tier.price_cents < MINIMUM_PAID_TIER_CENTS ||
+    tier.price_cents > MAXIMUM_PAID_TIER_CENTS
+  ) {
+    return jsonError(
+      "Choose a paid creator tier priced between $5 and $1,000 per month.",
+      400,
+      "creator_supporter_price_invalid"
+    );
   }
   if (await hasBlockRelationship(authorized.service, creatorId, authorized.user.id)) {
     return jsonError("This creator subscription is unavailable.", 403);
