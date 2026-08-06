@@ -1,0 +1,138 @@
+.creator-supporter-public-price {
+  width: fit-content;
+  color: #a07c28;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.creator-supporter-public-alert {
+  margin: 0.85rem 0 0;
+  border: 1px solid color-mix(in srgb, #cbab5b 65%, var(--supporter-border));
+  border-radius: 0.9rem;
+  padding: 0.7rem;
+  background: color-mix(in srgb, #cbab5b 10%, transparent);
+  color: var(--supporter-text);
+  font-size: 0.78rem;
+}
+
+.creator-supporter-public-subscription {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  border: 1px solid var(--supporter-border);
+  border-radius: 1rem;
+  padding: 0.85rem;
+  background: color-mix(in srgb, var(--supporter-page) 78%, var(--supporter-panel));
+}
+
+.creator-supporter-public-subscription > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.creator-supporter-public-subscription > div:first-child > svg {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  color: #a07c28;
+}
+
+.creator-supporter-public-subscription > div:first-child > span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.creator-supporter-public-subscription strong {
+  color: var(--supporter-text);
+}
+
+.creator-supporter-public-subscription small,
+.creator-supporter-public-subscription > p {
+  margin: 0;
+  color: var(--supporter-muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.creator-supporter-public-subscription > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.creator-supporter-public-subscription button,
+.creator-supporter-public-refund button {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: 1px solid var(--supporter-border);
+  border-radius: 999px;
+  padding: 0.55rem 0.75rem;
+  background: transparent;
+  color: var(--supporter-text);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.creator-supporter-public-subscription button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.creator-supporter-public-subscription button:disabled,
+.creator-supporter-public-refund button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.creator-supporter-public-refund {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+  border: 1px solid var(--supporter-border);
+  border-radius: 1rem;
+  padding: 0.8rem;
+  background: var(--supporter-panel);
+}
+
+.creator-supporter-public-refund label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.creator-supporter-public-refund label > span {
+  color: var(--supporter-muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.creator-supporter-public-refund textarea {
+  width: 100%;
+  border: 1px solid var(--supporter-border);
+  border-radius: 0.8rem;
+  padding: 0.65rem;
+  background: var(--supporter-page) !important;
+  color: var(--supporter-text) !important;
+  resize: vertical;
+}
+
+.creator-supporter-public-refund button {
+  width: fit-content;
+  border: 0;
+  background: #cbab5b;
+  color: #111;
+}
+
+@media (max-width: 700px) {
+  .creator-supporter-public-subscription > div:last-child {
+    display: grid;
+  }
+
+  .creator-supporter-public-subscription button,
+  .creator-supporter-public-refund button {
+    width: 100%;
+  }
+}

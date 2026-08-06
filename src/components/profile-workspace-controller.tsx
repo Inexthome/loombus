@@ -3,7 +3,8 @@
 import { Eye, Link2, Sparkles, User, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CreatorHubPhaseOne } from "@/components/creator-hub-phase-one";
-import { CreatorSupporterProgramManager } from "@/components/creator-supporter-program-manager";
+import { CreatorPaidSupporterManager } from "@/components/creator-paid-supporter-manager";
+import { CreatorSupporterProgramManagerPhase2 } from "@/components/creator-supporter-program-manager-phase2";
 import "@/components/creator-hub-phase-one.css";
 
 type Section = "overview" | "public" | "creator" | "preview";
@@ -89,7 +90,8 @@ export function ProfileWorkspaceController() {
       {active === "creator" ? (
         <div className="grid min-w-0 gap-4">
           <CreatorHubPhaseOne />
-          <CreatorSupporterProgramManager />
+          <CreatorSupporterProgramManagerPhase2 />
+          <CreatorPaidSupporterManager />
         </div>
       ) : null}
     </>
