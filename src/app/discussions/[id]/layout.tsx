@@ -1,9 +1,11 @@
 import { DiscussionFocusedThreadBridge } from "@/components/discussion-focused-thread-bridge";
+import { DiscussionPhaseFourNavigation } from "@/components/discussion-phase-four-navigation";
 import { DiscussionReplyPaginationBridge } from "@/components/discussion-reply-pagination-bridge";
 import { DiscussionThreadWindowDispatcher } from "@/components/discussion-thread-window-dispatcher";
 import "./discussion-detail-v2.css";
 import "./discussion-detail-v2-brand.css";
 import "./discussion-focused-thread.css";
+import "./discussion-phase-four.css";
 import "./discussion-reply-pagination.css";
 
 export default function DiscussionDetailLayout({
@@ -16,6 +18,7 @@ export default function DiscussionDetailLayout({
       <DiscussionThreadWindowDispatcher />
       <DiscussionFocusedThreadBridge />
       <DiscussionReplyPaginationBridge />
+      <DiscussionPhaseFourNavigation />
       {children}
     </>
   );
