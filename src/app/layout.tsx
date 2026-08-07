@@ -28,6 +28,7 @@ import { MobileNavigationShell } from "@/components/mobile-navigation-shell";
 import { NativeBiometricSessionGate } from "@/components/native-biometric-session-gate";
 import { NativePushRegistration } from "@/components/native-push-registration";
 import { PersistentMobilePrimaryDock } from "@/components/persistent-mobile-primary-dock";
+import { PlatformPromptBridge } from "@/components/platform-prompt-bridge";
 import { SessionLifecycleGuard } from "@/components/session-lifecycle-guard";
 
 const siteUrl = "https://loombus.com";
@@ -118,6 +119,7 @@ export default function RootLayout({
           <PersistentMobilePrimaryDock />
         </AppChromeBoundary>
         <RouteClientLayout>{children}</RouteClientLayout>
+        <PlatformPromptBridge />
         <AppChromeBoundary>
           <AdaptiveFloatingUtilityLauncher />
         </AppChromeBoundary>
