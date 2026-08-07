@@ -1,7 +1,6 @@
 import { DiscussionAutoLinker } from "@/components/discussion-auto-linker";
 import { DiscussionFeedRefinements } from "@/components/discussion-feed-refinements";
 import { DiscussionPublishToast } from "@/components/discussion-publish-toast";
-import { DiscussionsAuthorIdentityNormalizer } from "@/components/discussions-author-identity-normalizer";
 import { DiscussionsCreateComposerBridge } from "@/components/discussions-create-composer-bridge";
 import { DiscussionVideoAutoplay } from "@/components/discussion-video-autoplay";
 import "./discussion-feed-media.css";
@@ -19,7 +18,6 @@ export default function DiscussionsLayout({
       <DiscussionFeedRefinements />
       <DiscussionPublishToast />
       <DiscussionVideoAutoplay />
-      <DiscussionsAuthorIdentityNormalizer />
       <DiscussionsCreateComposerBridge />
       {children}
     </div>
