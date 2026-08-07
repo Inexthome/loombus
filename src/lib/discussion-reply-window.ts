@@ -38,6 +38,7 @@ export type DiscussionReplyWindowChildState = {
 
 export type DiscussionReplyWindowStateDetail = {
   discussionId: string;
+  discussionTotalCount: number;
   rootTotalCount: number;
   rootHasMore: boolean;
   rootLoading: boolean;
