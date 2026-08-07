@@ -38,10 +38,12 @@ function mergeReplies(current: Reply[], incoming: Reply[]) {
 export function useDiscussionReplyWindows({
   discussionId,
   currentUserId,
+  pinnedReplyId,
   sort,
 }: {
   discussionId: string;
   currentUserId?: string | null;
+  pinnedReplyId?: string | null;
   sort: DiscussionReplySort;
 }) {
   const [replies, setReplies] = useState<Reply[]>([]);
@@ -80,10 +82,12 @@ export function useDiscussionReplyWindows({
           limit: PAGE_SIZE,
           cursor,
         });
-        const hydrated = await hydrateReplyWindow({
-          replyIds: page.items.map((item) => item.replyId),
-          currentUserId,
-        });
+        const pageReplyIds = page.items.map((item) => item.replyId);
+        const replyIds =
+          reset && pinnedReplyId && !pageReplyIds.includes(pinnedReplyId)
+            ? [...pageReplyIds, pinnedReplyId]
+            : pageReplyIds;
+        const hydrated = await hydrateReplyWindow({ replyIds, currentUserId });
 
         if (generation !== generationRef.current) return;
         if (reset) {
@@ -102,7 +106,15 @@ export function useDiscussionReplyWindows({
       } finally {
         if (generation === generationRef.current) setRootLoading(false);
       }
-    }, [currentUserId, discussionId, mergeHydratedWindow, rootLoading, rootNextCursor, sort]
+    }, [
+      currentUserId,
+      discussionId,
+      mergeHydratedWindow,
+      pinnedReplyId,
+      rootLoading,
+      rootNextCursor,
+      sort,
+    ]
   );
 
   const loadChildPage = useCallback(
@@ -177,7 +189,7 @@ export function useDiscussionReplyWindows({
     void loadRootPage({ reset: true });
   // loadRootPage intentionally excluded because it captures cursor/loading state.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [discussionId, currentUserId, sort]);
+  }, [discussionId, currentUserId, pinnedReplyId, sort]);
 
   useEffect(() => {
     const handleThreadRequest = (event: Event) => {
