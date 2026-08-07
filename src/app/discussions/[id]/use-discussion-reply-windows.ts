@@ -217,6 +217,7 @@ export function useDiscussionReplyWindows({
     reportedReplyIds,
     setReportedReplyIds,
     rootTotalCount,
+    setRootTotalCount,
     rootNextCursor,
     rootLoading,
     rootLoaded,
