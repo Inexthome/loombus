@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getDiscussionChildReplyPage,
   getDiscussionRootReplyPage,
+  getDiscussionVisibleReplyCount,
   type DiscussionReplyCursor,
   type DiscussionReplySort,
 } from "@/lib/discussion-reply-pagination";
@@ -55,6 +56,7 @@ export function useDiscussionReplyWindows({
   const [reactionCounts, setReactionCounts] = useState<Record<string, ReplyReactionCounts>>({});
   const [myReactions, setMyReactions] = useState<Record<string, ReplyReactionType[]>>({});
   const [reportedReplyIds, setReportedReplyIds] = useState<string[]>([]);
+  const [discussionTotalCount, setDiscussionTotalCount] = useState(0);
   const [rootTotalCount, setRootTotalCount] = useState(0);
   const [rootNextCursor, setRootNextCursor] = useState<DiscussionReplyCursor | null>(null);
   const [rootLoading, setRootLoading] = useState(false);
@@ -81,12 +83,15 @@ export function useDiscussionReplyWindows({
 
       try {
         const cursor = reset ? null : rootNextCursor;
-        const page = await getDiscussionRootReplyPage({
-          discussionId,
-          sort,
-          limit: PAGE_SIZE,
-          cursor,
-        });
+        const [page, visibleReplyCount] = await Promise.all([
+          getDiscussionRootReplyPage({
+            discussionId,
+            sort,
+            limit: PAGE_SIZE,
+            cursor,
+          }),
+          reset ? getDiscussionVisibleReplyCount(discussionId) : Promise.resolve(null),
+        ]);
         const pageReplyIds = page.items.map((item) => item.replyId);
         const replyIds =
           reset && pinnedReplyId && !pageReplyIds.includes(pinnedReplyId)
@@ -102,6 +107,7 @@ export function useDiscussionReplyWindows({
           setMyReactions(hydrated.myReactions);
           setReportedReplyIds(hydrated.reportedReplyIds);
           setChildWindows({});
+          setDiscussionTotalCount(visibleReplyCount ?? 0);
         } else {
           mergeHydratedWindow(hydrated);
         }
@@ -189,6 +195,7 @@ export function useDiscussionReplyWindows({
     setReactionCounts({});
     setMyReactions({});
     setReportedReplyIds([]);
+    setDiscussionTotalCount(0);
     setRootTotalCount(0);
     setRootNextCursor(null);
     setRootLoaded(false);
@@ -239,6 +246,7 @@ export function useDiscussionReplyWindows({
     );
     const detail: DiscussionReplyWindowStateDetail = {
       discussionId,
+      discussionTotalCount,
       rootTotalCount,
       rootHasMore: Boolean(rootNextCursor),
       rootLoading,
@@ -250,7 +258,15 @@ export function useDiscussionReplyWindows({
         detail,
       })
     );
-  }, [childWindows, discussionId, rootLoaded, rootLoading, rootNextCursor, rootTotalCount]);
+  }, [
+    childWindows,
+    discussionId,
+    discussionTotalCount,
+    rootLoaded,
+    rootLoading,
+    rootNextCursor,
+    rootTotalCount,
+  ]);
 
   return {
     replies,
@@ -263,6 +279,8 @@ export function useDiscussionReplyWindows({
     setMyReactions,
     reportedReplyIds,
     setReportedReplyIds,
+    discussionTotalCount,
+    setDiscussionTotalCount,
     rootTotalCount,
     setRootTotalCount,
     rootNextCursor,
