@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ProfileMessagePromptBridge } from "@/components/profile-message-prompt-bridge";
 import "./profile-v2-shell.css";
 
 type ProfileLayoutProps = {
@@ -9,6 +10,7 @@ type ProfileLayoutProps = {
 export default function ProfileLayout({ children }: ProfileLayoutProps) {
   return (
     <div className="profile-v2-route">
+      <ProfileMessagePromptBridge />
       <div className="profile-v2-shell">
         <header className="profile-v2-hero">
           <div className="profile-v2-hero-copy">
