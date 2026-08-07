@@ -66,6 +66,20 @@ export function DiscussionFocusedThreadBridge() {
       return parentId && rows.has(parentId) ? parentId : null;
     }
 
+    function ancestorPath(replyId: string) {
+      const path: string[] = [];
+      const visited = new Set<string>();
+      let current: string | null = replyId;
+
+      while (current && !visited.has(current)) {
+        visited.add(current);
+        path.unshift(current);
+        current = parentOf(current);
+      }
+
+      return path;
+    }
+
     function ensureBranchButton(wrapper: HTMLElement, replyId: string) {
       const count = descendantCount(replyId);
       const existing = wrapper.querySelector<HTMLButtonElement>(
@@ -83,7 +97,7 @@ export function DiscussionFocusedThreadBridge() {
       const label = `${count} response${count === 1 ? "" : "s"}`;
       if (existing) {
         existing.textContent = label;
-        existing.setAttribute("aria-label", `Open ${label} in a focused thread`);
+        existing.setAttribute("aria-label", `Open ${label} in a focused point thread`);
         return;
       }
 
@@ -92,7 +106,7 @@ export function DiscussionFocusedThreadBridge() {
       button.className = "discussion-thread-branch-button";
       button.setAttribute(OPEN_BUTTON_ATTR, replyId);
       button.setAttribute(GENERATED_ATTR, "true");
-      button.setAttribute("aria-label", `Open ${label} in a focused thread`);
+      button.setAttribute("aria-label", `Open ${label} in a focused point thread`);
       button.textContent = label;
 
       const signal = footer.querySelector(".discussion-v2-reply-signal");
@@ -103,6 +117,50 @@ export function DiscussionFocusedThreadBridge() {
       } else {
         footer.prepend(button);
       }
+    }
+
+    function ensureContextLabel(wrapper: HTMLElement, visible: boolean) {
+      let label = wrapper.querySelector<HTMLElement>(":scope > .discussion-thread-context-label");
+      if (!visible) {
+        label?.remove();
+        return;
+      }
+
+      if (!label) {
+        label = document.createElement("div");
+        label.className = "discussion-thread-context-label";
+        label.setAttribute(GENERATED_ATTR, "true");
+        wrapper.prepend(label);
+      }
+
+      label.textContent = "Point being discussed";
+    }
+
+    function ensureResponsesHeading(replyList: HTMLElement) {
+      let heading = replyList.querySelector<HTMLElement>(":scope > .discussion-thread-responses-heading");
+
+      if (!activeReplyId) {
+        heading?.remove();
+        return;
+      }
+
+      if (!heading) {
+        heading = document.createElement("div");
+        heading.className = "discussion-thread-responses-heading";
+        heading.setAttribute(GENERATED_ATTR, "true");
+        replyList.append(heading);
+      }
+
+      const direct = directChildCount(activeReplyId);
+      heading.replaceChildren();
+
+      const copy = document.createElement("div");
+      const eyebrow = document.createElement("span");
+      eyebrow.textContent = "Responses to this point";
+      const count = document.createElement("strong");
+      count.textContent = `${direct} direct response${direct === 1 ? "" : "s"}`;
+      copy.append(eyebrow, count);
+      heading.append(copy);
     }
 
     function ensureFocusBanner(replyList: HTMLElement) {
@@ -126,28 +184,65 @@ export function DiscussionFocusedThreadBridge() {
       const direct = directChildCount(activeReplyId);
       const total = descendantCount(activeReplyId);
       const parentId = parentOf(activeReplyId);
+      const path = ancestorPath(activeReplyId);
+      const depth = Math.max(0, path.length - 1);
 
       banner.replaceChildren();
+
+      const main = document.createElement("div");
+      main.className = "discussion-thread-focus-main";
+
+      const breadcrumbs = document.createElement("nav");
+      breadcrumbs.className = "discussion-thread-breadcrumbs";
+      breadcrumbs.setAttribute("aria-label", "Point thread path");
+
+      const allCrumb = document.createElement("button");
+      allCrumb.type = "button";
+      allCrumb.dataset.loombusThreadAll = "true";
+      allCrumb.textContent = "Replies";
+      breadcrumbs.append(allCrumb);
+
+      path.forEach((replyId, index) => {
+        const separator = document.createElement("span");
+        separator.setAttribute("aria-hidden", "true");
+        separator.textContent = "/";
+        breadcrumbs.append(separator);
+
+        const crumb = document.createElement("button");
+        crumb.type = "button";
+        crumb.dataset.loombusThreadCrumb = replyId;
+        crumb.disabled = replyId === activeReplyId;
+        crumb.textContent = index === 0 ? "Point" : `Response ${index}`;
+        breadcrumbs.append(crumb);
+      });
 
       const copy = document.createElement("div");
       copy.className = "discussion-thread-focus-copy";
 
       const eyebrow = document.createElement("span");
-      eyebrow.textContent = "Focused thread";
+      eyebrow.textContent = "Point thread";
 
       const title = document.createElement("strong");
-      title.textContent = `${direct} direct response${direct === 1 ? "" : "s"}`;
+      title.textContent = depth === 0 ? "Focused on one discussion point" : `Focused ${depth} level${depth === 1 ? "" : "s"} into this point`;
 
       const detail = document.createElement("p");
       detail.textContent =
         total === direct
-          ? "This response and its direct conversation are isolated from the main reply stream."
-          : `${total} total responses continue through this branch. Open any response count to move deeper without adding indentation.`;
+          ? `${direct} direct response${direct === 1 ? "" : "s"} to the point below.`
+          : `${direct} direct response${direct === 1 ? "" : "s"}, with ${total} total response${total === 1 ? "" : "s"} continuing through this branch.`;
 
       copy.append(eyebrow, title, detail);
+      main.append(breadcrumbs, copy);
 
       const actions = document.createElement("div");
       actions.className = "discussion-thread-focus-actions";
+
+      const respondButton = document.createElement("button");
+      respondButton.type = "button";
+      respondButton.dataset.loombusThreadRespond = activeReplyId;
+      respondButton.className = "discussion-thread-primary-action";
+      respondButton.textContent = "Respond to this point";
+      actions.append(respondButton);
 
       if (parentId) {
         const parentButton = document.createElement("button");
@@ -163,7 +258,7 @@ export function DiscussionFocusedThreadBridge() {
       allButton.textContent = "Back to replies";
       actions.append(allButton);
 
-      banner.append(copy, actions);
+      banner.append(main, actions);
     }
 
     function applyThreadView() {
@@ -189,6 +284,7 @@ export function DiscussionFocusedThreadBridge() {
           wrapper.removeAttribute("data-thread-child");
 
           if (!activeReplyId) {
+            ensureContextLabel(wrapper, false);
             wrapper.hidden = !isRoot(replyId);
             continue;
           }
@@ -196,15 +292,34 @@ export function DiscussionFocusedThreadBridge() {
           const isContext = replyId === activeReplyId;
           const isDirectChild = parentOf(replyId) === activeReplyId;
           wrapper.hidden = !isContext && !isDirectChild;
+          ensureContextLabel(wrapper, isContext);
 
           if (isContext) wrapper.dataset.threadContext = "true";
           if (isDirectChild) wrapper.dataset.threadChild = "true";
         }
 
         ensureFocusBanner(replyList);
+        ensureResponsesHeading(replyList);
       } finally {
         applying = false;
       }
+    }
+
+    function focusThread(replyId: string) {
+      if (!rows.has(replyId)) return;
+      activeReplyId = replyId;
+      applyThreadView();
+      document
+        .querySelector(".discussion-thread-focus-banner")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function showAllReplies() {
+      activeReplyId = null;
+      applyThreadView();
+      document
+        .querySelector(".discussion-v2-replies-section")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     function scheduleHierarchyReload() {
@@ -236,33 +351,38 @@ export function DiscussionFocusedThreadBridge() {
       const openButton = target.closest<HTMLButtonElement>(`[${OPEN_BUTTON_ATTR}]`);
       if (openButton) {
         const replyId = openButton.getAttribute(OPEN_BUTTON_ATTR);
-        if (!replyId || !rows.has(replyId)) return;
-        activeReplyId = replyId;
-        applyThreadView();
-        document
-          .querySelector(".discussion-thread-focus-banner")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (replyId) focusThread(replyId);
+        return;
+      }
+
+      const crumbButton = target.closest<HTMLButtonElement>("[data-loombus-thread-crumb]");
+      if (crumbButton) {
+        const replyId = crumbButton.dataset.loombusThreadCrumb;
+        if (replyId) focusThread(replyId);
         return;
       }
 
       const parentButton = target.closest<HTMLButtonElement>("[data-loombus-thread-parent]");
       if (parentButton) {
         const parentId = parentButton.dataset.loombusThreadParent;
-        if (!parentId || !rows.has(parentId)) return;
-        activeReplyId = parentId;
-        applyThreadView();
-        document
-          .querySelector(".discussion-thread-focus-banner")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (parentId) focusThread(parentId);
+        return;
+      }
+
+      const respondButton = target.closest<HTMLButtonElement>("[data-loombus-thread-respond]");
+      if (respondButton) {
+        const replyId = respondButton.dataset.loombusThreadRespond;
+        if (!replyId) return;
+        const wrapper = document.getElementById(`reply-${replyId}`);
+        const originalRespond = Array.from(wrapper?.querySelectorAll<HTMLButtonElement>("button") ?? []).find(
+          (button) => button.textContent?.trim() === "Respond to point"
+        );
+        originalRespond?.click();
         return;
       }
 
       if (target.closest("[data-loombus-thread-all]")) {
-        activeReplyId = null;
-        applyThreadView();
-        document
-          .querySelector(".discussion-v2-replies-section")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        showAllReplies();
       }
     };
 
