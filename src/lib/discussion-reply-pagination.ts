@@ -58,6 +58,14 @@ function rpcCursor(cursor?: DiscussionReplyCursor | null) {
   };
 }
 
+export async function getDiscussionVisibleReplyCount(discussionId: string) {
+  const { data, error } = await supabase.rpc("get_discussion_visible_reply_count", {
+    p_discussion_id: discussionId,
+  });
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
 export async function getDiscussionRootReplyPage({
   discussionId,
   sort = "best",
