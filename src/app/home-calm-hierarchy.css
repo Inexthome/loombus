@@ -1,0 +1,117 @@
+/* Calm hierarchy pass for /home.
+   Preserve every Home capability while reducing card-on-card competition. */
+
+.home-v2-page {
+  --home-calm-rule: color-mix(in srgb, var(--loombus-border) 74%, transparent);
+}
+
+/* The page itself should read as one editorial canvas, not a stack of widgets. */
+.home-v2-page .home-v2-section,
+.home-v2-page .home-v2-side,
+.home-v2-page .home-v2-gate {
+  box-shadow: none;
+}
+
+.home-v2-page .home-v2-section {
+  border-color: transparent;
+  background: transparent;
+  border-radius: 0;
+  padding-inline: 0;
+}
+
+.home-v2-page .home-v2-section + .home-v2-section {
+  border-top: 1px solid var(--home-calm-rule);
+}
+
+/* Live Signal Brief remains the strongest operational surface. */
+.home-v2-page .home-v2-section:has(.home-v2-attention) {
+  border: 1px solid color-mix(in srgb, var(--loombus-gold) 24%, var(--loombus-border));
+  border-radius: 1.55rem;
+  background: color-mix(in srgb, var(--loombus-surface) 96%, var(--loombus-page-bg) 4%);
+  padding: 1.1rem;
+}
+
+.home-v2-page .home-v2-attention {
+  box-shadow: none;
+  background: transparent;
+}
+
+.home-v2-page .home-v2-attention:not(.is-urgent) {
+  border-color: var(--home-calm-rule);
+}
+
+/* Featured / continue surfaces stay useful but no longer feel like another hero. */
+.home-v2-page .home-v2-featured {
+  border-color: var(--home-calm-rule);
+  box-shadow: none;
+  background: color-mix(in srgb, var(--loombus-surface) 82%, transparent);
+}
+
+.home-v2-page .home-v2-featured-art {
+  min-height: 9.5rem;
+}
+
+/* Secondary rails become quiet navigation rather than full-weight panels. */
+.home-v2-page .home-v2-side {
+  border-color: var(--home-calm-rule);
+  background: color-mix(in srgb, var(--loombus-surface-muted) 60%, transparent);
+}
+
+.home-v2-page .home-v2-row,
+.home-v2-page .home-v2-side-action,
+.home-v2-page .home-v2-step,
+.home-v2-page .home-v2-empty {
+  box-shadow: none;
+  border-color: transparent;
+  background: transparent;
+}
+
+.home-v2-page .home-v2-row + .home-v2-row,
+.home-v2-page .home-v2-side-action + .home-v2-side-action,
+.home-v2-page .home-v2-step + .home-v2-step {
+  border-top: 1px solid var(--home-calm-rule);
+  border-radius: 0;
+}
+
+.home-v2-page .home-v2-row:hover,
+.home-v2-page .home-v2-side-action:hover {
+  transform: none;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--loombus-gold) 7%, transparent);
+}
+
+@media (min-width: 768px) {
+  .home-v2-page .home-v2-header {
+    padding-block: 0.5rem 0.85rem;
+  }
+
+  .home-v2-page .home-v2-section {
+    padding-block: 1.35rem;
+  }
+
+  .home-v2-page .home-v2-section:has(.home-v2-attention) {
+    padding: 1.2rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .home-v2-page .home-v2-section:not(:has(.home-v2-attention)) {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .home-v2-page .home-v2-section:has(.home-v2-attention) {
+    width: calc(100vw - 2rem) !important;
+    max-width: calc(100vw - 2rem) !important;
+    margin-inline: auto;
+    padding: 0.85rem;
+  }
+
+  .home-v2-page .home-v2-featured-art {
+    min-height: 8rem;
+  }
+
+  .home-v2-page .home-v2-side {
+    border-radius: 1.2rem;
+  }
+}
