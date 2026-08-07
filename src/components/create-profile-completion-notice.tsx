@@ -54,7 +54,7 @@ export function CreateProfileCompletionNotice() {
     <aside
       role="status"
       aria-live="polite"
-      className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+1rem)] z-[115] w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-[color-mix(in_srgb,var(--loombus-gold)_52%,var(--loombus-border))] bg-[color-mix(in_srgb,var(--loombus-surface)_96%,transparent)] px-4 py-3 text-[var(--loombus-text)] shadow-2xl shadow-black/20 backdrop-blur-xl"
+      className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+1rem)] z-[115] w-[min(92vw,42rem)] -translate-x-1/2 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-4 py-3 text-[var(--loombus-text)] shadow-2xl shadow-black/20 backdrop-blur-xl"
     >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]">
