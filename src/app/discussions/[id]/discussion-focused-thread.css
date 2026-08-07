@@ -1,0 +1,105 @@
+.discussion-thread-branch-button {
+  border: 1px solid rgba(180, 83, 9, 0.28) !important;
+  background: rgba(180, 83, 9, 0.07) !important;
+  color: #b45309 !important;
+  border-radius: 999px !important;
+  padding: 0.45rem 0.65rem !important;
+  font-weight: 800 !important;
+}
+
+.discussion-thread-branch-button:hover {
+  border-color: rgba(180, 83, 9, 0.5) !important;
+  background: rgba(180, 83, 9, 0.12) !important;
+  color: #92400e !important;
+}
+
+.discussion-thread-focus-banner {
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-surface);
+  color: var(--loombus-text);
+  border-radius: 1.35rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  scroll-margin-top: 7rem;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.07);
+}
+
+.discussion-thread-focus-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.discussion-thread-focus-copy > span {
+  color: #b45309;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.discussion-thread-focus-copy > strong {
+  color: var(--loombus-text);
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+}
+
+.discussion-thread-focus-copy > p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--loombus-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.discussion-thread-focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.discussion-thread-focus-actions button {
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text-muted);
+  border-radius: 999px;
+  min-height: 2.35rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.discussion-thread-focus-actions button:hover {
+  border-color: rgba(180, 83, 9, 0.4);
+  color: #b45309;
+}
+
+.discussion-thread-focused-list > [data-thread-context="true"] {
+  order: -1;
+}
+
+.discussion-thread-focused-list > [data-thread-context="true"] > .discussion-v2-reply-card {
+  border-color: rgba(180, 83, 9, 0.38);
+  box-shadow: 0 20px 60px rgba(180, 83, 9, 0.08);
+}
+
+.discussion-thread-focused-list > [data-thread-child="true"] > .discussion-v2-reply-card {
+  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.07);
+}
+
+@media (min-width: 720px) {
+  .discussion-thread-focus-banner {
+    padding: 1rem 1.15rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .discussion-thread-focus-actions {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+  }
+}
