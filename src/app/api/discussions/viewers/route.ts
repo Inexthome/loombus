@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   const [{ data: rows, error }, { data: blockRows }, { count }] = await Promise.all([
     service
       .from("discussion_views")
-      .select("viewer_id, identity_visible, viewed_at")
+      .select("viewer_id, viewed_at")
       .eq("discussion_id", discussionId)
       .not("viewer_id", "is", null)
       .neq("viewer_id", discussion.user_id)
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
 
   const latestByViewer = new Map<
     string,
-    { viewer_id: string; identity_visible: boolean; viewed_at: string }
+    { viewer_id: string; viewed_at: string }
   >();
   for (const row of rows ?? []) {
     if (!row.viewer_id || blockedIds.has(row.viewer_id) || latestByViewer.has(row.viewer_id)) {
@@ -86,21 +86,18 @@ export async function GET(request: NextRequest) {
     if (latestByViewer.size >= 30) break;
   }
 
-  const visibleIds = [...latestByViewer.values()]
-    .filter((row) => row.identity_visible)
-    .map((row) => row.viewer_id);
-  const { data: profiles } = visibleIds.length
+  const viewerIds = [...latestByViewer.keys()];
+  const { data: profiles } = viewerIds.length
     ? await service
         .from("profiles")
         .select("id, full_name, username, avatar_url")
-        .in("id", visibleIds)
+        .in("id", viewerIds)
     : { data: [] };
   const profileMap = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
 
   const viewers = [...latestByViewer.values()].map((row) => ({
     viewedAt: row.viewed_at,
-    privateViewer: !row.identity_visible,
-    profile: row.identity_visible ? profileMap.get(row.viewer_id) ?? null : null,
+    profile: profileMap.get(row.viewer_id) ?? null,
   }));
 
   return NextResponse.json(

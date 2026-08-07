@@ -15,7 +15,6 @@ import {
   type Profile,
   discussionBodyToSafeHtml,
   formatAttachmentFileSize,
-  getProfileHandle,
   getProfileName,
 } from "./discussion-detail-v2-model";
 
@@ -50,7 +49,6 @@ export function RichText({ content, className = "" }: { content: string; classNa
 export function AuthorIdentity({
   profile,
   size = "md",
-  compact = false,
 }: {
   profile?: Profile | null;
   size?: "sm" | "md" | "lg";
@@ -61,7 +59,6 @@ export function AuthorIdentity({
       <ProfileAvatar profile={profile ?? null} size={size} />
       <span className="discussion-v2-author-copy">
         <span className="discussion-v2-author-name">{getProfileName(profile)}</span>
-        {!compact ? <span className="discussion-v2-author-handle">{getProfileHandle(profile)}</span> : null}
       </span>
     </>
   );

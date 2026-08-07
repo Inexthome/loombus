@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, LockKeyhole } from "lucide-react";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,7 +9,6 @@ import { supabase } from "@/lib/supabase/client";
 
 type Viewer = {
   viewedAt: string;
-  privateViewer: boolean;
   profile: {
     id: string;
     full_name: string | null;
@@ -85,8 +84,8 @@ export function DiscussionViewersPanel() {
             <h2 className="mt-2 text-2xl font-black">Who viewed this discussion.</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--loombus-text-muted)]">
               Reader identities are visible only to the discussion owner and administrators.
-              Views are deduplicated for 24 hours. Members who disable viewer identity
-              appear as Private viewer.
+              Views are deduplicated for 24 hours. A private profile still shows the member&apos;s
+              basic public identity here while the rest of that profile remains private.
             </p>
           </div>
           <span className="inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] px-3 py-2 text-sm font-bold text-[var(--loombus-text-muted)]">
@@ -97,35 +96,17 @@ export function DiscussionViewersPanel() {
         {viewers.length ? (
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {viewers.map((viewer, index) => {
-              if (viewer.privateViewer || !viewer.profile) {
-                return (
-                  <article
-                    key={`private-${viewer.viewedAt}-${index}`}
-                    className="flex items-center gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3"
-                  >
-                    <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--loombus-page-bg)] text-[var(--loombus-text-muted)]">
-                      <LockKeyhole className="size-4" />
-                    </span>
-                    <div>
-                      <strong className="block text-sm">Private viewer</strong>
-                      <span className="mt-1 block text-xs text-[var(--loombus-text-muted)]">
-                        {formatViewedAt(viewer.viewedAt)}
-                      </span>
-                    </div>
-                  </article>
-                );
-              }
-
               const profile = viewer.profile;
               const name =
-                profile.full_name?.trim() || profile.username?.trim() || "Loombus member";
-              const href = profile.username
+                profile?.full_name?.trim() ||
+                (profile?.username?.trim() ? `@${profile.username.trim()}` : "Loombus member");
+              const href = profile?.username
                 ? `/u/${encodeURIComponent(profile.username)}`
                 : "/people";
 
               return (
                 <Link
-                  key={profile.id}
+                  key={profile?.id ?? `${viewer.viewedAt}-${index}`}
                   href={href}
                   className="flex items-center gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-muted)] p-3 transition hover:border-[var(--loombus-gold)]"
                 >
