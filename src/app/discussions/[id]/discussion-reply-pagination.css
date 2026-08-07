@@ -1,0 +1,35 @@
+.discussion-reply-pagination-controls {
+  display: flex;
+  justify-content: center;
+  padding: 0.45rem 0 0.25rem;
+}
+
+.discussion-reply-pagination-button {
+  min-height: 2.65rem;
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-surface);
+  color: var(--loombus-text);
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  transition: border-color 160ms ease, transform 160ms ease, opacity 160ms ease;
+}
+
+.discussion-reply-pagination-button:hover:not(:disabled) {
+  border-color: rgba(180, 83, 9, 0.45);
+  transform: translateY(-1px);
+}
+
+.discussion-reply-pagination-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+@media (max-width: 719px) {
+  .discussion-reply-pagination-button {
+    width: 100%;
+  }
+}
