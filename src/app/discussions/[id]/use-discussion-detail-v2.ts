@@ -36,10 +36,10 @@ import {
   type RelatedDiscussion,
   type Reply,
   type ReplyReactionCounts,
-  type ReplyReactionRow,
   type ReplyReactionType,
   getReactionTotal,
 } from "./discussion-detail-v2-model";
+import { useDiscussionReplyWindows } from "./use-discussion-reply-windows";
 
 export type ReplySort = "best" | "newest" | "oldest";
 export type ReportTarget =
@@ -99,11 +99,9 @@ export function useDiscussionDetailV2() {
 
   const [discussion, setDiscussion] = useState<Discussion | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [replies, setReplies] = useState<Reply[]>([]);
   const [relatedDiscussions, setRelatedDiscussions] = useState<RelatedDiscussion[]>([]);
   const [discussionTags, setDiscussionTags] = useState<string[]>([]);
   const [discussionAttachments, setDiscussionAttachments] = useState<DiscussionAttachment[]>([]);
-  const [replyProfiles, setReplyProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -118,12 +116,31 @@ export function useDiscussionDetailV2() {
   const [editingReplyBody, setEditingReplyBody] = useState("");
   const [replySort, setReplySort] = useState<ReplySort>("best");
 
-  const [replyReactionCounts, setReplyReactionCounts] = useState<
-    Record<string, ReplyReactionCounts>
-  >({});
-  const [myReplyReactions, setMyReplyReactions] = useState<
-    Record<string, ReplyReactionType[]>
-  >({});
+  const {
+    replies,
+    setReplies,
+    profiles: replyProfiles,
+    setProfiles: setReplyProfiles,
+    reactionCounts: replyReactionCounts,
+    setReactionCounts: setReplyReactionCounts,
+    myReactions: myReplyReactions,
+    setMyReactions: setMyReplyReactions,
+    reportedReplyIds,
+    setReportedReplyIds,
+    rootTotalCount,
+    setRootTotalCount,
+    rootNextCursor,
+    rootLoading,
+    rootLoaded,
+    loadMoreRoots,
+    childWindows,
+    loadMoreChildren,
+  } = useDiscussionReplyWindows({
+    discussionId: discussion ? id : "",
+    currentUserId,
+    pinnedReplyId: discussion?.pinned_reply_id ?? null,
+    sort: replySort,
+  });
 
   const [isSaved, setIsSaved] = useState(false);
   const [savedBookmarkId, setSavedBookmarkId] = useState<string | null>(null);
@@ -133,7 +150,6 @@ export function useDiscussionDetailV2() {
   const [isStickied, setIsStickied] = useState(false);
 
   const [reportedDiscussion, setReportedDiscussion] = useState(false);
-  const [reportedReplyIds, setReportedReplyIds] = useState<string[]>([]);
   const [reportTarget, setReportTarget] = useState<ReportTarget>(null);
   const [reportReason, setReportReason] = useState<ReportReason>(DEFAULT_REPORT_REASON);
 
@@ -223,15 +239,9 @@ export function useDiscussionDetailV2() {
     const discussionRow = discussionData as Discussion;
     setDiscussion(discussionRow);
 
-    const [authorResult, repliesResult, summaryResult, tagsResult, attachmentResult, relatedResult, viewerResult] =
+    const [authorResult, summaryResult, tagsResult, attachmentResult, relatedResult, viewerResult] =
       await Promise.all([
         supabase.from("profiles").select("*").eq("id", discussionRow.user_id).single(),
-        supabase
-          .from("replies")
-          .select("*")
-          .eq("discussion_id", id)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: true }),
         supabase
           .from("discussion_summaries")
           .select("id, discussion_id, summary, model_name, source_reply_count, generated_at")
@@ -275,34 +285,17 @@ export function useDiscussionDetailV2() {
       }
     }
 
-    const visibleReplies = ((repliesResult.data ?? []) as Reply[]).filter(
-      (reply) => !hiddenProfileIds.has(reply.user_id)
-    );
     const visibleRelated = ((relatedResult.data ?? []) as RelatedDiscussion[]).filter(
       (item) => !hiddenProfileIds.has(item.user_id)
     );
-    const replyUserIds = [...new Set(visibleReplies.map((reply) => reply.user_id))];
-    const replyProfileMap: Record<string, Profile> = {};
-
-    if (replyUserIds.length > 0) {
-      const { data: replyProfileData } = await supabase
-        .from("profiles")
-        .select("*")
-        .in("id", replyUserIds);
-      for (const replyProfile of (replyProfileData ?? []) as Profile[]) {
-        replyProfileMap[replyProfile.id] = replyProfile;
-      }
-    }
 
     setProfile((authorResult.data as Profile | null) ?? null);
-    setReplies(visibleReplies);
     setDiscussionSummary((summaryResult.data as DiscussionSummary | null) ?? null);
     setDiscussionTags(
       ((tagsResult.data ?? []) as Array<{ tag: string }>).map((row) => row.tag)
     );
     setDiscussionAttachments((attachmentResult.data ?? []) as DiscussionAttachment[]);
     setRelatedDiscussions(visibleRelated);
-    setReplyProfiles(replyProfileMap);
     setCurrentUserId(viewer?.id ?? null);
 
     if (!viewer) {
@@ -357,42 +350,6 @@ export function useDiscussionDetailV2() {
     setIsSaved(Boolean(savedResult.data));
     setSavedBookmarkId((savedResult.data as { id?: string } | null)?.id ?? null);
     setReportedDiscussion(Boolean(reportResult.data));
-
-    const replyIds = visibleReplies.map((reply) => reply.id);
-    if (replyIds.length > 0) {
-      const [reactionResult, replyReportResult] = await Promise.all([
-        supabase
-          .from("reply_reactions")
-          .select("reply_id, user_id, reaction_type")
-          .in("reply_id", replyIds),
-        supabase
-          .from("reports")
-          .select("reply_id")
-          .eq("reporter_id", viewer.id)
-          .in("reply_id", replyIds),
-      ]);
-
-      const reactionCounts: Record<string, ReplyReactionCounts> = {};
-      const viewerReactions: Record<string, ReplyReactionType[]> = {};
-      for (const row of (reactionResult.data ?? []) as ReplyReactionRow[]) {
-        const counts = reactionCounts[row.reply_id] ?? {};
-        counts[row.reaction_type] = (counts[row.reaction_type] ?? 0) + 1;
-        reactionCounts[row.reply_id] = counts;
-        if (row.user_id === viewer.id) {
-          viewerReactions[row.reply_id] = [
-            ...(viewerReactions[row.reply_id] ?? []),
-            row.reaction_type,
-          ];
-        }
-      }
-      setReplyReactionCounts(reactionCounts);
-      setMyReplyReactions(viewerReactions);
-      setReportedReplyIds(
-        ((replyReportResult.data ?? []) as Array<{ reply_id: string | null }>)
-          .map((row) => row.reply_id)
-          .filter((replyId): replyId is string => Boolean(replyId))
-      );
-    }
 
     const subscriptionKey = getSubscriptionDisplayKey(resolvedEntitlement);
     if (["premium", "premium_plus", "admin"].includes(subscriptionKey)) {
@@ -478,6 +435,7 @@ export function useDiscussionDetailV2() {
     const token = await requireAccessToken();
     if (!token) return;
     setWorkingAction("reply");
+    const wasTopLevelReply = !referencedReply;
 
     try {
       const response = await fetch("/api/replies/create", {
@@ -504,6 +462,7 @@ export function useDiscussionDetailV2() {
 
       if (result.reply) {
         setReplies((current) => [...current, result.reply as Reply]);
+        if (wasTopLevelReply) setRootTotalCount((current) => current + 1);
         const { data: profileData } = await supabase
           .from("profiles")
           .select("*")
@@ -587,6 +546,7 @@ export function useDiscussionDetailV2() {
     if (!window.confirm("Delete this reply? This cannot be undone.")) return;
     const token = await requireAccessToken();
     if (!token) return;
+    const deletingReply = replies.find((reply) => reply.id === replyId) ?? null;
     setWorkingAction(`delete:${replyId}`);
     try {
       const response = await fetch("/api/replies/delete", {
@@ -600,6 +560,9 @@ export function useDiscussionDetailV2() {
         return;
       }
       setReplies((current) => current.filter((reply) => reply.id !== replyId));
+      if (deletingReply && !deletingReply.referenced_reply_id) {
+        setRootTotalCount((current) => Math.max(0, current - 1));
+      }
       setNotice("Reply deleted.");
       broadcastDiscussionMetricsChanged(id);
     } finally {
@@ -1029,6 +992,13 @@ export function useDiscussionDetailV2() {
     canManageDiscussion,
     pinnedReply,
     sortedReplies,
+    rootTotalCount,
+    rootNextCursor,
+    rootLoading,
+    rootLoaded,
+    loadMoreRoots,
+    childWindows,
+    loadMoreChildren,
     replyBody,
     setReplyBody,
     pastedReplyCharacterCount,
