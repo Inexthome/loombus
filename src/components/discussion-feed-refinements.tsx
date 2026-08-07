@@ -97,6 +97,29 @@ function renameActivityTerminology(root: Element) {
   }
 }
 
+function normalizeAuthorIdentity(root: Element) {
+  for (const article of Array.from(root.querySelectorAll<HTMLElement>("article"))) {
+    const authorLink = Array.from(
+      article.querySelectorAll<HTMLAnchorElement>('a[href^="/discussions/"]')
+    ).find((anchor) => {
+      if (anchor.querySelector("h2")) return false;
+      const paragraphs = anchor.querySelectorAll("p");
+      return paragraphs.length >= 2;
+    });
+
+    if (!authorLink) continue;
+    const lines = authorLink.querySelectorAll<HTMLParagraphElement>("p");
+    const meta = lines[1];
+    if (!meta) continue;
+
+    const current = meta.textContent?.trim() ?? "";
+    const normalized = current.replace(/^@[A-Za-z0-9_]+\s*·\s*/, "");
+    if (normalized && normalized !== current) {
+      meta.textContent = normalized;
+    }
+  }
+}
+
 function styleExactTabs(root: Element, selectedLabel: string | null) {
   for (const label of ALL_TAB_LABELS) {
     const button = findTabButton(root, label);
@@ -181,6 +204,7 @@ export function DiscussionFeedRefinements() {
       applying = true;
       try {
         renameActivityTerminology(root);
+        normalizeAuthorIdentity(root);
         const articles = Array.from(root.querySelectorAll<HTMLElement>("article"));
         let visibleCount = 0;
 
