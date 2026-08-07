@@ -76,7 +76,7 @@ export function useDiscussionReplyWindows({
 
   const loadRootPage = useCallback(
     async ({ reset = false }: { reset?: boolean } = {}) => {
-      if (!discussionId || rootLoading) return;
+      if (!discussionId || (!reset && rootLoading)) return;
       if (!reset && rootLoaded && !rootNextCursor) return;
       const generation = generationRef.current;
       setRootLoading(true);
@@ -133,7 +133,7 @@ export function useDiscussionReplyWindows({
     async (parentReplyId: string, { reset = false }: { reset?: boolean } = {}) => {
       if (!discussionId || !parentReplyId) return;
       const currentWindow = childWindows[parentReplyId];
-      if (currentWindow?.loading) return;
+      if (!reset && currentWindow?.loading) return;
       if (!reset && currentWindow?.loaded && !currentWindow.nextCursor) return;
       const generation = generationRef.current;
 
