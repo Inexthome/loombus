@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { showLoombusPrompt } from "@/components/platform-prompt-bridge";
+import { showLoombusPrompt } from "@/lib/loombus-prompt";
 
 const feedbackSelector = [
   "[role='alert']",
