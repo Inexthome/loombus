@@ -10,6 +10,7 @@ import "./create-v2-shell.css";
 import "./discussion-audience-controls.css";
 import "./home-v2-shell.css";
 import "./home-mobile-viewport-fix.css";
+import "./home-calm-hierarchy.css";
 import "./mobile-card-polish.css"; // Mobile-only Home and Create card refinements.
 import "./people-v2-shell.css";
 import "./discussion-detail-shell-polish.css";
