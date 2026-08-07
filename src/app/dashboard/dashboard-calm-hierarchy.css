@@ -1,0 +1,192 @@
+/* Calm hierarchy pass for /dashboard.
+   Keep all tools available, but make overview, attention, and recent activity
+   the dominant reading path. */
+
+.dashboard-v2-page {
+  --dashboard-calm-rule: color-mix(in srgb, var(--loombus-border) 72%, transparent);
+}
+
+.dashboard-v2-shell {
+  gap: 0.45rem;
+}
+
+/* One quieter command-center hero instead of a large marketing hero plus card. */
+.dashboard-v2-hero {
+  box-shadow: none;
+  border-color: var(--dashboard-calm-rule);
+  padding: clamp(1.2rem, 3vw, 2rem);
+}
+
+.dashboard-v2-hero h1 {
+  max-width: 22ch;
+  font-size: clamp(2rem, 4.6vw, 3.8rem);
+}
+
+.dashboard-v2-hero-description {
+  max-width: 40rem;
+  margin-top: 0.8rem;
+}
+
+.dashboard-v2-member-card {
+  border-color: var(--dashboard-calm-rule);
+  background: transparent;
+}
+
+/* First priority: Needs attention. */
+.dashboard-v2-section:has(> .dashboard-v2-attention-grid) {
+  margin-top: 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--dashboard-gold) 24%, var(--loombus-border));
+  border-radius: 1.55rem;
+  padding: 1.15rem;
+  background: color-mix(in srgb, var(--loombus-surface) 95%, var(--loombus-page-bg) 5%);
+}
+
+.dashboard-v2-attention-card {
+  box-shadow: none;
+  min-height: auto !important;
+}
+
+/* Personal overview is compact, not another collection of large cards. */
+.dashboard-v2-section:has(> .dashboard-v2-metric-grid) {
+  border-bottom: 1px solid var(--dashboard-calm-rule);
+}
+
+.dashboard-v2-metric-grid {
+  gap: 0;
+  border: 1px solid var(--dashboard-calm-rule);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: var(--loombus-surface);
+}
+
+.dashboard-v2-metric-card {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.dashboard-v2-metric-card + .dashboard-v2-metric-card {
+  border-top: 1px solid var(--dashboard-calm-rule);
+}
+
+.dashboard-v2-metric-card strong {
+  font-size: clamp(1.65rem, 4vw, 2.25rem);
+}
+
+.dashboard-v2-metric-card span {
+  display: none;
+}
+
+/* Quick return becomes a compact launcher strip instead of six equal feature cards. */
+.dashboard-v2-section:has(> .dashboard-v2-quick-grid) {
+  padding-top: 0.9rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--dashboard-calm-rule);
+}
+
+.dashboard-v2-quick-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.dashboard-v2-quick-card {
+  min-height: 0;
+  border-color: var(--dashboard-calm-rule);
+  box-shadow: none;
+  padding: 0.85rem;
+  background: transparent;
+}
+
+.dashboard-v2-quick-card p,
+.dashboard-v2-quick-action {
+  display: none;
+}
+
+.dashboard-v2-quick-card h3 {
+  margin-bottom: 0;
+}
+
+/* Everything below the core overview becomes a secondary workspace. */
+.dashboard-v2-workspace-grid,
+.dashboard-v2-section:has(> .dashboard-v2-topic-grid),
+.dashboard-v2-section:has(> .dashboard-v2-discussion-grid) {
+  margin-top: 0.75rem;
+}
+
+.dashboard-v2-panel,
+.dashboard-v2-topic-card,
+.dashboard-v2-discussion-card,
+.dashboard-v2-goal-card,
+.dashboard-v2-empty-state,
+.dashboard-v2-onboarding-card {
+  box-shadow: none;
+}
+
+.dashboard-v2-panel {
+  border-color: var(--dashboard-calm-rule);
+  background: color-mix(in srgb, var(--loombus-surface) 78%, transparent);
+}
+
+.dashboard-v2-section:has(> .dashboard-v2-topic-grid),
+.dashboard-v2-section:has(> .dashboard-v2-discussion-grid) {
+  border-top: 1px solid var(--dashboard-calm-rule);
+}
+
+.dashboard-v2-topic-card,
+.dashboard-v2-discussion-card {
+  border-color: var(--dashboard-calm-rule);
+  background: transparent;
+}
+
+.dashboard-v2-section-description {
+  max-width: 38rem;
+}
+
+@media (min-width: 640px) {
+  .dashboard-v2-metric-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dashboard-v2-metric-card + .dashboard-v2-metric-card {
+    border-top: 0;
+    border-left: 1px solid var(--dashboard-calm-rule);
+  }
+
+  .dashboard-v2-quick-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-v2-quick-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .dashboard-v2-quick-card {
+    padding: 0.8rem;
+  }
+}
+
+@media (max-width: 639.98px) {
+  .dashboard-v2-page {
+    padding-inline: 0.75rem;
+  }
+
+  .dashboard-v2-hero {
+    border-radius: 1.45rem;
+  }
+
+  .dashboard-v2-section:has(> .dashboard-v2-attention-grid) {
+    border-radius: 1.3rem;
+    padding: 0.9rem;
+  }
+
+  .dashboard-v2-section-heading h2 {
+    font-size: 1.35rem;
+  }
+
+  .dashboard-v2-section-description {
+    line-height: 1.5;
+  }
+}
