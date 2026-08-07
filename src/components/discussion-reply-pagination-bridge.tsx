@@ -18,13 +18,26 @@ function activeParentReplyId() {
   return context?.id.startsWith("reply-") ? context.id.slice("reply-".length) : null;
 }
 
-function updateConversationHeading(totalCount: number) {
-  const heading = document.querySelector<HTMLElement>(
-    ".discussion-v2-replies-heading h2"
+function updateConversationCount(totalCount: number) {
+  const formatted = totalCount.toLocaleString();
+  const heading = document.querySelector<HTMLElement>(".discussion-v2-replies-heading h2");
+  if (heading) {
+    const next = `${formatted} ${totalCount === 1 ? "reply" : "replies"}`;
+    if (heading.textContent !== next) heading.textContent = next;
+  }
+
+  const repliesNavButton = Array.from(
+    document.querySelectorAll<HTMLButtonElement>(".discussion-v2-section-nav button")
+  ).find((button) => button.textContent?.includes("Replies"));
+  const navCount = repliesNavButton?.querySelector<HTMLElement>("span");
+  if (navCount && navCount.textContent !== formatted) navCount.textContent = formatted;
+
+  const glanceRows = Array.from(
+    document.querySelectorAll<HTMLElement>(".discussion-v2-glance-card dl > div")
   );
-  if (!heading) return;
-  const next = `${totalCount.toLocaleString()} ${totalCount === 1 ? "reply" : "replies"}`;
-  if (heading.textContent !== next) heading.textContent = next;
+  const replyRow = glanceRows.find((row) => row.querySelector("dt")?.textContent?.trim() === "Replies");
+  const glanceCount = replyRow?.querySelector<HTMLElement>("dd");
+  if (glanceCount && glanceCount.textContent !== formatted) glanceCount.textContent = formatted;
 }
 
 export function DiscussionReplyPaginationBridge() {
@@ -43,7 +56,7 @@ export function DiscussionReplyPaginationBridge() {
       const replyList = document.querySelector<HTMLElement>(".discussion-v2-reply-list");
       if (!replyList || !latestState) return;
 
-      updateConversationHeading(latestState.discussionTotalCount);
+      updateConversationCount(latestState.discussionTotalCount);
 
       let controls = replyList.parentElement?.querySelector<HTMLElement>(
         `:scope > [${GENERATED_ATTR}='true']`
@@ -100,7 +113,7 @@ export function DiscussionReplyPaginationBridge() {
         const total = await getDiscussionVisibleReplyCount(discussionId);
         if (cancelled) return;
         if (latestState) latestState = { ...latestState, discussionTotalCount: total };
-        updateConversationHeading(total);
+        updateConversationCount(total);
       } catch {
         // Count refresh is supplementary; the current window remains usable.
       }

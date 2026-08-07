@@ -1,0 +1,144 @@
+.discussion-phase-four-nav {
+  position: sticky;
+  top: 4.25rem;
+  z-index: 8;
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding: 0.55rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--loombus-border);
+  background: color-mix(in srgb, var(--loombus-surface) 94%, transparent);
+  backdrop-filter: blur(14px);
+  border-radius: 1.1rem;
+  scrollbar-width: none;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.06);
+}
+
+.discussion-phase-four-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.discussion-phase-four-nav button {
+  flex: 0 0 auto;
+  min-height: 2.35rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--loombus-text-muted);
+  border-radius: 999px;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.73rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.discussion-phase-four-nav button:hover,
+.discussion-phase-four-nav button[aria-current="page"] {
+  border-color: rgba(203, 171, 91, 0.48);
+  background: rgba(203, 171, 91, 0.12);
+  color: var(--loombus-text);
+}
+
+.discussion-phase-four-panel {
+  scroll-margin-top: 8rem;
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 2.5vw, 1.4rem);
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-surface);
+  border-radius: 1.35rem;
+  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.05);
+}
+
+.discussion-phase-four-panel-heading {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.discussion-phase-four-panel-heading > span {
+  color: #b45309;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.discussion-phase-four-panel-heading h2 {
+  margin: 0;
+  color: var(--loombus-text);
+  font-size: clamp(1.15rem, 2.4vw, 1.55rem);
+  letter-spacing: -0.025em;
+}
+
+.discussion-phase-four-panel-heading p {
+  margin: 0;
+  max-width: 66ch;
+  color: var(--loombus-text-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.discussion-phase-four-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.discussion-phase-four-discovery-card {
+  width: 100%;
+  border: 1px solid var(--loombus-border);
+  background: var(--loombus-page-bg);
+  color: var(--loombus-text);
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  display: grid;
+  gap: 0.38rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.discussion-phase-four-discovery-card:hover {
+  border-color: rgba(203, 171, 91, 0.52);
+  background: rgba(203, 171, 91, 0.06);
+  transform: translateY(-1px);
+}
+
+.discussion-phase-four-discovery-card span {
+  color: var(--loombus-text-muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.discussion-phase-four-discovery-card strong {
+  color: var(--loombus-text);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.discussion-phase-four-discovery-card small {
+  color: #b45309;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.discussion-phase-four-empty {
+  margin: 0;
+  border: 1px dashed var(--loombus-border);
+  border-radius: 1rem;
+  padding: 1rem;
+  color: var(--loombus-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 719px) {
+  .discussion-phase-four-nav {
+    top: 3.7rem;
+    margin-inline: -0.2rem;
+  }
+
+  .discussion-phase-four-nav button {
+    min-height: 2.6rem;
+    padding-inline: 0.9rem;
+  }
+}
