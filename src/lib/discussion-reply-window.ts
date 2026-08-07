@@ -16,10 +16,33 @@ export type HydratedReplyWindow = {
 };
 
 export const DISCUSSION_THREAD_WINDOW_REQUEST = "loombus:discussion-thread-window-request";
+export const DISCUSSION_REPLY_WINDOW_STATE = "loombus:discussion-reply-window-state";
+export const DISCUSSION_REPLY_WINDOW_LOAD_MORE = "loombus:discussion-reply-window-load-more";
 
 export type DiscussionThreadWindowRequestDetail = {
   discussionId: string;
   parentReplyId: string;
+};
+
+export type DiscussionReplyWindowLoadMoreDetail = {
+  discussionId: string;
+  parentReplyId?: string | null;
+};
+
+export type DiscussionReplyWindowChildState = {
+  totalCount: number;
+  hasMore: boolean;
+  loading: boolean;
+  loaded: boolean;
+};
+
+export type DiscussionReplyWindowStateDetail = {
+  discussionId: string;
+  rootTotalCount: number;
+  rootHasMore: boolean;
+  rootLoading: boolean;
+  rootLoaded: boolean;
+  children: Record<string, DiscussionReplyWindowChildState>;
 };
 
 export async function hydrateReplyWindow({
@@ -145,6 +168,15 @@ export function requestDiscussionThreadWindow(detail: DiscussionThreadWindowRequ
   if (typeof window === "undefined") return;
   window.dispatchEvent(
     new CustomEvent<DiscussionThreadWindowRequestDetail>(DISCUSSION_THREAD_WINDOW_REQUEST, {
+      detail,
+    })
+  );
+}
+
+export function requestDiscussionReplyWindowLoadMore(detail: DiscussionReplyWindowLoadMoreDetail) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent<DiscussionReplyWindowLoadMoreDetail>(DISCUSSION_REPLY_WINDOW_LOAD_MORE, {
       detail,
     })
   );
