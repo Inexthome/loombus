@@ -12,6 +12,28 @@ create index if not exists replies_discussion_parent_created_id_active_idx
 create index if not exists reply_reactions_reply_type_idx
   on public.reply_reactions (reply_id, reaction_type);
 
+create or replace function public.get_discussion_visible_reply_count(p_discussion_id uuid)
+returns bigint
+language sql
+stable
+security invoker
+set search_path = public
+as $$
+  select count(*)::bigint
+  from public.replies r
+  where r.discussion_id = p_discussion_id
+    and r.deleted_at is null
+    and not exists (
+      select 1
+      from public.user_blocks ub
+      where auth.uid() is not null
+        and (
+          (ub.blocker_id = auth.uid() and ub.blocked_id = r.user_id)
+          or (ub.blocked_id = auth.uid() and ub.blocker_id = r.user_id)
+        )
+    );
+$$;
+
 create or replace function public.get_discussion_root_reply_page(
   p_discussion_id uuid,
   p_sort text default 'best',
@@ -186,5 +208,6 @@ as $$
   limit greatest(1, least(coalesce(p_limit, 30), 100));
 $$;
 
+grant execute on function public.get_discussion_visible_reply_count(uuid) to anon, authenticated;
 grant execute on function public.get_discussion_root_reply_page(uuid, text, integer, bigint, timestamptz, uuid) to anon, authenticated;
 grant execute on function public.get_discussion_child_reply_page(uuid, uuid, text, integer, bigint, timestamptz, uuid) to anon, authenticated;
