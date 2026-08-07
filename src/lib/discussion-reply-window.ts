@@ -40,18 +40,50 @@ export async function hydrateReplyWindow({
     };
   }
 
-  const { data: replyData, error: replyError } = await supabase
-    .from("replies")
-    .select("*")
-    .in("id", uniqueReplyIds)
-    .is("deleted_at", null);
+  const [{ data: replyData, error: replyError }, blockResult] = await Promise.all([
+    supabase
+      .from("replies")
+      .select("*")
+      .in("id", uniqueReplyIds)
+      .is("deleted_at", null),
+    currentUserId
+      ? supabase
+          .from("user_blocks")
+          .select("blocker_id, blocked_id")
+          .or(`blocker_id.eq.${currentUserId},blocked_id.eq.${currentUserId}`)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
 
   if (replyError) throw replyError;
+  if (blockResult.error) throw blockResult.error;
 
-  const replyMap = new Map(((replyData ?? []) as Reply[]).map((reply) => [reply.id, reply]));
+  const blockedIds = new Set<string>();
+  for (const block of (blockResult.data ?? []) as Array<{
+    blocker_id: string;
+    blocked_id: string;
+  }>) {
+    blockedIds.add(block.blocker_id === currentUserId ? block.blocked_id : block.blocker_id);
+  }
+
+  const replyMap = new Map(
+    ((replyData ?? []) as Reply[])
+      .filter((reply) => !blockedIds.has(reply.user_id))
+      .map((reply) => [reply.id, reply])
+  );
   const replies = uniqueReplyIds
     .map((replyId) => replyMap.get(replyId))
     .filter((reply): reply is Reply => Boolean(reply));
+  const visibleReplyIds = replies.map((reply) => reply.id);
+
+  if (visibleReplyIds.length === 0) {
+    return {
+      replies: [],
+      profiles: {},
+      reactionCounts: {},
+      myReactions: {},
+      reportedReplyIds: [],
+    };
+  }
 
   const userIds = [...new Set(replies.map((reply) => reply.user_id))];
   const [profileResult, reactionResult, reportResult] = await Promise.all([
@@ -61,13 +93,13 @@ export async function hydrateReplyWindow({
     supabase
       .from("reply_reactions")
       .select("reply_id, user_id, reaction_type")
-      .in("reply_id", uniqueReplyIds),
+      .in("reply_id", visibleReplyIds),
     currentUserId
       ? supabase
           .from("reports")
           .select("reply_id")
           .eq("reporter_id", currentUserId)
-          .in("reply_id", uniqueReplyIds)
+          .in("reply_id", visibleReplyIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
 
