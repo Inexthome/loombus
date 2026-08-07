@@ -2,35 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { LoombusPrompt } from "@/components/loombus-prompt";
-
-type PromptTone = "error" | "success" | "info";
-
-type PromptDetail = {
-  message: string;
-  title?: string;
-  tone?: PromptTone;
-  autoDismissMs?: number;
-  actionHref?: string;
-  actionLabel?: string;
-};
+import type { LoombusPromptDetail } from "@/lib/loombus-prompt";
 
 declare global {
   interface WindowEventMap {
-    "loombus:prompt": CustomEvent<PromptDetail>;
+    "loombus:prompt": CustomEvent<LoombusPromptDetail>;
   }
 }
 
-export function showLoombusPrompt(detail: PromptDetail) {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("loombus:prompt", { detail }));
-}
-
 export function PlatformPromptBridge() {
-  const [prompt, setPrompt] = useState<PromptDetail | null>(null);
+  const [prompt, setPrompt] = useState<LoombusPromptDetail | null>(null);
   const close = useCallback(() => setPrompt(null), []);
 
   useEffect(() => {
-    const handlePrompt = (event: CustomEvent<PromptDetail>) => {
+    const handlePrompt = (event: CustomEvent<LoombusPromptDetail>) => {
       const detail = event.detail;
       if (!detail?.message?.trim()) return;
       setPrompt({ ...detail, message: detail.message.trim() });
