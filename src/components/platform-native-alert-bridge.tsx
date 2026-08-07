@@ -10,7 +10,7 @@ export function PlatformNativeAlertBridge() {
     window.alert = (message?: unknown) => {
       const text = typeof message === "string" ? message.trim() : String(message ?? "").trim();
       if (!text) return;
-      showLoombusPrompt({ message: text, tone: "error" });
+      showLoombusPrompt({ message: text, tone: "info", autoDismissMs: 6500 });
     };
 
     return () => {
