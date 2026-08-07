@@ -23,7 +23,8 @@ function updateConversationHeading(totalCount: number) {
     ".discussion-v2-replies-heading h2"
   );
   if (!heading) return;
-  heading.textContent = `${totalCount.toLocaleString()} ${totalCount === 1 ? "reply" : "replies"}`;
+  const next = `${totalCount.toLocaleString()} ${totalCount === 1 ? "reply" : "replies"}`;
+  if (heading.textContent !== next) heading.textContent = next;
 }
 
 export function DiscussionReplyPaginationBridge() {
@@ -34,70 +35,64 @@ export function DiscussionReplyPaginationBridge() {
     if (!discussionId) return;
 
     let cancelled = false;
-    let applying = false;
     let latestState: DiscussionReplyWindowStateDetail | null = null;
     let refreshTimer: number | null = null;
 
     function ensureControls() {
-      if (applying || cancelled) return;
-      applying = true;
+      if (cancelled) return;
+      const replyList = document.querySelector<HTMLElement>(".discussion-v2-reply-list");
+      if (!replyList || !latestState) return;
 
-      try {
-        const replyList = document.querySelector<HTMLElement>(".discussion-v2-reply-list");
-        if (!replyList || !latestState) return;
+      updateConversationHeading(latestState.discussionTotalCount);
 
-        updateConversationHeading(latestState.discussionTotalCount);
+      let controls = replyList.parentElement?.querySelector<HTMLElement>(
+        `:scope > [${GENERATED_ATTR}='true']`
+      );
+      const parentReplyId = activeParentReplyId();
+      const state = parentReplyId
+        ? latestState.children[parentReplyId]
+        : {
+            totalCount: latestState.rootTotalCount,
+            hasMore: latestState.rootHasMore,
+            loading: latestState.rootLoading,
+            loaded: latestState.rootLoaded,
+          };
 
-        let controls = replyList.parentElement?.querySelector<HTMLElement>(
-          `:scope > [${GENERATED_ATTR}='true']`
-        );
-        const parentReplyId = activeParentReplyId();
-        const state = parentReplyId
-          ? latestState.children[parentReplyId]
-          : {
-              totalCount: latestState.rootTotalCount,
-              hasMore: latestState.rootHasMore,
-              loading: latestState.rootLoading,
-              loaded: latestState.rootLoaded,
-            };
+      const shouldShow = Boolean(state?.hasMore || state?.loading);
+      if (!shouldShow) {
+        controls?.remove();
+        return;
+      }
 
-        const shouldShow = Boolean(state?.hasMore || state?.loading);
-        if (!shouldShow) {
-          controls?.remove();
-          return;
-        }
+      if (!controls) {
+        controls = document.createElement("div");
+        controls.className = "discussion-reply-pagination-controls";
+        controls.setAttribute(GENERATED_ATTR, "true");
+        replyList.insertAdjacentElement("afterend", controls);
+      }
 
-        if (!controls) {
-          controls = document.createElement("div");
-          controls.className = "discussion-reply-pagination-controls";
-          controls.setAttribute(GENERATED_ATTR, "true");
-          replyList.insertAdjacentElement("afterend", controls);
-        }
-
-        controls.replaceChildren();
-        const button = document.createElement("button");
+      let button = controls.querySelector<HTMLButtonElement>("button");
+      if (!button) {
+        button = document.createElement("button");
         button.type = "button";
         button.className = "discussion-reply-pagination-button";
-        button.disabled = Boolean(state?.loading);
-        button.textContent = state?.loading
-          ? "Loading…"
-          : parentReplyId
-            ? "Load more responses"
-            : "Load more replies";
-        button.setAttribute(
-          "aria-label",
-          parentReplyId ? "Load the next responses to this point" : "Load the next discussion replies"
-        );
-        button.addEventListener("click", () => {
-          requestDiscussionReplyWindowLoadMore({
-            discussionId,
-            parentReplyId,
-          });
-        });
         controls.append(button);
-      } finally {
-        applying = false;
       }
+
+      const label = state?.loading
+        ? "Loading…"
+        : parentReplyId
+          ? "Load more responses"
+          : "Load more replies";
+      button.disabled = Boolean(state?.loading);
+      if (button.textContent !== label) button.textContent = label;
+      button.setAttribute(
+        "aria-label",
+        parentReplyId ? "Load the next responses to this point" : "Load the next discussion replies"
+      );
+      button.onclick = () => {
+        requestDiscussionReplyWindowLoadMore({ discussionId, parentReplyId });
+      };
     }
 
     async function refreshExactCount() {
@@ -126,19 +121,19 @@ export function DiscussionReplyPaginationBridge() {
       }, 220);
     };
 
-    const observer = new MutationObserver(() => {
-      if (!applying) window.requestAnimationFrame(ensureControls);
-    });
+    const handleThreadNavigation = () => {
+      window.setTimeout(ensureControls, 0);
+    };
 
     window.addEventListener(DISCUSSION_REPLY_WINDOW_STATE, handleState);
     window.addEventListener("loombus:discussion-metrics-changed", handleMetricsChanged);
-    observer.observe(document.body, { childList: true, subtree: true });
+    document.addEventListener("click", handleThreadNavigation, true);
 
     return () => {
       cancelled = true;
       window.removeEventListener(DISCUSSION_REPLY_WINDOW_STATE, handleState);
       window.removeEventListener("loombus:discussion-metrics-changed", handleMetricsChanged);
-      observer.disconnect();
+      document.removeEventListener("click", handleThreadNavigation, true);
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
       document
         .querySelectorAll(`[${GENERATED_ATTR}='true']`)
