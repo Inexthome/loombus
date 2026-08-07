@@ -10,6 +10,16 @@
   gap: 0.45rem;
 }
 
+/* Preserve the existing React tree while changing the reading order. */
+.dashboard-v2-hero { order: 1; }
+.dashboard-v2-section:has(> .dashboard-v2-attention-grid) { order: 2; }
+.dashboard-v2-section:has(> .dashboard-v2-metric-grid) { order: 3; }
+.dashboard-v2-section:has(> .dashboard-v2-discussion-grid) { order: 4; }
+.dashboard-v2-section:has(> .dashboard-v2-quick-grid) { order: 5; }
+.dashboard-v2-workspace-grid { order: 6; }
+.dashboard-v2-section:has(> .dashboard-v2-topic-grid) { order: 7; }
+.dashboard-v2-onboarding-card { order: 8; }
+
 /* One quieter command-center hero instead of a large marketing hero plus card. */
 .dashboard-v2-hero {
   box-shadow: none;
@@ -78,6 +88,19 @@
   display: none;
 }
 
+/* Recent threads is the main return path, so it now follows the overview. */
+.dashboard-v2-section:has(> .dashboard-v2-discussion-grid) {
+  border-top: 0;
+  border-bottom: 1px solid var(--dashboard-calm-rule);
+  padding-top: 0.9rem;
+}
+
+.dashboard-v2-discussion-card {
+  box-shadow: none;
+  border-color: var(--dashboard-calm-rule);
+  background: transparent;
+}
+
 /* Quick return becomes a compact launcher strip instead of six equal feature cards. */
 .dashboard-v2-section:has(> .dashboard-v2-quick-grid) {
   padding-top: 0.9rem;
@@ -109,14 +132,12 @@
 
 /* Everything below the core overview becomes a secondary workspace. */
 .dashboard-v2-workspace-grid,
-.dashboard-v2-section:has(> .dashboard-v2-topic-grid),
-.dashboard-v2-section:has(> .dashboard-v2-discussion-grid) {
+.dashboard-v2-section:has(> .dashboard-v2-topic-grid) {
   margin-top: 0.75rem;
 }
 
 .dashboard-v2-panel,
 .dashboard-v2-topic-card,
-.dashboard-v2-discussion-card,
 .dashboard-v2-goal-card,
 .dashboard-v2-empty-state,
 .dashboard-v2-onboarding-card {
@@ -128,13 +149,11 @@
   background: color-mix(in srgb, var(--loombus-surface) 78%, transparent);
 }
 
-.dashboard-v2-section:has(> .dashboard-v2-topic-grid),
-.dashboard-v2-section:has(> .dashboard-v2-discussion-grid) {
+.dashboard-v2-section:has(> .dashboard-v2-topic-grid) {
   border-top: 1px solid var(--dashboard-calm-rule);
 }
 
-.dashboard-v2-topic-card,
-.dashboard-v2-discussion-card {
+.dashboard-v2-topic-card {
   border-color: var(--dashboard-calm-rule);
   background: transparent;
 }
