@@ -29,6 +29,7 @@ import { NativeBiometricSessionGate } from "@/components/native-biometric-sessio
 import { NativePushRegistration } from "@/components/native-push-registration";
 import { PersistentMobilePrimaryDock } from "@/components/persistent-mobile-primary-dock";
 import { PlatformPromptBridge } from "@/components/platform-prompt-bridge";
+import { PlatformPromptDomBridge } from "@/components/platform-prompt-dom-bridge";
 import { SessionLifecycleGuard } from "@/components/session-lifecycle-guard";
 
 const siteUrl = "https://loombus.com";
@@ -120,6 +121,7 @@ export default function RootLayout({
         </AppChromeBoundary>
         <RouteClientLayout>{children}</RouteClientLayout>
         <PlatformPromptBridge />
+        <PlatformPromptDomBridge />
         <AppChromeBoundary>
           <AdaptiveFloatingUtilityLauncher />
         </AppChromeBoundary>
