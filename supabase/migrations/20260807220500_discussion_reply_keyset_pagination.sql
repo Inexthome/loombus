@@ -40,6 +40,15 @@ as $$
     left join public.reply_reactions rr on rr.reply_id = r.id
     where r.discussion_id = p_discussion_id
       and r.deleted_at is null
+      and not exists (
+        select 1
+        from public.user_blocks ub
+        where auth.uid() is not null
+          and (
+            (ub.blocker_id = auth.uid() and ub.blocked_id = r.user_id)
+            or (ub.blocked_id = auth.uid() and ub.blocker_id = r.user_id)
+          )
+      )
       and (
         r.referenced_reply_id is null
         or not exists (
@@ -124,6 +133,15 @@ as $$
     where r.discussion_id = p_discussion_id
       and r.deleted_at is null
       and r.referenced_reply_id = p_parent_reply_id
+      and not exists (
+        select 1
+        from public.user_blocks ub
+        where auth.uid() is not null
+          and (
+            (ub.blocker_id = auth.uid() and ub.blocked_id = r.user_id)
+            or (ub.blocked_id = auth.uid() and ub.blocker_id = r.user_id)
+          )
+      )
     group by r.id, r.created_at
   ), ranked as (
     select
