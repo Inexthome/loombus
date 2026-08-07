@@ -31,7 +31,7 @@ export function PlatformPromptBridge() {
     <LoombusPrompt
       message={prompt.message}
       title={prompt.title}
-      tone={prompt.tone ?? "error"}
+      tone={prompt.tone ?? "info"}
       onClose={close}
       autoDismissMs={prompt.autoDismissMs}
       actionHref={prompt.actionHref}
