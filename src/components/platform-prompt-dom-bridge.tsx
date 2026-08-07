@@ -21,9 +21,7 @@ function readFeedback(element: Element) {
   const tone =
     explicitTone === "success" || element.hasAttribute("data-success-message")
       ? "success"
-      : explicitTone === "info"
-        ? "info"
-        : "error";
+      : "info";
 
   return { message, tone } as const;
 }
@@ -46,7 +44,7 @@ export function PlatformPromptDomBridge() {
         showLoombusPrompt({
           message: feedback.message,
           tone: feedback.tone,
-          autoDismissMs: feedback.tone === "error" ? undefined : 6500,
+          autoDismissMs: 6500,
         });
       }
     };
