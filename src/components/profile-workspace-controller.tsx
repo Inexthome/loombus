@@ -1,18 +1,20 @@
 "use client";
 
-import { Eye, Link2, Sparkles, User, Wrench } from "lucide-react";
+import { Eye, Link2, Sparkles, User, Users, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CreatorHubPhaseOne } from "@/components/creator-hub-phase-one";
 import { CreatorPaidSupporterManager } from "@/components/creator-paid-supporter-manager";
 import { CreatorSupporterProgramManagerPhase2 } from "@/components/creator-supporter-program-manager-phase2";
+import { ProfileViewersPanel } from "@/components/profile-viewers-panel";
 import "@/components/creator-hub-phase-one.css";
 
-type Section = "overview" | "public" | "creator" | "preview";
+type Section = "overview" | "public" | "creator" | "viewers" | "preview";
 
 const sections = [
   { key: "overview" as const, label: "Overview", Icon: Sparkles },
   { key: "public" as const, label: "Public profile", Icon: User },
   { key: "creator" as const, label: "Creator Hub", Icon: Wrench },
+  { key: "viewers" as const, label: "Profile viewers", Icon: Users },
   { key: "preview" as const, label: "Preview and sharing", Icon: Eye },
 ];
 
@@ -49,7 +51,8 @@ export function ProfileWorkspaceController() {
         section.textContent?.includes("Public profile")
       ) ?? null;
 
-    content.style.display = active === "creator" ? "none" : "";
+    const standaloneSection = active === "creator" || active === "viewers";
+    content.style.display = standaloneSection ? "none" : "";
     if (publicLink) {
       publicLink.style.display =
         active === "overview" || active === "preview" ? "" : "none";
@@ -65,7 +68,6 @@ export function ProfileWorkspaceController() {
     const url = new URL(window.location.href);
     url.searchParams.set("section", active);
     window.history.replaceState({}, "", url);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [active]);
 
   return (
@@ -92,6 +94,11 @@ export function ProfileWorkspaceController() {
           <CreatorHubPhaseOne />
           <CreatorSupporterProgramManagerPhase2 />
           <CreatorPaidSupporterManager />
+        </div>
+      ) : null}
+      {active === "viewers" ? (
+        <div className="profile-workspace-standalone-section min-w-0">
+          <ProfileViewersPanel />
         </div>
       ) : null}
     </>

@@ -1,6 +1,6 @@
-import { ProfileViewersPanel } from "@/components/profile-viewers-panel";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ProfileMessagePromptBridge } from "@/components/profile-message-prompt-bridge";
 import "./profile-v2-shell.css";
 
 type ProfileLayoutProps = {
@@ -10,6 +10,7 @@ type ProfileLayoutProps = {
 export default function ProfileLayout({ children }: ProfileLayoutProps) {
   return (
     <div className="profile-v2-route">
+      <ProfileMessagePromptBridge />
       <div className="profile-v2-shell">
         <header className="profile-v2-hero">
           <div className="profile-v2-hero-copy">
@@ -55,10 +56,7 @@ export default function ProfileLayout({ children }: ProfileLayoutProps) {
           </article>
         </section>
 
-        <div className="profile-v2-content">
-          {children}
-          <ProfileViewersPanel />
-        </div>
+        <div className="profile-v2-content">{children}</div>
       </div>
     </div>
   );
