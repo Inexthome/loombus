@@ -8,8 +8,12 @@ import {
   type DiscussionReplySort,
 } from "@/lib/discussion-reply-pagination";
 import {
+  DISCUSSION_REPLY_WINDOW_LOAD_MORE,
+  DISCUSSION_REPLY_WINDOW_STATE,
   DISCUSSION_THREAD_WINDOW_REQUEST,
   hydrateReplyWindow,
+  type DiscussionReplyWindowLoadMoreDetail,
+  type DiscussionReplyWindowStateDetail,
   type DiscussionThreadWindowRequestDetail,
   type HydratedReplyWindow,
 } from "@/lib/discussion-reply-window";
@@ -71,6 +75,7 @@ export function useDiscussionReplyWindows({
   const loadRootPage = useCallback(
     async ({ reset = false }: { reset?: boolean } = {}) => {
       if (!discussionId || rootLoading) return;
+      if (!reset && rootLoaded && !rootNextCursor) return;
       const generation = generationRef.current;
       setRootLoading(true);
 
@@ -111,6 +116,7 @@ export function useDiscussionReplyWindows({
       discussionId,
       mergeHydratedWindow,
       pinnedReplyId,
+      rootLoaded,
       rootLoading,
       rootNextCursor,
       sort,
@@ -122,6 +128,7 @@ export function useDiscussionReplyWindows({
       if (!discussionId || !parentReplyId) return;
       const currentWindow = childWindows[parentReplyId];
       if (currentWindow?.loading) return;
+      if (!reset && currentWindow?.loaded && !currentWindow.nextCursor) return;
       const generation = generationRef.current;
 
       setChildWindows((current) => ({
@@ -204,6 +211,46 @@ export function useDiscussionReplyWindows({
     window.addEventListener(DISCUSSION_THREAD_WINDOW_REQUEST, handleThreadRequest);
     return () => window.removeEventListener(DISCUSSION_THREAD_WINDOW_REQUEST, handleThreadRequest);
   }, [childWindows, discussionId, loadChildPage]);
+
+  useEffect(() => {
+    const handleLoadMore = (event: Event) => {
+      const detail = (event as CustomEvent<DiscussionReplyWindowLoadMoreDetail>).detail;
+      if (!detail || detail.discussionId !== discussionId) return;
+      if (detail.parentReplyId) void loadChildPage(detail.parentReplyId);
+      else void loadRootPage();
+    };
+
+    window.addEventListener(DISCUSSION_REPLY_WINDOW_LOAD_MORE, handleLoadMore);
+    return () => window.removeEventListener(DISCUSSION_REPLY_WINDOW_LOAD_MORE, handleLoadMore);
+  }, [discussionId, loadChildPage, loadRootPage]);
+
+  useEffect(() => {
+    if (!discussionId || typeof window === "undefined") return;
+    const children = Object.fromEntries(
+      Object.entries(childWindows).map(([replyId, state]) => [
+        replyId,
+        {
+          totalCount: state.totalCount,
+          hasMore: Boolean(state.nextCursor),
+          loading: state.loading,
+          loaded: state.loaded,
+        },
+      ])
+    );
+    const detail: DiscussionReplyWindowStateDetail = {
+      discussionId,
+      rootTotalCount,
+      rootHasMore: Boolean(rootNextCursor),
+      rootLoading,
+      rootLoaded,
+      children,
+    };
+    window.dispatchEvent(
+      new CustomEvent<DiscussionReplyWindowStateDetail>(DISCUSSION_REPLY_WINDOW_STATE, {
+        detail,
+      })
+    );
+  }, [childWindows, discussionId, rootLoaded, rootLoading, rootNextCursor, rootTotalCount]);
 
   return {
     replies,
