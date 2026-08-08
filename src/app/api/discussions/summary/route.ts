@@ -13,13 +13,9 @@ import {
   insertDiscussionSummary,
   upsertDiscussionSummary,
 } from "@/lib/premium-ai";
-import { generateAnthropicText } from "@/lib/anthropic-ai";
 
 const SUMMARY_MODEL = process.env.OPENAI_SUMMARY_MODEL || "gpt-4o-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_FALLBACK_MODEL =
-  process.env.ANTHROPIC_FALLBACK_MODEL || "claude-haiku-4-5-20251001";
 const MAX_DISCUSSION_BODY_CHARS = 6000;
 const MAX_REPLY_CHARS = 8000;
 
@@ -34,6 +30,8 @@ type CachedSummary = {
   generated_at: string;
 };
 
+// Historical cache rows can still identify a legacy Claude generation even
+// though Anthropic is no longer an active Loombus provider.
 function getSummaryProvider(modelName: string | null | undefined) {
   return modelName?.toLowerCase().startsWith("claude")
     ? "anthropic"
@@ -46,7 +44,9 @@ function clampText(text: string, maxLength: number) {
   }
 
   return `${text.slice(0, maxLength)}\n\n[Content truncated for summary generation.]`;
-}async function getMonthlySummaryUsageCount(supabase: any, userId: string) {
+}
+
+async function getMonthlySummaryUsageCount(supabase: any, userId: string) {
   const { count, error } = await supabase
     .from("ai_usage_events")
     .select("*", { count: "exact", head: true })
@@ -89,6 +89,7 @@ async function generateOpenAISummary({
     },
     body: JSON.stringify({
       model: SUMMARY_MODEL,
+      store: false,
       temperature: 0.2,
       max_tokens: 320,
       messages: [
@@ -120,49 +121,10 @@ async function generateOpenAISummary({
   }
 
   return {
-    summary: summary,
+    summary,
     usageMetadata: getOpenAiUsageMetadata(payload, SUMMARY_MODEL),
   };
 }
-
-async function generateAnthropicSummary({
-  title,
-  topic,
-  body,
-  replies,
-  replyCount,
-}: {
-  title: string;
-  topic: string;
-  body: string;
-  replies: string;
-  replyCount: number;
-}) {
-  const system =
-    "You write concise, neutral discussion summaries for a public high-signal discussion platform. Do not add facts not present in the source. Do not quote long passages. Keep the tone clear and non-sensational. When summarizing a point, include lightweight source tags using only [Original post] and [Reply N] labels from the provided source text. Do not invent source tags.";
-
-  const userPrompt = `Summarize this discussion thread for readers. Return 2-4 short bullets and one short takeaway. Add a source tag to each bullet when a claim comes from the supplied text, for example [Original post], [Reply 1], or [Reply 2]. If there are no replies, cite only [Original post].\n\nTopic: ${topic}\nTitle: ${title}\nReply count at generation time: ${replyCount}\n\n[Original post]\n${clampText(body, MAX_DISCUSSION_BODY_CHARS)}\n\nReplies in chronological order:\n${clampText(replies || "No replies yet.", MAX_REPLY_CHARS)}`;
-
-  const result = await generateAnthropicText({
-    apiKey: ANTHROPIC_API_KEY,
-    modelName: ANTHROPIC_FALLBACK_MODEL,
-    system,
-    messages: [
-      {
-        role: "user",
-        content: userPrompt,
-      },
-    ],
-    maxTokens: 320,
-    temperature: 0.2,
-  });
-
-  return {
-    summary: result.text,
-    usageMetadata: result.usageMetadata,
-  };
-}
-
 
 export async function POST(request: NextRequest) {
   try {
@@ -341,8 +303,8 @@ export async function POST(request: NextRequest) {
 
     let summaryText: string;
     let usageMetadata = {};
-    let generationProvider: "openai" | "anthropic" = "openai";
-    let generationModelName = SUMMARY_MODEL;
+    const generationProvider = "openai" as const;
+    const generationModelName = SUMMARY_MODEL;
 
     try {
       const generatedSummary = await generateOpenAISummary({
@@ -370,53 +332,12 @@ export async function POST(request: NextRequest) {
         errorMessage: message,
       });
 
-      if (!ANTHROPIC_API_KEY) {
-        const aiError = getAiProviderErrorResponse(message);
+      const aiError = getAiProviderErrorResponse(message);
 
-        return NextResponse.json(
-          { error: aiError.error },
-          { status: aiError.status }
-        );
-      }
-
-      try {
-        const generatedSummary = await generateAnthropicSummary({
-          title: discussion.title,
-          topic: discussion.topic,
-          body: discussion.body,
-          replies,
-          replyCount: sourceReplyCount,
-        });
-
-        summaryText = generatedSummary.summary;
-        usageMetadata = generatedSummary.usageMetadata;
-        generationProvider = "anthropic";
-        generationModelName = ANTHROPIC_FALLBACK_MODEL;
-      } catch (fallbackError) {
-        const fallbackMessage =
-          fallbackError instanceof Error
-            ? fallbackError.message
-            : "Anthropic fallback generation failed.";
-
-        await logAiUsage({
-          supabase,
-          userId: user.id,
-          featureKey: "thread_summary",
-          targetType: "discussion",
-          targetId: discussionId,
-          provider: "anthropic",
-          modelName: ANTHROPIC_FALLBACK_MODEL,
-          success: false,
-          errorMessage: fallbackMessage,
-        });
-
-        const aiError = getAiProviderErrorResponse(fallbackMessage);
-
-        return NextResponse.json(
-          { error: aiError.error },
-          { status: aiError.status }
-        );
-      }
+      return NextResponse.json(
+        { error: aiError.error },
+        { status: aiError.status }
+      );
     }
 
     const generatedAt = new Date().toISOString();
