@@ -4,6 +4,24 @@
 
 begin;
 
+-- The foundation event-type constraint predates preservation-target audit events.
+-- Extend it before the trigger/backfill emits target_added rows.
+alter table public.legal_request_events
+  drop constraint if exists legal_request_events_type_check;
+
+alter table public.legal_request_events
+  add constraint legal_request_events_type_check check (
+    event_type in (
+      'request_created', 'request_updated', 'status_changed', 'access',
+      'identity_review', 'authority_review', 'scope_review', 'scope_narrowed',
+      'deficiency', 'rejection', 'specialist_routing', 'counsel_review',
+      'emergency_review', 'hold_created', 'hold_updated', 'hold_released',
+      'target_added',
+      'disclosure_created', 'disclosure_updated', 'disclosure_approved',
+      'disclosure_transmitted', 'member_notice_decision', 'handling', 'note'
+    )
+  );
+
 create or replace function public.log_legal_preservation_target_insert()
 returns trigger
 language plpgsql
