@@ -162,6 +162,20 @@ checks as (
   union all
 
   select
+    'preservation_target_event_type_allowed',
+    count(*)::bigint,
+    1::bigint
+  from pg_constraint constraint_row
+  join pg_class class_row on class_row.oid = constraint_row.conrelid
+  join pg_namespace namespace_row on namespace_row.oid = class_row.relnamespace
+  where namespace_row.nspname = 'public'
+    and class_row.relname = 'legal_request_events'
+    and constraint_row.conname = 'legal_request_events_type_check'
+    and pg_get_constraintdef(constraint_row.oid) like '%target_added%'
+
+  union all
+
+  select
     'preservation_targets_have_audit_events',
     count(*)::bigint,
     0::bigint
