@@ -11,7 +11,7 @@ export type AiSafetyReview = {
 
 type ReviewContentSafetyOptions = {
   content: string;
-  contentType: "discussion" | "reply";
+  contentType: "discussion" | "reply" | "private_message" | "profile";
 };
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -22,10 +22,10 @@ const OPENAI_SAFETY_MODEL =
   "gpt-4o-mini";
 
 const SAFETY_SYSTEM_PROMPT =
-  "You are a strict but careful safety reviewer for Loombus, a public discussion platform focused on thoughtful discourse. Classify submitted user content before it is published. Return only valid JSON with keys: action, category, message. action must be allow, warn, or block. Use block only for high-confidence threats, intimidation, stalking, doxxing/private information abuse, sexual exploitation or abuse, non-consensual sexual content, child sexual content, severe targeted harassment, or direct hateful/dehumanizing abuse. Use warn for hostility, rage bait, broad shaming, abusive tone, or borderline personal attacks that should be revised. Use allow for normal disagreement, criticism of ideas, personal experience, non-abusive debate, or policy discussion. Do not over-block good-faith discussion.";
+  "You are a strict but careful safety reviewer for Loombus, a public discussion platform focused on thoughtful discourse. Classify submitted user content before it is published or sent. Return only valid JSON with keys: action, category, message. action must be allow, warn, or block. Use block only for high-confidence threats, intimidation, stalking, doxxing/private information abuse, sexual exploitation or abuse, non-consensual sexual content, child sexual content, severe targeted harassment, or direct hateful/dehumanizing abuse. Use warn for hostility, rage bait, broad shaming, abusive tone, or borderline personal attacks that should be revised. Use allow for normal disagreement, criticism of ideas, personal experience, non-abusive debate, or policy discussion. Do not over-block good-faith discussion.";
 
 function buildSafetyPrompt({ content, contentType }: ReviewContentSafetyOptions) {
-  return `Review this ${contentType} before it is published on Loombus.
+  return `Review this ${contentType} before it is published or sent on Loombus.
 
 Return JSON only:
 {
@@ -143,8 +143,8 @@ export async function reviewContentSafety(
     return await reviewWithOpenAI(options);
   } catch (openAiError) {
     // No external-provider fallback. If provider classification is required
-    // and OpenAI is unavailable, fail closed instead of publishing content
-    // that did not complete the configured AI safety layer.
+    // and OpenAI is unavailable, fail closed instead of publishing or sending
+    // content that did not complete the configured AI safety layer.
     console.error("OpenAI safety review failed:", openAiError);
   }
 
