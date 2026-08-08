@@ -103,11 +103,14 @@ const CONFIG_GROUPS: ConfigGroup[] = [
   },
   {
     key: "ai",
-    label: "AI providers",
-    description: "Generation credentials, feature models, and optional fallback.",
+    label: "AI provider",
+    description: "OpenAI credential and model overrides for active production AI paths.",
     Icon: Bot,
     items: [
       { key: "openAiApiKey", label: "OpenAI API key", required: true },
+      { key: "openAiDefaultModel", label: "Default OpenAI model" },
+      { key: "openAiResearchModel", label: "Research Desk model" },
+      { key: "openAiSearchAiModel", label: "Search AI model" },
       { key: "openAiSummaryModel", label: "Summary model" },
       { key: "openAiTakeawaysModel", label: "Takeaways model" },
       { key: "openAiWhatChangedModel", label: "What-changed model" },
@@ -115,8 +118,8 @@ const CONFIG_GROUPS: ConfigGroup[] = [
       { key: "openAiQualityCheckModel", label: "Quality-check model" },
       { key: "openAiRewriteModel", label: "Rewrite model" },
       { key: "openAiReplySuggestionsModel", label: "Reply-suggestions model" },
-      { key: "anthropicApiKey", label: "Anthropic API key" },
-      { key: "anthropicFallbackModel", label: "Anthropic fallback model" },
+      { key: "openAiSafetyModel", label: "Safety-review model" },
+      { key: "openAiFloorAnalysisModel", label: "The Floor analysis model" },
     ],
   },
   {
