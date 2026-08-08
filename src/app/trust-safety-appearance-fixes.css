@@ -83,6 +83,14 @@ html[data-loombus-theme="light"] {
   color: var(--loombus-text) !important;
 }
 
+/* Legal Operations uses a scoped wrapper so append-only event headings follow
+ * the selected Loombus appearance instead of a device-level dark utility.
+ * This keeps event labels readable in explicit Light and System-on-light. */
+[data-loombus-legal-operations] .text-zinc-900 {
+  color: var(--loombus-text) !important;
+  -webkit-text-fill-color: var(--loombus-text);
+}
+
 /* Explicitly theme native fields. Safari can otherwise retain a mismatched
  * fill when switching appearance without a full page reload. */
 .account-enforcement-page textarea,
