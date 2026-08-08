@@ -121,6 +121,25 @@ async function rpc<T>(
   return result.data as T;
 }
 
+async function assertRoomStorageDeletionNotHeld(
+  service: SupabaseClient,
+  roomId: string
+) {
+  const held = await rpc<boolean>(service, "legal_room_hold_applies", {
+    p_room_id: roomId,
+  });
+  if (held === true) {
+    throw new Error(
+      "An active Legal Operations preservation hold blocks Room Storage deletion."
+    );
+  }
+  if (held !== false) {
+    throw new Error(
+      "Legal Operations Room hold verification returned an invalid result."
+    );
+  }
+}
+
 function mapJob(row: JsonRecord): Job {
   return {
     id: text(row.id),
@@ -468,6 +487,7 @@ async function deleteClaimed(
         return { deleted, failed, complete: false };
       }
 
+      await assertRoomStorageDeletionNotHeld(service, job.roomId);
       const removed = await service.storage
         .from(bucket)
         .remove(batch.map((item) => item.object_path));
