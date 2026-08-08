@@ -1,0 +1,30 @@
+name: AI governance
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - ".env.example"
+      - "docs/trust-safety/**"
+      - "scripts/verification/verify-ai-system-registry.mjs"
+      - ".github/workflows/ai-governance.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - ".env.example"
+      - "docs/trust-safety/**"
+      - "scripts/verification/verify-ai-system-registry.mjs"
+      - ".github/workflows/ai-governance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-ai-governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify AI system registry and provider boundaries
+        run: node scripts/verification/verify-ai-system-registry.mjs
