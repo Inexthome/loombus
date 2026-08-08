@@ -110,6 +110,7 @@ Every material claim in the body must be supportable by at least one listed sour
       },
       body: JSON.stringify({
         model: RESEARCH_MODEL,
+        store: false,
         tools: [{ type: "web_search" }],
         input: prompt,
         max_output_tokens: 7000,
