@@ -32,7 +32,13 @@ type Candidate = {
   intelligence_score: number | string;
 };
 
-type IntelligenceItem = { replyId: string; title: string; note: string };
+type IntelligenceItem = {
+  replyId: string;
+  title: string;
+  note: string;
+  responseCount?: number;
+  signalCount?: number;
+};
 type IntelligencePayload = {
   summary: string;
   majorPoints: IntelligenceItem[];
@@ -45,6 +51,25 @@ type IntelligencePayload = {
 function clamp(text: string, max = 900) {
   const normalized = text.replace(/\s+/g, " ").trim();
   return normalized.length > max ? `${normalized.slice(0, max)}…` : normalized;
+}
+
+function enrichPayload(payload: IntelligencePayload, candidates: Candidate[]): IntelligencePayload {
+  const candidateMap = new Map(candidates.map((candidate) => [candidate.reply_id, candidate]));
+  const enrich = (items: IntelligenceItem[]) => items.map((item) => {
+    const candidate = candidateMap.get(item.replyId);
+    return {
+      ...item,
+      responseCount: Number(candidate?.direct_response_count ?? 0),
+      signalCount: Number(candidate?.signal_total ?? 0),
+    };
+  });
+  return {
+    ...payload,
+    majorPoints: enrich(payload.majorPoints),
+    counterpoints: enrich(payload.counterpoints),
+    evidenceToVerify: enrich(payload.evidenceToVerify),
+    changedViews: enrich(payload.changedViews),
+  };
 }
 
 function validatePayload(value: unknown, allowedIds: Set<string>): IntelligencePayload {
@@ -127,8 +152,9 @@ export async function POST(request: NextRequest) {
       .eq("feature_key", FEATURE_KEY)
       .maybeSingle();
     if (cached?.source_content_hash === sourceHash) {
+      const cachedIntelligence = enrichPayload(JSON.parse(cached.output_text) as IntelligencePayload, candidates);
       await logAiUsage({ supabase, userId: user.id, featureKey: FEATURE_KEY, targetType: "discussion", targetId: id, provider: "openai", modelName: MODEL, cached: true, success: true });
-      return NextResponse.json({ intelligence: JSON.parse(cached.output_text), cached: true, generatedAt: cached.generated_at, candidateCount: candidates.length });
+      return NextResponse.json({ intelligence: cachedIntelligence, cached: true, generatedAt: cached.generated_at, candidateCount: candidates.length });
     }
 
     const used = access.isAdmin ? 0 : await monthlyUsage(supabase, user.id);
@@ -168,14 +194,15 @@ export async function POST(request: NextRequest) {
 
     let parsed: unknown = {};
     try { parsed = JSON.parse(providerPayload?.choices?.[0]?.message?.content ?? "{}"); } catch { parsed = {}; }
-    const intelligence = validatePayload(parsed, allowedIds);
+    const baseIntelligence = validatePayload(parsed, allowedIds);
+    const intelligence = enrichPayload(baseIntelligence, candidates);
     const generatedAt = new Date().toISOString();
     const usageMetadata = getOpenAiUsageMetadata(providerPayload, MODEL);
 
     await upsertDiscussionAiOutput({
       discussion_id: id,
       feature_key: FEATURE_KEY,
-      output_text: JSON.stringify(intelligence),
+      output_text: JSON.stringify(baseIntelligence),
       model_name: MODEL,
       source_reply_count: candidates.length,
       source_content_hash: sourceHash,
