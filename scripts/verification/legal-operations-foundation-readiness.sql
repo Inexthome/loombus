@@ -1,5 +1,6 @@
--- Read-only readiness checks for Issue #674 Phase 1 legal-operations storage.
--- Run after applying 20260808080000_create_legal_operations_foundation.sql.
+-- Read-only readiness checks for Issue #674 legal-operations storage.
+-- Run after applying 20260808080000_create_legal_operations_foundation.sql and
+-- 20260808094500_audit_legal_preservation_target_inserts.sql.
 -- Every returned row must have status = PASS.
 
 with
@@ -21,6 +22,7 @@ required_functions(signature) as (
     ('public.log_legal_request_change()'),
     ('public.log_legal_hold_change()'),
     ('public.log_legal_disclosure_change()'),
+    ('public.log_legal_preservation_target_insert()'),
     ('public.prevent_legal_operations_append_only_mutation()'),
     ('public.legal_hold_applies(text,text,text,uuid)')
 ),
@@ -35,6 +37,7 @@ required_triggers(name) as (
     ('legal_disclosures_log_change'),
     ('legal_request_events_append_only'),
     ('legal_hold_targets_append_only'),
+    ('legal_hold_targets_log_insert'),
     ('legal_disclosure_items_append_only')
 ),
 legal_tables(name) as (
@@ -144,6 +147,32 @@ checks as (
     )
     and trigger_row.tgenabled <> 'D'
     and not trigger_row.tgisinternal
+
+  union all
+
+  select
+    'preservation_target_insert_trigger_enabled',
+    count(*)::bigint,
+    1::bigint
+  from pg_trigger trigger_row
+  where trigger_row.tgname = 'legal_hold_targets_log_insert'
+    and trigger_row.tgenabled <> 'D'
+    and not trigger_row.tgisinternal
+
+  union all
+
+  select
+    'preservation_targets_have_audit_events',
+    count(*)::bigint,
+    0::bigint
+  from public.legal_preservation_hold_targets target_row
+  where not exists (
+    select 1
+    from public.legal_request_events event_row
+    where event_row.hold_id = target_row.hold_id
+      and event_row.action = 'preservation_target_added'
+      and event_row.details ->> 'target_id' = target_row.id::text
+  )
 
   union all
 
