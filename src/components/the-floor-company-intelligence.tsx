@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Activity, ArrowLeft, BarChart3, BookOpen, CalendarClock, MessageSquare, Scale, ShieldCheck, Users } from "lucide-react";
+import { FloorAnalysisSection, type FloorAnalysisData } from "@/components/the-floor-analysis-section";
 import { supabase } from "@/lib/supabase/client";
 import { getFloorCompany, normalizeFloorTicker } from "@/lib/floor-companies";
 import { floorDisplayName, floorHorizonLabel, floorStanceLabel, type FloorHorizon, type FloorStance } from "@/lib/floor-shared";
@@ -19,6 +20,7 @@ type CallRow = {
 };
 type ThesisRow = {
   id: string;
+  author_id: string;
   ticker: string;
   stance: FloorStance;
   conviction: number;
@@ -26,9 +28,11 @@ type ThesisRow = {
   thesis: string;
   catalysts: string;
   risks: string;
+  lifecycle_status: string | null;
   created_at: string;
   author: AuthorEmbed | AuthorEmbed[] | null;
   floor_calls: CallRow[] | null;
+  floor_thesis_analyses: FloorAnalysisData[] | null;
 };
 
 type Tab = "overview" | "research" | "bull" | "bear" | "timeline" | "discussion" | "analysts";
@@ -59,6 +63,7 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
   const company = getFloorCompany(ticker);
   const [loading, setLoading] = useState(true);
   const [theses, setTheses] = useState<ThesisRow[]>([]);
+  const [userId, setUserId] = useState("");
   const [tab, setTab] = useState<Tab>("overview");
 
   useEffect(() => {
@@ -69,9 +74,10 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
         window.location.replace(`/login?next=${encodeURIComponent(`/the-floor/company/${ticker}`)}`);
         return;
       }
+      if (mounted) setUserId(auth.user.id);
       const { data, error } = await supabase
         .from("floor_theses")
-        .select("id, ticker, stance, conviction, horizon, thesis, catalysts, risks, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, status, outcome, resolves_by, created_at)")
+        .select("id, author_id, ticker, stance, conviction, horizon, thesis, catalysts, risks, lifecycle_status, created_at, author:profiles!floor_theses_author_id_fkey(username, full_name), floor_calls(id, prediction, status, outcome, resolves_by, created_at), floor_thesis_analyses(id, steelman, redteam, blind_spots, model, created_at)")
         .eq("ticker", ticker)
         .or("lifecycle_status.is.null,lifecycle_status.neq.deleted")
         .order("created_at", { ascending: false });
@@ -111,7 +117,7 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
   return (
     <main className="min-h-screen bg-[var(--loombus-page-bg)] px-4 pb-24 pt-5 text-[var(--loombus-text)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <Link href="/the-floor" className="inline-flex items-center gap-2 text-sm font-black text-[var(--loombus-text-muted)] hover:text-[var(--loombus-gold)]">
+        <Link href="/the-floor/overview" className="inline-flex items-center gap-2 text-sm font-black text-[var(--loombus-text-muted)] hover:text-[var(--loombus-gold)]">
           <ArrowLeft className="size-4" aria-hidden="true" /> Back to Opening Bell
         </Link>
 
@@ -172,8 +178,8 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
               })}
             </section>
             <section className="grid gap-5 lg:grid-cols-2">
-              <div className="rounded-3xl border border-emerald-500/20 bg-[var(--loombus-surface)] p-5"><h2 className="flex items-center gap-2 text-lg font-black"><ShieldCheck className="size-5 text-emerald-400"/>Bull case</h2><p className="mt-2 text-sm text-[var(--loombus-text-muted)]">{longCount ? `${longCount} published bullish ${longCount === 1 ? "thesis" : "theses"}. Open the Bull tab to compare catalysts, evidence, and risks.` : "No bullish thesis has been published yet."}</p></div>
-              <div className="rounded-3xl border border-rose-500/20 bg-[var(--loombus-surface)] p-5"><h2 className="flex items-center gap-2 text-lg font-black"><Scale className="size-5 text-rose-400"/>Bear case</h2><p className="mt-2 text-sm text-[var(--loombus-text-muted)]">{shortCount ? `${shortCount} published bearish ${shortCount === 1 ? "thesis" : "theses"}. Open the Bear tab to inspect the counter-case.` : "No bearish thesis has been published yet."}</p></div>
+              <div className="rounded-3xl border border-emerald-500/20 bg-[var(--loombus-surface)] p-5"><h2 className="flex items-center gap-2 text-lg font-black"><ShieldCheck className="size-5 text-emerald-400"/>Bull case</h2><p className="mt-2 text-sm text-[var(--loombus-text-muted)]">{longCount ? `${longCount} published bullish ${longCount === 1 ? "thesis" : "theses"}. Open the Bull tab to compare catalysts, evidence, risks, and AI red-team analysis.` : "No bullish thesis has been published yet."}</p></div>
+              <div className="rounded-3xl border border-rose-500/20 bg-[var(--loombus-surface)] p-5"><h2 className="flex items-center gap-2 text-lg font-black"><Scale className="size-5 text-rose-400"/>Bear case</h2><p className="mt-2 text-sm text-[var(--loombus-text-muted)]">{shortCount ? `${shortCount} published bearish ${shortCount === 1 ? "thesis" : "theses"}. Open the Bear tab to inspect the counter-case and AI red-team analysis.` : "No bearish thesis has been published yet."}</p></div>
             </section>
             <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><h2 className="flex items-center gap-2 text-lg font-black"><Activity className="size-5 text-[var(--loombus-gold)]"/>Accountability</h2><p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">{resolvedCalls.length ? `${resolvedCalls.length} falsifiable ${resolvedCalls.length === 1 ? "call has" : "calls have"} reached resolution and remain attached to the original research.` : "No calls have resolved yet. Research Confidence will deepen as claims reach their deadlines and outcomes remain visible."}</p></section>
           </div>
@@ -186,6 +192,12 @@ export default function CompanyIntelligencePage({ ticker: rawTicker }: { ticker:
                 <div className="flex flex-wrap items-center gap-2 text-xs font-black"><span className="rounded-full bg-[var(--loombus-gold-surface)] px-3 py-1 text-[var(--loombus-gold)]">{floorStanceLabel(item.stance)}</span><span className="rounded-full bg-[var(--loombus-surface-muted)] px-3 py-1 text-[var(--loombus-text-muted)]">{floorHorizonLabel(item.horizon)}</span><span className="ml-auto text-[var(--loombus-text-subtle)]">Conviction {item.conviction}/5</span></div>
                 <p className="mt-4 whitespace-pre-line text-sm leading-6">{normalizePublicText(item.thesis)}</p>
                 <div className="mt-4 grid gap-4 sm:grid-cols-2"><div><p className="text-xs font-black uppercase tracking-wide text-[var(--loombus-text-subtle)]">Catalysts</p><p className="mt-1 whitespace-pre-line text-sm leading-6 text-[var(--loombus-text-muted)]">{normalizePublicText(item.catalysts) || "Not provided"}</p></div><div><p className="text-xs font-black uppercase tracking-wide text-[var(--loombus-text-subtle)]">Risks</p><p className="mt-1 whitespace-pre-line text-sm leading-6 text-[var(--loombus-text-muted)]">{normalizePublicText(item.risks) || "Not provided"}</p></div></div>
+                <FloorAnalysisSection
+                  thesisId={item.id}
+                  analysis={item.floor_thesis_analyses?.[0] ?? null}
+                  canRequestAnalysis={item.author_id === userId && item.lifecycle_status === "active"}
+                  onAnalysisGenerated={() => window.location.reload()}
+                />
                 <p className="mt-4 border-t border-[var(--loombus-border-muted)] pt-3 text-xs font-bold text-[var(--loombus-text-subtle)]">{authorName(item.author)} · {new Date(item.created_at).toLocaleDateString()}</p>
               </article>
             )) : <div className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-8 text-center text-sm font-bold text-[var(--loombus-text-muted)]">No research is available in this section yet.</div>}
