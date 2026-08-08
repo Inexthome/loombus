@@ -160,7 +160,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      authorization,
+      // Legacy client display field only. Authorization decisions use can_prepare_disclosure.
+      authorization: { ...authorization, can_export: authorization.can_prepare_disclosure },
       requests: result.data ?? [],
       phase: phaseState(),
     });
@@ -234,7 +235,8 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    authorization,
+    // Legacy client display field only. Authorization decisions use can_prepare_disclosure.
+    authorization: { ...authorization, can_export: authorization.can_prepare_disclosure },
     request: requestResult.row,
     disclosures: disclosureResult.data ?? [],
     items,
