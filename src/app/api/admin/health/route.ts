@@ -142,6 +142,9 @@ function getConfigStatus() {
     siteUrl: present(process.env.NEXT_PUBLIC_SITE_URL),
 
     openAiApiKey: present(process.env.OPENAI_API_KEY),
+    openAiDefaultModel: present(process.env.OPENAI_MODEL),
+    openAiResearchModel: present(process.env.OPENAI_RESEARCH_MODEL),
+    openAiSearchAiModel: present(process.env.OPENAI_SEARCH_AI_MODEL),
     openAiSummaryModel: present(process.env.OPENAI_SUMMARY_MODEL),
     openAiTakeawaysModel: present(process.env.OPENAI_TAKEAWAYS_MODEL),
     openAiWhatChangedModel: present(process.env.OPENAI_WHAT_CHANGED_MODEL),
@@ -149,8 +152,8 @@ function getConfigStatus() {
     openAiQualityCheckModel: present(process.env.OPENAI_QUALITY_CHECK_MODEL),
     openAiRewriteModel: present(process.env.OPENAI_REWRITE_MODEL),
     openAiReplySuggestionsModel: present(process.env.OPENAI_REPLY_SUGGESTIONS_MODEL),
-    anthropicApiKey: present(process.env.ANTHROPIC_API_KEY),
-    anthropicFallbackModel: present(process.env.ANTHROPIC_FALLBACK_MODEL),
+    openAiSafetyModel: present(process.env.OPENAI_SAFETY_MODEL),
+    openAiFloorAnalysisModel: present(process.env.OPENAI_FLOOR_ANALYSIS_MODEL),
 
     stripeSecretKey: present(process.env.STRIPE_SECRET_KEY),
     stripeWebhookSecret: present(process.env.STRIPE_WEBHOOK_SECRET),
@@ -271,6 +274,9 @@ function getServiceChecks(
     config.siteUrl,
   ].filter(Boolean).length;
   const aiModelsConfigured = [
+    config.openAiDefaultModel,
+    config.openAiResearchModel,
+    config.openAiSearchAiModel,
     config.openAiSummaryModel,
     config.openAiTakeawaysModel,
     config.openAiWhatChangedModel,
@@ -278,6 +284,8 @@ function getServiceChecks(
     config.openAiQualityCheckModel,
     config.openAiRewriteModel,
     config.openAiReplySuggestionsModel,
+    config.openAiSafetyModel,
+    config.openAiFloorAnalysisModel,
   ].filter(Boolean).length;
   const billingPricesConfigured = [
     config.premiumMonthlyPrice || config.premiumMonthlyFallbackPrice,
@@ -345,11 +353,11 @@ function getServiceChecks(
           : "healthy",
       summary: !config.openAiApiKey
         ? "OpenAI key missing"
-        : `${aiModelsConfigured}/7 model settings configured`,
+        : `${aiModelsConfigured}/12 OpenAI model settings configured`,
       detail:
         failedAi24h > 0
           ? `${failedAi24h} AI events failed during the last 24 hours.`
-          : "No recent AI failures require attention.",
+          : "OpenAI is the configured external LLM provider and no recent AI failures require attention.",
       destination: "/admin/ai-access",
     },
     {
