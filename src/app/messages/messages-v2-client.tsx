@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   Archive,
   Bell,
@@ -19,6 +20,7 @@ import {
   Search,
   Send,
   ShieldCheck,
+  Sparkles,
   SquarePen,
   Trash2,
   UserRound,
@@ -43,6 +45,9 @@ import {
   isDifferentMessageDay,
 } from "./messages-v2-model";
 import { useMessagesV2 } from "./use-messages-v2";
+import { supabase } from "@/lib/supabase/client";
+
+type MessageAiAssistMode = "clearer" | "warmer" | "shorter" | "rewrite";
 
 function LoadingState() {
   return (
@@ -118,6 +123,58 @@ export default function MessagesV2Client() {
     handleSendMessage,
     handleComposerKeyDown,
   } = controller;
+  const [aiAssistWorking, setAiAssistWorking] = useState<MessageAiAssistMode | null>(null);
+
+  async function runAiAssist(mode: MessageAiAssistMode) {
+    if (aiAssistWorking || sending) return;
+
+    const draft = composerText.trim();
+    if (draft.length < 3) {
+      showNotice("Write a message draft first.", "neutral");
+      return;
+    }
+
+    setAiAssistWorking(mode);
+    showNotice("", "neutral");
+
+    try {
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token ?? "";
+      if (!accessToken) {
+        showNotice("Log in to use AI message assist.", "error");
+        return;
+      }
+
+      const response = await fetch("/api/messages/ai-assist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ text: draft, mode }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        showNotice(payload.error ?? "Unable to improve this message.", response.status >= 500 ? "error" : "neutral");
+        return;
+      }
+
+      const assistedText = String(payload.assistedText ?? "").trim();
+      if (!assistedText) {
+        showNotice("AI message assist returned no text.", "error");
+        return;
+      }
+
+      setComposerText(assistedText);
+      showNotice("AI assist updated your draft. Review it before sending.", "success");
+      window.setTimeout(() => composerRef.current?.focus(), 0);
+    } catch {
+      showNotice("Unable to improve this message.", "error");
+    } finally {
+      setAiAssistWorking(null);
+    }
+  }
 
   if (loading) return <LoadingState />;
 
@@ -540,6 +597,37 @@ export default function MessagesV2Client() {
                 {attachmentMessage ? (
                   <p className="messages-v2-attachment-message">{attachmentMessage}</p>
                 ) : null}
+
+                <div className="mb-2 flex flex-wrap items-center gap-2 px-1" aria-label="AI message assist">
+                  {([
+                    ["clearer", "Clearer"],
+                    ["warmer", "Warmer"],
+                    ["shorter", "Shorter"],
+                    ["rewrite", "Rewrite"],
+                  ] as const).map(([mode, label]) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => void runAiAssist(mode)}
+                      disabled={
+                        Boolean(aiAssistWorking) ||
+                        sending ||
+                        composerText.trim().length < 3
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--loombus-border)] bg-[var(--loombus-surface)] px-3 py-1.5 text-xs font-bold text-[var(--loombus-text-muted)] transition hover:border-[var(--loombus-gold)] hover:text-[var(--loombus-text)] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {aiAssistWorking === mode ? (
+                        <LoaderCircle className="is-spinning" aria-hidden="true" size={13} />
+                      ) : (
+                        <Sparkles aria-hidden="true" size={13} />
+                      )}
+                      {aiAssistWorking === mode ? "Working…" : label}
+                    </button>
+                  ))}
+                  <span className="rounded-full border border-[var(--loombus-gold)]/40 bg-[var(--loombus-gold-surface)] px-3 py-1.5 text-xs font-black text-[var(--loombus-gold)]">
+                    Premium Plus AI
+                  </span>
+                </div>
 
                 <div className="messages-v2-composer">
                   <label className="messages-v2-attach-button" title="Add images or PDFs">

@@ -65,6 +65,13 @@ function clampText(value: unknown, maxLength: number) {
     .slice(0, maxLength);
 }
 
+function isAiEligibleSearchResult(result: EverythingSearchResult) {
+  // Defense in depth: saved items are never AI-grounding sources, even if a
+  // future indexing change accidentally assigns them a broader visibility.
+  if (result.type === "saved") return false;
+  return result.visibility !== "member" && result.visibility !== "private";
+}
+
 function compactContextItem(result: EverythingSearchResult, index: number) {
   const details = [
     result.snippet,
@@ -87,10 +94,7 @@ function compactContextItem(result: EverythingSearchResult, index: number) {
 
 function compactContext(results: EverythingSearchResult[]) {
   return results
-    .filter(
-      (result) =>
-        result.visibility !== "member" && result.visibility !== "private"
-    )
+    .filter(isAiEligibleSearchResult)
     .slice(0, 12)
     .map(compactContextItem)
     .join("\n\n")
@@ -180,13 +184,14 @@ async function generateSearchAnswer({
     },
     body: JSON.stringify({
       model: SEARCH_AI_MODEL,
+      store: false,
       temperature: 0.2,
       max_tokens: 420,
       messages: [
         {
           role: "system",
           content:
-            "You are Loombus AI inside Everything Search. Organize only the supplied Loombus sources. Never claim to search the open web. Never invent businesses, people, prices, reviews, expertise, availability, consensus, or source counts. Use source markers such as [1] only when the numbered source directly supports the sentence. Distinguish member experiences from verified facts. Private Room and private saved-item material is not supplied. When evidence is thin or conflicting, say so plainly. Keep the response practical and concise. End with one useful next action inside Loombus.",
+            "You are Loombus AI inside Everything Search. Organize only the supplied Loombus sources. Never claim to search the open web. Never invent businesses, people, prices, reviews, expertise, availability, consensus, or source counts. Use source markers such as [1] only when the numbered source directly supports the sentence. Distinguish member experiences from verified facts. Private Room and saved-item material is not supplied. When evidence is thin or conflicting, say so plainly. Keep the response practical and concise. End with one useful next action inside Loombus.",
         },
         {
           role: "user",
@@ -249,17 +254,14 @@ export async function POST(request: NextRequest) {
       request,
       search.results
     );
-    const eligibleResults = teenFilter.results.filter(
-      (result) =>
-        result.visibility !== "member" && result.visibility !== "private"
-    );
+    const eligibleResults = teenFilter.results.filter(isAiEligibleSearchResult);
     const context = compactContext(eligibleResults);
 
     if (!context) {
       return jsonError(
         teenFilter.limited
           ? "No sources eligible under the current teen-safety settings are available for AI organization. Private Room, saved-item, and restricted commercial material stays excluded."
-          : "No public, member-directory, or Premium sources are available for AI organization. Private Room and saved-item content stays private.",
+          : "No eligible Loombus sources are available for AI organization. Private Room and saved-item content stays private.",
         409,
         { code: "no_ai_eligible_search_context" }
       );

@@ -23,6 +23,22 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
+function getServiceSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase service configuration.");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 function jsonError(message: string, status: number, code?: string) {
   return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
 }
@@ -67,7 +83,33 @@ export async function PATCH(request: NextRequest) {
     return jsonError("Private note is too long.", 400);
   }
 
-  const { data, error } = await supabase
+  // Verify ownership with the caller-scoped client before using the service
+  // client for the write. The bookmarks table historically has no owner
+  // UPDATE RLS path even though this API route supports note mutations, which
+  // made PostgREST return zero rows and `.single()` surface PGRST116.
+  const { data: ownedBookmark, error: ownershipError } = await supabase
+    .from("bookmarks")
+    .select("id")
+    .eq("id", bookmarkId)
+    .eq("user_id", accountAccess.user.id)
+    .maybeSingle();
+
+  if (ownershipError) {
+    return jsonError("Unable to verify the saved discussion.", 400);
+  }
+
+  if (!ownedBookmark) {
+    return jsonError("Saved discussion not found.", 404);
+  }
+
+  let service;
+  try {
+    service = getServiceSupabase();
+  } catch {
+    return jsonError("Server configuration error.", 500);
+  }
+
+  const { data, error } = await service
     .from("bookmarks")
     .update({
       private_note: note || null,

@@ -4,7 +4,7 @@ Status: engineering disposition defined; no AI deletion handler or provider dele
 
 Issue: #668
 
-Evidence date: 2026-08-05
+Evidence date: 2026-08-08
 
 ## Scope
 
@@ -19,7 +19,8 @@ It does not approve a retention period, legal basis, provider deletion request, 
 - The Floor thesis red-team analyses stored in `floor_thesis_analyses`
 - Research Desk drafts generated through the OpenAI Responses API and web search
 - administrator-only Research Desk generation and approval provenance
-- moderation and safety model calls
+- moderation and safety model calls, including covered private-message safety review
+- private-message AI writing assist
 - member helpfulness metadata stored separately in `ai_output_ratings`
 
 The reviewed repository evidence shows feature-specific persistence rather than one canonical platform-wide prompt, output, or trace table. This does not prove that prompts, outputs, traces, logs, or provider copies are absent.
@@ -56,18 +57,58 @@ The reviewed implementation includes at least these distinct first-party categor
 | Category | Example | Current boundary |
 |---|---|---|
 | Stored AI output | `floor_thesis_analyses` | Linked to a Floor thesis; service-authored; no automatic deletion approved |
-| Source-linked derivative | `discussion_summaries` and other summaries | Owning source, visibility, moderation, Search, cache, and legal-hold decisions apply |
-| Generation provenance | Research Desk model, prompt-version, generating-admin, approving-admin evidence | Administrator-only audit and publication evidence may require retention |
+| Source-linked derivative | `discussion_summaries` and `discussion_ai_outputs` | Owning source, visibility, moderation, Search, cache, and legal-hold decisions apply |
+| Generation provenance | Research Desk model, provider, prompt-version, generating-admin, approving-admin evidence | Administrator-only audit and publication evidence may require retention |
 | Product feedback | `ai_output_ratings` | Separately gated deletion handler deletes only the member rating, not the rated output or provider copy |
+| Runtime usage metadata | `ai_usage_events` | Provider/model/feature/target/success/cache/token/cost/error metadata; not intended as a prompt/output-body store |
+| Safety evidence | rule/AI safety events | Bounded content previews can be retained for warn/block events, including private-message mode |
 | Runtime request and response data | feature-specific route payloads and generated responses | Persistence, logs, caching, observability, and incident copies require inventory |
 
 Deleting a rating, hiding a response, removing access, or deleting one first-party row is not proof that all associated data was deleted.
 
 ## Provider boundary
 
-Repository evidence identifies OpenAI and Anthropic call paths. Provider-side retention, deletion APIs, project settings, training controls, abuse-monitoring retention, web-search processing, backups, subprocessors, and contractual obligations have not been verified by this phase.
+### Active provider
 
-A provider deletion outcome requires evidence tied to the correct provider project, request or object scope, account, date, and response. A successful API response alone is insufficient if the scope, logs, safety copies, backups, or subprocessors remain unclear.
+Issue #669 standardizes active external LLM processing on OpenAI. New production requests must not use Anthropic after the migration is deployed.
+
+Owner-supplied OpenAI API Platform evidence verified on 2026-08-08 establishes:
+
+- project: `Loombus Production`
+- geography: `Global`
+- project Data retention UI: `None`
+- API call logging: enabled per call
+- model-feedback sharing: disabled
+- evaluation/fine-tuning sharing: disabled
+- API input/output sharing: disabled
+- production `OPENAI_API_KEY`: active; last-used evidence observed 2026-08-07
+- Zero Data Retention: not shown, therefore not claimed
+- Modified Abuse Monitoring: not shown, therefore not claimed
+
+`Data retention: None` is not treated as Zero Data Retention.
+
+The Issue #669 hardening explicitly sends `store: false` on the audited high-sensitivity/Responses paths including Research Desk, grounded Search AI, private-message AI assist, safety review, Discussion Summary, Conversation Intelligence, and The Floor analysis. This controls application-state storage for those requests; it does not by itself prove absence of provider security/abuse-monitoring logs, backups, subprocessors, or legally required retention.
+
+Provider-side deletion APIs/workflows, DPA/addendum status, provider backup/subprocessor deletion, and exact provider human abuse-review treatment remain unverified unless separate evidence is recorded.
+
+### Legacy Anthropic data
+
+Anthropic was previously used for Discussion Summary fallback, safety fallback, and The Floor thesis red-team analysis. Issue #669 retires those call paths. Historical Anthropic-attributed outputs, usage records, logs, provider copies, or backups may still exist and must retain truthful historical provider attribution.
+
+Retiring a provider credential does not establish deletion of historical provider-held data.
+
+## Private and restricted content
+
+A blanket statement that private messages never reach an AI provider would be false.
+
+- Explicit private-message AI writing assist sends the member's unsent draft to OpenAI and returns the rewrite to that member.
+- Covered private-message sends run the centralized safety policy, which can send message text to OpenAI after deterministic rule checks.
+- AI warn/block safety events can retain bounded previews in first-party safety/audit history.
+- Anthropic fallback is removed from the private-message safety path by Issue #669.
+
+Discussion AI routes use the authenticated caller's database context. If the caller is permitted by RLS to read a restricted Discussion, its text may be processed by an explicitly invoked Discussion AI feature. The audited routes do not send Discussion attachment binaries, images, PDF bytes, or video bytes.
+
+Grounded Search AI excludes saved results and member/private visibility results before building model context. Saved items can exist in first-party Everything Search while remaining ineligible for Ask Loombus AI processing.
 
 ## Required verification sequence
 

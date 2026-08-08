@@ -170,6 +170,7 @@ export async function POST(request: NextRequest) {
       headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: MODEL,
+        store: false,
         temperature: 0.15,
         max_tokens: 1500,
         response_format: { type: "json_object" },
@@ -185,9 +186,10 @@ export async function POST(request: NextRequest) {
         ],
       }),
     });
-    const providerPayload = await response.json();
+    const providerPayload = await response.json().catch(() => ({}));
     if (!response.ok) {
       const message = providerPayload?.error?.message || "Conversation intelligence generation failed.";
+      await logAiUsage({ supabase, userId: user.id, featureKey: FEATURE_KEY, targetType: "discussion", targetId: id, provider: "openai", modelName: MODEL, cached: false, success: false, errorMessage: message });
       const aiError = getAiProviderErrorResponse(message);
       return NextResponse.json({ error: aiError.error }, { status: aiError.status });
     }

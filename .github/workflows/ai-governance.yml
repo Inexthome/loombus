@@ -1,0 +1,38 @@
+name: AI governance
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - ".env.example"
+      - "docs/trust-safety/**"
+      - "scripts/verification/verify-ai-system-registry.mjs"
+      - "scripts/verification/verify-ai-safety-fail-closed.mjs"
+      - ".github/workflows/ai-governance.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - ".env.example"
+      - "docs/trust-safety/**"
+      - "scripts/verification/verify-ai-system-registry.mjs"
+      - "scripts/verification/verify-ai-safety-fail-closed.mjs"
+      - ".github/workflows/ai-governance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-ai-governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Verify AI system registry and provider boundaries
+        run: node scripts/verification/verify-ai-system-registry.mjs
+      - name: Simulate OpenAI safety outage and verify fail-closed behavior
+        run: node scripts/verification/verify-ai-safety-fail-closed.mjs
