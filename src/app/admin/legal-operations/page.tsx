@@ -11,5 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default function LegalOperationsPage() {
-  return <LegalOperationsClient />;
+  return (
+    <div data-loombus-legal-operations>
+      <LegalOperationsClient />
+    </div>
+  );
 }
