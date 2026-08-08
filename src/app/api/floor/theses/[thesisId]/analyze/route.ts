@@ -7,8 +7,14 @@ import {
 } from "@/lib/floor-operations";
 
 const PLACEHOLDER = "Generating...";
+const STALE_CLAIM_MS = 2 * 60 * 1000;
 
 type RouteContext = { params: Promise<{ thesisId: string }> };
+
+type AnalysisClaim = {
+  id: string;
+  created_at: string;
+};
 
 function json(data: unknown, status = 200) {
   return NextResponse.json(data, {
@@ -19,6 +25,20 @@ function json(data: unknown, status = 200) {
 
 function jsonError(message: string, status: number) {
   return json({ error: message }, status);
+}
+
+function isPlaceholderAnalysis(value: {
+  steelman: string;
+  redteam: string;
+  blind_spots: string;
+  model: string | null;
+}) {
+  return (
+    value.model === null &&
+    value.steelman === PLACEHOLDER &&
+    value.redteam === PLACEHOLDER &&
+    value.blind_spots === PLACEHOLDER
+  );
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
@@ -50,12 +70,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const service = createFloorServiceSupabase();
 
-  // Claim the (thesis_id) slot before spending on a model call. The unique
-  // index on floor_thesis_analyses(thesis_id) makes this atomic -- a
-  // concurrent request loses here with 23505, before it ever calls the
-  // model, instead of racing past a count() check and paying for a
-  // duplicate generation.
-  const { data: claim, error: claimError } = await service
+  // Claim the thesis before spending on a provider call. The unique index on
+  // thesis_id keeps this atomic and prevents two concurrent generations from
+  // both paying for model output.
+  const { data: insertedClaim, error: claimError } = await service
     .from("floor_thesis_analyses")
     .insert({
       thesis_id: thesisId,
@@ -63,21 +81,58 @@ export async function POST(request: NextRequest, context: RouteContext) {
       redteam: PLACEHOLDER,
       blind_spots: PLACEHOLDER,
     })
-    .select("id")
+    .select("id, created_at")
     .single();
 
+  let claim: AnalysisClaim | null = insertedClaim;
+
   if (claimError) {
-    if (claimError.code === "23505") {
+    if (claimError.code !== "23505") {
+      return jsonError(claimError.message || "Unable to start the analysis.", 500);
+    }
+
+    // A previous interrupted request can leave the claim placeholder behind.
+    // Recover only a stale placeholder. A fresh placeholder still represents
+    // an in-flight request and must not trigger duplicate model spend.
+    const { data: existing, error: existingError } = await service
+      .from("floor_thesis_analyses")
+      .select("id, steelman, redteam, blind_spots, model, created_at")
+      .eq("thesis_id", thesisId)
+      .maybeSingle();
+
+    if (existingError) {
+      return jsonError(existingError.message || "Unable to inspect the existing analysis.", 500);
+    }
+    if (!existing) {
+      return jsonError("Unable to recover the existing analysis claim.", 500);
+    }
+    if (!isPlaceholderAnalysis(existing)) {
       return jsonError("This thesis already has an analysis.", 409);
     }
-    return jsonError(claimError.message || "Unable to start the analysis.", 500);
+
+    const createdAt = new Date(existing.created_at).getTime();
+    const isStale = Number.isFinite(createdAt) && Date.now() - createdAt >= STALE_CLAIM_MS;
+    if (!isStale) {
+      return jsonError("An analysis is already being generated. Try again shortly.", 409);
+    }
+
+    claim = { id: existing.id, created_at: existing.created_at };
+  }
+
+  if (!claim) {
+    return jsonError("Unable to start the analysis.", 500);
   }
 
   let analysis;
   try {
     analysis = await generateFloorThesisAnalysis(thesis);
   } catch (error) {
-    await service.from("floor_thesis_analyses").delete().eq("id", claim.id);
+    const cleanup = await service.from("floor_thesis_analyses").delete().eq("id", claim.id);
+    if (cleanup.error) {
+      console.error("[floor-ai-analysis] failed to remove incomplete claim", {
+        code: cleanup.error.code,
+      });
+    }
     return jsonError(
       error instanceof Error ? error.message : "Unable to generate the analysis.",
       502
