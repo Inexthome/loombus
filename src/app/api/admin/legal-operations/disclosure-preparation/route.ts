@@ -130,7 +130,7 @@ function cleanFieldNames(value: unknown) {
 }
 
 export async function GET(request: NextRequest) {
-  const access = await requireLegalOperationsAccess(request, "can_export");
+  const access = await requireLegalOperationsAccess(request, "can_prepare_disclosure");
   if (!access.user) return access.response;
 
   const { service, user, authorization } = access;
@@ -243,7 +243,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const access = await requireLegalOperationsAccess(request, "can_export");
+  const access = await requireLegalOperationsAccess(request, "can_prepare_disclosure");
   if (!access.user) return access.response;
 
   const { service, user } = access;
