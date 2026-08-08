@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase/client";
 import { Loader2, ShieldQuestion, Sparkles } from "lucide-react";
 import { useState } from "react";
 
+const PLACEHOLDER = "Generating...";
+
 export type FloorAnalysisData = {
   id: string;
   steelman: string;
@@ -29,6 +31,16 @@ function analysisBlock(label: string, value: string) {
   );
 }
 
+function isPlaceholderAnalysis(analysis: FloorAnalysisData | null) {
+  return Boolean(
+    analysis &&
+      analysis.model === null &&
+      analysis.steelman === PLACEHOLDER &&
+      analysis.redteam === PLACEHOLDER &&
+      analysis.blind_spots === PLACEHOLDER
+  );
+}
+
 export function FloorAnalysisSection({
   thesisId,
   analysis,
@@ -42,6 +54,8 @@ export function FloorAnalysisSection({
 }) {
   const [requesting, setRequesting] = useState(false);
   const [error, setError] = useState("");
+  const incompletePlaceholder = isPlaceholderAnalysis(analysis);
+  const visibleAnalysis = incompletePlaceholder ? null : analysis;
 
   async function requestAnalysis() {
     if (requesting) return;
@@ -65,7 +79,7 @@ export function FloorAnalysisSection({
     }
   }
 
-  if (!analysis && !canRequestAnalysis) return null;
+  if (!visibleAnalysis && !canRequestAnalysis) return null;
 
   return (
     <div className="mt-4 border-t border-[var(--loombus-border-muted)] pt-4">
@@ -73,7 +87,7 @@ export function FloorAnalysisSection({
         <span className="text-xs font-black uppercase tracking-wide text-[var(--loombus-text-subtle)]">
           AI red-team
         </span>
-        {!analysis && canRequestAnalysis ? (
+        {!visibleAnalysis && canRequestAnalysis ? (
           <button
             type="button"
             onClick={requestAnalysis}
@@ -85,7 +99,7 @@ export function FloorAnalysisSection({
             ) : (
               <Sparkles className="size-3.5" aria-hidden="true" />
             )}
-            Request AI red-team analysis
+            {incompletePlaceholder ? "Retry AI red-team analysis" : "Request AI red-team analysis"}
           </button>
         ) : null}
       </div>
@@ -96,11 +110,11 @@ export function FloorAnalysisSection({
         </p>
       ) : null}
 
-      {analysis ? (
+      {visibleAnalysis ? (
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          {analysisBlock("Steelman", analysis.steelman)}
-          {analysisBlock("Red-team", analysis.redteam)}
-          {analysisBlock("Blind spots", analysis.blind_spots)}
+          {analysisBlock("Steelman", visibleAnalysis.steelman)}
+          {analysisBlock("Red-team", visibleAnalysis.redteam)}
+          {analysisBlock("Blind spots", visibleAnalysis.blind_spots)}
         </div>
       ) : !canRequestAnalysis ? (
         <p className="mt-2 flex items-center gap-1.5 text-sm text-[var(--loombus-text-subtle)]">
