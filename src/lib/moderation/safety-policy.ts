@@ -121,7 +121,19 @@ function getSafetyContentType(mode: LoombusSafetyMode) {
 }
 
 function getAiSafetyContentType(mode: LoombusSafetyMode) {
-  return mode === "public_content" ? "discussion" : "reply";
+  if (mode === "public_content") {
+    return "discussion" as const;
+  }
+
+  if (mode === "private_message") {
+    return "private_message" as const;
+  }
+
+  if (mode === "profile_text") {
+    return "profile" as const;
+  }
+
+  return "reply" as const;
 }
 
 export async function reviewLoombusSafety({
