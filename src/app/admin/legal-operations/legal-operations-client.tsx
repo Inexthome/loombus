@@ -177,6 +177,23 @@ function formatDate(value: string | null | undefined) {
   });
 }
 
+function localDateTimeToIso(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("Enter a valid local date and time.");
+  }
+  return date.toISOString();
+}
+
+function isoToLocalDateTime(value: string | null | undefined) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
 async function authorizedFetch(input: string, init: RequestInit = {}) {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
@@ -427,12 +444,40 @@ export default function LegalOperationsClient() {
     setWorking(true);
     setMessage("");
     try {
-      await post({ operation: "create_hold", requestId: selectedId, ...holdForm });
+      await post({
+        operation: "create_hold",
+        requestId: selectedId,
+        legalBasisSummary: holdForm.legalBasisSummary,
+        scopeSummary: holdForm.scopeSummary,
+        expiresAt: localDateTimeToIso(holdForm.expiresAt),
+        nextReviewAt: localDateTimeToIso(holdForm.nextReviewAt),
+      });
       setHoldForm({ legalBasisSummary: "", scopeSummary: "", expiresAt: "", nextReviewAt: "" });
       await loadDetail(selectedId);
       setMessage("Draft preservation hold created.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to create hold.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function updateDraftHoldSchedule(holdId: string, expiresAt: string, nextReviewAt: string) {
+    if (!selectedId) return;
+    setWorking(true);
+    setMessage("");
+    try {
+      await post({
+        operation: "update_hold",
+        requestId: selectedId,
+        holdId,
+        expiresAt: localDateTimeToIso(expiresAt),
+        nextReviewAt: localDateTimeToIso(nextReviewAt),
+      });
+      await loadDetail(selectedId);
+      setMessage("Draft preservation hold schedule updated.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to update preservation hold schedule.");
     } finally {
       setWorking(false);
     }
@@ -677,6 +722,7 @@ export default function LegalOperationsClient() {
                     <TextAreaField label="Scope summary" value={holdForm.scopeSummary} onChange={(value) => setHoldForm({ ...holdForm, scopeSummary: value })} />
                     <label className={label}>Expires at<input className={field} type="datetime-local" value={holdForm.expiresAt} onChange={(event) => setHoldForm({ ...holdForm, expiresAt: event.target.value })} /></label>
                     <label className={label}>Next review at<input className={field} type="datetime-local" value={holdForm.nextReviewAt} onChange={(event) => setHoldForm({ ...holdForm, nextReviewAt: event.target.value })} /></label>
+                    <p className="text-xs text-zinc-500 md:col-span-2">Date and time fields are interpreted in this browser&apos;s local timezone and stored as timezone-aware UTC timestamps.</p>
                     <button className={button} disabled={working || holdForm.legalBasisSummary.trim().length < 5 || holdForm.scopeSummary.trim().length < 5} type="button" onClick={() => void createHold()}>Create draft hold</button>
                   </div>
                 ) : null}
@@ -696,6 +742,13 @@ export default function LegalOperationsClient() {
                       <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300"><strong>Basis:</strong> {hold.legal_basis_summary}</p>
                       <p className="mt-1 text-sm text-zinc-700 dark:text-zinc-300"><strong>Scope:</strong> {hold.scope_summary}</p>
                       <p className="mt-2 text-xs text-zinc-500">Starts: {formatDate(hold.starts_at)} · Expires: {formatDate(hold.expires_at)} · Review: {formatDate(hold.next_review_at)}</p>
+                      {authorization?.can_preserve && hold.status === "draft" ? (
+                        <DraftHoldScheduleEditor
+                          hold={hold}
+                          working={working}
+                          onSave={(expiresAt, nextReviewAt) => void updateDraftHoldSchedule(hold.id, expiresAt, nextReviewAt)}
+                        />
+                      ) : null}
                       <div className="mt-3 grid gap-2">
                         {(targetsByHold.get(hold.id) ?? []).map((target) => (
                           <div key={target.id} className="rounded-lg bg-zinc-50 px-3 py-2 text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
@@ -804,5 +857,40 @@ function TextAreaField({
       {heading}
       <textarea className={field} rows={3} value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
+  );
+}
+
+function DraftHoldScheduleEditor({
+  hold,
+  working,
+  onSave,
+}: {
+  hold: HoldRow;
+  working: boolean;
+  onSave: (expiresAt: string, nextReviewAt: string) => void;
+}) {
+  const [expiresAt, setExpiresAt] = useState(() => isoToLocalDateTime(hold.expires_at));
+  const [nextReviewAt, setNextReviewAt] = useState(() => isoToLocalDateTime(hold.next_review_at));
+
+  useEffect(() => {
+    setExpiresAt(isoToLocalDateTime(hold.expires_at));
+    setNextReviewAt(isoToLocalDateTime(hold.next_review_at));
+  }, [hold.expires_at, hold.next_review_at]);
+
+  return (
+    <div className="mt-3 grid gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800 md:grid-cols-2">
+      <label className={label}>
+        Draft expires at
+        <input className={field} type="datetime-local" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} />
+      </label>
+      <label className={label}>
+        Draft next review at
+        <input className={field} type="datetime-local" value={nextReviewAt} onChange={(event) => setNextReviewAt(event.target.value)} />
+      </label>
+      <p className="text-xs text-zinc-500 md:col-span-2">Use local wall-clock time. Saving converts these values to timezone-aware UTC before the restricted API receives them.</p>
+      <button className={secondaryButton} disabled={working} type="button" onClick={() => onSave(expiresAt, nextReviewAt)}>
+        Save draft schedule
+      </button>
+    </div>
   );
 }
