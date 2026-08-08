@@ -1,12 +1,10 @@
-import { generateAnthropicText } from "@/lib/anthropic-ai";
-
 export type AiSafetyAction = "allow" | "warn" | "block";
 
 export type AiSafetyReview = {
   action: AiSafetyAction;
   category: string;
   message: string;
-  provider: "openai" | "anthropic" | "none";
+  provider: "openai" | "none";
   modelName: string | null;
   unavailable?: boolean;
 };
@@ -22,10 +20,6 @@ const OPENAI_SAFETY_MODEL =
   process.env.OPENAI_QUALITY_CHECK_MODEL ||
   process.env.OPENAI_SUMMARY_MODEL ||
   "gpt-4o-mini";
-
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_FALLBACK_MODEL =
-  process.env.ANTHROPIC_FALLBACK_MODEL || "claude-haiku-4-5-20251001";
 
 const SAFETY_SYSTEM_PROMPT =
   "You are a strict but careful safety reviewer for Loombus, a public discussion platform focused on thoughtful discourse. Classify submitted user content before it is published. Return only valid JSON with keys: action, category, message. action must be allow, warn, or block. Use block only for high-confidence threats, intimidation, stalking, doxxing/private information abuse, sexual exploitation or abuse, non-consensual sexual content, child sexual content, severe targeted harassment, or direct hateful/dehumanizing abuse. Use warn for hostility, rage bait, broad shaming, abusive tone, or borderline personal attacks that should be revised. Use allow for normal disagreement, criticism of ideas, personal experience, non-abusive debate, or policy discussion. Do not over-block good-faith discussion.";
@@ -106,6 +100,7 @@ async function reviewWithOpenAI(options: ReviewContentSafetyOptions): Promise<Ai
     },
     body: JSON.stringify({
       model: OPENAI_SAFETY_MODEL,
+      store: false,
       temperature: 0,
       max_tokens: 180,
       response_format: { type: "json_object" },
@@ -141,47 +136,22 @@ async function reviewWithOpenAI(options: ReviewContentSafetyOptions): Promise<Ai
   };
 }
 
-async function reviewWithAnthropic(options: ReviewContentSafetyOptions): Promise<AiSafetyReview> {
-  const result = await generateAnthropicText({
-    apiKey: ANTHROPIC_API_KEY,
-    modelName: ANTHROPIC_FALLBACK_MODEL,
-    system: SAFETY_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: buildSafetyPrompt(options),
-      },
-    ],
-    maxTokens: 180,
-    temperature: 0,
-  });
-
-  return {
-    ...parseSafetyJson(result.text),
-    provider: "anthropic",
-    modelName: ANTHROPIC_FALLBACK_MODEL,
-  };
-}
-
 export async function reviewContentSafety(
   options: ReviewContentSafetyOptions
 ): Promise<AiSafetyReview> {
   try {
     return await reviewWithOpenAI(options);
   } catch (openAiError) {
+    // No external-provider fallback. If provider classification is required
+    // and OpenAI is unavailable, fail closed instead of publishing content
+    // that did not complete the configured AI safety layer.
     console.error("OpenAI safety review failed:", openAiError);
   }
 
-  try {
-    return await reviewWithAnthropic(options);
-  } catch (anthropicError) {
-    console.error("Anthropic safety review failed:", anthropicError);
-  }
-
   return {
-    action: "allow",
+    action: "block",
     category: "ai_safety_unavailable",
-    message: "AI safety review was unavailable. Rule-based moderation still applied.",
+    message: "Safety review is temporarily unavailable. Please try again.",
     provider: "none",
     modelName: null,
     unavailable: true,
