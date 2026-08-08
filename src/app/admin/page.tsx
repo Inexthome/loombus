@@ -16,7 +16,16 @@ export const metadata: Metadata = {
 export default function AdminDashboardPage() {
   return (
     <>
-      <nav className="mx-auto flex w-full max-w-[1480px] justify-end px-4 pt-4 sm:px-6" aria-label="Enforcement operations shortcut">
+      <nav
+        className="mx-auto flex w-full max-w-[1480px] flex-wrap justify-end gap-2 px-4 pt-4 sm:px-6"
+        aria-label="Admin operations shortcuts"
+      >
+        <Link
+          href="/admin/legal-operations"
+          className="inline-flex items-center justify-center rounded-full border border-[#CBAB5B]/50 px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:border-[#CBAB5B] hover:bg-[#CBAB5B]/10 dark:text-zinc-100"
+        >
+          Open Legal Operations
+        </Link>
         <Link
           href="/admin/enforcement"
           className="inline-flex items-center justify-center rounded-full bg-[#CBAB5B] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105"
