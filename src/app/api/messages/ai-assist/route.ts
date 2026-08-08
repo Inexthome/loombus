@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { getOpenAiUsageMetadata, logAiUsage } from "@/lib/premium-ai";
 
 const MESSAGE_ASSIST_MODEL =
   process.env.OPENAI_MESSAGE_ASSIST_MODEL ||
@@ -9,6 +10,7 @@ const MESSAGE_ASSIST_MODEL =
   "gpt-4o-mini";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const FEATURE_KEY = "message_ai_assist";
 
 type ProfileAccess = {
   is_admin: boolean | null;
@@ -140,6 +142,7 @@ async function generateAssistedMessage({
     },
     body: JSON.stringify({
       model: MESSAGE_ASSIST_MODEL,
+      store: false,
       temperature: 0.25,
       messages: [
         {
@@ -155,29 +158,32 @@ async function generateAssistedMessage({
     }),
   });
 
+  const payload = await response.json().catch(() => null);
+
   if (!response.ok) {
-    const payload = await response.json().catch(() => null);
     throw new Error(
       payload?.error?.message ?? "AI message assist generation failed."
     );
   }
 
-  const payload = await response.json();
   const assistedText = payload?.choices?.[0]?.message?.content?.trim();
 
   if (!assistedText) {
     throw new Error("AI message assist returned no text.");
   }
 
-  return assistedText.slice(0, 4000);
+  return {
+    assistedText: assistedText.slice(0, 4000),
+    usageMetadata: getOpenAiUsageMetadata(payload, MESSAGE_ASSIST_MODEL),
+  };
 }
 
 export async function POST(request: NextRequest) {
   const supabase = getSupabaseForRequest(request);
-  const { error } = await getCurrentUserAndAccess(supabase);
+  const { user, error } = await getCurrentUserAndAccess(supabase);
 
-  if (error) {
-    return error;
+  if (error || !user) {
+    return error ?? jsonError("Unauthorized.", 401);
   }
 
   const body = await request.json().catch(() => null);
@@ -193,26 +199,46 @@ export async function POST(request: NextRequest) {
     return jsonError("Write a message draft first.", 400);
   }
 
-  if (text.length > 2000) {
-    return jsonError("Message draft is too long for AI assist.", 400);
-  }
-
   try {
-    const assistedText = await generateAssistedMessage({
+    const generated = await generateAssistedMessage({
       text,
       mode,
     });
 
+    await logAiUsage({
+      supabase,
+      userId: user.id,
+      featureKey: FEATURE_KEY,
+      targetType: "private_message_draft",
+      provider: "openai",
+      modelName: MESSAGE_ASSIST_MODEL,
+      cached: false,
+      success: true,
+      ...generated.usageMetadata,
+    });
+
     return NextResponse.json({
-      assistedText,
+      assistedText: generated.assistedText,
       mode,
     });
   } catch (assistError) {
-    return jsonError(
+    const message =
       assistError instanceof Error
         ? assistError.message
-        : "Unable to generate AI message assist.",
-      500
-    );
+        : "Unable to generate AI message assist.";
+
+    await logAiUsage({
+      supabase,
+      userId: user.id,
+      featureKey: FEATURE_KEY,
+      targetType: "private_message_draft",
+      provider: "openai",
+      modelName: MESSAGE_ASSIST_MODEL,
+      cached: false,
+      success: false,
+      errorMessage: message,
+    });
+
+    return jsonError(message, 500);
   }
 }
