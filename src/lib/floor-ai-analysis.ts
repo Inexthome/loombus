@@ -20,13 +20,11 @@ export type FloorThesisAnalysisResult = {
   model: string;
 };
 
-const FLOOR_ANALYSIS_MODEL = "claude-opus-5";
+const FLOOR_ANALYSIS_MODEL =
+  process.env.OPENAI_FLOOR_ANALYSIS_MODEL ||
+  process.env.OPENAI_MODEL ||
+  "gpt-5.6";
 
-// Plain-language "return only JSON" + defensive fence-stripping on parse,
-// not an API-level output_config.format constraint -- this matches the
-// pattern already proven in production for Anthropic JSON responses in
-// src/lib/moderation/ai-safety.ts, rather than a mechanism this file
-// couldn't be tested against a live key before shipping.
 const SYSTEM_PROMPT = `You are the red-team analyst for The Floor, an accountable-reasoning investing space inside Loombus.
 
 Non-negotiable rule: you never issue a buy, sell, or hold recommendation, a price target, or any actionable trading advice. You do not rate the thesis on any numeric or letter scale. Your only job is to evaluate the QUALITY of the member's argument as written, from three angles:
@@ -35,7 +33,22 @@ Non-negotiable rule: you never issue a buy, sell, or hold recommendation, a pric
 - redteam: the strongest possible case AGAINST this thesis -- real risks, weak assumptions, or the most likely ways it turns out wrong.
 - blind_spots: something material this thesis does not address at all. Do not repeat the redteam here -- a blind spot is a silence, not a stated risk.
 
-Return only valid JSON with exactly these keys: steelman, redteam, blind_spots. Each value is plain text (no markdown). Do not wrap the JSON in a code fence. Do not include any text before or after the JSON object. Do not include internal or system XML tags in your response. Never tell the reader what to do with their money.`;
+Return only the requested structured fields. Each value must be plain text with no markdown. Never tell the reader what to do with their money.`;
+
+const FLOOR_ANALYSIS_RESPONSE_SCHEMA = {
+  name: "floor_thesis_red_team_analysis",
+  strict: true,
+  schema: {
+    type: "object",
+    properties: {
+      steelman: { type: "string" },
+      redteam: { type: "string" },
+      blind_spots: { type: "string" },
+    },
+    required: ["steelman", "redteam", "blind_spots"],
+    additionalProperties: false,
+  },
+} as const;
 
 function buildUserPrompt(thesis: FloorThesisAnalysisInput) {
   const entryZone =
@@ -53,29 +66,15 @@ function buildUserPrompt(thesis: FloorThesisAnalysisInput) {
     `Thesis: ${thesis.thesis}`,
     thesis.catalysts ? `Catalysts: ${thesis.catalysts}` : null,
     thesis.risks ? `Risks the author already named: ${thesis.risks}` : null,
-    "",
-    "Return JSON only:",
-    '{"steelman": "...", "redteam": "...", "blind_spots": "..."}',
   ]
     .filter((line) => line !== null)
     .join("\n");
 }
 
-type AnthropicContentBlock = { type?: string; text?: string };
-
-function stripJsonFence(rawText: string) {
-  return rawText
-    .trim()
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/```$/i, "")
-    .trim();
-}
-
 export async function generateFloorThesisAnalysis(
   thesis: FloorThesisAnalysisInput
 ): Promise<FloorThesisAnalysisResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error("AI analysis is not configured yet.");
   }
@@ -84,25 +83,24 @@ export async function generateFloorThesisAnalysis(
 
   let response: Response;
   try {
-    response = await fetch("https://api.anthropic.com/v1/messages", {
+    response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: FLOOR_ANALYSIS_MODEL,
-        // Thinking is on by default on Claude Opus 5 and shares max_tokens
-        // with the response text -- for this bounded, well-specified critique
-        // task we don't need it, and leaving it on risks the JSON output
-        // getting truncated mid-string by the thinking budget (which throws
-        // exactly the "not valid JSON" error this fixes). Disabling it is
-        // valid at the default effort ("high"), so this doesn't 400.
-        thinking: { type: "disabled" },
-        max_tokens: 3000,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: buildUserPrompt(thesis) }],
+        store: false,
+        max_completion_tokens: 3000,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: buildUserPrompt(thesis) },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: FLOOR_ANALYSIS_RESPONSE_SCHEMA,
+        },
       }),
       signal: timeout,
     });
@@ -113,37 +111,36 @@ export async function generateFloorThesisAnalysis(
     throw error;
   }
 
-  const payload = await response.json();
+  const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
     const message = payload?.error?.message || "Unable to generate the analysis.";
     throw new Error(message);
   }
 
-  if (payload?.stop_reason === "refusal") {
+  const choice = payload?.choices?.[0];
+  const message = choice?.message;
+
+  if (choice?.finish_reason === "length") {
+    throw new Error("The analysis response was incomplete. Try again.");
+  }
+
+  if (typeof message?.refusal === "string" && message.refusal.trim()) {
     throw new Error("The analysis was declined. Try adjusting the thesis and try again.");
   }
 
-  const textBlock = ((payload?.content ?? []) as AnthropicContentBlock[]).find(
-    (block) => block?.type === "text" && typeof block?.text === "string"
-  );
-
-  if (!textBlock?.text) {
+  const rawText = message?.content;
+  if (typeof rawText !== "string" || !rawText.trim()) {
     throw new Error("The analysis returned no content.");
   }
 
-  const cleaned = stripJsonFence(textBlock.text);
-
   let parsed: { steelman?: unknown; redteam?: unknown; blind_spots?: unknown };
   try {
-    parsed = JSON.parse(cleaned);
+    parsed = JSON.parse(rawText);
   } catch {
-    // Logged (not thrown) so the raw model output is diagnosable from
-    // server logs without exposing it in the user-facing error message.
-    console.error(
-      "[floor-ai-analysis] model response was not valid JSON after fence-stripping:",
-      cleaned.slice(0, 1000)
-    );
+    // Do not log model output here. Thesis content and generated analysis can
+    // contain member-provided material, so diagnostics remain metadata-only.
+    console.error("[floor-ai-analysis] OpenAI returned invalid structured JSON");
     throw new Error("The analysis response was not valid JSON.");
   }
 
@@ -152,10 +149,7 @@ export async function generateFloorThesisAnalysis(
     typeof parsed.redteam !== "string" ||
     typeof parsed.blind_spots !== "string"
   ) {
-    console.error(
-      "[floor-ai-analysis] model response was valid JSON but missing a required key:",
-      cleaned.slice(0, 1000)
-    );
+    console.error("[floor-ai-analysis] OpenAI response missed a required structured field");
     throw new Error("The analysis response was missing a required section.");
   }
 
