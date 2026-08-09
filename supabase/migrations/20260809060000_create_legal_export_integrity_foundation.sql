@@ -174,6 +174,35 @@ create table if not exists public.legal_chain_of_custody_events (
   )
 );
 
+create or replace function public.legal_enforce_export_package_request_consistency()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if not exists (
+    select 1
+    from public.legal_disclosures disclosure
+    where disclosure.id = new.disclosure_id
+      and disclosure.request_id = new.request_id
+  ) then
+    raise exception 'Export package disclosure does not belong to the legal request.'
+      using errcode = '23514';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.legal_enforce_export_package_request_consistency()
+  from public, anon, authenticated;
+
+drop trigger if exists legal_export_package_request_consistency on public.legal_export_packages;
+create trigger legal_export_package_request_consistency
+before insert or update on public.legal_export_packages
+for each row execute function public.legal_enforce_export_package_request_consistency();
+
 create index if not exists legal_export_packages_request_created_idx
   on public.legal_export_packages(request_id, created_at);
 create index if not exists legal_export_packages_disclosure_created_idx
@@ -219,6 +248,8 @@ grant select on table public.legal_export_artifacts to service_role;
 grant select on table public.legal_export_verifications to service_role;
 grant select on table public.legal_chain_of_custody_events to service_role;
 
+comment on function public.legal_enforce_export_package_request_consistency() is
+'Issue #674 integrity guard. Prevents a package from linking a disclosure to the wrong legal request.';
 comment on table public.legal_export_packages is
 'Issue #674 export-integrity package control metadata. No export-generation write path is enabled by this foundation.';
 comment on table public.legal_export_artifacts is
