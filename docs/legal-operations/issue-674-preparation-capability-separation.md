@@ -39,3 +39,7 @@ It does not authorize:
 7. Use fictional legal-request metadata, fictional recipient metadata, fictional record references, and fictional field names only.
 
 No real request, member data, actual export, disclosure, notice, or external contact belongs in this phase.
+
+## Preview refresh
+
+A documentation-only refresh commit was added after the Vercel deployment-rate limit reset so the existing PR preview/check suite can rerun without changing the authorization or disclosure-preparation implementation.
