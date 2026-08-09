@@ -199,9 +199,9 @@ checks as (
     count(*)::bigint,
     0::bigint
   from public.legal_retention_schedule_registry r
-  cross join lateral unnest(r.related_account_deletion_resource_keys) as resource_key
+  cross join lateral unnest(r.related_account_deletion_resource_keys) as rk(resource_key)
   left join public.account_deletion_resource_registry a
-    on a.resource_key = resource_key
+    on a.resource_key = rk.resource_key
   where r.enabled = true
     and a.resource_key is null
 
