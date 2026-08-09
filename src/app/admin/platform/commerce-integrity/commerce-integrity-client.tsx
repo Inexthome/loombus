@@ -22,6 +22,7 @@ const REVIEW_MODULES = [
 
 type ReviewModule = (typeof REVIEW_MODULES)[number][0];
 type AccessState = "checking" | "allowed" | "denied" | "error";
+
 type HistoryRow = {
   id: string;
   taxonomy_version: string;
@@ -72,6 +73,56 @@ function formatDate(value: string) {
   return Number.isFinite(date.getTime()) ? date.toLocaleString() : value;
 }
 
+function ModuleWorkspaceLink({ moduleKey }: { moduleKey: ReviewModule }) {
+  const className =
+    "rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-sm font-semibold text-[var(--loombus-gold-contrast)]";
+
+  switch (moduleKey) {
+    case "marketplace":
+      return (
+        <Link href="/admin/platform/marketplace" className={className}>
+          Open Marketplace
+        </Link>
+      );
+    case "businesses":
+      return (
+        <Link href="/admin/platform/businesses" className={className}>
+          Open Businesses
+        </Link>
+      );
+    case "services":
+      return (
+        <Link href="/admin/platform/services" className={className}>
+          Open Services
+        </Link>
+      );
+    case "requests":
+      return (
+        <Link href="/admin/platform/requests" className={className}>
+          Open Requests
+        </Link>
+      );
+    case "jobs":
+      return (
+        <Link href="/admin/platform/jobs" className={className}>
+          Open Jobs
+        </Link>
+      );
+    case "events":
+      return (
+        <Link href="/admin/platform/events" className={className}>
+          Open Events
+        </Link>
+      );
+    case "appointments":
+      return (
+        <Link href="/admin/platform/appointments" className={className}>
+          Open Appointments
+        </Link>
+      );
+  }
+}
+
 export default function CommerceIntegrityClient() {
   const [accessState, setAccessState] = useState<AccessState>("checking");
   const [token, setToken] = useState("");
@@ -104,9 +155,10 @@ export default function CommerceIntegrityClient() {
     [moduleKey],
   );
 
-  const selectedCategory = COMMERCE_INTEGRITY_CATEGORIES[
-    categoryId as keyof typeof COMMERCE_INTEGRITY_CATEGORIES
-  ];
+  const selectedCategory =
+    COMMERCE_INTEGRITY_CATEGORIES[
+      categoryId as keyof typeof COMMERCE_INTEGRITY_CATEGORIES
+    ];
   const reasonOptions = selectedCategory?.safetyReasonCodes ?? [];
   const severeConfirmed =
     recordState === "confirmed" &&
@@ -153,9 +205,10 @@ export default function CommerceIntegrityClient() {
   }, [categoryOptions, moduleKey]);
 
   useEffect(() => {
-    const nextReasons = COMMERCE_INTEGRITY_CATEGORIES[
-      categoryId as keyof typeof COMMERCE_INTEGRITY_CATEGORIES
-    ]?.safetyReasonCodes;
+    const nextReasons =
+      COMMERCE_INTEGRITY_CATEGORIES[
+        categoryId as keyof typeof COMMERCE_INTEGRITY_CATEGORIES
+      ]?.safetyReasonCodes;
     setPrimaryReason(nextReasons?.[0] ?? "");
     setSecondaryReasons([]);
   }, [categoryId]);
@@ -166,15 +219,18 @@ export default function CommerceIntegrityClient() {
       cache: "no-store",
     });
     const payload = (await result.json().catch(() => ({}))) as ApiError;
+
     if (!result.ok) {
       if (result.status === 403) setAccessState("denied");
       throw new Error(readableError(payload, "The reviewer request failed."));
     }
+
     return payload as unknown as HistoryPayload;
   }
 
   async function loadHistory() {
     if (!token || !recordId.trim()) return;
+
     setLoadingHistory(true);
     setMessage("");
     setError("");
@@ -199,6 +255,7 @@ export default function CommerceIntegrityClient() {
 
   async function submitClassification() {
     if (!token || submitting) return;
+
     setSubmitting(true);
     setMessage("");
     setError("");
@@ -302,12 +359,7 @@ export default function CommerceIntegrityClient() {
           >
             Platform Operations
           </Link>
-          <Link
-            href={`/admin/platform/${moduleKey}`}
-            className="rounded-full bg-[var(--loombus-gold)] px-4 py-2 text-sm font-semibold text-[var(--loombus-gold-contrast)]"
-          >
-            Open {REVIEW_MODULES.find(([key]) => key === moduleKey)?.[1]}
-          </Link>
+          <ModuleWorkspaceLink moduleKey={moduleKey} />
         </div>
       </div>
 
@@ -317,7 +369,10 @@ export default function CommerceIntegrityClient() {
         </div>
       ) : null}
       {error ? (
-        <div className="mb-5 rounded-2xl border border-red-500/25 bg-red-500/10 p-4 text-sm" role="alert">
+        <div
+          className="mb-5 rounded-2xl border border-red-500/25 bg-red-500/10 p-4 text-sm"
+          role="alert"
+        >
           {error}
         </div>
       ) : null}
@@ -387,7 +442,10 @@ export default function CommerceIntegrityClient() {
             disabled={!recordId.trim() || loadingHistory}
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-semibold disabled:opacity-50"
           >
-            <RefreshCw size={15} className={loadingHistory ? "animate-spin" : ""} />
+            <RefreshCw
+              size={15}
+              className={loadingHistory ? "animate-spin" : ""}
+            />
             Load classification history
           </button>
 
@@ -539,7 +597,11 @@ export default function CommerceIntegrityClient() {
             className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-5 py-3 text-sm font-semibold text-[var(--loombus-gold-contrast)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CheckCircle2 size={16} />
-            {submitting ? "Recording..." : historyPayload?.currentHead ? "Supersede current classification" : "Record classification"}
+            {submitting
+              ? "Recording..."
+              : historyPayload?.currentHead
+                ? "Supersede current classification"
+                : "Record classification"}
           </button>
         </section>
 
@@ -568,7 +630,9 @@ export default function CommerceIntegrityClient() {
                     <div className="flex flex-wrap items-center gap-2 text-xs">
                       <strong>{row.commerce_category_id}</strong>
                       <span>{row.record_state}</span>
-                      {row.policy_severity_code ? <span>{row.policy_severity_code}</span> : null}
+                      {row.policy_severity_code ? (
+                        <span>{row.policy_severity_code}</span>
+                      ) : null}
                     </div>
                     <p className="mt-2 break-words text-xs font-semibold">
                       {row.primary_safety_reason_code}
