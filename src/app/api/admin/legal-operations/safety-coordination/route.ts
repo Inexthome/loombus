@@ -122,22 +122,31 @@ async function requireSafetyCoordinationCapability(
   canReviewRequests: boolean
 ) {
   if (!canReviewRequests) {
-    return { allowed: false as const, unavailable: false as const };
+    return {
+      allowed: false as const,
+      unavailable: false as const,
+      canReviewEmergency: false,
+    };
   }
 
   const capability = await service
     .from("legal_operations_authorizations")
-    .select("can_coordinate_safety")
+    .select("can_coordinate_safety,can_review_emergency")
     .eq("user_id", userId)
     .maybeSingle();
 
   if (capability.error) {
-    return { allowed: false as const, unavailable: true as const };
+    return {
+      allowed: false as const,
+      unavailable: true as const,
+      canReviewEmergency: false,
+    };
   }
 
   return {
     allowed: Boolean(capability.data?.can_coordinate_safety),
     unavailable: false as const,
+    canReviewEmergency: Boolean(capability.data?.can_review_emergency),
   };
 }
 
@@ -262,9 +271,7 @@ export async function GET(request: NextRequest) {
         role: authorization.role,
         can_review_requests: authorization.can_review_requests,
         can_coordinate_safety: true,
-        can_review_emergency: authorization.can_approve_emergency
-          ? authorization.can_approve_emergency
-          : undefined,
+        can_review_emergency: capability.canReviewEmergency,
         can_export: authorization.can_export,
         can_disclose: authorization.can_disclose,
         can_approve_emergency: authorization.can_approve_emergency,
@@ -322,6 +329,9 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     case: caseResult.data,
     coordination: coordinationResult.data ?? null,
+    authorization: {
+      can_review_emergency: capability.canReviewEmergency,
+    },
     phase: phaseState(),
   });
 }
@@ -412,20 +422,7 @@ export async function POST(request: NextRequest) {
   if (legalRequestId && !(await legalRequestExists(service, legalRequestId))) {
     return NextResponse.json({ error: "Legal Operations request reference was not found." }, { status: 404 });
   }
-
-  const emergencyCapability = await service
-    .from("legal_operations_authorizations")
-    .select("can_review_emergency")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (emergencyCapability.error) {
-    return NextResponse.json(
-      { error: "Emergency-review capability could not be verified." },
-      { status: 503 }
-    );
-  }
-  if (coordinationType === "imminent_danger" && !emergencyCapability.data?.can_review_emergency) {
+  if (coordinationType === "imminent_danger" && !capability.canReviewEmergency) {
     return NextResponse.json(
       { error: "Imminent-danger coordination additionally requires can_review_emergency." },
       { status: 403 }
