@@ -78,8 +78,18 @@ checks as (
   from information_schema.role_table_grants
   where table_schema = 'public'
     and table_name = 'legal_data_source_registry'
-    and grantee in ('anon', 'authenticated')
+    and grantee in ('PUBLIC', 'anon', 'authenticated')
     and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER')
+
+  union all
+
+  select
+    'browser_registry_policies_absent',
+    count(*)::bigint,
+    0::bigint
+  from pg_policies
+  where schemaname = 'public'
+    and tablename = 'legal_data_source_registry'
 
   union all
 
