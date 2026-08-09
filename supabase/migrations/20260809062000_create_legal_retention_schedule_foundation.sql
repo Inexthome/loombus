@@ -151,7 +151,7 @@ values
   'Privacy and Data Governance with Legal or policy review',
   'quarterly',
   array['Post-closure retention duration requires qualified counsel approval and operational evidence.', 'Cross-border, confidentiality, delayed-notice, privilege, reporter, victim, and unrelated-member obligations may require case-specific review.'],
-  array['supabase/migrations/20260808024000_create_legal_operations_foundation.sql', 'supabase/migrations/20260809042000_add_legal_request_review_capability.sql', 'supabase/migrations/20260809051000_add_protected_party_review_controls.sql'],
+  array['supabase/migrations/20260808080000_create_legal_operations_foundation.sql', 'supabase/migrations/20260809042000_add_legal_request_review_capability.sql', 'supabase/migrations/20260809051000_add_protected_party_review_controls.sql'],
   'Legal request records are governance records and are not automatically deleted because a referenced member later requests account deletion.',
   10
 ),
@@ -170,7 +170,7 @@ values
   'Privacy and Data Governance with Legal or policy review',
   'quarterly',
   array['Post-release or post-expiry retention duration is not approved.', 'Provider-side preserved copies require provider-specific lifecycle evidence.'],
-  array['supabase/migrations/20260808024000_create_legal_operations_foundation.sql', 'supabase/migrations/20260808104000_enforce_legal_holds_on_destructive_paths.sql'],
+  array['supabase/migrations/20260808080000_create_legal_operations_foundation.sql', 'supabase/migrations/20260808104000_enforce_legal_holds_on_destructive_paths.sql'],
   'Cross-references the Issue #668 Room and retained-copy classes only for interaction awareness; it does not replace their canonical disposition rules.',
   20
 ),
@@ -189,7 +189,7 @@ values
   'Privacy and Data Governance with Legal or policy review',
   'quarterly',
   array['Post-transmission and cancelled-draft retention periods require counsel approval.', 'Recipient-side copies are outside Loombus disposition control and must be treated separately.'],
-  array['supabase/migrations/20260808024000_create_legal_operations_foundation.sql', 'supabase/migrations/20260808111500_restrict_legal_disclosure_preparation.sql'],
+  array['supabase/migrations/20260808080000_create_legal_operations_foundation.sql', 'supabase/migrations/20260808111500_restrict_legal_disclosure_preparation.sql'],
   'This row covers disclosure control metadata only, not responsive payload content or recipient-controlled copies.',
   30
 ),
@@ -208,7 +208,7 @@ values
   'Privacy and Data Governance with Legal or policy review',
   'quarterly',
   array['Retention duration for append-only manifest history is unapproved.', 'Future artifact or package linkage must not shorten the manifest retention rule.'],
-  array['supabase/migrations/20260808024000_create_legal_operations_foundation.sql', 'supabase/migrations/20260808111500_restrict_legal_disclosure_preparation.sql'],
+  array['supabase/migrations/20260808080000_create_legal_operations_foundation.sql', 'supabase/migrations/20260808111500_restrict_legal_disclosure_preparation.sql'],
   'Manifest rows store field-selection and integrity metadata, not responsive payload bytes.',
   40
 ),
@@ -227,7 +227,7 @@ values
   'Privacy and Data Governance with Legal or policy review',
   'quarterly',
   array['Minimum evidentiary retention period requires counsel approval.', 'Any future audit compaction or archival strategy requires integrity and accessibility review.'],
-  array['supabase/migrations/20260808024000_create_legal_operations_foundation.sql'],
+  array['supabase/migrations/20260808080000_create_legal_operations_foundation.sql'],
   'The Issue #668 trust/safety/support resource class is a related audit-history category, not a deletion instruction for Legal Operations events.',
   50
 ),
@@ -246,7 +246,7 @@ values
   'Privacy and Data Governance with Security and Legal or policy review',
   'quarterly',
   array['Exact retention duration for privileged access-governance history remains unapproved.', 'Future capability-change history may require a dedicated append-only authorization event log.'],
-  array['supabase/migrations/20260808024000_create_legal_operations_foundation.sql', 'supabase/migrations/20260809042000_add_legal_request_review_capability.sql', 'supabase/migrations/20260809060000_create_legal_export_integrity_foundation.sql'],
+  array['supabase/migrations/20260808080000_create_legal_operations_foundation.sql', 'supabase/migrations/20260809042000_add_legal_request_review_capability.sql', 'supabase/migrations/20260809060000_create_legal_export_integrity_foundation.sql'],
   'Authorization records contain internal governance metadata and are not a member-account profile substitute.',
   60
 ),
