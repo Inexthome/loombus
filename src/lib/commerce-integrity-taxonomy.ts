@@ -350,7 +350,7 @@ export const COMMERCE_INTEGRITY_CATEGORIES = {
   },
   "COM-09": {
     id: "COM-09",
-    title: "Live animals, food, cosmetics, medical devices, and conditionally allowed categories",
+    title: "Live animals, food, cosmetics, medical devices, and other conditionally allowed categories",
     internalLabel: "Conditionally allowed high-risk products",
     safetyReasonCodes: [
       "GOODS.UNAPPROVED_LIVE_ANIMAL_OR_FOOD",
@@ -365,7 +365,7 @@ export const COMMERCE_INTEGRITY_CATEGORIES = {
   },
   "COM-10": {
     id: "COM-10",
-    title: "Illegal, dangerous, and unsafe services",
+    title: "Illegal, dangerous, or unsafe services",
     internalLabel: "Illegal or dangerous services",
     safetyReasonCodes: [
       "SERVICE.ILLEGAL_OR_DANGEROUS_WORK",
