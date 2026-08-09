@@ -55,11 +55,11 @@ begin
 
   select exists (
     select 1
-    from public.legal_operations_authorizations authorization
-    where authorization.user_id = new.updated_by
-      and authorization.active = true
-      and authorization.revoked_at is null
-      and authorization.can_review_requests = true
+    from public.legal_operations_authorizations loa
+    where loa.user_id = new.updated_by
+      and loa.active = true
+      and loa.revoked_at is null
+      and loa.can_review_requests = true
   )
   into review_authorized;
 
