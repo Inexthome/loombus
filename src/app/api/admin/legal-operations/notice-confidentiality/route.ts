@@ -70,7 +70,7 @@ async function requireNoticeCapability(
   service: ServiceClient,
   userId: string,
   canReviewRequests: boolean
-+) {
+) {
   if (!canReviewRequests) {
     return { allowed: false as const, unavailable: false as const };
   }
