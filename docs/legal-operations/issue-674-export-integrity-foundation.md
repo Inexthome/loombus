@@ -37,6 +37,8 @@ Lifecycle states are:
 
 Generated and later states require accountable actor and timestamp metadata. Verified and sealed states require both manifest and package SHA-256 digests. Sealed and voided states have additional accountable-actor constraints.
 
+A database trigger rejects any package whose `disclosure_id` does not belong to the same `request_id`. This prevents cross-request package linkage even if a future writer supplies two individually valid foreign keys.
+
 The table stores control metadata only. It does not store export payload bytes.
 
 ### `legal_export_artifacts`
