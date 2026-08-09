@@ -22,13 +22,15 @@ export default function AdminDashboardPage() {
       >
         <Link
           href="/admin/legal-operations"
-          className="inline-flex items-center justify-center rounded-full border border-[#CBAB5B]/50 px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:border-[#CBAB5B] hover:bg-[#CBAB5B]/10 dark:text-zinc-100"
+          className="inline-flex items-center justify-center rounded-full border border-[#CBAB5B]/50 px-5 py-3 text-sm font-semibold transition hover:border-[#CBAB5B] hover:bg-[#CBAB5B]/10"
+          style={{ color: "var(--loombus-text-strong, #18181b)" }}
         >
           Open Legal Operations
         </Link>
         <Link
           href="/admin/legal-operations/disclosure-preparation"
-          className="inline-flex items-center justify-center rounded-full border border-[#CBAB5B]/50 px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:border-[#CBAB5B] hover:bg-[#CBAB5B]/10 dark:text-zinc-100"
+          className="inline-flex items-center justify-center rounded-full border border-[#CBAB5B]/50 px-5 py-3 text-sm font-semibold transition hover:border-[#CBAB5B] hover:bg-[#CBAB5B]/10"
+          style={{ color: "var(--loombus-text-strong, #18181b)" }}
         >
           Open Disclosure Preparation
         </Link>
