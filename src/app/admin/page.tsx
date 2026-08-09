@@ -42,6 +42,13 @@ export default function AdminDashboardPage() {
           Open Protected Party Review
         </Link>
         <Link
+          href="/admin/legal-operations/data-map"
+          className="inline-flex items-center justify-center rounded-full border border-[#CBAB5B]/50 px-5 py-3 text-sm font-semibold transition hover:border-[#CBAB5B] hover:bg-[#CBAB5B]/10"
+          style={{ color: "var(--loombus-text-strong, #18181b)" }}
+        >
+          Open Legal Data Map
+        </Link>
+        <Link
           href="/admin/enforcement"
           className="inline-flex items-center justify-center rounded-full bg-[#CBAB5B] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105"
         >
