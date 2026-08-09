@@ -130,7 +130,7 @@ function cleanFieldNames(value: unknown) {
 }
 
 export async function GET(request: NextRequest) {
-  const access = await requireLegalOperationsAccess(request, "can_export");
+  const access = await requireLegalOperationsAccess(request, "can_prepare_disclosure");
   if (!access.user) return access.response;
 
   const { service, user, authorization } = access;
@@ -160,7 +160,8 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      authorization,
+      // Legacy client display field only. Authorization decisions use can_prepare_disclosure.
+      authorization: { ...authorization, can_export: authorization.can_prepare_disclosure },
       requests: result.data ?? [],
       phase: phaseState(),
     });
@@ -234,7 +235,8 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    authorization,
+    // Legacy client display field only. Authorization decisions use can_prepare_disclosure.
+    authorization: { ...authorization, can_export: authorization.can_prepare_disclosure },
     request: requestResult.row,
     disclosures: disclosureResult.data ?? [],
     items,
@@ -243,7 +245,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const access = await requireLegalOperationsAccess(request, "can_export");
+  const access = await requireLegalOperationsAccess(request, "can_prepare_disclosure");
   if (!access.user) return access.response;
 
   const { service, user } = access;
