@@ -27,6 +27,12 @@ export default function AdminDashboardPage() {
           Open Legal Operations
         </Link>
         <Link
+          href="/admin/legal-operations/disclosure-preparation"
+          className="inline-flex items-center justify-center rounded-full border border-[#CBAB5B]/50 px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:border-[#CBAB5B] hover:bg-[#CBAB5B]/10 dark:text-zinc-100"
+        >
+          Open Disclosure Preparation
+        </Link>
+        <Link
           href="/admin/enforcement"
           className="inline-flex items-center justify-center rounded-full bg-[#CBAB5B] px-5 py-3 text-sm font-semibold text-black transition hover:brightness-105"
         >
