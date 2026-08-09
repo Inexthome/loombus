@@ -118,6 +118,33 @@ checks as (
   union all
 
   select
+    'package_request_consistency_function_security_definer',
+    count(*)::bigint,
+    1::bigint
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'legal_enforce_export_package_request_consistency'
+    and p.prosecdef = true
+
+  union all
+
+  select
+    'package_request_consistency_trigger_present',
+    count(*)::bigint,
+    1::bigint
+  from pg_trigger t
+  join pg_class c on c.oid = t.tgrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'public'
+    and c.relname = 'legal_export_packages'
+    and t.tgname = 'legal_export_package_request_consistency'
+    and not t.tgisinternal
+    and t.tgenabled <> 'D'
+
+  union all
+
+  select
     'package_lifecycle_constraints_present',
     count(*)::bigint,
     4::bigint
