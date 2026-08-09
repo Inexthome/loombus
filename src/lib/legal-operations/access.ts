@@ -8,6 +8,7 @@ export type LegalOperationsAuthorization = {
   can_review_requests: boolean;
   can_preserve: boolean;
   can_prepare_disclosure: boolean;
+  can_review_export_integrity: boolean;
   can_export: boolean;
   can_disclose: boolean;
   can_approve_emergency: boolean;
@@ -24,6 +25,7 @@ export type LegalOperationsCapability =
   | "can_review_requests"
   | "can_preserve"
   | "can_prepare_disclosure"
+  | "can_review_export_integrity"
   | "can_export"
   | "can_disclose"
   | "can_approve_emergency"
@@ -130,7 +132,7 @@ export async function requireLegalOperationsAccess(
   const authorizationResult = await service
     .from("legal_operations_authorizations")
     .select(
-      "user_id,role,can_intake,can_review_requests,can_preserve,can_prepare_disclosure,can_export,can_disclose,can_approve_emergency,can_manage_access,active,appointed_by,appointed_at,revoked_at,notes"
+      "user_id,role,can_intake,can_review_requests,can_preserve,can_prepare_disclosure,can_review_export_integrity,can_export,can_disclose,can_approve_emergency,can_manage_access,active,appointed_by,appointed_at,revoked_at,notes"
     )
     .eq("user_id", user.id)
     .maybeSingle();
