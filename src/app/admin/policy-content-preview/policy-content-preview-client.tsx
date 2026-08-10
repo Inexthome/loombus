@@ -169,7 +169,7 @@ export default function PolicyContentPreviewClient() {
             </div>
             <Link
               href="/admin/platform"
-              className="w-fit rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-semibold"
+              className="w-fit rounded-full border border-[var(--loombus-border)] px-4 py-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--loombus-bg)]"
             >
               Back to Platform Operations
             </Link>

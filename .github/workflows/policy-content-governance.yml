@@ -9,6 +9,7 @@ on:
       - "src/lib/policy-content-resolver.ts"
       - "src/content/policies/**"
       - "src/components/policy-content/**"
+      - "src/components/public-policy-page.tsx"
       - "src/app/admin/policy-content-preview/**"
       - "src/app/api/admin/policy-content-preview/**"
       - "docs/policy-content/**"
@@ -17,6 +18,7 @@ on:
       - "scripts/verification/verify-policy-accessibility-parity.mjs"
       - "scripts/verification/verify-policy-structured-preview.mjs"
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
+      - "scripts/verification/verify-policy-keyboard-focus.mjs"
       - ".github/workflows/policy-content-governance.yml"
       - "src/app/about/page.tsx"
       - "src/app/accessibility/page.tsx"
@@ -40,6 +42,7 @@ on:
       - "src/lib/policy-content-resolver.ts"
       - "src/content/policies/**"
       - "src/components/policy-content/**"
+      - "src/components/public-policy-page.tsx"
       - "src/app/admin/policy-content-preview/**"
       - "src/app/api/admin/policy-content-preview/**"
       - "docs/policy-content/**"
@@ -48,6 +51,7 @@ on:
       - "scripts/verification/verify-policy-accessibility-parity.mjs"
       - "scripts/verification/verify-policy-structured-preview.mjs"
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
+      - "scripts/verification/verify-policy-keyboard-focus.mjs"
       - ".github/workflows/policy-content-governance.yml"
       - "src/app/about/page.tsx"
       - "src/app/accessibility/page.tsx"
@@ -82,3 +86,5 @@ jobs:
         run: node scripts/verification/verify-policy-structured-preview.mjs
       - name: Verify policy review and resolution foundation
         run: node scripts/verification/verify-policy-resolution-foundation.mjs
+      - name: Verify policy keyboard focus
+        run: node scripts/verification/verify-policy-keyboard-focus.mjs
