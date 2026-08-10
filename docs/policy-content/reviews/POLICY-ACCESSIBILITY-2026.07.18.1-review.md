@@ -1,6 +1,6 @@
 # POLICY-ACCESSIBILITY 2026.07.18.1 Review Record
 
-Status: review pending
+Status: reviewer approvals complete
 
 Issue: #671
 
@@ -26,7 +26,7 @@ This file is the version-specific review record for the first Issue #671 structu
 
 It gives Product Owner and Accessibility review one exact evidence target. It does not record an approval merely because the payload exists, the preview is deployed, CI passes, or the pull request is merged.
 
-The candidate remains publication-ineligible until the registry itself contains explicit approved review records for this exact source revision and all remaining publication blockers are separately cleared.
+The required Product Owner and Accessibility reviews for this exact candidate are complete. The candidate remains publication-ineligible because public route migration, publication status, effective date, `publicReady`, and routing authorization remain separate controlled steps.
 
 ## Immutable review target
 
@@ -91,38 +91,32 @@ The preview is intended to remain:
 
 Reviewer role: `Product Owner`
 
-Current registry state: `pending`
+Current registry state: `approved`
 
-The Product Owner review should confirm the candidate faithfully represents the intended current public Accessibility page without introducing a new product promise.
+The Product Owner review confirms the candidate faithfully represents the intended current public Accessibility page without introducing a new product promise.
 
-Review the deployed restricted preview and verify:
+The deployed restricted preview was reviewed for:
 
-1. Title, description, and overall meaning match the current `/accessibility` page.
-2. All current sections are present in the expected order.
-3. The Support link points to `/support?category=accessibility`.
-4. The accessibility email target remains `support@loombus.com` with the intended subject.
-5. No text has been added that represents a new legal, product, staffing, response-time, certification, or accessibility guarantee.
-6. No current text is missing or materially rephrased.
-7. The preview is clearly labeled as a non-public candidate.
-8. There is no edit, approve, publish, schedule, notice, or route-switchover action available in the preview.
+1. Title, description, and overall meaning matching the current `/accessibility` page.
+2. All current sections present in the expected order.
+3. The Support link pointing to `/support?category=accessibility`.
+4. The accessibility email target remaining `support@loombus.com` with the intended subject.
+5. No added text representing a new legal, product, staffing, response-time, certification, or accessibility guarantee.
+6. No current text missing or materially rephrased.
+7. The preview clearly labeled as a non-public candidate.
+8. No edit, approve, publish, schedule, notice, or route-switchover action available in the preview.
 
-Possible outcomes:
+Outcome: `approved` for this exact version and source revision.
 
-- `approved`: the exact candidate is accepted for the Product Owner role;
-- `changes_requested`: specific candidate corrections are required;
-- remain `pending`: review is incomplete.
-
-An approval must identify this exact version and source revision.
+Evidence: Issue #671 comment `5237391065` records the explicit Product Owner confirmation.
 
 ## Accessibility review
 
 Reviewer role: `Accessibility`
 
-Current registry state: `pending`
+Current registry state: `approved`
 
-Static parity alone is not sufficient for Accessibility approval. The review should include the rendered candidate and relevant interaction behavior.
-
-At minimum verify:
+Static parity alone was not treated as sufficient for Accessibility approval. The rendered candidate and relevant interaction behavior were reviewed.
 
 ### Heading and landmark behavior
 
@@ -138,6 +132,8 @@ At minimum verify:
 - no preview control traps focus;
 - the page can be read from beginning to end without a pointing device.
 
+The initial manual keyboard review exposed insufficiently apparent focus. PR #880 added explicit focus treatment and link affordances. After merge/deployment, keyboard and reverse-keyboard navigation were re-tested and confirmed.
+
 ### Link semantics
 
 - `Loombus Support` has a meaningful accessible name;
@@ -146,10 +142,10 @@ At minimum verify:
 
 ### Zoom, reflow, and mobile
 
-- content remains readable at common browser zoom levels;
+- content remains readable at 200% browser zoom;
 - narrow mobile layouts do not introduce ordinary-reading horizontal scroll;
 - headings and lists remain understandable on mobile;
-- long URLs or identifiers in the review chrome do not break the main content layout.
+- long identifiers in the review chrome do not break the main content layout.
 
 ### Screen-reader and semantic review
 
@@ -159,24 +155,30 @@ At minimum verify:
 - reading order follows the source order;
 - preview-only status information does not obscure the policy content.
 
+VoiceOver was used to sample the page title, headings, paragraphs, lists, navigation links, Support link, and email link.
+
 ### Theme and contrast review
 
-- Light, Dark, and System modes remain usable through the shared public-policy presentation;
-- text, links, focus states, and review-status chrome remain readable in supported themes.
+- Light, Dark, and System modes were reviewed;
+- text, links, focus states, and review-status chrome remained readable in supported themes.
 
-Possible outcomes:
+Outcome: `approved` for this exact version and source revision.
 
-- `approved`: the exact candidate is accepted for the Accessibility role;
-- `changes_requested`: specific accessibility corrections are required;
-- remain `pending`: review is incomplete.
+Evidence on Issue #671:
 
-An approval must identify this exact version and source revision.
+- `5237485912`: initial keyboard review recorded changes requested;
+- `5237561231`: PR #880 production verification;
+- `5237584669`: keyboard re-test passed;
+- `5237607269`: 200% zoom/reflow passed;
+- `5237677111`: mobile/narrow viewport passed;
+- `5237705005`: Light/Dark/System theme review passed;
+- `5237757572`: screen-reader/semantic review passed and completed the Accessibility evidence sequence.
 
 ## Review evidence rule
 
-A later registry update may change a review state from `pending` only when an explicit review outcome exists for the exact version and source revision.
+A registry review state may change from `pending` only when an explicit review outcome exists for the exact version and source revision.
 
-The update must not infer approval from:
+The approvals in this record are based on the explicit human review evidence listed above. They were not inferred from:
 
 - PR merge;
 - deployment;
@@ -188,26 +190,26 @@ The update must not infer approval from:
 - issue closure;
 - a prior version's approval.
 
-## Current blockers that remain active
+## Current blockers after review
 
-The candidate currently retains both publication blockers:
+The candidate retains the publication blocker:
 
-- `registry_route_switchover_not_authorized`;
-- `accessibility_parity_review_pending`.
+- `registry_route_switchover_not_authorized` remains active.
 
-The route-parity product dependency remains blocking.
+The review-specific state changes are limited to:
 
-This review record does not clear any of them.
+- `accessibility_parity_review_pending` is inactive because exact parity plus required human review are complete;
+- `current-accessibility-route-parity` is non-blocking for this exact version/source revision.
 
-## What an explicit review may clear
+These changes do not authorize public registry routing or archive routing.
 
-After the exact candidate has been reviewed:
+## What the completed review satisfies
 
-- Product Owner approval may satisfy only the `Product Owner` reviewer requirement.
-- Accessibility approval may satisfy only the `Accessibility` reviewer requirement.
-- Completed parity evidence may justify clearing the parity-specific dependency or blocker only if the associated human review also supports that conclusion.
+- Product Owner approval satisfies only the `Product Owner` reviewer requirement.
+- Accessibility approval satisfies only the `Accessibility` reviewer requirement.
+- Completed parity evidence satisfies the parity-specific dependency/blocker for this exact reviewed candidate.
 
-Neither approval automatically authorizes public registry routing or archive routing.
+Neither approval authorizes public route migration.
 
 ## What remains a separate phase
 
@@ -229,32 +231,30 @@ A later route-switchover phase must separately verify:
 
 ## Review outcome section
 
-No outcome is recorded yet.
-
 ### Product Owner
 
-State: pending
+State: approved
 
-Approved by: none
+Approved by: `Inexthome`
 
-Approved at: none
+Approved at: `2026-08-10T08:27:14.000Z`
 
 Source revision: `git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780`
 
-Notes: explicit review required.
+Notes: explicit Product Owner review completed for the exact candidate; evidence is recorded on Issue #671.
 
 ### Accessibility
 
-State: pending
+State: approved
 
-Approved by: none
+Approved by: `Inexthome`
 
-Approved at: none
+Approved at: `2026-08-10T08:27:14.000Z`
 
 Source revision: `git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780`
 
-Notes: rendered accessibility review required.
+Notes: rendered Accessibility review completed after keyboard remediation and re-test, 200% zoom/reflow, mobile, supported-theme, and VoiceOver semantic checks.
 
 ## Safety boundary
 
-This record is internal review evidence. It does not publish policy text, create a legal approval, notify members, change Support operations, or enable any Issue #667, #670, or #674 capability.
+This record is internal review evidence. It does not publish policy text, create a legal approval, notify members, change Support operations, authorize route switchover, or enable any Issue #667, #670, or #674 capability.
