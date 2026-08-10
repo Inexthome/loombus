@@ -7,10 +7,11 @@ import { resolvePolicyPublicHistory } from "@/lib/policy-content-history";
 async function resolveHistoryPage(params: Promise<{ documentId: string }>) {
   const { documentId } = await params;
   const history = resolvePolicyPublicHistory(documentId);
-  if (!history.visible || !history.family || history.entries.length === 0) {
+  const family = history.family;
+  if (!history.visible || !family || history.entries.length === 0) {
     return null;
   }
-  return history;
+  return { ...history, family };
 }
 
 export async function generateMetadata({
