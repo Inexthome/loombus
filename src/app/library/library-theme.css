@@ -1,0 +1,26 @@
+/* Loombus Library reading surfaces. Keep these tokens scoped so the existing global appearance system remains authoritative. */
+[data-loombus-library] {
+  --loombus-reader-paper: #09090b;
+  --loombus-library-gold: #CBAB5B;
+  --loombus-library-cream: #FEFBEC;
+}
+
+html[data-loombus-theme="light"] [data-loombus-library] {
+  --loombus-reader-paper: #FEFBEC;
+}
+
+html[data-loombus-theme="dark"] [data-loombus-library] {
+  --loombus-reader-paper: #09090b;
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-loombus-theme="system"] [data-loombus-library] {
+    --loombus-reader-paper: #FEFBEC;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-loombus-theme="system"] [data-loombus-library] {
+    --loombus-reader-paper: #09090b;
+  }
+}

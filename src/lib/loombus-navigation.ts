@@ -86,6 +86,12 @@ export const EXPLORE_NAVIGATION_SECTIONS: readonly LoombusNavigationSection[] = 
         icon: "rooms",
       },
       {
+        href: "/library",
+        label: "Library",
+        description: "Read books, essays, research, reports, and guides while keeping highlights and discussion connected to the source.",
+        icon: "guide",
+      },
+      {
         href: "/the-floor",
         label: "The Floor",
         description: "Post accountable investing theses scored on argument quality and track record, never house ratings.",
