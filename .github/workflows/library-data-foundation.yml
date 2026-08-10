@@ -1,0 +1,28 @@
+name: Library data foundation
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/*library*"
+      - "scripts/verification/verify-library-data-foundation.mjs"
+      - ".github/workflows/library-data-foundation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/*library*"
+      - "scripts/verification/verify-library-data-foundation.mjs"
+      - ".github/workflows/library-data-foundation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-library-data-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library data foundation
+        run: node scripts/verification/verify-library-data-foundation.mjs
