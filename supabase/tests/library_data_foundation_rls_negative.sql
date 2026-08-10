@@ -1,0 +1,16 @@
+-- Loombus Library RLS negative-test template.
+-- Run only with fictional test accounts in a controlled environment after migration deployment.
+-- Do not run against real member Library data.
+--
+-- Required validation:
+-- 1. As fictional member A, insert member_items/progress/highlight/note rows owned by A.
+-- 2. As fictional member B, SELECT/UPDATE/DELETE A's personal rows must return no rows / affect 0 rows.
+-- 3. As fictional member B, INSERT rows with user_id=A must fail RLS.
+-- 4. A note referencing a highlight owned by B or from a different publication must fail RLS.
+-- 5. An authenticated member can SELECT published publication metadata only.
+-- 6. Draft and archived publication metadata must not be returned to the authenticated member role.
+-- 7. anon must have no table access to any Library table.
+--
+-- This file intentionally performs no mutations by itself. It records the mandatory negative
+-- authorization cases for production-readiness verification of this foundation.
+select 'NO_MUTATIONS_PERFORMED' as library_rls_negative_test_template;
