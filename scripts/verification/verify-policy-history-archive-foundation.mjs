@@ -63,7 +63,7 @@ if (!accessibility) {
   if (!candidate) {
     errors.push("Accessibility candidate 2026.07.18.1 is missing");
   } else {
-    if (candidate.status !== "review") errors.push("Accessibility candidate must remain status=review");
+    if (candidate.status !== "approved") errors.push("Accessibility candidate must remain status=approved after completed review");
     if (candidate.publicReady !== false) errors.push("Accessibility candidate must remain publicReady=false");
     if (candidate.effectiveAt !== null) errors.push("Accessibility candidate must retain effectiveAt=null");
     for (const role of ["Product Owner", "Accessibility"]) {
@@ -220,6 +220,12 @@ const reviewVersion = fixtureVersion({
   sourceRevision: "sha256:review",
   effectiveAt: "2026-08-09T00:00:00.000Z",
 });
+const approvedVersion = fixtureVersion({
+  version: "2026.08.10.1",
+  status: "approved",
+  sourceRevision: "sha256:approved",
+  effectiveAt: "2026-08-10T00:00:00.000Z",
+});
 const fixtureRegistry = {
   archiveRoutingEnabled: true,
   documentFamilies: [
@@ -227,7 +233,7 @@ const fixtureRegistry = {
       documentId: "TEST-POLICY",
       canonicalRoute: "/test-policy",
       migrationState: "registry_managed",
-      registryManagedVersions: [oldVersion, currentVersion, reviewVersion],
+      registryManagedVersions: [oldVersion, currentVersion, reviewVersion, approvedVersion],
     },
   ],
 };
@@ -241,6 +247,9 @@ if (history[0]?.version !== "2026.08.01.1" || history[1]?.version !== "2026.07.0
 }
 if (history.some((entry) => entry.version === reviewVersion.version)) {
   errors.push("fixture: review version leaked into public history");
+}
+if (history.some((entry) => entry.version === approvedVersion.version)) {
+  errors.push("fixture: approved version leaked into public history");
 }
 if (!history[1]?.href.endsWith("/TEST-POLICY/2026.07.01.1")) {
   errors.push("fixture: exact historical route identity is incorrect");
@@ -283,9 +292,9 @@ console.log("Policy history/archive foundation verification PASSED");
 console.log("- production archive routing enabled: false");
 console.log("- production registry routing enabled: false");
 console.log("- live /accessibility route remains legacy-rendered");
-console.log("- reviewed Accessibility candidate remains non-public");
+console.log("- approved Accessibility candidate remains non-public");
 console.log("- exact archive route is gated by trusted registry resolution");
-console.log("- public history excludes review versions and private approval metadata");
+console.log("- public history excludes review/approved versions and private approval metadata");
 console.log("- synthetic superseded-version exact route: PASS");
 console.log("- archive-disabled fail-closed fixture: PASS");
 console.log("- approval/source mismatch fail-closed fixture: PASS");
