@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "policy_content.v1",
+  "registryRoutingEnabled": false,
+  "archiveRoutingEnabled": false,
+  "defaultLocale": "en-US",
+  "defaultJurisdiction": "global",
+  "documentFamilies": [
+    {
+      "documentId": "HELP-ABOUT",
+      "canonicalRoute": "/about",
+      "documentType": "help",
+      "category": "community",
+      "currentSourcePath": "src/app/about/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "POLICY-ACCESSIBILITY",
+      "canonicalRoute": "/accessibility",
+      "documentType": "policy",
+      "category": "accessibility",
+      "currentSourcePath": "src/app/accessibility/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "LEGAL-COOKIES",
+      "canonicalRoute": "/cookies",
+      "documentType": "legal",
+      "category": "privacy",
+      "currentSourcePath": "src/app/cookies/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "LEGAL-DMCA",
+      "canonicalRoute": "/dmca",
+      "documentType": "legal",
+      "category": "content",
+      "currentSourcePath": "src/app/dmca/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "POLICY-COMMUNITY-STANDARDS",
+      "canonicalRoute": "/guidelines",
+      "documentType": "policy",
+      "category": "community",
+      "currentSourcePath": "src/app/guidelines/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "LEGAL-PRIVACY",
+      "canonicalRoute": "/privacy",
+      "documentType": "legal",
+      "category": "privacy",
+      "currentSourcePath": "src/app/privacy/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "LEGAL-REFUNDS",
+      "canonicalRoute": "/refunds",
+      "documentType": "legal",
+      "category": "billing",
+      "currentSourcePath": "src/app/refunds/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "SAFETY-CENTER",
+      "canonicalRoute": "/safety",
+      "documentType": "safety",
+      "category": "moderation",
+      "currentSourcePath": "src/app/safety/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "HELP-GUIDE",
+      "canonicalRoute": "/settings/guide",
+      "documentType": "help",
+      "category": "account",
+      "currentSourcePath": "src/app/settings/guide/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "HELP-SUPPORT",
+      "canonicalRoute": "/support",
+      "documentType": "help",
+      "category": "account",
+      "currentSourcePath": "src/app/support/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "LEGAL-TERMS",
+      "canonicalRoute": "/terms",
+      "documentType": "legal",
+      "category": "account",
+      "currentSourcePath": "src/app/terms/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    },
+    {
+      "documentId": "POLICY-AI-USAGE",
+      "canonicalRoute": "/ai-usage",
+      "documentType": "policy",
+      "category": "ai",
+      "currentSourcePath": "src/app/ai-usage/page.tsx",
+      "migrationState": "legacy_public_route",
+      "registryManagedVersions": []
+    }
+  ],
+  "migrationSources": [
+    {
+      "sourceId": "trust_safety_first_20_drafts",
+      "directory": "docs/trust-safety/drafts",
+      "filenamePattern": "^\\d{2}-.+\\.md$",
+      "minimumDocuments": 20,
+      "defaultStatus": "internal_draft",
+      "defaultAudience": "internal_only",
+      "forcePublicReadyFalse": true,
+      "registryImportEnabled": false,
+      "publicRoutingEnabled": false
+    }
+  ]
+}
