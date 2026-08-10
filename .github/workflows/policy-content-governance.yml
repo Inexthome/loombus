@@ -5,9 +5,11 @@ on:
     paths:
       - "src/lib/policy-content-registry.ts"
       - "src/lib/policy-content-registry.data.json"
+      - "src/content/policies/**"
       - "docs/policy-content/**"
       - "docs/trust-safety/drafts/**"
       - "scripts/verification/verify-policy-content-registry.mjs"
+      - "scripts/verification/verify-policy-accessibility-parity.mjs"
       - ".github/workflows/policy-content-governance.yml"
       - "src/app/about/page.tsx"
       - "src/app/accessibility/page.tsx"
@@ -27,9 +29,11 @@ on:
     paths:
       - "src/lib/policy-content-registry.ts"
       - "src/lib/policy-content-registry.data.json"
+      - "src/content/policies/**"
       - "docs/policy-content/**"
       - "docs/trust-safety/drafts/**"
       - "scripts/verification/verify-policy-content-registry.mjs"
+      - "scripts/verification/verify-policy-accessibility-parity.mjs"
       - ".github/workflows/policy-content-governance.yml"
       - "src/app/about/page.tsx"
       - "src/app/accessibility/page.tsx"
@@ -58,3 +62,5 @@ jobs:
           node-version: 22
       - name: Verify versioned policy content registry
         run: node scripts/verification/verify-policy-content-registry.mjs
+      - name: Verify Accessibility structured payload parity
+        run: node scripts/verification/verify-policy-accessibility-parity.mjs
