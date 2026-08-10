@@ -48,7 +48,7 @@
               "approvedBy": null,
               "approvedAt": null,
               "sourceRevision": "git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780",
-              "noteReference": "Issue #671 Phase C parity review pending",
+              "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.07.18.1-review.md",
               "reapprovalRequiredAfterChange": true
             },
             {
@@ -57,7 +57,7 @@
               "approvedBy": null,
               "approvedAt": null,
               "sourceRevision": "git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780",
-              "noteReference": "Issue #671 Phase C accessibility review pending",
+              "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.07.18.1-review.md",
               "reapprovalRequiredAfterChange": true
             }
           ],
