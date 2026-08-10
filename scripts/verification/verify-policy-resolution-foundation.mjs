@@ -156,7 +156,7 @@ if (!accessibility) {
   if (!candidate) {
     fail("POLICY-ACCESSIBILITY 2026.07.18.1 candidate is missing");
   } else {
-    if (candidate.status !== "review") fail("Accessibility candidate status must remain review");
+    if (candidate.status !== "approved") fail("Accessibility candidate status must be approved after completed review");
     if (candidate.publicReady !== false) fail("Accessibility candidate publicReady must remain false");
     if (candidate.effectiveAt !== null) fail("Accessibility candidate effectiveAt must remain null");
 
@@ -370,6 +370,24 @@ if (reviewArchive.resolved || !reviewArchive.reasons.includes("historical_status
   fail("fixture: review content was incorrectly eligible for archive serving");
 }
 
+const approvedArchive = resolveArchive(
+  {
+    ...fixtureRegistry,
+    documentFamilies: [
+      {
+        ...fixtureRegistry.documentFamilies[0],
+        registryManagedVersions: [{ ...fixtureNew, status: "approved" }],
+      },
+    ],
+  },
+  "TEST-POLICY",
+  fixtureNew.version,
+  fixtureNow,
+);
+if (approvedArchive.resolved || !approvedArchive.reasons.includes("historical_status_not_servable")) {
+  fail("fixture: approved content was incorrectly eligible for archive serving");
+}
+
 const mismatchArchive = resolveArchive(
   {
     ...fixtureRegistry,
@@ -405,6 +423,7 @@ if (errors.length > 0) {
 console.log("Policy resolution foundation verification PASSED");
 console.log("- production registry routing enabled: false");
 console.log("- production archive routing enabled: false");
+console.log("- Accessibility candidate status: approved");
 console.log("- Accessibility Product Owner review: approved");
 console.log("- Accessibility accessibility review: approved");
 console.log("- Accessibility parity dependency: non-blocking");
@@ -414,4 +433,5 @@ console.log("- exact superseded archive fixture: PASS");
 console.log("- disabled routing fail-closed fixtures: PASS");
 console.log("- ambiguous effective-version fixture: PASS");
 console.log("- review-status archive rejection fixture: PASS");
+console.log("- approved-status archive rejection fixture: PASS");
 console.log("- historical approval revision mismatch fixture: PASS");

@@ -102,7 +102,7 @@ if (registry) {
     if (!version) {
       errors.push("Accessibility candidate version 2026.07.18.1 is missing");
     } else {
-      if (version.status !== "review") errors.push("Accessibility candidate must remain in review");
+      if (version.status !== "approved") errors.push("Accessibility candidate must remain approved after completed review");
       if (version.publicReady !== false) errors.push("Accessibility candidate must remain publicReady=false");
       if (version.effectiveAt !== null) errors.push("Accessibility candidate effectiveAt must remain null");
       if (version.payloadPath !== paths.payload) errors.push("Accessibility payloadPath drifted");
@@ -221,7 +221,7 @@ if (errors.length > 0) {
 }
 
 console.log("Structured policy preview verification PASSED");
-console.log("- Accessibility remains registry_candidate and publicReady=false");
+console.log("- Accessibility remains registry_candidate, approved, and publicReady=false");
 console.log("- live /accessibility remains disconnected from registry rendering");
 console.log("- preview API is administrator-only, GET-only, static-allowlisted, and no-store");
 console.log("- structured renderer rejects unsafe link schemes and uses no raw HTML injection");
