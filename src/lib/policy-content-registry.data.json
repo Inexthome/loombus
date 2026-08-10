@@ -20,8 +20,98 @@
       "documentType": "policy",
       "category": "accessibility",
       "currentSourcePath": "src/app/accessibility/page.tsx",
-      "migrationState": "legacy_public_route",
-      "registryManagedVersions": []
+      "migrationState": "registry_candidate",
+      "registryManagedVersions": [
+        {
+          "documentId": "POLICY-ACCESSIBILITY",
+          "version": "2026.07.18.1",
+          "slug": "accessibility",
+          "canonicalRoute": "/accessibility",
+          "title": "Accessibility",
+          "summary": "Loombus is working toward a clear, operable, understandable, and robust experience across web, iOS, Android, user-generated content, files, and third-party integrations.",
+          "documentType": "policy",
+          "category": "accessibility",
+          "audience": "public",
+          "status": "review",
+          "publicReady": false,
+          "effectiveAt": null,
+          "lastReviewedAt": "2026-07-18T00:00:00.000Z",
+          "owner": "Loombus Product Operations",
+          "requiredReviewers": [
+            "Product Owner",
+            "Accessibility"
+          ],
+          "approvals": [
+            {
+              "reviewerRole": "Product Owner",
+              "state": "pending",
+              "approvedBy": null,
+              "approvedAt": null,
+              "sourceRevision": "git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780",
+              "noteReference": "Issue #671 Phase C parity review pending",
+              "reapprovalRequiredAfterChange": true
+            },
+            {
+              "reviewerRole": "Accessibility",
+              "state": "pending",
+              "approvedBy": null,
+              "approvedAt": null,
+              "sourceRevision": "git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780",
+              "noteReference": "Issue #671 Phase C accessibility review pending",
+              "reapprovalRequiredAfterChange": true
+            }
+          ],
+          "productDependencies": [
+            {
+              "dependencyId": "current-accessibility-route-parity",
+              "blocking": true,
+              "note": "Exact payload parity must remain verified before route switchover."
+            }
+          ],
+          "publicationBlockers": [
+            {
+              "blockerId": "registry_route_switchover_not_authorized",
+              "active": true,
+              "note": "Global registry routing remains disabled in Phase C."
+            },
+            {
+              "blockerId": "accessibility_parity_review_pending",
+              "active": true,
+              "note": "Candidate payload requires explicit route-parity and accessibility review before any migration."
+            }
+          ],
+          "relatedSettings": [],
+          "relatedReports": [],
+          "relatedAppeals": [],
+          "relatedSupport": [
+            {
+              "label": "Loombus Support",
+              "href": "/support?category=accessibility"
+            }
+          ],
+          "relatedEmergencyActions": [],
+          "relatedArticles": [],
+          "searchKeywords": [
+            "accessibility",
+            "keyboard",
+            "screen reader",
+            "WCAG",
+            "zoom",
+            "contrast",
+            "reduced motion",
+            "captions",
+            "support"
+          ],
+          "jurisdiction": "global",
+          "locale": "en-US",
+          "sourceRevision": "git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780",
+          "changeNote": "Structured parity candidate for the existing /accessibility route. No public text change.",
+          "supersedesVersion": null,
+          "replacementDocumentId": null,
+          "withdrawalReason": null,
+          "payloadPath": "src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json"
+        }
+      ]
     },
     {
       "documentId": "LEGAL-COOKIES",
