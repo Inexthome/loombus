@@ -46,10 +46,10 @@ if (!family) {
 }
 
 if (registry.registryRoutingEnabled !== false) {
-  fail("registry: Phase C must keep registryRoutingEnabled=false");
+  fail("registry: reviewed candidate must keep registryRoutingEnabled=false before switchover");
 }
 if (registry.archiveRoutingEnabled !== false) {
-  fail("registry: Phase C must keep archiveRoutingEnabled=false");
+  fail("registry: reviewed candidate must keep archiveRoutingEnabled=false before archive activation");
 }
 
 if (family) {
@@ -82,8 +82,26 @@ if (version) {
   if (!version.publicationBlockers?.some((blocker) => blocker.active === true)) {
     fail("registry: Accessibility candidate must retain at least one active publication blocker");
   }
-  if ((version.approvals ?? []).some((approval) => approval.state === "approved")) {
-    fail("registry: Phase C must not record an approval merely from payload migration work");
+
+  for (const reviewerRole of version.requiredReviewers ?? []) {
+    const approval = (version.approvals ?? []).find(
+      (candidate) => candidate.reviewerRole === reviewerRole,
+    );
+    if (!approval) {
+      fail(`registry: missing required ${reviewerRole} approval record`);
+      continue;
+    }
+    if (approval.state !== "approved") {
+      fail(`registry: ${reviewerRole} approval must be approved after completed human review`);
+      continue;
+    }
+    if (!requireString(approval.approvedBy, `registry: ${reviewerRole}.approvedBy`)) continue;
+    if (!Number.isFinite(Date.parse(approval.approvedAt ?? ""))) {
+      fail(`registry: ${reviewerRole}.approvedAt must be a valid timestamp`);
+    }
+    if (approval.sourceRevision !== version.sourceRevision) {
+      fail(`registry: ${reviewerRole} approval source revision does not match candidate`);
+    }
   }
 }
 
@@ -179,7 +197,7 @@ if (payload) {
     fail("legacy route: reviewedDate no longer matches the payload");
   }
   if (legacySource.includes("effectiveDate=")) {
-    fail("legacy route: an effectiveDate was added; Phase C parity assumptions must be reviewed");
+    fail("legacy route: an effectiveDate was added; parity assumptions must be reviewed");
   }
 
   const expectedSectionIds = [
@@ -251,7 +269,7 @@ if (payload) {
           if (inline.type === "link") {
             requireString(inline.href, `${inlineContext}.href`);
             if (!(inline.href.startsWith("/") || inline.href.startsWith("mailto:"))) {
-              fail(`${inlineContext}: Phase C allows only internal or mailto links`);
+              fail(`${inlineContext}: parity payload allows only internal or mailto links`);
             }
             if (inline.href.startsWith("/")) {
               if (!legacySource.includes(`href="${inline.href}"`)) {
@@ -289,7 +307,7 @@ if (payload) {
   }
 
   if (legacySource.includes("policy-content-registry") || legacySource.includes("src/content/policies")) {
-    fail("legacy route: /accessibility is already wired to the registry/payload; Phase C forbids route switchover");
+    fail("legacy route: /accessibility is already wired to the registry/payload; reviewed candidate state forbids route switchover");
   }
 }
 
@@ -304,6 +322,7 @@ console.log(`- source revision: ${legacyBlobRevision}`);
 console.log(`- candidate version: ${version?.version ?? "missing"}`);
 console.log(`- candidate status: ${version?.status ?? "missing"}`);
 console.log(`- public ready: ${version?.publicReady ?? "missing"}`);
+console.log(`- required reviewer approvals: ${(version?.approvals ?? []).map((approval) => `${approval.reviewerRole}:${approval.state}`).join(", ")}`);
 console.log(`- registry routing enabled: ${registry.registryRoutingEnabled}`);
 console.log(`- archive routing enabled: ${registry.archiveRoutingEnabled}`);
 console.log(`- legacy route remains authoritative: ${family?.currentSourcePath === "src/app/accessibility/page.tsx"}`);

@@ -137,10 +137,10 @@ function resolveArchive(sourceRegistry, documentId, versionId, now) {
 }
 
 if (registry.registryRoutingEnabled !== false) {
-  fail("production registryRoutingEnabled must remain false in Phase E");
+  fail("production registryRoutingEnabled must remain false before route switchover");
 }
 if (registry.archiveRoutingEnabled !== false) {
-  fail("production archiveRoutingEnabled must remain false in Phase E");
+  fail("production archiveRoutingEnabled must remain false before archive activation");
 }
 
 const accessibility = findFamily(registry, "POLICY-ACCESSIBILITY");
@@ -159,25 +159,58 @@ if (!accessibility) {
     if (candidate.status !== "review") fail("Accessibility candidate status must remain review");
     if (candidate.publicReady !== false) fail("Accessibility candidate publicReady must remain false");
     if (candidate.effectiveAt !== null) fail("Accessibility candidate effectiveAt must remain null");
+
     const productOwner = candidate.approvals.find(
       (approval) => approval.reviewerRole === "Product Owner",
     );
     const accessibilityApproval = candidate.approvals.find(
       (approval) => approval.reviewerRole === "Accessibility",
     );
-    if (productOwner?.state !== "pending") fail("Product Owner approval must remain pending");
-    if (accessibilityApproval?.state !== "pending") fail("Accessibility approval must remain pending");
-    if (productOwner?.noteReference !== reviewPath) {
-      fail("Product Owner approval must reference the exact Phase E review record");
+
+    for (const [label, approval] of [
+      ["Product Owner", productOwner],
+      ["Accessibility", accessibilityApproval],
+    ]) {
+      if (!approval) {
+        fail(`${label} approval is missing`);
+        continue;
+      }
+      if (approval.state !== "approved") fail(`${label} approval must be approved`);
+      if (typeof approval.approvedBy !== "string" || !approval.approvedBy.trim()) {
+        fail(`${label} approvedBy must be recorded`);
+      }
+      if (!Number.isFinite(Date.parse(approval.approvedAt ?? ""))) {
+        fail(`${label} approvedAt must be a valid timestamp`);
+      }
+      if (approval.sourceRevision !== candidate.sourceRevision) {
+        fail(`${label} approval must match the exact candidate source revision`);
+      }
+      if (approval.noteReference !== reviewPath) {
+        fail(`${label} approval must reference the exact review record`);
+      }
     }
-    if (accessibilityApproval?.noteReference !== reviewPath) {
-      fail("Accessibility approval must reference the exact Phase E review record");
+
+    const parityDependency = (candidate.productDependencies ?? []).find(
+      (dependency) => dependency.dependencyId === "current-accessibility-route-parity",
+    );
+    if (!parityDependency) {
+      fail("Accessibility route-parity dependency is missing");
+    } else if (parityDependency.blocking !== false) {
+      fail("Accessibility route-parity dependency must be non-blocking after completed review");
     }
-    if (!(candidate.productDependencies ?? []).some((dependency) => dependency.blocking === true)) {
-      fail("Accessibility candidate must retain a blocking product dependency");
+
+    const routeBlocker = (candidate.publicationBlockers ?? []).find(
+      (blocker) => blocker.blockerId === "registry_route_switchover_not_authorized",
+    );
+    if (!routeBlocker || routeBlocker.active !== true) {
+      fail("route-switchover blocker must remain active");
     }
-    if (!(candidate.publicationBlockers ?? []).some((blocker) => blocker.active === true)) {
-      fail("Accessibility candidate must retain active publication blockers");
+
+    const parityBlocker = (candidate.publicationBlockers ?? []).find(
+      (blocker) => blocker.blockerId === "accessibility_parity_review_pending",
+    );
+    if (!parityBlocker || parityBlocker.active !== false) {
+      fail("Accessibility parity-review blocker must be inactive after completed review");
     }
   }
 }
@@ -195,13 +228,12 @@ for (const fragment of [
 }
 
 for (const fragment of [
-  "Status: review pending",
+  "Status: reviewer approvals complete",
   "Public route switchover authorized by this record: no",
-  "Current registry state: `pending`",
-  "No outcome is recorded yet.",
-  "State: pending",
-  "explicit review required",
-  "rendered accessibility review required",
+  "Current registry state: `approved`",
+  "State: approved",
+  "5237391065",
+  "5237757572",
 ]) {
   requireSourceFragment(reviewSource, fragment, reviewPath);
 }
@@ -373,8 +405,10 @@ if (errors.length > 0) {
 console.log("Policy resolution foundation verification PASSED");
 console.log("- production registry routing enabled: false");
 console.log("- production archive routing enabled: false");
-console.log("- Accessibility Product Owner review: pending");
-console.log("- Accessibility accessibility review: pending");
+console.log("- Accessibility Product Owner review: approved");
+console.log("- Accessibility accessibility review: approved");
+console.log("- Accessibility parity dependency: non-blocking");
+console.log("- route-switchover blocker: active");
 console.log("- current-version resolver fixture: PASS");
 console.log("- exact superseded archive fixture: PASS");
 console.log("- disabled routing fail-closed fixtures: PASS");
