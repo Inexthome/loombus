@@ -75,7 +75,7 @@ if (!version) {
 }
 
 if (version) {
-  if (version.status !== "review") fail(`registry: Accessibility candidate status must remain review, got ${version.status}`);
+  if (version.status !== "approved") fail(`registry: Accessibility candidate status must be approved after completed review, got ${version.status}`);
   if (version.publicReady !== false) fail("registry: Accessibility candidate must remain publicReady=false");
   if (version.audience !== "public") fail(`registry: Accessibility candidate audience must remain public, got ${version.audience}`);
   if (version.effectiveAt !== null) fail("registry: Accessibility candidate effectiveAt must remain null before switchover approval");
