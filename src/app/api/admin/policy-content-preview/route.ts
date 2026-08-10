@@ -3,6 +3,7 @@ import accessibilityPayload from "@/content/policies/POLICY-ACCESSIBILITY/2026.0
 import {
   evaluatePolicyVersionPublicationEligibility,
   findPolicyDocumentFamily,
+  policyContentRegistry,
 } from "@/lib/policy-content-registry";
 import { validateStructuredPolicyPayload } from "@/lib/policy-content-payload";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
@@ -95,6 +96,17 @@ function boundedQueryValue(value: string | null, maximum = 120) {
 export async function GET(request: NextRequest) {
   try {
     await requireAdministrator(request);
+
+    if (
+      policyContentRegistry.registryRoutingEnabled ||
+      policyContentRegistry.archiveRoutingEnabled
+    ) {
+      throw new PolicyPreviewError(
+        "The Phase D preview contract requires public registry and archive routing to remain disabled.",
+        409,
+        "policy_preview_routing_boundary_changed",
+      );
+    }
 
     const documentId = boundedQueryValue(
       request.nextUrl.searchParams.get("documentId"),
@@ -200,8 +212,8 @@ export async function GET(request: NextRequest) {
       payload,
       boundaries: {
         publicRouteSwitchover: false,
-        registryRoutingEnabled: false,
-        archiveRoutingEnabled: false,
+        registryRoutingEnabled: policyContentRegistry.registryRoutingEnabled,
+        archiveRoutingEnabled: policyContentRegistry.archiveRoutingEnabled,
         editable: false,
         approvalActionAvailable: false,
         publishActionAvailable: false,
