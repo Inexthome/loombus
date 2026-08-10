@@ -35,7 +35,7 @@ export function PublicPolicyPage({
     <PageShell width="lg">
       <Link
         href={backHref}
-        className="mb-10 inline-block text-sm text-zinc-500 transition hover:text-white"
+        className="mb-10 inline-block rounded-sm text-sm text-zinc-500 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--loombus-bg)]"
       >
         ← {backLabel}
       </Link>
