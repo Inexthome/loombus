@@ -44,18 +44,18 @@
           "approvals": [
             {
               "reviewerRole": "Product Owner",
-              "state": "pending",
-              "approvedBy": null,
-              "approvedAt": null,
+              "state": "approved",
+              "approvedBy": "Inexthome",
+              "approvedAt": "2026-08-10T08:27:14.000Z",
               "sourceRevision": "git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780",
               "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.07.18.1-review.md",
               "reapprovalRequiredAfterChange": true
             },
             {
               "reviewerRole": "Accessibility",
-              "state": "pending",
-              "approvedBy": null,
-              "approvedAt": null,
+              "state": "approved",
+              "approvedBy": "Inexthome",
+              "approvedAt": "2026-08-10T08:27:14.000Z",
               "sourceRevision": "git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780",
               "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.07.18.1-review.md",
               "reapprovalRequiredAfterChange": true
@@ -64,8 +64,8 @@
           "productDependencies": [
             {
               "dependencyId": "current-accessibility-route-parity",
-              "blocking": true,
-              "note": "Exact payload parity must remain verified before route switchover."
+              "blocking": false,
+              "note": "Exact payload parity and required human review are complete for version 2026.07.18.1; public route switchover remains separately controlled."
             }
           ],
           "publicationBlockers": [
@@ -76,8 +76,8 @@
             },
             {
               "blockerId": "accessibility_parity_review_pending",
-              "active": true,
-              "note": "Candidate payload requires explicit route-parity and accessibility review before any migration."
+              "active": false,
+              "note": "Exact parity plus Product Owner and Accessibility review are complete for version 2026.07.18.1; this does not authorize route switchover."
             }
           ],
           "relatedSettings": [],
