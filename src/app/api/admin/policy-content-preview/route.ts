@@ -6,10 +6,7 @@ import {
 } from "@/lib/policy-content-registry";
 import { validateStructuredPolicyPayload } from "@/lib/policy-content-payload";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
-import {
-  createRequestSupabase,
-  createRoomServiceSupabase,
-} from "@/lib/room-operations";
+import { createRequestSupabase } from "@/lib/room-operations";
 
 const ACCESSIBILITY_DOCUMENT_ID = "POLICY-ACCESSIBILITY";
 const ACCESSIBILITY_VERSION = "2026.07.18.1";
@@ -86,10 +83,6 @@ async function requireAdministrator(request: NextRequest) {
       "administrator_required",
     );
   }
-
-  // Instantiate the existing server-only service client as an additional guard that
-  // this route remains server-side. The preview does not query or mutate Supabase.
-  createRoomServiceSupabase();
 
   return access.user.id;
 }
