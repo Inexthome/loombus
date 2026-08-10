@@ -11,7 +11,7 @@ import {
 } from "@/lib/policy-content-payload";
 
 const linkClassName =
-  "text-zinc-200 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)]";
+  "underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--loombus-gold)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--loombus-bg)]";
 
 function renderInline(
   inline: PolicyPayloadInline,
