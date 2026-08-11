@@ -21,14 +21,16 @@ const CHECKOUT_PLANS = {
     priceEnvVar: "STRIPE_PREMIUM_ANNUAL_PRICE_ID",
   },
   premium_plus_monthly: {
-    label: "Loombus Premium Plus Monthly",
+    // Keep the legacy key and Stripe env var; only the public product name is
+    // changing during this rollout.
+    label: "Loombus Premium Pro Monthly",
     tier: "premium_plus",
     interval: "monthly",
     mode: "subscription",
     priceEnvVar: "STRIPE_PREMIUM_PLUS_MONTHLY_PRICE_ID",
   },
   premium_plus_annual: {
-    label: "Loombus Premium Plus Annual",
+    label: "Loombus Premium Pro Annual",
     tier: "premium_plus",
     interval: "annual",
     mode: "subscription",
