@@ -9,6 +9,7 @@ on:
       - "src/lib/policy-content-payload-registry.ts"
       - "src/lib/policy-content-resolver.ts"
       - "src/lib/policy-content-history.ts"
+      - "src/lib/policy-content-canonical-route.ts"
       - "src/content/policies/**"
       - "src/components/policy-content/**"
       - "src/components/public-policy-page.tsx"
@@ -16,6 +17,7 @@ on:
       - "src/app/api/admin/policy-content-preview/**"
       - "src/app/policies/archive/**"
       - "src/app/policies/history/**"
+      - "src/app/accessibility/layout.tsx"
       - "docs/policy-content/**"
       - "docs/trust-safety/drafts/**"
       - "scripts/verification/verify-policy-content-registry.mjs"
@@ -24,6 +26,7 @@ on:
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
       - "scripts/verification/verify-policy-keyboard-focus.mjs"
       - "scripts/verification/verify-policy-history-archive-foundation.mjs"
+      - "scripts/verification/verify-policy-canonical-route-switchover.mjs"
       - ".github/workflows/policy-content-governance.yml"
       - "src/app/about/page.tsx"
       - "src/app/accessibility/page.tsx"
@@ -47,6 +50,7 @@ on:
       - "src/lib/policy-content-payload-registry.ts"
       - "src/lib/policy-content-resolver.ts"
       - "src/lib/policy-content-history.ts"
+      - "src/lib/policy-content-canonical-route.ts"
       - "src/content/policies/**"
       - "src/components/policy-content/**"
       - "src/components/public-policy-page.tsx"
@@ -54,6 +58,7 @@ on:
       - "src/app/api/admin/policy-content-preview/**"
       - "src/app/policies/archive/**"
       - "src/app/policies/history/**"
+      - "src/app/accessibility/layout.tsx"
       - "docs/policy-content/**"
       - "docs/trust-safety/drafts/**"
       - "scripts/verification/verify-policy-content-registry.mjs"
@@ -62,6 +67,7 @@ on:
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
       - "scripts/verification/verify-policy-keyboard-focus.mjs"
       - "scripts/verification/verify-policy-history-archive-foundation.mjs"
+      - "scripts/verification/verify-policy-canonical-route-switchover.mjs"
       - ".github/workflows/policy-content-governance.yml"
       - "src/app/about/page.tsx"
       - "src/app/accessibility/page.tsx"
@@ -100,3 +106,5 @@ jobs:
         run: node scripts/verification/verify-policy-keyboard-focus.mjs
       - name: Verify policy history and archive foundation
         run: node scripts/verification/verify-policy-history-archive-foundation.mjs
+      - name: Verify canonical route switchover preparation
+        run: node scripts/verification/verify-policy-canonical-route-switchover.mjs
