@@ -17,7 +17,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { BillingPortalButton } from "@/components/billing-portal-button";
 import { isIosNativeApp } from "@/lib/apple-purchases";
 import {
@@ -423,7 +423,7 @@ export default function PremiumV3Client() {
           })}
         </section>
 
-        <section className="premium-v2-comparison-card">
+        <section id="master-entitlements" className="premium-v2-comparison-card">
           <div className="premium-v2-card-heading">
             <div>
               <p className="premium-v2-eyebrow">Master entitlement map</p>
@@ -439,7 +439,7 @@ export default function PremiumV3Client() {
               <thead><tr><th>Capability</th><th>Free</th><th>Premium</th><th>Premium Pro</th></tr></thead>
               <tbody>
                 {MASTER_SUBSCRIPTION_ENTITLEMENTS.map((group) => (
-                  <tbody key={group.label} className="premium-v3-table-group">
+                  <Fragment key={group.label}>
                     <tr className="premium-v3-group-row"><th colSpan={4}>{group.label}</th></tr>
                     {group.rows.map((row) => (
                       <tr key={`${group.label}-${row.capability}`}>
@@ -449,7 +449,7 @@ export default function PremiumV3Client() {
                         <td><ComparisonValue value={row.pro} /></td>
                       </tr>
                     ))}
-                  </tbody>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
