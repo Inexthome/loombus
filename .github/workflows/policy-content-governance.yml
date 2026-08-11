@@ -10,6 +10,8 @@ on:
       - "src/lib/policy-content-resolver.ts"
       - "src/lib/policy-content-history.ts"
       - "src/lib/policy-content-canonical-route.ts"
+      - "src/lib/policy-content-public-discovery.ts"
+      - "src/lib/public-help-catalog.ts"
       - "src/content/policies/**"
       - "src/components/policy-content/**"
       - "src/components/public-policy-page.tsx"
@@ -19,6 +21,7 @@ on:
       - "src/app/policies/archive/**"
       - "src/app/policies/history/**"
       - "src/app/accessibility/layout.tsx"
+      - "src/app/support/**"
       - "docs/policy-content/**"
       - "docs/trust-safety/drafts/**"
       - "scripts/verification/verify-policy-content-registry.mjs"
@@ -26,6 +29,7 @@ on:
       - "scripts/verification/verify-policy-accessibility-successor.mjs"
       - "scripts/verification/verify-policy-accessibility-successor-activation.mjs"
       - "scripts/verification/verify-policy-jump-print.mjs"
+      - "scripts/verification/verify-policy-help-discovery.mjs"
       - "scripts/verification/verify-policy-structured-preview.mjs"
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
       - "scripts/verification/verify-policy-keyboard-focus.mjs"
@@ -42,7 +46,6 @@ on:
       - "src/app/refunds/page.tsx"
       - "src/app/safety/page.tsx"
       - "src/app/settings/guide/page.tsx"
-      - "src/app/support/page.tsx"
       - "src/app/terms/page.tsx"
   push:
     branches:
@@ -55,6 +58,8 @@ on:
       - "src/lib/policy-content-resolver.ts"
       - "src/lib/policy-content-history.ts"
       - "src/lib/policy-content-canonical-route.ts"
+      - "src/lib/policy-content-public-discovery.ts"
+      - "src/lib/public-help-catalog.ts"
       - "src/content/policies/**"
       - "src/components/policy-content/**"
       - "src/components/public-policy-page.tsx"
@@ -64,6 +69,7 @@ on:
       - "src/app/policies/archive/**"
       - "src/app/policies/history/**"
       - "src/app/accessibility/layout.tsx"
+      - "src/app/support/**"
       - "docs/policy-content/**"
       - "docs/trust-safety/drafts/**"
       - "scripts/verification/verify-policy-content-registry.mjs"
@@ -71,6 +77,7 @@ on:
       - "scripts/verification/verify-policy-accessibility-successor.mjs"
       - "scripts/verification/verify-policy-accessibility-successor-activation.mjs"
       - "scripts/verification/verify-policy-jump-print.mjs"
+      - "scripts/verification/verify-policy-help-discovery.mjs"
       - "scripts/verification/verify-policy-structured-preview.mjs"
       - "scripts/verification/verify-policy-resolution-foundation.mjs"
       - "scripts/verification/verify-policy-keyboard-focus.mjs"
@@ -87,7 +94,6 @@ on:
       - "src/app/refunds/page.tsx"
       - "src/app/safety/page.tsx"
       - "src/app/settings/guide/page.tsx"
-      - "src/app/support/page.tsx"
       - "src/app/terms/page.tsx"
 
 permissions:
@@ -110,3 +116,5 @@ jobs:
         run: node scripts/verification/verify-policy-keyboard-focus.mjs
       - name: Verify policy Jump-to navigation and print views
         run: node scripts/verification/verify-policy-jump-print.mjs
+      - name: Verify public Policy and Help discovery
+        run: node scripts/verification/verify-policy-help-discovery.mjs
