@@ -32,7 +32,7 @@
           "documentType": "policy",
           "category": "accessibility",
           "audience": "public",
-          "status": "effective",
+          "status": "superseded",
           "publicReady": true,
           "effectiveAt": "2026-08-11T02:24:00.000Z",
           "lastReviewedAt": "2026-07-18T00:00:00.000Z",
@@ -121,9 +121,9 @@
           "documentType": "policy",
           "category": "accessibility",
           "audience": "public",
-          "status": "approved",
-          "publicReady": false,
-          "effectiveAt": null,
+          "status": "effective",
+          "publicReady": true,
+          "effectiveAt": "2026-08-11T03:36:00.000Z",
           "lastReviewedAt": "2026-08-10T00:00:00.000Z",
           "owner": "Loombus Product Operations",
           "requiredReviewers": [
@@ -165,8 +165,8 @@
             },
             {
               "blockerId": "accessibility_successor_activation_not_authorized",
-              "active": true,
-              "note": "The approved successor may not become effective until a separate explicit activation decision is recorded."
+              "active": false,
+              "note": "Product Owner authorized immediate successor activation on Issue #671 comment 5248695077 at 2026-08-11T03:36:00.000Z."
             }
           ],
           "relatedSettings": [],
