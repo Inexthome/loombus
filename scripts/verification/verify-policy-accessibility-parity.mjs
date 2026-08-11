@@ -6,6 +6,7 @@ const root = process.cwd();
 const registryPath = path.join(root, "src/lib/policy-content-registry.data.json");
 const registry = JSON.parse(fs.readFileSync(registryPath, "utf8"));
 const errors = [];
+const AUTHORIZED_EFFECTIVE_AT = "2026-08-11T02:24:00.000Z";
 
 function fail(message) {
   errors.push(message);
@@ -45,11 +46,11 @@ if (!family) {
   fail("registry: POLICY-ACCESSIBILITY family is missing");
 }
 
-if (registry.registryRoutingEnabled !== false) {
-  fail("registry: reviewed candidate must keep registryRoutingEnabled=false before switchover");
+if (registry.registryRoutingEnabled !== true) {
+  fail("registry: activated Accessibility requires registryRoutingEnabled=true");
 }
-if (registry.archiveRoutingEnabled !== false) {
-  fail("registry: reviewed candidate must keep archiveRoutingEnabled=false before archive activation");
+if (registry.archiveRoutingEnabled !== true) {
+  fail("registry: activated Accessibility requires archiveRoutingEnabled=true");
 }
 
 if (family) {
@@ -59,28 +60,39 @@ if (family) {
   if (family.currentSourcePath !== "src/app/accessibility/page.tsx") {
     fail(`registry: unexpected Accessibility source path ${family.currentSourcePath}`);
   }
-  if (family.migrationState !== "registry_candidate") {
-    fail(`registry: expected Accessibility migrationState registry_candidate, got ${family.migrationState}`);
+  if (family.migrationState !== "registry_managed") {
+    fail(`registry: expected Accessibility migrationState registry_managed, got ${family.migrationState}`);
   }
 }
 
 const versions = family?.registryManagedVersions ?? [];
 if (versions.length !== 1) {
-  fail(`registry: expected exactly one Accessibility candidate version, found ${versions.length}`);
+  fail(`registry: expected exactly one Accessibility registry version, found ${versions.length}`);
 }
 
 const version = versions.find((candidate) => candidate.version === "2026.07.18.1");
 if (!version) {
-  fail("registry: Accessibility candidate 2026.07.18.1 is missing");
+  fail("registry: Accessibility version 2026.07.18.1 is missing");
 }
 
 if (version) {
-  if (version.status !== "approved") fail(`registry: Accessibility candidate status must be approved after completed review, got ${version.status}`);
-  if (version.publicReady !== false) fail("registry: Accessibility candidate must remain publicReady=false");
-  if (version.audience !== "public") fail(`registry: Accessibility candidate audience must remain public, got ${version.audience}`);
-  if (version.effectiveAt !== null) fail("registry: Accessibility candidate effectiveAt must remain null before switchover approval");
-  if (!version.publicationBlockers?.some((blocker) => blocker.active === true)) {
-    fail("registry: Accessibility candidate must retain at least one active publication blocker");
+  if (version.status !== "effective") fail(`registry: Accessibility status must be effective, got ${version.status}`);
+  if (version.publicReady !== true) fail("registry: activated Accessibility must be publicReady=true");
+  if (version.audience !== "public") fail(`registry: Accessibility audience must remain public, got ${version.audience}`);
+  if (version.effectiveAt !== AUTHORIZED_EFFECTIVE_AT) {
+    fail(`registry: Accessibility effectiveAt must equal authorized timestamp ${AUTHORIZED_EFFECTIVE_AT}`);
+  }
+  if (version.publicationBlockers?.some((blocker) => blocker.active === true)) {
+    fail("registry: activated Accessibility must not retain an active publication blocker");
+  }
+  const routeBlocker = (version.publicationBlockers ?? []).find(
+    (blocker) => blocker.blockerId === "registry_route_switchover_not_authorized",
+  );
+  if (!routeBlocker || routeBlocker.active !== false) {
+    fail("registry: route-switchover blocker must be inactive after explicit authorization");
+  }
+  if (!routeBlocker?.note?.includes("5248313219")) {
+    fail("registry: route-switchover authorization note must cite Issue #671 comment 5248313219");
   }
 
   for (const reviewerRole of version.requiredReviewers ?? []) {
@@ -92,7 +104,7 @@ if (version) {
       continue;
     }
     if (approval.state !== "approved") {
-      fail(`registry: ${reviewerRole} approval must be approved after completed human review`);
+      fail(`registry: ${reviewerRole} approval must remain approved`);
       continue;
     }
     if (!requireString(approval.approvedBy, `registry: ${reviewerRole}.approvedBy`)) continue;
@@ -100,7 +112,7 @@ if (version) {
       fail(`registry: ${reviewerRole}.approvedAt must be a valid timestamp`);
     }
     if (approval.sourceRevision !== version.sourceRevision) {
-      fail(`registry: ${reviewerRole} approval source revision does not match candidate`);
+      fail(`registry: ${reviewerRole} approval source revision does not match effective version`);
     }
   }
 }
@@ -157,7 +169,7 @@ if (payload) {
     );
   }
   if (version && payload.sourceRevision !== version.sourceRevision) {
-    fail("payload: sourceRevision does not match registry candidate");
+    fail("payload: sourceRevision does not match effective registry version");
   }
   if (version && version.payloadPath !== path.relative(root, payloadPath)) {
     fail("payload: registry payloadPath does not point to the parity payload");
@@ -166,7 +178,7 @@ if (payload) {
   requireString(payload.eyebrow, "payload.eyebrow");
   requireString(payload.title, "payload.title");
   requireString(payload.description, "payload.description");
-  if (payload.effectiveDate !== null) fail("payload: effectiveDate must remain null because the legacy page exposes only reviewedDate");
+  if (payload.effectiveDate !== null) fail("payload: effectiveDate must remain null because activation is registry metadata only and the reviewed legacy text has no effectiveDate field");
   if (payload.reviewedDate !== "July 18, 2026") {
     fail(`payload: expected reviewedDate July 18, 2026, got ${payload.reviewedDate}`);
   }
@@ -285,8 +297,6 @@ if (payload) {
             }
           }
 
-          // The email address is rendered through the supportEmail constant declared near
-          // the top of the legacy source, so it cannot participate in section-order matching.
           if (inline.text === "support@loombus.com") continue;
           assertOrderedFragment(inline.text, `${inlineContext}.text`);
         }
@@ -307,7 +317,7 @@ if (payload) {
   }
 
   if (legacySource.includes("policy-content-registry") || legacySource.includes("src/content/policies")) {
-    fail("legacy route: /accessibility is already wired to the registry/payload; reviewed candidate state forbids route switchover");
+    fail("legacy source: /accessibility page.tsx must remain an immutable parity source; registry activation belongs in the reviewed layout/resolver boundary");
   }
 }
 
@@ -319,10 +329,11 @@ if (errors.length > 0) {
 
 console.log("Accessibility policy payload parity verification PASSED");
 console.log(`- source revision: ${legacyBlobRevision}`);
-console.log(`- candidate version: ${version?.version ?? "missing"}`);
-console.log(`- candidate status: ${version?.status ?? "missing"}`);
+console.log(`- version: ${version?.version ?? "missing"}`);
+console.log(`- status: ${version?.status ?? "missing"}`);
 console.log(`- public ready: ${version?.publicReady ?? "missing"}`);
+console.log(`- effective at: ${version?.effectiveAt ?? "missing"}`);
 console.log(`- required reviewer approvals: ${(version?.approvals ?? []).map((approval) => `${approval.reviewerRole}:${approval.state}`).join(", ")}`);
 console.log(`- registry routing enabled: ${registry.registryRoutingEnabled}`);
 console.log(`- archive routing enabled: ${registry.archiveRoutingEnabled}`);
-console.log(`- legacy route remains authoritative: ${family?.currentSourcePath === "src/app/accessibility/page.tsx"}`);
+console.log("- legacy page remains the exact reviewed parity source while the canonical layout selects the registry payload");
