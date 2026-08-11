@@ -1,0 +1,46 @@
+.printRoot {
+  min-width: 0;
+}
+
+@media print {
+  @page {
+    margin: 0.65in;
+  }
+
+  .printRoot.printRoot.printRoot {
+    max-width: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .printRoot.printRoot.printRoot * {
+    background: transparent !important;
+    color: #000000 !important;
+    border-color: #d4d4d8 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .printRoot.printRoot.printRoot [data-policy-screen-only] {
+    display: none !important;
+  }
+
+  .printRoot.printRoot.printRoot a {
+    color: #000000 !important;
+    text-decoration: underline !important;
+  }
+
+  .printSection {
+    break-inside: auto;
+  }
+
+  .printSection h2 {
+    break-after: avoid-page;
+  }
+
+  .printSection p,
+  .printSection li {
+    orphans: 3;
+    widows: 3;
+  }
+}
