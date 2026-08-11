@@ -1,0 +1,79 @@
+.support-policy-discovery-page {
+  padding-bottom: 1rem;
+}
+
+.support-policy-category-nav {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.support-policy-category-button {
+  min-height: 2.6rem;
+  border: 1px solid var(--loombus-border);
+  border-radius: 999px;
+  padding: 0.55rem 0.9rem;
+  background: var(--loombus-surface-muted);
+  color: var(--loombus-text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.support-policy-category-button:hover,
+.support-policy-category-button[data-active="true"] {
+  border-color: #cbab5b;
+  color: var(--loombus-text);
+}
+
+.support-policy-category-button[data-active="true"] {
+  background: color-mix(in srgb, #cbab5b 14%, var(--loombus-surface-muted));
+}
+
+.support-policy-category-button:focus-visible,
+.support-policy-discovery-page a:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--loombus-bg),
+    0 0 0 4px #cbab5b;
+}
+
+.support-policy-centered-actions {
+  justify-content: center;
+}
+
+/* The existing SupportV2Client remains responsible for the structured support
+   request form. Its former discovery shell is hidden only inside this wrapper so
+   the canonical /support page has one search and one category-navigation surface. */
+.support-policy-contact-only .support-v2-hero,
+.support-policy-contact-only .support-v2-section {
+  display: none;
+}
+
+.support-policy-contact-only .support-v2-page {
+  min-height: auto;
+  padding-top: 0;
+  background: var(--loombus-bg);
+}
+
+.support-policy-contact-only .support-v2-contact-layout {
+  margin-top: 0;
+}
+
+@media (max-width: 640px) {
+  .support-policy-category-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: thin;
+  }
+
+  .support-policy-category-button {
+    flex: 0 0 auto;
+  }
+}
