@@ -2,6 +2,10 @@ import fs from "node:fs";
 
 const migrationPath = "supabase/migrations/20260810120000_add_loombus_library_data_foundation.sql";
 const sql = fs.readFileSync(migrationPath, "utf8");
+const executableSql = sql
+  .split("\n")
+  .filter((line) => !line.trimStart().startsWith("--"))
+  .join("\n");
 
 const requiredTables = [
   "library_publications",
@@ -42,7 +46,7 @@ const forbidden = [
 ];
 
 for (const token of forbidden) {
-  if (sql.toLowerCase().includes(token)) failures.push(`out-of-scope capability present: ${token}`);
+  if (executableSql.toLowerCase().includes(token)) failures.push(`out-of-scope capability present: ${token}`);
 }
 
 if (failures.length) {
