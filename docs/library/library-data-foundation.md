@@ -41,3 +41,5 @@ Reading progress, personal Library membership, highlights, and notes are private
 ## Next phase
 
 After migration deployment and RLS verification, the next narrow phase can wire `/library` to these tables and make My Library, Continue Reading, Highlights, and Notes functional using metadata/test fixtures only. Uploads, commerce, DRM, author publishing, and AI should remain separate later phases.
+
+<!-- PR refresh: deployment retrigger only; no Library behavior or data-contract change. -->
