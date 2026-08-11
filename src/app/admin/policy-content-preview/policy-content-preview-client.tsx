@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase/client";
 
 const PREVIEW_PATH = "/admin/policy-content-preview";
 const DOCUMENT_ID = "POLICY-ACCESSIBILITY";
-const VERSION = "2026.07.18.1";
+const VERSION = "2026.08.10.1";
 const PREVIEW_API = `/api/admin/policy-content-preview?documentId=${encodeURIComponent(DOCUMENT_ID)}&version=${encodeURIComponent(VERSION)}`;
 
 type AccessState = "checking" | "allowed" | "denied" | "error";
@@ -164,7 +164,7 @@ export default function PolicyContentPreviewClient() {
                 {preview.documentId} · {preview.version}
               </h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--loombus-text-muted)]">
-                Read-only parity preview from the source-controlled structured payload. This is not the live public route, does not create an approval, and cannot publish or notify members.
+                Read-only preview from the source-controlled structured payload. This is not the live public route, does not create an approval, and cannot publish or notify members.
               </p>
             </div>
             <Link

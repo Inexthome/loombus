@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import accessibilityPayload from "@/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json";
+import accessibilitySuccessorPayload from "@/content/policies/POLICY-ACCESSIBILITY/2026.08.10.1.json";
 import {
   evaluatePolicyVersionPublicationEligibility,
   findPolicyDocumentFamily,
@@ -10,9 +10,15 @@ import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 import { createRequestSupabase } from "@/lib/room-operations";
 
 const ACCESSIBILITY_DOCUMENT_ID = "POLICY-ACCESSIBILITY";
-const ACCESSIBILITY_VERSION = "2026.07.18.1";
-const ACCESSIBILITY_PAYLOAD_PATH =
-  "src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json";
+const ACCESSIBILITY_SUCCESSOR_VERSION = "2026.08.10.1";
+const ACCESSIBILITY_SUCCESSOR_PAYLOAD_PATH =
+  "src/content/policies/POLICY-ACCESSIBILITY/2026.08.10.1.json";
+const PREVIEWABLE_STATUSES = new Set([
+  "internal_draft",
+  "review",
+  "approved",
+  "scheduled",
+]);
 
 const PREVIEW_PAYLOADS: Readonly<
   Record<
@@ -23,9 +29,9 @@ const PREVIEW_PAYLOADS: Readonly<
     }
   >
 > = {
-  [`${ACCESSIBILITY_DOCUMENT_ID}:${ACCESSIBILITY_VERSION}`]: {
-    payloadPath: ACCESSIBILITY_PAYLOAD_PATH,
-    payload: accessibilityPayload,
+  [`${ACCESSIBILITY_DOCUMENT_ID}:${ACCESSIBILITY_SUCCESSOR_VERSION}`]: {
+    payloadPath: ACCESSIBILITY_SUCCESSOR_PAYLOAD_PATH,
+    payload: accessibilitySuccessorPayload,
   },
 };
 
@@ -97,17 +103,6 @@ export async function GET(request: NextRequest) {
   try {
     await requireAdministrator(request);
 
-    if (
-      policyContentRegistry.registryRoutingEnabled ||
-      policyContentRegistry.archiveRoutingEnabled
-    ) {
-      throw new PolicyPreviewError(
-        "The Phase D preview contract requires public registry and archive routing to remain disabled.",
-        409,
-        "policy_preview_routing_boundary_changed",
-      );
-    }
-
     const documentId = boundedQueryValue(
       request.nextUrl.searchParams.get("documentId"),
       80,
@@ -143,11 +138,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (family.migrationState !== "registry_candidate") {
+    if (
+      family.migrationState !== "registry_candidate" &&
+      family.migrationState !== "registry_managed"
+    ) {
       throw new PolicyPreviewError(
-        "This preview route is restricted to an explicitly registered candidate.",
+        "This preview route is restricted to an explicitly registered policy-content family.",
         409,
-        "policy_family_not_preview_candidate",
+        "policy_family_not_previewable",
       );
     }
 
@@ -159,6 +157,14 @@ export async function GET(request: NextRequest) {
         "The requested policy version is not registered on this document family.",
         404,
         "policy_version_not_registered",
+      );
+    }
+
+    if (!PREVIEWABLE_STATUSES.has(versionRecord.status)) {
+      throw new PolicyPreviewError(
+        "Only non-effective policy candidates may be loaded through the restricted preview.",
+        409,
+        "policy_version_not_preview_candidate",
       );
     }
 

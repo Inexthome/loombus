@@ -110,6 +110,95 @@
           "replacementDocumentId": null,
           "withdrawalReason": null,
           "payloadPath": "src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json"
+        },
+        {
+          "documentId": "POLICY-ACCESSIBILITY",
+          "version": "2026.08.10.1",
+          "slug": "accessibility",
+          "canonicalRoute": "/accessibility",
+          "title": "Accessibility",
+          "summary": "Loombus is working toward a clear, operable, understandable, and robust experience across web, iOS, Android, user-generated content, files, and third-party integrations.",
+          "documentType": "policy",
+          "category": "accessibility",
+          "audience": "public",
+          "status": "approved",
+          "publicReady": false,
+          "effectiveAt": null,
+          "lastReviewedAt": "2026-08-10T00:00:00.000Z",
+          "owner": "Loombus Product Operations",
+          "requiredReviewers": [
+            "Product Owner",
+            "Accessibility"
+          ],
+          "approvals": [
+            {
+              "reviewerRole": "Product Owner",
+              "state": "approved",
+              "approvedBy": "Inexthome",
+              "approvedAt": "2026-08-11T03:21:00.000Z",
+              "sourceRevision": "sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe",
+              "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.08.10.1-review.md",
+              "reapprovalRequiredAfterChange": true
+            },
+            {
+              "reviewerRole": "Accessibility",
+              "state": "approved",
+              "approvedBy": "Inexthome",
+              "approvedAt": "2026-08-11T03:21:00.000Z",
+              "sourceRevision": "sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe",
+              "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.08.10.1-review.md",
+              "reapprovalRequiredAfterChange": true
+            }
+          ],
+          "productDependencies": [
+            {
+              "dependencyId": "accessibility-successor-metadata-review",
+              "blocking": false,
+              "note": "Manual restricted-preview review was confirmed on Issue #671 comment 5248614787 for the metadata-only successor."
+            }
+          ],
+          "publicationBlockers": [
+            {
+              "blockerId": "accessibility_successor_review_pending",
+              "active": false,
+              "note": "Product Owner and Accessibility review were confirmed on Issue #671 comment 5248614787 for version 2026.08.10.1."
+            },
+            {
+              "blockerId": "accessibility_successor_activation_not_authorized",
+              "active": true,
+              "note": "The approved successor may not become effective until a separate explicit activation decision is recorded."
+            }
+          ],
+          "relatedSettings": [],
+          "relatedReports": [],
+          "relatedAppeals": [],
+          "relatedSupport": [
+            {
+              "label": "Loombus Support",
+              "href": "/support?category=accessibility"
+            }
+          ],
+          "relatedEmergencyActions": [],
+          "relatedArticles": [],
+          "searchKeywords": [
+            "accessibility",
+            "keyboard",
+            "screen reader",
+            "WCAG",
+            "zoom",
+            "contrast",
+            "reduced motion",
+            "captions",
+            "support"
+          ],
+          "jurisdiction": "global",
+          "locale": "en-US",
+          "sourceRevision": "sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe",
+          "changeNote": "Updates the displayed Last reviewed date to August 10, 2026; no policy wording, links, sections, or accessibility commitments change.",
+          "supersedesVersion": "2026.07.18.1",
+          "replacementDocumentId": null,
+          "withdrawalReason": null,
+          "payloadPath": "src/content/policies/POLICY-ACCESSIBILITY/2026.08.10.1.json"
         }
       ]
     },
