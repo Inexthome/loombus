@@ -4,12 +4,15 @@ import path from "node:path";
 
 const root = process.cwd();
 const errors = [];
+const AUTHORIZED_EFFECTIVE_AT = "2026-08-11T02:24:00.000Z";
 
 const paths = {
   registry: "src/lib/policy-content-registry.data.json",
   canonicalRoute: "src/lib/policy-content-canonical-route.ts",
   accessibilityLayout: "src/app/accessibility/layout.tsx",
   accessibilityPage: "src/app/accessibility/page.tsx",
+  accessibilityPayload:
+    "src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json",
 };
 
 function read(relativePath) {
@@ -46,12 +49,13 @@ const registry = JSON.parse(read(paths.registry));
 const canonicalRouteSource = read(paths.canonicalRoute);
 const layoutSource = read(paths.accessibilityLayout);
 const pageSource = read(paths.accessibilityPage);
+const accessibilityPayload = JSON.parse(read(paths.accessibilityPayload));
 
-if (registry.registryRoutingEnabled !== false) {
-  errors.push("production registryRoutingEnabled must remain false in switchover preparation");
+if (registry.registryRoutingEnabled !== true) {
+  errors.push("production registryRoutingEnabled must be true after authorized activation");
 }
-if (registry.archiveRoutingEnabled !== false) {
-  errors.push("production archiveRoutingEnabled must remain false in switchover preparation");
+if (registry.archiveRoutingEnabled !== true) {
+  errors.push("production archiveRoutingEnabled must be true after authorized activation");
 }
 
 const family = registry.documentFamilies.find(
@@ -60,8 +64,8 @@ const family = registry.documentFamilies.find(
 if (!family) {
   errors.push("POLICY-ACCESSIBILITY family is missing");
 } else {
-  if (family.migrationState !== "registry_candidate") {
-    errors.push("Accessibility family must remain registry_candidate during switchover preparation");
+  if (family.migrationState !== "registry_managed") {
+    errors.push("Accessibility family must be registry_managed after activation");
   }
 
   const version = family.registryManagedVersions.find(
@@ -70,20 +74,26 @@ if (!family) {
   if (!version) {
     errors.push("Accessibility version 2026.07.18.1 is missing");
   } else {
-    if (version.status !== "approved") {
-      errors.push("Accessibility candidate must remain approved before publication activation");
+    if (version.status !== "effective") {
+      errors.push("Accessibility version must be effective after publication activation");
     }
-    if (version.publicReady !== false) {
-      errors.push("Accessibility candidate must remain publicReady=false during switchover preparation");
+    if (version.publicReady !== true) {
+      errors.push("Accessibility effective version must be publicReady=true");
     }
-    if (version.effectiveAt !== null) {
-      errors.push("Accessibility candidate must retain effectiveAt=null until an effective date is explicitly authorized");
+    if (version.effectiveAt !== AUTHORIZED_EFFECTIVE_AT) {
+      errors.push("Accessibility effectiveAt must match the explicitly authorized timestamp");
     }
     const routeBlocker = version.publicationBlockers.find(
       (blocker) => blocker.blockerId === "registry_route_switchover_not_authorized",
     );
-    if (!routeBlocker || routeBlocker.active !== true) {
-      errors.push("registry_route_switchover_not_authorized must remain active");
+    if (!routeBlocker || routeBlocker.active !== false) {
+      errors.push("registry_route_switchover_not_authorized must be inactive after authorization");
+    }
+    if (!routeBlocker?.note?.includes("5248313219")) {
+      errors.push("route-switchover authorization note must cite Issue #671 comment 5248313219");
+    }
+    if (version.publicationBlockers.some((blocker) => blocker.active === true)) {
+      errors.push("Accessibility effective version must have no active publication blocker");
     }
 
     const liveRevision = gitBlobRevision(pageSource);
@@ -91,6 +101,15 @@ if (!family) {
       errors.push(
         `live Accessibility source revision drifted: expected ${version.sourceRevision}, got ${liveRevision}`,
       );
+    }
+    if (accessibilityPayload.sourceRevision !== version.sourceRevision) {
+      errors.push("Accessibility payload source revision does not match the effective registry version");
+    }
+    if (accessibilityPayload.version !== version.version) {
+      errors.push("Accessibility payload version does not match the effective registry version");
+    }
+    if (accessibilityPayload.canonicalRoute !== family.canonicalRoute) {
+      errors.push("Accessibility payload canonical route does not match the effective family");
     }
   }
 }
@@ -270,6 +289,27 @@ function resolveFixtureCanonical(sourceRegistry, documentId, payloadSource, now)
   };
 }
 
+const productionVersion = family?.registryManagedVersions.find(
+  (candidate) => candidate.version === "2026.07.18.1",
+);
+if (productionVersion) {
+  const productionPayloadSource = {
+    documentId: "POLICY-ACCESSIBILITY",
+    version: "2026.07.18.1",
+    payloadPath: productionVersion.payloadPath,
+    payload: accessibilityPayload,
+  };
+  const productionResult = resolveFixtureCanonical(
+    registry,
+    "POLICY-ACCESSIBILITY",
+    productionPayloadSource,
+    Date.parse("2026-08-11T02:24:01.000Z"),
+  );
+  if (!productionResult.resolved || productionResult.version?.version !== "2026.07.18.1") {
+    errors.push(`production: activated Accessibility canonical route did not resolve: ${productionResult.reasons.join(", ")}`);
+  }
+}
+
 const now = Date.parse("2026-08-10T12:00:00.000Z");
 const eligibleVersion = fixtureVersion();
 const validPayload = {
@@ -377,18 +417,19 @@ for (const [label, alteredPayload, expectedReason] of [
 }
 
 if (errors.length > 0) {
-  console.error("Policy canonical-route switchover verification FAILED:\n");
+  console.error("Policy canonical-route activation verification FAILED:\n");
   for (const error of errors) console.error(`- ${error}`);
   process.exit(1);
 }
 
-console.log("Policy canonical-route switchover preparation verification PASSED");
+console.log("Policy canonical-route activation verification PASSED");
 console.log("- live Accessibility source remains exact reviewed revision");
-console.log("- Accessibility route adapter is present but dormant");
-console.log("- production registry routing remains disabled");
-console.log("- Accessibility remains registry_candidate, approved, publicReady=false, effectiveAt=null");
-console.log("- route-switchover blocker remains active");
+console.log("- Accessibility route adapter is active only through the validated canonical resolver");
+console.log("- production registry and archive routing are enabled");
+console.log(`- Accessibility is registry_managed, effective, publicReady=true, effectiveAt=${AUTHORIZED_EFFECTIVE_AT}`);
+console.log("- route-switchover blocker is inactive by explicit Issue #671 authorization");
+console.log("- production activated canonical route resolves the exact reviewed payload");
 console.log("- canonical resolver validates registry eligibility plus payload path/source/canonical identity");
-console.log("- disabled/candidate/approved/blocker fixtures preserve legacy fallback");
+console.log("- disabled/candidate/approved/blocker fixtures still fail closed");
 console.log("- fully eligible fixture resolves only after all publication gates are satisfied");
 console.log("- payload identity mismatch fixtures fail closed");

@@ -3,6 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const errors = [];
+const AUTHORIZED_EFFECTIVE_AT = "2026-08-11T02:24:00.000Z";
 
 const paths = {
   registry: "src/lib/policy-content-registry.data.json",
@@ -41,11 +42,11 @@ const archiveRouteSource = read(paths.archiveRoute);
 const historyRouteSource = read(paths.historyRoute);
 const liveAccessibilitySource = read(paths.liveAccessibility);
 
-if (registry.registryRoutingEnabled !== false) {
-  errors.push("production registry routing must remain disabled");
+if (registry.registryRoutingEnabled !== true) {
+  errors.push("production registry routing must be enabled after Accessibility activation");
 }
-if (registry.archiveRoutingEnabled !== false) {
-  errors.push("production archive routing must remain disabled");
+if (registry.archiveRoutingEnabled !== true) {
+  errors.push("production archive routing must be enabled after Accessibility activation");
 }
 
 const accessibility = registry.documentFamilies.find(
@@ -54,18 +55,18 @@ const accessibility = registry.documentFamilies.find(
 if (!accessibility) {
   errors.push("POLICY-ACCESSIBILITY family is missing");
 } else {
-  if (accessibility.migrationState !== "registry_candidate") {
-    errors.push("Accessibility must remain registry_candidate in the archive foundation phase");
+  if (accessibility.migrationState !== "registry_managed") {
+    errors.push("Accessibility must be registry_managed after activation");
   }
   const candidate = accessibility.registryManagedVersions.find(
     (version) => version.version === "2026.07.18.1",
   );
   if (!candidate) {
-    errors.push("Accessibility candidate 2026.07.18.1 is missing");
+    errors.push("Accessibility version 2026.07.18.1 is missing");
   } else {
-    if (candidate.status !== "approved") errors.push("Accessibility candidate must remain status=approved after completed review");
-    if (candidate.publicReady !== false) errors.push("Accessibility candidate must remain publicReady=false");
-    if (candidate.effectiveAt !== null) errors.push("Accessibility candidate must retain effectiveAt=null");
+    if (candidate.status !== "effective") errors.push("Accessibility version must be status=effective");
+    if (candidate.publicReady !== true) errors.push("Accessibility effective version must be publicReady=true");
+    if (candidate.effectiveAt !== AUTHORIZED_EFFECTIVE_AT) errors.push("Accessibility effectiveAt does not match explicit authorization");
     for (const role of ["Product Owner", "Accessibility"]) {
       const approval = candidate.approvals.find(
         (entry) => entry.reviewerRole === role,
@@ -80,8 +81,14 @@ if (!accessibility) {
     const routeBlocker = candidate.publicationBlockers.find(
       (blocker) => blocker.blockerId === "registry_route_switchover_not_authorized",
     );
-    if (routeBlocker?.active !== true) {
-      errors.push("route-switchover blocker must remain active");
+    if (routeBlocker?.active !== false) {
+      errors.push("route-switchover blocker must be inactive after authorization");
+    }
+    if (!routeBlocker?.note?.includes("5248313219")) {
+      errors.push("route-switchover blocker note must cite Issue #671 authorization comment");
+    }
+    if (candidate.publicationBlockers.some((blocker) => blocker.active === true)) {
+      errors.push("Accessibility effective version must have no active publication blocker");
     }
   }
 }
@@ -141,9 +148,9 @@ for (const forbidden of [
   reject(historyRouteSource, forbidden, paths.historyRoute);
 }
 
-reject(liveAccessibilitySource, "policy-content-history", "live Accessibility route");
-reject(liveAccessibilitySource, "policy-content-resolver", "live Accessibility route");
-reject(liveAccessibilitySource, "policy-content-payload-registry", "live Accessibility route");
+reject(liveAccessibilitySource, "policy-content-history", "legacy Accessibility parity source");
+reject(liveAccessibilitySource, "policy-content-resolver", "legacy Accessibility parity source");
+reject(liveAccessibilitySource, "policy-content-payload-registry", "legacy Accessibility parity source");
 
 function approval(sourceRevision) {
   return {
@@ -200,6 +207,18 @@ function publicHistory(fixtureRegistry, documentId, now) {
       version: version.version,
       href: `/policies/archive/${encodeURIComponent(documentId)}/${encodeURIComponent(version.version)}`,
     }));
+}
+
+const productionHistory = publicHistory(
+  registry,
+  "POLICY-ACCESSIBILITY",
+  Date.parse("2026-08-11T02:24:01.000Z"),
+);
+if (productionHistory.length !== 1 || productionHistory[0]?.version !== "2026.07.18.1") {
+  errors.push("production: Accessibility public history must expose exactly the activated effective version");
+}
+if (!productionHistory[0]?.href.endsWith("/POLICY-ACCESSIBILITY/2026.07.18.1")) {
+  errors.push("production: Accessibility exact-version archive href is incorrect");
 }
 
 const oldVersion = fixtureVersion({
@@ -289,11 +308,12 @@ if (errors.length > 0) {
 }
 
 console.log("Policy history/archive foundation verification PASSED");
-console.log("- production archive routing enabled: false");
-console.log("- production registry routing enabled: false");
-console.log("- live /accessibility route remains legacy-rendered");
-console.log("- approved Accessibility candidate remains non-public");
+console.log("- production archive routing enabled: true");
+console.log("- production registry routing enabled: true");
+console.log("- Accessibility is effective and registry-managed");
+console.log(`- Accessibility effectiveAt: ${AUTHORIZED_EFFECTIVE_AT}`);
 console.log("- exact archive route is gated by trusted registry resolution");
+console.log("- production history exposes the exact activated version without private approval metadata");
 console.log("- public history excludes review/approved versions and private approval metadata");
 console.log("- synthetic superseded-version exact route: PASS");
 console.log("- archive-disabled fail-closed fixture: PASS");

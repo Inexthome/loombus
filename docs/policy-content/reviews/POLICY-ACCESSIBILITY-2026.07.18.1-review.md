@@ -1,6 +1,6 @@
 # POLICY-ACCESSIBILITY 2026.07.18.1 Review Record
 
-Status: reviewer approvals complete
+Status: effective and registry-managed
 
 Issue: #671
 
@@ -12,21 +12,25 @@ Canonical route: `/accessibility`
 
 Structured payload: `src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json`
 
-Legacy source: `src/app/accessibility/page.tsx`
+Legacy parity source: `src/app/accessibility/page.tsx`
 
 Exact legacy source revision: `git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780`
 
-Restricted preview: `/admin/policy-content-preview`
+Restricted candidate preview: `/admin/policy-content-preview`
 
-Public route switchover authorized by this record: no
+Public route switchover authorized by this record: yes
+
+Technical effective timestamp: `2026-08-11T02:24:00.000Z`
+
+Activation authorization evidence: Issue #671 comment `5248313219`
 
 ## Purpose
 
-This file is the version-specific review record for the first Issue #671 structured policy candidate.
+This file is the version-specific review and activation record for the first Issue #671 structured policy version.
 
-It gives Product Owner and Accessibility review one exact evidence target. It does not record an approval merely because the payload exists, the preview is deployed, CI passes, or the pull request is merged.
+It gives Product Owner and Accessibility review one exact evidence target and records the later, separate technical publication authorization. It does not treat payload existence, preview deployment, CI success, administrator status, or PR merge as approval.
 
-The required Product Owner and Accessibility reviews for this exact candidate are complete. The candidate remains publication-ineligible because public route migration, publication status, effective date, `publicReady`, and routing authorization remain separate controlled steps.
+The required Product Owner and Accessibility reviews for this exact version are complete. After the route-switchover preparation phase was merged and deployed, the Product Owner separately authorized this exact reviewed version to become effective immediately. The authorization did not change policy wording, links, section structure, source revision, or the reviewed payload.
 
 ## Immutable review target
 
@@ -37,13 +41,13 @@ The review target is the combination of:
 - source revision `git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780`;
 - payload path `src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json`;
 - canonical route `/accessibility`;
-- restricted preview `/admin/policy-content-preview`.
+- restricted candidate preview `/admin/policy-content-preview`.
 
-If the payload text, links, section structure, source revision, canonical route, or renderer contract changes, prior review evidence for this target cannot be silently carried forward.
+If the payload text, links, section structure, source revision, canonical route, or renderer contract changes, prior review evidence for this target cannot be silently carried forward. The existing approval records require reapproval after a source change.
 
 ## Current automated evidence
 
-The following automated checks are supporting evidence only. They are not reviewer approval.
+The following automated checks are supporting evidence only. They are not reviewer approval or publication authorization.
 
 ### Exact source parity
 
@@ -57,9 +61,11 @@ The Accessibility parity verifier checks:
 - ordered text fragments;
 - Support and email links;
 - structured block and inline types;
-- registry candidate identity;
-- publication blockers;
-- route-disconnection boundaries.
+- registry identity and lifecycle state;
+- required approvals and blocker state;
+- the exact authorized technical effective timestamp.
+
+The reviewed legacy `page.tsx` remains the immutable parity source. Canonical serving is selected by the reviewed layout/resolver boundary rather than by rewriting that source file.
 
 ### Structured payload validation
 
@@ -75,7 +81,7 @@ Unsupported, protocol-relative, `javascript:`, `data:`, insecure `http:`, and co
 
 ### Restricted preview boundary
 
-The preview is intended to remain:
+The candidate preview remains designed to be:
 
 - administrator-authenticated;
 - read-only;
@@ -83,27 +89,43 @@ The preview is intended to remain:
 - private and no-store;
 - non-indexable;
 - source-code allowlisted;
-- disconnected from public registry routing;
-- disconnected from archive routing;
 - unable to approve, publish, schedule, notify, or switch the public route.
+
+The preview API remains candidate-only. Once this version is `registry_managed` and `effective`, the public canonical route is the relevant rendered surface for production verification.
+
+### Canonical route and archive boundary
+
+The canonical resolver requires all of the following before returning structured public content:
+
+- global registry routing enabled;
+- family state `registry_managed`;
+- exactly one fully eligible `effective` version;
+- `publicReady=true`;
+- a valid effective timestamp that is not in the future;
+- all required approvals bound to the exact source revision;
+- no active publication blocker;
+- a source-code allowlisted structured payload;
+- exact payload document ID, version, payload path, source revision, and canonical-route identity.
+
+The archive resolver independently requires archive routing, a registry-managed family, an `effective` or `superseded` version, and the same publication identity/approval/blocker safeguards.
 
 ## Product Owner review
 
 Reviewer role: `Product Owner`
 
-Current registry state: `approved`
+Current registry state: `effective`
 
-The Product Owner review confirms the candidate faithfully represents the intended current public Accessibility page without introducing a new product promise.
+The Product Owner review confirms the candidate faithfully represents the intended Accessibility page without introducing a new product promise.
 
 The deployed restricted preview was reviewed for:
 
-1. Title, description, and overall meaning matching the current `/accessibility` page.
+1. Title, description, and overall meaning matching the reviewed `/accessibility` source.
 2. All current sections present in the expected order.
 3. The Support link pointing to `/support?category=accessibility`.
 4. The accessibility email target remaining `support@loombus.com` with the intended subject.
 5. No added text representing a new legal, product, staffing, response-time, certification, or accessibility guarantee.
 6. No current text missing or materially rephrased.
-7. The preview clearly labeled as a non-public candidate.
+7. The preview clearly labeled as a non-public candidate during review.
 8. No edit, approve, publish, schedule, notice, or route-switchover action available in the preview.
 
 Outcome: `approved` for this exact version and source revision.
@@ -114,7 +136,7 @@ Evidence: Issue #671 comment `5237391065` records the explicit Product Owner con
 
 Reviewer role: `Accessibility`
 
-Current registry state: `approved`
+Current registry state: `effective`
 
 Static parity alone was not treated as sufficient for Accessibility approval. The rendered candidate and relevant interaction behavior were reviewed.
 
@@ -190,44 +212,61 @@ The approvals in this record are based on the explicit human review evidence lis
 - issue closure;
 - a prior version's approval.
 
-## Current blockers after review
+## Publication authorization
 
-The candidate retains the publication blocker:
+After PR #887 established and deployed the fail-closed canonical-route adapter, the Product Owner explicitly authorized immediate technical activation of this exact reviewed version.
 
-- `registry_route_switchover_not_authorized` remains active.
+Authorization evidence: Issue #671 comment `5248313219`.
 
-The review-specific state changes are limited to:
+Authorization time: `2026-08-11T02:24:00.000Z` (`2026-08-10 22:24` America/New_York).
 
-- `accessibility_parity_review_pending` is inactive because exact parity plus required human review are complete;
-- `current-accessibility-route-parity` is non-blocking for this exact version/source revision.
+The authorization is limited to these lifecycle and routing changes:
 
-These changes do not authorize public registry routing or archive routing.
+- `registryRoutingEnabled: false -> true`;
+- `archiveRoutingEnabled: false -> true`;
+- Accessibility family `registry_candidate -> registry_managed`;
+- version `approved -> effective`;
+- `publicReady: false -> true`;
+- `effectiveAt: null -> 2026-08-11T02:24:00.000Z`;
+- `registry_route_switchover_not_authorized: active -> inactive`.
 
-## What the completed review satisfies
+The authorization does not approve any content/source revision change. It does not authorize a member notice, create a legal approval, change Support operations, or alter Issue #667, #670, or #674 capabilities.
+
+## Current blockers after activation
+
+There are no active publication blockers for `POLICY-ACCESSIBILITY` version `2026.07.18.1`.
+
+The retained blocker records are historical/auditable state markers:
+
+- `registry_route_switchover_not_authorized` is inactive because the explicit Product Owner authorization is recorded in Issue #671 comment `5248313219`;
+- `accessibility_parity_review_pending` is inactive because exact parity plus required human review are complete.
+
+The `current-accessibility-route-parity` dependency remains non-blocking for this exact version/source revision.
+
+## What the completed review and activation satisfy
 
 - Product Owner approval satisfies only the `Product Owner` reviewer requirement.
 - Accessibility approval satisfies only the `Accessibility` reviewer requirement.
-- Completed parity evidence satisfies the parity-specific dependency/blocker for this exact reviewed candidate.
+- Completed parity evidence satisfies the parity-specific dependency for this exact reviewed version.
+- Explicit Product Owner publication authorization permits the technical route/status activation for this exact reviewed version.
+- Registry eligibility, canonical payload identity, and archive eligibility still fail closed if any required condition later drifts.
 
-Neither approval authorizes public route migration.
+## Current registry lifecycle state
 
-## What remains a separate phase
+- family migration state: `registry_managed`;
+- version status: `effective`;
+- public ready: `true`;
+- effective at: `2026-08-11T02:24:00.000Z`;
+- registry routing: enabled;
+- archive routing: enabled;
+- active publication blockers: none;
+- exact reviewed source revision: unchanged.
 
-Even after both reviewer roles are approved, public route migration remains a separate controlled change.
+## Remaining Issue #671 work outside this activation
 
-A later route-switchover phase must separately verify:
+This activation completes the first controlled canonical migration for Accessibility. Issue #671 remains broader than this one document. Remaining product-system work includes the wider policy/help inventory and capabilities such as unified search, desktop/mobile category navigation, Jump to navigation, printable legal views, scheduled future effective-date workflows, change-note presentation where required, privacy-appropriate analytics, and scalable migration of additional drafts/families.
 
-- registry family migration to `registry_managed`;
-- an eligible publication status and effective date;
-- `publicReady=true` only after all publication conditions are satisfied;
-- no active blockers;
-- canonical route behavior;
-- version history behavior;
-- historical exact-version lookup;
-- mobile and accessibility confirmation;
-- print behavior;
-- search/navigation behavior where enabled;
-- rollback to the existing route if the registry resolver fails closed.
+Future policy versions must preserve exact-version history and must not silently overwrite this effective version.
 
 ## Review outcome section
 
@@ -255,6 +294,18 @@ Source revision: `git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780`
 
 Notes: rendered Accessibility review completed after keyboard remediation and re-test, 200% zoom/reflow, mobile, supported-theme, and VoiceOver semantic checks.
 
+### Publication activation
+
+State: authorized
+
+Authorized by: `Inexthome`
+
+Authorized at: `2026-08-11T02:24:00.000Z`
+
+Evidence: Issue #671 comment `5248313219`.
+
+Scope: technical activation of the exact reviewed version/source revision only.
+
 ## Safety boundary
 
-This record is internal review evidence. It does not publish policy text, create a legal approval, notify members, change Support operations, authorize route switchover, or enable any Issue #667, #670, or #674 capability.
+This record documents policy-content review and technical publication authorization. It does not create a legal approval, legal conclusion, regulatory certification, accessibility certification, member notice, or authority for any Issue #667, #670, or #674 restricted capability.

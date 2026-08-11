@@ -209,11 +209,11 @@ const requiredVersionKeys = [
 if (registry.schemaVersion !== "policy_content.v1") {
   addError(`registry: expected schemaVersion policy_content.v1, got ${registry.schemaVersion}`);
 }
-if (registry.registryRoutingEnabled !== false) {
-  addError("registry: Phase B requires registryRoutingEnabled=false; public route switchover is not authorized");
+if (typeof registry.registryRoutingEnabled !== "boolean") {
+  addError("registry: registryRoutingEnabled must be boolean");
 }
-if (registry.archiveRoutingEnabled !== false) {
-  addError("registry: Phase B requires archiveRoutingEnabled=false; public archive routing is not authorized");
+if (typeof registry.archiveRoutingEnabled !== "boolean") {
+  addError("registry: archiveRoutingEnabled must be boolean");
 }
 requireString(registry.defaultLocale, "registry.defaultLocale");
 requireString(registry.defaultJurisdiction, "registry.defaultJurisdiction");

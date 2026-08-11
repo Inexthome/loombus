@@ -1,7 +1,7 @@
 {
   "schemaVersion": "policy_content.v1",
-  "registryRoutingEnabled": false,
-  "archiveRoutingEnabled": false,
+  "registryRoutingEnabled": true,
+  "archiveRoutingEnabled": true,
   "defaultLocale": "en-US",
   "defaultJurisdiction": "global",
   "documentFamilies": [
@@ -20,7 +20,7 @@
       "documentType": "policy",
       "category": "accessibility",
       "currentSourcePath": "src/app/accessibility/page.tsx",
-      "migrationState": "registry_candidate",
+      "migrationState": "registry_managed",
       "registryManagedVersions": [
         {
           "documentId": "POLICY-ACCESSIBILITY",
@@ -32,9 +32,9 @@
           "documentType": "policy",
           "category": "accessibility",
           "audience": "public",
-          "status": "approved",
-          "publicReady": false,
-          "effectiveAt": null,
+          "status": "effective",
+          "publicReady": true,
+          "effectiveAt": "2026-08-11T02:24:00.000Z",
           "lastReviewedAt": "2026-07-18T00:00:00.000Z",
           "owner": "Loombus Product Operations",
           "requiredReviewers": [
@@ -65,19 +65,19 @@
             {
               "dependencyId": "current-accessibility-route-parity",
               "blocking": false,
-              "note": "Exact payload parity and required human review are complete for version 2026.07.18.1; public route switchover remains separately controlled."
+              "note": "Exact payload parity and required human review are complete for version 2026.07.18.1; the reviewed version was authorized for canonical registry activation on Issue #671."
             }
           ],
           "publicationBlockers": [
             {
               "blockerId": "registry_route_switchover_not_authorized",
-              "active": true,
-              "note": "Global registry routing remains disabled in Phase C."
+              "active": false,
+              "note": "Product Owner authorized immediate technical activation on Issue #671 comment 5248313219 at 2026-08-11T02:24:00.000Z."
             },
             {
               "blockerId": "accessibility_parity_review_pending",
               "active": false,
-              "note": "Exact parity plus Product Owner and Accessibility review are complete for version 2026.07.18.1; this does not authorize route switchover."
+              "note": "Exact parity plus Product Owner and Accessibility review are complete for version 2026.07.18.1."
             }
           ],
           "relatedSettings": [],
@@ -105,7 +105,7 @@
           "jurisdiction": "global",
           "locale": "en-US",
           "sourceRevision": "git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780",
-          "changeNote": "Structured parity candidate for the existing /accessibility route. No public text change.",
+          "changeNote": "Registry activation of the existing reviewed /accessibility text; no public wording change.",
           "supersedesVersion": null,
           "replacementDocumentId": null,
           "withdrawalReason": null,
