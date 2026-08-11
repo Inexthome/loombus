@@ -93,7 +93,7 @@ export default function PolicyHelpDiscoveryClient({
   const hasResults = resultCount > 0;
 
   return (
-    <main className="support-v2-page support-policy-discovery-page">
+    <div className="support-v2-page support-policy-discovery-page">
       <div className="support-v2-shell">
         <header className="support-v2-hero">
           <p className="support-v2-eyebrow">Loombus Help & Support</p>
@@ -162,11 +162,11 @@ export default function PolicyHelpDiscoveryClient({
         {hasResults ? (
           <>
             {filteredHelpAreas.length > 0 && (
-              <section className="support-v2-section" aria-labelledby="support-help-areas">
+              <section className="support-v2-section" aria-labelledby="policy-help-areas">
                 <div className="support-v2-section-heading">
                   <div>
                     <p className="support-v2-section-kicker">Help by area</p>
-                    <h2 id="support-help-areas">Go directly to the right workspace</h2>
+                    <h2 id="policy-help-areas">Go directly to the right workspace</h2>
                   </div>
                   <span className="support-v2-result-count">
                     {filteredHelpAreas.length} area
@@ -193,11 +193,11 @@ export default function PolicyHelpDiscoveryClient({
             )}
 
             {filteredHelpArticles.length > 0 && (
-              <section className="support-v2-section" aria-labelledby="support-help-articles">
+              <section className="support-v2-section" aria-labelledby="policy-help-articles">
                 <div className="support-v2-section-heading">
                   <div>
                     <p className="support-v2-section-kicker">Guides and actions</p>
-                    <h2 id="support-help-articles">Help topics across Loombus</h2>
+                    <h2 id="policy-help-articles">Help topics across Loombus</h2>
                   </div>
                   <span className="support-v2-result-count">
                     {filteredHelpArticles.length} result
@@ -233,12 +233,12 @@ export default function PolicyHelpDiscoveryClient({
             {filteredPolicyEntries.length > 0 && (
               <section
                 className="support-v2-section"
-                aria-labelledby="support-policy-documents"
+                aria-labelledby="policy-help-documents"
               >
                 <div className="support-v2-section-heading">
                   <div>
                     <p className="support-v2-section-kicker">Policy and trust</p>
-                    <h2 id="support-policy-documents">Current public documents</h2>
+                    <h2 id="policy-help-documents">Current public documents</h2>
                   </div>
                   <span className="support-v2-result-count">
                     {filteredPolicyEntries.length} document
@@ -302,6 +302,6 @@ export default function PolicyHelpDiscoveryClient({
           </section>
         )}
       </div>
-    </main>
+    </div>
   );
 }
