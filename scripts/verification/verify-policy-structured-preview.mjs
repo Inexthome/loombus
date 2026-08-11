@@ -95,12 +95,12 @@ if (!family) {
   if (!successor) {
     errors.push("Accessibility successor preview candidate is missing");
   } else {
-    if (successor.status !== "review") errors.push("successor preview candidate must remain in review");
+    if (successor.status !== "approved") errors.push("successor preview candidate must be approved after completed review");
     if (successor.publicReady !== false) errors.push("successor preview candidate must remain publicReady=false");
     if (successor.effectiveAt !== null) errors.push("successor preview candidate must remain without an effective date");
     if (successor.payloadPath !== paths.successorPayload) errors.push("successor payloadPath drifted");
-    if (successor.publicationBlockers?.every((blocker) => blocker.active !== true)) {
-      errors.push("successor preview candidate must retain active publication blockers");
+    if (!successor.publicationBlockers?.some((blocker) => blocker.blockerId === "accessibility_successor_activation_not_authorized" && blocker.active === true)) {
+      errors.push("successor preview candidate must retain the activation blocker");
     }
     if (successorPayload.sourceRevision !== successor.sourceRevision) {
       errors.push("successor registry/payload sourceRevision mismatch");
@@ -219,7 +219,7 @@ if (errors.length > 0) {
 
 console.log("Structured policy preview verification PASSED");
 console.log("- current Accessibility remains effective and publicly routed");
-console.log("- successor 2026.08.10.1 remains review-only and publicReady=false");
-console.log("- preview supports non-effective candidates inside registry-managed families");
+console.log("- successor 2026.08.10.1 is approved but remains publicReady=false and non-effective");
+console.log("- preview supports approved non-effective candidates inside registry-managed families");
 console.log("- preview remains administrator-only, GET-only, static-allowlisted, and no-store");
 console.log("- effective/superseded/withdrawn versions are rejected by the candidate preview boundary");
