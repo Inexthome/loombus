@@ -1,6 +1,6 @@
 # POLICY-ACCESSIBILITY 2026.08.10.1 Review Record
 
-Status: review pending
+Status: reviewer approvals complete
 
 Issue: #671
 
@@ -26,7 +26,7 @@ Public activation authorized by this record: no
 
 This successor exists because the current effective Accessibility page displays `Last reviewed: July 18, 2026`, while the completed Product Owner and Accessibility review sequence occurred on August 10, 2026.
 
-The correction requested for this successor is limited to displaying `Last reviewed: August 10, 2026` on the current Accessibility policy after the successor is separately reviewed and activated.
+The correction requested for this successor is limited to displaying `Last reviewed: August 10, 2026` on the current Accessibility policy after the successor is separately activated.
 
 The already-effective version `2026.07.18.1` is not rewritten. It remains an immutable historical version and continues serving publicly until a later activation explicitly supersedes it.
 
@@ -60,17 +60,17 @@ The family remains `registry_managed` because version `2026.07.18.1` is already 
 
 For candidate `2026.08.10.1`:
 
-- status: `review`;
+- status: `approved`;
 - `publicReady=false`;
 - `effectiveAt=null`;
 - `lastReviewedAt=2026-08-10T00:00:00.000Z`;
-- Product Owner approval: pending;
-- Accessibility approval: pending;
-- successor metadata review dependency: blocking;
-- successor review blocker: active;
+- Product Owner approval: approved;
+- Accessibility approval: approved;
+- successor metadata review dependency: non-blocking;
+- successor review blocker: inactive;
 - successor activation blocker: active.
 
-The current effective version remains the sole public current version. The new candidate must not appear in public history or exact-version archive serving while it remains in review.
+The current effective version remains the sole public current version. The approved successor must not appear in public history or exact-version archive serving until a separate activation phase makes it effective.
 
 ## Restricted preview boundary
 
@@ -86,31 +86,61 @@ The restricted preview is allowed to display non-effective candidates within an 
 
 The preview endpoint rejects effective, superseded, and withdrawn versions. Global registry/archive routing may remain enabled because candidate eligibility is enforced at the requested version boundary.
 
-## Review required
+## Completed manual review
 
-No approval is inferred from the request to create this correction, from CI, from deployment, from administrator status, or from the prior version's approvals.
+Issue #671 comment `5248614787` records the explicit manual confirmation of the deployed restricted PR #889 preview for this exact successor source revision.
+
+The requested manual scope was:
+
+- confirm `Last reviewed: August 10, 2026` displays correctly;
+- confirm the page otherwise visually matches the current Accessibility policy;
+- confirm the Support and accessibility email links remain normal.
+
+The Product Owner confirmed the preview after those checks. Automated governance separately proves that policy wording, section order and IDs, links, page metadata, title, description, support destination, and accessibility commitments are unchanged from the current effective payload after removing the three permitted successor metadata fields.
 
 ### Product Owner
 
-State: pending
+State: approved
 
-Review target: confirm the only user-visible change is `Last reviewed: August 10, 2026` and that all policy wording, links, sections, and commitments are unchanged.
+Approved by: `Inexthome`
+
+Approved at: `2026-08-11T03:21:00.000Z`
+
+Source revision: `sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe`
+
+Evidence: Issue #671 comment `5248614787`.
+
+Scope: the intended user-visible reviewed-date correction and unchanged policy content/links were confirmed on the restricted preview.
 
 ### Accessibility
 
-State: pending
+State: approved
 
-Review target: confirm the rendered successor preserves the previously reviewed semantics, heading/list/link structure, keyboard behavior, mobile/reflow behavior, supported-theme readability, and screen-reader semantics. Because the only intended visible delta is a date string, focused regression confirmation is sufficient; prior approval is not silently copied.
+Approved by: `Inexthome`
+
+Approved at: `2026-08-11T03:21:00.000Z`
+
+Source revision: `sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe`
+
+Evidence: Issue #671 comment `5248614787`, together with the successor equality verifier and the previously completed rendered Accessibility review for the unchanged renderer/content structure.
+
+Scope: focused regression confirmation is sufficient for this metadata-only successor because the renderer, headings, lists, links, policy wording, and accessibility commitments are unchanged. Prior approval was not silently copied; a new approval record is bound to this exact successor revision.
+
+## Review evidence rule
+
+Approval is based on explicit human confirmation for this exact successor version/revision. It is not inferred from CI, Vercel, administrator status, the prior version's approvals, or the request to create the correction.
+
+If the successor payload, source-revision descriptor, renderer contract, policy wording, links, sections, or reviewed-date value changes, these approvals must be reconsidered under the version-specific reapproval rule.
 
 ## Activation boundary
 
-Even after both reviewer roles are approved, this successor remains non-public until a separate activation decision:
+Even with both reviewer roles approved, this successor remains non-public until a separate activation decision:
 
 - marks `2026.07.18.1` superseded;
 - marks `2026.08.10.1` effective;
 - sets `publicReady=true`;
 - assigns an effective timestamp;
-- clears all candidate publication blockers;
+- clears the remaining activation blocker;
 - verifies current route, history, and exact-version archive behavior.
 
 No policy wording change, legal approval, member notice, or Issue #667/#670/#674 capability change is authorized by this review record.
