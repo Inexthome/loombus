@@ -110,6 +110,95 @@
           "replacementDocumentId": null,
           "withdrawalReason": null,
           "payloadPath": "src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json"
+        },
+        {
+          "documentId": "POLICY-ACCESSIBILITY",
+          "version": "2026.08.10.1",
+          "slug": "accessibility",
+          "canonicalRoute": "/accessibility",
+          "title": "Accessibility",
+          "summary": "Loombus is working toward a clear, operable, understandable, and robust experience across web, iOS, Android, user-generated content, files, and third-party integrations.",
+          "documentType": "policy",
+          "category": "accessibility",
+          "audience": "public",
+          "status": "review",
+          "publicReady": false,
+          "effectiveAt": null,
+          "lastReviewedAt": "2026-08-10T00:00:00.000Z",
+          "owner": "Loombus Product Operations",
+          "requiredReviewers": [
+            "Product Owner",
+            "Accessibility"
+          ],
+          "approvals": [
+            {
+              "reviewerRole": "Product Owner",
+              "state": "pending",
+              "approvedBy": null,
+              "approvedAt": null,
+              "sourceRevision": "sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe",
+              "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.08.10.1-review.md",
+              "reapprovalRequiredAfterChange": true
+            },
+            {
+              "reviewerRole": "Accessibility",
+              "state": "pending",
+              "approvedBy": null,
+              "approvedAt": null,
+              "sourceRevision": "sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe",
+              "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.08.10.1-review.md",
+              "reapprovalRequiredAfterChange": true
+            }
+          ],
+          "productDependencies": [
+            {
+              "dependencyId": "accessibility-successor-metadata-review",
+              "blocking": true,
+              "note": "The successor changes only version identity, source-revision binding, and the displayed Last reviewed date to August 10, 2026; explicit human review is still required before activation."
+            }
+          ],
+          "publicationBlockers": [
+            {
+              "blockerId": "accessibility_successor_review_pending",
+              "active": true,
+              "note": "Product Owner and Accessibility review are pending for version 2026.08.10.1."
+            },
+            {
+              "blockerId": "accessibility_successor_activation_not_authorized",
+              "active": true,
+              "note": "The successor may not become effective until a separate explicit activation decision is recorded after review."
+            }
+          ],
+          "relatedSettings": [],
+          "relatedReports": [],
+          "relatedAppeals": [],
+          "relatedSupport": [
+            {
+              "label": "Loombus Support",
+              "href": "/support?category=accessibility"
+            }
+          ],
+          "relatedEmergencyActions": [],
+          "relatedArticles": [],
+          "searchKeywords": [
+            "accessibility",
+            "keyboard",
+            "screen reader",
+            "WCAG",
+            "zoom",
+            "contrast",
+            "reduced motion",
+            "captions",
+            "support"
+          ],
+          "jurisdiction": "global",
+          "locale": "en-US",
+          "sourceRevision": "sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe",
+          "changeNote": "Updates the displayed Last reviewed date to August 10, 2026; no policy wording, links, sections, or accessibility commitments change.",
+          "supersedesVersion": "2026.07.18.1",
+          "replacementDocumentId": null,
+          "withdrawalReason": null,
+          "payloadPath": "src/content/policies/POLICY-ACCESSIBILITY/2026.08.10.1.json"
         }
       ]
     },
