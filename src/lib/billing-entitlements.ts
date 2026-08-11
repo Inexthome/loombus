@@ -1,21 +1,22 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
+import { AI_ALLOWANCES } from "@/lib/subscription-entitlements";
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const EXTRA_AI_PACK_CREDITS = 25;
 
 export const PREMIUM_LIMITS = {
-  monthly_summary_limit: 50,
-  monthly_writing_limit: 25,
-  monthly_research_limit: 10,
-  monthly_discovery_limit: 25,
+  monthly_summary_limit: AI_ALLOWANCES.premium.understanding,
+  monthly_writing_limit: AI_ALLOWANCES.premium.writing,
+  monthly_research_limit: AI_ALLOWANCES.premium.research,
+  monthly_discovery_limit: AI_ALLOWANCES.premium.discovery,
 };
 
 export const PREMIUM_PLUS_LIMITS = {
-  monthly_summary_limit: 150,
-  monthly_writing_limit: 75,
-  monthly_research_limit: 30,
-  monthly_discovery_limit: 75,
+  monthly_summary_limit: AI_ALLOWANCES.pro.understanding,
+  monthly_writing_limit: AI_ALLOWANCES.pro.writing,
+  monthly_research_limit: AI_ALLOWANCES.pro.research,
+  monthly_discovery_limit: AI_ALLOWANCES.pro.discovery,
 };
 
 export type BillingIdentity = {
@@ -95,8 +96,8 @@ export function getLimitsForPlan(planKey: string | null | undefined) {
 
 export function getBillingPlanLabel(planKey: string | null | undefined) {
   if (planKey === "premium_annual") return "Premium Annual";
-  if (planKey === "premium_plus_monthly") return "Premium Plus Monthly";
-  if (planKey === "premium_plus_annual") return "Premium Plus Annual";
+  if (planKey === "premium_plus_monthly") return "Premium Pro Monthly";
+  if (planKey === "premium_plus_annual") return "Premium Pro Annual";
   if (planKey === "extra_ai_pack") return "Extra AI Pack";
   return "Premium Monthly";
 }
@@ -116,6 +117,9 @@ export async function activatePremiumForUser(
   const { error } = await supabase.from("user_ai_entitlements").upsert(
     {
       user_id: userId,
+      // Keep the legacy stored tier until every existing server gate accepts a
+      // dedicated Pro tier. Pro is resolved centrally from the provisioned
+      // allowance, so existing members do not lose AI access during rollout.
       tier: "premium",
       ai_assisted_enabled: true,
       ...limits,
