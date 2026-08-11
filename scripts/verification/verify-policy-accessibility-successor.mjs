@@ -13,6 +13,8 @@ const SUCCESSOR_SOURCE_REVISION =
   "sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe";
 const SUCCESSOR_REVIEW_PATH =
   "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.08.10.1-review.md";
+const REVIEW_EVIDENCE_COMMENT = "5248614787";
+const APPROVED_AT = "2026-08-11T03:21:00.000Z";
 const REVISION_DESCRIPTOR =
   "POLICY-ACCESSIBILITY|2026.08.10.1|reviewedDate=August 10, 2026|base=git-blob:21b0c0eb9504012d8926dc73dcb88d5591a17780";
 
@@ -135,9 +137,9 @@ if (registry) {
     if (!successor) {
       errors.push(`successor version ${SUCCESSOR_VERSION} is missing`);
     } else {
-      if (successor.status !== "review") errors.push("successor must remain status=review");
-      if (successor.publicReady !== false) errors.push("successor must remain publicReady=false");
-      if (successor.effectiveAt !== null) errors.push("successor effectiveAt must remain null");
+      if (successor.status !== "approved") errors.push("successor must be status=approved after completed review");
+      if (successor.publicReady !== false) errors.push("successor must remain publicReady=false before activation");
+      if (successor.effectiveAt !== null) errors.push("successor effectiveAt must remain null before activation");
       if (successor.lastReviewedAt !== "2026-08-10T00:00:00.000Z") {
         errors.push("successor lastReviewedAt must represent August 10, 2026");
       }
@@ -159,11 +161,14 @@ if (registry) {
           errors.push(`successor is missing ${role} approval record`);
           continue;
         }
-        if (approval.state !== "pending") {
-          errors.push(`${role} approval must remain pending until explicit review evidence exists`);
+        if (approval.state !== "approved") {
+          errors.push(`${role} approval must be approved after explicit review evidence`);
         }
-        if (approval.approvedBy !== null || approval.approvedAt !== null) {
-          errors.push(`${role} pending approval must not contain an approving actor or timestamp`);
+        if (approval.approvedBy !== "Inexthome") {
+          errors.push(`${role} approvedBy must record Inexthome`);
+        }
+        if (approval.approvedAt !== APPROVED_AT) {
+          errors.push(`${role} approvedAt must equal ${APPROVED_AT}`);
         }
         if (approval.sourceRevision !== SUCCESSOR_SOURCE_REVISION) {
           errors.push(`${role} approval record is not bound to the successor source revision`);
@@ -177,20 +182,30 @@ if (registry) {
         (candidate) =>
           candidate.dependencyId === "accessibility-successor-metadata-review",
       );
-      if (!dependency || dependency.blocking !== true) {
-        errors.push("successor metadata review dependency must remain blocking");
+      if (!dependency || dependency.blocking !== false) {
+        errors.push("successor metadata review dependency must be non-blocking after completed review");
+      }
+      if (!dependency?.note?.includes(REVIEW_EVIDENCE_COMMENT)) {
+        errors.push("successor metadata review dependency must cite the explicit review evidence comment");
       }
 
-      for (const blockerId of [
-        "accessibility_successor_review_pending",
-        "accessibility_successor_activation_not_authorized",
-      ]) {
-        const blocker = successor.publicationBlockers?.find(
-          (candidate) => candidate.blockerId === blockerId,
-        );
-        if (!blocker || blocker.active !== true) {
-          errors.push(`${blockerId} must remain active before review/activation`);
-        }
+      const reviewBlocker = successor.publicationBlockers?.find(
+        (candidate) =>
+          candidate.blockerId === "accessibility_successor_review_pending",
+      );
+      if (!reviewBlocker || reviewBlocker.active !== false) {
+        errors.push("successor review blocker must be inactive after completed review");
+      }
+      if (!reviewBlocker?.note?.includes(REVIEW_EVIDENCE_COMMENT)) {
+        errors.push("successor review blocker must cite the explicit review evidence comment");
+      }
+
+      const activationBlocker = successor.publicationBlockers?.find(
+        (candidate) =>
+          candidate.blockerId === "accessibility_successor_activation_not_authorized",
+      );
+      if (!activationBlocker || activationBlocker.active !== true) {
+        errors.push("successor activation blocker must remain active until a separate activation decision");
       }
     }
 
@@ -293,12 +308,13 @@ for (const forbidden of ["dangerouslySetInnerHTML", '<form', '<textarea', 'metho
 }
 
 for (const fragment of [
-  "Status: review pending",
+  "Status: reviewer approvals complete",
   "Public activation authorized by this record: no",
   "Last reviewed: August 10, 2026",
   SUCCESSOR_SOURCE_REVISION,
-  "State: pending",
-  "prior approval is not silently copied",
+  "State: approved",
+  REVIEW_EVIDENCE_COMMENT,
+  "Prior approval was not silently copied",
 ]) {
   expect(reviewSource, fragment, paths.review);
 }
@@ -311,9 +327,9 @@ if (errors.length > 0) {
 
 console.log("Accessibility successor verification PASSED");
 console.log(`- current effective version remains ${BASE_VERSION}`);
-console.log(`- successor review candidate: ${SUCCESSOR_VERSION}`);
+console.log(`- approved successor candidate: ${SUCCESSOR_VERSION}`);
 console.log("- only intended public delta: Last reviewed July 18 -> August 10, 2026");
-console.log("- Product Owner review: pending");
-console.log("- Accessibility review: pending");
+console.log("- Product Owner review: approved");
+console.log("- Accessibility review: approved");
 console.log("- successor activation: blocked");
-console.log("- restricted preview supports non-effective candidates in registry-managed families");
+console.log("- restricted preview supports approved non-effective candidates in registry-managed families");
