@@ -121,7 +121,7 @@
           "documentType": "policy",
           "category": "accessibility",
           "audience": "public",
-          "status": "review",
+          "status": "approved",
           "publicReady": false,
           "effectiveAt": null,
           "lastReviewedAt": "2026-08-10T00:00:00.000Z",
@@ -133,18 +133,18 @@
           "approvals": [
             {
               "reviewerRole": "Product Owner",
-              "state": "pending",
-              "approvedBy": null,
-              "approvedAt": null,
+              "state": "approved",
+              "approvedBy": "Inexthome",
+              "approvedAt": "2026-08-11T03:21:00.000Z",
               "sourceRevision": "sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe",
               "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.08.10.1-review.md",
               "reapprovalRequiredAfterChange": true
             },
             {
               "reviewerRole": "Accessibility",
-              "state": "pending",
-              "approvedBy": null,
-              "approvedAt": null,
+              "state": "approved",
+              "approvedBy": "Inexthome",
+              "approvedAt": "2026-08-11T03:21:00.000Z",
               "sourceRevision": "sha256:e97bb10027f3895a55fb78dce32fee3ade2363ccc24690a40042737ab1f2edfe",
               "noteReference": "docs/policy-content/reviews/POLICY-ACCESSIBILITY-2026.08.10.1-review.md",
               "reapprovalRequiredAfterChange": true
@@ -153,20 +153,20 @@
           "productDependencies": [
             {
               "dependencyId": "accessibility-successor-metadata-review",
-              "blocking": true,
-              "note": "The successor changes only version identity, source-revision binding, and the displayed Last reviewed date to August 10, 2026; explicit human review is still required before activation."
+              "blocking": false,
+              "note": "Manual restricted-preview review was confirmed on Issue #671 comment 5248614787 for the metadata-only successor."
             }
           ],
           "publicationBlockers": [
             {
               "blockerId": "accessibility_successor_review_pending",
-              "active": true,
-              "note": "Product Owner and Accessibility review are pending for version 2026.08.10.1."
+              "active": false,
+              "note": "Product Owner and Accessibility review were confirmed on Issue #671 comment 5248614787 for version 2026.08.10.1."
             },
             {
               "blockerId": "accessibility_successor_activation_not_authorized",
               "active": true,
-              "note": "The successor may not become effective until a separate explicit activation decision is recorded after review."
+              "note": "The approved successor may not become effective until a separate explicit activation decision is recorded."
             }
           ],
           "relatedSettings": [],
