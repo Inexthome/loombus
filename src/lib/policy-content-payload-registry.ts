@@ -1,6 +1,7 @@
 import "server-only";
 
-import accessibilityPayload from "@/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json";
+import accessibilityPayload202607181 from "@/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json";
+import accessibilityPayload202608101 from "@/content/policies/POLICY-ACCESSIBILITY/2026.08.10.1.json";
 import {
   validateStructuredPolicyPayload,
   type StructuredPolicyPayload,
@@ -29,7 +30,14 @@ const RAW_POLICY_PAYLOAD_SOURCES: Readonly<
     version: "2026.07.18.1",
     payloadPath:
       "src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json",
-    payload: accessibilityPayload,
+    payload: accessibilityPayload202607181,
+  },
+  "POLICY-ACCESSIBILITY:2026.08.10.1": {
+    documentId: "POLICY-ACCESSIBILITY",
+    version: "2026.08.10.1",
+    payloadPath:
+      "src/content/policies/POLICY-ACCESSIBILITY/2026.08.10.1.json",
+    payload: accessibilityPayload202608101,
   },
 };
 
