@@ -1,4 +1,4 @@
-export type LoombusPromptTone = "error" | "success" | "info";
+export type LoombusPromptTone = "error" | "success" | "info" | "warning";
 
 export type LoombusPromptDetail = {
   message: string;
@@ -7,6 +7,7 @@ export type LoombusPromptDetail = {
   autoDismissMs?: number;
   actionHref?: string;
   actionLabel?: string;
+  compact?: boolean;
 };
 
 export function showLoombusPrompt(detail: LoombusPromptDetail) {
