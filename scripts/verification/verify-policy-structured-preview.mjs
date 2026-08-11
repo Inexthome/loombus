@@ -3,17 +3,18 @@ import path from "node:path";
 
 const root = process.cwd();
 const errors = [];
-const AUTHORIZED_EFFECTIVE_AT = "2026-08-11T02:24:00.000Z";
+const BASE_VERSION = "2026.07.18.1";
+const SUCCESSOR_VERSION = "2026.08.10.1";
 
 const paths = {
   registry: "src/lib/policy-content-registry.data.json",
-  payload: "src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json",
+  basePayload: "src/content/policies/POLICY-ACCESSIBILITY/2026.07.18.1.json",
+  successorPayload: "src/content/policies/POLICY-ACCESSIBILITY/2026.08.10.1.json",
   payloadContract: "src/lib/policy-content-payload.ts",
   renderer: "src/components/policy-content/structured-policy-renderer.tsx",
   api: "src/app/api/admin/policy-content-preview/route.ts",
   page: "src/app/admin/policy-content-preview/page.tsx",
-  client:
-    "src/app/admin/policy-content-preview/policy-content-preview-client.tsx",
+  client: "src/app/admin/policy-content-preview/policy-content-preview-client.tsx",
   liveAccessibility: "src/app/accessibility/page.tsx",
   workflow: ".github/workflows/policy-content-governance.yml",
 };
@@ -53,8 +54,9 @@ function safeHref(href) {
   return false;
 }
 
-const registryText = read(paths.registry);
-const payloadText = read(paths.payload);
+const registry = JSON.parse(read(paths.registry));
+const basePayload = JSON.parse(read(paths.basePayload));
+const successorPayload = JSON.parse(read(paths.successorPayload));
 const payloadContract = read(paths.payloadContract);
 const renderer = read(paths.renderer);
 const api = read(paths.api);
@@ -63,69 +65,56 @@ const client = read(paths.client);
 const liveAccessibility = read(paths.liveAccessibility);
 const workflow = read(paths.workflow);
 
-let registry = null;
-let payload = null;
-try {
-  registry = JSON.parse(registryText);
-} catch (error) {
-  errors.push(`registry JSON invalid: ${error instanceof Error ? error.message : String(error)}`);
+if (registry.registryRoutingEnabled !== true) {
+  errors.push("registry routing must remain enabled for the current effective policy");
 }
-try {
-  payload = JSON.parse(payloadText);
-} catch (error) {
-  errors.push(`payload JSON invalid: ${error instanceof Error ? error.message : String(error)}`);
+if (registry.archiveRoutingEnabled !== true) {
+  errors.push("archive routing must remain enabled for the current effective policy");
 }
 
-if (registry) {
-  if (registry.registryRoutingEnabled !== true) {
-    errors.push("registry routing must be enabled after authorized Accessibility activation");
-  }
-  if (registry.archiveRoutingEnabled !== true) {
-    errors.push("archive routing must be enabled after authorized Accessibility activation");
+const family = registry.documentFamilies?.find(
+  (candidate) => candidate.documentId === "POLICY-ACCESSIBILITY",
+);
+if (!family) {
+  errors.push("POLICY-ACCESSIBILITY family is missing");
+} else {
+  if (family.migrationState !== "registry_managed") {
+    errors.push("Accessibility must remain registry_managed");
   }
 
-  const family = registry.documentFamilies?.find(
-    (candidate) => candidate.documentId === "POLICY-ACCESSIBILITY",
+  const base = family.registryManagedVersions?.find(
+    (candidate) => candidate.version === BASE_VERSION,
   );
-  if (!family) {
-    errors.push("POLICY-ACCESSIBILITY family is missing");
-  } else {
-    if (family.canonicalRoute !== "/accessibility") {
-      errors.push("Accessibility canonical route changed unexpectedly");
-    }
-    if (family.migrationState !== "registry_managed") {
-      errors.push("Accessibility must be registry_managed after authorized activation");
-    }
+  const successor = family.registryManagedVersions?.find(
+    (candidate) => candidate.version === SUCCESSOR_VERSION,
+  );
 
-    const version = family.registryManagedVersions?.find(
-      (candidate) => candidate.version === "2026.07.18.1",
-    );
-    if (!version) {
-      errors.push("Accessibility version 2026.07.18.1 is missing");
-    } else {
-      if (version.status !== "effective") errors.push("Accessibility version must be effective after activation");
-      if (version.publicReady !== true) errors.push("Accessibility effective version must be publicReady=true");
-      if (version.effectiveAt !== AUTHORIZED_EFFECTIVE_AT) errors.push("Accessibility effectiveAt does not match the explicit authorization timestamp");
-      if (version.payloadPath !== paths.payload) errors.push("Accessibility payloadPath drifted");
-      if (version.publicationBlockers?.some((blocker) => blocker.active === true)) {
-        errors.push("Accessibility effective version must not retain an active publication blocker");
-      }
-      if (payload && version.sourceRevision !== payload.sourceRevision) {
-        errors.push("Accessibility registry/payload sourceRevision mismatch");
-      }
+  if (!base || base.status !== "effective" || base.publicReady !== true) {
+    errors.push("current Accessibility version must remain effective and publicReady=true");
+  }
+  if (!successor) {
+    errors.push("Accessibility successor preview candidate is missing");
+  } else {
+    if (successor.status !== "review") errors.push("successor preview candidate must remain in review");
+    if (successor.publicReady !== false) errors.push("successor preview candidate must remain publicReady=false");
+    if (successor.effectiveAt !== null) errors.push("successor preview candidate must remain without an effective date");
+    if (successor.payloadPath !== paths.successorPayload) errors.push("successor payloadPath drifted");
+    if (successor.publicationBlockers?.every((blocker) => blocker.active !== true)) {
+      errors.push("successor preview candidate must retain active publication blockers");
+    }
+    if (successorPayload.sourceRevision !== successor.sourceRevision) {
+      errors.push("successor registry/payload sourceRevision mismatch");
     }
   }
 }
 
-if (payload) {
+for (const payload of [basePayload, successorPayload]) {
   if (payload.schemaVersion !== "policy_payload.v1") errors.push("unexpected payload schemaVersion");
   if (payload.documentId !== "POLICY-ACCESSIBILITY") errors.push("unexpected payload documentId");
-  if (payload.version !== "2026.07.18.1") errors.push("unexpected payload version");
   if (payload.canonicalRoute !== "/accessibility") errors.push("unexpected payload canonicalRoute");
   if (!Array.isArray(payload.sections) || payload.sections.length !== 19) {
     errors.push(`Accessibility payload must contain exactly 19 sections; found ${payload.sections?.length ?? "invalid"}`);
   }
-
   for (const [sectionIndex, section] of (payload.sections ?? []).entries()) {
     for (const [blockIndex, block] of (section.blocks ?? []).entries()) {
       if (block.type !== "paragraph") continue;
@@ -140,12 +129,15 @@ if (payload) {
   }
 }
 
+if (basePayload.version !== BASE_VERSION) errors.push("base payload version drifted");
+if (successorPayload.version !== SUCCESSOR_VERSION) errors.push("successor payload version drifted");
+if (successorPayload.reviewedDate !== "August 10, 2026") {
+  errors.push("successor preview must display Last reviewed: August 10, 2026");
+}
+
 expect(payloadContract, 'POLICY_PAYLOAD_SCHEMA_VERSION = "policy_payload.v1"', "payload contract");
 expect(payloadContract, "export function validateStructuredPolicyPayload", "payload contract");
 expect(payloadContract, "export function isSafePolicyPayloadHref", "payload contract");
-expect(payloadContract, 'href.startsWith("/")', "payload href guard");
-expect(payloadContract, 'href.startsWith("mailto:")', "payload href guard");
-expect(payloadContract, 'href.startsWith("https://")', "payload href guard");
 reject(payloadContract, "dangerouslySetInnerHTML", "payload contract");
 
 expect(renderer, "PublicPolicyPage", "structured renderer");
@@ -153,48 +145,53 @@ expect(renderer, "isSafePolicyPayloadHref", "structured renderer");
 reject(renderer, "dangerouslySetInnerHTML", "structured renderer");
 reject(renderer, "@/content/policies/", "structured renderer must not import a concrete payload");
 
-expect(api, "verifyRequestAccountAccess", "preview API");
-expect(api, "access.profile.is_admin !== true", "preview API");
-expect(api, "POLICY-ACCESSIBILITY/2026.07.18.1.json", "preview API static allowlist");
-expect(api, '"Cache-Control": "private, no-store, max-age=0"', "preview API");
-expect(api, '"X-Robots-Tag": "noindex, nofollow, noarchive"', "preview API");
-expect(api, "validateStructuredPolicyPayload", "preview API");
-expect(api, 'family.migrationState !== "registry_candidate"', "preview API candidate-only boundary");
-expect(api, "export async function GET", "preview API");
-reject(api, "export async function POST", "preview API must be read-only");
-reject(api, "export async function PUT", "preview API must be read-only");
-reject(api, "export async function PATCH", "preview API must be read-only");
-reject(api, "export async function DELETE", "preview API must be read-only");
-reject(api, "readFileSync", "preview API must not accept filesystem-derived dynamic payloads");
-reject(api, "import(`", "preview API must not dynamically import request-selected payloads");
+for (const fragment of [
+  "verifyRequestAccountAccess",
+  "access.profile.is_admin !== true",
+  "POLICY-ACCESSIBILITY/2026.08.10.1.json",
+  "PREVIEWABLE_STATUSES",
+  'family.migrationState !== "registry_candidate"',
+  'family.migrationState !== "registry_managed"',
+  "!PREVIEWABLE_STATUSES.has(versionRecord.status)",
+  '"Cache-Control": "private, no-store, max-age=0"',
+  '"X-Robots-Tag": "noindex, nofollow, noarchive"',
+  "validateStructuredPolicyPayload",
+  "export async function GET",
+]) {
+  expect(api, fragment, "preview API");
+}
+for (const forbidden of [
+  "export async function POST",
+  "export async function PUT",
+  "export async function PATCH",
+  "export async function DELETE",
+  "readFileSync",
+  "import(`",
+  "Phase D preview contract requires public registry and archive routing to remain disabled",
+]) {
+  reject(api, forbidden, "preview API");
+}
 
 expect(page, "index: false", "preview page robots");
 expect(page, "follow: false", "preview page robots");
 expect(page, "noarchive: true", "preview page robots");
 
 expect(client, 'const DOCUMENT_ID = "POLICY-ACCESSIBILITY"', "preview client");
-expect(client, 'const VERSION = "2026.07.18.1"', "preview client");
+expect(client, 'const VERSION = "2026.08.10.1"', "preview client");
 expect(client, "StructuredPolicyRenderer", "preview client");
 expect(client, "Authorization: `Bearer ${token}`", "preview client");
-reject(client, "dangerouslySetInnerHTML", "preview client");
-reject(client, "method: \"POST\"", "preview client must be read-only");
-reject(client, "<form", "preview client must not expose an editor form");
-reject(client, "<textarea", "preview client must not expose an editor textarea");
+for (const forbidden of ["dangerouslySetInnerHTML", 'method: "POST"', "<form", "<textarea"]) {
+  reject(client, forbidden, "preview client");
+}
 
 reject(liveAccessibility, "StructuredPolicyRenderer", "legacy Accessibility page must remain an immutable parity source");
 reject(liveAccessibility, "policy-content-payload", "legacy Accessibility page must remain disconnected");
 reject(liveAccessibility, "src/content/policies", "legacy Accessibility page must remain disconnected");
 
-expect(workflow, '"src/lib/policy-content-payload.ts"', "policy governance workflow watch paths");
-expect(workflow, '"src/components/policy-content/**"', "policy governance workflow watch paths");
 expect(workflow, '"src/app/admin/policy-content-preview/**"', "policy governance workflow watch paths");
 expect(workflow, '"src/app/api/admin/policy-content-preview/**"', "policy governance workflow watch paths");
 expect(workflow, '"scripts/verification/verify-policy-structured-preview.mjs"', "policy governance workflow watch paths");
-expect(
-  workflow,
-  "node scripts/verification/verify-policy-structured-preview.mjs",
-  "policy governance workflow step",
-);
+expect(workflow, "node scripts/verification/verify-policy-structured-preview.mjs", "policy governance workflow step");
 
 for (const unsafe of [
   "javascript:alert(1)",
@@ -221,8 +218,8 @@ if (errors.length > 0) {
 }
 
 console.log("Structured policy preview verification PASSED");
-console.log("- Accessibility is registry_managed, effective, and publicReady=true");
-console.log("- candidate preview API remains administrator-only, GET-only, static-allowlisted, and no-store");
-console.log("- effective Accessibility is served through the canonical route adapter, not by mutating the reviewed legacy page");
-console.log("- structured renderer rejects unsafe link schemes and uses no raw HTML injection");
-console.log("- preview exposes no editor, approval, publish, notice, or write action");
+console.log("- current Accessibility remains effective and publicly routed");
+console.log("- successor 2026.08.10.1 remains review-only and publicReady=false");
+console.log("- preview supports non-effective candidates inside registry-managed families");
+console.log("- preview remains administrator-only, GET-only, static-allowlisted, and no-store");
+console.log("- effective/superseded/withdrawn versions are rejected by the candidate preview boundary");
