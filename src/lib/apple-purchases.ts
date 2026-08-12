@@ -101,7 +101,19 @@ export async function initializeApplePurchases() {
     throw new Error("Apple purchases are not available yet. Please restart the app and try again.");
   }
 
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+  if (!userId) {
+    throw new Error("Please log in before purchasing.");
+  }
+
   const { store } = CdvPurchase;
+
+  // Supabase user IDs are UUIDs. Passing that UUID through unchanged lets
+  // StoreKit 2 include it as appAccountToken, giving the server an Apple-signed
+  // binding between the StoreKit transaction and the Loombus account.
+  store.applicationUsername = userId;
+  store.obfuscator = "disabled";
 
   store.register([
     {
