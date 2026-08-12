@@ -1,15 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
 import {
   evaluateSubscriptionEntitlement,
-  resolvePlanFromEntitlementRow,
+  type SubscriptionPlanId,
 } from "@/lib/subscription-entitlements";
-
-type EntitlementRow = {
-  tier: string | null;
-  ai_assisted_enabled: boolean | null;
-  monthly_summary_limit: number | null;
-};
 
 type ProfileRow = {
   is_admin: boolean | null;
@@ -67,16 +62,10 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function hasPremiumDigestAccess(
-  entitlement: EntitlementRow | null,
-  isAdmin: boolean
-) {
+function hasPremiumDigestAccess(plan: SubscriptionPlanId, isAdmin: boolean) {
   if (isAdmin) return true;
 
-  return evaluateSubscriptionEntitlement(
-    resolvePlanFromEntitlementRow(entitlement),
-    "personalized_digest"
-  ).allowed;
+  return evaluateSubscriptionEntitlement(plan, "personalized_digest").allowed;
 }
 
 function normalizeStoredPreferences(row: PreferenceRow | null, isAdmin: boolean) {
@@ -125,30 +114,25 @@ async function getCurrentUserContext(supabase: any) {
     return {
       user: null,
       isAdmin: false,
-      entitlement: null as EntitlementRow | null,
+      plan: "free" as SubscriptionPlanId,
     };
   }
 
-  const [{ data: profile }, { data: entitlement }] = await Promise.all([
+  const [{ data: profile }, subscription] = await Promise.all([
     supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
       .maybeSingle(),
-    supabase
-      .from("user_ai_entitlements")
-      .select("tier, ai_assisted_enabled, monthly_summary_limit")
-      .eq("user_id", user.id)
-      .maybeSingle(),
+    getResolvedGeneralSubscriptionForUser(user.id),
   ]);
 
   const profileRow = (profile ?? null) as ProfileRow | null;
-  const entitlementRow = (entitlement ?? null) as EntitlementRow | null;
 
   return {
     user,
     isAdmin: Boolean(profileRow?.is_admin),
-    entitlement: entitlementRow,
+    plan: subscription.plan,
   };
 }
 
@@ -161,7 +145,14 @@ export async function GET(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const { user, isAdmin, entitlement } = await getCurrentUserContext(supabase);
+  let context;
+  try {
+    context = await getCurrentUserContext(supabase);
+  } catch {
+    return jsonError("Unable to resolve subscription access.", 503);
+  }
+
+  const { user, isAdmin, plan } = context;
 
   if (!user) {
     return jsonError("Unauthorized.", 401);
@@ -184,7 +175,7 @@ export async function GET(request: NextRequest) {
       (data ?? null) as PreferenceRow | null,
       isAdmin
     ),
-    canUseEmailDigest: hasPremiumDigestAccess(entitlement, isAdmin),
+    canUseEmailDigest: hasPremiumDigestAccess(plan, isAdmin),
     isAdmin,
   });
 }
@@ -198,7 +189,14 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const { user, isAdmin, entitlement } = await getCurrentUserContext(supabase);
+  let context;
+  try {
+    context = await getCurrentUserContext(supabase);
+  } catch {
+    return jsonError("Unable to resolve subscription access.", 503);
+  }
+
+  const { user, isAdmin, plan } = context;
 
   if (!user) {
     return jsonError("Unauthorized.", 401);
@@ -211,7 +209,7 @@ export async function POST(request: NextRequest) {
   }
 
   const source = body as Record<string, unknown>;
-  const canUseEmailDigest = hasPremiumDigestAccess(entitlement, isAdmin);
+  const canUseEmailDigest = hasPremiumDigestAccess(plan, isAdmin);
   const normalized = {
     repliesEnabled: readBoolean(
       source,
