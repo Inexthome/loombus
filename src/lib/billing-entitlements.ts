@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
-import { AI_ALLOWANCES } from "@/lib/subscription-entitlements";
+import { AI_ALLOWANCES, normalizeSubscriptionPlan } from "@/lib/subscription-entitlements";
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const EXTRA_AI_PACK_CREDITS = 25;
@@ -19,7 +19,24 @@ export const PREMIUM_PLUS_LIMITS = {
   monthly_discovery_limit: AI_ALLOWANCES.pro.discovery,
 };
 
+export type BillingProvider = "stripe" | "apple";
+
 export type BillingIdentity = {
+  provider?: BillingProvider | null;
+  providerCustomerId?: string | null;
+  providerSubscriptionId?: string | null;
+  providerProductId?: string | null;
+  originalTransactionId?: string | null;
+  appAccountToken?: string | null;
+  environment?: "Production" | "Sandbox" | null;
+  currentPeriodEnd?: string | null;
+  subscriptionStatus?: string | null;
+  cancelAtPeriodEnd?: boolean | null;
+  lastVerifiedAt?: string | null;
+
+  // Compatibility fields used by existing Stripe/Floor call sites while the
+  // general-subscription foundation rolls out. New non-Stripe code should use
+  // the provider-neutral fields above.
   stripeCustomerId?: string | null;
   stripeSubscriptionId?: string | null;
   stripePriceId?: string | null;
@@ -102,6 +119,92 @@ export function getBillingPlanLabel(planKey: string | null | undefined) {
   return "Premium Monthly";
 }
 
+function getStoredPlanKey(planKey: string | null | undefined) {
+  return normalizeSubscriptionPlan(
+    planKey?.startsWith("premium_plus") ? "pro" : planKey?.startsWith("premium") ? "premium" : planKey
+  );
+}
+
+function resolveProvider(identity: BillingIdentity): BillingProvider | null {
+  if (identity.provider) return identity.provider;
+  if (
+    identity.stripeCustomerId === "apple" ||
+    identity.stripePriceId?.startsWith("loombus_")
+  ) {
+    return "apple";
+  }
+  if (
+    identity.stripeCustomerId ||
+    identity.stripeSubscriptionId ||
+    identity.stripePriceId
+  ) {
+    return "stripe";
+  }
+  return null;
+}
+
+function getProviderNeutralIdentity(identity: BillingIdentity) {
+  const provider = resolveProvider(identity);
+  return {
+    provider,
+    providerCustomerId:
+      identity.providerCustomerId ??
+      (provider === "stripe" ? identity.stripeCustomerId ?? null : null),
+    providerSubscriptionId:
+      identity.providerSubscriptionId ?? identity.stripeSubscriptionId ?? null,
+    providerProductId:
+      identity.providerProductId ?? identity.stripePriceId ?? null,
+    currentPeriodEnd:
+      identity.currentPeriodEnd ?? identity.stripeCurrentPeriodEnd ?? null,
+    subscriptionStatus:
+      identity.subscriptionStatus ?? identity.stripeSubscriptionStatus ?? null,
+  };
+}
+
+async function upsertGeneralSubscription({
+  userId,
+  planKey,
+  identity,
+  defaultStatus,
+}: {
+  userId: string;
+  planKey: string | null | undefined;
+  identity: BillingIdentity;
+  defaultStatus: string;
+}) {
+  const supabase = getBillingSupabaseAdmin();
+  const neutral = getProviderNeutralIdentity(identity);
+  const updatedAt = new Date().toISOString();
+
+  if (!neutral.provider) {
+    throw new Error("General subscription billing provider is missing.");
+  }
+
+  const { error } = await (supabase.from("user_general_subscriptions") as any).upsert(
+    {
+      user_id: userId,
+      plan_key: getStoredPlanKey(planKey),
+      provider: neutral.provider,
+      provider_customer_id: neutral.providerCustomerId,
+      provider_subscription_id: neutral.providerSubscriptionId,
+      provider_product_id: neutral.providerProductId,
+      original_transaction_id: identity.originalTransactionId ?? null,
+      app_account_token: identity.appAccountToken ?? null,
+      environment: identity.environment ?? null,
+      status: neutral.subscriptionStatus ?? defaultStatus,
+      current_period_end: neutral.currentPeriodEnd,
+      cancel_at_period_end: identity.cancelAtPeriodEnd ?? false,
+      last_verified_at: identity.lastVerifiedAt ?? updatedAt,
+      updated_at: updatedAt,
+    },
+    { onConflict: "user_id" }
+  );
+
+  if (error) {
+    throw new Error(`Unable to sync general subscription state: ${error.message}`);
+  }
+}
+
 export async function activatePremiumForUser(
   userId: string,
   note: string,
@@ -113,22 +216,34 @@ export async function activatePremiumForUser(
   const resolvedPlanKey =
     getPremiumPlanKeyFromPriceId(billingIdentity.stripePriceId) ?? planKey;
   const limits = getLimitsForPlan(resolvedPlanKey);
+  const neutral = getProviderNeutralIdentity(billingIdentity);
+
+  await upsertGeneralSubscription({
+    userId,
+    planKey: resolvedPlanKey,
+    identity: billingIdentity,
+    defaultStatus: "active",
+  });
+
+  const legacyStripeFields = neutral.provider === "stripe"
+    ? {
+        stripe_customer_id: neutral.providerCustomerId,
+        stripe_subscription_id: neutral.providerSubscriptionId,
+        stripe_price_id: neutral.providerProductId,
+        stripe_current_period_end: neutral.currentPeriodEnd,
+        stripe_subscription_status: neutral.subscriptionStatus ?? "active",
+      }
+    : {};
 
   const { error } = await supabase.from("user_ai_entitlements").upsert(
     {
       user_id: userId,
-      // Keep the legacy stored tier until every existing server gate accepts a
-      // dedicated Pro tier. Pro is resolved centrally from the provisioned
-      // allowance, so existing members do not lose AI access during rollout.
+      // AI quota storage remains backward compatible while plan identity now
+      // lives in user_general_subscriptions.
       tier: "premium",
       ai_assisted_enabled: true,
       ...limits,
-      stripe_customer_id: billingIdentity.stripeCustomerId ?? null,
-      stripe_subscription_id: billingIdentity.stripeSubscriptionId ?? null,
-      stripe_price_id: billingIdentity.stripePriceId ?? null,
-      stripe_current_period_end: billingIdentity.stripeCurrentPeriodEnd ?? null,
-      stripe_subscription_status:
-        billingIdentity.stripeSubscriptionStatus ?? "active",
+      ...legacyStripeFields,
       notes: `${note} Plan: ${getBillingPlanLabel(resolvedPlanKey)}.`,
       updated_at: updatedAt,
     },
@@ -145,10 +260,40 @@ export async function activatePremiumForUser(
 export async function deactivatePremiumForUser(
   userId: string,
   note: string,
-  billingIdentity: BillingIdentity = {}
+  billingIdentity: BillingIdentity = {},
+  planKey?: string | null
 ) {
   const supabase = getBillingSupabaseAdmin();
   const updatedAt = new Date().toISOString();
+  const neutral = getProviderNeutralIdentity(billingIdentity);
+
+  let resolvedPlanKey = planKey;
+  if (!resolvedPlanKey) {
+    const { data: currentSubscription } = await (
+      supabase.from("user_general_subscriptions") as any
+    )
+      .select("plan_key")
+      .eq("user_id", userId)
+      .maybeSingle();
+    resolvedPlanKey = currentSubscription?.plan_key ?? "free";
+  }
+
+  await upsertGeneralSubscription({
+    userId,
+    planKey: resolvedPlanKey,
+    identity: billingIdentity,
+    defaultStatus: "canceled",
+  });
+
+  const legacyStripeFields = neutral.provider === "stripe"
+    ? {
+        stripe_customer_id: neutral.providerCustomerId,
+        stripe_subscription_id: neutral.providerSubscriptionId,
+        stripe_price_id: neutral.providerProductId,
+        stripe_current_period_end: neutral.currentPeriodEnd,
+        stripe_subscription_status: neutral.subscriptionStatus ?? "canceled",
+      }
+    : {};
 
   const { error } = await supabase.from("user_ai_entitlements").upsert(
     {
@@ -159,12 +304,7 @@ export async function deactivatePremiumForUser(
       monthly_writing_limit: 0,
       monthly_research_limit: 0,
       monthly_discovery_limit: 0,
-      stripe_customer_id: billingIdentity.stripeCustomerId ?? null,
-      stripe_subscription_id: billingIdentity.stripeSubscriptionId ?? null,
-      stripe_price_id: billingIdentity.stripePriceId ?? null,
-      stripe_current_period_end: billingIdentity.stripeCurrentPeriodEnd ?? null,
-      stripe_subscription_status:
-        billingIdentity.stripeSubscriptionStatus ?? "canceled",
+      ...legacyStripeFields,
       notes: note,
       updated_at: updatedAt,
     },
