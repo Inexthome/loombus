@@ -3,9 +3,13 @@
 -- Billing identity belongs here. AI quotas remain in user_ai_entitlements.
 -- This migration is intentionally additive: existing Stripe/Apple compatibility
 -- columns are preserved until every legacy reader has moved to the new source.
+--
+-- A member can briefly hold subscriptions through more than one provider, so
+-- rows represent provider subscriptions rather than one mutable row per user.
 
 create table if not exists public.user_general_subscriptions (
-  user_id uuid primary key references auth.users(id) on delete cascade,
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
   plan_key text not null default 'free'
     check (plan_key in ('free', 'premium', 'pro')),
   provider text
@@ -32,6 +36,9 @@ create unique index if not exists user_general_subscriptions_provider_subscripti
 create unique index if not exists user_general_subscriptions_apple_original_transaction_uidx
   on public.user_general_subscriptions (provider, original_transaction_id)
   where provider = 'apple' and original_transaction_id is not null;
+
+create index if not exists user_general_subscriptions_user_idx
+  on public.user_general_subscriptions (user_id, updated_at desc);
 
 create index if not exists user_general_subscriptions_plan_status_idx
   on public.user_general_subscriptions (plan_key, status);
@@ -108,17 +115,7 @@ where e.ai_assisted_enabled is true
     lower(coalesce(e.tier, '')) in ('premium', 'pro', 'premium_pro', 'premium_plus')
     or coalesce(e.monthly_summary_limit, 0) > 0
   )
-on conflict (user_id) do update set
-  plan_key = excluded.plan_key,
-  provider = coalesce(excluded.provider, public.user_general_subscriptions.provider),
-  provider_customer_id = coalesce(excluded.provider_customer_id, public.user_general_subscriptions.provider_customer_id),
-  provider_subscription_id = coalesce(excluded.provider_subscription_id, public.user_general_subscriptions.provider_subscription_id),
-  provider_product_id = coalesce(excluded.provider_product_id, public.user_general_subscriptions.provider_product_id),
-  original_transaction_id = coalesce(excluded.original_transaction_id, public.user_general_subscriptions.original_transaction_id),
-  status = excluded.status,
-  current_period_end = coalesce(excluded.current_period_end, public.user_general_subscriptions.current_period_end),
-  last_verified_at = now(),
-  updated_at = now();
+on conflict do nothing;
 
 comment on table public.user_general_subscriptions is
-  'Provider-neutral source of truth for general Loombus Free/Premium/Premium Pro billing state. AI quotas remain in user_ai_entitlements.';
+  'Provider-neutral source of truth for general Loombus Free/Premium/Premium Pro billing state. Multiple provider subscriptions may coexist; effective access resolves from active rows. AI quotas remain in user_ai_entitlements.';
