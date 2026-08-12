@@ -1,6 +1,7 @@
 import {
   AI_ALLOWANCES,
   VIDEO_CONTEXT_LIMITS as PLAN_VIDEO_CONTEXT_LIMITS,
+  type SubscriptionPlanId,
 } from "@/lib/subscription-entitlements";
 
 export type VideoContextTier = "free" | "premium" | "premium_plus" | "admin";
@@ -81,6 +82,23 @@ export const VIDEO_CONTEXT_LIMITS: Record<VideoContextTier, VideoContextLimits> 
     maxFileSizeBytes: 2 * 1024 * 1024 * 1024,
   },
 };
+
+export function getVideoContextTierForPlan(
+  plan: SubscriptionPlanId,
+  isAdmin = false
+): VideoContextTier {
+  if (isAdmin) return "admin";
+  if (plan === "pro") return "premium_plus";
+  if (plan === "premium") return "premium";
+  return "free";
+}
+
+export function getVideoContextLimitsForPlan(
+  plan: SubscriptionPlanId,
+  isAdmin = false
+) {
+  return VIDEO_CONTEXT_LIMITS[getVideoContextTierForPlan(plan, isAdmin)];
+}
 
 export function getVideoContextTier(
   entitlement: VideoContextEntitlement,
