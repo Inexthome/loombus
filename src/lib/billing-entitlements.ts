@@ -316,7 +316,10 @@ async function syncAiEntitlementsFromGeneralSubscriptions({
   }
 }
 
-function getLegacyStripeFields(identity: BillingIdentity, defaultStatus: string) {
+function getLegacyStripeFields(
+  identity: BillingIdentity,
+  defaultStatus: string
+): Record<string, string | null> {
   const neutral = getProviderNeutralIdentity(identity);
   if (neutral.provider !== "stripe") return {};
 
