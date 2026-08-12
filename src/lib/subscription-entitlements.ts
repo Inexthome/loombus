@@ -49,10 +49,13 @@ export const SUBSCRIPTION_PLANS = {
 }>;
 
 /**
- * Launch pricing stays active until it is deliberately changed. There is no
- * automatic expiry because the launch-promo duration has not been finalized.
- * Stripe/App Store product identifiers remain unchanged during this phase.
+ * Launch-year pricing applies for the first 12 months after the official
+ * Loombus launch. The exact calendar dates remain product configuration until
+ * the official launch date is finalized. Stripe/App Store product identifiers
+ * remain unchanged during this phase.
  */
+export const EARLY_ACCESS_PROMOTION_DURATION_MONTHS = 12 as const;
+
 export const EARLY_ACCESS_PRICING = {
   active: true,
   transitionMode: "manual" as const,
@@ -92,6 +95,44 @@ export const AI_ALLOWANCES = {
     discovery: 75,
   },
 } as const;
+
+export type VideoContextLimit = {
+  uploadsPerMonth: number;
+  maxMinutesPerUpload: number;
+  totalMinutesPerMonth: number;
+};
+
+/**
+ * Video Context has two independent quota boundaries: upload count and
+ * processed minutes. Both must be enforced so a plan cannot exceed its
+ * intended monthly processing allowance through longer uploads.
+ */
+export const VIDEO_CONTEXT_LIMITS = {
+  free: {
+    uploadsPerMonth: 3,
+    maxMinutesPerUpload: 5,
+    totalMinutesPerMonth: 15,
+  },
+  premium: {
+    uploadsPerMonth: 10,
+    maxMinutesPerUpload: 15,
+    totalMinutesPerMonth: 150,
+  },
+  pro: {
+    uploadsPerMonth: 30,
+    maxMinutesPerUpload: 30,
+    totalMinutesPerMonth: 900,
+  },
+} as const satisfies Record<SubscriptionPlanId, VideoContextLimit>;
+
+export function getVideoContextLimit(plan: SubscriptionPlanId): VideoContextLimit {
+  return VIDEO_CONTEXT_LIMITS[plan];
+}
+
+function formatVideoContextLimit(plan: SubscriptionPlanId): string {
+  const limits = VIDEO_CONTEXT_LIMITS[plan];
+  return `${limits.uploadsPerMonth} uploads/mo · ${limits.maxMinutesPerUpload} min max/upload · ${limits.totalMinutesPerMonth} min/mo total`;
+}
 
 /**
  * Public naming changes to Premium Pro while the existing premium_plus keys
@@ -296,7 +337,7 @@ export const MASTER_SUBSCRIPTION_ENTITLEMENTS: MasterEntitlementGroup[] = [
       { capability: "AI clarity rewrite", free: false, premium: true, pro: true },
       { capability: "AI-powered search", free: false, premium: true, pro: true },
       { capability: "Knowledge Graph-assisted AI", free: false, premium: false, pro: true },
-      { capability: "Video Context", free: "5 × 60 sec", premium: "25 × 120 sec", pro: "50 × 3 min" },
+      { capability: "Video Context", free: formatVideoContextLimit("free"), premium: formatVideoContextLimit("premium"), pro: formatVideoContextLimit("pro") },
     ],
   },
   {
