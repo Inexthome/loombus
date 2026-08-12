@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import {
+  evaluateSubscriptionEntitlement,
+  resolvePlanFromEntitlementRow,
+} from "@/lib/subscription-entitlements";
 
 type EntitlementRow = {
   tier: string | null;
   ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
 };
 
 function jsonError(message: string, status: number) {
@@ -39,10 +44,10 @@ function hasPremiumTopicAlertAccess(
     return true;
   }
 
-  return (
-    entitlement?.ai_assisted_enabled === true &&
-    entitlement.tier === "premium"
-  );
+  return evaluateSubscriptionEntitlement(
+    resolvePlanFromEntitlementRow(entitlement),
+    "advanced_alerts"
+  ).allowed;
 }
 
 function normalizeRequestedTopics(value: unknown) {
@@ -79,7 +84,7 @@ async function getCurrentUserContext(supabase: any) {
     supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle(),
     supabase
       .from("user_ai_entitlements")
-      .select("tier, ai_assisted_enabled")
+      .select("tier, ai_assisted_enabled, monthly_summary_limit")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);

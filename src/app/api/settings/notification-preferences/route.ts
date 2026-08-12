@@ -1,9 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  evaluateSubscriptionEntitlement,
+  resolvePlanFromEntitlementRow,
+} from "@/lib/subscription-entitlements";
 
 type EntitlementRow = {
   tier: string | null;
   ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
 };
 
 type ProfileRow = {
@@ -68,10 +73,10 @@ function hasPremiumDigestAccess(
 ) {
   if (isAdmin) return true;
 
-  return (
-    entitlement?.ai_assisted_enabled === true &&
-    entitlement.tier === "premium"
-  );
+  return evaluateSubscriptionEntitlement(
+    resolvePlanFromEntitlementRow(entitlement),
+    "personalized_digest"
+  ).allowed;
 }
 
 function normalizeStoredPreferences(row: PreferenceRow | null, isAdmin: boolean) {
@@ -132,7 +137,7 @@ async function getCurrentUserContext(supabase: any) {
       .maybeSingle(),
     supabase
       .from("user_ai_entitlements")
-      .select("tier, ai_assisted_enabled")
+      .select("tier, ai_assisted_enabled, monthly_summary_limit")
       .eq("user_id", user.id)
       .maybeSingle(),
   ]);

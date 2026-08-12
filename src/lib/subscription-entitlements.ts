@@ -200,6 +200,7 @@ export type SubscriptionEntitlementKey =
   | "unlimited_organization"
   | "ai_powered_search"
   | "advanced_alerts"
+  | "personalized_digest"
   | "external_calendar_sync"
   | "ai_understanding"
   | "ai_quality_tools"
@@ -230,6 +231,7 @@ export const SUBSCRIPTION_ENTITLEMENTS: Record<
   unlimited_organization: { minimumPlan: "premium" },
   ai_powered_search: { minimumPlan: "premium" },
   advanced_alerts: { minimumPlan: "premium" },
+  personalized_digest: { minimumPlan: "premium" },
   external_calendar_sync: { minimumPlan: "pro" },
   ai_understanding: { minimumPlan: "premium" },
   ai_quality_tools: { minimumPlan: "premium" },
