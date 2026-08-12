@@ -233,7 +233,7 @@ export const SUBSCRIPTION_ENTITLEMENTS: Record<
   external_calendar_sync: { minimumPlan: "premium" },
   ai_understanding: { minimumPlan: "premium" },
   ai_quality_tools: { minimumPlan: "premium" },
-  saved_discussion_export: { minimumPlan: "premium" },
+  saved_discussion_export: { minimumPlan: "free" },
   knowledge_graph_ai: { minimumPlan: "pro" },
   advanced_export_formats: { minimumPlan: "pro" },
   advanced_creator_analytics: { minimumPlan: "pro" },
@@ -370,8 +370,8 @@ export const MASTER_SUBSCRIPTION_ENTITLEMENTS: MasterEntitlementGroup[] = [
   {
     label: "Export & Labs",
     rows: [
-      { capability: "Saved-discussion export", free: false, premium: true, pro: true },
-      { capability: "Standard export formats", free: false, premium: true, pro: true },
+      { capability: "Saved-discussion export", free: true, premium: true, pro: true },
+      { capability: "Standard export formats", free: true, premium: true, pro: true },
       { capability: "Advanced export formats", free: false, premium: false, pro: true },
       { capability: "Loombus Labs", free: "Standard", premium: "Early access", pro: "Priority access" },
     ],
