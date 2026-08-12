@@ -8,15 +8,15 @@ import {
   type SubscriptionPlanId,
 } from "@/lib/subscription-entitlements";
 
-export type GeneralSubscriptionProvider = "stripe" | "apple";
+export type GeneralSubscriptionProvider = "stripe" | "apple" | "legacy";
 
 export type GeneralSubscriptionRow = {
   id?: string;
   user_id: string;
   plan_key: string | null;
-  provider: GeneralSubscriptionProvider | null;
+  provider: GeneralSubscriptionProvider;
   provider_customer_id: string | null;
-  provider_subscription_id: string | null;
+  provider_subscription_id: string;
   provider_product_id: string | null;
   original_transaction_id: string | null;
   app_account_token: string | null;
@@ -40,6 +40,7 @@ export type ResolvedGeneralSubscription = {
 
 const STRIPE_ACCESS_STATUSES = new Set(["active", "trialing", "past_due"]);
 const APPLE_ACCESS_STATUSES = new Set(["active", "grace_period"]);
+const LEGACY_ACCESS_STATUSES = new Set(["active", "trialing", "past_due"]);
 
 function createBillingReadClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -77,7 +78,7 @@ export function isGeneralSubscriptionActive(
     return STRIPE_ACCESS_STATUSES.has(status);
   }
 
-  return false;
+  return LEGACY_ACCESS_STATUSES.has(status);
 }
 
 export function resolvePlanFromGeneralSubscriptionRow(
