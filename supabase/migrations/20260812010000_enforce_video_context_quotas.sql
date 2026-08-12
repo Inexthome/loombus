@@ -6,6 +6,38 @@
 -- acceptance is intentionally conservative: a later processor may mark work
 -- complete/failed, but concurrent uploads can never race past the advertised
 -- subscription ceiling.
+--
+-- discussion_attachments historically enforced the original 3-minute / 250 MB
+-- video ceiling. Relax those table-level checks only to the platform-wide
+-- maximum; the API and quota ledger trigger below remain responsible for the
+-- member-specific Free/Premium/Pro limits.
+
+alter table public.discussion_attachments
+  drop constraint if exists discussion_attachments_size_check,
+  drop constraint if exists discussion_attachments_video_duration_check;
+
+alter table public.discussion_attachments
+  add constraint discussion_attachments_size_check
+    check (
+      file_size_bytes > 0
+      and (
+        (attachment_kind = 'video' and file_size_bytes <= 2147483648)
+        or (attachment_kind <> 'video' and file_size_bytes <= 10485760)
+      )
+    ),
+  add constraint discussion_attachments_video_duration_check
+    check (
+      (
+        attachment_kind = 'video'
+        and video_duration_seconds is not null
+        and video_duration_seconds > 0
+        and video_duration_seconds <= 3600
+      )
+      or (
+        attachment_kind <> 'video'
+        and video_duration_seconds is null
+      )
+    );
 
 create table if not exists public.discussion_video_upload_events (
   id uuid primary key default gen_random_uuid(),
