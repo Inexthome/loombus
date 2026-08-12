@@ -48,6 +48,13 @@ function credentialMetadata(row: CredentialMetadataRow | null) {
   };
 }
 
+function buildFeedUrl(request: NextRequest, token: string) {
+  return new URL(
+    `/api/calendar/feed/${encodeURIComponent(token)}`,
+    request.url
+  ).toString();
+}
+
 async function getAccountContext(request: NextRequest): Promise<AccountContext> {
   let requestClient;
 
@@ -189,7 +196,8 @@ export async function POST(request: NextRequest) {
         configured: true,
         token: generated.token,
         tokenShownOnce: true,
-        feedReady: false,
+        feedUrl: buildFeedUrl(request, generated.token),
+        feedReady: true,
         credential: credentialMetadata(data as CredentialMetadataRow),
       },
       existing ? 200 : 201
