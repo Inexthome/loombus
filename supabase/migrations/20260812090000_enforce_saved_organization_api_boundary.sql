@@ -1,18 +1,16 @@
--- Saved organization quotas are enforced by authenticated application API routes.
--- Keep owner reads available through RLS, but prevent authenticated clients from
--- bypassing the 25-save / 3-folder / 10-private-note limits through direct PostgREST writes.
--- Service-role mutations still pass database constraints/triggers and are always
--- filtered by the authenticated user id in the application routes.
+-- Align Saved organization persistence with the current subscription contract.
+--
+-- This migration is intentionally safe whether it lands immediately before or
+-- immediately after the application deployment. Existing authenticated write
+-- grants stay intact, while database guards prevent Free clients from bypassing
+-- the new save quota. Free folder and private-note direct writes remain protected
+-- by their existing paid-only RLS/trigger paths; the application APIs provide the
+-- new limited Free mutations through ownership-checked service-role writes.
 
 begin;
 
-revoke insert, update, delete on table public.bookmarks from authenticated;
-revoke insert, update, delete on table public.bookmark_collections from authenticated;
-
--- Private-note writes are now authorized and quota-checked by the bookmark note API.
--- The existing database guard must therefore permit the service-role mutation path.
--- Retain the legacy admin/paid cases for compatibility with any internal database
--- workflow that still invokes this helper directly.
+-- The private-note API now owns the Free 10-note quota. Permit its service-role
+-- mutation path while retaining the pre-existing admin/paid compatibility cases.
 create or replace function public.user_has_bookmark_private_notes_access(target_user_id uuid)
 returns boolean
 language sql
@@ -42,5 +40,45 @@ as $$
         )
     );
 $$;
+
+-- `bookmarks` historically permits owner inserts directly through PostgREST.
+-- Keep that path backward-compatible, but enforce the Free 25-save ceiling in
+-- the database as well as in the application API. Existing paid/admin collection
+-- access is the stable pre-contract discriminator already used by bookmark RLS.
+create or replace function public.enforce_free_bookmark_save_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  existing_count integer;
+begin
+  if (select auth.role()) = 'service_role' then
+    return new;
+  end if;
+
+  if public.user_has_bookmark_collection_access(new.user_id) then
+    return new;
+  end if;
+
+  select count(*)
+  into existing_count
+  from public.bookmarks bookmark
+  where bookmark.user_id = new.user_id;
+
+  if existing_count >= 25 then
+    raise exception 'Free Saved is limited to 25 discussions. Upgrade to Premium for unlimited saves.';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists enforce_free_bookmark_save_limit_trigger on public.bookmarks;
+create trigger enforce_free_bookmark_save_limit_trigger
+before insert on public.bookmarks
+for each row
+execute function public.enforce_free_bookmark_save_limit();
 
 commit;
