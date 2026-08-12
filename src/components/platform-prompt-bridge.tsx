@@ -36,6 +36,7 @@ export function PlatformPromptBridge() {
       autoDismissMs={prompt.autoDismissMs}
       actionHref={prompt.actionHref}
       actionLabel={prompt.actionLabel}
+      compact={prompt.compact}
     />
   );
 }

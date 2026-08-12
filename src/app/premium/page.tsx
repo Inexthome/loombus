@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import PremiumV2Client from "./premium-v2-client";
+import PremiumV3Client from "./premium-v3-client";
 import "./premium-v2.css";
+import "./premium-v3.css";
 
 export const metadata: Metadata = {
   title: "Loombus Premium & Plans | Loombus",
   description:
-    "Review your current Loombus plan, Premium options, AI access, and supported billing-management paths.",
+    "Compare Loombus Free, Premium, and Premium Pro access, AI allowances, professional tools, and current Early Access launch pricing.",
   robots: {
     index: false,
     follow: true,
@@ -28,7 +29,7 @@ export default function PremiumPage() {
         </main>
       }
     >
-      <PremiumV2Client />
+      <PremiumV3Client />
     </Suspense>
   );
 }

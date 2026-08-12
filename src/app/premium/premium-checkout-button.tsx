@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { isIosNativeApp, purchaseApplePlan } from "@/lib/apple-purchases";
+import { showLoombusPrompt } from "@/lib/loombus-prompt";
+import { showSubscriptionWarning } from "@/lib/subscription-access-prompt";
 
 type PremiumPlanCheckoutButtonProps = {
   planKey: string;
@@ -15,12 +17,9 @@ export function PremiumPlanCheckoutButton({
   children,
   variant = "primary",
 }: PremiumPlanCheckoutButtonProps) {
-  const [message, setMessage] = useState("");
   const [startingCheckout, setStartingCheckout] = useState(false);
 
   async function startCheckout() {
-    setMessage("");
-
     if (startingCheckout) return;
 
     setStartingCheckout(true);
@@ -29,13 +28,24 @@ export function PremiumPlanCheckoutButton({
       const { data: sessionData } = await supabase.auth.getSession();
 
       if (!sessionData.session) {
-        window.location.href = "/login";
+        showSubscriptionWarning({
+          title: "Sign in required",
+          message: "Sign in before starting a Loombus subscription purchase.",
+          actionHref: "/login?next=/premium",
+          actionLabel: "Log in",
+        });
         return;
       }
 
       if (isIosNativeApp()) {
         await purchaseApplePlan(planKey);
-        setMessage("Apple purchase completed. Your Loombus access is being updated.");
+        showLoombusPrompt({
+          title: "Purchase completed",
+          message: "Your Loombus access is being updated.",
+          tone: "success",
+          autoDismissMs: 3600,
+          compact: true,
+        });
         return;
       }
 
@@ -59,16 +69,20 @@ export function PremiumPlanCheckoutButton({
       }));
 
       if (!response.ok) {
-        setMessage(
-          result.detail
+        showSubscriptionWarning({
+          title: "Checkout unavailable",
+          message: result.detail
             ? `${result.error ?? "Unable to start Premium checkout."} ${result.detail}`
-            : result.error ?? "Unable to start Premium checkout."
-        );
+            : result.error ?? "Unable to start Premium checkout.",
+        });
         return;
       }
 
       if (!result.url) {
-        setMessage("Checkout URL was not returned.");
+        showSubscriptionWarning({
+          title: "Checkout unavailable",
+          message: "Checkout URL was not returned.",
+        });
         return;
       }
 
@@ -81,7 +95,10 @@ export function PremiumPlanCheckoutButton({
             ? error.message
             : "Unable to start Premium checkout.";
 
-      setMessage(errorMessage);
+      showSubscriptionWarning({
+        title: "Checkout unavailable",
+        message: errorMessage,
+      });
     } finally {
       setStartingCheckout(false);
     }
@@ -93,21 +110,13 @@ export function PremiumPlanCheckoutButton({
       : "inline-flex rounded-full border border-zinc-700 px-5 py-3 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-900 disabled:text-zinc-700";
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={startCheckout}
-        disabled={startingCheckout}
-        className={buttonClass}
-      >
-        {startingCheckout ? "Starting checkout..." : children}
-      </button>
-
-      {message && (
-        <p className="mt-4 max-w-md text-sm text-zinc-500">
-          {message}
-        </p>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={startCheckout}
+      disabled={startingCheckout}
+      className={buttonClass}
+    >
+      {startingCheckout ? "Starting checkout..." : children}
+    </button>
   );
 }

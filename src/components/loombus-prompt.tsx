@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
 import { useEffect } from "react";
-
-type LoombusPromptTone = "error" | "success" | "info";
+import type { LoombusPromptTone } from "@/lib/loombus-prompt";
 
 type LoombusPromptProps = {
   message: string;
@@ -14,11 +13,13 @@ type LoombusPromptProps = {
   autoDismissMs?: number;
   actionHref?: string;
   actionLabel?: string;
+  compact?: boolean;
 };
 
 const toneClasses: Record<LoombusPromptTone, string> = {
-  error:
-    "border-red-900/80 bg-red-950 text-red-50 shadow-red-950/35",
+  error: "border-red-900/80 bg-red-950 text-red-50 shadow-red-950/35",
+  warning:
+    "border-[color-mix(in_srgb,var(--loombus-gold)_62%,var(--loombus-border))] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-black/25",
   success:
     "border-[color-mix(in_srgb,var(--loombus-gold)_55%,var(--loombus-border))] bg-[var(--loombus-surface)] text-[var(--loombus-text)] shadow-black/25",
   info:
@@ -27,6 +28,7 @@ const toneClasses: Record<LoombusPromptTone, string> = {
 
 const iconClasses: Record<LoombusPromptTone, string> = {
   error: "bg-red-900/70 text-red-100",
+  warning: "bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]",
   success: "bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]",
   info: "bg-[var(--loombus-page-bg)] text-[var(--loombus-text-muted)]",
 };
@@ -39,6 +41,7 @@ export function LoombusPrompt({
   autoDismissMs,
   actionHref,
   actionLabel,
+  compact = false,
 }: LoombusPromptProps) {
   useEffect(() => {
     if (!message || !onClose || !autoDismissMs) return;
@@ -50,16 +53,27 @@ export function LoombusPrompt({
   if (!message) return null;
 
   const Icon =
-    tone === "error" ? AlertTriangle : tone === "success" ? CheckCircle2 : Info;
+    tone === "error" || tone === "warning"
+      ? AlertTriangle
+      : tone === "success"
+        ? CheckCircle2
+        : Info;
+
+  const outerClass = compact
+    ? "pointer-events-none fixed inset-0 z-[160] flex items-start justify-center p-4 pt-20 sm:justify-end"
+    : "pointer-events-none fixed inset-0 z-[160] grid place-items-center p-4";
+  const cardClass = compact
+    ? "w-[min(92vw,22rem)] rounded-xl border px-3.5 py-3 shadow-2xl backdrop-blur-xl"
+    : "w-[min(92vw,30rem)] rounded-2xl border px-4 py-4 shadow-2xl backdrop-blur-xl";
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-[160] grid place-items-center p-4"
+      className={outerClass}
       aria-live={tone === "error" ? "assertive" : "polite"}
     >
       <div
         role={tone === "error" ? "alert" : "status"}
-        className={`pointer-events-auto relative w-[min(92vw,30rem)] rounded-2xl border px-4 py-4 shadow-2xl backdrop-blur-xl ${toneClasses[tone]}`}
+        className={`pointer-events-auto relative ${cardClass} ${toneClasses[tone]}`}
       >
         {onClose ? (
           <button
@@ -74,7 +88,7 @@ export function LoombusPrompt({
 
         <div className="flex items-start gap-3 pr-7">
           <span
-            className={`mt-0.5 grid size-9 shrink-0 place-items-center rounded-full ${iconClasses[tone]}`}
+            className={`mt-0.5 grid ${compact ? "size-8" : "size-9"} shrink-0 place-items-center rounded-full ${iconClasses[tone]}`}
           >
             <Icon aria-hidden="true" className="size-4" />
           </span>
