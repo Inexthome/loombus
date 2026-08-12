@@ -23,6 +23,7 @@ import { isIosNativeApp } from "@/lib/apple-purchases";
 import {
   AI_ALLOWANCES,
   EARLY_ACCESS_PRICING,
+  EARLY_ACCESS_PROMOTION_DURATION_MONTHS,
   MASTER_SUBSCRIPTION_ENTITLEMENTS,
   PLAN_RANK,
   SUBSCRIPTION_PLANS,
@@ -81,7 +82,7 @@ const plans: PlanDefinition[] = [
     label: SUBSCRIPTION_PLANS.premium.label,
     monthly: `$${EARLY_ACCESS_PRICING.current.premium.monthlyUsd} / month`,
     annual: `$${EARLY_ACCESS_PRICING.current.premium.annualUsd} / year`,
-    futurePrice: `Early Access launch promo · future monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.premium}`,
+    futurePrice: `Launch-year promo · future monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.premium}`,
     positioning: SUBSCRIPTION_PLANS.premium.positioning,
     description:
       "The Loombus intelligence subscription for members who want deeper understanding, stronger search and more control over their knowledge workflow.",
@@ -99,7 +100,7 @@ const plans: PlanDefinition[] = [
     label: SUBSCRIPTION_PLANS.pro.label,
     monthly: `$${EARLY_ACCESS_PRICING.current.pro.monthlyUsd} / month`,
     annual: `$${EARLY_ACCESS_PRICING.current.pro.annualUsd} / year`,
-    futurePrice: `Early Access launch promo · future monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.pro}`,
+    futurePrice: `Launch-year promo · future monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.pro}`,
     positioning: SUBSCRIPTION_PLANS.pro.positioning,
     description:
       "Professional leverage on top of Premium: deeper AI capacity, professional identity, booking infrastructure, discovery and economic tools.",
@@ -349,12 +350,12 @@ export default function PremiumV3Client() {
           </div>
         </header>
 
-        <section className="premium-v3-promo" aria-label="Early Access pricing">
+        <section className="premium-v3-promo" aria-label="Launch-year pricing">
           <Sparkles aria-hidden="true" />
           <div>
-            <strong>Early Access launch pricing is active.</strong>
+            <strong>Launch-year pricing is active.</strong>
             <span>
-              Premium remains $7/month and Premium Pro remains $12/month for the current launch promotion. The future monthly targets are $12 and $19. No automatic promo end date is configured yet.
+              Premium is $7/month or $70/year and Premium Pro is $12/month or $120/year for the first {EARLY_ACCESS_PROMOTION_DURATION_MONTHS} months after the official Loombus launch. Standard monthly targets are $12 and $19. Exact calendar dates will be set when the official launch date is finalized.
             </span>
           </div>
         </section>
@@ -499,7 +500,7 @@ export default function PremiumV3Client() {
 
         <footer className="premium-v2-footer-note">
           <CreditCard aria-hidden="true" />
-          <p>Paid subscriptions renew through the purchase provider until canceled. Current launch pricing and the billing interval are shown before purchase.</p>
+          <p>Paid subscriptions renew through the purchase provider until canceled. Current launch-year pricing and the billing interval are shown before purchase.</p>
         </footer>
       </div>
     </main>
