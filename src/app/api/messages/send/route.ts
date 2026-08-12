@@ -4,6 +4,7 @@ import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotification } from "@/lib/notifications";
 import { logAuditEvent } from "@/lib/audit-log";
+import { getSubscriptionEntitlementDecisionForUser } from "@/lib/subscription-access";
 
 type ProfileAccess = {
   account_status: string | null;
@@ -115,6 +116,29 @@ async function hasBlockRelationship(supabase: any, userId: string, otherUserId: 
     .limit(1);
 
   return Boolean(blocks && blocks.length > 0);
+}
+
+async function usersMutuallyFollow(
+  supabase: any,
+  userId: string,
+  otherUserId: string
+) {
+  const [{ data: viewerFollow }, { data: otherFollow }] = await Promise.all([
+    supabase
+      .from("follows")
+      .select("id")
+      .eq("follower_id", userId)
+      .eq("following_id", otherUserId)
+      .maybeSingle(),
+    supabase
+      .from("follows")
+      .select("id")
+      .eq("follower_id", otherUserId)
+      .eq("following_id", userId)
+      .maybeSingle(),
+  ]);
+
+  return Boolean(viewerFollow && otherFollow);
 }
 
 function normalizeAgeBand(value: unknown) {
@@ -318,6 +342,23 @@ export async function POST(request: NextRequest) {
 
   if (blocked) {
     return jsonError("You cannot message this member.", 403);
+  }
+
+  const messagingDecision = await getSubscriptionEntitlementDecisionForUser(
+    user.id,
+    "unlimited_messaging"
+  );
+
+  if (!messagingDecision.allowed) {
+    const mutualFollow = await usersMutuallyFollow(supabase, user.id, recipientId);
+
+    if (!mutualFollow) {
+      return jsonError(
+        "Private messages require mutual following.",
+        403,
+        "subscription_entitlement_required"
+      );
+    }
   }
 
   const recipientAgeRestriction = getMessagingAgeRestriction(

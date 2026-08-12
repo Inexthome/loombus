@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { logAuditEvent } from "@/lib/audit-log";
+import { getSubscriptionEntitlementDecisionForUser } from "@/lib/subscription-access";
 
 type ProfileAccess = {
   account_status: string | null;
@@ -554,12 +555,6 @@ export async function POST(request: NextRequest) {
     return jsonError("You cannot message this member.", 403);
   }
 
-  const mutualFollow = await usersMutuallyFollow(supabase, user.id, targetUserId);
-
-  if (!mutualFollow) {
-    return jsonError("Private messages require mutual following.", 403);
-  }
-
   const existingConversationId = await findExistingConversation(
     supabase,
     user.id,
@@ -571,6 +566,23 @@ export async function POST(request: NextRequest) {
       conversationId: existingConversationId,
       created: false,
     });
+  }
+
+  const messagingDecision = await getSubscriptionEntitlementDecisionForUser(
+    user.id,
+    "unlimited_messaging"
+  );
+
+  if (!messagingDecision.allowed) {
+    const mutualFollow = await usersMutuallyFollow(supabase, user.id, targetUserId);
+
+    if (!mutualFollow) {
+      return jsonError(
+        "Private messages require mutual following.",
+        403,
+        "subscription_entitlement_required"
+      );
+    }
   }
 
   const cooldownSince = new Date(
