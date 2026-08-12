@@ -37,12 +37,13 @@ export async function POST(request: NextRequest) {
   if (!name) return jsonError("Enter a folder name.", 400);
   if (name.length > 60) return jsonError("Folder name is too long.", 400);
 
-  let service;
-  try { service = getBookmarkMutationSupabase(); } catch { return jsonError("Server configuration error.", 500); }
-
   let unlimitedOrganization = false;
   try { unlimitedOrganization = await hasUnlimitedOrganization(accountAccess.user.id); }
   catch { return jsonError("Unable to verify folder access.", 503); }
+
+  let service;
+  try { service = getBookmarkMutationSupabase(unlimitedOrganization); }
+  catch { return jsonError("Server configuration error.", 500); }
 
   if (!unlimitedOrganization) {
     const { count, error: countError } = await service.from("bookmark_collections").select("id", { count: "exact", head: true }).eq("user_id", accountAccess.user.id);
@@ -52,7 +53,11 @@ export async function POST(request: NextRequest) {
   }
 
   const { data, error } = await service.from("bookmark_collections").insert({ user_id: accountAccess.user.id, name }).select("id, user_id, name, description, created_at, updated_at").single();
-  if (error) return jsonError(error.message || "Unable to create folder.", 400);
+  if (error) {
+    const message = error.message || "Unable to create folder.";
+    if (message.includes("Free Saved folders are limited")) return jsonError(message, 403, "organization_limit_reached", { limit: ORGANIZATION_LIMITS.free.folders });
+    return jsonError(message, 400);
+  }
   return NextResponse.json({ collection: data });
 }
 
