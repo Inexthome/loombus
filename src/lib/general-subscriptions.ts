@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 import {
+  PLAN_RANK,
   normalizeSubscriptionPlan,
   resolvePlanFromEntitlementRow,
   type SubscriptionPlanId,
@@ -10,6 +11,7 @@ import {
 export type GeneralSubscriptionProvider = "stripe" | "apple";
 
 export type GeneralSubscriptionRow = {
+  id?: string;
   user_id: string;
   plan_key: string | null;
   provider: GeneralSubscriptionProvider | null;
@@ -23,6 +25,7 @@ export type GeneralSubscriptionRow = {
   current_period_end: string | null;
   cancel_at_period_end: boolean | null;
   last_verified_at: string | null;
+  updated_at?: string | null;
 };
 
 export type ResolvedGeneralSubscription = {
@@ -32,6 +35,7 @@ export type ResolvedGeneralSubscription = {
   isAdminOverride: boolean;
   source: "general_subscription" | "legacy_ai_entitlement" | "free";
   subscription: GeneralSubscriptionRow | null;
+  subscriptions: GeneralSubscriptionRow[];
 };
 
 const STRIPE_ACCESS_STATUSES = new Set(["active", "trialing", "past_due"]);
@@ -83,50 +87,87 @@ export function resolvePlanFromGeneralSubscriptionRow(
   return normalizeSubscriptionPlan(row.plan_key);
 }
 
+export function resolveEffectiveSubscriptionFromRows(
+  rows: GeneralSubscriptionRow[]
+) {
+  const activeRows = rows.filter(isGeneralSubscriptionActive);
+  if (activeRows.length === 0) {
+    return { plan: "free" as const, subscription: null };
+  }
+
+  const sorted = [...activeRows].sort((a, b) => {
+    const planDifference =
+      PLAN_RANK[normalizeSubscriptionPlan(b.plan_key)] -
+      PLAN_RANK[normalizeSubscriptionPlan(a.plan_key)];
+    if (planDifference !== 0) return planDifference;
+
+    return Date.parse(b.last_verified_at ?? b.updated_at ?? "1970-01-01") -
+      Date.parse(a.last_verified_at ?? a.updated_at ?? "1970-01-01");
+  });
+
+  const subscription = sorted[0];
+  return {
+    plan: normalizeSubscriptionPlan(subscription.plan_key),
+    subscription,
+  };
+}
+
 export async function getResolvedGeneralSubscriptionForUser(
   userId: string
 ): Promise<ResolvedGeneralSubscription> {
   const supabase = createBillingReadClient();
 
-  const { data: generalRow, error: generalError } = await (
-    supabase.from("user_general_subscriptions") as any
-  )
-    .select(
-      "user_id, plan_key, provider, provider_customer_id, provider_subscription_id, provider_product_id, original_transaction_id, app_account_token, environment, status, current_period_end, cancel_at_period_end, last_verified_at"
-    )
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [generalResult, legacyResult] = await Promise.all([
+    (supabase.from("user_general_subscriptions") as any)
+      .select(
+        "id, user_id, plan_key, provider, provider_customer_id, provider_subscription_id, provider_product_id, original_transaction_id, app_account_token, environment, status, current_period_end, cancel_at_period_end, last_verified_at, updated_at"
+      )
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false }),
+    (supabase.from("user_ai_entitlements") as any)
+      .select("tier, ai_assisted_enabled, monthly_summary_limit")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
 
-  if (!generalError && generalRow) {
-    const subscription = generalRow as GeneralSubscriptionRow;
-    const plan = resolvePlanFromGeneralSubscriptionRow(subscription);
+  const legacyRow = legacyResult.data;
+  const legacyTier = legacyRow?.tier?.trim().toLowerCase() ?? "";
+  if (legacyTier === "admin") {
+    return {
+      plan: "pro",
+      paidPlan: "free",
+      active: true,
+      isAdminOverride: true,
+      source: "legacy_ai_entitlement",
+      subscription: null,
+      subscriptions: (generalResult.data ?? []) as GeneralSubscriptionRow[],
+    };
+  }
+
+  if (!generalResult.error && generalResult.data?.length) {
+    const subscriptions = generalResult.data as GeneralSubscriptionRow[];
+    const effective = resolveEffectiveSubscriptionFromRows(subscriptions);
 
     return {
-      plan,
-      paidPlan: plan,
-      active: plan !== "free",
+      plan: effective.plan,
+      paidPlan: effective.plan,
+      active: effective.plan !== "free",
       isAdminOverride: false,
       source: "general_subscription",
-      subscription,
+      subscription: effective.subscription,
+      subscriptions,
     };
   }
 
   // Rollout compatibility: if the additive migration has not reached an
   // environment yet, or a historic member has not been backfilled, resolve
-  // access from the existing AI entitlement row. Once a general-subscription
-  // row exists it is authoritative, including an explicit inactive state.
-  const { data: legacyRow, error: legacyError } = await (
-    supabase.from("user_ai_entitlements") as any
-  )
-    .select("tier, ai_assisted_enabled, monthly_summary_limit")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (legacyError) {
-    if (generalError) {
+  // access from the existing AI entitlement row. Once any general-subscription
+  // rows exist for the member they are authoritative, including inactive rows.
+  if (legacyResult.error) {
+    if (generalResult.error) {
       console.error("Unable to resolve general subscription state:", {
-        generalError: generalError.message,
-        legacyError: legacyError.message,
+        generalError: generalResult.error.message,
+        legacyError: legacyResult.error.message,
       });
     }
 
@@ -137,18 +178,7 @@ export async function getResolvedGeneralSubscriptionForUser(
       isAdminOverride: false,
       source: "free",
       subscription: null,
-    };
-  }
-
-  const legacyTier = legacyRow?.tier?.trim().toLowerCase() ?? "";
-  if (legacyTier === "admin") {
-    return {
-      plan: "pro",
-      paidPlan: "free",
-      active: true,
-      isAdminOverride: true,
-      source: "legacy_ai_entitlement",
-      subscription: null,
+      subscriptions: [],
     };
   }
 
@@ -160,5 +190,6 @@ export async function getResolvedGeneralSubscriptionForUser(
     isAdminOverride: false,
     source: plan === "free" ? "free" : "legacy_ai_entitlement",
     subscription: null,
+    subscriptions: [],
   };
 }
