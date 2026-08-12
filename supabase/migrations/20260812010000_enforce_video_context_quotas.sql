@@ -79,19 +79,19 @@ begin
       max_video_seconds := 3600;
       monthly_seconds_limit := 59999940;
     when 'premium_plus' then
-      upload_limit := 30;
+      upload_limit := 50;
       max_video_seconds := 1800;
       monthly_seconds_limit := 54000;
     when 'premium_pro' then
-      upload_limit := 30;
+      upload_limit := 50;
       max_video_seconds := 1800;
       monthly_seconds_limit := 54000;
     when 'pro' then
-      upload_limit := 30;
+      upload_limit := 50;
       max_video_seconds := 1800;
       monthly_seconds_limit := 54000;
     when 'premium' then
-      upload_limit := 10;
+      upload_limit := 25;
       max_video_seconds := 900;
       monthly_seconds_limit := 9000;
     else
