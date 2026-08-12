@@ -2,23 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   createCalendarFeedServiceClient,
   createCalendarFeedToken,
-  type CalendarFeedCredentialRow,
 } from "@/lib/calendar-feed-credentials";
 import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 import { createRequestSupabase } from "@/lib/room-operations";
 import { evaluateSubscriptionEntitlement } from "@/lib/subscription-entitlements";
 
-type ManagementContext =
+type AccountContext =
   | {
       ok: true;
       userId: string;
-      canUseExternalCalendarSync: boolean;
+      isAdmin: boolean;
     }
   | {
       ok: false;
       response: NextResponse;
     };
+
+type CredentialMetadataRow = {
+  token_hint: string;
+  created_at: string;
+  updated_at: string;
+  revoked_at: string | null;
+};
 
 function json(payload: unknown, status = 200) {
   return NextResponse.json(payload, {
@@ -31,7 +37,7 @@ function errorJson(message: string, status: number) {
   return json({ error: message }, status);
 }
 
-function credentialMetadata(row: CalendarFeedCredentialRow | null) {
+function credentialMetadata(row: CredentialMetadataRow | null) {
   if (!row) return null;
 
   return {
@@ -42,9 +48,7 @@ function credentialMetadata(row: CalendarFeedCredentialRow | null) {
   };
 }
 
-async function getManagementContext(
-  request: NextRequest
-): Promise<ManagementContext> {
+async function getAccountContext(request: NextRequest): Promise<AccountContext> {
   let requestClient;
 
   try {
@@ -64,50 +68,51 @@ async function getManagementContext(
     };
   }
 
-  try {
-    const subscription = await getResolvedGeneralSubscriptionForUser(
-      access.user.id
-    );
-    const plan = access.profile.is_admin ? "pro" : subscription.plan;
+  return {
+    ok: true,
+    userId: access.user.id,
+    isAdmin: Boolean(access.profile.is_admin),
+  };
+}
 
-    return {
-      ok: true,
-      userId: access.user.id,
-      canUseExternalCalendarSync: evaluateSubscriptionEntitlement(
-        plan,
-        "external_calendar_sync"
-      ).allowed,
-    };
-  } catch (error) {
-    console.error("Unable to resolve calendar-sync entitlement:", error);
-    return {
-      ok: false,
-      response: errorJson("Unable to verify calendar-sync access.", 503),
-    };
-  }
+async function canUseExternalCalendarSync(userId: string, isAdmin: boolean) {
+  if (isAdmin) return true;
+
+  const subscription = await getResolvedGeneralSubscriptionForUser(userId);
+  return evaluateSubscriptionEntitlement(
+    subscription.plan,
+    "external_calendar_sync"
+  ).allowed;
 }
 
 export async function GET(request: NextRequest) {
-  const context = await getManagementContext(request);
+  const context = await getAccountContext(request);
   if (!context.ok) return context.response;
 
   try {
     const service = createCalendarFeedServiceClient();
-    const { data, error } = await service
-      .from("calendar_feed_credentials")
-      .select(
-        "user_id, token_hash, token_hint, created_at, updated_at, revoked_at"
-      )
-      .eq("user_id", context.userId)
-      .maybeSingle();
+    const [{ data, error }, entitlement] = await Promise.all([
+      service
+        .from("calendar_feed_credentials")
+        .select("token_hint, created_at, updated_at, revoked_at")
+        .eq("user_id", context.userId)
+        .maybeSingle(),
+      canUseExternalCalendarSync(context.userId, context.isAdmin)
+        .then((allowed) => ({ available: true as const, allowed }))
+        .catch((error) => {
+          console.error("Unable to resolve calendar-sync entitlement:", error);
+          return { available: false as const, allowed: false };
+        }),
+    ]);
 
     if (error) {
       return errorJson("Calendar feed storage is unavailable.", 503);
     }
 
-    const credential = (data ?? null) as CalendarFeedCredentialRow | null;
+    const credential = (data ?? null) as CredentialMetadataRow | null;
     return json({
-      canUseExternalCalendarSync: context.canUseExternalCalendarSync,
+      canUseExternalCalendarSync: entitlement.allowed,
+      entitlementAvailable: entitlement.available,
       configured: Boolean(credential && !credential.revoked_at),
       credential: credentialMetadata(credential),
     });
@@ -118,10 +123,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const context = await getManagementContext(request);
+  const context = await getAccountContext(request);
   if (!context.ok) return context.response;
 
-  if (!context.canUseExternalCalendarSync) {
+  let allowed = false;
+  try {
+    allowed = await canUseExternalCalendarSync(context.userId, context.isAdmin);
+  } catch (error) {
+    console.error("Unable to resolve calendar-sync entitlement:", error);
+    return errorJson("Unable to verify calendar-sync access.", 503);
+  }
+
+  if (!allowed) {
     return errorJson("Premium Pro is required for external calendar sync.", 403);
   }
 
@@ -162,9 +175,7 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: "user_id" }
       )
-      .select(
-        "user_id, token_hash, token_hint, created_at, updated_at, revoked_at"
-      )
+      .select("token_hint, created_at, updated_at, revoked_at")
       .single();
 
     if (error || !data) {
@@ -174,11 +185,12 @@ export async function POST(request: NextRequest) {
     return json(
       {
         canUseExternalCalendarSync: true,
+        entitlementAvailable: true,
         configured: true,
         token: generated.token,
         tokenShownOnce: true,
         feedReady: false,
-        credential: credentialMetadata(data as CalendarFeedCredentialRow),
+        credential: credentialMetadata(data as CredentialMetadataRow),
       },
       existing ? 200 : 201
     );
@@ -189,7 +201,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const context = await getManagementContext(request);
+  const context = await getAccountContext(request);
   if (!context.ok) return context.response;
 
   try {
@@ -199,9 +211,7 @@ export async function DELETE(request: NextRequest) {
       .from("calendar_feed_credentials")
       .update({ revoked_at: now, updated_at: now })
       .eq("user_id", context.userId)
-      .select(
-        "user_id, token_hash, token_hint, created_at, updated_at, revoked_at"
-      )
+      .select("token_hint, created_at, updated_at, revoked_at")
       .maybeSingle();
 
     if (error) {
@@ -209,12 +219,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     return json({
-      canUseExternalCalendarSync: context.canUseExternalCalendarSync,
       configured: false,
       revoked: Boolean(data),
-      credential: credentialMetadata(
-        (data ?? null) as CalendarFeedCredentialRow | null
-      ),
+      credential: credentialMetadata((data ?? null) as CredentialMetadataRow | null),
     });
   } catch (error) {
     console.error("Unable to revoke calendar-feed credential:", error);
