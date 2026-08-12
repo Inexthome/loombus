@@ -51,6 +51,16 @@ type ProfileAccount = {
   is_admin: boolean | null;
 };
 
+type CanonicalSubscriptionStatus = {
+  plan: SubscriptionPlanId;
+  paidPlan: SubscriptionPlanId;
+  active: boolean;
+  isAdmin: boolean;
+  source: "general_subscription" | "legacy_ai_entitlement" | "free";
+  billingProvider: "stripe" | "apple" | null;
+  providers: Array<"stripe" | "apple">;
+};
+
 type PlanDefinition = {
   key: SubscriptionPlanId;
   label: string;
@@ -123,8 +133,15 @@ const currentPlanRank: Record<CurrentPlan, number> = {
   admin: 3,
 };
 
-function getCurrentPlan(entitlement: Entitlement | null, isAdmin: boolean): CurrentPlan {
-  if (isAdmin || entitlement?.tier === "admin") return "admin";
+function getCurrentPlan(
+  entitlement: Entitlement | null,
+  isAdmin: boolean,
+  canonicalStatus: CanonicalSubscriptionStatus | null
+): CurrentPlan {
+  if (isAdmin || canonicalStatus?.isAdmin || entitlement?.tier === "admin") {
+    return "admin";
+  }
+  if (canonicalStatus) return canonicalStatus.plan;
   return resolvePlanFromEntitlementRow(entitlement);
 }
 
@@ -282,6 +299,8 @@ export default function PremiumV3Client() {
   const [signedIn, setSignedIn] = useState(false);
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canonicalStatus, setCanonicalStatus] =
+    useState<CanonicalSubscriptionStatus | null>(null);
   const [promoCountdown, setPromoCountdown] = useState(
     `Ends ${EARLY_ACCESS_PROMOTION_END_DATE}`
   );
@@ -310,33 +329,57 @@ export default function PremiumV3Client() {
             setSignedIn(false);
             setEntitlement(null);
             setIsAdmin(false);
+            setCanonicalStatus(null);
           }
           return;
         }
 
-        const [entitlementResult, profileResult] = await Promise.all([
-          supabase
-            .from("user_ai_entitlements")
-            .select("tier, ai_assisted_enabled, monthly_summary_limit, stripe_customer_id")
-            .eq("user_id", user.id)
-            .maybeSingle(),
-          supabase
-            .from("profiles")
-            .select("is_admin")
-            .eq("id", user.id)
-            .maybeSingle(),
-        ]);
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) throw new Error("Missing authenticated billing session.");
 
+        const [subscriptionResponse, entitlementResult, profileResult] =
+          await Promise.all([
+            fetch("/api/billing/subscription-status", {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+              cache: "no-store",
+            }),
+            supabase
+              .from("user_ai_entitlements")
+              .select("tier, ai_assisted_enabled, monthly_summary_limit, stripe_customer_id")
+              .eq("user_id", user.id)
+              .maybeSingle(),
+            supabase
+              .from("profiles")
+              .select("is_admin")
+              .eq("id", user.id)
+              .maybeSingle(),
+          ]);
+
+        if (!subscriptionResponse.ok) {
+          throw new Error("Canonical subscription status could not be verified.");
+        }
         if (entitlementResult.error) throw entitlementResult.error;
         if (profileResult.error) throw profileResult.error;
+
+        const subscriptionStatus =
+          (await subscriptionResponse.json()) as CanonicalSubscriptionStatus;
+
         if (!mounted) return;
 
         setSignedIn(true);
+        setCanonicalStatus(subscriptionStatus);
         setEntitlement((entitlementResult.data ?? null) as Entitlement | null);
         setIsAdmin(Boolean((profileResult.data as ProfileAccount | null)?.is_admin));
       } catch (error) {
         console.error("Unable to load Premium plan state.", error);
         if (mounted) {
+          setCanonicalStatus(null);
           setLoadError("Your current plan could not be verified. Plan information remains available below.");
         }
       } finally {
@@ -351,13 +394,32 @@ export default function PremiumV3Client() {
   }, []);
 
   const currentPlan = useMemo(
-    () => getCurrentPlan(entitlement, isAdmin),
-    [entitlement, isAdmin]
+    () => getCurrentPlan(entitlement, isAdmin, canonicalStatus),
+    [canonicalStatus, entitlement, isAdmin]
   );
   const nativeIos = typeof window !== "undefined" && isIosNativeApp();
   const hasStripeCustomer = Boolean(entitlement?.stripe_customer_id);
-  const canManageBilling = signedIn && (nativeIos || hasStripeCustomer);
+  const hasStripeProvider = canonicalStatus?.providers.includes("stripe") ?? false;
+  const hasAppleProvider = canonicalStatus?.providers.includes("apple") ?? false;
+  const canManageBilling =
+    signedIn &&
+    (nativeIos || hasStripeProvider || hasAppleProvider || hasStripeCustomer);
   const aiUsage = getAiUsageLabel(currentPlan, entitlement);
+  const billingLabel = loading
+    ? "Checking"
+    : !signedIn
+      ? "Sign in required"
+      : hasAppleProvider && hasStripeProvider
+        ? "Apple + Stripe"
+        : hasAppleProvider
+          ? "Apple subscription"
+          : hasStripeProvider || hasStripeCustomer
+            ? "Stripe portal available"
+            : nativeIos
+              ? "Apple subscriptions"
+              : currentPlan === "free"
+                ? "No paid subscription"
+                : "Billing source unavailable";
 
   return (
     <main className="premium-v2-page">
@@ -396,7 +458,7 @@ export default function PremiumV3Client() {
           <div className="premium-v2-account-copy">
             <p className="premium-v2-eyebrow">Your account</p>
             {loading ? (
-              <><h2>Checking current plan…</h2><p>Loombus is reading the current entitlement record.</p></>
+              <><h2>Checking current plan…</h2><p>Loombus is reading the verified subscription state.</p></>
             ) : !signedIn ? (
               <><h2>Sign in to see your current plan.</h2><p>Plan comparison is public. Sign in before purchase or billing management.</p></>
             ) : (
@@ -406,7 +468,7 @@ export default function PremiumV3Client() {
           <div className="premium-v2-account-facts">
             <div><span>Plan</span><strong>{loading ? "Checking" : signedIn ? getPlanLabel(currentPlan) : "Not signed in"}</strong></div>
             <div><span>AI access</span><strong>{loading ? "Checking" : signedIn ? aiUsage : "Sign in required"}</strong></div>
-            <div><span>Billing</span><strong>{loading ? "Checking" : !signedIn ? "Sign in required" : canManageBilling ? nativeIos ? "Apple subscriptions" : "Stripe portal available" : currentPlan === "free" ? "No paid subscription" : "Billing source unavailable"}</strong></div>
+            <div><span>Billing</span><strong>{billingLabel}</strong></div>
           </div>
           <div className="premium-v2-account-actions">
             {!signedIn && !loading ? (
