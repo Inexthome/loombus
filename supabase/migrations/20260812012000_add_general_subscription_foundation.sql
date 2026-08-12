@@ -12,10 +12,10 @@ create table if not exists public.user_general_subscriptions (
   user_id uuid not null references auth.users(id) on delete cascade,
   plan_key text not null default 'free'
     check (plan_key in ('free', 'premium', 'pro')),
-  provider text
-    check (provider is null or provider in ('stripe', 'apple')),
+  provider text not null
+    check (provider in ('stripe', 'apple', 'legacy')),
   provider_customer_id text,
-  provider_subscription_id text,
+  provider_subscription_id text not null,
   provider_product_id text,
   original_transaction_id text,
   app_account_token uuid,
@@ -26,12 +26,10 @@ create table if not exists public.user_general_subscriptions (
   cancel_at_period_end boolean not null default false,
   last_verified_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint user_general_subscriptions_provider_subscription_unique
+    unique (provider, provider_subscription_id)
 );
-
-create unique index if not exists user_general_subscriptions_provider_subscription_uidx
-  on public.user_general_subscriptions (provider, provider_subscription_id)
-  where provider is not null and provider_subscription_id is not null;
 
 create unique index if not exists user_general_subscriptions_apple_original_transaction_uidx
   on public.user_general_subscriptions (provider, original_transaction_id)
@@ -89,10 +87,10 @@ select
       or e.stripe_subscription_id is not null
       or e.stripe_price_id is not null
       then 'stripe'
-    else null
+    else 'legacy'
   end as provider,
   case when e.stripe_customer_id = 'apple' then null else e.stripe_customer_id end,
-  e.stripe_subscription_id,
+  coalesce(e.stripe_subscription_id, 'legacy:' || e.user_id::text),
   e.stripe_price_id,
   case
     when e.stripe_customer_id = 'apple' then e.stripe_subscription_id
@@ -115,7 +113,7 @@ where e.ai_assisted_enabled is true
     lower(coalesce(e.tier, '')) in ('premium', 'pro', 'premium_pro', 'premium_plus')
     or coalesce(e.monthly_summary_limit, 0) > 0
   )
-on conflict do nothing;
+on conflict (provider, provider_subscription_id) do nothing;
 
 comment on table public.user_general_subscriptions is
   'Provider-neutral source of truth for general Loombus Free/Premium/Premium Pro billing state. Multiple provider subscriptions may coexist; effective access resolves from active rows. AI quotas remain in user_ai_entitlements.';
