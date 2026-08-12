@@ -91,7 +91,16 @@ export function resolvePlanFromGeneralSubscriptionRow(
 export function resolveEffectiveSubscriptionFromRows(
   rows: GeneralSubscriptionRow[]
 ) {
-  const activeRows = rows.filter(isGeneralSubscriptionActive);
+  // Legacy rows exist only to bridge historic paid members into the new
+  // provider-neutral model. Once Stripe or Apple has identified any real
+  // subscription for the member, provider state becomes authoritative even
+  // when that subscription is inactive. This prevents stale legacy access.
+  const providerRows = rows.filter(
+    (row) => row.provider === "stripe" || row.provider === "apple"
+  );
+  const candidateRows = providerRows.length > 0 ? providerRows : rows;
+  const activeRows = candidateRows.filter(isGeneralSubscriptionActive);
+
   if (activeRows.length === 0) {
     return { plan: "free" as const, subscription: null };
   }
