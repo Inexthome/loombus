@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { ORGANIZATION_LIMITS } from "@/lib/organization-limits";
+import { getSubscriptionEntitlementDecisionForUser } from "@/lib/subscription-access";
 
 type StickyItem = {
   id: string;
@@ -85,37 +87,23 @@ async function getUserAndAccess(request: NextRequest) {
     return { error: jsonError("Login required.", 401) };
   }
 
-  const [{ data: profileData }, { data: entitlementData }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", userData.user.id)
-      .maybeSingle(),
-    supabase
-      .from("user_ai_entitlements")
-      .select("tier, ai_assisted_enabled")
-      .eq("user_id", userData.user.id)
-      .maybeSingle(),
-  ]);
+  try {
+    const organizationDecision =
+      await getSubscriptionEntitlementDecisionForUser(
+        userData.user.id,
+        "unlimited_organization"
+      );
 
-  const isAdmin = Boolean(profileData?.is_admin);
-  const hasPremiumAccess =
-    isAdmin ||
-    (entitlementData?.ai_assisted_enabled === true &&
-      ["premium", "premium_plus", "admin"].includes(entitlementData.tier ?? ""));
-
-  if (!hasPremiumAccess) {
     return {
-      error: jsonError("Stickies requires Premium access.", 403, {
-        upgradeRequired: true,
-      }),
+      supabase,
+      user: userData.user,
+      unlimitedOrganization: organizationDecision.allowed,
+    };
+  } catch {
+    return {
+      error: jsonError("Unable to verify Stickies access.", 503),
     };
   }
-
-  return {
-    supabase,
-    user: userData.user,
-  };
 }
 
 export async function GET(request: NextRequest) {
@@ -139,6 +127,12 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     stickies: (data ?? []) as StickyItem[],
+    organization: {
+      unlimited: context.unlimitedOrganization,
+      limit: context.unlimitedOrganization
+        ? null
+        : ORGANIZATION_LIMITS.free.stickies,
+    },
   });
 }
 
@@ -179,11 +173,46 @@ export async function POST(request: NextRequest) {
     return jsonError("Discussion not found.", 404);
   }
 
-  const { count } = await context.supabase
-    .from("sticky_items")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", context.user.id)
-    .eq("item_type", "discussion");
+  const [countResult, existingStickyResult] = await Promise.all([
+    context.supabase
+      .from("sticky_items")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", context.user.id)
+      .eq("item_type", "discussion"),
+    context.supabase
+      .from("sticky_items")
+      .select("id")
+      .eq("user_id", context.user.id)
+      .eq("item_type", "discussion")
+      .eq("source_key", discussion.id)
+      .maybeSingle(),
+  ]);
+
+  if (countResult.error) {
+    return jsonError(countResult.error.message, 500);
+  }
+
+  if (existingStickyResult.error) {
+    return jsonError(existingStickyResult.error.message, 500);
+  }
+
+  const freeStickyLimit = ORGANIZATION_LIMITS.free.stickies;
+
+  if (
+    !context.unlimitedOrganization &&
+    !existingStickyResult.data &&
+    (countResult.count ?? 0) >= freeStickyLimit
+  ) {
+    return jsonError(
+      `Free Stickies are limited to ${freeStickyLimit} pinned discussions. Upgrade to Premium for unlimited Stickies.`,
+      403,
+      {
+        code: "organization_limit_reached",
+        limit: freeStickyLimit,
+        upgradeRequired: false,
+      }
+    );
+  }
 
   const cleanBody = stripHtml(discussion.body ?? "");
   const subtitle = [
@@ -200,7 +229,7 @@ export async function POST(request: NextRequest) {
     title: discussion.title,
     subtitle,
     href: `/discussions/${discussion.id}`,
-    position: count ?? 0,
+    position: countResult.count ?? 0,
     updated_at: new Date().toISOString(),
   };
 
