@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import CalendarExternalSyncPanel from "@/components/calendar-external-sync-panel";
 import CalendarPage from "@/components/calendar-page";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function MyCalendarPage() {
-  return <CalendarPage />;
+  return (
+    <>
+      <CalendarExternalSyncPanel />
+      <CalendarPage />
+    </>
+  );
 }
