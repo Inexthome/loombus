@@ -1,3 +1,7 @@
+import {
+  VIDEO_CONTEXT_LIMITS as PLAN_VIDEO_CONTEXT_LIMITS,
+} from "@/lib/subscription-entitlements";
+
 export type VideoContextTier = "free" | "premium" | "premium_plus" | "admin";
 
 export type VideoContextEntitlement = {
@@ -11,6 +15,7 @@ export type VideoContextLimits = {
   label: string;
   monthlyUploadLimit: number;
   maxDurationSeconds: number;
+  monthlyProcessedSecondsLimit: number;
   maxFileSizeBytes: number;
 };
 
@@ -37,34 +42,42 @@ export const DISCUSSION_ATTACHMENT_ACCEPT = [
   ...VIDEO_CONTEXT_ALLOWED_MIME_TYPES,
 ].join(",");
 
+const free = PLAN_VIDEO_CONTEXT_LIMITS.free;
+const premium = PLAN_VIDEO_CONTEXT_LIMITS.premium;
+const pro = PLAN_VIDEO_CONTEXT_LIMITS.pro;
+
 export const VIDEO_CONTEXT_LIMITS: Record<VideoContextTier, VideoContextLimits> = {
   free: {
     tier: "free",
-    label: "Free",
-    monthlyUploadLimit: 5,
-    maxDurationSeconds: 60,
-    maxFileSizeBytes: 75 * 1024 * 1024,
+    label: "Free trial",
+    monthlyUploadLimit: free.uploadsPerMonth,
+    maxDurationSeconds: free.maxMinutesPerUpload * 60,
+    monthlyProcessedSecondsLimit: free.totalMinutesPerMonth * 60,
+    maxFileSizeBytes: 150 * 1024 * 1024,
   },
   premium: {
     tier: "premium",
     label: "Premium",
-    monthlyUploadLimit: 25,
-    maxDurationSeconds: 120,
-    maxFileSizeBytes: 150 * 1024 * 1024,
+    monthlyUploadLimit: premium.uploadsPerMonth,
+    maxDurationSeconds: premium.maxMinutesPerUpload * 60,
+    monthlyProcessedSecondsLimit: premium.totalMinutesPerMonth * 60,
+    maxFileSizeBytes: 1024 * 1024 * 1024,
   },
   premium_plus: {
     tier: "premium_plus",
-    label: "Premium Plus",
-    monthlyUploadLimit: 50,
-    maxDurationSeconds: 180,
-    maxFileSizeBytes: 250 * 1024 * 1024,
+    label: "Premium Pro",
+    monthlyUploadLimit: pro.uploadsPerMonth,
+    maxDurationSeconds: pro.maxMinutesPerUpload * 60,
+    monthlyProcessedSecondsLimit: pro.totalMinutesPerMonth * 60,
+    maxFileSizeBytes: 2 * 1024 * 1024 * 1024,
   },
   admin: {
     tier: "admin",
     label: "Admin",
     monthlyUploadLimit: 999999,
-    maxDurationSeconds: 180,
-    maxFileSizeBytes: 250 * 1024 * 1024,
+    maxDurationSeconds: 60 * 60,
+    monthlyProcessedSecondsLimit: 999999 * 60,
+    maxFileSizeBytes: 2 * 1024 * 1024 * 1024,
   },
 };
 
@@ -76,17 +89,28 @@ export function getVideoContextTier(
     return "admin";
   }
 
+  const normalizedTier = entitlement?.tier?.trim().toLowerCase().replaceAll("-", "_");
+
   if (
     entitlement?.ai_assisted_enabled === true &&
-    entitlement.tier === "premium" &&
-    (entitlement.monthly_summary_limit ?? 0) > 50
+    (normalizedTier === "premium_plus" ||
+      normalizedTier === "premium_pro" ||
+      normalizedTier === "pro")
   ) {
     return "premium_plus";
   }
 
   if (
     entitlement?.ai_assisted_enabled === true &&
-    entitlement.tier === "premium"
+    normalizedTier === "premium" &&
+    (entitlement.monthly_summary_limit ?? 0) >= 150
+  ) {
+    return "premium_plus";
+  }
+
+  if (
+    entitlement?.ai_assisted_enabled === true &&
+    normalizedTier === "premium"
   ) {
     return "premium";
   }
@@ -134,9 +158,12 @@ export function formatVideoContextDuration(seconds: number) {
 }
 
 export function formatVideoContextLimitSummary(limits: VideoContextLimits) {
-  return `${limits.label}: ${limits.monthlyUploadLimit.toLocaleString()} videos/month, up to ${formatVideoContextDuration(limits.maxDurationSeconds)} each.`;
+  return `${limits.label}: ${limits.monthlyUploadLimit.toLocaleString()} videos/month, up to ${formatVideoContextDuration(limits.maxDurationSeconds)} each, and ${Math.floor(limits.monthlyProcessedSecondsLimit / 60).toLocaleString()} processed minutes/month.`;
 }
 
 export function formatVideoContextFileSizeLimit(limits: VideoContextLimits) {
-  return `${Math.round(limits.maxFileSizeBytes / (1024 * 1024))} MB`;
+  const megabytes = limits.maxFileSizeBytes / (1024 * 1024);
+  return megabytes >= 1024
+    ? `${Number((megabytes / 1024).toFixed(1))} GB`
+    : `${Math.round(megabytes)} MB`;
 }
