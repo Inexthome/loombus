@@ -19,6 +19,11 @@ type BillingRow = {
   stripe_subscription_id: string | null;
 };
 
+type GeneralStripeBillingRow = {
+  provider_customer_id: string | null;
+  provider_subscription_id: string | null;
+};
+
 type BillingOwnership = {
   customerId: string;
   subscriptionId: string | null;
@@ -73,6 +78,95 @@ function getPortalConfiguration(scope: PortalScope, action: PortalAction) {
   );
 }
 
+async function resolveGeneralMembershipStripeBilling({
+  userId,
+  subscriptionId,
+}: {
+  userId: string;
+  subscriptionId?: string | null;
+}): Promise<BillingOwnership | null> {
+  const admin = getBillingSupabaseAdmin();
+
+  let generalQuery = (admin.from("user_general_subscriptions") as any)
+    .select("provider_customer_id, provider_subscription_id")
+    .eq("user_id", userId)
+    .eq("provider", "stripe")
+    .not("provider_customer_id", "is", null)
+    .order("last_verified_at", { ascending: false, nullsFirst: false })
+    .order("updated_at", { ascending: false })
+    .limit(1);
+
+  if (subscriptionId) {
+    generalQuery = generalQuery.eq(
+      "provider_subscription_id",
+      subscriptionId
+    );
+  }
+
+  const { data: generalRows, error: generalError } = await generalQuery;
+  if (!generalError) {
+    const general = ((generalRows ?? [])[0] ?? null) as
+      | GeneralStripeBillingRow
+      | null;
+    if (general?.provider_customer_id) {
+      return {
+        customerId: general.provider_customer_id,
+        subscriptionId:
+          subscriptionId ?? general.provider_subscription_id ?? null,
+        scope: "membership",
+      };
+    }
+  } else if (generalError.code !== "42P01") {
+    throw new Error(
+      `Unable to verify general Premium billing: ${generalError.message}`
+    );
+  }
+
+  // Rollout fallback for environments that have not applied the additive
+  // subscription-foundation migration yet.
+  const { data: entitlement, error: entitlementError } = await admin
+    .from("user_ai_entitlements")
+    .select("stripe_customer_id, stripe_subscription_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (entitlementError) {
+    throw new Error(
+      `Unable to verify legacy Premium billing: ${entitlementError.message}`
+    );
+  }
+
+  const premium = (entitlement ?? null) as BillingRow | null;
+  if (
+    premium?.stripe_customer_id &&
+    premium.stripe_customer_id !== "apple" &&
+    (!subscriptionId || premium.stripe_subscription_id === subscriptionId)
+  ) {
+    return {
+      customerId: premium.stripe_customer_id,
+      subscriptionId: subscriptionId ?? premium.stripe_subscription_id,
+      scope: "membership",
+    };
+  }
+
+  return null;
+}
+
+async function hasAppleGeneralMembership(userId: string) {
+  const admin = getBillingSupabaseAdmin();
+  const { data, error } = await (admin.from("user_general_subscriptions") as any)
+    .select("id")
+    .eq("user_id", userId)
+    .eq("provider", "apple")
+    .limit(1);
+
+  if (error?.code === "42P01") return false;
+  if (error) {
+    throw new Error(`Unable to verify Apple billing provider: ${error.message}`);
+  }
+  return Boolean((data ?? []).length);
+}
+
 async function resolveBillingOwnership({
   userId,
   subscriptionId,
@@ -104,27 +198,11 @@ async function resolveBillingOwnership({
     };
   }
 
-  const { data: entitlement, error: entitlementError } = await admin
-    .from("user_ai_entitlements")
-    .select("stripe_customer_id, stripe_subscription_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (entitlementError) {
-    throw new Error(`Unable to verify Premium billing: ${entitlementError.message}`);
-  }
-
-  const premium = (entitlement ?? null) as BillingRow | null;
-  if (
-    premium?.stripe_customer_id &&
-    (!subscriptionId || premium.stripe_subscription_id === subscriptionId)
-  ) {
-    return {
-      customerId: premium.stripe_customer_id,
-      subscriptionId: subscriptionId ?? premium.stripe_subscription_id,
-      scope: "membership",
-    };
-  }
+  const membership = await resolveGeneralMembershipStripeBilling({
+    userId,
+    subscriptionId,
+  });
+  if (membership) return membership;
 
   let roomQuery = admin
     .from("rooms")
@@ -182,7 +260,9 @@ export async function POST(request: NextRequest) {
       action?: unknown;
       subscriptionId?: unknown;
     };
-    const action: PortalAction = isPortalAction(body.action) ? body.action : "manage";
+    const action: PortalAction = isPortalAction(body.action)
+      ? body.action
+      : "manage";
     const subscriptionId =
       typeof body.subscriptionId === "string" && body.subscriptionId.trim()
         ? body.subscriptionId.trim()
@@ -201,6 +281,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (!ownership?.customerId) {
+      if (!subscriptionId && (await hasAppleGeneralMembership(user.id))) {
+        return NextResponse.json(
+          {
+            error:
+              "This Loombus membership is billed by Apple. Manage or cancel it from your Apple App Store subscriptions.",
+            code: "apple_billing_managed_by_app_store",
+          },
+          { status: 409 }
+        );
+      }
+
       return NextResponse.json(
         {
           error:
@@ -242,9 +333,10 @@ export async function POST(request: NextRequest) {
     }
 
     const origin = getSafeOrigin(request);
-    const returnUrl = ownership.scope === "floor"
-      ? `${origin}/the-floor/settings?billing=returned`
-      : `${origin}/settings?section=plan&billing=returned`;
+    const returnUrl =
+      ownership.scope === "floor"
+        ? `${origin}/the-floor/settings?billing=returned`
+        : `${origin}/settings?section=plan&billing=returned`;
     const params: Stripe.BillingPortal.SessionCreateParams = {
       customer: ownership.customerId,
       return_url: returnUrl,
