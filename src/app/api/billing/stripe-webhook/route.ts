@@ -23,6 +23,20 @@ import { syncRoomSubscriptionEvent } from "@/lib/room-subscription-events";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
+const GENERAL_ACCESS_STATUSES = new Set<Stripe.Subscription.Status>([
+  "active",
+  "trialing",
+  "past_due",
+]);
+
+const GENERAL_REVOKE_STATUSES = new Set<Stripe.Subscription.Status>([
+  "canceled",
+  "unpaid",
+  "incomplete",
+  "incomplete_expired",
+  "paused",
+]);
+
 function getStripe() {
   if (!STRIPE_SECRET_KEY) {
     throw new Error("STRIPE_SECRET_KEY is not configured.");
@@ -79,6 +93,32 @@ function getUserIdFromSubscription(subscription: Stripe.Subscription) {
 
 function getPlanKeyFromSubscription(subscription: Stripe.Subscription) {
   return subscription.metadata?.plan_key ?? null;
+}
+
+function getGeneralStripeBillingIdentity(
+  subscription: Stripe.Subscription,
+  fallbackCustomerId?: string | null
+): BillingIdentity {
+  const customerId =
+    getCustomerIdFromSubscription(subscription) ?? fallbackCustomerId ?? null;
+  const priceId = getSubscriptionPriceId(subscription);
+  const periodEnd = getSubscriptionPeriodEnd(subscription);
+
+  return {
+    provider: "stripe",
+    providerCustomerId: customerId,
+    providerSubscriptionId: subscription.id,
+    providerProductId: priceId,
+    currentPeriodEnd: periodEnd,
+    subscriptionStatus: subscription.status,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    lastVerifiedAt: new Date().toISOString(),
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: subscription.id,
+    stripePriceId: priceId,
+    stripeCurrentPeriodEnd: periodEnd,
+    stripeSubscriptionStatus: subscription.status,
+  };
 }
 
 async function fulfillExtraAiPackForUser(
@@ -139,6 +179,43 @@ async function fulfillExtraAiPackForUser(
   });
 }
 
+async function syncGeneralStripeSubscription(
+  userId: string,
+  planKey: string | null,
+  subscription: Stripe.Subscription,
+  fallbackCustomerId?: string | null,
+  source = "Stripe subscription event"
+) {
+  const billingIdentity = getGeneralStripeBillingIdentity(
+    subscription,
+    fallbackCustomerId
+  );
+
+  if (GENERAL_ACCESS_STATUSES.has(subscription.status)) {
+    await activatePremiumForUser(
+      userId,
+      `General Loombus subscription active from ${source} ${subscription.id} with status ${subscription.status}.`,
+      planKey,
+      billingIdentity
+    );
+    return;
+  }
+
+  if (GENERAL_REVOKE_STATUSES.has(subscription.status)) {
+    await deactivatePremiumForUser(
+      userId,
+      `General Loombus subscription disabled from ${source} ${subscription.id} with status ${subscription.status}.`,
+      billingIdentity,
+      planKey
+    );
+    return;
+  }
+
+  console.log(
+    `Stripe subscription ${subscription.id} has status ${subscription.status}; no general entitlement change applied.`
+  );
+}
+
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
   if (isCreatorSupporterProduct(session)) {
     await fulfillCreatorSupporterCheckoutSession(session);
@@ -166,48 +243,38 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   if (session.mode !== "subscription") return;
 
   const subscriptionId = getSubscriptionIdFromCheckoutSession(session);
-  const checkoutCustomerId = getCustomerIdFromCheckoutSession(session);
-  if (subscriptionId) {
-    const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
-    if (session.metadata?.product === "loombus_floor" && isFloorPlanKey(planKey)) {
-      await syncFloorSubscription(userId, planKey, subscription.status, {
-        stripeCustomerId:
-          getCustomerIdFromSubscription(subscription) ?? checkoutCustomerId,
-        stripeSubscriptionId: subscription.id,
-        stripePriceId: getSubscriptionPriceId(subscription),
-        stripeCurrentPeriodEnd: getSubscriptionPeriodEnd(subscription),
-        stripeSubscriptionStatus: subscription.status,
-      });
-      return;
-    }
-
-    if (["active", "trialing"].includes(subscription.status)) {
-      await activatePremiumForUser(
-        userId,
-        `Premium AI-Assisted Layer activated from Stripe checkout session ${session.id}.`,
-        planKey,
-        {
-          stripeCustomerId:
-            getCustomerIdFromSubscription(subscription) ?? checkoutCustomerId,
-          stripeSubscriptionId: subscription.id,
-          stripePriceId: getSubscriptionPriceId(subscription),
-          stripeCurrentPeriodEnd: getSubscriptionPeriodEnd(subscription),
-          stripeSubscriptionStatus: subscription.status,
-        }
-      );
-    }
+  if (!subscriptionId) {
+    // Never invent a billing identity from a Checkout Session. The canonical
+    // customer.subscription webhook will establish access when Stripe has a
+    // real subscription id.
+    console.warn(
+      "Stripe subscription checkout completed without subscription id:",
+      session.id
+    );
     return;
   }
 
-  await activatePremiumForUser(
+  const checkoutCustomerId = getCustomerIdFromCheckoutSession(session);
+  const subscription = await getStripe().subscriptions.retrieve(subscriptionId);
+
+  if (session.metadata?.product === "loombus_floor" && isFloorPlanKey(planKey)) {
+    await syncFloorSubscription(userId, planKey, subscription.status, {
+      stripeCustomerId:
+        getCustomerIdFromSubscription(subscription) ?? checkoutCustomerId,
+      stripeSubscriptionId: subscription.id,
+      stripePriceId: getSubscriptionPriceId(subscription),
+      stripeCurrentPeriodEnd: getSubscriptionPeriodEnd(subscription),
+      stripeSubscriptionStatus: subscription.status,
+    });
+    return;
+  }
+
+  await syncGeneralStripeSubscription(
     userId,
-    `Premium AI-Assisted Layer activated from Stripe checkout session ${session.id}.`,
     planKey,
-    {
-      stripeCustomerId: checkoutCustomerId,
-      stripeSubscriptionId: subscriptionId,
-      stripeSubscriptionStatus: "active",
-    }
+    subscription,
+    checkoutCustomerId,
+    `Stripe checkout session ${session.id}`
   );
 }
 
@@ -231,37 +298,27 @@ async function handleSubscriptionChanged(subscription: Stripe.Subscription) {
     return;
   }
 
-  const billingIdentity: BillingIdentity = {
-    stripeCustomerId: getCustomerIdFromSubscription(subscription),
-    stripeSubscriptionId: subscription.id,
-    stripePriceId: getSubscriptionPriceId(subscription),
-    stripeCurrentPeriodEnd: getSubscriptionPeriodEnd(subscription),
-    stripeSubscriptionStatus: subscription.status,
-  };
+  const billingIdentity = getGeneralStripeBillingIdentity(subscription);
 
-  if (subscription.metadata?.product === "loombus_floor" && isFloorPlanKey(planKey)) {
-    await syncFloorSubscription(userId, planKey, subscription.status, billingIdentity);
-    return;
-  }
-  if (["active", "trialing"].includes(subscription.status)) {
-    await activatePremiumForUser(
+  if (
+    subscription.metadata?.product === "loombus_floor" &&
+    isFloorPlanKey(planKey)
+  ) {
+    await syncFloorSubscription(
       userId,
-      `Premium AI-Assisted Layer active from Stripe subscription ${subscription.id} with status ${subscription.status}.`,
       planKey,
+      subscription.status,
       billingIdentity
     );
     return;
   }
-  if (["canceled", "unpaid", "incomplete_expired"].includes(subscription.status)) {
-    await deactivatePremiumForUser(
-      userId,
-      `Premium AI-Assisted Layer disabled from Stripe subscription ${subscription.id} with status ${subscription.status}.`,
-      billingIdentity
-    );
-    return;
-  }
-  console.log(
-    `Stripe subscription ${subscription.id} has status ${subscription.status}; no entitlement change applied.`
+
+  await syncGeneralStripeSubscription(
+    userId,
+    planKey,
+    subscription,
+    null,
+    "Stripe webhook"
   );
 }
 
@@ -309,6 +366,8 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted":
+      case "customer.subscription.paused":
+      case "customer.subscription.resumed":
         await handleSubscriptionChanged(
           event.data.object as Stripe.Subscription
         );

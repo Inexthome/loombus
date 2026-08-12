@@ -24,6 +24,9 @@ import {
   AI_ALLOWANCES,
   EARLY_ACCESS_PRICING,
   EARLY_ACCESS_PROMOTION_DURATION_MONTHS,
+  EARLY_ACCESS_PROMOTION_END_DATE,
+  EARLY_ACCESS_PROMOTION_ENDS_AT,
+  LOOMBUS_OFFICIAL_LAUNCH_DATE,
   MASTER_SUBSCRIPTION_ENTITLEMENTS,
   PLAN_RANK,
   SUBSCRIPTION_PLANS,
@@ -46,6 +49,16 @@ type Entitlement = {
 
 type ProfileAccount = {
   is_admin: boolean | null;
+};
+
+type CanonicalSubscriptionStatus = {
+  plan: SubscriptionPlanId;
+  paidPlan: SubscriptionPlanId;
+  active: boolean;
+  isAdmin: boolean;
+  source: "general_subscription" | "legacy_ai_entitlement" | "free";
+  billingProvider: "stripe" | "apple" | null;
+  providers: Array<"stripe" | "apple">;
 };
 
 type PlanDefinition = {
@@ -82,7 +95,7 @@ const plans: PlanDefinition[] = [
     label: SUBSCRIPTION_PLANS.premium.label,
     monthly: `$${EARLY_ACCESS_PRICING.current.premium.monthlyUsd} / month`,
     annual: `$${EARLY_ACCESS_PRICING.current.premium.annualUsd} / year`,
-    futurePrice: `Launch-year promo · future monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.premium}`,
+    futurePrice: `Launch-year promo · standard monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.premium}`,
     positioning: SUBSCRIPTION_PLANS.premium.positioning,
     description:
       "The Loombus intelligence subscription for members who want deeper understanding, stronger search and more control over their knowledge workflow.",
@@ -100,7 +113,7 @@ const plans: PlanDefinition[] = [
     label: SUBSCRIPTION_PLANS.pro.label,
     monthly: `$${EARLY_ACCESS_PRICING.current.pro.monthlyUsd} / month`,
     annual: `$${EARLY_ACCESS_PRICING.current.pro.annualUsd} / year`,
-    futurePrice: `Launch-year promo · future monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.pro}`,
+    futurePrice: `Launch-year promo · standard monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.pro}`,
     positioning: SUBSCRIPTION_PLANS.pro.positioning,
     description:
       "Professional leverage on top of Premium: deeper AI capacity, professional identity, booking infrastructure, discovery and economic tools.",
@@ -120,8 +133,15 @@ const currentPlanRank: Record<CurrentPlan, number> = {
   admin: 3,
 };
 
-function getCurrentPlan(entitlement: Entitlement | null, isAdmin: boolean): CurrentPlan {
-  if (isAdmin || entitlement?.tier === "admin") return "admin";
+function getCurrentPlan(
+  entitlement: Entitlement | null,
+  isAdmin: boolean,
+  canonicalStatus: CanonicalSubscriptionStatus | null
+): CurrentPlan {
+  if (isAdmin || canonicalStatus?.isAdmin || entitlement?.tier === "admin") {
+    return "admin";
+  }
+  if (canonicalStatus) return canonicalStatus.plan;
   return resolvePlanFromEntitlementRow(entitlement);
 }
 
@@ -135,6 +155,21 @@ function getAiUsageLabel(plan: CurrentPlan, entitlement: Entitlement | null) {
   const limit = entitlement?.monthly_summary_limit ?? 0;
   if (limit <= 0) return "No paid AI allowance";
   return `${limit} understanding actions / month`;
+}
+
+function formatPromoCountdown(nowMs: number) {
+  const remainingMs = Date.parse(EARLY_ACCESS_PROMOTION_ENDS_AT) - nowMs;
+
+  if (remainingMs <= 0) {
+    return "Launch-year pricing has ended.";
+  }
+
+  const totalMinutes = Math.floor(remainingMs / 60_000);
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${days}d ${hours}h ${minutes}m remaining`;
 }
 
 function CheckoutStatus() {
@@ -264,6 +299,18 @@ export default function PremiumV3Client() {
   const [signedIn, setSignedIn] = useState(false);
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [canonicalStatus, setCanonicalStatus] =
+    useState<CanonicalSubscriptionStatus | null>(null);
+  const [promoCountdown, setPromoCountdown] = useState(
+    `Ends ${EARLY_ACCESS_PROMOTION_END_DATE}`
+  );
+
+  useEffect(() => {
+    const updateCountdown = () => setPromoCountdown(formatPromoCountdown(Date.now()));
+    updateCountdown();
+    const timer = window.setInterval(updateCountdown, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -282,33 +329,57 @@ export default function PremiumV3Client() {
             setSignedIn(false);
             setEntitlement(null);
             setIsAdmin(false);
+            setCanonicalStatus(null);
           }
           return;
         }
 
-        const [entitlementResult, profileResult] = await Promise.all([
-          supabase
-            .from("user_ai_entitlements")
-            .select("tier, ai_assisted_enabled, monthly_summary_limit, stripe_customer_id")
-            .eq("user_id", user.id)
-            .maybeSingle(),
-          supabase
-            .from("profiles")
-            .select("is_admin")
-            .eq("id", user.id)
-            .maybeSingle(),
-        ]);
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) throw new Error("Missing authenticated billing session.");
 
+        const [subscriptionResponse, entitlementResult, profileResult] =
+          await Promise.all([
+            fetch("/api/billing/subscription-status", {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+              cache: "no-store",
+            }),
+            supabase
+              .from("user_ai_entitlements")
+              .select("tier, ai_assisted_enabled, monthly_summary_limit, stripe_customer_id")
+              .eq("user_id", user.id)
+              .maybeSingle(),
+            supabase
+              .from("profiles")
+              .select("is_admin")
+              .eq("id", user.id)
+              .maybeSingle(),
+          ]);
+
+        if (!subscriptionResponse.ok) {
+          throw new Error("Canonical subscription status could not be verified.");
+        }
         if (entitlementResult.error) throw entitlementResult.error;
         if (profileResult.error) throw profileResult.error;
+
+        const subscriptionStatus =
+          (await subscriptionResponse.json()) as CanonicalSubscriptionStatus;
+
         if (!mounted) return;
 
         setSignedIn(true);
+        setCanonicalStatus(subscriptionStatus);
         setEntitlement((entitlementResult.data ?? null) as Entitlement | null);
         setIsAdmin(Boolean((profileResult.data as ProfileAccount | null)?.is_admin));
       } catch (error) {
         console.error("Unable to load Premium plan state.", error);
         if (mounted) {
+          setCanonicalStatus(null);
           setLoadError("Your current plan could not be verified. Plan information remains available below.");
         }
       } finally {
@@ -323,13 +394,32 @@ export default function PremiumV3Client() {
   }, []);
 
   const currentPlan = useMemo(
-    () => getCurrentPlan(entitlement, isAdmin),
-    [entitlement, isAdmin]
+    () => getCurrentPlan(entitlement, isAdmin, canonicalStatus),
+    [canonicalStatus, entitlement, isAdmin]
   );
   const nativeIos = typeof window !== "undefined" && isIosNativeApp();
   const hasStripeCustomer = Boolean(entitlement?.stripe_customer_id);
-  const canManageBilling = signedIn && (nativeIos || hasStripeCustomer);
+  const hasStripeProvider = canonicalStatus?.providers.includes("stripe") ?? false;
+  const hasAppleProvider = canonicalStatus?.providers.includes("apple") ?? false;
+  const canManageBilling =
+    signedIn &&
+    (nativeIos || hasStripeProvider || hasAppleProvider || hasStripeCustomer);
   const aiUsage = getAiUsageLabel(currentPlan, entitlement);
+  const billingLabel = loading
+    ? "Checking"
+    : !signedIn
+      ? "Sign in required"
+      : hasAppleProvider && hasStripeProvider
+        ? "Apple + Stripe"
+        : hasAppleProvider
+          ? "Apple subscription"
+          : hasStripeProvider || hasStripeCustomer
+            ? "Stripe portal available"
+            : nativeIos
+              ? "Apple subscriptions"
+              : currentPlan === "free"
+                ? "No paid subscription"
+                : "Billing source unavailable";
 
   return (
     <main className="premium-v2-page">
@@ -353,9 +443,12 @@ export default function PremiumV3Client() {
         <section className="premium-v3-promo" aria-label="Launch-year pricing">
           <Sparkles aria-hidden="true" />
           <div>
-            <strong>Launch-year pricing is active.</strong>
+            <strong>Launch-year pricing is active. {promoCountdown}</strong>
             <span>
-              Premium is $7/month or $70/year and Premium Pro is $12/month or $120/year for the first {EARLY_ACCESS_PROMOTION_DURATION_MONTHS} months after the official Loombus launch. Standard monthly targets are $12 and $19. Exact calendar dates will be set when the official launch date is finalized.
+              Loombus officially launched June 15, 2026. Premium is $7/month or $70/year and Premium Pro is $12/month or $120/year for the first {EARLY_ACCESS_PROMOTION_DURATION_MONTHS} months. This pricing ends June 14, 2027 at 11:59 PM ET; standard pricing begins June 15, 2027. Standard monthly targets are $12 and $19. Join before the launch-year window closes.
+            </span>
+            <span className="premium-v2-standard">
+              Official launch: {LOOMBUS_OFFICIAL_LAUNCH_DATE} · Standard-pricing start: {EARLY_ACCESS_PROMOTION_END_DATE}
             </span>
           </div>
         </section>
@@ -365,7 +458,7 @@ export default function PremiumV3Client() {
           <div className="premium-v2-account-copy">
             <p className="premium-v2-eyebrow">Your account</p>
             {loading ? (
-              <><h2>Checking current plan…</h2><p>Loombus is reading the current entitlement record.</p></>
+              <><h2>Checking current plan…</h2><p>Loombus is reading the verified subscription state.</p></>
             ) : !signedIn ? (
               <><h2>Sign in to see your current plan.</h2><p>Plan comparison is public. Sign in before purchase or billing management.</p></>
             ) : (
@@ -375,7 +468,7 @@ export default function PremiumV3Client() {
           <div className="premium-v2-account-facts">
             <div><span>Plan</span><strong>{loading ? "Checking" : signedIn ? getPlanLabel(currentPlan) : "Not signed in"}</strong></div>
             <div><span>AI access</span><strong>{loading ? "Checking" : signedIn ? aiUsage : "Sign in required"}</strong></div>
-            <div><span>Billing</span><strong>{loading ? "Checking" : !signedIn ? "Sign in required" : canManageBilling ? nativeIos ? "Apple subscriptions" : "Stripe portal available" : currentPlan === "free" ? "No paid subscription" : "Billing source unavailable"}</strong></div>
+            <div><span>Billing</span><strong>{billingLabel}</strong></div>
           </div>
           <div className="premium-v2-account-actions">
             {!signedIn && !loading ? (

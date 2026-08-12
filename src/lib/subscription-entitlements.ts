@@ -49,17 +49,22 @@ export const SUBSCRIPTION_PLANS = {
 }>;
 
 /**
- * Launch-year pricing applies for the first 12 months after the official
- * Loombus launch. The exact calendar dates remain product configuration until
- * the official launch date is finalized. Stripe/App Store product identifiers
- * remain unchanged during this phase.
+ * Loombus officially launched June 15, 2026. Launch-year pricing runs for the
+ * first 12 months and ends when June 15, 2027 begins in the launch market.
+ * Stripe/App Store product identifiers remain unchanged until the billing
+ * price transition is deliberately activated.
  */
+export const LOOMBUS_OFFICIAL_LAUNCH_DATE = "2026-06-15" as const;
 export const EARLY_ACCESS_PROMOTION_DURATION_MONTHS = 12 as const;
+export const EARLY_ACCESS_PROMOTION_END_DATE = "2027-06-15" as const;
+export const EARLY_ACCESS_PROMOTION_ENDS_AT = "2027-06-15T04:00:00.000Z" as const;
 
 export const EARLY_ACCESS_PRICING = {
   active: true,
-  transitionMode: "manual" as const,
-  endsAt: null as string | null,
+  transitionMode: "scheduled" as const,
+  startsOn: LOOMBUS_OFFICIAL_LAUNCH_DATE,
+  endsOn: EARLY_ACCESS_PROMOTION_END_DATE,
+  endsAt: EARLY_ACCESS_PROMOTION_ENDS_AT,
   current: {
     premium: { monthlyUsd: 7, annualUsd: 70 },
     pro: { monthlyUsd: 12, annualUsd: 120 },
@@ -70,10 +75,14 @@ export const EARLY_ACCESS_PRICING = {
   },
 } as const;
 
+export function isLaunchYearPricingActive(now = new Date()) {
+  return now.getTime() < Date.parse(EARLY_ACCESS_PROMOTION_ENDS_AT);
+}
+
 /**
- * These are the AI limits currently provisioned by the billing activation
- * path. Keeping them here prevents public plan copy and plan detection from
- * drifting apart.
+ * These are monthly per-action AI limits used by the billing activation path.
+ * They deliberately remain separate buckets rather than pretending Loombus
+ * already has one shared generic-credit ledger.
  */
 export const AI_ALLOWANCES = {
   free: {
@@ -83,16 +92,16 @@ export const AI_ALLOWANCES = {
     discovery: 0,
   },
   premium: {
-    understanding: 50,
-    writing: 25,
-    research: 10,
-    discovery: 25,
-  },
-  pro: {
     understanding: 150,
     writing: 75,
     research: 30,
     discovery: 75,
+  },
+  pro: {
+    understanding: 300,
+    writing: 150,
+    research: 60,
+    discovery: 150,
   },
 } as const;
 
@@ -103,9 +112,12 @@ export type VideoContextLimit = {
 };
 
 /**
- * Video Context has two independent quota boundaries: upload count and
- * processed minutes. Both must be enforced so a plan cannot exceed its
- * intended monthly processing allowance through longer uploads.
+ * Video Context quota boundaries are intentionally independent: upload count,
+ * per-video duration, and cumulative processed minutes. Free's concrete
+ * 3-video / 5-minute / 15-minute ceiling is the implementation of the public
+ * "Trial only / Short preview / Limited trial" language. Higher upload counts
+ * let paid members use more short videos without silently multiplying the
+ * more expensive processed-minute allowance.
  */
 export const VIDEO_CONTEXT_LIMITS = {
   free: {
@@ -114,12 +126,12 @@ export const VIDEO_CONTEXT_LIMITS = {
     totalMinutesPerMonth: 15,
   },
   premium: {
-    uploadsPerMonth: 10,
+    uploadsPerMonth: 25,
     maxMinutesPerUpload: 15,
     totalMinutesPerMonth: 150,
   },
   pro: {
-    uploadsPerMonth: 30,
+    uploadsPerMonth: 50,
     maxMinutesPerUpload: 30,
     totalMinutesPerMonth: 900,
   },
@@ -127,11 +139,6 @@ export const VIDEO_CONTEXT_LIMITS = {
 
 export function getVideoContextLimit(plan: SubscriptionPlanId): VideoContextLimit {
   return VIDEO_CONTEXT_LIMITS[plan];
-}
-
-function formatVideoContextLimit(plan: SubscriptionPlanId): string {
-  const limits = VIDEO_CONTEXT_LIMITS[plan];
-  return `${limits.uploadsPerMonth} uploads/mo · ${limits.maxMinutesPerUpload} min max/upload · ${limits.totalMinutesPerMonth} min/mo total`;
 }
 
 /**
@@ -337,7 +344,14 @@ export const MASTER_SUBSCRIPTION_ENTITLEMENTS: MasterEntitlementGroup[] = [
       { capability: "AI clarity rewrite", free: false, premium: true, pro: true },
       { capability: "AI-powered search", free: false, premium: true, pro: true },
       { capability: "Knowledge Graph-assisted AI", free: false, premium: false, pro: true },
-      { capability: "Video Context", free: formatVideoContextLimit("free"), premium: formatVideoContextLimit("premium"), pro: formatVideoContextLimit("pro") },
+    ],
+  },
+  {
+    label: "AI Video Context",
+    rows: [
+      { capability: "AI video analysis", free: "Trial only", premium: `${VIDEO_CONTEXT_LIMITS.premium.uploadsPerMonth} videos/mo`, pro: `${VIDEO_CONTEXT_LIMITS.pro.uploadsPerMonth} videos/mo` },
+      { capability: "Maximum video analyzed", free: "Short preview", premium: `${VIDEO_CONTEXT_LIMITS.premium.maxMinutesPerUpload} min/video`, pro: `${VIDEO_CONTEXT_LIMITS.pro.maxMinutesPerUpload} min/video` },
+      { capability: "AI video allowance", free: "Limited trial", premium: `Up to ${VIDEO_CONTEXT_LIMITS.premium.totalMinutesPerMonth} min/mo`, pro: `Up to ${VIDEO_CONTEXT_LIMITS.pro.totalMinutesPerMonth} min/mo` },
     ],
   },
   {
@@ -382,9 +396,9 @@ export const MASTER_SUBSCRIPTION_ENTITLEMENTS: MasterEntitlementGroup[] = [
     label: "Trust & professional discovery",
     rows: [
       { capability: "Expert verification", free: false, premium: false, pro: "Eligible to apply" },
-      { capability: "Verified expert badge", free: false, premium: false, pro: "After independent approval" },
-      { capability: "Verified expert surfacing", free: false, premium: false, pro: "After independent approval" },
-      { capability: "Service-request matching", free: false, premium: false, pro: "Relevance / eligibility based" },
+      { capability: "Verified expert badge", free: false, premium: false, pro: "Only after independent approval" },
+      { capability: "Verified expert surfacing", free: false, premium: false, pro: "Enhanced after verification" },
+      { capability: "Service-request matching", free: false, premium: false, pro: "Based on relevance / eligibility" },
       { capability: "Professional discovery", free: false, premium: false, pro: true },
       { capability: "Pay-to-rank in search", free: "Never", premium: "Never", pro: "Never" },
     ],
@@ -394,7 +408,7 @@ export const MASTER_SUBSCRIPTION_ENTITLEMENTS: MasterEntitlementGroup[] = [
     rows: [
       { capability: "Offer services", free: true, premium: true, pro: true },
       { capability: "Respond to service requests", free: true, premium: true, pro: true },
-      { capability: "Service transaction fee", free: "Standard", premium: "Standard", pro: "Reduced" },
+      { capability: "Reduced service transaction fee", free: false, premium: false, pro: true },
       { capability: "Professional booking workflow", free: false, premium: false, pro: true },
       { capability: "Service analytics", free: false, premium: false, pro: true },
     ],

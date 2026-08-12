@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
+import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
 import { logAuditEvent } from "@/lib/audit-log";
 import {
   getAttachmentKindForMimeType,
-  getVideoContextLimitsForEntitlement,
+  getVideoContextLimitsForPlan,
   MAX_DISCUSSION_ATTACHMENTS,
   NON_VIDEO_ATTACHMENT_MAX_SIZE_BYTES,
   NON_VIDEO_ATTACHMENT_MIME_TYPES,
@@ -31,12 +32,6 @@ type DiscussionAccess = {
   id: string;
   user_id: string;
   deleted_at: string | null;
-};
-
-type AiEntitlement = {
-  tier: string | null;
-  ai_assisted_enabled: boolean | null;
-  monthly_summary_limit: number | null;
 };
 
 type AttachmentRow = {
@@ -131,7 +126,7 @@ async function getAuthenticatedUser(request: NextRequest) {
   const token = authHeader.replace("Bearer ", "").trim();
 
   if (!token) {
-    return { user: null, token: null, error: "Unauthorized." };
+    return { user: null, token, error: "Unauthorized." };
   }
 
   const authSupabase = getSupabaseAuthClient(token);
@@ -214,7 +209,6 @@ export async function POST(request: NextRequest) {
       { data: profile },
       { data: discussion },
       { data: existingAttachments },
-      { data: entitlement },
     ] = await Promise.all([
       supabase
         .from("profiles")
@@ -230,11 +224,6 @@ export async function POST(request: NextRequest) {
         .from("discussion_attachments")
         .select("id, attachment_kind")
         .eq("discussion_id", discussionId),
-      supabase
-        .from("user_ai_entitlements")
-        .select("tier, ai_assisted_enabled, monthly_summary_limit")
-        .eq("user_id", user.id)
-        .maybeSingle(),
     ]);
 
     const profileAccess = (profile ?? null) as ProfileAccess | null;
@@ -273,10 +262,7 @@ export async function POST(request: NextRequest) {
     }
 
     let normalizedVideoDurationSeconds: number | null = null;
-    const videoContextLimits = getVideoContextLimitsForEntitlement(
-      (entitlement ?? null) as AiEntitlement | null,
-      isAdmin
-    );
+    let videoContextLimits: ReturnType<typeof getVideoContextLimitsForPlan> | null = null;
 
     if (attachmentKind === "video") {
       const existingVideoCount = attachmentRows.filter(
@@ -286,6 +272,12 @@ export async function POST(request: NextRequest) {
       if (existingVideoCount >= 1) {
         return jsonError("A discussion can have only one Video Context.", 400);
       }
+
+      const resolvedSubscription = await getResolvedGeneralSubscriptionForUser(user.id);
+      videoContextLimits = getVideoContextLimitsForPlan(
+        resolvedSubscription.plan,
+        isAdmin
+      );
 
       if (
         !Number.isFinite(videoDurationSeconds) ||
@@ -361,7 +353,11 @@ export async function POST(request: NextRequest) {
       return jsonError(insertError.message || "Unable to save attachment.", 400);
     }
 
-    if (attachmentKind === "video" && normalizedVideoDurationSeconds) {
+    if (
+      attachmentKind === "video" &&
+      normalizedVideoDurationSeconds &&
+      videoContextLimits
+    ) {
       const { error: usageInsertError } = await supabase
         .from("discussion_video_upload_events")
         .insert({
