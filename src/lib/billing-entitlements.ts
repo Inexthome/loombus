@@ -234,6 +234,29 @@ async function upsertGeneralSubscription({
   if (error) {
     throw new Error(`Unable to sync general subscription state: ${error.message}`);
   }
+
+  // Once a real billing provider has identified the member's subscription,
+  // historic migration-only access must stop participating in entitlement
+  // resolution. This prevents a legacy row from preserving paid access after
+  // the real Stripe or Apple subscription later expires or is canceled.
+  const { error: legacySupersedeError } = await (
+    supabase.from("user_general_subscriptions") as any
+  )
+    .update({
+      status: "superseded",
+      cancel_at_period_end: false,
+      last_verified_at: updatedAt,
+      updated_at: updatedAt,
+    })
+    .eq("user_id", userId)
+    .eq("provider", "legacy")
+    .neq("status", "superseded");
+
+  if (legacySupersedeError) {
+    throw new Error(
+      `Unable to retire legacy subscription state: ${legacySupersedeError.message}`
+    );
+  }
 }
 
 async function getEffectivePaidPlanForUser(
@@ -252,9 +275,14 @@ async function getEffectivePaidPlanForUser(
     throw new Error(`Unable to resolve effective subscription state: ${error.message}`);
   }
 
-  const activeRows = ((data ?? []) as GeneralSubscriptionRow[]).filter(
-    isGeneralSubscriptionActive
+  const rows = (data ?? []) as GeneralSubscriptionRow[];
+  const hasProviderSubscription = rows.some(
+    (row) => row.provider === "stripe" || row.provider === "apple"
   );
+  const eligibleRows = hasProviderSubscription
+    ? rows.filter((row) => row.provider !== "legacy")
+    : rows;
+  const activeRows = eligibleRows.filter(isGeneralSubscriptionActive);
   if (activeRows.length === 0) return "free";
 
   return activeRows.reduce<SubscriptionPlanId>((highest, row) => {
