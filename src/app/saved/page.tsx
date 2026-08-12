@@ -31,6 +31,14 @@ function downloadFile(filename: string, content: string, type: string) {
 function excerpt(value: string) {
   return normalizePublicText(value).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 export default function SavedPage() {
   const [saved, setSaved] = useState<SavedItem[]>([]);
@@ -50,6 +58,7 @@ export default function SavedPage() {
   const isAdmin = Boolean(subscriptionStatus?.isAdmin);
   const unlimitedOrganization = isAdmin || evaluateSubscriptionEntitlement(plan, "unlimited_organization").allowed;
   const canExport = isAdmin || evaluateSubscriptionEntitlement(plan, "saved_discussion_export").allowed;
+  const canAdvancedExport = isAdmin || evaluateSubscriptionEntitlement(plan, "advanced_export_formats").allowed;
   const privateNoteCount = useMemo(() => saved.filter((item) => Boolean(item.private_note?.trim())).length, [saved]);
   const folderLimit = ORGANIZATION_LIMITS.free.folders;
   const noteLimit = ORGANIZATION_LIMITS.free.privateNotes;
@@ -166,12 +175,52 @@ export default function SavedPage() {
     setBusyId(null);
   }
   function exportLibrary(format: "markdown" | "json") {
-    if (!canExport) return setMessage("Saved-discussion export requires Premium access.");
+    if (!canExport) return setMessage("Saved-discussion export is unavailable for this plan.");
     const items = saved.filter((item) => item.discussions).map((item) => ({ title: item.discussions!.title, topic: item.discussions!.topic, folder: item.collection_id ? folderNames[item.collection_id] : "Unfiled", note: noteDrafts[item.id] ?? "", url: `${window.location.origin}/discussions/${item.discussions!.id}` }));
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
     if (format === "json") downloadFile(`loombus-saved-${stamp}.json`, JSON.stringify({ exported_at: new Date().toISOString(), items }, null, 2), "application/json");
     else downloadFile(`loombus-saved-${stamp}.md`, ["# Loombus Saved Library", "", ...items.flatMap((item, index) => [`## ${index + 1}. ${item.title}`, "", `- Topic: ${item.topic ?? "Other"}`, `- Folder: ${item.folder}`, `- URL: ${item.url}`, "", item.note ? `Private note: ${item.note}` : "_No private note._", "", "---", ""])].join("\n"), "text/markdown");
     setMessage(`Saved library exported as ${format === "json" ? "JSON" : "Markdown"}.`);
+  }
+  function exportHtmlReport() {
+    if (!canAdvancedExport) return setMessage("Advanced export formats require Premium Pro.");
+    const exportedAt = new Date();
+    const items = saved.filter((item) => item.discussions).map((item) => {
+      const discussion = item.discussions!;
+      return {
+        title: normalizePublicText(discussion.title),
+        topic: discussion.topic ?? "Other",
+        realityLens: discussion.reality_lens ?? "",
+        purposeLane: discussion.purpose_lane ?? "",
+        folder: item.collection_id ? folderNames[item.collection_id] ?? "Folder" : "Unfiled",
+        note: noteDrafts[item.id] ?? "",
+        excerpt: excerpt(discussion.body),
+        savedAt: new Date(item.created_at).toLocaleDateString(),
+        url: `${window.location.origin}/discussions/${discussion.id}`,
+      };
+    });
+    const withNotes = items.filter((item) => item.note.trim()).length;
+    const folderTotal = new Set(items.map((item) => item.folder)).size;
+    const cards = items.map((item, index) => {
+      const metadata = [item.topic, item.realityLens, item.purposeLane].filter(Boolean).map((value) => `<span>${escapeHtml(value)}</span>`).join("");
+      return `<article class="card"><div class="eyebrow">${escapeHtml(item.folder)} · Saved ${escapeHtml(item.savedAt)}</div><h2>${index + 1}. ${escapeHtml(item.title)}</h2><div class="meta">${metadata}</div>${item.excerpt ? `<p class="excerpt">${escapeHtml(item.excerpt)}</p>` : ""}<div class="note"><strong>Private note</strong><p>${item.note.trim() ? escapeHtml(item.note) : "No private note."}</p></div><a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Open discussion</a></article>`;
+    }).join("");
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>Loombus Saved Library</title>
+<style>
+:root{color-scheme:light dark;--gold:#CBAB5B;--cream:#FEFBEC;--ink:#171717;--muted:#666;--surface:#fff;--border:#e5e1d4;--note:#f8f4e8}*{box-sizing:border-box}body{margin:0;background:#f6f4ef;color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:980px;margin:0 auto;padding:48px 24px 72px}.brand{color:var(--gold);font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}h1{font-size:40px;line-height:1.1;margin:8px 0 12px}.sub{color:var(--muted);margin:0}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:28px 0}.stat,.card{background:var(--surface);border:1px solid var(--border);border-radius:18px}.stat{padding:18px}.stat strong{display:block;font-size:26px}.stat span{color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase}.card{padding:24px;margin:16px 0;break-inside:avoid}.eyebrow{color:var(--gold);font-size:12px;font-weight:800;text-transform:uppercase}.card h2{margin:8px 0 10px;font-size:22px;line-height:1.25}.meta{display:flex;flex-wrap:wrap;gap:8px}.meta span{border:1px solid var(--border);border-radius:999px;padding:4px 9px;font-size:12px}.excerpt{color:var(--muted)}.note{background:var(--note);border-radius:12px;padding:14px 16px;margin:16px 0}.note p{margin:6px 0 0;white-space:pre-wrap}.card a{color:var(--gold);font-weight:800;text-decoration:none}.footer{color:var(--muted);font-size:12px;margin-top:28px}@media(max-width:620px){h1{font-size:32px}.summary{grid-template-columns:1fr}}@media(prefers-color-scheme:dark){:root{--ink:#f5f1e6;--muted:#b7b1a5;--surface:#171717;--border:#34312b;--note:#211f1a}body{background:#0d0d0d}}@media print{body{background:#fff}.wrap{max-width:none;padding:20px}.card,.stat{box-shadow:none}.card a{color:#7d6528}}
+</style>
+</head>
+<body><main class="wrap"><div class="brand">Loombus · Signal over noise</div><h1>Saved Library</h1><p class="sub">Premium Pro HTML report · Exported ${escapeHtml(exportedAt.toLocaleString())}</p><section class="summary"><div class="stat"><strong>${items.length}</strong><span>Saved discussions</span></div><div class="stat"><strong>${folderTotal}</strong><span>Folders represented</span></div><div class="stat"><strong>${withNotes}</strong><span>Private notes</span></div></section>${cards || '<article class="card"><h2>No saved discussions</h2><p class="sub">This library was empty when the report was exported.</p></article>'}<p class="footer">Generated locally from your Loombus Saved library. Private notes are included in this file.</p></main></body>
+</html>`;
+    const stamp = exportedAt.toISOString().replace(/[:.]/g, "-");
+    downloadFile(`loombus-saved-report-${stamp}.html`, html, "text/html;charset=utf-8");
+    setMessage("Saved library exported as a Premium Pro HTML report.");
   }
 
   if (loading) return <LoombusLoadingScreen title="Loading Saved..." message="Preparing your signal library." />;
@@ -213,7 +262,7 @@ export default function SavedPage() {
 
         <aside className="space-y-4">
           <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><h2 className="flex items-center gap-2 font-black"><Sparkles className="h-5 w-5 text-[var(--loombus-gold)]" />Strongest topics</h2><div className="mt-4 space-y-3">{topics.map(([topic, count], index) => <button key={topic} onClick={() => setQuery(topic)} className="flex w-full items-center gap-3 text-left text-sm"><strong className="w-5 text-[var(--loombus-gold)]">{index + 1}</strong><span className="min-w-0 flex-1 truncate font-bold">{topic}</span><span className="text-xs text-[var(--loombus-text-subtle)]">{count}</span></button>)}</div></section>
-          {canExport ? <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><h2 className="flex items-center gap-2 font-black"><Download className="h-5 w-5 text-[var(--loombus-gold)]" />Export library</h2><p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">Download saved discussions, folders, links, and private notes.</p><div className="mt-4 grid gap-2"><button onClick={() => exportLibrary("markdown")} className="rounded-2xl bg-[var(--loombus-gold)] px-4 py-3 text-sm font-black text-[var(--loombus-gold-contrast)]">Export Markdown</button><button onClick={() => exportLibrary("json")} className="rounded-2xl border border-[var(--loombus-border)] px-4 py-3 text-sm font-black">Export JSON</button></div></section> : <Link href="/premium" className="block rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><Download className="h-6 w-6 text-[var(--loombus-gold)]" /><h2 className="mt-4 font-black">Premium export</h2><p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">Upgrade to export your saved discussions in standard formats.</p><ChevronRight className="mt-3 h-4 w-4 text-[var(--loombus-gold)]" /></Link>}
+          {canExport ? <section className="rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><h2 className="flex items-center gap-2 font-black"><Download className="h-5 w-5 text-[var(--loombus-gold)]" />Export library</h2><p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">Download saved discussions, folders, links, and private notes.</p><div className="mt-4 grid gap-2"><button onClick={() => exportLibrary("markdown")} className="rounded-2xl bg-[var(--loombus-gold)] px-4 py-3 text-sm font-black text-[var(--loombus-gold-contrast)]">Export Markdown</button><button onClick={() => exportLibrary("json")} className="rounded-2xl border border-[var(--loombus-border)] px-4 py-3 text-sm font-black">Export JSON</button></div><div className="mt-5 border-t border-[var(--loombus-border-muted)] pt-4"><div className="flex items-center justify-between gap-2"><p className="text-xs font-black uppercase tracking-[.16em] text-[var(--loombus-text-subtle)]">Advanced format</p><span className="rounded-full bg-[var(--loombus-gold-surface)] px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-[var(--loombus-gold)]">Premium Pro</span></div><p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">Create a styled, self-contained HTML report with excerpts and Saved metadata.</p>{canAdvancedExport ? <button onClick={exportHtmlReport} className="mt-3 w-full rounded-2xl border border-[var(--loombus-gold)] px-4 py-3 text-sm font-black text-[var(--loombus-gold)]">Export HTML report</button> : <Link href="/premium" className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--loombus-border)] px-4 py-3 text-sm font-black">Unlock HTML report <ChevronRight className="h-4 w-4 text-[var(--loombus-gold)]" /></Link>}</div></section> : <Link href="/premium" className="block rounded-3xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><Download className="h-6 w-6 text-[var(--loombus-gold)]" /><h2 className="mt-4 font-black">Export unavailable</h2><p className="mt-2 text-sm leading-6 text-[var(--loombus-text-muted)]">This plan does not include Saved-discussion export.</p><ChevronRight className="mt-3 h-4 w-4 text-[var(--loombus-gold)]" /></Link>}
         </aside>
       </section>
     </div>
