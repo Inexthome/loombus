@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
 import {
   evaluateSubscriptionEntitlement,
-  resolvePlanFromEntitlementRow,
+  type SubscriptionPlanId,
 } from "@/lib/subscription-entitlements";
-
-type EntitlementRow = {
-  tier: string | null;
-  ai_assisted_enabled: boolean | null;
-  monthly_summary_limit: number | null;
-};
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -37,17 +32,14 @@ function getSupabaseForRequest(request: NextRequest) {
 }
 
 function hasPremiumTopicAlertAccess(
-  entitlement: EntitlementRow | null,
+  plan: SubscriptionPlanId,
   isAdmin: boolean
 ) {
   if (isAdmin) {
     return true;
   }
 
-  return evaluateSubscriptionEntitlement(
-    resolvePlanFromEntitlementRow(entitlement),
-    "advanced_alerts"
-  ).allowed;
+  return evaluateSubscriptionEntitlement(plan, "advanced_alerts").allowed;
 }
 
 function normalizeRequestedTopics(value: unknown) {
@@ -76,23 +68,19 @@ async function getCurrentUserContext(supabase: any) {
     return {
       user: null,
       isAdmin: false,
-      entitlement: null as EntitlementRow | null,
+      plan: "free" as SubscriptionPlanId,
     };
   }
 
-  const [{ data: profile }, { data: entitlement }] = await Promise.all([
+  const [{ data: profile }, subscription] = await Promise.all([
     supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle(),
-    supabase
-      .from("user_ai_entitlements")
-      .select("tier, ai_assisted_enabled, monthly_summary_limit")
-      .eq("user_id", user.id)
-      .maybeSingle(),
+    getResolvedGeneralSubscriptionForUser(user.id),
   ]);
 
   return {
     user,
     isAdmin: Boolean((profile as { is_admin?: boolean | null } | null)?.is_admin),
-    entitlement: (entitlement ?? null) as EntitlementRow | null,
+    plan: subscription.plan,
   };
 }
 
@@ -105,13 +93,20 @@ export async function GET(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const { user, isAdmin, entitlement } = await getCurrentUserContext(supabase);
+  let context;
+  try {
+    context = await getCurrentUserContext(supabase);
+  } catch {
+    return jsonError("Unable to resolve subscription access.", 503);
+  }
+
+  const { user, isAdmin, plan } = context;
 
   if (!user) {
     return jsonError("Unauthorized.", 401);
   }
 
-  const canUseTopicAlerts = hasPremiumTopicAlertAccess(entitlement, isAdmin);
+  const canUseTopicAlerts = hasPremiumTopicAlertAccess(plan, isAdmin);
 
   const { data, error } = await supabase
     .from("user_topic_alerts")
@@ -142,13 +137,20 @@ export async function POST(request: NextRequest) {
     return jsonError("Server configuration error.", 500);
   }
 
-  const { user, isAdmin, entitlement } = await getCurrentUserContext(supabase);
+  let context;
+  try {
+    context = await getCurrentUserContext(supabase);
+  } catch {
+    return jsonError("Unable to resolve subscription access.", 503);
+  }
+
+  const { user, isAdmin, plan } = context;
 
   if (!user) {
     return jsonError("Unauthorized.", 401);
   }
 
-  if (!hasPremiumTopicAlertAccess(entitlement, isAdmin)) {
+  if (!hasPremiumTopicAlertAccess(plan, isAdmin)) {
     return jsonError("Topic alerts require Premium access.", 403);
   }
 
