@@ -257,6 +257,36 @@ async function upsertGeneralSubscription({
       `Unable to retire legacy subscription state: ${legacySupersedeError.message}`
     );
   }
+
+  // Before server verification existed, Apple purchases were stored in the
+  // legacy Stripe-shaped columns using the client transaction id. A renewal
+  // transaction id is not guaranteed to equal Apple's stable
+  // originalTransactionId. Once Apple gives us the authoritative subscription
+  // identity, retire any other Apple compatibility rows for this account so a
+  // stale historic row cannot keep Premium active after the real subscription
+  // expires. Stripe rows are intentionally untouched because cross-provider
+  // overlap can be legitimate during a billing-method transition.
+  if (neutral.provider === "apple") {
+    const { error: appleSupersedeError } = await (
+      supabase.from("user_general_subscriptions") as any
+    )
+      .update({
+        status: "superseded",
+        cancel_at_period_end: false,
+        last_verified_at: updatedAt,
+        updated_at: updatedAt,
+      })
+      .eq("user_id", userId)
+      .eq("provider", "apple")
+      .neq("provider_subscription_id", neutral.providerSubscriptionId)
+      .neq("status", "superseded");
+
+    if (appleSupersedeError) {
+      throw new Error(
+        `Unable to reconcile historic Apple subscription state: ${appleSupersedeError.message}`
+      );
+    }
+  }
 }
 
 async function getEffectivePaidPlanForUser(
