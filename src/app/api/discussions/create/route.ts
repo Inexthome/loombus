@@ -9,6 +9,8 @@ import { logAuditEvent } from "@/lib/audit-log";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
 import { reviewLoombusSafety } from "@/lib/moderation/safety-policy";
 import { createNotifications } from "@/lib/notifications";
+import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
+import { evaluateSubscriptionEntitlement } from "@/lib/subscription-entitlements";
 import { validatePublicProfileCompletion } from "@/lib/profile-completion";
 import { normalizePublicText } from "@/lib/public-text";
 import {
@@ -107,10 +109,54 @@ async function createTopicAlertNotifications({
     return;
   }
 
+  const { data: alertProfiles, error: alertProfileError } = await supabase
+    .from("profiles")
+    .select("id, is_admin")
+    .in("id", candidateUserIds);
+
+  if (alertProfileError) {
+    console.error("Topic alert admin lookup failed:", alertProfileError.message);
+  }
+
+  const adminUserIds = new Set(
+    ((alertProfiles ?? []) as { id: string; is_admin: boolean | null }[])
+      .filter((profile) => profile.is_admin === true)
+      .map((profile) => profile.id)
+  );
+
+  const eligibleUserIds = (
+    await Promise.all(
+      candidateUserIds.map(async (userId) => {
+        try {
+          const subscription = await getResolvedGeneralSubscriptionForUser(userId);
+          const hasAccess =
+            adminUserIds.has(userId) ||
+            subscription.isAdminOverride ||
+            evaluateSubscriptionEntitlement(
+              subscription.plan,
+              "advanced_alerts"
+            ).allowed;
+
+          return hasAccess ? userId : null;
+        } catch (error) {
+          console.error("Topic alert subscription resolution failed:", {
+            userId,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return null;
+        }
+      })
+    )
+  ).filter((userId): userId is string => Boolean(userId));
+
+  if (eligibleUserIds.length === 0) {
+    return;
+  }
+
   const { data: blockRows } = await supabase
     .from("user_blocks")
     .select("blocker_id, blocked_id")
-    .or(`and(blocker_id.eq.${authorId},blocked_id.in.(${candidateUserIds.join(",")})),and(blocked_id.eq.${authorId},blocker_id.in.(${candidateUserIds.join(",")}))`);
+    .or(`and(blocker_id.eq.${authorId},blocked_id.in.(${eligibleUserIds.join(",")})),and(blocked_id.eq.${authorId},blocker_id.in.(${eligibleUserIds.join(",")}))`);
 
   const hiddenUserIds = new Set<string>();
 
@@ -124,7 +170,7 @@ async function createTopicAlertNotifications({
     }
   }
 
-  const notifications = candidateUserIds
+  const notifications = eligibleUserIds
     .filter((userId) => !hiddenUserIds.has(userId))
     .map((userId) => ({
       user_id: userId,
