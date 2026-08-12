@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
+import {
+  getBookmarkMutationSupabase,
+  hasUnlimitedOrganization,
+} from "@/lib/bookmark-mutation-server";
+import { ORGANIZATION_LIMITS } from "@/lib/organization-limits";
 
 function getSupabaseForRequest(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -23,8 +28,16 @@ function getSupabaseForRequest(request: NextRequest) {
   });
 }
 
-function jsonError(message: string, status: number, code?: string) {
-  return NextResponse.json(code ? { error: message, code } : { error: message }, { status });
+function jsonError(
+  message: string,
+  status: number,
+  code?: string,
+  extras: Record<string, unknown> = {}
+) {
+  return NextResponse.json(
+    code ? { error: message, code, ...extras } : { error: message, ...extras },
+    { status }
+  );
 }
 
 function isValidUuid(value: unknown): value is string {
@@ -62,7 +75,57 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid discussion id.", 400);
   }
 
-  const { data: bookmark, error } = await supabase
+  let service;
+  try {
+    service = getBookmarkMutationSupabase();
+  } catch {
+    return jsonError("Server configuration error.", 500);
+  }
+
+  const { data: existingBookmark, error: existingError } = await service
+    .from("bookmarks")
+    .select("id")
+    .eq("user_id", accountAccess.user.id)
+    .eq("discussion_id", discussionId)
+    .maybeSingle();
+
+  if (existingError) {
+    return jsonError("Unable to verify saved discussion.", 400);
+  }
+
+  if (existingBookmark) {
+    return NextResponse.json({ bookmark: existingBookmark, existing: true });
+  }
+
+  let unlimitedOrganization = false;
+  try {
+    unlimitedOrganization = await hasUnlimitedOrganization(accountAccess.user.id);
+  } catch {
+    return jsonError("Unable to verify Saved access.", 503);
+  }
+
+  if (!unlimitedOrganization) {
+    const { count, error: countError } = await service
+      .from("bookmarks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", accountAccess.user.id);
+
+    if (countError) {
+      return jsonError("Unable to verify Saved usage.", 400);
+    }
+
+    const limit = ORGANIZATION_LIMITS.free.saves;
+    if ((count ?? 0) >= limit) {
+      return jsonError(
+        `Free Saved is limited to ${limit} discussions. Upgrade to Premium for unlimited saves.`,
+        403,
+        "organization_limit_reached",
+        { limit }
+      );
+    }
+  }
+
+  const { data: bookmark, error } = await service
     .from("bookmarks")
     .insert({
       user_id: accountAccess.user.id,
@@ -101,7 +164,14 @@ export async function DELETE(request: NextRequest) {
   const bookmarkId = body?.bookmarkId;
   const discussionId = body?.discussionId;
 
-  let query = supabase
+  let service;
+  try {
+    service = getBookmarkMutationSupabase();
+  } catch {
+    return jsonError("Server configuration error.", 500);
+  }
+
+  let query = service
     .from("bookmarks")
     .delete()
     .eq("user_id", accountAccess.user.id);
