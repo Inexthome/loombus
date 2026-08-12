@@ -47,25 +47,24 @@ export async function PATCH(request: NextRequest) {
   if (ownershipError) return jsonError("Unable to verify the saved discussion.", 400);
   if (!ownedBookmark) return jsonError("Saved discussion not found.", 404);
 
+  let unlimitedOrganization = false;
+  try { unlimitedOrganization = await hasUnlimitedOrganization(accountAccess.user.id); }
+  catch { return jsonError("Unable to verify private-note access.", 503); }
+
   let service;
-  try { service = getBookmarkMutationSupabase(); } catch { return jsonError("Server configuration error.", 500); }
+  try { service = getBookmarkMutationSupabase(unlimitedOrganization); }
+  catch { return jsonError("Server configuration error.", 500); }
 
   const isCreatingNote = Boolean(note) && !Boolean(ownedBookmark.private_note?.trim());
-  if (isCreatingNote) {
-    let unlimitedOrganization = false;
-    try { unlimitedOrganization = await hasUnlimitedOrganization(accountAccess.user.id); }
-    catch { return jsonError("Unable to verify private-note access.", 503); }
-
-    if (!unlimitedOrganization) {
-      const { count, error: countError } = await service
-        .from("bookmarks")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", accountAccess.user.id)
-        .not("private_note", "is", null);
-      if (countError) return jsonError("Unable to verify private-note usage.", 400);
-      const limit = ORGANIZATION_LIMITS.free.privateNotes;
-      if ((count ?? 0) >= limit) return jsonError(`Free private notes are limited to ${limit} saved discussions. Upgrade to Premium for unlimited private notes.`, 403, "organization_limit_reached", { limit });
-    }
+  if (isCreatingNote && !unlimitedOrganization) {
+    const { count, error: countError } = await service
+      .from("bookmarks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", accountAccess.user.id)
+      .not("private_note", "is", null);
+    if (countError) return jsonError("Unable to verify private-note usage.", 400);
+    const limit = ORGANIZATION_LIMITS.free.privateNotes;
+    if ((count ?? 0) >= limit) return jsonError(`Free private notes are limited to ${limit} saved discussions. Upgrade to Premium for unlimited private notes.`, 403, "organization_limit_reached", { limit });
   }
 
   const { data, error } = await service
@@ -75,6 +74,10 @@ export async function PATCH(request: NextRequest) {
     .eq("user_id", accountAccess.user.id)
     .select("id, private_note, private_note_updated_at")
     .single();
-  if (error) return jsonError(error.message || "Unable to save private note.", 400);
+  if (error) {
+    const message = error.message || "Unable to save private note.";
+    if (message.includes("Free private notes are limited")) return jsonError(message, 403, "organization_limit_reached", { limit: ORGANIZATION_LIMITS.free.privateNotes });
+    return jsonError(message, 400);
+  }
   return NextResponse.json({ bookmark: data });
 }
