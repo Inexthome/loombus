@@ -24,6 +24,9 @@ import {
   AI_ALLOWANCES,
   EARLY_ACCESS_PRICING,
   EARLY_ACCESS_PROMOTION_DURATION_MONTHS,
+  EARLY_ACCESS_PROMOTION_END_DATE,
+  EARLY_ACCESS_PROMOTION_ENDS_AT,
+  LOOMBUS_OFFICIAL_LAUNCH_DATE,
   MASTER_SUBSCRIPTION_ENTITLEMENTS,
   PLAN_RANK,
   SUBSCRIPTION_PLANS,
@@ -82,7 +85,7 @@ const plans: PlanDefinition[] = [
     label: SUBSCRIPTION_PLANS.premium.label,
     monthly: `$${EARLY_ACCESS_PRICING.current.premium.monthlyUsd} / month`,
     annual: `$${EARLY_ACCESS_PRICING.current.premium.annualUsd} / year`,
-    futurePrice: `Launch-year promo · future monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.premium}`,
+    futurePrice: `Launch-year promo · standard monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.premium}`,
     positioning: SUBSCRIPTION_PLANS.premium.positioning,
     description:
       "The Loombus intelligence subscription for members who want deeper understanding, stronger search and more control over their knowledge workflow.",
@@ -100,7 +103,7 @@ const plans: PlanDefinition[] = [
     label: SUBSCRIPTION_PLANS.pro.label,
     monthly: `$${EARLY_ACCESS_PRICING.current.pro.monthlyUsd} / month`,
     annual: `$${EARLY_ACCESS_PRICING.current.pro.annualUsd} / year`,
-    futurePrice: `Launch-year promo · future monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.pro}`,
+    futurePrice: `Launch-year promo · standard monthly target $${EARLY_ACCESS_PRICING.futureMonthlyTarget.pro}`,
     positioning: SUBSCRIPTION_PLANS.pro.positioning,
     description:
       "Professional leverage on top of Premium: deeper AI capacity, professional identity, booking infrastructure, discovery and economic tools.",
@@ -135,6 +138,21 @@ function getAiUsageLabel(plan: CurrentPlan, entitlement: Entitlement | null) {
   const limit = entitlement?.monthly_summary_limit ?? 0;
   if (limit <= 0) return "No paid AI allowance";
   return `${limit} understanding actions / month`;
+}
+
+function formatPromoCountdown(nowMs: number) {
+  const remainingMs = Date.parse(EARLY_ACCESS_PROMOTION_ENDS_AT) - nowMs;
+
+  if (remainingMs <= 0) {
+    return "Launch-year pricing has ended.";
+  }
+
+  const totalMinutes = Math.floor(remainingMs / 60_000);
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+
+  return `${days}d ${hours}h ${minutes}m remaining`;
 }
 
 function CheckoutStatus() {
@@ -264,6 +282,16 @@ export default function PremiumV3Client() {
   const [signedIn, setSignedIn] = useState(false);
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [promoCountdown, setPromoCountdown] = useState(
+    `Ends ${EARLY_ACCESS_PROMOTION_END_DATE}`
+  );
+
+  useEffect(() => {
+    const updateCountdown = () => setPromoCountdown(formatPromoCountdown(Date.now()));
+    updateCountdown();
+    const timer = window.setInterval(updateCountdown, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -353,9 +381,12 @@ export default function PremiumV3Client() {
         <section className="premium-v3-promo" aria-label="Launch-year pricing">
           <Sparkles aria-hidden="true" />
           <div>
-            <strong>Launch-year pricing is active.</strong>
+            <strong>Launch-year pricing is active. {promoCountdown}</strong>
             <span>
-              Premium is $7/month or $70/year and Premium Pro is $12/month or $120/year for the first {EARLY_ACCESS_PROMOTION_DURATION_MONTHS} months after the official Loombus launch. Standard monthly targets are $12 and $19. Exact calendar dates will be set when the official launch date is finalized.
+              Loombus officially launched June 15, 2026. Premium is $7/month or $70/year and Premium Pro is $12/month or $120/year for the first {EARLY_ACCESS_PROMOTION_DURATION_MONTHS} months. This pricing ends June 14, 2027 at 11:59 PM ET; standard pricing begins June 15, 2027. Standard monthly targets are $12 and $19. Join before the launch-year window closes.
+            </span>
+            <span className="premium-v2-standard">
+              Official launch: {LOOMBUS_OFFICIAL_LAUNCH_DATE} · Standard-pricing start: {EARLY_ACCESS_PROMOTION_END_DATE}
             </span>
           </div>
         </section>
