@@ -76,7 +76,8 @@ function getWindowMs(frequency: "daily" | "weekly") {
 }
 
 function getDigestSince(preference: NotificationPreference) {
-  const fallback = Date.now() - getWindowMs(preference.email_digest_frequency);
+  const fallback =
+    Date.now() - getWindowMs(preference.email_digest_frequency);
   const lastSent = preference.email_digest_last_sent_at
     ? new Date(preference.email_digest_last_sent_at).getTime()
     : Number.NaN;
