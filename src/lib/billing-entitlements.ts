@@ -1,6 +1,16 @@
 import "server-only";
+
 import { createClient } from "@supabase/supabase-js";
-import { AI_ALLOWANCES, normalizeSubscriptionPlan } from "@/lib/subscription-entitlements";
+import {
+  AI_ALLOWANCES,
+  PLAN_RANK,
+  normalizeSubscriptionPlan,
+  type SubscriptionPlanId,
+} from "@/lib/subscription-entitlements";
+import {
+  isGeneralSubscriptionActive,
+  type GeneralSubscriptionRow,
+} from "@/lib/general-subscriptions";
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 export const EXTRA_AI_PACK_CREDITS = 25;
@@ -17,6 +27,13 @@ export const PREMIUM_PLUS_LIMITS = {
   monthly_writing_limit: AI_ALLOWANCES.pro.writing,
   monthly_research_limit: AI_ALLOWANCES.pro.research,
   monthly_discovery_limit: AI_ALLOWANCES.pro.discovery,
+};
+
+const FREE_LIMITS = {
+  monthly_summary_limit: 0,
+  monthly_writing_limit: 0,
+  monthly_research_limit: 0,
+  monthly_discovery_limit: 0,
 };
 
 export type BillingProvider = "stripe" | "apple";
@@ -103,26 +120,24 @@ export function getBillingSupabaseAdmin() {
   );
 }
 
-export function getLimitsForPlan(planKey: string | null | undefined) {
-  if (planKey?.startsWith("premium_plus")) {
-    return PREMIUM_PLUS_LIMITS;
-  }
+function getStoredPlanKey(planKey: string | null | undefined): SubscriptionPlanId {
+  if (planKey?.startsWith("premium_plus")) return "pro";
+  if (planKey?.startsWith("premium")) return "premium";
+  return normalizeSubscriptionPlan(planKey);
+}
 
-  return PREMIUM_LIMITS;
+export function getLimitsForPlan(planKey: string | null | undefined) {
+  return getStoredPlanKey(planKey) === "pro"
+    ? PREMIUM_PLUS_LIMITS
+    : PREMIUM_LIMITS;
 }
 
 export function getBillingPlanLabel(planKey: string | null | undefined) {
   if (planKey === "premium_annual") return "Premium Annual";
   if (planKey === "premium_plus_monthly") return "Premium Pro Monthly";
   if (planKey === "premium_plus_annual") return "Premium Pro Annual";
-  if (planKey === "extra_ai_pack") return "Extra AI Pack";
+  if (getStoredPlanKey(planKey) === "pro") return "Premium Pro";
   return "Premium Monthly";
-}
-
-function getStoredPlanKey(planKey: string | null | undefined) {
-  return normalizeSubscriptionPlan(
-    planKey?.startsWith("premium_plus") ? "pro" : planKey?.startsWith("premium") ? "premium" : planKey
-  );
 }
 
 function resolveProvider(identity: BillingIdentity): BillingProvider | null {
@@ -176,8 +191,24 @@ async function upsertGeneralSubscription({
   const neutral = getProviderNeutralIdentity(identity);
   const updatedAt = new Date().toISOString();
 
-  if (!neutral.provider) {
-    throw new Error("General subscription billing provider is missing.");
+  if (!neutral.provider || !neutral.providerSubscriptionId) {
+    throw new Error("General subscription provider identity is incomplete.");
+  }
+
+  const { data: existing, error: existingError } = await (
+    supabase.from("user_general_subscriptions") as any
+  )
+    .select("user_id")
+    .eq("provider", neutral.provider)
+    .eq("provider_subscription_id", neutral.providerSubscriptionId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(`Unable to verify general subscription ownership: ${existingError.message}`);
+  }
+
+  if (existing && existing.user_id !== userId) {
+    throw new Error("General subscription is already bound to another Loombus account.");
   }
 
   const { error } = await (supabase.from("user_general_subscriptions") as any).upsert(
@@ -197,12 +228,105 @@ async function upsertGeneralSubscription({
       last_verified_at: identity.lastVerifiedAt ?? updatedAt,
       updated_at: updatedAt,
     },
-    { onConflict: "user_id" }
+    { onConflict: "provider,provider_subscription_id" }
   );
 
   if (error) {
     throw new Error(`Unable to sync general subscription state: ${error.message}`);
   }
+}
+
+async function getEffectivePaidPlanForUser(
+  supabase: ReturnType<typeof getBillingSupabaseAdmin>,
+  userId: string
+): Promise<SubscriptionPlanId> {
+  const { data, error } = await (
+    supabase.from("user_general_subscriptions") as any
+  )
+    .select(
+      "user_id, plan_key, provider, provider_customer_id, provider_subscription_id, provider_product_id, original_transaction_id, app_account_token, environment, status, current_period_end, cancel_at_period_end, last_verified_at, updated_at"
+    )
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`Unable to resolve effective subscription state: ${error.message}`);
+  }
+
+  const activeRows = ((data ?? []) as GeneralSubscriptionRow[]).filter(
+    isGeneralSubscriptionActive
+  );
+  if (activeRows.length === 0) return "free";
+
+  return activeRows.reduce<SubscriptionPlanId>((highest, row) => {
+    const plan = normalizeSubscriptionPlan(row.plan_key);
+    return PLAN_RANK[plan] > PLAN_RANK[highest] ? plan : highest;
+  }, "free");
+}
+
+async function syncAiEntitlementsFromGeneralSubscriptions({
+  userId,
+  note,
+  legacyStripeFields = {},
+}: {
+  userId: string;
+  note: string;
+  legacyStripeFields?: Record<string, string | null>;
+}) {
+  const supabase = getBillingSupabaseAdmin();
+  const updatedAt = new Date().toISOString();
+
+  const { data: currentAiRow, error: currentAiError } = await (
+    supabase.from("user_ai_entitlements") as any
+  )
+    .select("tier")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (currentAiError) {
+    throw new Error(`Unable to inspect AI entitlement state: ${currentAiError.message}`);
+  }
+
+  // Platform admins are authorization overrides, not subscription products.
+  // Billing lifecycle events must never downgrade or rewrite the admin tier.
+  if (currentAiRow?.tier?.trim().toLowerCase() === "admin") {
+    return;
+  }
+
+  const effectivePlan = await getEffectivePaidPlanForUser(supabase, userId);
+  const active = effectivePlan !== "free";
+  const limits = active
+    ? getLimitsForPlan(effectivePlan)
+    : FREE_LIMITS;
+
+  const { error } = await supabase.from("user_ai_entitlements").upsert(
+    {
+      user_id: userId,
+      tier: active ? "premium" : "free",
+      ai_assisted_enabled: active,
+      ...limits,
+      ...legacyStripeFields,
+      notes: `${note} Effective general plan: ${effectivePlan}.`,
+      updated_at: updatedAt,
+    },
+    { onConflict: "user_id" }
+  );
+
+  if (error) {
+    throw new Error(`Unable to synchronize Premium AI access: ${error.message}`);
+  }
+}
+
+function getLegacyStripeFields(identity: BillingIdentity, defaultStatus: string) {
+  const neutral = getProviderNeutralIdentity(identity);
+  if (neutral.provider !== "stripe") return {};
+
+  return {
+    stripe_customer_id: neutral.providerCustomerId,
+    stripe_subscription_id: neutral.providerSubscriptionId,
+    stripe_price_id: neutral.providerProductId,
+    stripe_current_period_end: neutral.currentPeriodEnd,
+    stripe_subscription_status: neutral.subscriptionStatus ?? defaultStatus,
+  };
 }
 
 export async function activatePremiumForUser(
@@ -211,12 +335,8 @@ export async function activatePremiumForUser(
   planKey?: string | null,
   billingIdentity: BillingIdentity = {}
 ) {
-  const supabase = getBillingSupabaseAdmin();
-  const updatedAt = new Date().toISOString();
   const resolvedPlanKey =
     getPremiumPlanKeyFromPriceId(billingIdentity.stripePriceId) ?? planKey;
-  const limits = getLimitsForPlan(resolvedPlanKey);
-  const neutral = getProviderNeutralIdentity(billingIdentity);
 
   await upsertGeneralSubscription({
     userId,
@@ -225,36 +345,11 @@ export async function activatePremiumForUser(
     defaultStatus: "active",
   });
 
-  const legacyStripeFields = neutral.provider === "stripe"
-    ? {
-        stripe_customer_id: neutral.providerCustomerId,
-        stripe_subscription_id: neutral.providerSubscriptionId,
-        stripe_price_id: neutral.providerProductId,
-        stripe_current_period_end: neutral.currentPeriodEnd,
-        stripe_subscription_status: neutral.subscriptionStatus ?? "active",
-      }
-    : {};
-
-  const { error } = await supabase.from("user_ai_entitlements").upsert(
-    {
-      user_id: userId,
-      // AI quota storage remains backward compatible while plan identity now
-      // lives in user_general_subscriptions.
-      tier: "premium",
-      ai_assisted_enabled: true,
-      ...limits,
-      ...legacyStripeFields,
-      notes: `${note} Plan: ${getBillingPlanLabel(resolvedPlanKey)}.`,
-      updated_at: updatedAt,
-    },
-    {
-      onConflict: "user_id",
-    }
-  );
-
-  if (error) {
-    throw new Error(`Unable to activate Premium AI access: ${error.message}`);
-  }
+  await syncAiEntitlementsFromGeneralSubscriptions({
+    userId,
+    note: `${note} Plan event: ${getBillingPlanLabel(resolvedPlanKey)}.`,
+    legacyStripeFields: getLegacyStripeFields(billingIdentity, "active"),
+  });
 }
 
 export async function deactivatePremiumForUser(
@@ -264,16 +359,17 @@ export async function deactivatePremiumForUser(
   planKey?: string | null
 ) {
   const supabase = getBillingSupabaseAdmin();
-  const updatedAt = new Date().toISOString();
   const neutral = getProviderNeutralIdentity(billingIdentity);
+  let resolvedPlanKey =
+    getPremiumPlanKeyFromPriceId(billingIdentity.stripePriceId) ?? planKey;
 
-  let resolvedPlanKey = planKey;
-  if (!resolvedPlanKey) {
+  if (!resolvedPlanKey && neutral.provider && neutral.providerSubscriptionId) {
     const { data: currentSubscription } = await (
       supabase.from("user_general_subscriptions") as any
     )
       .select("plan_key")
-      .eq("user_id", userId)
+      .eq("provider", neutral.provider)
+      .eq("provider_subscription_id", neutral.providerSubscriptionId)
       .maybeSingle();
     resolvedPlanKey = currentSubscription?.plan_key ?? "free";
   }
@@ -285,37 +381,11 @@ export async function deactivatePremiumForUser(
     defaultStatus: "canceled",
   });
 
-  const legacyStripeFields = neutral.provider === "stripe"
-    ? {
-        stripe_customer_id: neutral.providerCustomerId,
-        stripe_subscription_id: neutral.providerSubscriptionId,
-        stripe_price_id: neutral.providerProductId,
-        stripe_current_period_end: neutral.currentPeriodEnd,
-        stripe_subscription_status: neutral.subscriptionStatus ?? "canceled",
-      }
-    : {};
-
-  const { error } = await supabase.from("user_ai_entitlements").upsert(
-    {
-      user_id: userId,
-      tier: "free",
-      ai_assisted_enabled: false,
-      monthly_summary_limit: 0,
-      monthly_writing_limit: 0,
-      monthly_research_limit: 0,
-      monthly_discovery_limit: 0,
-      ...legacyStripeFields,
-      notes: note,
-      updated_at: updatedAt,
-    },
-    {
-      onConflict: "user_id",
-    }
-  );
-
-  if (error) {
-    throw new Error(`Unable to deactivate Premium AI access: ${error.message}`);
-  }
+  await syncAiEntitlementsFromGeneralSubscriptions({
+    userId,
+    note,
+    legacyStripeFields: getLegacyStripeFields(billingIdentity, "canceled"),
+  });
 }
 
 export async function ensureExtraAiPackPurchaseLedger({
