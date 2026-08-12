@@ -80,10 +80,9 @@ export function isLaunchYearPricingActive(now = new Date()) {
 }
 
 /**
- * These are the AI limits currently provisioned by the billing activation
- * path. Keeping them here prevents public plan copy and plan detection from
- * drifting apart. The screenshot's future generic-credit model must not be
- * advertised as live until a shared credit ledger consumes those credits.
+ * These are monthly per-action AI limits used by the billing activation path.
+ * They deliberately remain separate buckets rather than pretending Loombus
+ * already has one shared generic-credit ledger.
  */
 export const AI_ALLOWANCES = {
   free: {
@@ -93,16 +92,16 @@ export const AI_ALLOWANCES = {
     discovery: 0,
   },
   premium: {
-    understanding: 50,
-    writing: 25,
-    research: 10,
-    discovery: 25,
-  },
-  pro: {
     understanding: 150,
     writing: 75,
     research: 30,
     discovery: 75,
+  },
+  pro: {
+    understanding: 300,
+    writing: 150,
+    research: 60,
+    discovery: 150,
   },
 } as const;
 
@@ -116,7 +115,9 @@ export type VideoContextLimit = {
  * Video Context quota boundaries are intentionally independent: upload count,
  * per-video duration, and cumulative processed minutes. Free's concrete
  * 3-video / 5-minute / 15-minute ceiling is the implementation of the public
- * "Trial only / Short preview / Limited trial" language.
+ * "Trial only / Short preview / Limited trial" language. Higher upload counts
+ * let paid members use more short videos without silently multiplying the
+ * more expensive processed-minute allowance.
  */
 export const VIDEO_CONTEXT_LIMITS = {
   free: {
@@ -125,12 +126,12 @@ export const VIDEO_CONTEXT_LIMITS = {
     totalMinutesPerMonth: 15,
   },
   premium: {
-    uploadsPerMonth: 10,
+    uploadsPerMonth: 25,
     maxMinutesPerUpload: 15,
     totalMinutesPerMonth: 150,
   },
   pro: {
-    uploadsPerMonth: 30,
+    uploadsPerMonth: 50,
     maxMinutesPerUpload: 30,
     totalMinutesPerMonth: 900,
   },
