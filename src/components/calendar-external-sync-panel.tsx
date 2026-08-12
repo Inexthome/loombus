@@ -46,6 +46,16 @@ function formatCredentialDate(value: string | null | undefined) {
   }).format(parsed);
 }
 
+function feedUrlMatchesCredential(url: string, tokenHint: string | null | undefined) {
+  if (!tokenHint) return false;
+  try {
+    const token = decodeURIComponent(new URL(url).pathname.split("/").filter(Boolean).at(-1) ?? "");
+    return token.endsWith(tokenHint);
+  } catch {
+    return false;
+  }
+}
+
 export default function CalendarExternalSyncPanel() {
   const [status, setStatus] = useState<SyncStatus>(EMPTY_STATUS);
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
@@ -67,12 +77,20 @@ export default function CalendarExternalSyncPanel() {
       if (!response.ok) {
         throw new Error(payload.error ?? "Unable to load calendar synchronization settings.");
       }
-      setStatus({
+      const nextStatus: SyncStatus = {
         canUseExternalCalendarSync: Boolean(payload.canUseExternalCalendarSync),
         entitlementAvailable: payload.entitlementAvailable !== false,
         configured: Boolean(payload.configured),
         credential: payload.credential ?? null,
-      });
+      };
+      setStatus(nextStatus);
+      setFeedUrl((current) =>
+        current &&
+        nextStatus.configured &&
+        feedUrlMatchesCredential(current, nextStatus.credential?.tokenHint)
+          ? current
+          : null
+      );
     } catch (error) {
       setNotice(
         error instanceof Error
@@ -176,6 +194,18 @@ export default function CalendarExternalSyncPanel() {
 
   const lastChanged = formatCredentialDate(status.credential?.updatedAt);
 
+  const revokeButton = status.configured ? (
+    <button
+      type="button"
+      onClick={() => void revoke()}
+      disabled={working !== null}
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[color:var(--loombus-border)] px-4 text-sm font-semibold transition hover:border-red-400 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <Trash2 aria-hidden="true" className="h-4 w-4" />
+      {working === "revoke" ? "Revoking…" : "Revoke old link"}
+    </button>
+  ) : null;
+
   return (
     <section className="bg-[color:var(--loombus-page-bg)] px-4 pt-5 text-[color:var(--loombus-text)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[88rem] rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6">
@@ -215,11 +245,19 @@ export default function CalendarExternalSyncPanel() {
               Checking calendar synchronization access…
             </div>
           ) : !status.entitlementAvailable ? (
-            <div className="rounded-2xl bg-[color:var(--loombus-page-bg)] p-4">
-              <p className="text-sm font-semibold">Calendar synchronization status is temporarily unavailable.</p>
-              <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
-                No subscription changes were made. Refresh the status before creating a private link.
-              </p>
+            <div className="flex flex-col gap-4 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Calendar synchronization status is temporarily unavailable.</p>
+                <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                  No subscription changes were made. Refresh the status before creating or rotating a private link.
+                </p>
+                {status.configured ? (
+                  <p className="mt-2 text-xs font-semibold text-[color:var(--loombus-text-subtle)]">
+                    An existing private link is still configured. You can revoke it without waiting for billing status to recover.
+                  </p>
+                ) : null}
+              </div>
+              {revokeButton}
             </div>
           ) : !status.canUseExternalCalendarSync ? (
             <div className="flex flex-col gap-4 rounded-2xl bg-[color:var(--loombus-page-bg)] p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -230,14 +268,22 @@ export default function CalendarExternalSyncPanel() {
                   <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
                     Your Loombus Calendar remains available normally on Free and Premium.
                   </p>
+                  {status.configured ? (
+                    <p className="mt-2 text-xs font-semibold text-[color:var(--loombus-text-subtle)]">
+                      Your previous subscription link is disabled while this account is not Premium Pro. You can revoke it permanently below.
+                    </p>
+                  ) : null}
                 </div>
               </div>
-              <Link
-                href="/premium"
-                className="inline-flex h-10 shrink-0 items-center justify-center rounded-full bg-[#CBAB5B] px-5 text-sm font-semibold text-black transition hover:opacity-90"
-              >
-                View Premium Pro
-              </Link>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {revokeButton}
+                <Link
+                  href="/premium"
+                  className="inline-flex h-10 items-center justify-center rounded-full bg-[#CBAB5B] px-5 text-sm font-semibold text-black transition hover:opacity-90"
+                >
+                  View Premium Pro
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
