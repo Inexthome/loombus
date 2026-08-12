@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
+  evaluateSubscriptionEntitlement,
+  resolvePlanFromEntitlementRow,
+} from "@/lib/subscription-entitlements";
+import {
   runRoomDigests,
   type RoomDigestResult,
 } from "@/lib/room-digest-delivery";
@@ -17,6 +21,7 @@ type EntitlementRow = {
   user_id: string;
   tier: string | null;
   ai_assisted_enabled: boolean | null;
+  monthly_summary_limit: number | null;
 };
 
 type NotificationRow = {
@@ -82,10 +87,12 @@ function getDigestSince(preference: NotificationPreference) {
 }
 
 function hasPremiumDigestAccess(entitlement: EntitlementRow | null) {
-  return (
-    entitlement?.ai_assisted_enabled === true &&
-    ["premium", "admin"].includes(entitlement.tier ?? "")
-  );
+  if (entitlement?.tier === "admin") return true;
+
+  return evaluateSubscriptionEntitlement(
+    resolvePlanFromEntitlementRow(entitlement),
+    "personalized_digest"
+  ).allowed;
 }
 
 function isDue(preference: NotificationPreference) {
@@ -236,7 +243,7 @@ async function runAccountDigests(args: {
   const { data: entitlements, error: entitlementError } = dueUserIds.length
     ? await args.supabase
         .from("user_ai_entitlements")
-        .select("user_id, tier, ai_assisted_enabled")
+        .select("user_id, tier, ai_assisted_enabled, monthly_summary_limit")
         .in("user_id", dueUserIds)
     : { data: [], error: null };
   if (entitlementError) throw new Error(entitlementError.message);
