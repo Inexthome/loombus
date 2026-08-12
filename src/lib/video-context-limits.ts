@@ -1,4 +1,5 @@
 import {
+  AI_ALLOWANCES,
   VIDEO_CONTEXT_LIMITS as PLAN_VIDEO_CONTEXT_LIMITS,
 } from "@/lib/subscription-entitlements";
 
@@ -103,7 +104,7 @@ export function getVideoContextTier(
   if (
     entitlement?.ai_assisted_enabled === true &&
     normalizedTier === "premium" &&
-    (entitlement.monthly_summary_limit ?? 0) >= 150
+    (entitlement.monthly_summary_limit ?? 0) >= AI_ALLOWANCES.pro.understanding
   ) {
     return "premium_plus";
   }
