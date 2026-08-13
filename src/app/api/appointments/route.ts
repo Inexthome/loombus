@@ -12,6 +12,7 @@ import {
   updateAppointmentService,
 } from "@/lib/appointments-server";
 import { getProfessionalBookingRequestViolation } from "@/lib/professional-booking-request-server";
+import { getProfessionalBookingSlotGuidance } from "@/lib/professional-booking-slot-guidance-server";
 import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
 
 const ADULT_ONLY_ACTIONS = new Set([
@@ -50,6 +51,15 @@ export async function GET(request: NextRequest) {
     const businessSlug = params.get("businessSlug");
     if (!businessSlug) {
       throw new AppointmentsError("Business slug is required.", 400, "business_slug_required");
+    }
+    const slotGuidanceServiceId = params.get("slotGuidanceServiceId");
+    if (slotGuidanceServiceId) {
+      return response(
+        await getProfessionalBookingSlotGuidance(
+          businessSlug,
+          slotGuidanceServiceId,
+        ),
+      );
     }
     return response(await getPublicBusinessScheduling(request, businessSlug));
   } catch (error) {
