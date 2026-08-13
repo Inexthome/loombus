@@ -11,6 +11,7 @@ import {
   setAppointmentServiceStatus,
   updateAppointmentService,
 } from "@/lib/appointments-server";
+import { getProfessionalBookingRequestViolation } from "@/lib/professional-booking-request-server";
 import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
 
 const ADULT_ONLY_ACTIONS = new Set([
@@ -82,7 +83,20 @@ export async function POST(request: NextRequest) {
     if (action === "set_service_status") {
       return response(await setAppointmentServiceStatus(request, input));
     }
-    if (action === "request") return response(await requestAppointment(request, input), 201);
+    if (action === "request") {
+      const violation = await getProfessionalBookingRequestViolation(
+        request,
+        input,
+      );
+      if (violation) {
+        throw new AppointmentsError(
+          violation.message,
+          violation.status,
+          violation.code,
+        );
+      }
+      return response(await requestAppointment(request, input), 201);
+    }
     if (action === "provider_response") {
       return response(await respondToAppointment(request, input));
     }
