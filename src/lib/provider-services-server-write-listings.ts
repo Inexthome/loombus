@@ -1,7 +1,9 @@
 import "server-only";
 
 import type { NextRequest } from "next/server";
+import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
 import { createAdminNotifications, createNotification } from "@/lib/notifications";
+import { evaluateSubscriptionEntitlement } from "@/lib/subscription-entitlements";
 import {
   ProviderServicesError,
   cleanText,
@@ -12,9 +14,77 @@ import {
   requireProviderEligibility,
   requireProviderServiceControl,
   resolveViewer,
+  stringArray,
   uniqueProviderServiceSlug,
   type ProviderServiceInput,
 } from "@/lib/provider-services-server-core";
+
+async function requireProfessionalPortfolioForNewAttachments(
+  providerId: string,
+  isAdmin: boolean,
+  input: ProviderServiceInput,
+  existingAttachmentPaths: unknown = [],
+) {
+  const requestedPaths = stringArray(
+    input.attachmentPaths,
+    8,
+    600,
+  );
+
+  const existingPaths = new Set(
+    Array.isArray(existingAttachmentPaths)
+      ? existingAttachmentPaths
+          .map((value) => cleanText(value, 600))
+          .filter(Boolean)
+      : [],
+  );
+
+  const addsPortfolioAttachment = requestedPaths.some(
+    (path) => !existingPaths.has(path),
+  );
+
+  if (!addsPortfolioAttachment || isAdmin) {
+    return;
+  }
+
+  try {
+    const subscription =
+      await getResolvedGeneralSubscriptionForUser(providerId);
+
+    if (
+      subscription.isAdminOverride ||
+      evaluateSubscriptionEntitlement(
+        subscription.plan,
+        "professional_portfolio",
+      ).allowed
+    ) {
+      return;
+    }
+  } catch (error) {
+    console.error(
+      "Professional portfolio subscription resolution failed:",
+      {
+        providerId,
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      },
+    );
+
+    throw new ProviderServicesError(
+      "Unable to verify Premium Pro portfolio access.",
+      503,
+      "professional_portfolio_access_unavailable",
+    );
+  }
+
+  throw new ProviderServicesError(
+    "Premium Pro is required to add professional Service portfolio attachments.",
+    403,
+    "professional_portfolio_required",
+  );
+}
 
 async function validateAttribution(
   request: NextRequest,
@@ -68,6 +138,13 @@ export async function createProviderService(
 ) {
   const { viewer, providerId, businessId, appointmentServiceId } =
     await validateAttribution(request, input);
+
+  await requireProfessionalPortfolioForNewAttachments(
+    providerId,
+    viewer.isAdmin,
+    input,
+  );
+
   const values = await normalizeProviderServiceInput(
     viewer.service,
     providerId,
@@ -125,6 +202,14 @@ export async function updateProviderService(
       input,
       existing.business_id ? String(existing.business_id) : null,
     );
+
+  await requireProfessionalPortfolioForNewAttachments(
+    providerId,
+    viewer.isAdmin,
+    input,
+    existing.attachment_paths,
+  );
+
   const values = await normalizeProviderServiceInput(
     viewer.service,
     providerId,

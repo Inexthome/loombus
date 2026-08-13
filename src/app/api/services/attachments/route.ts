@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
+import { evaluateSubscriptionEntitlement } from "@/lib/subscription-entitlements";
 import {
   createRequestSupabase,
   createRoomServiceSupabase,
@@ -72,12 +74,82 @@ async function authorize(request: NextRequest) {
       ),
     };
   }
-  return { ok: true as const, userId: access.user.id, service };
+  return {
+    ok: true as const,
+    userId: access.user.id,
+    isAdmin: access.profile.is_admin === true,
+    service,
+  };
+}
+
+async function professionalPortfolioUploadDenial(
+  userId: string,
+  isAdmin: boolean,
+) {
+  if (isAdmin) {
+    return null;
+  }
+
+  try {
+    const subscription =
+      await getResolvedGeneralSubscriptionForUser(userId);
+
+    if (
+      subscription.isAdminOverride ||
+      evaluateSubscriptionEntitlement(
+        subscription.plan,
+        "professional_portfolio",
+      ).allowed
+    ) {
+      return null;
+    }
+  } catch (error) {
+    console.error(
+      "Professional portfolio upload authorization failed:",
+      {
+        userId,
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      },
+    );
+
+    return response(
+      {
+        error:
+          "Unable to verify Premium Pro portfolio access.",
+        code:
+          "professional_portfolio_access_unavailable",
+      },
+      503,
+    );
+  }
+
+  return response(
+    {
+      error:
+        "Premium Pro is required to add professional Service portfolio attachments.",
+      code: "professional_portfolio_required",
+    },
+    403,
+  );
 }
 
 export async function POST(request: NextRequest) {
   const authorized = await authorize(request);
   if (!authorized.ok) return authorized.response;
+
+  const portfolioDenial =
+    await professionalPortfolioUploadDenial(
+      authorized.userId,
+      authorized.isAdmin,
+    );
+
+  if (portfolioDenial) {
+    return portfolioDenial;
+  }
+
   try {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count, error: countError } = await authorized.service
