@@ -94,33 +94,23 @@ begin
     message
   )
   select
-    follow.user_id,
+    topic_follow.user_id,
     new.user_id,
     'topic_follow',
     'discussion',
     new.id,
     'New discussion in ' || new.topic || ': ' || new.title
-  from public.user_topic_follows follow
-  where follow.topic = new.topic
-    and follow.user_id <> new.user_id
-    -- If this member also has the paid Advanced alert enabled for the exact
-    -- topic, leave delivery to the existing Advanced runtime so only one
-    -- notification is produced.
-    and not exists (
-      select 1
-      from public.user_topic_alerts advanced
-      where advanced.user_id = follow.user_id
-        and advanced.topic = new.topic
-        and advanced.enabled = true
-    )
+  from public.user_topic_follows topic_follow
+  where topic_follow.topic = new.topic
+    and topic_follow.user_id <> new.user_id
     and not exists (
       select 1
       from public.user_blocks block_row
       where (
         block_row.blocker_id = new.user_id
-        and block_row.blocked_id = follow.user_id
+        and block_row.blocked_id = topic_follow.user_id
       ) or (
-        block_row.blocker_id = follow.user_id
+        block_row.blocker_id = topic_follow.user_id
         and block_row.blocked_id = new.user_id
       )
     );
@@ -142,3 +132,41 @@ create trigger notify_basic_topic_followers_after_discussion_insert
 after insert on public.discussions
 for each row
 execute function public.notify_basic_topic_followers();
+
+-- If the paid Advanced runtime later creates a topic_alert for the same member
+-- and discussion, prefer that richer paid notification and remove the Basic
+-- in-app duplicate. If the Advanced runtime skips a downgraded Free member,
+-- the Basic topic_follow row remains intact.
+create or replace function public.prefer_advanced_topic_alert_notification()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.type = 'topic_alert'
+     and new.target_type = 'discussion'
+     and new.target_id is not null then
+    delete from public.notifications
+    where user_id = new.user_id
+      and target_type = 'discussion'
+      and target_id = new.target_id
+      and type = 'topic_follow'
+      and id <> new.id;
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.prefer_advanced_topic_alert_notification() from public;
+revoke all on function public.prefer_advanced_topic_alert_notification() from anon;
+revoke all on function public.prefer_advanced_topic_alert_notification() from authenticated;
+
+drop trigger if exists prefer_advanced_topic_alert_after_notification_insert
+on public.notifications;
+
+create trigger prefer_advanced_topic_alert_after_notification_insert
+after insert on public.notifications
+for each row
+execute function public.prefer_advanced_topic_alert_notification();
