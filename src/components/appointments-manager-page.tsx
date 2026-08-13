@@ -23,6 +23,7 @@ import {
   type AppointmentService,
 } from "@/lib/events";
 import { scheduleAuthorizedFetch } from "@/lib/schedule-client";
+import ProfessionalBookingAvailabilityCard from "@/components/professional-booking-availability-card";
 
 type BusinessOption = { id: string; name: string; slug: string };
 type ManagePayload = {
@@ -484,6 +485,8 @@ export default function AppointmentsManagerPage() {
             {view === "services" ? (
               (data?.businesses.length ?? 0) > 0 ? (
                 <div className="space-y-6">
+                  <ProfessionalBookingAvailabilityCard />
+
                   <form
                     onSubmit={saveService}
                     className="rounded-[1.75rem] border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] p-5 shadow-xl shadow-black/10 sm:p-6"
