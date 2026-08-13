@@ -34,7 +34,10 @@ export function useSignalDirectoryData() {
         const accessToken = sessionData.session?.access_token ?? "";
         const hiddenUserIds = new Set<string>();
 
-        if (mounted) setViewerId(userId);
+        if (mounted) {
+          setViewerId(userId);
+          setCanFollowTopics(Boolean(userId));
+        }
 
         if (userId) {
           const { data: blockRows } = await supabase
@@ -95,7 +98,7 @@ export function useSignalDirectoryData() {
                   .in("discussion_id", discussionIds)
               : Promise.resolve({ data: [], error: null }),
             accessToken
-              ? fetch("/api/topic-alerts", {
+              ? fetch("/api/topic-follows", {
                   headers: { Authorization: `Bearer ${accessToken}` },
                 })
               : Promise.resolve(null),
@@ -139,7 +142,6 @@ export function useSignalDirectoryData() {
           const payload = await alertResult.json().catch(() => ({}));
 
           if (mounted && alertResult.ok) {
-            setCanFollowTopics(Boolean(payload.canUseTopicAlerts));
             setFollowedTopics(
               Array.isArray(payload.selectedTopics) ? payload.selectedTopics : []
             );
@@ -178,13 +180,6 @@ export function useSignalDirectoryData() {
       return;
     }
 
-    if (!canFollowTopics) {
-      setMessage(
-        "Following a topic turns on new-discussion alerts and requires Premium or Admin access."
-      );
-      return;
-    }
-
     const wasFollowing = followedSet.has(topic);
     const nextTopics = wasFollowing
       ? followedTopics.filter((value) => value !== topic)
@@ -202,7 +197,7 @@ export function useSignalDirectoryData() {
         return;
       }
 
-      const response = await fetch("/api/topic-alerts", {
+      const response = await fetch("/api/topic-follows", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${accessToken}`,

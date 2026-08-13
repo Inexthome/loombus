@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
 import {
   evaluateSubscriptionEntitlement,
-  resolvePlanFromEntitlementRow,
+  type SubscriptionPlanId,
 } from "@/lib/subscription-entitlements";
 import {
   runRoomDigests,
@@ -17,11 +18,9 @@ type NotificationPreference = {
   email_digest_unsubscribe_token: string | null;
 };
 
-type EntitlementRow = {
-  user_id: string;
-  tier: string | null;
-  ai_assisted_enabled: boolean | null;
-  monthly_summary_limit: number | null;
+type ProfileRow = {
+  id: string;
+  is_admin: boolean | null;
 };
 
 type NotificationRow = {
@@ -86,13 +85,13 @@ function getDigestSince(preference: NotificationPreference) {
   ).toISOString();
 }
 
-function hasPremiumDigestAccess(entitlement: EntitlementRow | null) {
-  if (entitlement?.tier === "admin") return true;
+function hasPremiumDigestAccess(
+  plan: SubscriptionPlanId,
+  isAdmin: boolean
+) {
+  if (isAdmin) return true;
 
-  return evaluateSubscriptionEntitlement(
-    resolvePlanFromEntitlementRow(entitlement),
-    "personalized_digest"
-  ).allowed;
+  return evaluateSubscriptionEntitlement(plan, "personalized_digest").allowed;
 }
 
 function isDue(preference: NotificationPreference) {
@@ -240,28 +239,45 @@ async function runAccountDigests(args: {
     isDue
   );
   const dueUserIds = duePreferences.map((preference) => preference.user_id);
-  const { data: entitlements, error: entitlementError } = dueUserIds.length
+  const { data: profiles, error: profileError } = dueUserIds.length
     ? await args.supabase
-        .from("user_ai_entitlements")
-        .select("user_id, tier, ai_assisted_enabled, monthly_summary_limit")
-        .in("user_id", dueUserIds)
+        .from("profiles")
+        .select("id, is_admin")
+        .in("id", dueUserIds)
     : { data: [], error: null };
-  if (entitlementError) throw new Error(entitlementError.message);
+  if (profileError) throw new Error(profileError.message);
 
-  const entitlementByUserId = new Map(
-    ((entitlements ?? []) as EntitlementRow[]).map((entitlement) => [
-      entitlement.user_id,
-      entitlement,
-    ])
+  const adminUserIds = new Set(
+    ((profiles ?? []) as ProfileRow[])
+      .filter((profile) => profile.is_admin === true)
+      .map((profile) => profile.id)
   );
   const results: DigestResult[] = [];
 
   for (const preference of duePreferences) {
-    if (
-      !hasPremiumDigestAccess(
-        entitlementByUserId.get(preference.user_id) ?? null
-      )
-    ) {
+    let plan: SubscriptionPlanId = "free";
+    let isAdmin = adminUserIds.has(preference.user_id);
+
+    try {
+      const subscription = await getResolvedGeneralSubscriptionForUser(
+        preference.user_id
+      );
+      plan = subscription.plan;
+      isAdmin = isAdmin || subscription.isAdminOverride;
+    } catch (error) {
+      console.error("Account digest subscription resolution failed:", {
+        userId: preference.user_id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      results.push({
+        userId: preference.user_id,
+        sent: false,
+        skippedReason: "Unable to resolve current subscription access.",
+      });
+      continue;
+    }
+
+    if (!hasPremiumDigestAccess(plan, isAdmin)) {
       results.push({
         userId: preference.user_id,
         sent: false,

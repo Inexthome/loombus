@@ -11,6 +11,7 @@ create table if not exists public.user_topic_follows (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   topic text not null,
+  enabled boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint user_topic_follows_topic_length
@@ -19,11 +20,11 @@ create table if not exists public.user_topic_follows (
     unique (user_id, topic)
 );
 
-create index if not exists user_topic_follows_user_topic_idx
-on public.user_topic_follows(user_id, topic);
+create index if not exists user_topic_follows_user_enabled_topic_idx
+on public.user_topic_follows(user_id, enabled, topic);
 
-create index if not exists user_topic_follows_topic_idx
-on public.user_topic_follows(topic, user_id);
+create index if not exists user_topic_follows_topic_enabled_user_idx
+on public.user_topic_follows(topic, enabled, user_id);
 
 alter table public.user_topic_follows enable row level security;
 alter table public.user_topic_follows force row level security;
@@ -74,6 +75,9 @@ comment on table public.user_topic_follows is
 comment on column public.user_topic_follows.topic is
 'Exact canonical discussion topic followed by the member.';
 
+comment on column public.user_topic_follows.enabled is
+'Whether the Free Basic Topic Alert follow is currently active.';
+
 create or replace function public.notify_basic_topic_followers()
 returns trigger
 language plpgsql
@@ -102,6 +106,7 @@ begin
     'New discussion in ' || new.topic || ': ' || new.title
   from public.user_topic_follows topic_follow
   where topic_follow.topic = new.topic
+    and topic_follow.enabled = true
     and topic_follow.user_id <> new.user_id
     and not exists (
       select 1
