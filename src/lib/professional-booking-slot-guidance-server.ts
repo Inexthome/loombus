@@ -19,6 +19,11 @@ type AvailabilityWindow = {
   endMinute: number;
 };
 
+type BusyInterval = {
+  startMs: number;
+  endMs: number;
+};
+
 type StoredSettings = {
   timezone: string;
   weeklyAvailability: AvailabilityWindow[];
@@ -202,6 +207,16 @@ function fitsAvailabilityWindow(
   );
 }
 
+function overlapsBusyInterval(
+  startMs: number,
+  endMs: number,
+  busyIntervals: BusyInterval[],
+) {
+  return busyIntervals.some(
+    (busy) => startMs < busy.endMs && endMs > busy.startMs,
+  );
+}
+
 async function providerCanUseProfessionalBooking(
   service: Service,
   providerId: string,
@@ -240,7 +255,7 @@ async function providerCanUseProfessionalBooking(
   }
 }
 
-function suggestedStarts(
+function guidanceHorizon(
   settings: StoredSettings,
   durationMinutes: number,
 ) {
@@ -257,6 +272,23 @@ function suggestedStarts(
   const scanEndMs = Math.min(
     latestStartMs,
     nowMs + 31 * 86_400_000,
+  );
+
+  return {
+    earliestStartMs,
+    scanEndMs,
+    busyWindowEndMs: scanEndMs + durationMinutes * 60_000,
+  };
+}
+
+function suggestedStarts(
+  settings: StoredSettings,
+  durationMinutes: number,
+  busyIntervals: BusyInterval[],
+) {
+  const { earliestStartMs, scanEndMs } = guidanceHorizon(
+    settings,
+    durationMinutes,
   );
   const stepMs = 15 * 60_000;
   const durationMs = durationMinutes * 60_000;
@@ -278,6 +310,7 @@ function suggestedStarts(
     if (
       startWall &&
       endWall &&
+      !overlapsBusyInterval(cursor, endMs, busyIntervals) &&
       settings.weeklyAvailability.some((window) =>
         fitsAvailabilityWindow(window, startWall, endWall),
       )
@@ -289,6 +322,27 @@ function suggestedStarts(
   }
 
   return starts;
+}
+
+function normalizeBusyIntervals(rows: Row[]) {
+  const intervals: BusyInterval[] = [];
+
+  for (const row of rows) {
+    const startMs = Date.parse(text(row.requested_start, 100));
+    const endMs = Date.parse(text(row.requested_end, 100));
+
+    if (
+      !Number.isFinite(startMs) ||
+      !Number.isFinite(endMs) ||
+      startMs >= endMs
+    ) {
+      return null;
+    }
+
+    intervals.push({ startMs, endMs });
+  }
+
+  return intervals;
 }
 
 export async function getProfessionalBookingSlotGuidance(
@@ -377,9 +431,45 @@ export async function getProfessionalBookingSlotGuidance(
     return INACTIVE_GUIDANCE;
   }
 
+  const { earliestStartMs, busyWindowEndMs } = guidanceHorizon(
+    settings,
+    durationMinutes,
+  );
+  const { data: acceptedRows, error: acceptedError } = await service
+    .from("business_appointment_requests")
+    .select("requested_start, requested_end")
+    .eq("provider_id", providerId)
+    .eq("status", "accepted")
+    .lt("requested_start", new Date(busyWindowEndMs).toISOString())
+    .gt("requested_end", new Date(earliestStartMs).toISOString());
+
+  if (acceptedError) {
+    console.error(
+      "Professional Booking slot-guidance accepted appointment lookup failed:",
+      {
+        providerId,
+        error: acceptedError.message,
+      },
+    );
+    return INACTIVE_GUIDANCE;
+  }
+
+  const busyIntervals = normalizeBusyIntervals((acceptedRows ?? []) as Row[]);
+  if (!busyIntervals) {
+    console.error(
+      "Professional Booking slot-guidance accepted appointment data is invalid:",
+      { providerId },
+    );
+    return INACTIVE_GUIDANCE;
+  }
+
   return {
     active: true,
     providerTimezone: settings.timezone,
-    suggestedStarts: suggestedStarts(settings, durationMinutes),
+    suggestedStarts: suggestedStarts(
+      settings,
+      durationMinutes,
+      busyIntervals,
+    ),
   };
 }
