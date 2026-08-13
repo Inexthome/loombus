@@ -40,6 +40,7 @@ import {
   type PublicProviderService,
 } from "@/lib/provider-services";
 import { providerServicesAuthorizedFetch } from "@/lib/provider-services-client";
+import { requireSubscriptionEntitlement } from "@/lib/subscription-access-prompt";
 
 type Attachment = { path: string; url: string; type: string; name: string };
 type ResponseDraft = {
@@ -181,7 +182,11 @@ export default function ServicesManagerPage() {
       );
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error ?? "Unable to load Services.");
-      setData(payload as ProviderServicesManageResponse);
+      const manageData = payload as ProviderServicesManageResponse;
+      setData(manageData);
+      if (!manageData.canUseProfessionalMatching) {
+        setView((current) => (current === "requests" ? "services" : current));
+      }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to load Services.");
     } finally {
@@ -216,6 +221,21 @@ export default function ServicesManagerPage() {
 
   function update<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function openMatchingRequests() {
+    if (!data) return;
+
+    if (!data.canUseProfessionalMatching) {
+      requireSubscriptionEntitlement({
+        plan: data.subscriptionPlan,
+        entitlement: "professional_matching",
+        featureLabel: "professional service-request matching",
+      });
+      return;
+    }
+
+    setView("requests");
   }
 
   async function send(body: Record<string, unknown>, key: string, success: string) {
@@ -775,8 +795,12 @@ export default function ServicesManagerPage() {
                   <button type="button" onClick={() => setView("inquiries")} className="flex w-full items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-left text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">
                     Review inquiries <Inbox className="h-4 w-4 text-[color:var(--loombus-gold)]" />
                   </button>
-                  <button type="button" onClick={() => setView("requests")} className="flex w-full items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-left text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">
-                    Relevant Requests <ChevronRight className="h-4 w-4 text-[color:var(--loombus-gold)]" />
+                  <button type="button" onClick={openMatchingRequests} className="flex w-full items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-left text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">
+                    Relevant Requests
+                    <span className="flex items-center gap-2">
+                      <span className="rounded-full bg-[color:var(--loombus-gold-soft)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[color:var(--loombus-gold)]">Pro</span>
+                      <ChevronRight className="h-4 w-4 text-[color:var(--loombus-gold)]" />
+                    </span>
                   </button>
                   <Link href="/appointments" className="flex items-center justify-between rounded-2xl bg-[color:var(--loombus-page-bg)] px-4 py-3 text-sm font-semibold transition hover:bg-[color:var(--loombus-surface-muted)]">
                     Appointments <ArrowUpRight className="h-4 w-4 text-[color:var(--loombus-gold)]" />
