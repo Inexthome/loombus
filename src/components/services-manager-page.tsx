@@ -238,6 +238,17 @@ export default function ServicesManagerPage() {
     setView("requests");
   }
 
+  function requestProfessionalPortfolio() {
+    if (!data) return;
+
+    requireSubscriptionEntitlement({
+      plan: data.subscriptionPlan,
+      entitlement: "professional_portfolio",
+      featureLabel:
+        "professional Service portfolio attachments",
+    });
+  }
+
   async function send(body: Record<string, unknown>, key: string, success: string) {
     if (working) return;
     setWorking(key);
@@ -309,7 +320,19 @@ export default function ServicesManagerPage() {
   async function upload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file || working || draft.attachments.length >= 8) return;
+
+    if (
+      !file ||
+      working ||
+      draft.attachments.length >= 8
+    ) {
+      return;
+    }
+
+    if (!data?.canUseProfessionalPortfolio) {
+      requestProfessionalPortfolio();
+      return;
+    }
     setWorking("upload");
     setNotice("");
     try {
@@ -653,7 +676,39 @@ export default function ServicesManagerPage() {
                   <Field label="Response expectation"><input maxLength={300} value={draft.responseExpectation} onChange={(event) => update("responseExpectation", event.target.value)} placeholder="Example: Usually within one business day" className={inputClass} /></Field>
                   <Field label="Availability"><input maxLength={1000} value={draft.availabilityText} onChange={(event) => update("availabilityText", event.target.value)} className={inputClass} /></Field>
                   <Field label="Examples and documents" wide>
-                    <label className={`${secondary} inline-flex cursor-pointer`}><FileUp size={16} /> Upload JPEG, PNG, WebP, or PDF<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => void upload(event)} className="sr-only" /></label>
+                    {data?.canUseProfessionalPortfolio ? (
+                      <label className={`${secondary} inline-flex cursor-pointer`}>
+                        <FileUp size={16} />
+                        Upload JPEG, PNG, WebP, or PDF
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,application/pdf"
+                          onChange={(event) => void upload(event)}
+                          className="sr-only"
+                        />
+                      </label>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={requestProfessionalPortfolio}
+                        className={secondary}
+                      >
+                        <FileUp size={16} />
+                        Add portfolio examples
+                        <span className="rounded-full bg-[color:var(--loombus-gold-soft)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[color:var(--loombus-gold)]">
+                          Pro
+                        </span>
+                      </button>
+                    )}
+
+                    <p className="mt-2 text-xs leading-5 text-[color:var(--loombus-text-muted)]">
+                      {data?.canUseProfessionalPortfolio
+                        ? "Add up to eight portfolio examples or supporting documents."
+                        : draft.attachments.length
+                          ? "Existing portfolio files remain visible and removable. Premium Pro is required to add new examples or documents."
+                          : "Premium Pro adds professional portfolio examples and documents to your Service."}
+                    </p>
+
                     <div className="mt-3 grid gap-2">
                       {draft.attachments.map((attachment, index) => (
                         <div key={`${attachment.path}:${index}`} className="flex items-center justify-between rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-3 text-sm">

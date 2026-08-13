@@ -120,6 +120,7 @@ export type ProviderServicesManageResponse = {
   receivedInquiries: ProviderServiceInquiry[];
   sentInquiries: ProviderServiceInquiry[];
   subscriptionPlan: SubscriptionPlanId;
+  canUseProfessionalPortfolio: boolean;
   canUseProfessionalMatching: boolean;
   matchingRequests: Array<{
     id: string;

@@ -256,24 +256,35 @@ export async function getProviderServicesManageData(
   const viewer = await resolveViewer(request, true);
   const userId = viewer.user!.id;
   let subscriptionPlan: SubscriptionPlanId = "free";
+  let canUseProfessionalPortfolio = viewer.isAdmin;
   let canUseProfessionalMatching = viewer.isAdmin;
 
   if (!viewer.isAdmin) {
     try {
       const subscription = await getResolvedGeneralSubscriptionForUser(userId);
       subscriptionPlan = subscription.plan;
+      const hasAdminOverride = subscription.isAdminOverride;
+
+      canUseProfessionalPortfolio =
+        hasAdminOverride ||
+        evaluateSubscriptionEntitlement(
+          subscription.plan,
+          "professional_portfolio",
+        ).allowed;
+
       canUseProfessionalMatching =
-        subscription.isAdminOverride ||
+        hasAdminOverride ||
         evaluateSubscriptionEntitlement(
           subscription.plan,
           "professional_matching",
         ).allowed;
     } catch (error) {
-      console.error("Professional matching subscription resolution failed:", {
+      console.error("Professional Services subscription resolution failed:", {
         userId,
         error: error instanceof Error ? error.message : String(error),
       });
       subscriptionPlan = "free";
+      canUseProfessionalPortfolio = false;
       canUseProfessionalMatching = false;
     }
   }
@@ -478,6 +489,7 @@ export async function getProviderServicesManageData(
     receivedInquiries,
     sentInquiries,
     subscriptionPlan,
+    canUseProfessionalPortfolio,
     canUseProfessionalMatching,
     matchingRequests,
     reports,
