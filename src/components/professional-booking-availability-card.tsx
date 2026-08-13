@@ -35,7 +35,14 @@ function cloneDefaults(): ProfessionalBookingSettings {
   };
 }
 
-function minuteToTime(value: number) {
+function minuteToTime(
+  value: number,
+  allowEndOfDay = false,
+) {
+  if (allowEndOfDay && value === 1440) {
+    return "00:00";
+  }
+
   const safe = Math.max(
     0,
     Math.min(Number.isFinite(value) ? value : 0, 1439),
@@ -48,7 +55,14 @@ function minuteToTime(value: number) {
   ).padStart(2, "0")}`;
 }
 
-function timeToMinute(value: string) {
+function timeToMinute(
+  value: string,
+  allowEndOfDay = false,
+) {
+  if (allowEndOfDay && value === "00:00") {
+    return 1440;
+  }
+
   const match = /^(\d{2}):(\d{2})$/.exec(value);
   if (!match) return null;
 
@@ -140,6 +154,8 @@ export default function ProfessionalBookingAvailabilityCard() {
   }, []);
 
   useEffect(() => {
+    // Initial remote synchronization intentionally starts on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
@@ -627,11 +643,13 @@ export default function ProfessionalBookingAvailabilityCard() {
                                   disabled={!canEdit}
                                   value={minuteToTime(
                                     window.endMinute,
+                                    true,
                                   )}
                                   onChange={(event) => {
                                     const minute =
                                       timeToMinute(
                                         event.target.value,
+                                        true,
                                       );
                                     if (minute !== null) {
                                       updateWindow(
