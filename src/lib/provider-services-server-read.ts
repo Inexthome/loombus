@@ -1,6 +1,11 @@
 import "server-only";
 
 import type { NextRequest } from "next/server";
+import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
+import {
+  evaluateSubscriptionEntitlement,
+  type SubscriptionPlanId,
+} from "@/lib/subscription-entitlements";
 import type {
   ProviderServicesDirectoryResponse,
   ProviderServicesManageResponse,
@@ -250,6 +255,29 @@ export async function getProviderServicesManageData(
 ): Promise<ProviderServicesManageResponse> {
   const viewer = await resolveViewer(request, true);
   const userId = viewer.user!.id;
+  let subscriptionPlan: SubscriptionPlanId = "free";
+  let canUseProfessionalMatching = viewer.isAdmin;
+
+  if (!viewer.isAdmin) {
+    try {
+      const subscription = await getResolvedGeneralSubscriptionForUser(userId);
+      subscriptionPlan = subscription.plan;
+      canUseProfessionalMatching =
+        subscription.isAdminOverride ||
+        evaluateSubscriptionEntitlement(
+          subscription.plan,
+          "professional_matching",
+        ).allowed;
+    } catch (error) {
+      console.error("Professional matching subscription resolution failed:", {
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      subscriptionPlan = "free";
+      canUseProfessionalMatching = false;
+    }
+  }
+
   let serviceQuery = viewer.service
     .from("provider_services")
     .select("*")
@@ -328,7 +356,11 @@ export async function getProviderServicesManageData(
     ),
   ];
   let matchingRequests: ProviderServicesManageResponse["matchingRequests"] = [];
-  if (!viewer.isAdmin && publishedCategories.length) {
+  if (
+    !viewer.isAdmin &&
+    canUseProfessionalMatching &&
+    publishedCategories.length
+  ) {
     const { data: activeResponses } = await viewer.service
       .from("service_request_responses")
       .select("request_id")
@@ -445,6 +477,8 @@ export async function getProviderServicesManageData(
     services,
     receivedInquiries,
     sentInquiries,
+    subscriptionPlan,
+    canUseProfessionalMatching,
     matchingRequests,
     reports,
     metrics: {

@@ -1,3 +1,5 @@
+import type { SubscriptionPlanId } from "@/lib/subscription-entitlements";
+
 export type ProviderServiceStatus =
   | "draft"
   | "pending"
@@ -117,6 +119,8 @@ export type ProviderServicesManageResponse = {
   services: PublicProviderService[];
   receivedInquiries: ProviderServiceInquiry[];
   sentInquiries: ProviderServiceInquiry[];
+  subscriptionPlan: SubscriptionPlanId;
+  canUseProfessionalMatching: boolean;
   matchingRequests: Array<{
     id: string;
     slug: string;
