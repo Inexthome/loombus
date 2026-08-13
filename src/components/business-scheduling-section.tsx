@@ -6,6 +6,34 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import type { AppointmentService } from "@/lib/events";
 import { scheduleAuthorizedFetch } from "@/lib/schedule-client";
 
+type SlotGuidance = {
+  serviceId: string;
+  active: boolean;
+  providerTimezone: string | null;
+  suggestedStarts: string[];
+};
+
+function isoToLocalDateTimeInput(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function suggestedTimeLabel(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "Suggested time";
+
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export default function BusinessSchedulingSection({
   businessSlug,
   preselectServiceId = "",
@@ -17,6 +45,7 @@ export default function BusinessSchedulingSection({
   const [businessName, setBusinessName] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState("");
+  const [slotGuidance, setSlotGuidance] = useState<SlotGuidance | null>(null);
   const [requestedStart, setRequestedStart] = useState("");
   const [note, setNote] = useState("");
   const [working, setWorking] = useState(false);
@@ -48,10 +77,49 @@ export default function BusinessSchedulingSection({
     };
   }, [businessSlug, preselectServiceId]);
 
+  useEffect(() => {
+    if (!selectedId) return;
+
+    let active = true;
+    const params = new URLSearchParams({
+      businessSlug,
+      slotGuidanceServiceId: selectedId,
+    });
+
+    void fetch(`/api/appointments?${params.toString()}`, {
+      cache: "no-store",
+    })
+      .then((response) => response.json())
+      .then((payload) => {
+        if (!active) return;
+        setSlotGuidance({
+          serviceId: selectedId,
+          active: payload.active === true,
+          providerTimezone:
+            typeof payload.providerTimezone === "string"
+              ? payload.providerTimezone
+              : null,
+          suggestedStarts: Array.isArray(payload.suggestedStarts)
+            ? payload.suggestedStarts.filter(
+                (value: unknown): value is string => typeof value === "string",
+              )
+            : [],
+        });
+      })
+      .catch(() => null);
+
+    return () => {
+      active = false;
+    };
+  }, [businessSlug, selectedId]);
+
   const selected = useMemo(
     () => services.find((service) => service.id === selectedId) ?? null,
     [selectedId, services],
   );
+
+  const selectedGuidance =
+    slotGuidance?.serviceId === selectedId ? slotGuidance : null;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -160,6 +228,52 @@ export default function BusinessSchedulingSection({
               <CalendarClock size={19} />
               <h3 className="font-semibold">Request {selected.name}</h3>
             </div>
+
+            {selectedGuidance?.active ? (
+              <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
+                <strong className="text-sm">Suggested Professional Booking times</strong>
+                <p className="mt-1 text-xs leading-5 text-[var(--loombus-text-muted)]">
+                  Suggestions are shown in your local time and still require the
+                  business to accept your request.
+                  {selectedGuidance.providerTimezone
+                    ? ` Provider availability uses ${selectedGuidance.providerTimezone}.`
+                    : ""}
+                </p>
+
+                {selectedGuidance.suggestedStarts.length ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selectedGuidance.suggestedStarts.map((start) => {
+                      const inputValue = isoToLocalDateTimeInput(start);
+                      const selectedSuggestion =
+                        inputValue && requestedStart === inputValue;
+
+                      return (
+                        <button
+                          key={start}
+                          type="button"
+                          onClick={() => {
+                            if (inputValue) setRequestedStart(inputValue);
+                          }}
+                          className={`rounded-full border px-3 py-2 text-xs font-semibold transition ${
+                            selectedSuggestion
+                              ? "border-[var(--loombus-text)] bg-[var(--loombus-surface-muted)]"
+                              : "border-[var(--loombus-border)] hover:border-[var(--loombus-text-muted)]"
+                          }`}
+                        >
+                          {suggestedTimeLabel(start)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-[var(--loombus-text-muted)]">
+                    No suggested Professional Booking times are currently
+                    available within this provider&apos;s booking window.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <label>
                 <span className="mb-2 block text-sm font-semibold">
