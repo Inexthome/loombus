@@ -37,6 +37,11 @@ type CheckoutResult = {
   paymentRequired: true;
 };
 
+type CapturedForAcceptance = {
+  payment: Row;
+  capturedByThisCall: boolean;
+};
+
 function text(value: unknown, max = 500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
@@ -339,7 +344,13 @@ async function syncProfessionalBookingPayment(
       authorizationExpiresAt,
       livemode: intent.livemode,
     });
-    return updatePaymentStatus(service, payment, "authorized", {
+    const aggregateStatus: ProfessionalBookingPaymentStatus = [
+      "capture_pending",
+      "cancel_pending",
+    ].includes(String(payment.status))
+      ? (payment.status as ProfessionalBookingPaymentStatus)
+      : "authorized";
+    return updatePaymentStatus(service, payment, aggregateStatus, {
       authorized_at: payment.authorized_at ?? new Date().toISOString(),
       authorization_expires_at: authorizationExpiresAt,
       latest_error_code: null,
@@ -352,7 +363,9 @@ async function syncProfessionalBookingPayment(
       authorizationExpiresAt,
       livemode: intent.livemode,
     });
-    return updatePaymentStatus(service, payment, "captured", {
+    const aggregateStatus: ProfessionalBookingPaymentStatus =
+      payment.status === "refund_pending" ? "refund_pending" : "captured";
+    return updatePaymentStatus(service, payment, aggregateStatus, {
       captured_at: payment.captured_at ?? new Date().toISOString(),
       authorization_expires_at: authorizationExpiresAt,
       latest_error_code: null,
@@ -746,14 +759,18 @@ async function requireCurrentIntent(
 async function ensureCapturedForAcceptance(
   service: Service,
   rawPayment: Row,
-) {
+): Promise<CapturedForAcceptance> {
   let payment = await syncProfessionalBookingPayment(service, rawPayment);
-  if (payment.status === "captured") return payment;
+  if (payment.status === "captured") {
+    return { payment, capturedByThisCall: false };
+  }
 
   const { intent } = await requireCurrentIntent(service, payment);
   if (intent.status === "succeeded") {
     payment = await syncProfessionalBookingPayment(service, payment);
-    if (payment.status === "captured") return payment;
+    if (payment.status === "captured") {
+      return { payment, capturedByThisCall: false };
+    }
   }
 
   if (intent.status !== "requires_capture") {
@@ -779,6 +796,21 @@ async function ensureCapturedForAcceptance(
     );
   }
 
+  if (payment.status === "capture_pending") {
+    const refreshed = await syncProfessionalBookingPayment(
+      service,
+      await loadPaymentById(service, String(payment.id)),
+    );
+    if (refreshed.status === "captured") {
+      return { payment: refreshed, capturedByThisCall: false };
+    }
+    throw new AppointmentsError(
+      "This Professional Booking payment is already being captured. Refresh the appointment before trying again.",
+      409,
+      "professional_booking_payment_capture_in_progress",
+    );
+  }
+
   const { data: claimed, error: claimError } = await service
     .from("professional_booking_payments")
     .update({
@@ -797,21 +829,29 @@ async function ensureCapturedForAcceptance(
       "professional_booking_payment_capture_lock_failed",
     );
   }
-  if (!claimed && payment.status !== "capture_pending") {
+  if (!claimed) {
     payment = await syncProfessionalBookingPayment(
       service,
       await loadPaymentById(service, String(payment.id)),
     );
-    if (payment.status === "captured") return payment;
-    if (payment.status !== "authorized" && payment.status !== "capture_pending") {
+    if (payment.status === "captured") {
+      return { payment, capturedByThisCall: false };
+    }
+    if (payment.status === "capture_pending") {
       throw new AppointmentsError(
-        "This payment authorization changed before it could be captured. Refresh and try again.",
+        "This Professional Booking payment is already being captured. Refresh the appointment before trying again.",
         409,
-        "professional_booking_payment_state_changed",
+        "professional_booking_payment_capture_in_progress",
       );
     }
+    throw new AppointmentsError(
+      "This payment authorization changed before it could be captured. Refresh and try again.",
+      409,
+      "professional_booking_payment_state_changed",
+    );
   }
 
+  payment = { ...payment, status: "capture_pending" };
   try {
     await getStripe().paymentIntents.capture(
       intent.id,
@@ -823,7 +863,9 @@ async function ensureCapturedForAcceptance(
       service,
       await loadPaymentById(service, String(payment.id)),
     ).catch(() => null);
-    if (refreshed?.status === "captured") return refreshed;
+    if (refreshed?.status === "captured") {
+      return { payment: refreshed, capturedByThisCall: true };
+    }
     await updatePaymentStatus(service, payment, "authorized", {
       latest_error_code: "professional_booking_payment_capture_failed",
     }).catch(() => null);
@@ -845,7 +887,7 @@ async function ensureCapturedForAcceptance(
       "professional_booking_payment_capture_unconfirmed",
     );
   }
-  return payment;
+  return { payment, capturedByThisCall: true };
 }
 
 async function expireOpenCheckout(service: Service, payment: Row) {
@@ -1001,12 +1043,21 @@ async function settleTerminalPaymentByRequestId(
   }
 }
 
-async function compensateFailedAcceptance(service: Service, payment: Row) {
+async function compensateFailedAcceptance(
+  service: Service,
+  payment: Row,
+  requestId: string,
+) {
   try {
+    const appointment = await loadAppointment(service, requestId).catch(() => null);
+    if (appointment?.status === "accepted") {
+      return;
+    }
     await refundCapturedPayment(service, payment);
   } catch (error) {
     console.error("Professional Booking failed-acceptance refund reconciliation failed:", {
       paymentId: payment.id,
+      requestId,
       error: error instanceof Error ? error.message : String(error),
     });
   }
@@ -1025,11 +1076,17 @@ export async function runProviderResponseWithProfessionalBookingPayment<T>(
 
   const decision = text(input.decision, 40);
   if (decision === "accept") {
-    const captured = await ensureCapturedForAcceptance(viewer.service, payment);
+    const capture = await ensureCapturedForAcceptance(viewer.service, payment);
     try {
       return await operation();
     } catch (error) {
-      await compensateFailedAcceptance(viewer.service, captured);
+      if (capture.capturedByThisCall) {
+        await compensateFailedAcceptance(
+          viewer.service,
+          capture.payment,
+          requestId,
+        );
+      }
       throw error;
     }
   }
@@ -1054,11 +1111,17 @@ export async function runRequesterActionWithProfessionalBookingPayment<T>(
 
   const action = text(input.requestAction, 40);
   if (action === "accept_reschedule") {
-    const captured = await ensureCapturedForAcceptance(viewer.service, payment);
+    const capture = await ensureCapturedForAcceptance(viewer.service, payment);
     try {
       return await operation();
     } catch (error) {
-      await compensateFailedAcceptance(viewer.service, captured);
+      if (capture.capturedByThisCall) {
+        await compensateFailedAcceptance(
+          viewer.service,
+          capture.payment,
+          requestId,
+        );
+      }
       throw error;
     }
   }
