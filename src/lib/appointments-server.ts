@@ -6,6 +6,11 @@ import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 import { createRequestSupabase, createRoomServiceSupabase } from "@/lib/room-operations";
 import type { AppointmentRequest, AppointmentService } from "@/lib/events";
 import type { ProfessionalBookingIntakeSnapshotItem } from "@/lib/professional-booking-intake";
+import {
+  normalizeProfessionalBookingPolicySnapshot,
+  type ProfessionalBookingPolicySnapshot,
+  type ProfessionalBookingRequesterCancellationTiming,
+} from "@/lib/professional-booking-policy";
 
 export type AppointmentInput = Record<string, unknown>;
 type Row = Record<string, any>;
@@ -391,6 +396,7 @@ export async function requestAppointment(
   request: NextRequest,
   input: AppointmentInput,
   professionalBookingIntakeSnapshot: ProfessionalBookingIntakeSnapshotItem[] | null = null,
+  professionalBookingPolicySnapshot: ProfessionalBookingPolicySnapshot | null = null,
 ) {
   const viewer = await resolveViewer(request, true);
   const requesterId = viewer.user!.id;
@@ -453,6 +459,11 @@ export async function requestAppointment(
       professionalBookingIntakeSnapshot;
   }
 
+  if (professionalBookingPolicySnapshot) {
+    insertValues.professional_booking_policy_snapshot =
+      professionalBookingPolicySnapshot;
+  }
+
   const { data, error: insertError } = await viewer.service
     .from("business_appointment_requests")
     .insert(insertValues)
@@ -469,6 +480,18 @@ export async function requestAppointment(
         "Professional Booking client intake storage is not available yet.",
         503,
         "professional_booking_intake_schema_unavailable",
+      );
+    }
+    if (
+      professionalBookingPolicySnapshot &&
+      /professional_booking_policy_snapshot|schema cache/i.test(
+        insertError?.message ?? "",
+      )
+    ) {
+      throw new AppointmentsError(
+        "Professional Booking policy storage is not available yet.",
+        503,
+        "professional_booking_policy_schema_unavailable",
       );
     }
     throw new AppointmentsError("Unable to send the appointment request.", 503, "appointment_request_failed");
@@ -614,6 +637,8 @@ export async function requesterAppointmentAction(request: NextRequest, input: Ap
   const now = new Date().toISOString();
   const updates: Row = { acted_at: now };
   let message: string;
+  let cancellationTiming: ProfessionalBookingRequesterCancellationTiming | null = null;
+
   if (action === "accept_reschedule") {
     if (current !== "reschedule_proposed" || !row.proposed_start || !row.proposed_end) {
       throw new AppointmentsError("No proposed appointment time is awaiting acceptance.", 409, "appointment_reschedule_unavailable");
@@ -631,10 +656,37 @@ export async function requesterAppointmentAction(request: NextRequest, input: Ap
     }
     updates.status = "cancelled";
     message = "The appointment request was cancelled.";
+
+    if (current === "accepted") {
+      const policySnapshot = normalizeProfessionalBookingPolicySnapshot(
+        row.professional_booking_policy_snapshot,
+      );
+      if (policySnapshot?.cancellationNoticeHours) {
+        const scheduledStartMs = new Date(row.requested_start).getTime();
+        const cancellationMs = new Date(now).getTime();
+        const cutoffMs =
+          scheduledStartMs -
+          policySnapshot.cancellationNoticeHours * 60 * 60_000;
+
+        if (
+          Number.isFinite(scheduledStartMs) &&
+          Number.isFinite(cancellationMs)
+        ) {
+          cancellationTiming = cancellationMs > cutoffMs ? "late" : "on_time";
+          updates.professional_booking_requester_cancellation_timing =
+            cancellationTiming;
+
+          if (cancellationTiming === "late") {
+            message = `The accepted appointment was cancelled inside the saved ${policySnapshot.cancellationNoticeHours}-hour notice window.`;
+          }
+        }
+      }
+    }
   } else {
     throw new AppointmentsError("Choose a valid appointment action.", 400, "invalid_appointment_action");
   }
-  const { data: updatedRequest, error } = await viewer.service
+
+  let updateResult = await viewer.service
     .from("business_appointment_requests")
     .update(updates)
     .eq("id", requestId)
@@ -642,6 +694,28 @@ export async function requesterAppointmentAction(request: NextRequest, input: Ap
     .eq("status", current)
     .select("id")
     .maybeSingle();
+
+  if (
+    updateResult.error &&
+    cancellationTiming &&
+    /professional_booking_requester_cancellation_timing|schema cache/i.test(
+      updateResult.error.message ?? "",
+    )
+  ) {
+    delete updates.professional_booking_requester_cancellation_timing;
+    cancellationTiming = null;
+    message = "The appointment request was cancelled.";
+    updateResult = await viewer.service
+      .from("business_appointment_requests")
+      .update(updates)
+      .eq("id", requestId)
+      .eq("requester_id", viewer.user!.id)
+      .eq("status", current)
+      .select("id")
+      .maybeSingle();
+  }
+
+  const { data: updatedRequest, error } = updateResult;
   if (error) {
     throw new AppointmentsError(
       "Unable to update the appointment.",
@@ -664,7 +738,11 @@ export async function requesterAppointmentAction(request: NextRequest, input: Ap
     target_id: requestId,
     message,
   });
-  return { updated: true, status: updates.status };
+  return {
+    updated: true,
+    status: updates.status,
+    requesterCancellationTiming: cancellationTiming,
+  };
 }
 
 export async function completeAppointment(request: NextRequest, input: AppointmentInput) {

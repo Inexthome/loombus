@@ -5,6 +5,7 @@ import {
   CalendarClock,
   ClipboardList,
   Clock3,
+  FileText,
   MapPin,
   Send,
 } from "lucide-react";
@@ -14,6 +15,7 @@ import {
   PROFESSIONAL_BOOKING_INTAKE_ANSWER_MAX_LENGTH,
   type ProfessionalBookingIntakeQuestion,
 } from "@/lib/professional-booking-intake";
+import type { PublicProfessionalBookingPolicyResponse } from "@/lib/professional-booking-policy";
 import { scheduleAuthorizedFetch } from "@/lib/schedule-client";
 
 type SlotGuidance = {
@@ -50,6 +52,12 @@ function suggestedTimeLabel(value: string) {
   }).format(date);
 }
 
+function cancellationNoticeLabel(hours: number) {
+  if (hours === 1) return "1 hour";
+  if (hours === 168) return "7 days";
+  return `${hours} hours`;
+}
+
 function isIntakeQuestion(value: unknown): value is ProfessionalBookingIntakeQuestion {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
@@ -74,6 +82,9 @@ export default function BusinessSchedulingSection({
   const [slotGuidance, setSlotGuidance] = useState<SlotGuidance | null>(null);
   const [intakeForm, setIntakeForm] = useState<IntakeForm | null>(null);
   const [intakeAnswers, setIntakeAnswers] = useState<Record<string, string>>({});
+  const [policyForm, setPolicyForm] =
+    useState<PublicProfessionalBookingPolicyResponse | null>(null);
+  const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
   const [requestedStart, setRequestedStart] = useState("");
   const [note, setNote] = useState("");
   const [working, setWorking] = useState(false);
@@ -178,6 +189,49 @@ export default function BusinessSchedulingSection({
     };
   }, [businessSlug, selectedId]);
 
+  useEffect(() => {
+    if (!selectedId) return;
+
+    let active = true;
+    const params = new URLSearchParams({
+      businessSlug,
+      policyServiceId: selectedId,
+    });
+
+    void fetch(`/api/appointments?${params.toString()}`, {
+      cache: "no-store",
+    })
+      .then((response) => response.json())
+      .then((payload) => {
+        if (!active) return;
+        setPolicyForm({
+          serviceId: selectedId,
+          active: payload.active === true,
+          policyText:
+            typeof payload.policyText === "string" ? payload.policyText : "",
+          cancellationNoticeHours:
+            typeof payload.cancellationNoticeHours === "number"
+              ? payload.cancellationNoticeHours
+              : 0,
+        });
+        setPolicyAcknowledged(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setPolicyForm({
+          serviceId: selectedId,
+          active: false,
+          policyText: "",
+          cancellationNoticeHours: 0,
+        });
+        setPolicyAcknowledged(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [businessSlug, selectedId]);
+
   const selected = useMemo(
     () => services.find((service) => service.id === selectedId) ?? null,
     [selectedId, services],
@@ -187,11 +241,25 @@ export default function BusinessSchedulingSection({
     slotGuidance?.serviceId === selectedId ? slotGuidance : null;
   const selectedIntake =
     intakeForm?.serviceId === selectedId ? intakeForm : null;
+  const selectedPolicy =
+    policyForm?.serviceId === selectedId ? policyForm : null;
   const intakeReady = !selected || intakeForm?.serviceId === selected.id;
+  const policyReady = !selected || policyForm?.serviceId === selected.id;
+  const policyAllowsSubmit =
+    !selectedPolicy?.active || policyAcknowledged;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selected || !requestedStart || !intakeReady || working) return;
+    if (
+      !selected ||
+      !requestedStart ||
+      !intakeReady ||
+      !policyReady ||
+      !policyAllowsSubmit ||
+      working
+    ) {
+      return;
+    }
     setWorking(true);
     setNotice("");
     try {
@@ -206,6 +274,8 @@ export default function BusinessSchedulingSection({
             requestedStart: new Date(requestedStart).toISOString(),
             timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
             note,
+            policyAcknowledged:
+              selectedPolicy?.active === true && policyAcknowledged,
             intakeAnswers:
               selectedIntake?.active && selectedIntake.questions.length
                 ? selectedIntake.questions.map((question) => ({
@@ -224,6 +294,7 @@ export default function BusinessSchedulingSection({
       setRequestedStart("");
       setNote("");
       setIntakeAnswers({});
+      setPolicyAcknowledged(false);
       setNotice("Appointment request sent. Track it from Appointments.");
     } catch (error) {
       setNotice(
@@ -274,6 +345,8 @@ export default function BusinessSchedulingSection({
                 if (service.id !== selectedId) {
                   setIntakeForm(null);
                   setIntakeAnswers({});
+                  setPolicyForm(null);
+                  setPolicyAcknowledged(false);
                 }
                 setSelectedId(service.id);
               }}
@@ -356,6 +429,38 @@ export default function BusinessSchedulingSection({
               </div>
             ) : null}
 
+            {selectedPolicy?.active ? (
+              <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
+                <div className="flex items-center gap-2">
+                  <FileText size={17} />
+                  <strong className="text-sm">Booking & cancellation policy</strong>
+                </div>
+                {selectedPolicy.policyText ? (
+                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[var(--loombus-text-muted)]">
+                    {selectedPolicy.policyText}
+                  </p>
+                ) : null}
+                {selectedPolicy.cancellationNoticeHours > 0 ? (
+                  <p className="mt-3 text-sm leading-6 text-[var(--loombus-text-muted)]">
+                    This provider asks for at least {cancellationNoticeLabel(selectedPolicy.cancellationNoticeHours)} of notice before cancelling an accepted appointment.
+                  </p>
+                ) : null}
+                <p className="mt-3 text-xs leading-5 text-[var(--loombus-text-muted)]">
+                  Loombus does not block appointment cancellation or charge a cancellation fee. A requester cancellation of an accepted appointment after the saved notice cutoff may be recorded as late.
+                </p>
+                <label className="mt-4 flex items-start gap-3 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-page-bg)] p-3 text-sm">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={policyAcknowledged}
+                    onChange={(event) => setPolicyAcknowledged(event.target.checked)}
+                    className="mt-1"
+                  />
+                  <span>I have read and acknowledge this booking and cancellation policy.</span>
+                </label>
+              </div>
+            ) : null}
+
             {selectedIntake?.active && selectedIntake.questions.length ? (
               <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
                 <div className="flex items-center gap-2">
@@ -422,7 +527,13 @@ export default function BusinessSchedulingSection({
             </div>
             <button
               type="submit"
-              disabled={working || !requestedStart || !intakeReady}
+              disabled={
+                working ||
+                !requestedStart ||
+                !intakeReady ||
+                !policyReady ||
+                !policyAllowsSubmit
+              }
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-semibold text-[var(--loombus-primary-text)] disabled:opacity-50"
             >
               <Send size={16} /> Send appointment request
