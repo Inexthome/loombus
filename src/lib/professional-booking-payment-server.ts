@@ -9,6 +9,7 @@ import {
 import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
 import {
   PROFESSIONAL_BOOKING_PAYMENT_PRODUCT,
+  PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION,
   type ProfessionalBookingPaymentListResponse,
   type ProfessionalBookingPaymentStatus,
   type ProfessionalBookingPaymentSummary,
@@ -26,6 +27,10 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const PAYMENT_MINIMUM_CENTS = 50;
 const PAYMENT_MAXIMUM_CENTS = 99_999_999;
 const TERMINAL_APPOINTMENT_STATUSES = new Set(["declined", "cancelled"]);
+const AUTHORIZATION_OPEN_APPOINTMENT_STATUSES = new Set([
+  "pending",
+  "reschedule_proposed",
+]);
 
 type Service = ReturnType<typeof createRoomServiceSupabase>;
 type Row = Record<string, any>;
@@ -42,6 +47,11 @@ type CapturedForAcceptance = {
   capturedByThisCall: boolean;
 };
 
+type ProviderPaymentTerms = {
+  version: typeof PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION;
+  acceptedAt: string;
+};
+
 function text(value: unknown, max = 500) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
@@ -54,9 +64,13 @@ function uuid(value: unknown) {
 }
 
 function isSchemaUnavailable(error: { message?: string | null } | null | undefined) {
-  return /professional_booking_payments|professional_booking_payment_attempts|schema cache|relation .* does not exist/i.test(
+  return /professional_booking_payments|professional_booking_payment_attempts|professional_booking_payment_provider_terms|schema cache|relation .* does not exist/i.test(
     error?.message ?? "",
   );
+}
+
+function isUniqueViolation(error: { code?: string | null } | null | undefined) {
+  return error?.code === "23505";
 }
 
 export function professionalBookingPaymentsEnabled() {
@@ -185,6 +199,42 @@ async function latestAttempt(service: Service, paymentId: string): Promise<Row |
   return (data ?? null) as Row | null;
 }
 
+async function requireCurrentProviderPaymentTerms(
+  service: Service,
+  providerId: string,
+): Promise<ProviderPaymentTerms> {
+  const { data, error } = await service
+    .from("professional_booking_payment_provider_terms")
+    .select("terms_version, accepted_at")
+    .eq("provider_id", providerId)
+    .eq("terms_version", PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION)
+    .maybeSingle();
+
+  if (error) {
+    throw new AppointmentsError(
+      isSchemaUnavailable(error)
+        ? "Professional Booking payment terms storage is not available yet."
+        : "The provider's Professional Booking payment terms could not be verified.",
+      503,
+      isSchemaUnavailable(error)
+        ? "professional_booking_payment_terms_schema_unavailable"
+        : "professional_booking_payment_terms_unavailable",
+    );
+  }
+  if (!data?.accepted_at) {
+    throw new AppointmentsError(
+      "This provider must accept the current Professional Booking payment terms before collecting payment.",
+      409,
+      "professional_booking_payment_terms_required",
+    );
+  }
+
+  return {
+    version: PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION,
+    acceptedAt: String(data.accepted_at),
+  };
+}
+
 function paymentIntentId(value: Stripe.Checkout.Session["payment_intent"]) {
   if (typeof value === "string") return value;
   return value?.id ?? null;
@@ -215,7 +265,9 @@ function validateStripeContract(payment: Row, intent: Stripe.PaymentIntent) {
     destination !== String(payment.stripe_destination_account_id) ||
     intent.metadata?.product !== PROFESSIONAL_BOOKING_PAYMENT_PRODUCT ||
     intent.metadata?.payment_id !== String(payment.id) ||
-    intent.metadata?.appointment_request_id !== String(payment.appointment_request_id)
+    intent.metadata?.appointment_request_id !== String(payment.appointment_request_id) ||
+    intent.metadata?.provider_payment_terms_version !==
+      String(payment.provider_payment_terms_version)
   ) {
     throw new AppointmentsError(
       "The Stripe authorization does not match the saved Professional Booking payment contract.",
@@ -257,6 +309,16 @@ async function updateAttemptFromStripe(
   }
 }
 
+async function markAttemptFailed(service: Service, attemptId: string) {
+  await service
+    .from("professional_booking_payment_attempts")
+    .update({
+      status: "failed",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", attemptId);
+}
+
 async function updatePaymentStatus(
   service: Service,
   payment: Row,
@@ -280,6 +342,39 @@ async function updatePaymentStatus(
     );
   }
   return { ...payment, ...values } as Row;
+}
+
+async function cancelAppointmentForExpiredAuthorization(
+  service: Service,
+  payment: Row,
+) {
+  const requestId = String(payment.appointment_request_id);
+  const now = new Date().toISOString();
+  const { data, error } = await service
+    .from("business_appointment_requests")
+    .update({ status: "cancelled", acted_at: now })
+    .eq("id", requestId)
+    .in("status", [...AUTHORIZATION_OPEN_APPOINTMENT_STATUSES])
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new AppointmentsError(
+      "The expired payment authorization could not close the appointment request.",
+      503,
+      "professional_booking_payment_expiry_cancel_failed",
+    );
+  }
+  if (data) return;
+
+  const appointment = await loadAppointment(service, requestId);
+  if (TERMINAL_APPOINTMENT_STATUSES.has(String(appointment.status))) return;
+
+  throw new AppointmentsError(
+    "The appointment changed while its payment authorization expired. Payment reconciliation stopped for review.",
+    409,
+    "professional_booking_payment_expiry_state_conflict",
+  );
 }
 
 async function syncProfessionalBookingPayment(
@@ -308,8 +403,11 @@ async function syncProfessionalBookingPayment(
   const intentId = text(attempt.stripe_payment_intent_id, 255);
   if (!intentId) {
     if (session?.status === "expired") {
+      await cancelAppointmentForExpiredAuthorization(service, payment);
       await updateAttemptFromStripe(service, attempt, { status: "expired" });
-      payment = await updatePaymentStatus(service, payment, "authorization_expired");
+      payment = await updatePaymentStatus(service, payment, "authorization_expired", {
+        latest_error_code: null,
+      });
     }
     return payment;
   }
@@ -377,7 +475,11 @@ async function syncProfessionalBookingPayment(
       service,
       String(payment.appointment_request_id),
     ).catch(() => null);
-    const terminal = appointment && TERMINAL_APPOINTMENT_STATUSES.has(String(appointment.status));
+    const terminal =
+      appointment && TERMINAL_APPOINTMENT_STATUSES.has(String(appointment.status));
+    if (!terminal) {
+      await cancelAppointmentForExpiredAuthorization(service, payment);
+    }
     await updateAttemptFromStripe(service, attempt, {
       status: terminal ? "canceled" : "expired",
       authorizationExpiresAt,
@@ -388,13 +490,17 @@ async function syncProfessionalBookingPayment(
       payment,
       terminal ? "canceled" : "authorization_expired",
       {
-        canceled_at: terminal ? payment.canceled_at ?? new Date().toISOString() : payment.canceled_at,
+        canceled_at: terminal
+          ? payment.canceled_at ?? new Date().toISOString()
+          : payment.canceled_at,
         authorization_expires_at: authorizationExpiresAt,
+        latest_error_code: null,
       },
     );
   }
 
   if (session?.status === "expired") {
+    await cancelAppointmentForExpiredAuthorization(service, payment);
     await updateAttemptFromStripe(service, attempt, {
       status: "expired",
       authorizationExpiresAt,
@@ -402,10 +508,37 @@ async function syncProfessionalBookingPayment(
     });
     return updatePaymentStatus(service, payment, "authorization_expired", {
       authorization_expires_at: authorizationExpiresAt,
+      latest_error_code: null,
     });
   }
 
   return payment;
+}
+
+async function existingOpenCheckoutResult(
+  service: Service,
+  paymentId: string,
+  attempt: Row | null,
+): Promise<CheckoutResult | null> {
+  if (!attempt?.stripe_checkout_session_id) return null;
+  try {
+    const existingSession = await getStripe().checkout.sessions.retrieve(
+      String(attempt.stripe_checkout_session_id),
+    );
+    if (existingSession.status === "open" && existingSession.url) {
+      return {
+        paymentId,
+        checkoutUrl: existingSession.url,
+        paymentRequired: true,
+      };
+    }
+  } catch (error) {
+    console.warn("Professional Booking existing Checkout Session lookup failed:", {
+      paymentId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+  return null;
 }
 
 async function createCheckoutAttempt(
@@ -419,7 +552,7 @@ async function createCheckoutAttempt(
     service,
     String(payment.appointment_request_id),
   );
-  if (!["pending", "reschedule_proposed"].includes(String(appointment.status))) {
+  if (!AUTHORIZATION_OPEN_APPOINTMENT_STATUSES.has(String(appointment.status))) {
     throw new AppointmentsError(
       "Payment authorization is no longer available for this appointment request.",
       409,
@@ -434,27 +567,21 @@ async function createCheckoutAttempt(
       paymentRequired: true,
     };
   }
+  if (payment.status !== "checkout_pending") {
+    throw new AppointmentsError(
+      "This Professional Booking payment authorization is closed. Submit a new booking request if you still want the appointment.",
+      409,
+      "professional_booking_payment_checkout_closed",
+    );
+  }
 
   const previousAttempt = await latestAttempt(service, String(payment.id));
-  if (previousAttempt?.stripe_checkout_session_id) {
-    try {
-      const existingSession = await getStripe().checkout.sessions.retrieve(
-        String(previousAttempt.stripe_checkout_session_id),
-      );
-      if (existingSession.status === "open" && existingSession.url) {
-        return {
-          paymentId: String(payment.id),
-          checkoutUrl: existingSession.url,
-          paymentRequired: true,
-        };
-      }
-    } catch (error) {
-      console.warn("Professional Booking existing Checkout Session lookup failed:", {
-        paymentId: payment.id,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
+  const previousCheckout = await existingOpenCheckoutResult(
+    service,
+    String(payment.id),
+    previousAttempt,
+  );
+  if (previousCheckout) return previousCheckout;
 
   const { data: attempt, error: attemptError } = await service
     .from("professional_booking_payment_attempts")
@@ -465,6 +592,20 @@ async function createCheckoutAttempt(
     .select("id")
     .single();
   if (attemptError || !attempt?.id) {
+    if (isUniqueViolation(attemptError)) {
+      const activeAttempt = await latestAttempt(service, String(payment.id));
+      const activeCheckout = await existingOpenCheckoutResult(
+        service,
+        String(payment.id),
+        activeAttempt,
+      );
+      if (activeCheckout) return activeCheckout;
+      throw new AppointmentsError(
+        "This Professional Booking payment authorization is already being prepared. Refresh before trying again.",
+        409,
+        "professional_booking_payment_checkout_in_progress",
+      );
+    }
     throw new AppointmentsError(
       "Unable to prepare the Professional Booking payment authorization.",
       503,
@@ -472,12 +613,14 @@ async function createCheckoutAttempt(
     );
   }
 
+  const attemptId = String(attempt.id);
   const { data: appointmentService, error: serviceError } = await service
     .from("business_appointment_services")
     .select("name")
     .eq("id", payment.service_id)
     .maybeSingle();
   if (serviceError) {
+    await markAttemptFailed(service, attemptId).catch(() => null);
     throw new AppointmentsError(
       "Unable to prepare the Professional Booking payment description.",
       503,
@@ -501,8 +644,11 @@ async function createCheckoutAttempt(
         metadata: {
           product: PROFESSIONAL_BOOKING_PAYMENT_PRODUCT,
           payment_id: String(payment.id),
-          payment_attempt_id: String(attempt.id),
+          payment_attempt_id: attemptId,
           appointment_request_id: String(payment.appointment_request_id),
+          provider_payment_terms_version: String(
+            payment.provider_payment_terms_version,
+          ),
         },
         line_items: [
           {
@@ -525,25 +671,22 @@ async function createCheckoutAttempt(
           metadata: {
             product: PROFESSIONAL_BOOKING_PAYMENT_PRODUCT,
             payment_id: String(payment.id),
-            payment_attempt_id: String(attempt.id),
+            payment_attempt_id: attemptId,
             appointment_request_id: String(payment.appointment_request_id),
             requester_id: String(payment.requester_id),
             provider_id: String(payment.provider_id),
+            provider_payment_terms_version: String(
+              payment.provider_payment_terms_version,
+            ),
           },
         },
       },
       {
-        idempotencyKey: `professional-booking-checkout:${payment.id}:${attempt.id}`,
+        idempotencyKey: `professional-booking-checkout:${payment.id}:${attemptId}`,
       },
     );
   } catch (error) {
-    await service
-      .from("professional_booking_payment_attempts")
-      .update({
-        status: "failed",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", attempt.id);
+    await markAttemptFailed(service, attemptId).catch(() => null);
     throw new AppointmentsError(
       "Stripe could not start the Professional Booking payment authorization.",
       503,
@@ -552,6 +695,7 @@ async function createCheckoutAttempt(
   }
 
   if (!session.url) {
+    await markAttemptFailed(service, attemptId).catch(() => null);
     throw new AppointmentsError(
       "Stripe did not return a payment authorization page.",
       503,
@@ -559,12 +703,36 @@ async function createCheckoutAttempt(
     );
   }
 
-  await updateAttemptFromStripe(service, { id: attempt.id }, {
-    sessionId: session.id,
-    paymentIntentId: paymentIntentId(session.payment_intent),
-    status: "checkout_pending",
-    livemode: session.livemode,
-  });
+  try {
+    await updateAttemptFromStripe(
+      service,
+      { id: attemptId },
+      {
+        sessionId: session.id,
+        paymentIntentId: paymentIntentId(session.payment_intent),
+        status: "checkout_pending",
+        livemode: session.livemode,
+      },
+    );
+  } catch (error) {
+    try {
+      if (session.status === "open") {
+        await stripe.checkout.sessions.expire(session.id);
+      }
+    } catch (cleanupError) {
+      console.error("Unable to expire orphaned Professional Booking Checkout Session:", {
+        paymentId: payment.id,
+        sessionId: session.id,
+        error:
+          cleanupError instanceof Error
+            ? cleanupError.message
+            : String(cleanupError),
+      });
+    }
+    await markAttemptFailed(service, attemptId).catch(() => null);
+    throw error;
+  }
+
   payment = await updatePaymentStatus(service, payment, "checkout_pending", {
     latest_error_code: null,
   });
@@ -656,6 +824,11 @@ export async function prepareProfessionalBookingPaymentForNewRequest(
       );
     }
 
+    const providerPaymentTerms = await requireCurrentProviderPaymentTerms(
+      service,
+      providerId,
+    );
+
     const { data: payout, error: payoutError } = await service
       .from("member_payout_accounts")
       .select(
@@ -704,6 +877,8 @@ export async function prepareProfessionalBookingPaymentForNewRequest(
           fee.providerNetBeforeProcessingCents,
         provider_plan: fee.providerPlan,
         reduced_service_fee_applied: fee.reducedServiceFeeApplied,
+        provider_payment_terms_version: providerPaymentTerms.version,
+        provider_payment_terms_accepted_at: providerPaymentTerms.acceptedAt,
         stripe_destination_account_id: payout.stripe_account_id,
       })
       .select("*")
@@ -776,7 +951,7 @@ async function ensureCapturedForAcceptance(
   if (intent.status !== "requires_capture") {
     if (intent.status === "canceled") {
       throw new AppointmentsError(
-        "This payment authorization expired or was released. The requester must authorize payment again.",
+        "This payment authorization expired or was released, so the appointment request was cancelled. Submit a new booking request to continue.",
         409,
         "professional_booking_payment_authorization_expired",
       );
@@ -1168,8 +1343,8 @@ function toPaymentSummary(
     refundedAt: payment.refunded_at ? String(payment.refunded_at) : null,
     canCheckout:
       requester &&
-      ["pending", "reschedule_proposed"].includes(appointmentStatus) &&
-      !["authorized", "capture_pending", "captured"].includes(paymentStatus),
+      AUTHORIZATION_OPEN_APPOINTMENT_STATUSES.has(appointmentStatus) &&
+      paymentStatus === "checkout_pending",
     canRefresh: true,
   };
 }
@@ -1343,9 +1518,15 @@ async function paymentIdFromStripeEvent(
 
   let intentId: string | null = null;
   if (object?.object === "charge") {
-    intentId = typeof object.payment_intent === "string" ? object.payment_intent : object.payment_intent?.id ?? null;
+    intentId =
+      typeof object.payment_intent === "string"
+        ? object.payment_intent
+        : object.payment_intent?.id ?? null;
   } else if (object?.object === "refund") {
-    intentId = typeof object.payment_intent === "string" ? object.payment_intent : object.payment_intent?.id ?? null;
+    intentId =
+      typeof object.payment_intent === "string"
+        ? object.payment_intent
+        : object.payment_intent?.id ?? null;
   }
   if (!intentId) return null;
 
@@ -1384,7 +1565,15 @@ export async function syncProfessionalBookingPaymentStripeEvent(
   const service = createRoomServiceSupabase();
   const paymentId = await paymentIdFromStripeEvent(service, event);
   if (!paymentId) return false;
-  if (!explicitlyProfessional && !["charge.refunded", "refund.created", "refund.updated", "refund.failed"].includes(event.type)) {
+  if (
+    !explicitlyProfessional &&
+    ![
+      "charge.refunded",
+      "refund.created",
+      "refund.updated",
+      "refund.failed",
+    ].includes(event.type)
+  ) {
     return false;
   }
 
