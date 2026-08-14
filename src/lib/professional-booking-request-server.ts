@@ -388,5 +388,34 @@ export async function getProfessionalBookingRequestViolation(
     };
   }
 
+  const { data: acceptedRows, error: acceptedError } = await service
+    .from("business_appointment_requests")
+    .select("id")
+    .eq("provider_id", providerId)
+    .eq("status", "accepted")
+    .lt("requested_start", new Date(requestedEndMs).toISOString())
+    .gt("requested_end", new Date(requestedStartMs).toISOString())
+    .limit(1);
+
+  if (acceptedError) {
+    console.error(
+      "Professional Booking request accepted appointment lookup failed:",
+      {
+        providerId,
+        error: acceptedError.message,
+      },
+    );
+    return null;
+  }
+
+  if ((acceptedRows ?? []).length) {
+    return {
+      message:
+        "Choose another time. This provider already has an accepted appointment then.",
+      status: 409,
+      code: "professional_booking_time_conflict",
+    };
+  }
+
   return null;
 }
