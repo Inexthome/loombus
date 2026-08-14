@@ -5,6 +5,7 @@ import { createNotification } from "@/lib/notifications";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 import { createRequestSupabase, createRoomServiceSupabase } from "@/lib/room-operations";
 import type { AppointmentRequest, AppointmentService } from "@/lib/events";
+import type { ProfessionalBookingIntakeSnapshotItem } from "@/lib/professional-booking-intake";
 
 export type AppointmentInput = Record<string, unknown>;
 type Row = Record<string, any>;
@@ -386,7 +387,11 @@ async function ensureNotBlocked(service: Service, leftId: string, rightId: strin
   }
 }
 
-export async function requestAppointment(request: NextRequest, input: AppointmentInput) {
+export async function requestAppointment(
+  request: NextRequest,
+  input: AppointmentInput,
+  professionalBookingIntakeSnapshot: ProfessionalBookingIntakeSnapshotItem[] | null = null,
+) {
   const viewer = await resolveViewer(request, true);
   const requesterId = viewer.user!.id;
   const serviceId = uuid(input.serviceId, "service id");
@@ -430,22 +435,44 @@ export async function requestAppointment(request: NextRequest, input: Appointmen
   if ((count ?? 0) >= 10) {
     throw new AppointmentsError("You have reached the appointment request limit for this hour.", 429, "appointment_rate_limited");
   }
+
+  const insertValues: Row = {
+    service_id: serviceId,
+    business_id: service.business_id,
+    provider_id: service.owner_id,
+    requester_id: requesterId,
+    requested_start: requestedStart,
+    requested_end: requestedEnd,
+    timezone,
+    note,
+    status: "pending",
+  };
+
+  if (professionalBookingIntakeSnapshot?.length) {
+    insertValues.professional_booking_intake_snapshot =
+      professionalBookingIntakeSnapshot;
+  }
+
   const { data, error: insertError } = await viewer.service
     .from("business_appointment_requests")
-    .insert({
-      service_id: serviceId,
-      business_id: service.business_id,
-      provider_id: service.owner_id,
-      requester_id: requesterId,
-      requested_start: requestedStart,
-      requested_end: requestedEnd,
-      timezone,
-      note,
-      status: "pending",
-    })
+    .insert(insertValues)
     .select("id")
     .single();
-  if (insertError || !data) throw new AppointmentsError("Unable to send the appointment request.", 503, "appointment_request_failed");
+  if (insertError || !data) {
+    if (
+      professionalBookingIntakeSnapshot?.length &&
+      /professional_booking_intake_snapshot|schema cache/i.test(
+        insertError?.message ?? "",
+      )
+    ) {
+      throw new AppointmentsError(
+        "Professional Booking client intake storage is not available yet.",
+        503,
+        "professional_booking_intake_schema_unavailable",
+      );
+    }
+    throw new AppointmentsError("Unable to send the appointment request.", 503, "appointment_request_failed");
+  }
   await createNotification({
     user_id: service.owner_id,
     actor_id: requesterId,
