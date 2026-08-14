@@ -16,6 +16,7 @@ import {
   syncCreatorSupporterInvoiceEvent,
   syncCreatorSupporterSubscriptionEvent,
 } from "@/lib/creator-supporter-billing";
+import { syncAdoptedCreatorPayoutAccountEvent } from "@/lib/creator-supporter-payout-adoption-server";
 import { isFloorPlanKey, syncFloorSubscription } from "@/lib/floor-billing";
 import { syncMemberPayoutAccountEvent } from "@/lib/member-payout-account-server";
 import { fulfillRoomCheckoutSession } from "@/lib/room-billing";
@@ -245,9 +246,6 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
   const subscriptionId = getSubscriptionIdFromCheckoutSession(session);
   if (!subscriptionId) {
-    // Never invent a billing identity from a Checkout Session. The canonical
-    // customer.subscription webhook will establish access when Stripe has a
-    // real subscription id.
     console.warn(
       "Stripe subscription checkout completed without subscription id:",
       session.id
@@ -376,7 +374,10 @@ export async function POST(request: NextRequest) {
       case "account.updated": {
         const account = event.data.object as Stripe.Account;
         await syncMemberPayoutAccountEvent(account);
-        await syncCreatorPayoutAccountEvent(account);
+        const adoptedCreatorHandled = await syncAdoptedCreatorPayoutAccountEvent(account);
+        if (!adoptedCreatorHandled) {
+          await syncCreatorPayoutAccountEvent(account);
+        }
         break;
       }
       case "invoice.paid":
