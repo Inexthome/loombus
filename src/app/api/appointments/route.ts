@@ -15,6 +15,10 @@ import {
   getProfessionalBookingIntakeRequestState,
   getPublicProfessionalBookingIntake,
 } from "@/lib/professional-booking-intake-runtime-server";
+import {
+  getProfessionalBookingPolicyRequestState,
+  getPublicProfessionalBookingPolicy,
+} from "@/lib/professional-booking-policy-runtime-server";
 import { getProfessionalBookingRequestViolation } from "@/lib/professional-booking-request-server";
 import { getProfessionalBookingSlotGuidance } from "@/lib/professional-booking-slot-guidance-server";
 import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
@@ -62,6 +66,15 @@ export async function GET(request: NextRequest) {
         await getPublicProfessionalBookingIntake(
           businessSlug,
           intakeServiceId,
+        ),
+      );
+    }
+    const policyServiceId = params.get("policyServiceId");
+    if (policyServiceId) {
+      return response(
+        await getPublicProfessionalBookingPolicy(
+          businessSlug,
+          policyServiceId,
         ),
       );
     }
@@ -119,6 +132,18 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const policy = await getProfessionalBookingPolicyRequestState(
+        request,
+        input,
+      );
+      if (policy.violation) {
+        throw new AppointmentsError(
+          policy.violation.message,
+          policy.violation.status,
+          policy.violation.code,
+        );
+      }
+
       const intake = await getProfessionalBookingIntakeRequestState(
         request,
         input,
@@ -136,6 +161,7 @@ export async function POST(request: NextRequest) {
           request,
           input,
           intake.snapshot,
+          policy.snapshot,
         ),
         201,
       );
