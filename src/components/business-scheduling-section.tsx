@@ -16,6 +16,7 @@ import {
   type ProfessionalBookingIntakeQuestion,
 } from "@/lib/professional-booking-intake";
 import type { PublicProfessionalBookingPolicyResponse } from "@/lib/professional-booking-policy";
+import type { PublicProfessionalBookingPricingResponse } from "@/lib/professional-booking-pricing";
 import { scheduleAuthorizedFetch } from "@/lib/schedule-client";
 
 type SlotGuidance = {
@@ -58,6 +59,23 @@ function cancellationNoticeLabel(hours: number) {
   return `${hours} hours`;
 }
 
+function professionalBookingPriceLabel(
+  pricing: PublicProfessionalBookingPricingResponse,
+) {
+  if (
+    !pricing.active ||
+    pricing.amountCents === null ||
+    pricing.currency !== "usd"
+  ) {
+    return "";
+  }
+
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+  }).format(pricing.amountCents / 100);
+}
+
 function isIntakeQuestion(value: unknown): value is ProfessionalBookingIntakeQuestion {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const row = value as Record<string, unknown>;
@@ -85,6 +103,9 @@ export default function BusinessSchedulingSection({
   const [policyForm, setPolicyForm] =
     useState<PublicProfessionalBookingPolicyResponse | null>(null);
   const [policyAcknowledged, setPolicyAcknowledged] = useState(false);
+  const [pricingForm, setPricingForm] =
+    useState<PublicProfessionalBookingPricingResponse | null>(null);
+  const [pricingRefreshKey, setPricingRefreshKey] = useState(0);
   const [requestedStart, setRequestedStart] = useState("");
   const [note, setNote] = useState("");
   const [working, setWorking] = useState(false);
@@ -232,6 +253,49 @@ export default function BusinessSchedulingSection({
     };
   }, [businessSlug, selectedId]);
 
+  useEffect(() => {
+    if (!selectedId) return;
+
+    let active = true;
+    const params = new URLSearchParams({
+      businessSlug,
+      pricingServiceId: selectedId,
+    });
+
+    void fetch(`/api/appointments?${params.toString()}`, {
+      cache: "no-store",
+    })
+      .then((response) => response.json())
+      .then((payload) => {
+        if (!active) return;
+        setPricingForm({
+          serviceId: selectedId,
+          active: payload.active === true,
+          amountCents:
+            typeof payload.amountCents === "number" ? payload.amountCents : null,
+          currency: payload.currency === "usd" ? "usd" : null,
+          sourceRevision:
+            typeof payload.sourceRevision === "string"
+              ? payload.sourceRevision
+              : null,
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+        setPricingForm({
+          serviceId: selectedId,
+          active: false,
+          amountCents: null,
+          currency: null,
+          sourceRevision: null,
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [businessSlug, pricingRefreshKey, selectedId]);
+
   const selected = useMemo(
     () => services.find((service) => service.id === selectedId) ?? null,
     [selectedId, services],
@@ -243,10 +307,16 @@ export default function BusinessSchedulingSection({
     intakeForm?.serviceId === selectedId ? intakeForm : null;
   const selectedPolicy =
     policyForm?.serviceId === selectedId ? policyForm : null;
+  const selectedPricing =
+    pricingForm?.serviceId === selectedId ? pricingForm : null;
   const intakeReady = !selected || intakeForm?.serviceId === selected.id;
   const policyReady = !selected || policyForm?.serviceId === selected.id;
+  const pricingReady = !selected || pricingForm?.serviceId === selected.id;
   const policyAllowsSubmit =
     !selectedPolicy?.active || policyAcknowledged;
+  const displayedProfessionalPrice = selectedPricing
+    ? professionalBookingPriceLabel(selectedPricing)
+    : "";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -255,6 +325,7 @@ export default function BusinessSchedulingSection({
       !requestedStart ||
       !intakeReady ||
       !policyReady ||
+      !pricingReady ||
       !policyAllowsSubmit ||
       working
     ) {
@@ -276,6 +347,10 @@ export default function BusinessSchedulingSection({
             note,
             policyAcknowledged:
               selectedPolicy?.active === true && policyAcknowledged,
+            professionalBookingPriceRevision:
+              selectedPricing?.active === true
+                ? selectedPricing.sourceRevision
+                : null,
             intakeAnswers:
               selectedIntake?.active && selectedIntake.questions.length
                 ? selectedIntake.questions.map((question) => ({
@@ -289,6 +364,10 @@ export default function BusinessSchedulingSection({
       );
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (payload.code === "professional_booking_price_changed") {
+          setPricingForm(null);
+          setPricingRefreshKey((current) => current + 1);
+        }
         throw new Error(payload.error ?? "Unable to request the appointment.");
       }
       setRequestedStart("");
@@ -347,6 +426,7 @@ export default function BusinessSchedulingSection({
                   setIntakeAnswers({});
                   setPolicyForm(null);
                   setPolicyAcknowledged(false);
+                  setPricingForm(null);
                 }
                 setSelectedId(service.id);
               }}
@@ -426,6 +506,18 @@ export default function BusinessSchedulingSection({
                     available within this provider&apos;s booking window.
                   </p>
                 )}
+              </div>
+            ) : null}
+
+            {selectedPricing?.active && displayedProfessionalPrice ? (
+              <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4">
+                <strong className="text-sm">Professional Booking price</strong>
+                <p className="mt-2 text-2xl font-semibold tracking-[-0.03em]">
+                  {displayedProfessionalPrice}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-[var(--loombus-text-muted)]">
+                  This is the provider&apos;s structured price for this appointment request. Loombus is not collecting payment in this booking flow yet. If the provider changes this price before you submit, Loombus will ask you to review the updated amount first.
+                </p>
               </div>
             ) : null}
 
@@ -532,6 +624,7 @@ export default function BusinessSchedulingSection({
                 !requestedStart ||
                 !intakeReady ||
                 !policyReady ||
+                !pricingReady ||
                 !policyAllowsSubmit
               }
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--loombus-primary-bg)] px-5 py-3 text-sm font-semibold text-[var(--loombus-primary-text)] disabled:opacity-50"

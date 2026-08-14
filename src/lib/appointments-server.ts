@@ -11,6 +11,10 @@ import {
   type ProfessionalBookingPolicySnapshot,
   type ProfessionalBookingRequesterCancellationTiming,
 } from "@/lib/professional-booking-policy";
+import {
+  normalizeProfessionalBookingPriceSnapshot,
+  type ProfessionalBookingPriceSnapshot,
+} from "@/lib/professional-booking-pricing";
 
 export type AppointmentInput = Record<string, unknown>;
 type Row = Record<string, any>;
@@ -154,6 +158,9 @@ function normalizeRequest(
     timezone: text(row.timezone, 100) || "UTC",
     note: text(row.note, 3000) || null,
     providerNote: text(row.provider_note, 3000) || null,
+    professionalBookingPriceSnapshot: normalizeProfessionalBookingPriceSnapshot(
+      row.professional_booking_price_snapshot,
+    ),
     status: text(row.status, 40) as AppointmentRequest["status"],
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
@@ -397,6 +404,7 @@ export async function requestAppointment(
   input: AppointmentInput,
   professionalBookingIntakeSnapshot: ProfessionalBookingIntakeSnapshotItem[] | null = null,
   professionalBookingPolicySnapshot: ProfessionalBookingPolicySnapshot | null = null,
+  professionalBookingPriceSnapshot: ProfessionalBookingPriceSnapshot | null = null,
 ) {
   const viewer = await resolveViewer(request, true);
   const requesterId = viewer.user!.id;
@@ -464,6 +472,11 @@ export async function requestAppointment(
       professionalBookingPolicySnapshot;
   }
 
+  if (professionalBookingPriceSnapshot) {
+    insertValues.professional_booking_price_snapshot =
+      professionalBookingPriceSnapshot;
+  }
+
   const { data, error: insertError } = await viewer.service
     .from("business_appointment_requests")
     .insert(insertValues)
@@ -492,6 +505,18 @@ export async function requestAppointment(
         "Professional Booking policy storage is not available yet.",
         503,
         "professional_booking_policy_schema_unavailable",
+      );
+    }
+    if (
+      professionalBookingPriceSnapshot &&
+      /professional_booking_price_snapshot|schema cache/i.test(
+        insertError?.message ?? "",
+      )
+    ) {
+      throw new AppointmentsError(
+        "Professional Booking price snapshot storage is not available yet.",
+        503,
+        "professional_booking_price_schema_unavailable",
       );
     }
     throw new AppointmentsError("Unable to send the appointment request.", 503, "appointment_request_failed");
