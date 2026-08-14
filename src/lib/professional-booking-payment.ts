@@ -3,6 +3,8 @@ import type { SubscriptionPlanId } from "@/lib/subscription-entitlements";
 export const PROFESSIONAL_BOOKING_PAYMENT_PRODUCT =
   "loombus_professional_booking" as const;
 export const PROFESSIONAL_BOOKING_PAYMENT_CURRENCY = "usd" as const;
+export const PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION =
+  "professional-booking-payments-2026-08-v1" as const;
 
 export type ProfessionalBookingPaymentStatus =
   | "checkout_pending"
