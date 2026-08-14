@@ -17,6 +17,7 @@ import {
   syncCreatorSupporterSubscriptionEvent,
 } from "@/lib/creator-supporter-billing";
 import { isFloorPlanKey, syncFloorSubscription } from "@/lib/floor-billing";
+import { syncMemberPayoutAccountEvent } from "@/lib/member-payout-account-server";
 import { fulfillRoomCheckoutSession } from "@/lib/room-billing";
 import { syncRoomSubscriptionEvent } from "@/lib/room-subscription-events";
 
@@ -372,9 +373,12 @@ export async function POST(request: NextRequest) {
           event.data.object as Stripe.Subscription
         );
         break;
-      case "account.updated":
-        await syncCreatorPayoutAccountEvent(event.data.object as Stripe.Account);
+      case "account.updated": {
+        const account = event.data.object as Stripe.Account;
+        await syncMemberPayoutAccountEvent(account);
+        await syncCreatorPayoutAccountEvent(account);
         break;
+      }
       case "invoice.paid":
         await syncCreatorSupporterInvoiceEvent(
           event.data.object as Stripe.Invoice,
