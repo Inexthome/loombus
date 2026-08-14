@@ -18,6 +18,12 @@ export default function AppointmentsPage() {
           <UnifiedAppointmentsOverview />
           <div className="mt-3 flex flex-wrap justify-end gap-2">
             <Link
+              href="/appointments/professional-policy"
+              className="rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)]"
+            >
+              Premium Pro booking policies
+            </Link>
+            <Link
               href="/appointments/professional-intake-responses"
               className="rounded-full border border-[color:var(--loombus-border)] bg-[color:var(--loombus-surface)] px-4 py-2 text-sm font-semibold transition hover:border-[color:var(--loombus-gold)]"
             >
