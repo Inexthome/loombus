@@ -8,6 +8,7 @@ import {
   refreshCreatorPayoutAccount,
   saveCreatorSupporterTierPricing,
 } from "@/lib/creator-supporter-billing";
+import { prepareCreatorSupporterPayoutIdentity } from "@/lib/creator-supporter-payout-adoption-server";
 import {
   createMemberPrivacyServiceClient,
   requireMemberUser,
@@ -186,6 +187,16 @@ export async function POST(request: NextRequest) {
           "creator_supporter_paid_beta_unavailable"
         );
       }
+
+      // Always establish or adopt the provider-neutral canonical payout
+      // identity before entering the Creator Supporter-specific onboarding
+      // path. This prevents Creator Supporters from creating a second Stripe
+      // Express account when another Loombus product connected Stripe first.
+      await prepareCreatorSupporterPayoutIdentity({
+        creatorId: authorized.user.id,
+        acceptedIp: requestIp(request),
+      });
+
       const result = await createCreatorPayoutOnboarding({
         creatorId: authorized.user.id,
         email: authorized.user.email ?? null,
