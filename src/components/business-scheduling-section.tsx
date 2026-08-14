@@ -516,7 +516,7 @@ export default function BusinessSchedulingSection({
                   {displayedProfessionalPrice}
                 </p>
                 <p className="mt-2 text-xs leading-5 text-[var(--loombus-text-muted)]">
-                  This is the provider&apos;s structured price for this appointment request. Loombus is not collecting payment in this booking flow yet. If the provider changes this price before you submit, Loombus will ask you to review the updated amount first.
+                  This is the provider&apos;s structured price for this appointment request. If online payment is required, Loombus will take you to Stripe to authorize this exact amount after you send the request. Payment is captured only if the appointment is accepted. If the provider changes this price before you submit, Loombus will ask you to review the updated amount first.
                 </p>
               </div>
             ) : null}

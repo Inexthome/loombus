@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  acceptProfessionalBookingPaymentTerms,
   getProfessionalBookingPayout,
   openProfessionalBookingPayoutDashboard,
   ProfessionalBookingPayoutError,
@@ -42,6 +43,14 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
     const action = String(body.action ?? "").trim().toLowerCase();
 
+    if (action === "accept_payment_terms") {
+      return response(
+        await acceptProfessionalBookingPaymentTerms(
+          request,
+          body.paymentTermsAccepted,
+        ),
+      );
+    }
     if (action === "start_onboarding") {
       return response(await startProfessionalBookingPayoutOnboarding(request));
     }
