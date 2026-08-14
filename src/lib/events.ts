@@ -1,4 +1,5 @@
 import type { BookingSourceType } from "@/lib/booking-source";
+import type { ProfessionalBookingPriceSnapshot } from "@/lib/professional-booking-pricing";
 
 export type PublicEventStatus =
   | "pending"
@@ -114,6 +115,7 @@ export type AppointmentRequest = AppointmentBookingSourceFields & {
   timezone: string;
   note: string | null;
   providerNote: string | null;
+  professionalBookingPriceSnapshot: ProfessionalBookingPriceSnapshot | null;
   status:
     | "pending"
     | "accepted"
