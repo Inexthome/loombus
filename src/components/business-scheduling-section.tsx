@@ -271,9 +271,11 @@ export default function BusinessSchedulingSection({
               key={service.id}
               type="button"
               onClick={() => {
+                if (service.id !== selectedId) {
+                  setIntakeForm(null);
+                  setIntakeAnswers({});
+                }
                 setSelectedId(service.id);
-                setIntakeForm(null);
-                setIntakeAnswers({});
               }}
               className={`rounded-2xl border p-4 text-left transition ${
                 selectedId === service.id
