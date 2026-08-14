@@ -19,6 +19,7 @@ import {
 import { syncAdoptedCreatorPayoutAccountEvent } from "@/lib/creator-supporter-payout-adoption-server";
 import { isFloorPlanKey, syncFloorSubscription } from "@/lib/floor-billing";
 import { syncMemberPayoutAccountEvent } from "@/lib/member-payout-account-server";
+import { syncProfessionalBookingPaymentStripeEvent } from "@/lib/professional-booking-payment-server";
 import { fulfillRoomCheckoutSession } from "@/lib/room-billing";
 import { syncRoomSubscriptionEvent } from "@/lib/room-subscription-events";
 
@@ -356,6 +357,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (await syncProfessionalBookingPaymentStripeEvent(event)) {
+      return NextResponse.json({ received: true });
+    }
+
     switch (event.type) {
       case "checkout.session.completed":
         await handleCheckoutSessionCompleted(

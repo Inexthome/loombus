@@ -16,6 +16,11 @@ import {
   getPublicProfessionalBookingIntake,
 } from "@/lib/professional-booking-intake-runtime-server";
 import {
+  prepareProfessionalBookingPaymentForNewRequest,
+  runProviderResponseWithProfessionalBookingPayment,
+  runRequesterActionWithProfessionalBookingPayment,
+} from "@/lib/professional-booking-payment-server";
+import {
   getProfessionalBookingPolicyRequestState,
   getPublicProfessionalBookingPolicy,
 } from "@/lib/professional-booking-policy-runtime-server";
@@ -35,11 +40,14 @@ const ADULT_ONLY_ACTIONS = new Set([
   "provider_response",
 ]);
 
-function response(payload: unknown, status = 200) {
-  return NextResponse.json(payload, {
-    status,
-    headers: { "Cache-Control": "private, no-store" },
-  });
+function response(
+  payload: unknown,
+  status = 200,
+  navigateTo?: string | null,
+) {
+  const headers = new Headers({ "Cache-Control": "private, no-store" });
+  if (navigateTo) headers.set("X-Loombus-Navigate-To", navigateTo);
+  return NextResponse.json(payload, { status, headers });
 }
 
 function errorResponse(error: unknown) {
@@ -181,22 +189,45 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const appointment = await requestAppointment(
+        request,
+        input,
+        intake.snapshot,
+        policy.snapshot,
+        pricing.snapshot,
+      );
+      const payment = await prepareProfessionalBookingPaymentForNewRequest(
+        request,
+        appointment.id,
+      );
       return response(
-        await requestAppointment(
-          request,
-          input,
-          intake.snapshot,
-          policy.snapshot,
-          pricing.snapshot,
-        ),
+        {
+          ...appointment,
+          professionalBookingPayment: payment
+            ? { required: true, paymentId: payment.paymentId }
+            : null,
+        },
         201,
+        payment?.checkoutUrl,
       );
     }
     if (action === "provider_response") {
-      return response(await respondToAppointment(request, input));
+      return response(
+        await runProviderResponseWithProfessionalBookingPayment(
+          request,
+          input,
+          () => respondToAppointment(request, input),
+        ),
+      );
     }
     if (action === "requester_action") {
-      return response(await requesterAppointmentAction(request, input));
+      return response(
+        await runRequesterActionWithProfessionalBookingPayment(
+          request,
+          input,
+          () => requesterAppointmentAction(request, input),
+        ),
+      );
     }
     if (action === "complete") return response(await completeAppointment(request, input));
     throw new AppointmentsError(
