@@ -11,6 +11,10 @@ import {
   setAppointmentServiceStatus,
   updateAppointmentService,
 } from "@/lib/appointments-server";
+import {
+  getProfessionalBookingIntakeRequestState,
+  getPublicProfessionalBookingIntake,
+} from "@/lib/professional-booking-intake-runtime-server";
 import { getProfessionalBookingRequestViolation } from "@/lib/professional-booking-request-server";
 import { getProfessionalBookingSlotGuidance } from "@/lib/professional-booking-slot-guidance-server";
 import { enforceAdultOnlyAction } from "@/lib/teen-safety-server";
@@ -51,6 +55,15 @@ export async function GET(request: NextRequest) {
     const businessSlug = params.get("businessSlug");
     if (!businessSlug) {
       throw new AppointmentsError("Business slug is required.", 400, "business_slug_required");
+    }
+    const intakeServiceId = params.get("intakeServiceId");
+    if (intakeServiceId) {
+      return response(
+        await getPublicProfessionalBookingIntake(
+          businessSlug,
+          intakeServiceId,
+        ),
+      );
     }
     const slotGuidanceServiceId = params.get("slotGuidanceServiceId");
     if (slotGuidanceServiceId) {
@@ -105,7 +118,27 @@ export async function POST(request: NextRequest) {
           violation.code,
         );
       }
-      return response(await requestAppointment(request, input), 201);
+
+      const intake = await getProfessionalBookingIntakeRequestState(
+        request,
+        input,
+      );
+      if (intake.violation) {
+        throw new AppointmentsError(
+          intake.violation.message,
+          intake.violation.status,
+          intake.violation.code,
+        );
+      }
+
+      return response(
+        await requestAppointment(
+          request,
+          input,
+          intake.snapshot,
+        ),
+        201,
+      );
     }
     if (action === "provider_response") {
       return response(await respondToAppointment(request, input));
