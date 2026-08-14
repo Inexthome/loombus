@@ -6,6 +6,21 @@ export type ProfessionalBookingIntakeQuestion = {
   required: boolean;
 };
 
+export type ProfessionalBookingIntakeAnswerInput = {
+  id: string;
+  answer: string;
+};
+
+export type ProfessionalBookingIntakeSnapshotItem =
+  ProfessionalBookingIntakeQuestion & {
+    answer: string;
+  };
+
+export type PublicProfessionalBookingIntakeResponse = {
+  active: boolean;
+  questions: ProfessionalBookingIntakeQuestion[];
+};
+
 export type ProfessionalBookingIntakeService = {
   id: string;
   name: string;
@@ -23,3 +38,4 @@ export type ProfessionalBookingIntakeResponse = {
 };
 
 export const PROFESSIONAL_BOOKING_INTAKE_QUESTION_LIMIT = 5;
+export const PROFESSIONAL_BOOKING_INTAKE_ANSWER_MAX_LENGTH = 2000;
