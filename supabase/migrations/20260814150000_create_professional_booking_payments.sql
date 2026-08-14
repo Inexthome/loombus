@@ -86,6 +86,104 @@ create table if not exists public.professional_booking_payment_attempts (
 create index if not exists professional_booking_payment_attempts_payment_idx
   on public.professional_booking_payment_attempts(payment_id, created_at desc);
 
+create or replace function public.protect_professional_booking_payment_contract()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if row(
+    new.id,
+    new.appointment_request_id,
+    new.service_id,
+    new.provider_id,
+    new.requester_id,
+    new.gross_amount_cents,
+    new.currency,
+    new.fee_schedule_version,
+    new.platform_fee_bps,
+    new.platform_fee_cents,
+    new.provider_net_before_processing_cents,
+    new.provider_plan,
+    new.reduced_service_fee_applied,
+    new.stripe_destination_account_id,
+    new.created_at
+  ) is distinct from row(
+    old.id,
+    old.appointment_request_id,
+    old.service_id,
+    old.provider_id,
+    old.requester_id,
+    old.gross_amount_cents,
+    old.currency,
+    old.fee_schedule_version,
+    old.platform_fee_bps,
+    old.platform_fee_cents,
+    old.provider_net_before_processing_cents,
+    old.provider_plan,
+    old.reduced_service_fee_applied,
+    old.stripe_destination_account_id,
+    old.created_at
+  ) then
+    raise exception 'Professional Booking payment contract fields are immutable.'
+      using errcode = '22023';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.protect_professional_booking_payment_contract() from public;
+revoke all on function public.protect_professional_booking_payment_contract() from anon;
+revoke all on function public.protect_professional_booking_payment_contract() from authenticated;
+grant execute on function public.protect_professional_booking_payment_contract() to service_role;
+
+drop trigger if exists professional_booking_payment_contract_immutable
+  on public.professional_booking_payments;
+create trigger professional_booking_payment_contract_immutable
+before update on public.professional_booking_payments
+for each row execute function public.protect_professional_booking_payment_contract();
+
+create or replace function public.protect_professional_booking_payment_attempt_identity()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if new.id is distinct from old.id
+     or new.payment_id is distinct from old.payment_id
+     or new.created_at is distinct from old.created_at
+     or (
+       old.stripe_checkout_session_id is not null
+       and new.stripe_checkout_session_id is distinct from old.stripe_checkout_session_id
+     )
+     or (
+       old.stripe_payment_intent_id is not null
+       and new.stripe_payment_intent_id is distinct from old.stripe_payment_intent_id
+     )
+     or (
+       old.livemode is not null
+       and new.livemode is distinct from old.livemode
+     ) then
+    raise exception 'Professional Booking Stripe attempt identity is immutable once assigned.'
+      using errcode = '22023';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.protect_professional_booking_payment_attempt_identity() from public;
+revoke all on function public.protect_professional_booking_payment_attempt_identity() from anon;
+revoke all on function public.protect_professional_booking_payment_attempt_identity() from authenticated;
+grant execute on function public.protect_professional_booking_payment_attempt_identity() to service_role;
+
+drop trigger if exists professional_booking_payment_attempt_identity_immutable
+  on public.professional_booking_payment_attempts;
+create trigger professional_booking_payment_attempt_identity_immutable
+before update on public.professional_booking_payment_attempts
+for each row execute function public.protect_professional_booking_payment_attempt_identity();
+
 alter table public.professional_booking_payments enable row level security;
 alter table public.professional_booking_payments force row level security;
 alter table public.professional_booking_payment_attempts enable row level security;
@@ -107,3 +205,7 @@ comment on column public.professional_booking_payments.provider_net_before_proce
   'Gross amount less only the Loombus platform fee. Stripe processing, taxes, disputes, and other settlement costs are not represented here.';
 comment on table public.professional_booking_payment_attempts is
   'Server-only Stripe Checkout/PaymentIntent attempts for Professional Booking, allowing safe reauthorization without overwriting prior attempt identity.';
+comment on function public.protect_professional_booking_payment_contract() is
+  'Prevents post-insert mutation of the appointment, participant, price, fee-schedule, plan, and payout-destination contract for a Professional Booking payment.';
+comment on function public.protect_professional_booking_payment_attempt_identity() is
+  'Allows Stripe attempt identifiers to be assigned once, then prevents rebinding an attempt to a different Checkout Session, PaymentIntent, payment, or livemode.';
