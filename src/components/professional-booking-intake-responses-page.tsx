@@ -84,6 +84,8 @@ export default function ProfessionalBookingIntakeResponsesPage() {
   }, []);
 
   useEffect(() => {
+    // Initial remote synchronization intentionally starts on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
