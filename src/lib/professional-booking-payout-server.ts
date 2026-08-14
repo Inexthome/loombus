@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isIP } from "node:net";
 import type { NextRequest } from "next/server";
 import { getResolvedGeneralSubscriptionForUser } from "@/lib/general-subscriptions";
 import {
@@ -9,11 +10,13 @@ import {
   MemberPayoutIdentityError,
   refreshMemberPayoutAccount,
 } from "@/lib/member-payout-account-server";
+import { PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION } from "@/lib/professional-booking-payment";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 import {
   createRequestSupabase,
   createRoomServiceSupabase,
 } from "@/lib/room-operations";
+import { SERVICE_TRANSACTION_FEE_SCHEDULE } from "@/lib/service-transaction-fees";
 import {
   evaluateSubscriptionEntitlement,
   type SubscriptionPlanId,
@@ -105,13 +108,60 @@ function payoutPayload(identity: Awaited<ReturnType<typeof getMemberPayoutIdenti
   };
 }
 
+function termsSchemaUnavailable(message: string | null | undefined) {
+  return /professional_booking_payment_provider_terms|schema cache|relation .* does not exist/i.test(
+    message ?? "",
+  );
+}
+
+async function paymentTermsState(
+  service: ReturnType<typeof createRoomServiceSupabase>,
+  providerId: string,
+) {
+  const { data, error } = await service
+    .from("professional_booking_payment_provider_terms")
+    .select("accepted_at")
+    .eq("provider_id", providerId)
+    .eq("terms_version", PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION)
+    .maybeSingle();
+
+  if (error) {
+    if (termsSchemaUnavailable(error.message)) {
+      return { available: false, accepted: false, acceptedAt: null as string | null };
+    }
+    throw new ProfessionalBookingPayoutError(
+      "Unable to verify Professional Booking payment terms.",
+      503,
+      "professional_booking_payment_terms_unavailable",
+    );
+  }
+
+  return {
+    available: true,
+    accepted: Boolean(data?.accepted_at),
+    acceptedAt: data?.accepted_at ? String(data.accepted_at) : null,
+  };
+}
+
+function requestIp(request: NextRequest) {
+  const candidates = [
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+    request.headers.get("x-real-ip")?.trim(),
+  ];
+  for (const candidate of candidates) {
+    if (candidate && isIP(candidate)) return candidate;
+  }
+  return null;
+}
+
 export async function getProfessionalBookingPayout(request: NextRequest) {
   const context = await viewer(request);
-  const [subscription, hasProviderService, age, identity] = await Promise.all([
+  const [subscription, hasProviderService, age, identity, terms] = await Promise.all([
     subscriptionAccess(context.userId, context.isAdmin),
     providerHasService(context.service, context.userId),
     ageEligibility(context.service, context.userId),
     getMemberPayoutIdentity(context.userId),
+    paymentTermsState(context.service, context.userId),
   ]);
 
   return {
@@ -123,6 +173,11 @@ export async function getProfessionalBookingPayout(request: NextRequest) {
     adultProviderEligible: age.adult,
     hasPayoutIdentity: Boolean(identity),
     payout: payoutPayload(identity),
+    paymentTermsStorageAvailable: terms.available,
+    paymentTermsVersion: PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION,
+    paymentTermsAccepted: terms.accepted,
+    paymentTermsAcceptedAt: terms.acceptedAt,
+    paymentPlatformFeeBps: SERVICE_TRANSACTION_FEE_SCHEDULE.proReducedFeeBps,
   };
 }
 
@@ -179,6 +234,56 @@ function translatePayoutError(error: unknown): never {
     throw new ProfessionalBookingPayoutError(error.message, error.status, error.code);
   }
   throw error;
+}
+
+export async function acceptProfessionalBookingPaymentTerms(
+  request: NextRequest,
+  explicitlyAccepted: unknown,
+) {
+  if (explicitlyAccepted !== true) {
+    throw new ProfessionalBookingPayoutError(
+      "You must explicitly accept the Professional Booking payment terms.",
+      400,
+      "professional_booking_payment_terms_acceptance_required",
+    );
+  }
+
+  const context = await requirePayoutAction(request);
+  const existing = await paymentTermsState(context.service, context.userId);
+  if (!existing.available) {
+    throw new ProfessionalBookingPayoutError(
+      "Professional Booking payment terms storage is not available yet.",
+      503,
+      "professional_booking_payment_terms_schema_unavailable",
+    );
+  }
+  if (!existing.accepted) {
+    const { error } = await context.service
+      .from("professional_booking_payment_provider_terms")
+      .insert({
+        provider_id: context.userId,
+        terms_version: PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION,
+        accepted_ip: requestIp(request),
+      });
+
+    if (error && error.code !== "23505") {
+      throw new ProfessionalBookingPayoutError(
+        "Unable to save Professional Booking payment terms acceptance.",
+        503,
+        "professional_booking_payment_terms_save_failed",
+      );
+    }
+  }
+
+  const confirmed = await paymentTermsState(context.service, context.userId);
+  if (!confirmed.accepted) {
+    throw new ProfessionalBookingPayoutError(
+      "Professional Booking payment terms acceptance could not be confirmed.",
+      503,
+      "professional_booking_payment_terms_confirmation_failed",
+    );
+  }
+  return getProfessionalBookingPayout(request);
 }
 
 export async function startProfessionalBookingPayoutOnboarding(request: NextRequest) {
