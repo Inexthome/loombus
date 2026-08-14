@@ -2,6 +2,19 @@
 -- Stores immutable service-commerce economics and Stripe authorization attempts.
 -- Money movement remains feature-flagged and is service-role only.
 
+create table if not exists public.professional_booking_payment_provider_terms (
+  provider_id uuid not null references auth.users(id) on delete cascade,
+  terms_version text not null,
+  accepted_at timestamptz not null default now(),
+  accepted_ip inet,
+  primary key (provider_id, terms_version),
+  constraint professional_booking_payment_provider_terms_version_check
+    check (char_length(terms_version) between 1 and 120)
+);
+
+create index if not exists professional_booking_payment_provider_terms_provider_idx
+  on public.professional_booking_payment_provider_terms(provider_id, accepted_at desc);
+
 create table if not exists public.professional_booking_payments (
   id uuid primary key default gen_random_uuid(),
   appointment_request_id uuid not null unique references public.business_appointment_requests(id) on delete cascade,
@@ -184,11 +197,16 @@ create trigger professional_booking_payment_attempt_identity_immutable
 before update on public.professional_booking_payment_attempts
 for each row execute function public.protect_professional_booking_payment_attempt_identity();
 
+alter table public.professional_booking_payment_provider_terms enable row level security;
+alter table public.professional_booking_payment_provider_terms force row level security;
 alter table public.professional_booking_payments enable row level security;
 alter table public.professional_booking_payments force row level security;
 alter table public.professional_booking_payment_attempts enable row level security;
 alter table public.professional_booking_payment_attempts force row level security;
 
+revoke all on table public.professional_booking_payment_provider_terms from public;
+revoke all on table public.professional_booking_payment_provider_terms from anon;
+revoke all on table public.professional_booking_payment_provider_terms from authenticated;
 revoke all on table public.professional_booking_payments from public;
 revoke all on table public.professional_booking_payments from anon;
 revoke all on table public.professional_booking_payments from authenticated;
@@ -196,9 +214,14 @@ revoke all on table public.professional_booking_payment_attempts from public;
 revoke all on table public.professional_booking_payment_attempts from anon;
 revoke all on table public.professional_booking_payment_attempts from authenticated;
 
+grant select, insert on table public.professional_booking_payment_provider_terms to service_role;
 grant select, insert, update, delete on table public.professional_booking_payments to service_role;
 grant select, insert, update, delete on table public.professional_booking_payment_attempts to service_role;
 
+comment on table public.professional_booking_payment_provider_terms is
+  'Immutable versioned provider acceptance of the Professional Booking payment economics and lifecycle. This is separate from Creator Supporter product terms.';
+comment on column public.professional_booking_payment_provider_terms.accepted_ip is
+  'Request IP recorded at explicit provider acceptance when available. No acceptance is inferred from Stripe onboarding or another Loombus product.';
 comment on table public.professional_booking_payments is
   'Server-only immutable Professional Booking payment economics plus aggregate authorization/capture/refund state. No browser-supplied money values are trusted.';
 comment on column public.professional_booking_payments.provider_net_before_processing_cents is
