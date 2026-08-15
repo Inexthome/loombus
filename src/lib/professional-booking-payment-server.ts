@@ -1238,6 +1238,32 @@ async function compensateFailedAcceptance(
   }
 }
 
+async function assertPricedAcceptanceHasPayment(
+  service: Service,
+  requestId: string,
+  viewerId: string,
+  viewerRole: "provider" | "requester",
+) {
+  const appointment = await loadAppointment(service, requestId);
+  const expectedViewerId =
+    viewerRole === "provider"
+      ? String(appointment.provider_id)
+      : String(appointment.requester_id);
+
+  if (expectedViewerId !== viewerId) return;
+
+  const priceSnapshot = normalizeProfessionalBookingPriceSnapshot(
+    appointment.professional_booking_price_snapshot,
+  );
+  if (!priceSnapshot) return;
+
+  throw new AppointmentsError(
+    "This paid Professional Booking request has no payment authorization. Submit a new booking request after payments are enabled.",
+    409,
+    "professional_booking_payment_authorization_required",
+  );
+}
+
 export async function runProviderResponseWithProfessionalBookingPayment<T>(
   request: NextRequest,
   input: AppointmentInput,
@@ -1246,10 +1272,23 @@ export async function runProviderResponseWithProfessionalBookingPayment<T>(
   const requestId = uuid(input.requestId);
   if (!requestId) return operation();
   const viewer = await requireViewer(request);
-  const payment = await loadPaymentByRequestId(viewer.service, requestId);
-  if (!payment || String(payment.provider_id) !== viewer.user.id) return operation();
-
   const decision = text(input.decision, 40);
+  const payment = await loadPaymentByRequestId(viewer.service, requestId);
+
+  if (!payment) {
+    if (decision === "accept") {
+      await assertPricedAcceptanceHasPayment(
+        viewer.service,
+        requestId,
+        viewer.user.id,
+        "provider",
+      );
+    }
+    return operation();
+  }
+
+  if (String(payment.provider_id) !== viewer.user.id) return operation();
+
   if (decision === "accept") {
     const capture = await ensureCapturedForAcceptance(viewer.service, payment);
     try {
@@ -1281,10 +1320,23 @@ export async function runRequesterActionWithProfessionalBookingPayment<T>(
   const requestId = uuid(input.requestId);
   if (!requestId) return operation();
   const viewer = await requireViewer(request);
-  const payment = await loadPaymentByRequestId(viewer.service, requestId);
-  if (!payment || String(payment.requester_id) !== viewer.user.id) return operation();
-
   const action = text(input.requestAction, 40);
+  const payment = await loadPaymentByRequestId(viewer.service, requestId);
+
+  if (!payment) {
+    if (action === "accept_reschedule") {
+      await assertPricedAcceptanceHasPayment(
+        viewer.service,
+        requestId,
+        viewer.user.id,
+        "requester",
+      );
+    }
+    return operation();
+  }
+
+  if (String(payment.requester_id) !== viewer.user.id) return operation();
+
   if (action === "accept_reschedule") {
     const capture = await ensureCapturedForAcceptance(viewer.service, payment);
     try {
