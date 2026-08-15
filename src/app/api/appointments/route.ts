@@ -17,6 +17,7 @@ import {
 } from "@/lib/professional-booking-intake-runtime-server";
 import {
   prepareProfessionalBookingPaymentForNewRequest,
+  professionalBookingPaymentsEnabled,
   runProviderResponseWithProfessionalBookingPayment,
   runRequesterActionWithProfessionalBookingPayment,
 } from "@/lib/professional-booking-payment-server";
@@ -186,6 +187,14 @@ export async function POST(request: NextRequest) {
           pricing.violation.message,
           pricing.violation.status,
           pricing.violation.code,
+        );
+      }
+
+      if (pricing.snapshot && !professionalBookingPaymentsEnabled()) {
+        throw new AppointmentsError(
+          "Paid Professional Booking requests are temporarily unavailable.",
+          503,
+          "professional_booking_payments_disabled",
         );
       }
 
