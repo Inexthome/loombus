@@ -13,6 +13,7 @@ type PayoutState = {
   hasProviderService: boolean;
   ageSafetyAvailable: boolean;
   adultProviderEligible: boolean;
+  payoutOnboardingEnabled: boolean;
   hasPayoutIdentity: boolean;
   payout: null | {
     detailsSubmitted: boolean;
@@ -93,6 +94,12 @@ export default function ProfessionalBookingPayoutCard() {
     if (!data || working) return;
     if (!data.canUseProfessionalBooking) {
       requestAccess();
+      return;
+    }
+    if (name === "start_onboarding" && !data.payoutOnboardingEnabled) {
+      setNotice(
+        "Professional Booking Stripe payout onboarding is not enabled in this deployment.",
+      );
       return;
     }
     if (name === "accept_payment_terms" && !termsChecked) {
@@ -232,6 +239,14 @@ export default function ProfessionalBookingPayoutCard() {
             </div>
           ) : null}
 
+          {canManage &&
+          (!data.hasPayoutIdentity || !data.payout?.detailsSubmitted) &&
+          !data.payoutOnboardingEnabled ? (
+            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 text-sm text-[color:var(--loombus-text-muted)]">
+              Professional Booking Stripe payout onboarding is not enabled in this deployment.
+            </div>
+          ) : null}
+
           {data.payout?.requirementsDue?.length ? (
             <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4">
               <p className="text-sm font-semibold">Stripe requirements still due</p>
@@ -242,7 +257,18 @@ export default function ProfessionalBookingPayoutCard() {
           {canManage ? (
             <div className="flex flex-wrap gap-2">
               {!data.hasPayoutIdentity || !data.payout?.detailsSubmitted ? (
-                <button type="button" onClick={() => void action("start_onboarding")} disabled={working} className="rounded-full bg-[color:var(--loombus-gold)] px-4 py-2 text-sm font-bold text-black disabled:opacity-50">{data.hasPayoutIdentity ? "Continue Stripe setup" : "Connect Stripe"}</button>
+                <button
+                  type="button"
+                  onClick={() => void action("start_onboarding")}
+                  disabled={working || !data.payoutOnboardingEnabled}
+                  className="rounded-full bg-[color:var(--loombus-gold)] px-4 py-2 text-sm font-bold text-black disabled:opacity-50"
+                >
+                  {!data.payoutOnboardingEnabled
+                    ? "Stripe setup unavailable"
+                    : data.hasPayoutIdentity
+                      ? "Continue Stripe setup"
+                      : "Connect Stripe"}
+                </button>
               ) : (
                 <button type="button" onClick={() => void action("open_dashboard")} disabled={working} className="inline-flex items-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-4 py-2 text-sm font-bold text-black disabled:opacity-50">Open Stripe dashboard <ExternalLink size={14} /></button>
               )}
