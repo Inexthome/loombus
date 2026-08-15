@@ -23,6 +23,8 @@ import {
 } from "@/lib/subscription-entitlements";
 import { getMemberAgeSafety } from "@/lib/teen-safety-server";
 
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+
 export class ProfessionalBookingPayoutError extends Error {
   constructor(
     message: string,
@@ -35,6 +37,14 @@ export class ProfessionalBookingPayoutError extends Error {
 
 export function professionalBookingPayoutOnboardingEnabled() {
   return process.env.PROFESSIONAL_BOOKING_PAYOUT_ONBOARDING_ENABLED === "true";
+}
+
+export function professionalBookingPayoutOnboardingLiveAllowed() {
+  return process.env.PROFESSIONAL_BOOKING_PAYOUT_ONBOARDING_ALLOW_LIVE === "true";
+}
+
+function stripeKeyLooksLive() {
+  return /^(sk|rk)_live_/.test(STRIPE_SECRET_KEY ?? "");
 }
 
 async function viewer(request: NextRequest) {
@@ -298,6 +308,13 @@ export async function startProfessionalBookingPayoutOnboarding(request: NextRequ
       "Professional Booking Stripe payout onboarding is not enabled.",
       503,
       "professional_booking_payout_onboarding_disabled",
+    );
+  }
+  if (stripeKeyLooksLive() && !professionalBookingPayoutOnboardingLiveAllowed()) {
+    throw new ProfessionalBookingPayoutError(
+      "Live Professional Booking Stripe payout onboarding is not enabled.",
+      503,
+      "professional_booking_payout_onboarding_live_disabled",
     );
   }
   try {
