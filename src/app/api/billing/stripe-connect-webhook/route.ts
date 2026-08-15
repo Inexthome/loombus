@@ -57,6 +57,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (!event.livemode) {
+      console.log(`Ignoring non-live Stripe Connect webhook event: ${event.type}`);
+      return NextResponse.json({ received: true });
+    }
+
     if (event.type !== "account.updated") {
       console.log(`Unhandled Stripe Connect webhook event: ${event.type}`);
       return NextResponse.json({ received: true });
