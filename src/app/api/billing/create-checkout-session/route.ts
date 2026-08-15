@@ -66,6 +66,25 @@ function isCheckoutPlanKey(value: string): value is CheckoutPlanKey {
   return value in CHECKOUT_PLANS;
 }
 
+const MEMBERSHIP_CHECKOUT_PLAN_KEYS = new Set<CheckoutPlanKey>([
+  "premium_monthly",
+  "premium_annual",
+  "premium_plus_monthly",
+  "premium_plus_annual",
+]);
+
+function isMembershipCheckoutPlanKey(planKey: CheckoutPlanKey) {
+  return MEMBERSHIP_CHECKOUT_PLAN_KEYS.has(planKey);
+}
+
+function membershipCheckoutLiveAllowed() {
+  return process.env.LOOMBUS_MEMBERSHIP_CHECKOUT_ALLOW_LIVE === "true";
+}
+
+function stripeKeyLooksLive() {
+  return /^(sk|rk)_live_/.test(STRIPE_SECRET_KEY ?? "");
+}
+
 function getPriceId(planKey: CheckoutPlanKey) {
   const plan = CHECKOUT_PLANS[planKey];
   const primaryPriceId = process.env[plan.priceEnvVar];
@@ -138,6 +157,20 @@ export async function POST(request: NextRequest) {
             "Checkout is not configured yet. Stripe keys and the selected plan price ID are required.",
           code: "stripe_not_configured",
           detail: `Missing Stripe configuration for ${selectedPlan.label}.`,
+        },
+        { status: 503 }
+      );
+    }
+
+    if (
+      isMembershipCheckoutPlanKey(requestedPlanKey) &&
+      stripeKeyLooksLive() &&
+      !membershipCheckoutLiveAllowed()
+    ) {
+      return NextResponse.json(
+        {
+          error: "Live Loombus membership checkout is not enabled.",
+          code: "membership_checkout_live_disabled",
         },
         { status: 503 }
       );
