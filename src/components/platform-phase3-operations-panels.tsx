@@ -96,6 +96,12 @@ export type AppointmentsAdminResponse = {
     overdueAccepted: number;
     completedRequests: number;
     cancelledRequests: number;
+    paymentReviewProviders: number;
+    paymentEligibleProviders: number;
+    paymentReviewAttention: number;
+    paymentDisputes: number;
+    paymentDisputesOpen: number;
+    paymentDisputesNeedsResponse: number;
   };
   services: Array<{
     id: string;
@@ -140,10 +146,180 @@ export type AppointmentsAdminResponse = {
     createdAt: string | null;
     updatedAt: string | null;
   }>;
+  providerPaymentReviews: Array<{
+    providerId: string;
+    provider: ProfileSummary;
+    review: {
+      id: string;
+      decision: "approved" | "rejected";
+      policyVersion: string;
+      scopeFingerprint: string;
+      reviewedBusinessIds: string[];
+      reviewedServiceIds: string[];
+      basisNote: string;
+      reviewedBy: string;
+      reviewedAt: string;
+    } | null;
+    matchesCurrentScope: boolean;
+    paymentEligible: boolean;
+    scope: {
+      providerId: string;
+      serviceIds: string[];
+      businessIds: string[];
+      fingerprint: string;
+      blockers: string[];
+      unsupportedSourceTypes: string[];
+      services: Array<{
+        id: string;
+        businessId: string;
+        name: string;
+        description: string;
+        durationMinutes: number | null;
+        locationMode: string;
+        locationText: string | null;
+        priceText: string | null;
+        instructions: string | null;
+        sourceType: string;
+        sourceId: string | null;
+      }>;
+      businesses: Array<{
+        id: string;
+        ownerId: string | null;
+        name: string;
+        description: string;
+        category: string;
+        phone: string | null;
+        contactEmail: string | null;
+        websiteUrl: string | null;
+        bookingUrl: string | null;
+        logoUrl: string | null;
+        coverImageUrl: string | null;
+        addressLine1: string | null;
+        addressLine2: string | null;
+        city: string | null;
+        region: string | null;
+        postalCode: string | null;
+        countryCode: string;
+        showExactAddress: boolean;
+        serviceAreaMode: string;
+        serviceRadiusMiles: number | null;
+        serviceAreas: string[];
+        verificationStatus: string;
+        status: string;
+        moderationReason: string | null;
+      }>;
+      businessServices: Array<{
+        businessId: string;
+        name: string;
+        description: string;
+        category: string | null;
+        priceText: string | null;
+        bookingUrl: string | null;
+        serviceArea: string | null;
+      }>;
+      pricing: Array<{
+        serviceId: string;
+        providerId: string;
+        amountCents: number | null;
+        currency: string;
+      }>;
+      marketplaceListings: Array<{
+        id: string;
+        sellerId: string;
+        businessId: string | null;
+        title: string;
+        description: string;
+        category: string;
+        itemCondition: string;
+        price: number | null;
+        currency: string;
+        isFree: boolean;
+        isNegotiable: boolean;
+        city: string | null;
+        region: string | null;
+        postalCode: string | null;
+        countryCode: string;
+        pickupAvailable: boolean;
+        localDeliveryAvailable: boolean;
+        shippingAvailable: boolean;
+        tags: string[];
+        attributes: unknown;
+        photoPaths: string[];
+        expiresAt: string | null;
+        status: string;
+      }>;
+      commerceIntegrityHeads: Array<{
+        id: string;
+        taxonomyVersion: string;
+        sourceModule: string;
+        sourceRecordType: string;
+        sourceRecordId: string;
+        categoryId: string;
+        primarySafetyReasonCode: string;
+        secondarySafetyReasonCodes: string[];
+        contextModifiers: string[];
+        policySeverityCode: string | null;
+        triageSeverityCode: string | null;
+        trustSafetyCaseId: string | null;
+        recordState: string;
+        classificationSource: string;
+        basisNote: string;
+        classifiedAt: string;
+      }>;
+    };
+  }>;
+  paymentDisputes: Array<{
+    id: string;
+    paymentId: string;
+    appointmentRequestId: string;
+    serviceId: string;
+    serviceName: string;
+    businessId: string | null;
+    businessName: string;
+    providerId: string;
+    provider: ProfileSummary;
+    requesterId: string;
+    requester: ProfileSummary;
+    appointmentStatus: string | null;
+    requestedStart: string | null;
+    requestedEnd: string | null;
+    timezone: string | null;
+    paymentStatus: string;
+    grossAmountCents: number;
+    paymentCurrency: string;
+    stripeDisputeId: string;
+    stripeChargeId: string;
+    stripePaymentIntentId: string;
+    livemode: boolean;
+    amountCents: number;
+    currency: string;
+    reason: string;
+    status:
+      | "lost"
+      | "needs_response"
+      | "prevented"
+      | "under_review"
+      | "warning_closed"
+      | "warning_needs_response"
+      | "warning_under_review"
+      | "won";
+    isChargeRefundable: boolean;
+    evidenceDueAt: string | null;
+    evidenceHasEvidence: boolean;
+    evidencePastDue: boolean;
+    evidenceSubmissionCount: number;
+    stripeCreatedAt: string | null;
+    lastStripeEventId: string;
+    lastEventCreatedAt: string | null;
+    firstSeenAt: string | null;
+    lastSyncedAt: string | null;
+    resolvedAt: string | null;
+  }>;
   boundaries: {
     disputeQueueAvailable: boolean;
     accountSuspensionAvailable: boolean;
     paymentOperationsAvailable: boolean;
+    paymentEligibilityReviewAvailable: boolean;
   };
 };
 
