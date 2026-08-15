@@ -33,6 +33,10 @@ export class ProfessionalBookingPayoutError extends Error {
   }
 }
 
+export function professionalBookingPayoutOnboardingEnabled() {
+  return process.env.PROFESSIONAL_BOOKING_PAYOUT_ONBOARDING_ENABLED === "true";
+}
+
 async function viewer(request: NextRequest) {
   const access = await verifyRequestAccountAccess(createRequestSupabase(request));
   if (!access.ok) {
@@ -171,6 +175,7 @@ export async function getProfessionalBookingPayout(request: NextRequest) {
     hasProviderService,
     ageSafetyAvailable: age.available,
     adultProviderEligible: age.adult,
+    payoutOnboardingEnabled: professionalBookingPayoutOnboardingEnabled(),
     hasPayoutIdentity: Boolean(identity),
     payout: payoutPayload(identity),
     paymentTermsStorageAvailable: terms.available,
@@ -288,6 +293,13 @@ export async function acceptProfessionalBookingPaymentTerms(
 
 export async function startProfessionalBookingPayoutOnboarding(request: NextRequest) {
   const context = await requirePayoutAction(request);
+  if (!professionalBookingPayoutOnboardingEnabled()) {
+    throw new ProfessionalBookingPayoutError(
+      "Professional Booking Stripe payout onboarding is not enabled.",
+      503,
+      "professional_booking_payout_onboarding_disabled",
+    );
+  }
   try {
     return await createMemberPayoutOnboarding({
       memberId: context.userId,
