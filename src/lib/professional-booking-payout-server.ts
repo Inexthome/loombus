@@ -11,6 +11,10 @@ import {
   refreshMemberPayoutAccount,
 } from "@/lib/member-payout-account-server";
 import { PROFESSIONAL_BOOKING_PAYMENT_TERMS_VERSION } from "@/lib/professional-booking-payment";
+import {
+  getProfessionalBookingProviderPaymentReviewState,
+  ProfessionalBookingProviderPaymentReviewError,
+} from "@/lib/professional-booking-provider-payment-review-server";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 import {
   createRequestSupabase,
@@ -157,6 +161,35 @@ async function paymentTermsState(
   };
 }
 
+
+async function providerPaymentEligibilityState(
+  service: ReturnType<typeof createRoomServiceSupabase>,
+  providerId: string,
+) {
+  try {
+    const state = await getProfessionalBookingProviderPaymentReviewState(
+      service,
+      providerId,
+    );
+    return {
+      available: true,
+      paymentEligible: state.paymentEligible,
+    };
+  } catch (error) {
+    if (error instanceof ProfessionalBookingProviderPaymentReviewError) {
+      console.error(
+        "Professional Booking payout payment-review resolution failed:",
+        error,
+      );
+      return {
+        available: false,
+        paymentEligible: false,
+      };
+    }
+    throw error;
+  }
+}
+
 function requestIp(request: NextRequest) {
   const candidates = [
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
@@ -170,12 +203,20 @@ function requestIp(request: NextRequest) {
 
 export async function getProfessionalBookingPayout(request: NextRequest) {
   const context = await viewer(request);
-  const [subscription, hasProviderService, age, identity, terms] = await Promise.all([
+  const [
+    subscription,
+    hasProviderService,
+    age,
+    identity,
+    terms,
+    paymentReview,
+  ] = await Promise.all([
     subscriptionAccess(context.userId, context.isAdmin),
     providerHasService(context.service, context.userId),
     ageEligibility(context.service, context.userId),
     getMemberPayoutIdentity(context.userId),
     paymentTermsState(context.service, context.userId),
+    providerPaymentEligibilityState(context.service, context.userId),
   ]);
 
   return {
@@ -185,6 +226,8 @@ export async function getProfessionalBookingPayout(request: NextRequest) {
     hasProviderService,
     ageSafetyAvailable: age.available,
     adultProviderEligible: age.adult,
+    paymentEligibilityReviewAvailable: paymentReview.available,
+    paymentEligible: paymentReview.paymentEligible,
     payoutOnboardingEnabled: professionalBookingPayoutOnboardingEnabled(),
     hasPayoutIdentity: Boolean(identity),
     payout: payoutPayload(identity),
@@ -317,6 +360,33 @@ export async function startProfessionalBookingPayoutOnboarding(request: NextRequ
       "professional_booking_payout_onboarding_live_disabled",
     );
   }
+
+  let paymentReview;
+  try {
+    paymentReview =
+      await getProfessionalBookingProviderPaymentReviewState(
+        context.service,
+        context.userId,
+      );
+  } catch (error) {
+    if (error instanceof ProfessionalBookingProviderPaymentReviewError) {
+      throw new ProfessionalBookingPayoutError(
+        error.message,
+        error.status,
+        error.code,
+      );
+    }
+    throw error;
+  }
+
+  if (!paymentReview.paymentEligible) {
+    throw new ProfessionalBookingPayoutError(
+      "Your current Professional Booking payment eligibility must be approved before Stripe payout onboarding.",
+      409,
+      "professional_booking_payout_payment_review_required",
+    );
+  }
+
   try {
     return await createMemberPayoutOnboarding({
       memberId: context.userId,

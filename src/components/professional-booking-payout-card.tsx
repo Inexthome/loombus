@@ -13,6 +13,8 @@ type PayoutState = {
   hasProviderService: boolean;
   ageSafetyAvailable: boolean;
   adultProviderEligible: boolean;
+  paymentEligibilityReviewAvailable: boolean;
+  paymentEligible: boolean;
   payoutOnboardingEnabled: boolean;
   hasPayoutIdentity: boolean;
   payout: null | {
@@ -99,6 +101,21 @@ export default function ProfessionalBookingPayoutCard() {
     if (name === "start_onboarding" && !data.payoutOnboardingEnabled) {
       setNotice(
         "Professional Booking Stripe payout onboarding is not enabled in this deployment.",
+      );
+      return;
+    }
+    if (
+      name === "start_onboarding" &&
+      !data.paymentEligibilityReviewAvailable
+    ) {
+      setNotice(
+        "Loombus cannot verify your Professional Booking payment eligibility right now. Retry before connecting Stripe.",
+      );
+      return;
+    }
+    if (name === "start_onboarding" && !data.paymentEligible) {
+      setNotice(
+        "Your current Professional Booking payment eligibility must be approved before Stripe payout onboarding.",
       );
       return;
     }
@@ -240,6 +257,24 @@ export default function ProfessionalBookingPayoutCard() {
           ) : null}
 
           {canManage &&
+          data.payoutOnboardingEnabled &&
+          (!data.hasPayoutIdentity || !data.payout?.detailsSubmitted) &&
+          (!data.paymentEligibilityReviewAvailable || !data.paymentEligible) ? (
+            <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4">
+              <p className="text-sm font-semibold">
+                {data.paymentEligibilityReviewAvailable
+                  ? "Payment eligibility review required"
+                  : "Payment eligibility review unavailable"}
+              </p>
+              <p className="mt-1 text-sm leading-6 text-[color:var(--loombus-text-muted)]">
+                {data.paymentEligibilityReviewAvailable
+                  ? "Loombus must approve your current Professional Booking payment scope before Stripe payout onboarding can begin."
+                  : "Loombus cannot verify your current Professional Booking payment eligibility right now. Retry before connecting Stripe."}
+              </p>
+            </div>
+          ) : null}
+
+          {canManage &&
           (!data.hasPayoutIdentity || !data.payout?.detailsSubmitted) &&
           !data.payoutOnboardingEnabled ? (
             <div className="rounded-2xl border border-[color:var(--loombus-border)] bg-[color:var(--loombus-page-bg)] p-4 text-sm text-[color:var(--loombus-text-muted)]">
@@ -260,14 +295,23 @@ export default function ProfessionalBookingPayoutCard() {
                 <button
                   type="button"
                   onClick={() => void action("start_onboarding")}
-                  disabled={working || !data.payoutOnboardingEnabled}
+                  disabled={
+                    working ||
+                    !data.payoutOnboardingEnabled ||
+                    !data.paymentEligibilityReviewAvailable ||
+                    !data.paymentEligible
+                  }
                   className="rounded-full bg-[color:var(--loombus-gold)] px-4 py-2 text-sm font-bold text-black disabled:opacity-50"
                 >
                   {!data.payoutOnboardingEnabled
                     ? "Stripe setup unavailable"
-                    : data.hasPayoutIdentity
-                      ? "Continue Stripe setup"
-                      : "Connect Stripe"}
+                    : !data.paymentEligibilityReviewAvailable
+                      ? "Review status unavailable"
+                      : !data.paymentEligible
+                        ? "Payment review required"
+                        : data.hasPayoutIdentity
+                          ? "Continue Stripe setup"
+                          : "Connect Stripe"}
                 </button>
               ) : (
                 <button type="button" onClick={() => void action("open_dashboard")} disabled={working} className="inline-flex items-center gap-2 rounded-full bg-[color:var(--loombus-gold)] px-4 py-2 text-sm font-bold text-black disabled:opacity-50">Open Stripe dashboard <ExternalLink size={14} /></button>

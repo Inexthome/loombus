@@ -15,6 +15,10 @@ import {
   type ProfessionalBookingPaymentSummary,
 } from "@/lib/professional-booking-payment";
 import { normalizeProfessionalBookingPriceSnapshot } from "@/lib/professional-booking-pricing";
+import {
+  getProfessionalBookingProviderPaymentReviewState,
+  ProfessionalBookingProviderPaymentReviewError,
+} from "@/lib/professional-booking-provider-payment-review-server";
 import { verifyRequestAccountAccess } from "@/lib/request-account-access";
 import {
   createRequestSupabase,
@@ -64,7 +68,7 @@ function uuid(value: unknown) {
 }
 
 function isSchemaUnavailable(error: { message?: string | null } | null | undefined) {
-  return /professional_booking_payments|professional_booking_payment_attempts|professional_booking_payment_provider_terms|schema cache|relation .* does not exist/i.test(
+  return /professional_booking_payments|professional_booking_payment_attempts|professional_booking_payment_provider_terms|professional_booking_payment_disputes|schema cache|relation .* does not exist/i.test(
     error?.message ?? "",
   );
 }
@@ -824,6 +828,32 @@ export async function prepareProfessionalBookingPaymentForNewRequest(
       );
     }
 
+    let paymentReview;
+    try {
+      paymentReview =
+        await getProfessionalBookingProviderPaymentReviewState(
+          service,
+          providerId,
+        );
+    } catch (error) {
+      if (error instanceof ProfessionalBookingProviderPaymentReviewError) {
+        throw new AppointmentsError(
+          error.message,
+          error.status,
+          error.code,
+        );
+      }
+      throw error;
+    }
+
+    if (!paymentReview.paymentEligible) {
+      throw new AppointmentsError(
+        "This provider's current Professional Booking payment eligibility is not approved.",
+        409,
+        "professional_booking_payment_provider_review_required",
+      );
+    }
+
     const providerPaymentTerms = await requireCurrentProviderPaymentTerms(
       service,
       providerId,
@@ -1560,6 +1590,312 @@ export async function refreshProfessionalBookingPayment(
   );
 }
 
+const RESOLVED_PROFESSIONAL_BOOKING_DISPUTE_STATUSES =
+  new Set<Stripe.Dispute.Status>([
+    "lost",
+    "prevented",
+    "warning_closed",
+    "won",
+  ]);
+
+const PROFESSIONAL_BOOKING_DISPUTE_STATUS_ORDER:
+  Record<Stripe.Dispute.Status, number> = {
+    warning_needs_response: 10,
+    needs_response: 10,
+    warning_under_review: 20,
+    under_review: 20,
+    warning_closed: 30,
+    prevented: 30,
+    won: 30,
+    lost: 30,
+  };
+
+function stripeResourceId(
+  value: string | { id: string } | null | undefined,
+) {
+  return typeof value === "string"
+    ? value
+    : value?.id ?? null;
+}
+
+function stripeTimestamp(seconds: number) {
+  return new Date(seconds * 1000).toISOString();
+}
+
+async function professionalBookingDisputeAssociation(
+  service: Service,
+  dispute: Stripe.Dispute,
+): Promise<{
+  paymentId: string;
+  paymentIntentId: string;
+  chargeId: string;
+  attemptLivemode: boolean | null;
+} | null> {
+  const chargeId = stripeResourceId(dispute.charge);
+  if (!chargeId) return null;
+
+  let intentId = stripeResourceId(dispute.payment_intent);
+
+  if (!intentId) {
+    const charge =
+      typeof dispute.charge === "string"
+        ? await getStripe().charges.retrieve(dispute.charge)
+        : dispute.charge;
+
+    intentId = stripeResourceId(charge?.payment_intent);
+  }
+
+  if (!intentId) return null;
+
+  const { data, error } = await service
+    .from("professional_booking_payment_attempts")
+    .select("payment_id,livemode")
+    .eq("stripe_payment_intent_id", intentId)
+    .maybeSingle();
+
+  if (error) {
+    if (isSchemaUnavailable(error)) return null;
+    throw error;
+  }
+
+  const paymentId = uuid(data?.payment_id);
+  if (!paymentId) return null;
+
+  return {
+    paymentId,
+    paymentIntentId: intentId,
+    chargeId,
+    attemptLivemode:
+      typeof data?.livemode === "boolean"
+        ? data.livemode
+        : null,
+  };
+}
+
+async function syncProfessionalBookingDisputeEvent(
+  service: Service,
+  event: Stripe.Event,
+  dispute: Stripe.Dispute,
+): Promise<boolean> {
+  const association =
+    await professionalBookingDisputeAssociation(service, dispute);
+
+  if (!association) return false;
+
+  const payment = await loadPaymentById(
+    service,
+    association.paymentId,
+  );
+
+  const currency = text(dispute.currency, 10).toLowerCase();
+  const paymentCurrency = text(payment.currency, 10).toLowerCase();
+
+  if (
+    currency !== "usd" ||
+    paymentCurrency !== currency ||
+    !Number.isSafeInteger(dispute.amount) ||
+    dispute.amount <= 0
+  ) {
+    throw new AppointmentsError(
+      "The Stripe dispute does not match the Professional Booking payment contract.",
+      503,
+      "professional_booking_dispute_contract_mismatch",
+    );
+  }
+
+  if (
+    association.attemptLivemode !== null &&
+    association.attemptLivemode !== dispute.livemode
+  ) {
+    throw new AppointmentsError(
+      "The Stripe dispute live mode does not match the Professional Booking payment attempt.",
+      503,
+      "professional_booking_dispute_livemode_mismatch",
+    );
+  }
+
+  const reason = text(dispute.reason, 200);
+  if (!reason) {
+    throw new AppointmentsError(
+      "The Stripe dispute reason is unavailable.",
+      503,
+      "professional_booking_dispute_contract_mismatch",
+    );
+  }
+
+  const eventCreatedAt = stripeTimestamp(event.created);
+  const stripeCreatedAt = stripeTimestamp(dispute.created);
+  const evidenceDueAt =
+    dispute.evidence_details.due_by &&
+    dispute.evidence_details.due_by > 0
+      ? stripeTimestamp(dispute.evidence_details.due_by)
+      : null;
+  const incomingResolved =
+    RESOLVED_PROFESSIONAL_BOOKING_DISPUTE_STATUSES.has(
+      dispute.status,
+    );
+
+  const { data: existing, error: existingError } = await service
+    .from("professional_booking_payment_disputes")
+    .select(
+      "id,payment_id,stripe_dispute_id,stripe_charge_id,stripe_payment_intent_id,livemode,stripe_created_at,status,last_stripe_event_id,last_event_created_at,resolved_at",
+    )
+    .eq("stripe_dispute_id", dispute.id)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new AppointmentsError(
+      isSchemaUnavailable(existingError)
+        ? "Professional Booking dispute storage is not available yet."
+        : "Unable to load the Professional Booking dispute.",
+      503,
+      isSchemaUnavailable(existingError)
+        ? "professional_booking_dispute_schema_unavailable"
+        : "professional_booking_dispute_unavailable",
+    );
+  }
+
+  if (existing) {
+    if (
+      String(existing.payment_id) !== association.paymentId ||
+      String(existing.stripe_charge_id) !== association.chargeId ||
+      String(existing.stripe_payment_intent_id) !==
+        association.paymentIntentId ||
+      existing.livemode !== dispute.livemode ||
+      new Date(String(existing.stripe_created_at)).getTime() !==
+        dispute.created * 1000
+    ) {
+      throw new AppointmentsError(
+        "The Stripe dispute identity does not match its stored Professional Booking dispute.",
+        503,
+        "professional_booking_dispute_identity_mismatch",
+      );
+    }
+
+    const existingEventMs =
+      new Date(String(existing.last_event_created_at)).getTime();
+    const incomingEventMs = event.created * 1000;
+
+    if (
+      Number.isFinite(existingEventMs) &&
+      incomingEventMs < existingEventMs
+    ) {
+      return true;
+    }
+
+    if (
+      incomingEventMs === existingEventMs &&
+      String(existing.last_stripe_event_id) === event.id
+    ) {
+      return true;
+    }
+
+    const existingStatus =
+      text(existing.status, 40) as Stripe.Dispute.Status;
+    const existingResolved =
+      RESOLVED_PROFESSIONAL_BOOKING_DISPUTE_STATUSES.has(
+        existingStatus,
+      );
+
+    if (existingResolved && !incomingResolved) {
+      return true;
+    }
+
+    if (
+      incomingEventMs === existingEventMs &&
+      PROFESSIONAL_BOOKING_DISPUTE_STATUS_ORDER[dispute.status] <
+        PROFESSIONAL_BOOKING_DISPUTE_STATUS_ORDER[existingStatus]
+    ) {
+      return true;
+    }
+
+    const { error: updateError } = await service
+      .from("professional_booking_payment_disputes")
+      .update({
+        amount_cents: dispute.amount,
+        currency,
+        reason,
+        status: dispute.status,
+        is_charge_refundable: dispute.is_charge_refundable,
+        evidence_due_at: evidenceDueAt,
+        evidence_has_evidence:
+          dispute.evidence_details.has_evidence,
+        evidence_past_due:
+          dispute.evidence_details.past_due,
+        evidence_submission_count:
+          dispute.evidence_details.submission_count,
+        last_stripe_event_id: event.id,
+        last_event_created_at: eventCreatedAt,
+        last_synced_at: new Date().toISOString(),
+        resolved_at: incomingResolved
+          ? existing.resolved_at ?? eventCreatedAt
+          : null,
+      })
+      .eq("id", existing.id);
+
+    if (updateError) {
+      throw new AppointmentsError(
+        "Unable to update the Professional Booking dispute.",
+        503,
+        "professional_booking_dispute_update_failed",
+      );
+    }
+
+    return true;
+  }
+
+  const { error: insertError } = await service
+    .from("professional_booking_payment_disputes")
+    .insert({
+      payment_id: association.paymentId,
+      stripe_dispute_id: dispute.id,
+      stripe_charge_id: association.chargeId,
+      stripe_payment_intent_id: association.paymentIntentId,
+      livemode: dispute.livemode,
+      amount_cents: dispute.amount,
+      currency,
+      reason,
+      status: dispute.status,
+      is_charge_refundable: dispute.is_charge_refundable,
+      evidence_due_at: evidenceDueAt,
+      evidence_has_evidence:
+        dispute.evidence_details.has_evidence,
+      evidence_past_due:
+        dispute.evidence_details.past_due,
+      evidence_submission_count:
+        dispute.evidence_details.submission_count,
+      stripe_created_at: stripeCreatedAt,
+      last_stripe_event_id: event.id,
+      last_event_created_at: eventCreatedAt,
+      last_synced_at: new Date().toISOString(),
+      resolved_at: incomingResolved
+        ? eventCreatedAt
+        : null,
+    });
+
+  if (insertError) {
+    if (isUniqueViolation(insertError)) {
+      return syncProfessionalBookingDisputeEvent(
+        service,
+        event,
+        dispute,
+      );
+    }
+
+    throw new AppointmentsError(
+      isSchemaUnavailable(insertError)
+        ? "Professional Booking dispute storage is not available yet."
+        : "Unable to save the Professional Booking dispute.",
+      503,
+      isSchemaUnavailable(insertError)
+        ? "professional_booking_dispute_schema_unavailable"
+        : "professional_booking_dispute_create_failed",
+    );
+  }
+
+  return true;
+}
+
 async function paymentIdFromStripeEvent(
   service: Service,
   event: Stripe.Event,
@@ -1597,6 +1933,20 @@ async function paymentIdFromStripeEvent(
 export async function syncProfessionalBookingPaymentStripeEvent(
   event: Stripe.Event,
 ): Promise<boolean> {
+  const disputeTypes = new Set([
+    "charge.dispute.created",
+    "charge.dispute.updated",
+    "charge.dispute.closed",
+  ]);
+
+  if (disputeTypes.has(event.type)) {
+    return syncProfessionalBookingDisputeEvent(
+      createRoomServiceSupabase(),
+      event,
+      event.data.object as Stripe.Dispute,
+    );
+  }
+
   const supported = new Set([
     "checkout.session.completed",
     "checkout.session.expired",

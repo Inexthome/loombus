@@ -586,6 +586,8 @@ function AppointmentsOperationsWorkspace({
   runAction: ActionRunner;
 }) {
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [paymentReviewNotes, setPaymentReviewNotes] =
+    useState<Record<string, string>>({});
   const operationalRequests = useMemo(
     () =>
       data.requests.filter((request) =>
@@ -593,9 +595,30 @@ function AppointmentsOperationsWorkspace({
       ),
     [data.requests],
   );
+  const paymentReviewAttention = useMemo(
+    () =>
+      data.providerPaymentReviews.filter(
+        (item) => !item.paymentEligible,
+      ),
+    [data.providerPaymentReviews],
+  );
+  const openPaymentDisputes = useMemo(
+    () =>
+      data.paymentDisputes.filter(
+        (item) => item.resolvedAt === null,
+      ),
+    [data.paymentDisputes],
+  );
   const noteFor = (id: string) => notes[id] ?? "";
   const setNote = (id: string, value: string) =>
     setNotes((current) => ({ ...current, [id]: value }));
+  const paymentReviewNoteFor = (id: string) =>
+    paymentReviewNotes[id] ?? "";
+  const setPaymentReviewNote = (id: string, value: string) =>
+    setPaymentReviewNotes((current) => ({
+      ...current,
+      [id]: value,
+    }));
 
   return (
     <div className="space-y-5">
@@ -628,18 +651,625 @@ function AppointmentsOperationsWorkspace({
       </div>
 
       <AdminQueueSection
+        eyebrow="Professional Booking payment readiness"
+        title="Provider payment eligibility review"
+        description="Review the provider's current seller, business, service, structured-pricing, source, and Commerce Integrity scope before approving Professional Booking payment eligibility. Approval records eligibility only; it does not create a Stripe account, move money, or enable payments."
+        action={
+          <QueueBadge
+            count={paymentReviewAttention.length}
+            noun="attention"
+          />
+        }
+      >
+        <div className="grid gap-4">
+          {data.providerPaymentReviews.map((item) => {
+            const note = paymentReviewNoteFor(item.providerId);
+            const canApprove =
+              !working &&
+              note.trim().length >= 10 &&
+              item.scope.blockers.length === 0;
+            const canReject =
+              !working && note.trim().length >= 10;
+            const reviewLabel = item.paymentEligible
+              ? "approved current"
+              : item.review === null
+                ? "unreviewed"
+                : !item.matchesCurrentScope
+                  ? "review stale"
+                  : item.review.decision;
+
+            return (
+              <article
+                key={item.providerId}
+                className={recordClass}
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusPill
+                        value={reviewLabel}
+                        attention={!item.paymentEligible}
+                      />
+                      {item.scope.blockers.length > 0 ? (
+                        <AdminStatusBadge status="attention">
+                          {item.scope.blockers.length} blocker
+                          {item.scope.blockers.length === 1 ? "" : "s"}
+                        </AdminStatusBadge>
+                      ) : (
+                        <AdminStatusBadge status="ready">
+                          Scope clear
+                        </AdminStatusBadge>
+                      )}
+                    </div>
+                    <h3 className="mt-3 text-xl font-semibold">
+                      {identity(item.provider)}
+                    </h3>
+                    <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                      {item.scope.businessIds.length} business
+                      {item.scope.businessIds.length === 1 ? "" : "es"} ·{" "}
+                      {item.scope.serviceIds.length} Professional Booking service
+                      {item.scope.serviceIds.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <span className={detailPillClass}>
+                    Scope {item.scope.fingerprint.slice(0, 12)}
+                  </span>
+                </div>
+
+                {item.review ? (
+                  <div className="mt-4 rounded-2xl bg-[var(--loombus-surface)] p-4 text-sm leading-6 text-[var(--loombus-text-muted)]">
+                    <p>
+                      <strong className="text-[var(--loombus-text)]">
+                        Latest review:
+                      </strong>{" "}
+                      {item.review.decision.replaceAll("_", " ")} ·{" "}
+                      {item.matchesCurrentScope
+                        ? "matches current scope"
+                        : "does not match current scope"}
+                    </p>
+                    <p className="mt-1">
+                      Reviewed {formatDateTime(item.review.reviewedAt)}
+                    </p>
+                    <p className="mt-2 whitespace-pre-wrap">
+                      {item.review.basisNote}
+                    </p>
+                  </div>
+                ) : null}
+
+                {item.scope.blockers.length > 0 ? (
+                  <div className="mt-4 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
+                    <p className="text-sm font-semibold">
+                      Current approval blockers
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {item.scope.blockers.map((blocker) => (
+                        <StatusPill
+                          key={blocker}
+                          value={blocker}
+                          attention
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                  {item.scope.businesses.map((business) => (
+                    <div
+                      key={business.id}
+                      className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StatusPill
+                          value={business.status}
+                          attention={business.status !== "published"}
+                        />
+                        <StatusPill
+                          value={business.verificationStatus}
+                          attention={
+                            business.verificationStatus === "denied"
+                          }
+                        />
+                      </div>
+                      <h4 className="mt-3 font-semibold">
+                        {business.name}
+                      </h4>
+                      <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                        {business.category || "No category"}
+                      </p>
+                      {business.description ? (
+                        <p className="mt-3 line-clamp-5 whitespace-pre-wrap text-sm leading-6 text-[var(--loombus-text-muted)]">
+                          {business.description}
+                        </p>
+                      ) : null}
+                      <div className="mt-3 grid gap-1 text-xs text-[var(--loombus-text-subtle)]">
+                        <span>
+                          Location:{" "}
+                          {[
+                            business.addressLine1,
+                            business.addressLine2,
+                            business.city,
+                            business.region,
+                            business.postalCode,
+                            business.countryCode,
+                          ]
+                            .filter(Boolean)
+                            .join(", ") || "Not stated"}
+                        </span>
+                        <span>
+                          Service model:{" "}
+                          {business.serviceAreaMode.replaceAll("_", " ")}
+                        </span>
+                        {business.contactEmail ? (
+                          <span>Email: {business.contactEmail}</span>
+                        ) : null}
+                        {business.phone ? (
+                          <span>Phone: {business.phone}</span>
+                        ) : null}
+                        {business.websiteUrl ? (
+                          <span>Website: {business.websiteUrl}</span>
+                        ) : null}
+                        {business.bookingUrl ? (
+                          <span>Booking URL: {business.bookingUrl}</span>
+                        ) : null}
+                      </div>
+
+                      {item.scope.businessServices.filter(
+                        (service) =>
+                          service.businessId === business.id,
+                      ).length > 0 ? (
+                        <div className="mt-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
+                            Business directory services
+                          </p>
+                          <div className="mt-2 space-y-2">
+                            {item.scope.businessServices
+                              .filter(
+                                (service) =>
+                                  service.businessId === business.id,
+                              )
+                              .map((service, index) => (
+                                <div
+                                  key={`${business.id}-${service.name}-${index}`}
+                                  className="rounded-xl border border-[var(--loombus-border)] p-3 text-sm"
+                                >
+                                  <strong>{service.name}</strong>
+                                  {service.category ? (
+                                    <span className="text-[var(--loombus-text-muted)]">
+                                      {" "}
+                                      · {service.category}
+                                    </span>
+                                  ) : null}
+                                  {service.description ? (
+                                    <p className="mt-1 line-clamp-3 text-[var(--loombus-text-muted)]">
+                                      {service.description}
+                                    </p>
+                                  ) : null}
+                                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--loombus-text-subtle)]">
+                                    {service.priceText ? (
+                                      <span>{service.priceText}</span>
+                                    ) : null}
+                                    {service.serviceArea ? (
+                                      <span>{service.serviceArea}</span>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+
+                  {item.scope.services.map((service) => {
+                    const structuredPrice = item.scope.pricing.find(
+                      (price) => price.serviceId === service.id,
+                    );
+
+                    return (
+                      <div
+                        key={service.id}
+                        className="rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <StatusPill value={service.sourceType} />
+                          {structuredPrice?.amountCents !== null &&
+                          structuredPrice?.amountCents !== undefined ? (
+                            <StatusPill
+                              value={`${(
+                                structuredPrice.amountCents / 100
+                              ).toFixed(2)} ${structuredPrice.currency.toUpperCase()}`}
+                            />
+                          ) : (
+                            <StatusPill
+                              value="No structured price"
+                              attention
+                            />
+                          )}
+                        </div>
+                        <h4 className="mt-3 font-semibold">
+                          {service.name}
+                        </h4>
+                        <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                          {service.durationMinutes ?? "Unknown"} minutes ·{" "}
+                          {service.locationMode.replaceAll("_", " ")}
+                          {service.locationText
+                            ? ` · ${service.locationText}`
+                            : ""}
+                        </p>
+                        {service.description ? (
+                          <p className="mt-3 line-clamp-5 whitespace-pre-wrap text-sm leading-6 text-[var(--loombus-text-muted)]">
+                            {service.description}
+                          </p>
+                        ) : null}
+                        {service.instructions ? (
+                          <p className="mt-3 rounded-xl border border-[var(--loombus-border)] p-3 text-sm text-[var(--loombus-text-muted)]">
+                            {service.instructions}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {item.scope.marketplaceListings.length > 0 ? (
+                  <div className="mt-4 rounded-2xl border border-[var(--loombus-border)] p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
+                      Marketplace source records
+                    </p>
+                    <div className="mt-3 grid gap-3 xl:grid-cols-2">
+                      {item.scope.marketplaceListings.map((listing) => (
+                        <div
+                          key={listing.id}
+                          className="rounded-xl bg-[var(--loombus-surface)] p-4"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusPill
+                              value={listing.status}
+                              attention={listing.status !== "published"}
+                            />
+                            <StatusPill value={listing.category} />
+                          </div>
+                          <h4 className="mt-3 font-semibold">
+                            {listing.title}
+                          </h4>
+                          <p className="mt-2 line-clamp-5 whitespace-pre-wrap text-sm leading-6 text-[var(--loombus-text-muted)]">
+                            {listing.description}
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--loombus-text-subtle)]">
+                            <span>
+                              {listing.isFree
+                                ? "Free"
+                                : `${listing.price ?? "Unknown"} ${listing.currency}`}
+                            </span>
+                            <span>
+                              {listing.itemCondition.replaceAll("_", " ")}
+                            </span>
+                            <span>
+                              {listing.photoPaths.length} photo
+                              {listing.photoPaths.length === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {item.scope.commerceIntegrityHeads.length > 0 ? (
+                  <div className="mt-4 rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--loombus-text-subtle)]">
+                      Current Commerce Integrity heads
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      {item.scope.commerceIntegrityHeads.map((head) => (
+                        <div
+                          key={head.id}
+                          className="rounded-xl border border-amber-500/20 p-3 text-sm"
+                        >
+                          <div className="flex flex-wrap gap-2">
+                            <StatusPill
+                              value={head.recordState}
+                              attention
+                            />
+                            <StatusPill value={head.categoryId} attention />
+                            {head.policySeverityCode ? (
+                              <StatusPill
+                                value={head.policySeverityCode}
+                                attention
+                              />
+                            ) : null}
+                          </div>
+                          <p className="mt-2 font-semibold">
+                            {head.primarySafetyReasonCode}
+                          </p>
+                          <p className="mt-2 whitespace-pre-wrap text-[var(--loombus-text-muted)]">
+                            {head.basisNote}
+                          </p>
+                          <p className="mt-2 text-xs text-[var(--loombus-text-subtle)]">
+                            {head.sourceModule} / {head.sourceRecordType} ·{" "}
+                            {formatDateTime(head.classifiedAt)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-4 rounded-2xl border border-[var(--loombus-border)] p-4 text-sm text-[var(--loombus-text-muted)]">
+                    No current Commerce Integrity classification head is attached
+                    to this review scope. This is not a positive safety
+                    classification; the dedicated payment review remains the
+                    approval decision.
+                  </p>
+                )}
+
+                <NotesField
+                  id={`provider-payment-review-note-${item.providerId}`}
+                  label="Payment eligibility review basis"
+                  placeholder="Required. Record the basis for approving or rejecting this current seller scope."
+                  value={note}
+                  onChange={(value) =>
+                    setPaymentReviewNote(item.providerId, value)
+                  }
+                />
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={!canApprove}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Approve this provider's current Professional Booking payment eligibility scope? This records eligibility only and does not enable or move payments.",
+                        )
+                      ) {
+                        void runAction(
+                          {
+                            action:
+                              "review_provider_payment_eligibility",
+                            providerId: item.providerId,
+                            decision: "approved",
+                            note,
+                          },
+                          "The provider's current Professional Booking payment eligibility scope was approved.",
+                        );
+                      }
+                    }}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-semibold text-[var(--loombus-gold-contrast)] transition disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <CheckCircle2 size={15} aria-hidden="true" />
+                    Approve payment eligibility
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={!canReject}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Reject this provider's current Professional Booking payment eligibility scope?",
+                        )
+                      ) {
+                        void runAction(
+                          {
+                            action:
+                              "review_provider_payment_eligibility",
+                            providerId: item.providerId,
+                            decision: "rejected",
+                            note,
+                          },
+                          "The provider's current Professional Booking payment eligibility scope was rejected.",
+                        );
+                      }
+                    }}
+                    className={dangerButtonClass}
+                  >
+                    <XCircle size={15} aria-hidden="true" />
+                    Reject payment eligibility
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+
+          {data.providerPaymentReviews.length === 0 ? (
+            <p className={emptyClass}>
+              No active or paused Professional Booking provider scope exists for
+              payment eligibility review.
+            </p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
+        eyebrow="Professional Booking payment risk"
+        title="Stripe dispute queue"
+        description="Read-only operational visibility into Professional Booking disputes synchronized from Stripe. This queue exposes dispute status, deadlines, payment context, and evidence-state metadata only. It does not expose evidence contents or provide refund, evidence-submission, charge, capture, suspension, or Stripe-account controls."
+        action={
+          <QueueBadge
+            count={openPaymentDisputes.length}
+            noun="open"
+          />
+        }
+      >
+        <div className="grid gap-4 xl:grid-cols-2">
+          {data.paymentDisputes.map((item) => {
+            const needsResponse = [
+              "needs_response",
+              "warning_needs_response",
+            ].includes(item.status);
+            const unresolved = item.resolvedAt === null;
+            const disputedAmount = new Intl.NumberFormat(
+              undefined,
+              {
+                style: "currency",
+                currency: item.currency.toUpperCase(),
+              },
+            ).format(item.amountCents / 100);
+            const grossAmount = new Intl.NumberFormat(
+              undefined,
+              {
+                style: "currency",
+                currency: item.paymentCurrency.toUpperCase(),
+              },
+            ).format(item.grossAmountCents / 100);
+
+            return (
+              <article
+                key={item.id}
+                className={recordClass}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusPill
+                        value={item.status}
+                        attention={unresolved}
+                      />
+                      {needsResponse ? (
+                        <AdminStatusBadge status="attention">
+                          Response needed
+                        </AdminStatusBadge>
+                      ) : null}
+                      {item.livemode ? (
+                        <AdminStatusBadge status="attention">
+                          Live
+                        </AdminStatusBadge>
+                      ) : (
+                        <AdminStatusBadge status="ready">
+                          Test
+                        </AdminStatusBadge>
+                      )}
+                    </div>
+
+                    <h3 className="mt-3 text-xl font-semibold">
+                      {item.serviceName}
+                    </h3>
+                    <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">
+                      {item.businessName}
+                    </p>
+                  </div>
+
+                  <span className={detailPillClass}>
+                    {disputedAmount} disputed
+                  </span>
+                </div>
+
+                <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+                  <span>
+                    <strong>Provider:</strong>{" "}
+                    {identity(item.provider)}
+                  </span>
+                  <span>
+                    <strong>Requester:</strong>{" "}
+                    {identity(item.requester)}
+                  </span>
+                  <span>
+                    <strong>Payment:</strong>{" "}
+                    {item.paymentStatus.replaceAll("_", " ")}
+                  </span>
+                  <span>
+                    <strong>Appointment:</strong>{" "}
+                    {item.appointmentStatus
+                      ? item.appointmentStatus.replaceAll("_", " ")
+                      : "Unavailable"}
+                  </span>
+                  <span>
+                    <strong>Payment gross:</strong>{" "}
+                    {grossAmount}
+                  </span>
+                  <span>
+                    <strong>Dispute reason:</strong>{" "}
+                    {item.reason.replaceAll("_", " ")}
+                  </span>
+                  <span>
+                    <strong>Scheduled:</strong>{" "}
+                    {formatDateTime(item.requestedStart)}
+                  </span>
+                  <span>
+                    <strong>Evidence due:</strong>{" "}
+                    {formatDateTime(item.evidenceDueAt)}
+                  </span>
+                </div>
+
+                <div className="mt-4 rounded-2xl bg-[var(--loombus-surface)] p-4">
+                  <p className="text-sm font-semibold">
+                    Evidence-state metadata
+                  </p>
+                  <div className="mt-2 grid gap-2 text-sm text-[var(--loombus-text-muted)] sm:grid-cols-2">
+                    <span>
+                      Evidence staged:{" "}
+                      {item.evidenceHasEvidence ? "Yes" : "No"}
+                    </span>
+                    <span>
+                      Past due:{" "}
+                      {item.evidencePastDue ? "Yes" : "No"}
+                    </span>
+                    <span>
+                      Submission count:{" "}
+                      {item.evidenceSubmissionCount}
+                    </span>
+                    <span>
+                      Charge refundable:{" "}
+                      {item.isChargeRefundable ? "Yes" : "No"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-1 text-xs text-[var(--loombus-text-subtle)]">
+                  <span>
+                    Stripe dispute: {item.stripeDisputeId}
+                  </span>
+                  <span>
+                    PaymentIntent: {item.stripePaymentIntentId}
+                  </span>
+                  <span>
+                    Charge: {item.stripeChargeId}
+                  </span>
+                  <span>
+                    First seen: {formatDateTime(item.firstSeenAt)}
+                  </span>
+                  <span>
+                    Last synced: {formatDateTime(item.lastSyncedAt)}
+                  </span>
+                  <span>
+                    Last Stripe event: {item.lastStripeEventId}
+                  </span>
+                  {item.resolvedAt ? (
+                    <span>
+                      Resolved: {formatDateTime(item.resolvedAt)}
+                    </span>
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
+
+          {data.paymentDisputes.length === 0 ? (
+            <p className={emptyClass}>
+              No Professional Booking Stripe disputes have been synchronized.
+            </p>
+          ) : null}
+        </div>
+      </AdminQueueSection>
+
+      <AdminQueueSection
         eyebrow="Operational boundary"
-        title="Administrator intervention is lifecycle-only"
-        description="Provider publishing remains in the provider workspace. The only administrator mutation exposed by the existing endpoint is an audited cancellation of an active request."
-        action={<AdminStatusBadge status="ready">Contract preserved</AdminStatusBadge>}
+        title="Administrator intervention is bounded"
+        description="This module exposes audited appointment cancellation, Professional Booking seller-payment eligibility decisions, and read-only Stripe dispute visibility. Provider publishing remains provider-owned. Payment movement, Stripe account creation, dispute mutation, evidence submission, and account suspension are not exposed here."
+        action={
+          <AdminStatusBadge status="ready">
+            Payment operations remain disabled
+          </AdminStatusBadge>
+        }
       >
         <BoundaryCard
-          title="No hidden professional or payment controls"
-          description="There is no appointment dispute queue, provider credential review, durable provider suspension, payment operation, or professional ranking system in this module."
+          title="Seller review is separate from payment operations"
+          description="Approving a provider records whether the current reviewed scope is eligible to proceed to later payment onboarding checks. It does not charge a requester, capture or refund funds, create a Stripe connected account, suspend a provider, or change public publishing."
         >
+          <StatusPill value="Payment eligibility review" />
           <StatusPill value="Audited cancellation" />
-          <StatusPill value="Provider-owned publishing" />
-          <StatusPill value="No payment operations" />
+          <StatusPill value="No payment movement" />
         </BoundaryCard>
       </AdminQueueSection>
 
