@@ -24,11 +24,13 @@
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "cordova-plugin-purchase": "^13.17.2",
+    "fast-xml-parser": "^5.10.1",
     "lucide-react": "^1.21.0",
     "next": "16.2.11",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "stripe": "^22.2.2"
+    "stripe": "^22.2.2",
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2",
@@ -36,6 +38,7 @@
     "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/yauzl": "^3.4.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.2.12",
     "tailwindcss": "^4",
