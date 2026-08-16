@@ -1,0 +1,30 @@
+name: Library functional wiring
+
+on:
+  pull_request:
+    paths:
+      - "src/app/library/**"
+      - "src/components/library/**"
+      - "scripts/verification/verify-library-functional-wiring.mjs"
+      - ".github/workflows/library-functional-wiring.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/app/library/**"
+      - "src/components/library/**"
+      - "scripts/verification/verify-library-functional-wiring.mjs"
+      - ".github/workflows/library-functional-wiring.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-library-functional-wiring:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library functional wiring
+        run: node scripts/verification/verify-library-functional-wiring.mjs
