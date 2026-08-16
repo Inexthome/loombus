@@ -23,6 +23,10 @@ const XML_OPTIONS = {
 };
 
 const xmlParser = new XMLParser(XML_OPTIONS);
+const xhtmlParser = new XMLParser({
+  ...XML_OPTIONS,
+  alwaysCreateTextNode: true,
+});
 
 function asArray<T>(value: T | T[] | undefined | null): T[] {
   if (value == null) return [];
@@ -132,24 +136,69 @@ function normalizePath(baseFile: string, href: string): string {
   return output.join("/");
 }
 
+const BLOCKED_TEXT_ELEMENTS = new Set(["script", "style", "iframe", "object", "embed"]);
+
+function collectNodeText(node: unknown): string {
+  if (node == null) return "";
+  if (typeof node === "string" || typeof node === "number" || typeof node === "boolean") return String(node);
+  if (Array.isArray(node)) return node.map(collectNodeText).filter(Boolean).join(" ");
+  if (typeof node !== "object") return "";
+
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    if (key.startsWith("@_") || key === "?xml" || BLOCKED_TEXT_ELEMENTS.has(key.toLowerCase())) continue;
+    if (key === "#text") {
+      if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") parts.push(String(value));
+      continue;
+    }
+    const nested = collectNodeText(value);
+    if (nested) parts.push(nested);
+  }
+  return parts.join(" ");
+}
+
+function findFirstTagText(node: unknown, target: string): string | null {
+  if (node == null || typeof node !== "object") return null;
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const found = findFirstTagText(child, target);
+      if (found) return found;
+    }
+    return null;
+  }
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    if (key.toLowerCase() === target) {
+      const text = collectNodeText(value).replace(/\s+/g, " ").trim();
+      if (text) return text;
+    }
+    if (!key.startsWith("@_") && key !== "#text") {
+      const found = findFirstTagText(value, target);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function escapeHtmlText(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function htmlToSafeTextResource(path: string, source: string): EpubTextResource {
-  const stripped = source
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-    .replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, " ")
-    .replace(/<object\b[^>]*>[\s\S]*?<\/object>/gi, " ")
-    .replace(/<embed\b[^>]*>/gi, " ");
-  const titleMatch = stripped.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
-  const decode = (value: string) => value
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'");
-  const text = decode(stripped.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
-  const title = titleMatch ? decode(titleMatch[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim() || null : null;
-  const contentHtml = text ? `<p>${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>` : "";
+  let parsed: unknown;
+  try {
+    parsed = xhtmlParser.parse(source);
+  } catch {
+    throw new Error("library_epub_xhtml_invalid");
+  }
+
+  const text = collectNodeText(parsed).replace(/\s+/g, " ").trim();
+  const title = findFirstTagText(parsed, "title");
+  const contentHtml = text ? `<p>${escapeHtmlText(text)}</p>` : "";
   return { path, title, html: contentHtml, text };
 }
 
