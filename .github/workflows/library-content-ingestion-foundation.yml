@@ -1,0 +1,30 @@
+name: Library content ingestion foundation
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/*library_content_ingestion_foundation.sql"
+      - "src/lib/library/content-contract.ts"
+      - "scripts/verification/verify-library-content-ingestion-foundation.mjs"
+      - ".github/workflows/library-content-ingestion-foundation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/*library_content_ingestion_foundation.sql"
+      - "src/lib/library/content-contract.ts"
+      - "scripts/verification/verify-library-content-ingestion-foundation.mjs"
+      - ".github/workflows/library-content-ingestion-foundation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-library-content-ingestion-foundation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library content-ingestion foundation
+        run: node scripts/verification/verify-library-content-ingestion-foundation.mjs
