@@ -7,6 +7,7 @@ on:
       - "supabase/tests/library_data_foundation_*"
       - "scripts/verification/verify-library-data-foundation.mjs"
       - "scripts/verification/verify-library-migration-static.mjs"
+      - "scripts/verification/verify-library-note-binding-repair.mjs"
       - ".github/workflows/library-data-foundation.yml"
   push:
     branches: [main]
@@ -15,6 +16,7 @@ on:
       - "supabase/tests/library_data_foundation_*"
       - "scripts/verification/verify-library-data-foundation.mjs"
       - "scripts/verification/verify-library-migration-static.mjs"
+      - "scripts/verification/verify-library-note-binding-repair.mjs"
       - ".github/workflows/library-data-foundation.yml"
 
 permissions:
@@ -32,3 +34,5 @@ jobs:
         run: node scripts/verification/verify-library-data-foundation.mjs
       - name: Verify Library migration safety
         run: node scripts/verification/verify-library-migration-static.mjs
+      - name: Verify Library note binding repair
+        run: node scripts/verification/verify-library-note-binding-repair.mjs
