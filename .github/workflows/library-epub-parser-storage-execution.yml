@@ -1,0 +1,29 @@
+name: Library EPUB parser storage execution
+
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "src/lib/library/epub-parser.ts"
+      - "src/lib/library/server-ingestion-client.ts"
+      - "src/lib/library/ingest-source.ts"
+      - "scripts/verification/verify-library-epub-parser-storage-execution.mjs"
+      - ".github/workflows/library-epub-parser-storage-execution.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-library-epub-parser-storage-execution:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Verify Library EPUB parser/storage execution boundary
+        run: node scripts/verification/verify-library-epub-parser-storage-execution.mjs
