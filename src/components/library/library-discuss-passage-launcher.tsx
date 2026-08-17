@@ -1,10 +1,11 @@
 "use client";
 
-import { MessageSquareText, X } from "lucide-react";
+import { MessageSquareText, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
-const PASSAGE_STORAGE_KEY = "loombus:library:discuss-passage:v1";
+const DISCUSS_PASSAGE_STORAGE_KEY = "loombus:library:discuss-passage:v1";
+const ASK_LOOMBUS_STORAGE_KEY = "loombus:library:ask-loombus:v1";
 const MIN_PASSAGE_CHARS = 20;
 const MAX_PASSAGE_CHARS = 1200;
 
@@ -74,16 +75,8 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
         if (!authData.user || cancelled) return;
 
         const [publicationResult, progressResult] = await Promise.all([
-          supabase
-            .from("library_publications")
-            .select("title, author_name")
-            .eq("id", publicationId)
-            .single(),
-          supabase
-            .from("library_reading_progress")
-            .select("locator")
-            .eq("publication_id", publicationId)
-            .maybeSingle(),
+          supabase.from("library_publications").select("title, author_name").eq("id", publicationId).single(),
+          supabase.from("library_reading_progress").select("locator").eq("publication_id", publicationId).maybeSingle(),
         ]);
 
         const locator = progressResult.data?.locator as string | null | undefined;
@@ -108,12 +101,12 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
         if (section.content_text.slice(startOffset, endOffset) !== trimmed) return;
         if (trimmed.length < MIN_PASSAGE_CHARS) {
           setSelection(null);
-          setError(`Select at least ${MIN_PASSAGE_CHARS} characters to start a passage discussion.`);
+          setError(`Select at least ${MIN_PASSAGE_CHARS} characters to use passage tools.`);
           return;
         }
         if (trimmed.length > MAX_PASSAGE_CHARS) {
           setSelection(null);
-          setError(`Passage discussions are limited to ${MAX_PASSAGE_CHARS} selected characters.`);
+          setError(`Passage tools are limited to ${MAX_PASSAGE_CHARS} selected characters.`);
           return;
         }
 
@@ -155,10 +148,10 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
     setError(null);
   }
 
-  function discussPassage() {
+  function openTool(storageKey: string, href: string) {
     if (!selection) return;
-    window.sessionStorage.setItem(PASSAGE_STORAGE_KEY, JSON.stringify(selection));
-    window.location.href = "/library/discuss-passage";
+    window.sessionStorage.setItem(storageKey, JSON.stringify(selection));
+    window.location.href = href;
   }
 
   if (!selection && !error) return null;
@@ -167,23 +160,28 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
     <div className="fixed inset-x-4 bottom-5 z-[120] mx-auto max-w-2xl rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 text-[var(--loombus-text)] shadow-2xl sm:bottom-7">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-sm font-black text-[var(--loombus-gold)]">Discuss passage</p>
+          <p className="text-sm font-black text-[var(--loombus-gold)]">Passage tools</p>
           {selection ? (
             <p className="mt-1 line-clamp-2 text-sm leading-6 text-[var(--loombus-text-muted)]">“{selection.selectedText}”</p>
           ) : (
             <p className="mt-1 text-sm text-[var(--loombus-text-muted)]">{error}</p>
           )}
         </div>
-        <button type="button" onClick={dismiss} aria-label="Dismiss passage discussion" className="grid size-9 shrink-0 place-items-center rounded-full border border-[var(--loombus-border)] text-[var(--loombus-text-muted)]">
+        <button type="button" onClick={dismiss} aria-label="Dismiss passage tools" className="grid size-9 shrink-0 place-items-center rounded-full border border-[var(--loombus-border)] text-[var(--loombus-text-muted)]">
           <X className="size-4" />
         </button>
       </div>
       {selection ? (
-        <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-[var(--loombus-text-subtle)]">{selection.sectionTitle ?? "Current chapter"} · {selection.selectedText.length} characters</p>
-          <button type="button" onClick={discussPassage} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-black text-black">
-            <MessageSquareText className="size-4" /> Start discussion
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => openTool(ASK_LOOMBUS_STORAGE_KEY, "/library/ask-loombus")} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--loombus-gold)] px-4 text-sm font-black text-[var(--loombus-gold)]">
+              <Sparkles className="size-4" /> Ask Loombus
+            </button>
+            <button type="button" onClick={() => openTool(DISCUSS_PASSAGE_STORAGE_KEY, "/library/discuss-passage")} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-black text-black">
+              <MessageSquareText className="size-4" /> Discuss passage
+            </button>
+          </div>
         </div>
       ) : null}
     </div>
