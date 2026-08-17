@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Highlighter, Loader2, Minus, NotebookPen, Plus, Search, Trash2, Type, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Highlighter, List, Loader2, Minus, NotebookPen, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type Publication = { id: string; title: string; subtitle: string | null; author_name: string | null; publisher_name: string | null };
@@ -12,9 +12,11 @@ type Highlight = { id: string; locator: string; selected_text: string; start_off
 type Note = { id: string; highlight_id: string | null; locator: string | null; body: string; created_at: string };
 type BookmarkRow = { id: string; locator: string; created_at: string };
 type ReaderSelection = { text: string; startOffset: number; endOffset: number };
-type SearchResult = { sectionIndex: number; locator: string; title: string; snippet: string };
+type SearchResult = { id: string; sectionIndex: number; locator: string; title: string; snippet: string; titleMatch: boolean };
+type ReadingToolTab = "bookmarks" | "highlights" | "notes";
 
 const READER_FONT_SIZE_KEY = "loombus-library-reader-font-size";
+const MAX_SEARCH_RESULTS = 50;
 
 function progressPercent(index: number, total: number): number {
   if (total <= 0) return 0;
@@ -25,13 +27,55 @@ function sectionLabel(section: ReaderSection): string {
   return section.title ?? `Section ${section.ordinal + 1}`;
 }
 
-function searchSnippet(text: string, query: string): string {
+function searchSnippetAt(text: string, index: number, queryLength: number): string {
   const compact = text.replace(/\s+/g, " ").trim();
-  const index = compact.toLocaleLowerCase().indexOf(query.toLocaleLowerCase());
-  if (index < 0) return compact.slice(0, 150);
   const start = Math.max(0, index - 55);
-  const end = Math.min(compact.length, index + query.length + 85);
+  const end = Math.min(compact.length, index + queryLength + 85);
   return `${start > 0 ? "…" : ""}${compact.slice(start, end)}${end < compact.length ? "…" : ""}`;
+}
+
+function renderSearchMatch(text: string, query: string) {
+  const trimmed = query.trim();
+  if (!trimmed) return text;
+  const index = text.toLocaleLowerCase().indexOf(trimmed.toLocaleLowerCase());
+  if (index < 0) return text;
+  return <>{text.slice(0, index)}<mark className="rounded-sm bg-[var(--loombus-gold)] px-0.5 text-black">{text.slice(index, index + trimmed.length)}</mark>{text.slice(index + trimmed.length)}</>;
+}
+
+function buildSearchResults(sections: ReaderSection[], query: string): SearchResult[] {
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+  const lowered = trimmed.toLocaleLowerCase();
+  const results: SearchResult[] = [];
+
+  for (let sectionIndex = 0; sectionIndex < sections.length && results.length < MAX_SEARCH_RESULTS; sectionIndex += 1) {
+    const section = sections[sectionIndex];
+    const title = sectionLabel(section);
+    if (title.toLocaleLowerCase().includes(lowered)) {
+      results.push({ id: `${section.section_key}:title`, sectionIndex, locator: section.section_key, title, snippet: "Chapter title match", titleMatch: true });
+    }
+
+    const compact = section.content_text.replace(/\s+/g, " ").trim();
+    const compactLower = compact.toLocaleLowerCase();
+    let cursor = 0;
+    let matchNumber = 0;
+    while (cursor < compactLower.length && results.length < MAX_SEARCH_RESULTS) {
+      const matchIndex = compactLower.indexOf(lowered, cursor);
+      if (matchIndex < 0) break;
+      matchNumber += 1;
+      results.push({
+        id: `${section.section_key}:body:${matchNumber}:${matchIndex}`,
+        sectionIndex,
+        locator: section.section_key,
+        title,
+        snippet: searchSnippetAt(compact, matchIndex, trimmed.length),
+        titleMatch: false,
+      });
+      cursor = matchIndex + Math.max(1, lowered.length);
+    }
+  }
+
+  return results;
 }
 
 async function sha256Text(value: string): Promise<string> {
@@ -99,6 +143,8 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
   const [currentTextSha256, setCurrentTextSha256] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
+  const [readingToolTab, setReadingToolTab] = useState<ReadingToolTab>("bookmarks");
 
   const locatedIndex = sections.findIndex((section) => section.section_key === progress.locator);
   const currentIndex = locatedIndex >= 0 ? locatedIndex : 0;
@@ -107,23 +153,7 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
   const sectionNotes = useMemo(() => currentSection ? notes.filter((row) => row.locator === currentSection.section_key) : [], [currentSection, notes]);
   const bookmarkedLocators = useMemo(() => new Set(bookmarks.map((row) => row.locator)), [bookmarks]);
   const currentBookmark = currentSection ? bookmarks.find((row) => row.locator === currentSection.section_key) ?? null : null;
-  const searchResults = useMemo<SearchResult[]>(() => {
-    const query = searchQuery.trim();
-    if (query.length < 2) return [];
-    const lowered = query.toLocaleLowerCase();
-    return sections.flatMap((section, sectionIndex) => {
-      const title = sectionLabel(section);
-      const titleMatch = title.toLocaleLowerCase().includes(lowered);
-      const bodyMatch = section.content_text.toLocaleLowerCase().includes(lowered);
-      if (!titleMatch && !bodyMatch) return [];
-      return [{
-        sectionIndex,
-        locator: section.section_key,
-        title,
-        snippet: bodyMatch ? searchSnippet(section.content_text, query) : "Chapter title match",
-      }];
-    }).slice(0, 25);
-  }, [searchQuery, sections]);
+  const searchResults = useMemo(() => buildSearchResults(sections, searchQuery), [searchQuery, sections]);
   const inlineHighlightCount = useMemo(() => currentTextSha256 ? sectionHighlights.filter((highlight) =>
     highlight.text_sha256 === currentTextSha256 &&
     highlight.start_offset !== null &&
@@ -140,6 +170,10 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
     const parsed = saved ? Number.parseInt(saved, 10) : 18;
     if (Number.isFinite(parsed)) setFontSize(Math.min(26, Math.max(15, parsed)));
   }, []);
+
+  useEffect(() => {
+    setActiveSearchIndex(0);
+  }, [searchQuery]);
 
   useEffect(() => {
     let cancelled = false;
@@ -232,10 +266,25 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
     const next = { locator: section.section_key, progress_percent: progressPercent(index, sections.length) };
     const { error: saveError } = await supabase.from("library_reading_progress").upsert({ user_id: userId, publication_id: publicationId, ...next, last_read_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: "user_id,publication_id" });
     if (saveError) setError("Unable to save your reading position.");
-    else setProgress(next);
+    else {
+      setProgress(next);
+      window.requestAnimationFrame(() => readerTextRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
     setSelection(null);
     window.getSelection()?.removeAllRanges();
     setSaving(false);
+  }
+
+  function moveToLocator(locator: string) {
+    const index = sections.findIndex((section) => section.section_key === locator);
+    if (index >= 0) void moveTo(index);
+  }
+
+  function moveSearchResult(nextIndex: number) {
+    if (!searchResults.length) return;
+    const normalized = (nextIndex + searchResults.length) % searchResults.length;
+    setActiveSearchIndex(normalized);
+    void moveTo(searchResults[normalized].sectionIndex);
   }
 
   async function toggleBookmark() {
@@ -379,7 +428,10 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
                 <div className="flex items-center gap-2"><Search className="h-4 w-4 text-[var(--loombus-gold)]" /><h2 className="font-semibold">Search this book</h2></div>
                 <div className="mt-4 flex items-center rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-3"><Search className="h-4 w-4 shrink-0 text-[var(--loombus-text-subtle)]" /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Find words or chapters…" className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm outline-none" />{searchQuery ? <button aria-label="Clear book search" onClick={() => setSearchQuery("")} className="text-[var(--loombus-text-muted)]"><X className="h-4 w-4" /></button> : null}</div>
                 {searchQuery.trim().length === 1 ? <p className="mt-3 text-xs text-[var(--loombus-text-muted)]">Type at least 2 characters.</p> : null}
-                {searchQuery.trim().length >= 2 ? <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">{searchResults.length ? searchResults.map((result) => <button key={result.locator} onClick={() => void moveTo(result.sectionIndex)} className="w-full rounded-xl border border-[var(--loombus-border)] p-3 text-left hover:bg-[var(--loombus-surface-strong)]"><p className="text-xs font-semibold text-[var(--loombus-gold)]">{result.sectionIndex + 1}. {result.title}</p><p className="mt-1 line-clamp-3 text-xs leading-relaxed text-[var(--loombus-text-muted)]">{result.snippet}</p></button>) : <p className="text-xs text-[var(--loombus-text-muted)]">No matches in this book.</p>}</div> : null}
+                {searchQuery.trim().length >= 2 ? <>
+                  <div className="mt-3 flex items-center justify-between gap-2"><span className="text-xs text-[var(--loombus-text-muted)]">{searchResults.length ? `Match ${Math.min(activeSearchIndex + 1, searchResults.length)} of ${searchResults.length}` : "0 matches"}</span>{searchResults.length ? <div className="flex items-center gap-1"><button aria-label="Previous search match" onClick={() => moveSearchResult(activeSearchIndex - 1)} className="rounded-full border border-[var(--loombus-border)] p-1.5"><ChevronLeft className="h-3.5 w-3.5" /></button><button aria-label="Next search match" onClick={() => moveSearchResult(activeSearchIndex + 1)} className="rounded-full border border-[var(--loombus-border)] p-1.5"><ChevronRight className="h-3.5 w-3.5" /></button></div> : null}</div>
+                  <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">{searchResults.length ? searchResults.map((result, resultIndex) => <button key={result.id} onClick={() => { setActiveSearchIndex(resultIndex); void moveTo(result.sectionIndex); }} aria-current={resultIndex === activeSearchIndex ? "true" : undefined} className={`w-full rounded-xl border p-3 text-left ${resultIndex === activeSearchIndex ? "border-[var(--loombus-gold)] bg-[var(--loombus-gold-surface)]" : "border-[var(--loombus-border)] hover:bg-[var(--loombus-surface-strong)]"}`}><p className="text-xs font-semibold text-[var(--loombus-gold)]">{result.sectionIndex + 1}. {renderSearchMatch(result.title, searchQuery)}</p><p className="mt-1 line-clamp-3 text-xs leading-relaxed text-[var(--loombus-text-muted)]">{result.titleMatch ? result.snippet : renderSearchMatch(result.snippet, searchQuery)}</p></button>) : <p className="text-xs text-[var(--loombus-text-muted)]">No matches in this book.</p>}</div>
+                </> : null}
               </section>
 
               <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
@@ -390,6 +442,17 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
                   const bookmarked = bookmarkedLocators.has(section.section_key);
                   return <button key={section.section_key} onClick={() => void moveTo(index)} aria-current={active ? "location" : undefined} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm ${active ? "bg-[var(--loombus-gold-surface)] font-semibold" : "text-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-strong)]"}`}><span className="w-5 shrink-0 text-right text-xs text-[var(--loombus-text-subtle)]">{index + 1}</span><span className="min-w-0 flex-1 truncate">{sectionLabel(section)}</span>{bookmarked ? <BookmarkCheck aria-label="Bookmarked chapter" className="h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /> : null}</button>;
                 })}</div>
+              </section>
+
+              <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
+                <div className="flex items-center gap-2"><List className="h-4 w-4 text-[var(--loombus-gold)]" /><h2 className="font-semibold">Saved & annotations</h2></div>
+                <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">Navigate saved reading tools across this publication.</p>
+                <div className="mt-4 grid grid-cols-3 gap-1 rounded-xl bg-[var(--loombus-surface-strong)] p-1">{(["bookmarks", "highlights", "notes"] as ReadingToolTab[]).map((tab) => <button key={tab} onClick={() => setReadingToolTab(tab)} aria-pressed={readingToolTab === tab} className={`rounded-lg px-2 py-2 text-[11px] font-semibold capitalize ${readingToolTab === tab ? "bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]" : "text-[var(--loombus-text-muted)]"}`}>{tab}</button>)}</div>
+                <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {readingToolTab === "bookmarks" ? (bookmarks.length ? bookmarks.map((bookmark) => { const index = sections.findIndex((section) => section.section_key === bookmark.locator); return <button key={bookmark.id} disabled={index < 0} onClick={() => moveToLocator(bookmark.locator)} className="w-full rounded-xl border border-[var(--loombus-border)] p-3 text-left disabled:opacity-50"><p className="text-xs font-semibold">{index >= 0 ? `${index + 1}. ${sectionLabel(sections[index])}` : "Unavailable chapter"}</p><p className="mt-1 text-[10px] text-[var(--loombus-text-subtle)]">Private bookmark</p></button>; }) : <p className="text-xs text-[var(--loombus-text-muted)]">No bookmarks in this book.</p>) : null}
+                  {readingToolTab === "highlights" ? (highlights.length ? highlights.map((highlight) => { const index = sections.findIndex((section) => section.section_key === highlight.locator); return <button key={highlight.id} disabled={index < 0} onClick={() => moveToLocator(highlight.locator)} className="w-full rounded-xl bg-[var(--loombus-gold-surface)] p-3 text-left disabled:opacity-50"><p className="line-clamp-2 text-xs">“{highlight.selected_text}”</p><p className="mt-1 text-[10px] text-[var(--loombus-text-subtle)]">{index >= 0 ? `${index + 1}. ${sectionLabel(sections[index])}` : "Unavailable chapter"}</p></button>; }) : <p className="text-xs text-[var(--loombus-text-muted)]">No highlights in this book.</p>) : null}
+                  {readingToolTab === "notes" ? (notes.length ? notes.map((note) => { const index = note.locator ? sections.findIndex((section) => section.section_key === note.locator) : -1; return <button key={note.id} disabled={index < 0} onClick={() => note.locator && moveToLocator(note.locator)} className="w-full rounded-xl border border-[var(--loombus-border)] p-3 text-left disabled:opacity-50"><p className="line-clamp-2 whitespace-pre-wrap text-xs">{note.body}</p><p className="mt-1 text-[10px] text-[var(--loombus-text-subtle)]">{index >= 0 ? `${index + 1}. ${sectionLabel(sections[index])}` : "Unavailable chapter"}</p></button>; }) : <p className="text-xs text-[var(--loombus-text-muted)]">No notes in this book.</p>) : null}
+                </div>
               </section>
 
               <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><NotebookPen className="h-4 w-4 text-[var(--loombus-gold)]" /><h2 className="font-semibold">Private note</h2></div><p className="mt-1 text-xs text-[var(--loombus-text-muted)]">Saved to this chapter only.</p><textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Write a note at this position…" className="mt-4 min-h-24 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-3 text-sm outline-none" /><button onClick={() => void saveNote()} disabled={saving || !noteDraft.trim()} className="mt-3 text-sm font-semibold text-[var(--loombus-gold)] disabled:opacity-40">Save note</button></section>
