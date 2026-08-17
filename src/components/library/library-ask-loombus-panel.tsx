@@ -57,6 +57,55 @@ function readPassageContext(): PassageContext | null {
   }
 }
 
+function renderInlineMarkdown(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+      return <strong key={`strong-${index}`} className="font-black">{part.slice(2, -2)}</strong>;
+    }
+    return <span key={`text-${index}`}>{part}</span>;
+  });
+}
+
+function renderAskAnswer(answer: string) {
+  const lines = answer.split(/\r?\n/);
+
+  return (
+    <div className="space-y-3 text-[15px] leading-7 text-[var(--loombus-text)]">
+      {lines.map((rawLine, index) => {
+        const line = rawLine.trim();
+        if (!line) return <div key={`space-${index}`} className="h-1" aria-hidden="true" />;
+
+        const bullet = line.match(/^[-*]\s+(.+)$/);
+        if (bullet) {
+          return (
+            <div key={`bullet-${index}`} className="flex items-start gap-3">
+              <span aria-hidden="true" className="mt-[0.72rem] size-1.5 shrink-0 rounded-full bg-[var(--loombus-gold)]" />
+              <p className="min-w-0">{renderInlineMarkdown(bullet[1])}</p>
+            </div>
+          );
+        }
+
+        const numbered = line.match(/^(\d+)\.\s+(.+)$/);
+        if (numbered) {
+          return (
+            <div key={`number-${index}`} className="flex items-start gap-3">
+              <span className="min-w-5 shrink-0 font-black text-[var(--loombus-gold)]">{numbered[1]}.</span>
+              <p className="min-w-0">{renderInlineMarkdown(numbered[2])}</p>
+            </div>
+          );
+        }
+
+        const heading = line.match(/^#{1,3}\s+(.+)$/);
+        if (heading) {
+          return <h3 key={`heading-${index}`} className="pt-1 text-base font-black">{renderInlineMarkdown(heading[1])}</h3>;
+        }
+
+        return <p key={`paragraph-${index}`}>{renderInlineMarkdown(line)}</p>;
+      })}
+    </div>
+  );
+}
+
 export function LibraryAskLoombusPanel() {
   const [ready, setReady] = useState(false);
   const [passage, setPassage] = useState<PassageContext | null>(null);
@@ -180,7 +229,7 @@ export function LibraryAskLoombusPanel() {
               <div><p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--loombus-gold)]">Ask Loombus answer</p><p className="mt-1 text-xs text-[var(--loombus-text-subtle)]">Grounded in selected passage + nearby chapter context</p></div>
               <button type="button" onClick={() => void askLoombus()} disabled={loading} className="inline-flex items-center gap-2 text-sm font-black text-[var(--loombus-gold)]"><RefreshCw className="size-4" /> Ask again</button>
             </div>
-            <div className="mt-5 whitespace-pre-wrap text-[15px] leading-7 text-[var(--loombus-text)]">{result.answer}</div>
+            <div className="mt-5">{renderAskAnswer(result.answer)}</div>
           </section>
         ) : null}
       </div>
