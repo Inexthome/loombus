@@ -1,0 +1,26 @@
+name: Library Discuss Passage runtime
+
+on:
+  pull_request:
+    paths:
+      - "src/app/library/read/[publicationId]/page.tsx"
+      - "src/app/library/discuss-passage/page.tsx"
+      - "src/app/api/library/discuss-passage/create/route.ts"
+      - "src/components/library/library-discuss-passage-launcher.tsx"
+      - "src/components/library/library-discuss-passage-composer.tsx"
+      - "scripts/verification/verify-library-discuss-passage-runtime.mjs"
+      - ".github/workflows/library-discuss-passage-runtime.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/verification/verify-library-discuss-passage-runtime.mjs
