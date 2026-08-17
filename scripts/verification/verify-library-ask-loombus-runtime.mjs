@@ -5,7 +5,6 @@ const files = {
   panel: "src/components/library/library-ask-loombus-panel.tsx",
   page: "src/app/library/ask-loombus/page.tsx",
   api: "src/app/api/library/ask-loombus/route.ts",
-  premiumAi: "src/lib/premium-ai.ts",
 };
 
 for (const path of Object.values(files)) {
@@ -16,7 +15,6 @@ const launcher = fs.readFileSync(files.launcher, "utf8");
 const panel = fs.readFileSync(files.panel, "utf8");
 const page = fs.readFileSync(files.page, "utf8");
 const api = fs.readFileSync(files.api, "utf8");
-const premiumAi = fs.readFileSync(files.premiumAi, "utf8");
 
 for (const contract of [
   'ASK_LOOMBUS_STORAGE_KEY = "loombus:library:ask-loombus:v1"',
@@ -41,7 +39,7 @@ if (!page.includes("LibraryAskLoombusPanel")) throw new Error("Ask Loombus page 
 for (const contract of [
   'const FEATURE_KEY = "ask_loombus"',
   'getAiAccess(supabase, userId)',
-  'getAiFeatureLimit(access, FEATURE_KEY)',
+  "access.monthlyResearchLimit",
   'getMonthlyAiFeatureUsageCount(supabase, userId, FEATURE_KEY)',
   '.from("library_publication_sections")',
   "canonicalHash !== textSha256",
@@ -55,8 +53,10 @@ for (const contract of [
   if (!api.includes(contract)) throw new Error(`Ask Loombus API contract missing: ${contract}`);
 }
 
-if (!premiumAi.includes('ask_loombus: {') || !premiumAi.includes('bucket: "research"')) {
-  throw new Error("Ask Loombus must use the existing research AI allowance bucket.");
+const validationIndex = api.indexOf("sectionText.slice(startOffset, endOffset) !== selectedText");
+const creditIndex = api.indexOf("consumeExtraAiCredit({");
+if (validationIndex < 0 || creditIndex < 0 || creditIndex < validationIndex) {
+  throw new Error("Ask Loombus must verify the canonical passage before consuming any extra AI credit.");
 }
 
 const forbiddenClientTokens = [
