@@ -25,11 +25,13 @@ for (const contract of requiredReaderContracts) {
 }
 
 const requiredLauncherContracts = [
+  'const DISCUSS_PASSAGE_STORAGE_KEY = "loombus:library:discuss-passage:v1"',
   'const MAX_PASSAGE_CHARS = 1200',
   'section.content_text.slice(startOffset, endOffset) !== trimmed',
   'sha256Text(section.content_text)',
-  'window.sessionStorage.setItem(PASSAGE_STORAGE_KEY',
-  'window.location.href = "/library/discuss-passage"',
+  'window.sessionStorage.setItem(storageKey, JSON.stringify(selection))',
+  'openTool(DISCUSS_PASSAGE_STORAGE_KEY, "/library/discuss-passage")',
+  "Discuss passage",
 ];
 for (const contract of requiredLauncherContracts) {
   if (!launcher.includes(contract)) throw new Error(`Launcher contract missing: ${contract}`);
