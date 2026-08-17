@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Highlighter, Loader2, Minus, NotebookPen, Plus, Trash2, Type } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type Publication = { id: string; title: string; subtitle: string | null; author_name: string | null; publisher_name: string | null };
 type ReaderSection = { section_key: string; ordinal: number; title: string | null; content_text: string };
 type Progress = { locator: string | null; progress_percent: number };
-type Highlight = { id: string; locator: string; selected_text: string; created_at: string };
+type Highlight = { id: string; locator: string; selected_text: string; start_offset: number | null; end_offset: number | null; text_sha256: string | null; created_at: string };
 type Note = { id: string; highlight_id: string | null; locator: string | null; body: string; created_at: string };
+type ReaderSelection = { text: string; startOffset: number; endOffset: number };
 
 const READER_FONT_SIZE_KEY = "loombus-library-reader-font-size";
 
@@ -18,7 +19,56 @@ function progressPercent(index: number, total: number): number {
   return Math.min(100, Math.max(1, Math.round(((index + 1) / total) * 100)));
 }
 
+async function sha256Text(value: string): Promise<string> {
+  const digest = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function textOffsetWithin(container: HTMLElement, node: Node, offset: number): number {
+  const range = document.createRange();
+  range.selectNodeContents(container);
+  range.setEnd(node, offset);
+  return range.toString().length;
+}
+
+function renderInlineHighlights(text: string, highlights: Highlight[], textSha256: string | null) {
+  if (!textSha256) return text;
+
+  const ranges = highlights
+    .filter((highlight) =>
+      highlight.text_sha256 === textSha256 &&
+      highlight.start_offset !== null &&
+      highlight.end_offset !== null &&
+      highlight.start_offset >= 0 &&
+      highlight.end_offset > highlight.start_offset &&
+      highlight.end_offset <= text.length &&
+      text.slice(highlight.start_offset, highlight.end_offset) === highlight.selected_text,
+    )
+    .map((highlight) => ({ start: highlight.start_offset as number, end: highlight.end_offset as number }))
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+
+  if (!ranges.length) return text;
+
+  const merged: Array<{ start: number; end: number }> = [];
+  for (const range of ranges) {
+    const previous = merged[merged.length - 1];
+    if (previous && range.start <= previous.end) previous.end = Math.max(previous.end, range.end);
+    else merged.push({ ...range });
+  }
+
+  const parts = [];
+  let cursor = 0;
+  for (const range of merged) {
+    if (range.start > cursor) parts.push(<span key={`text-${cursor}`}>{text.slice(cursor, range.start)}</span>);
+    parts.push(<mark key={`highlight-${range.start}-${range.end}`} className="rounded-sm bg-[var(--loombus-gold-surface)] text-inherit">{text.slice(range.start, range.end)}</mark>);
+    cursor = range.end;
+  }
+  if (cursor < text.length) parts.push(<span key={`text-${cursor}`}>{text.slice(cursor)}</span>);
+  return parts;
+}
+
 export function LibraryReaderSurface({ publicationId }: { publicationId: string }) {
+  const readerTextRef = useRef<HTMLDivElement | null>(null);
   const [publication, setPublication] = useState<Publication | null>(null);
   const [sections, setSections] = useState<ReaderSection[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
@@ -29,7 +79,8 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selection, setSelection] = useState("");
+  const [selection, setSelection] = useState<ReaderSelection | null>(null);
+  const [currentTextSha256, setCurrentTextSha256] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
 
   const locatedIndex = sections.findIndex((section) => section.section_key === progress.locator);
@@ -37,12 +88,34 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
   const currentSection = sections[currentIndex] ?? null;
   const sectionHighlights = useMemo(() => currentSection ? highlights.filter((row) => row.locator === currentSection.section_key) : [], [currentSection, highlights]);
   const sectionNotes = useMemo(() => currentSection ? notes.filter((row) => row.locator === currentSection.section_key) : [], [currentSection, notes]);
+  const inlineHighlightCount = useMemo(() => currentTextSha256 ? sectionHighlights.filter((highlight) =>
+    highlight.text_sha256 === currentTextSha256 &&
+    highlight.start_offset !== null &&
+    highlight.end_offset !== null &&
+    highlight.start_offset >= 0 &&
+    highlight.end_offset > highlight.start_offset &&
+    currentSection !== null &&
+    highlight.end_offset <= currentSection.content_text.length &&
+    currentSection.content_text.slice(highlight.start_offset, highlight.end_offset) === highlight.selected_text,
+  ).length : 0, [currentSection, currentTextSha256, sectionHighlights]);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(READER_FONT_SIZE_KEY);
     const parsed = saved ? Number.parseInt(saved, 10) : 18;
     if (Number.isFinite(parsed)) setFontSize(Math.min(26, Math.max(15, parsed)));
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCurrentTextSha256(null);
+    if (!currentSection) return () => { cancelled = true; };
+    void sha256Text(currentSection.content_text).then((hash) => {
+      if (!cancelled) setCurrentTextSha256(hash);
+    }).catch(() => {
+      if (!cancelled) setError("Unable to verify saved inline highlights for this chapter.");
+    });
+    return () => { cancelled = true; };
+  }, [currentSection]);
 
   function changeFontSize(next: number) {
     const value = Math.min(26, Math.max(15, next));
@@ -78,7 +151,7 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
     const [sectionResult, progressResult, highlightResult, noteResult] = await Promise.all([
       supabase.from("library_publication_sections").select("section_key, ordinal, title, content_text").eq("publication_id", publicationId).order("ordinal", { ascending: true }),
       supabase.from("library_reading_progress").select("locator, progress_percent").eq("publication_id", publicationId).maybeSingle(),
-      supabase.from("library_highlights").select("id, locator, selected_text, created_at").eq("publication_id", publicationId).order("created_at", { ascending: false }),
+      supabase.from("library_highlights").select("id, locator, selected_text, start_offset, end_offset, text_sha256, created_at").eq("publication_id", publicationId).order("created_at", { ascending: false }),
       supabase.from("library_notes").select("id, highlight_id, locator, body, created_at").eq("publication_id", publicationId).order("created_at", { ascending: false }),
     ]);
 
@@ -117,21 +190,70 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
     const { error: saveError } = await supabase.from("library_reading_progress").upsert({ user_id: userId, publication_id: publicationId, ...next, last_read_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: "user_id,publication_id" });
     if (saveError) setError("Unable to save your reading position.");
     else setProgress(next);
-    setSelection("");
+    setSelection(null);
+    window.getSelection()?.removeAllRanges();
     setSaving(false);
   }
 
   function captureSelection() {
-    const text = window.getSelection()?.toString().trim() ?? "";
-    setSelection(text.slice(0, 4000));
+    const browserSelection = window.getSelection();
+    const container = readerTextRef.current;
+    if (!browserSelection || browserSelection.rangeCount !== 1 || browserSelection.isCollapsed || !container) {
+      setSelection(null);
+      return;
+    }
+
+    const range = browserSelection.getRangeAt(0);
+    if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
+      setSelection(null);
+      return;
+    }
+
+    const raw = range.toString();
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      setSelection(null);
+      return;
+    }
+
+    const leadingWhitespace = raw.length - raw.trimStart().length;
+    const startOffset = textOffsetWithin(container, range.startContainer, range.startOffset) + leadingWhitespace;
+    const text = trimmed.slice(0, 4000);
+    const endOffset = startOffset + text.length;
+    if (!currentSection || currentSection.content_text.slice(startOffset, endOffset) !== text) {
+      setSelection(null);
+      setError("Select text from within the current chapter to create a highlight.");
+      return;
+    }
+
+    setError(null);
+    setSelection({ text, startOffset, endOffset });
   }
 
   async function saveHighlight() {
     if (!userId || !selection || !currentSection) return;
     setSaving(true);
-    const { data, error: saveError } = await supabase.from("library_highlights").insert({ user_id: userId, publication_id: publicationId, locator: currentSection.section_key, selected_text: selection }).select("id, locator, selected_text, created_at").single();
-    if (saveError || !data) setError("Unable to save this highlight.");
-    else { setHighlights((rows) => [data as Highlight, ...rows]); setSelection(""); window.getSelection()?.removeAllRanges(); }
+    setError(null);
+    try {
+      const textSha256 = currentTextSha256 ?? await sha256Text(currentSection.content_text);
+      const { data, error: saveError } = await supabase.from("library_highlights").insert({
+        user_id: userId,
+        publication_id: publicationId,
+        locator: currentSection.section_key,
+        selected_text: selection.text,
+        start_offset: selection.startOffset,
+        end_offset: selection.endOffset,
+        text_sha256: textSha256,
+      }).select("id, locator, selected_text, start_offset, end_offset, text_sha256, created_at").single();
+      if (saveError || !data) setError("Unable to save this highlight.");
+      else {
+        setHighlights((rows) => [data as Highlight, ...rows]);
+        setSelection(null);
+        window.getSelection()?.removeAllRanges();
+      }
+    } catch {
+      setError("Unable to verify this highlight against the current chapter text.");
+    }
     setSaving(false);
   }
 
@@ -183,8 +305,8 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
                 <h1 className="mt-3 text-3xl font-semibold tracking-tight">{publication.title}</h1>
                 {publication.subtitle ? <p className="mt-2 text-lg text-[var(--loombus-text-muted)]">{publication.subtitle}</p> : null}
                 <p className="mt-2 text-sm text-[var(--loombus-text-subtle)]">{publication.author_name ?? publication.publisher_name ?? "Loombus Library"}</p>
-                <div onMouseUp={captureSelection} onTouchEnd={captureSelection} className="mt-9 whitespace-pre-line leading-[1.9] selection:bg-[var(--loombus-gold-surface)]" style={{ fontSize }}>{currentSection.content_text}</div>
-                {selection ? <div className="mt-6 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-gold-surface)] p-4"><p className="line-clamp-3 text-sm">“{selection}”</p><div className="mt-3 flex gap-4"><button onClick={() => void saveHighlight()} disabled={saving} className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--loombus-gold)]"><Highlighter className="h-4 w-4" /> Save highlight</button><button onClick={() => { setSelection(""); window.getSelection()?.removeAllRanges(); }} className="text-sm text-[var(--loombus-text-muted)]">Cancel</button></div></div> : null}
+                <div ref={readerTextRef} onMouseUp={captureSelection} onTouchEnd={captureSelection} className="mt-9 whitespace-pre-line leading-[1.9] selection:bg-[var(--loombus-gold-surface)]" style={{ fontSize }}>{renderInlineHighlights(currentSection.content_text, sectionHighlights, currentTextSha256)}</div>
+                {selection ? <div className="mt-6 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-gold-surface)] p-4"><p className="line-clamp-3 text-sm">“{selection.text}”</p><div className="mt-3 flex gap-4"><button onClick={() => void saveHighlight()} disabled={saving} className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--loombus-gold)]"><Highlighter className="h-4 w-4" /> Save highlight</button><button onClick={() => { setSelection(null); window.getSelection()?.removeAllRanges(); }} className="text-sm text-[var(--loombus-text-muted)]">Cancel</button></div></div> : null}
                 <div className="mt-10 flex items-center justify-between border-t border-[var(--loombus-border)] pt-5"><button onClick={() => void moveTo(currentIndex - 1)} disabled={currentIndex === 0 || saving} className="inline-flex items-center gap-2 text-sm disabled:opacity-40"><ChevronLeft className="h-4 w-4" /> Previous</button><span className="text-xs text-[var(--loombus-text-muted)]">{saving ? "Saving…" : `${progress.progress_percent}%`}</span><button onClick={() => void moveTo(currentIndex + 1)} disabled={currentIndex === sections.length - 1 || saving} className="inline-flex items-center gap-2 text-sm disabled:opacity-40">Next <ChevronRight className="h-4 w-4" /></button></div>
                 <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--loombus-surface-muted)]"><div className="h-full bg-[var(--loombus-gold)] transition-all" style={{ width: `${progress.progress_percent}%` }} /></div>
               </div>
@@ -193,7 +315,7 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
             <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
               <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[var(--loombus-gold)]" /><h2 className="font-semibold">Chapters</h2></div><div className="mt-4 max-h-72 space-y-1 overflow-y-auto pr-1">{sections.map((section, index) => <button key={section.section_key} onClick={() => void moveTo(index)} aria-current={section.section_key === currentSection.section_key ? "location" : undefined} className={`w-full rounded-xl px-3 py-2 text-left text-sm ${section.section_key === currentSection.section_key ? "bg-[var(--loombus-gold-surface)] font-semibold" : "text-[var(--loombus-text-muted)]"}`}><span className="mr-2 text-xs text-[var(--loombus-text-subtle)]">{index + 1}</span>{section.title ?? `Section ${section.ordinal + 1}`}</button>)}</div></section>
               <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><NotebookPen className="h-4 w-4 text-[var(--loombus-gold)]" /><h2 className="font-semibold">Private note</h2></div><p className="mt-1 text-xs text-[var(--loombus-text-muted)]">Saved to this chapter only.</p><textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Write a note at this position…" className="mt-4 min-h-24 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-3 text-sm outline-none" /><button onClick={() => void saveNote()} disabled={saving || !noteDraft.trim()} className="mt-3 text-sm font-semibold text-[var(--loombus-gold)] disabled:opacity-40">Save note</button></section>
-              <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold">This chapter</h2><span className="text-xs text-[var(--loombus-text-muted)]">{sectionHighlights.length} highlights · {sectionNotes.length} notes</span></div>{sectionHighlights.length || sectionNotes.length ? <div className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-1">{sectionHighlights.map((highlight) => <div key={highlight.id} className="rounded-xl bg-[var(--loombus-gold-surface)] p-3"><div className="flex items-start gap-2"><Highlighter className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /><p className="min-w-0 flex-1 text-xs leading-relaxed">“{highlight.selected_text}”</p><button aria-label="Delete highlight" disabled={saving} onClick={() => void deleteHighlight(highlight.id)} className="shrink-0 text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}{sectionNotes.map((note) => <div key={note.id} className="rounded-xl border border-[var(--loombus-border)] p-3"><div className="flex items-start gap-2"><NotebookPen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /><p className="min-w-0 flex-1 whitespace-pre-wrap text-xs leading-relaxed">{note.body}</p><button aria-label="Delete note" disabled={saving} onClick={() => void deleteNote(note.id)} className="shrink-0 text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}</div> : <p className="mt-3 text-xs text-[var(--loombus-text-muted)]">No annotations in this chapter yet.</p>}<p className="mt-4 border-t border-[var(--loombus-border)] pt-3 text-[11px] text-[var(--loombus-text-subtle)]">Book total: {highlights.length} highlights · {notes.length} notes</p></section>
+              <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold">This chapter</h2><span className="text-xs text-[var(--loombus-text-muted)]">{sectionHighlights.length} highlights · {sectionNotes.length} notes</span></div>{sectionHighlights.length || sectionNotes.length ? <div className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-1">{sectionHighlights.map((highlight) => <div key={highlight.id} className="rounded-xl bg-[var(--loombus-gold-surface)] p-3"><div className="flex items-start gap-2"><Highlighter className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /><div className="min-w-0 flex-1"><p className="text-xs leading-relaxed">“{highlight.selected_text}”</p><p className="mt-1 text-[10px] text-[var(--loombus-text-subtle)]">{highlight.start_offset === null ? "Legacy highlight · sidebar only" : highlight.text_sha256 === currentTextSha256 && highlight.end_offset !== null && currentSection.content_text.slice(highlight.start_offset, highlight.end_offset) === highlight.selected_text ? "Rendered inline" : "Inline range unavailable"}</p></div><button aria-label="Delete highlight" disabled={saving} onClick={() => void deleteHighlight(highlight.id)} className="shrink-0 text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}{sectionNotes.map((note) => <div key={note.id} className="rounded-xl border border-[var(--loombus-border)] p-3"><div className="flex items-start gap-2"><NotebookPen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /><p className="min-w-0 flex-1 whitespace-pre-wrap text-xs leading-relaxed">{note.body}</p><button aria-label="Delete note" disabled={saving} onClick={() => void deleteNote(note.id)} className="shrink-0 text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}</div> : <p className="mt-3 text-xs text-[var(--loombus-text-muted)]">No annotations in this chapter yet.</p>}<p className="mt-4 border-t border-[var(--loombus-border)] pt-3 text-[11px] text-[var(--loombus-text-subtle)]">Book total: {highlights.length} highlights · {notes.length} notes · {inlineHighlightCount} inline here</p></section>
             </aside>
           </div>
         ) : null}
