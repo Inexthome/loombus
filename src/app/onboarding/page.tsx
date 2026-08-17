@@ -4,10 +4,13 @@ import Link from "next/link";
 import {
   ArrowRight,
   Bookmark,
+  BookOpen,
   Check,
   Compass,
   DoorOpen,
+  LineChart,
   Lightbulb,
+  MapPin,
   MessageCircle,
   PencilLine,
   Sparkles,
@@ -220,8 +223,9 @@ export default function OnboardingPage() {
             <p className="onboarding-v2-eyebrow">Member onboarding</p>
             <h1>Welcome, {getFirstName(profile)}. Build a signal worth following.</h1>
             <p className="onboarding-v2-hero-description">
-              Loombus works best when your identity is clear, your topic has direction, and your first
-              contribution gives people something meaningful to respond to.
+              Bring an idea, give it context, invite evidence, and move understanding
+              forward. Start with a clear identity, a focused topic, and one contribution
+              that gives people something meaningful to respond to.
             </p>
             <div className="onboarding-v2-hero-actions">
               <Link href={nextAction.href} className="onboarding-v2-button onboarding-v2-button-primary">
@@ -412,12 +416,21 @@ export default function OnboardingPage() {
         <section className="onboarding-v2-section" aria-labelledby="tools-heading">
           <div className="onboarding-v2-section-heading">
             <div>
-              <p className="onboarding-v2-eyebrow">After the first post</p>
-              <h2 id="tools-heading">Know where useful conversations go next.</h2>
+              <p className="onboarding-v2-eyebrow">Beyond the first post</p>
+              <h2 id="tools-heading">See where ideas can go next.</h2>
             </div>
-            <p>These are destinations you open intentionally. None of them appear as floating instruction overlays.</p>
+            <p>
+              Discussion is the starting engine. From there, you can build knowledge,
+              strengthen connections, conduct research, and find real-world opportunities.
+            </p>
           </div>
           <div className="onboarding-v2-product-grid">
+            <ProductCard
+              icon={<BookOpen aria-hidden="true" size={20} />}
+              title="Library"
+              description="Read publications, highlight passages, keep private notes, and bring an idea into structured discussion."
+              href="/library"
+            />
             <ProductCard
               icon={<Bookmark aria-hidden="true" size={20} />}
               title="Saved"
@@ -435,6 +448,18 @@ export default function OnboardingPage() {
               title="Rooms"
               description="Enter focused public or private spaces built around a group, place, or shared purpose."
               href="/rooms"
+            />
+            <ProductCard
+              icon={<LineChart aria-hidden="true" size={20} />}
+              title="The Floor"
+              description="Research companies, develop investment theses, examine evidence, and learn with the investing community."
+              href="/the-floor"
+            />
+            <ProductCard
+              icon={<MapPin aria-hidden="true" size={20} />}
+              title="Local and opportunities"
+              description="Discover businesses, services, requests, jobs, events, Marketplace listings, and nearby opportunities."
+              href="/local"
             />
             <ProductCard
               icon={<MessageCircle aria-hidden="true" size={20} />}

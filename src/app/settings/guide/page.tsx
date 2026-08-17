@@ -6,7 +6,7 @@ import styles from "@/components/ui/reference-v2.module.css";
 export const metadata: Metadata = {
   title: "Loombus Guide | Loombus",
   description:
-    "Learn how Loombus discussions, Signal, Search Everything, Ask Loombus AI, Rooms, messages, Local, businesses, Services, Requests, Jobs, Events, Marketplace, appointments, matching, saved knowledge, subscriptions, and safety controls work.",
+    "Learn how Loombus discussions, Library, The Floor, Signal, Search Everything, Rooms, AI-assisted understanding, and real-world opportunities work.",
   alternates: {
     canonical: "https://loombus.com/settings/guide",
   },
@@ -31,11 +31,13 @@ const guideSections: GuideSection[] = [
     id: "getting-started",
     eyebrow: "Start here",
     title: "Getting started",
-    body: "Loombus is an everything knowledge platform built for Signal over noise. Begin by completing your profile, selecting your appearance, reading discussions, trying Search Everything, saving useful material, and creating one focused contribution.",
+    body: "Loombus is a signal-first platform where ideas move through structured discussion, evidence, knowledge, meaningful connection, and action. Begin by completing your profile, choosing a topic, reading discussions, and creating one focused contribution.",
     bullets: [
       "Complete your profile so people understand who they are reading or contacting.",
       "Use Home as the entry point to your personal Loombus workspace.",
       "Use Discussions for public knowledge and Rooms for limited-access community work.",
+      "Use Library to read publications, highlight passages, and keep publication notes.",
+      "Use The Floor for investment research, theses, evidence, discussion, and learning.",
       "Use Local and the real-world directories when you need a business, Service, Request, Job, Event, or Marketplace listing.",
     ],
   },
@@ -43,7 +45,7 @@ const guideSections: GuideSection[] = [
     id: "home",
     eyebrow: "Home",
     title: "Home and your Signal hub",
-    body: "Home brings important Loombus workspaces together without relying on an endless feed. It helps you move between creating, reading, search, saved items, activity, Stickies, Rooms, Local, Labs, and account tools.",
+    body: "Home brings important Loombus workspaces together without relying on an endless feed. It helps you move between creating, reading, Library, The Floor, search, saved items, activity, Stickies, Rooms, Local, Labs, and account tools.",
     bullets: [
       "Needs Attention surfaces activity that may require a response.",
       "Loombus Updates explains meaningful platform changes.",
@@ -109,7 +111,7 @@ const guideSections: GuideSection[] = [
     id: "search",
     eyebrow: "Search Everything",
     title: "Searching inside Loombus",
-    body: "Search Everything searches Loombus content and destinations. It is not Google Search and does not search the general open web. Results can include discussions, replies, people, public pages, authorized Room content, saved items, files, businesses, Services, Requests, Jobs, Events, Marketplace listings, and other supported records.",
+    body: "Search Everything searches Loombus content and destinations. It is not Google Search and does not search the general open web. Results can include discussions, replies, publications, Library, The Floor, people, public pages, authorized Room content, saved items, files, businesses, Services, Requests, Jobs, Events, Marketplace listings, and other supported records.",
     bullets: [
       "Search permissions determine whether private or restricted results can appear.",
       "Finding private content does not make it public.",
@@ -169,13 +171,49 @@ const guideSections: GuideSection[] = [
     id: "saved",
     eyebrow: "Personal library",
     title: "Saved, notes, Stickies, and Reading History",
-    body: "Saved is your private working library. Folders and private notes help organize material, Stickies support working memory, and Reading History helps recover recently opened discussions.",
+    body: "Saved is your private workspace for discussions and bookmarks. Folders and private notes help organize saved material, Stickies support working memory, and Reading History helps recover recently opened discussions. Saved is separate from the publication Library.",
     bullets: [
       "Save material with long-term research, decision, or reference value.",
       "Use private notes for your own context rather than public replies.",
       "Private saved notes are not included in Ask Loombus AI answer context.",
       "Do not store passwords, authentication codes, or highly sensitive records in ordinary notes.",
     ],
+  },
+  {
+    id: "library",
+    eyebrow: "Publications",
+    title: "Reading and working in Library",
+    body: "Library is the publication-reading workspace. It supports available publications, personal library status, reading progress, highlights, and private publication notes. A highlighted passage can become one entry point into a structured Loombus discussion.",
+    bullets: [
+      "Open an available publication and continue from your saved reading position.",
+      "Highlight a supported passage when the exact source language matters.",
+      "Use private publication notes for your own interpretation or research context.",
+      "Treat passage to discussion to evidence to knowledge as the Library flow, not the only way a Loombus discussion can begin.",
+    ],
+    callout: {
+      title: "The publication remains the source",
+      body: "Highlights, notes, discussions, and AI-assisted tools do not replace the original publication or independent evaluation of it.",
+      href: "/library",
+      label: "Open Library",
+    },
+  },
+  {
+    id: "the-floor",
+    eyebrow: "Investing research",
+    title: "Researching on The Floor",
+    body: "The Floor is Loombus's investing research and discussion area. It can support company research, investment theses, evidence, counterarguments, analyst context, community discussion, and learning tools.",
+    bullets: [
+      "Use a thesis to state the idea, supporting evidence, risks, counterarguments, and invalidation conditions.",
+      "Review original sources and current market information before relying on a contribution or AI-assisted output.",
+      "Treat member rankings, analyst activity, and track records as context rather than guarantees.",
+      "The Floor does not execute securities trades and does not replace licensed financial advice.",
+    ],
+    callout: {
+      title: "Research before action",
+      body: "Investment research, discussion, education, and AI-assisted analysis can be incomplete, delayed, or wrong. You remain responsible for investment decisions.",
+      href: "/the-floor",
+      label: "Open The Floor",
+    },
   },
   {
     id: "people",
