@@ -60,7 +60,7 @@ function renderInlineHighlights(text: string, highlights: Highlight[], textSha25
   let cursor = 0;
   for (const range of merged) {
     if (range.start > cursor) parts.push(<span key={`text-${cursor}`}>{text.slice(cursor, range.start)}</span>);
-    parts.push(<mark key={`highlight-${range.start}-${range.end}`} className="rounded-sm bg-[var(--loombus-gold-surface)] text-inherit">{text.slice(range.start, range.end)}</mark>);
+    parts.push(<mark key={`highlight-${range.start}-${range.end}`} className="rounded-sm bg-[var(--loombus-gold)] text-black">{text.slice(range.start, range.end)}</mark>);
     cursor = range.end;
   }
   if (cursor < text.length) parts.push(<span key={`text-${cursor}`}>{text.slice(cursor)}</span>);
