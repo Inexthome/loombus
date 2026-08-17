@@ -4,7 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 import {
   consumeExtraAiCredit,
   getAiAccess,
-  getAiFeatureLimit,
   getAiProviderErrorResponse,
   getMonthlyAiFeatureUsageCount,
   getOpenAiUsageMetadata,
@@ -132,23 +131,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const limit = getAiFeatureLimit(access, FEATURE_KEY);
-    const used = await getMonthlyAiFeatureUsageCount(supabase, userId, FEATURE_KEY);
-    if (!access.isAdmin && used >= limit) {
-      const consumed = await consumeExtraAiCredit({
-        userId,
-        featureKey: FEATURE_KEY,
-        targetType: "library_publication",
-        targetId: publicationId,
-      });
-      if (!consumed) {
-        return NextResponse.json(
-          { error: "You have reached your monthly Ask Loombus allowance.", code: "ai_limit_reached", limit, used },
-          { status: 429 }
-        );
-      }
-    }
-
     const [publicationResult, sectionResult] = await Promise.all([
       supabase.from("library_publications").select("id, title, author_name, status").eq("id", publicationId).single(),
       supabase.from("library_publication_sections").select("section_key, title, content_text").eq("publication_id", publicationId).eq("section_key", locator).single(),
@@ -168,6 +150,23 @@ export async function POST(request: NextRequest) {
     }
     if (endOffset > sectionText.length || sectionText.slice(startOffset, endOffset) !== selectedText) {
       return NextResponse.json({ error: "The selected passage no longer matches this chapter. Select it again before asking Loombus." }, { status: 409 });
+    }
+
+    const limit = access.isAdmin ? Number.MAX_SAFE_INTEGER : access.monthlyResearchLimit;
+    const used = await getMonthlyAiFeatureUsageCount(supabase, userId, FEATURE_KEY);
+    if (!access.isAdmin && used >= limit) {
+      const consumed = await consumeExtraAiCredit({
+        userId,
+        featureKey: FEATURE_KEY,
+        targetType: "library_publication",
+        targetId: publicationId,
+      });
+      if (!consumed) {
+        return NextResponse.json(
+          { error: "You have reached your monthly Ask Loombus allowance.", code: "ai_limit_reached", limit, used },
+          { status: 429 }
+        );
+      }
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
