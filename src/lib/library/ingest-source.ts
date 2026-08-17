@@ -1,5 +1,6 @@
 import { LIBRARY_ORIGINALS_BUCKET } from "@/lib/library/content-contract";
 import { parseEpubBuffer } from "@/lib/library/epub-parser";
+import { sha256Hex } from "@/lib/library/epub-validation";
 import {
   markLibrarySourceFailed,
   markLibrarySourceProcessing,
@@ -28,6 +29,8 @@ export async function ingestLibraryPublicationSource(sourceId: string): Promise<
     if (data.size !== source.byte_size) throw new Error("library_source_size_mismatch");
 
     const buffer = Buffer.from(await data.arrayBuffer());
+    if (sha256Hex(buffer) !== source.sha256) throw new Error("library_source_sha256_mismatch");
+
     const sections = await parseEpubBuffer(buffer);
     await replaceLibrarySections(client, {
       publicationId: source.publication_id,
