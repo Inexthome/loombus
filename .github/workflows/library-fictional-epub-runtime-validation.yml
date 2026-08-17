@@ -1,0 +1,27 @@
+name: Library fictional EPUB runtime validation
+
+on:
+  pull_request:
+    paths:
+      - "src/app/api/admin/library/fictional-epub-validation/route.ts"
+      - "src/lib/library/fictional-epub-fixture.ts"
+      - "src/lib/library/ingest-source.ts"
+      - "scripts/verification/verify-library-fictional-epub-runtime-validation.mjs"
+      - ".github/workflows/library-fictional-epub-runtime-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-library-fictional-epub-runtime-validation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Verify fictional EPUB runtime validation boundary
+        run: node scripts/verification/verify-library-fictional-epub-runtime-validation.mjs
