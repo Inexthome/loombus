@@ -2,12 +2,37 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Loombus | Signal over noise",
+  title: { absolute: "Loombus | Signal over noise" },
   description:
     "Loombus turns ideas into structured conversations, stronger understanding, meaningful connections, and real opportunities in one signal-first platform.",
   alternates: {
     canonical: "https://loombus.com/",
   },
+};
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://loombus.com/#organization",
+      name: "Loombus",
+      url: "https://loombus.com/",
+      logo: "https://loombus.com/icon.png",
+      slogan: "Signal over noise",
+      description:
+        "Loombus is a signal-first platform where ideas become structured conversations, stronger understanding, meaningful connections, and real opportunities.",
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://loombus.com/#website",
+      url: "https://loombus.com/",
+      name: "Loombus",
+      description:
+        "Loombus turns ideas into structured conversations, stronger understanding, meaningful connections, and real opportunities.",
+      publisher: { "@id": "https://loombus.com/#organization" },
+    },
+  ],
 };
 
 const signalCards = [
@@ -34,6 +59,12 @@ const signalCards = [
 export default function RootPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-[color:var(--loombus-page-bg)] text-[color:var(--loombus-text)]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+        }}
+      />
       <section className="relative min-h-screen px-6 py-7 sm:px-10 lg:px-16">
         <div
           aria-hidden="true"
