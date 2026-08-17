@@ -1,0 +1,22 @@
+name: Library highlight range foundation
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260817052500_add_library_highlight_text_ranges.sql"
+      - "scripts/verification/verify-library-highlight-range-foundation.mjs"
+      - ".github/workflows/library-highlight-range-foundation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-library-highlight-range-foundation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library highlight range foundation
+        run: node scripts/verification/verify-library-highlight-range-foundation.mjs
