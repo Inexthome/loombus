@@ -38,7 +38,7 @@ const downloadOptions = [
 export const metadata: Metadata = {
   title: "Download Loombus | Loombus",
   description:
-    "Download Loombus for iPhone and Android to explore structured discussions, private Rooms, local discovery, services, events, jobs, Marketplace listings, and more in one signal-first platform.",
+    "Download Loombus for iPhone and Android to explore structured discussions, Library, The Floor, private Rooms, meaningful connections, and real-world opportunities.",
   alternates: {
     canonical: "https://loombus.com/download",
   },
@@ -59,9 +59,9 @@ export default function DownloadPage() {
         title="Download Loombus"
         description={
           <>
-            Get Loombus on mobile and bring structured discussions, private
-            Rooms, local discovery, services, events, jobs, Marketplace, and
-            useful connections into one signal-first platform.
+            Read and discuss publications in Library, research investments on The
+            Floor, join structured discussions and Rooms, and discover meaningful
+            connections and real-world opportunities in one signal-first platform.
           </>
         }
       />

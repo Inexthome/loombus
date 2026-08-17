@@ -128,7 +128,8 @@ export default function SignupPage() {
         <p className="mb-4 text-sm uppercase tracking-[0.3em] text-zinc-500">Join Loombus</p>
         <h1 className="mb-6 text-4xl font-semibold tracking-tight sm:text-5xl">Create your account.</h1>
         <p className="mb-8 leading-relaxed text-zinc-400 sm:mb-10">
-          Join a calmer, higher-signal environment for thoughtful discussion.
+          Join a signal-first platform where ideas move through discussion,
+          evidence, understanding, and action.
         </p>
 
         <div className="mb-6 rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-black/30">

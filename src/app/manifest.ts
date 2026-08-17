@@ -4,7 +4,8 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Loombus",
     short_name: "Loombus",
-    description: "A high-signal discussion platform for thoughtful conversations.",
+    description:
+      "Loombus is a signal-first platform where ideas become structured conversations, stronger understanding, meaningful connections, and real opportunities.",
     start_url: "/",
     scope: "/",
     display: "standalone",

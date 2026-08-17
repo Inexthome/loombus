@@ -29,6 +29,22 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     keywords: ["discussions", "threads", "feed", "signal", "conversation"],
   },
   {
+    title: "Library",
+    description:
+      "Read publications, continue reading, and work with publication highlights and private notes.",
+    href: "/library",
+    category: "Knowledge",
+    keywords: [
+      "library",
+      "publications",
+      "books",
+      "reading",
+      "highlights",
+      "publication notes",
+      "continue reading",
+    ],
+  },
+  {
     title: "Create discussion",
     description:
       "Start a focused discussion with written context, a Topic, Reality Lens, purpose, and supported attachments.",
@@ -67,6 +83,24 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
       "discover",
       "ask loombus ai",
       "grounded answer",
+    ],
+  },
+  {
+    title: "The Floor",
+    description:
+      "Open Loombus investment research, theses, companies, analysts, evidence, discussion, and learning tools.",
+    href: "/the-floor",
+    category: "Investing",
+    keywords: [
+      "the floor",
+      "investing",
+      "investment research",
+      "stocks",
+      "companies",
+      "theses",
+      "analysts",
+      "markets",
+      "academy",
     ],
   },
   {
@@ -295,8 +329,8 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
     description:
       "Return to saved discussions, private notes, folders, and bookmarks.",
     href: "/saved",
-    category: "Library",
-    keywords: ["saved", "bookmarks", "folders", "notes", "private notes", "library"],
+    category: "Personal",
+    keywords: ["saved", "bookmarks", "folders", "notes", "private notes"],
   },
   {
     title: "Signal Board",
@@ -453,7 +487,7 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
   {
     title: "About Loombus",
     description:
-      "Read how Loombus connects knowledge, private communities, AI, Local, services, commerce, and Signal over noise.",
+      "Read how Loombus moves ideas through discussion, evidence, knowledge, connection, and action around Signal over noise.",
     href: "/about",
     category: "Reference",
     keywords: [
@@ -462,6 +496,8 @@ export const PLATFORM_ROUTE_REGISTRY: PlatformRouteEntry[] = [
       "purpose",
       "mission",
       "signal over noise",
+      "ideas move forward",
+      "idea discussion evidence knowledge",
       "everything knowledge platform",
     ],
   },

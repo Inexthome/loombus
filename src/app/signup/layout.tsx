@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 export const metadata: Metadata = {
   title: "Create an account | Loombus",
   description:
-    "Create a Loombus account and join a platform built for thoughtful discussions instead of endless scrolling.",
+    "Create a Loombus account and join a signal-first platform where ideas move through discussion, evidence, understanding, connection, and action.",
   alternates: {
     canonical: "https://loombus.com/signup",
   },
