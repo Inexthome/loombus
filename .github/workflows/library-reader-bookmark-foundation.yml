@@ -1,0 +1,22 @@
+name: Library Reader bookmark foundation
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260817074500_add_library_reader_bookmarks.sql"
+      - "scripts/verification/verify-library-reader-bookmark-foundation.mjs"
+      - ".github/workflows/library-reader-bookmark-foundation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-library-reader-bookmark-foundation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library Reader bookmark foundation
+        run: node scripts/verification/verify-library-reader-bookmark-foundation.mjs
