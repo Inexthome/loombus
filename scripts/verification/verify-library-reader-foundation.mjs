@@ -13,6 +13,22 @@ for (const token of [
   'from("library_reading_progress")',
   'from("library_highlights")',
   'from("library_notes")',
+  'from("library_bookmarks")',
+  'select("id, locator, created_at")',
+  'insert({ user_id: userId, publication_id: publicationId, locator: currentSection.section_key })',
+  '.delete().eq("id", currentBookmark.id).eq("user_id", userId).eq("publication_id", publicationId)',
+  "toggleBookmark",
+  "Bookmarked",
+  "Search this book",
+  "Find words or chapters…",
+  "No matches in this book.",
+  "searchQuery",
+  "searchResults",
+  "searchSnippet",
+  "Contents",
+  "bookmarkedLocators",
+  'aria-label="Bookmarked chapter"',
+  'aria-current={active ? "location" : undefined}',
   "supabase.auth.getUser()",
   "progress_percent",
   "section.section_key",
@@ -28,7 +44,6 @@ for (const token of [
   "Chapter {currentIndex + 1} of {sections.length}",
   "READER_FONT_SIZE_KEY",
   "window.localStorage.setItem",
-  'aria-current={section.section_key === currentSection.section_key ? "location" : undefined}',
   "lg:sticky lg:top-20",
   'start_offset, end_offset, text_sha256',
   'window.crypto.subtle.digest("SHA-256"',
@@ -77,13 +92,16 @@ if (failures.length) {
 
 console.log("Loombus Reader foundation verification passed");
 console.log("- Reader consumes ordered normalized publication sections");
-console.log("- stable section_key locators drive progress, highlights, and notes");
+console.log("- stable section_key locators drive progress, highlights, notes, and private bookmarks");
+console.log("- in-book search operates only over already-authorized normalized section titles and text");
+console.log("- search results navigate through the existing progress-saving chapter boundary");
+console.log("- refined Contents navigation exposes active and bookmarked chapter state");
+console.log("- bookmark reads, inserts, and deletes use the authenticated browser client and existing owner RLS");
 console.log("- durable highlights persist exact UTF-16 offsets plus normalized-text SHA-256");
 console.log("- inline rendering requires hash-valid offsets and exact selected-text agreement");
 console.log("- legacy or stale highlights remain sidebar-visible but are not guessed inline");
 console.log("- current-chapter highlights and notes are visible and owner-scoped for deletion");
 console.log("- chapter navigation, persistent text sizing, and sticky desktop controls refine long-form reading");
 console.log("- missing normalized content fails closed without source-object fallback");
-console.log("- private highlights and notes continue through existing RLS-protected tables");
 console.log("- typography and Light/Dark/System theme tokens are preserved");
 console.log("- original EPUB storage, commerce, DRM, and AI remain outside the Reader surface");
