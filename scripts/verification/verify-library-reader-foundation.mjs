@@ -22,13 +22,27 @@ for (const token of [
   "Search this book",
   "Find words or chapters…",
   "No matches in this book.",
-  "searchQuery",
-  "searchResults",
-  "searchSnippet",
+  "buildSearchResults",
+  "MAX_SEARCH_RESULTS",
+  "renderSearchMatch",
+  "Previous search match",
+  "Next search match",
+  "activeSearchIndex",
+  "moveSearchResult",
+  "Match ${Math.min(activeSearchIndex + 1, searchResults.length)} of ${searchResults.length}",
   "Contents",
   "bookmarkedLocators",
   'aria-label="Bookmarked chapter"',
   'aria-current={active ? "location" : undefined}',
+  "Saved & annotations",
+  'type ReadingToolTab = "bookmarks" | "highlights" | "notes"',
+  "readingToolTab",
+  "moveToLocator",
+  "No bookmarks in this book.",
+  "No highlights in this book.",
+  "No notes in this book.",
+  "Unavailable chapter",
+  'readerTextRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })',
   "supabase.auth.getUser()",
   "progress_percent",
   "section.section_key",
@@ -93,14 +107,16 @@ if (failures.length) {
 console.log("Loombus Reader foundation verification passed");
 console.log("- Reader consumes ordered normalized publication sections");
 console.log("- stable section_key locators drive progress, highlights, notes, and private bookmarks");
-console.log("- in-book search operates only over already-authorized normalized section titles and text");
-console.log("- search results navigate through the existing progress-saving chapter boundary");
+console.log("- in-book search expands to bounded individual matches with visible query emphasis");
+console.log("- previous/next search controls navigate through the existing progress-saving chapter boundary");
 console.log("- refined Contents navigation exposes active and bookmarked chapter state");
+console.log("- publication-level Saved & annotations tabs navigate bookmarks, highlights, and notes by stable locator");
+console.log("- stale locators fail closed as unavailable rather than guessing a chapter");
 console.log("- bookmark reads, inserts, and deletes use the authenticated browser client and existing owner RLS");
 console.log("- durable highlights persist exact UTF-16 offsets plus normalized-text SHA-256");
 console.log("- inline rendering requires hash-valid offsets and exact selected-text agreement");
 console.log("- legacy or stale highlights remain sidebar-visible but are not guessed inline");
-console.log("- current-chapter highlights and notes are visible and owner-scoped for deletion");
+console.log("- current-chapter highlights and notes remain visible and owner-scoped for deletion");
 console.log("- chapter navigation, persistent text sizing, and sticky desktop controls refine long-form reading");
 console.log("- missing normalized content fails closed without source-object fallback");
 console.log("- typography and Light/Dark/System theme tokens are preserved");
