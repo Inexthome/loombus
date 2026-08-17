@@ -35,6 +35,7 @@ import { SessionLifecycleGuard } from "@/components/session-lifecycle-guard";
 
 const siteUrl = "https://loombus.com";
 const siteTitle = "Loombus";
+const siteSocialTitle = "Loombus | Signal over noise";
 const siteDescription =
   "Loombus is a signal-first platform where ideas become structured conversations, stronger understanding, meaningful connections, and real opportunities.";
 
@@ -65,7 +66,7 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: siteTitle,
+    title: siteSocialTitle,
     description: siteDescription,
     url: siteUrl,
     siteName: siteTitle,
@@ -74,14 +75,14 @@ export const metadata: Metadata = {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "Loombus",
+        alt: "Loombus, a signal-first platform where ideas move forward",
       },
     ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: siteTitle,
+    title: siteSocialTitle,
     description: siteDescription,
     images: ["/opengraph-image.png"],
   },
