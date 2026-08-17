@@ -44,8 +44,17 @@ requireText(launcher, 'href="/library/research"', "Research destination link");
 
 requireText(research, '.from("library_research_items")', "private Research list/delete access");
 requireText(research, '.delete()', "Research item deletion");
-requireText(research, '.from("library_reading_progress").upsert', "saved chapter navigation");
+requireText(research, '.from("library_reading_progress")', "saved chapter progress target");
+requireText(research, '.upsert(', "saved chapter progress upsert");
 requireText(research, 'window.location.href = `/library/read/${item.publication_id}`', "Reader return navigation");
+
+const progressTargetIndex = research.indexOf('.from("library_reading_progress")');
+const progressUpsertIndex = research.indexOf('.upsert(', progressTargetIndex);
+const readerReturnIndex = research.indexOf('window.location.href = `/library/read/${item.publication_id}`');
+if (!(progressTargetIndex >= 0 && progressUpsertIndex > progressTargetIndex && readerReturnIndex > progressUpsertIndex)) {
+  throw new Error("Saved chapter navigation must persist reading progress before returning to Reader.");
+}
+
 requireText(page, '<LibraryResearchSurface />', "Research page wiring");
 
 for (const [source, label] of [[route, "route"], [launcher, "launcher"], [research, "research surface"]]) {
