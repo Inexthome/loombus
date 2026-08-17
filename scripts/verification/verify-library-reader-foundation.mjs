@@ -20,6 +20,16 @@ for (const token of [
   "This publication does not have readable content yet.",
   "Save highlight",
   "Save note",
+  "This chapter",
+  "Book total:",
+  "Delete highlight",
+  "Delete note",
+  '.delete().eq("id", id).eq("user_id", userId).eq("publication_id", publicationId)',
+  "Chapter {currentIndex + 1} of {sections.length}",
+  "READER_FONT_SIZE_KEY",
+  "window.localStorage.setItem",
+  'aria-current={section.section_key === currentSection.section_key ? "location" : undefined}',
+  "lg:sticky lg:top-20",
   "var(--loombus-gold)",
   "var(--loombus-page-bg)",
   "var(--loombus-reader-paper",
@@ -54,6 +64,8 @@ if (failures.length) {
 console.log("Loombus Reader foundation verification passed");
 console.log("- Reader consumes ordered normalized publication sections");
 console.log("- stable section_key locators drive progress, highlights, and notes");
+console.log("- current-chapter highlights and notes are visible and owner-scoped for deletion");
+console.log("- chapter navigation, persistent text sizing, and sticky desktop controls refine long-form reading");
 console.log("- missing normalized content fails closed without source-object fallback");
 console.log("- private highlights and notes continue through existing RLS-protected tables");
 console.log("- typography and Light/Dark/System theme tokens are preserved");
