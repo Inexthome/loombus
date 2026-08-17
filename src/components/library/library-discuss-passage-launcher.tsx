@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquareText, Sparkles, X } from "lucide-react";
+import { Check, FlaskConical, MessageSquareText, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -53,6 +53,9 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
   const captureInFlight = useRef(false);
   const [selection, setSelection] = useState<PassageSelection | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [savingResearch, setSavingResearch] = useState(false);
+  const [researchSaved, setResearchSaved] = useState(false);
+  const [researchMessage, setResearchMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,6 +72,8 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
 
       captureInFlight.current = true;
       setError(null);
+      setResearchSaved(false);
+      setResearchMessage(null);
 
       try {
         const { data: authData } = await supabase.auth.getUser();
@@ -146,12 +151,50 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
   function dismiss() {
     setSelection(null);
     setError(null);
+    setResearchSaved(false);
+    setResearchMessage(null);
   }
 
   function openTool(storageKey: string, href: string) {
     if (!selection) return;
     window.sessionStorage.setItem(storageKey, JSON.stringify(selection));
     window.location.href = href;
+  }
+
+  async function saveToResearch() {
+    if (!selection || savingResearch || researchSaved) return;
+    setSavingResearch(true);
+    setResearchMessage(null);
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        setResearchMessage("Sign in again to save this passage to Research.");
+        return;
+      }
+
+      const response = await fetch("/api/library/save-to-research", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ passage: selection }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setResearchMessage(payload?.error ?? "Unable to save this passage to Research.");
+        return;
+      }
+
+      setResearchSaved(true);
+      setResearchMessage(payload?.duplicate ? "Already saved in your Research." : "Saved privately to Research.");
+    } catch {
+      setResearchMessage("Save to Research is temporarily unavailable.");
+    } finally {
+      setSavingResearch(false);
+    }
   }
 
   if (!selection && !error) return null;
@@ -172,16 +215,23 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
         </button>
       </div>
       {selection ? (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-[var(--loombus-text-subtle)]">{selection.sectionTitle ?? "Current chapter"} · {selection.selectedText.length} characters</p>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => openTool(ASK_LOOMBUS_STORAGE_KEY, "/library/ask-loombus")} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--loombus-gold)] px-4 text-sm font-black text-[var(--loombus-gold)]">
-              <Sparkles className="size-4" /> Ask Loombus
-            </button>
-            <button type="button" onClick={() => openTool(DISCUSS_PASSAGE_STORAGE_KEY, "/library/discuss-passage")} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-black text-black">
-              <MessageSquareText className="size-4" /> Discuss passage
-            </button>
+        <div className="mt-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-[var(--loombus-text-subtle)]">{selection.sectionTitle ?? "Current chapter"} · {selection.selectedText.length} characters</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => void saveToResearch()} disabled={savingResearch || researchSaved} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--loombus-border)] px-4 text-sm font-black text-[var(--loombus-text)] disabled:opacity-70">
+                {researchSaved ? <Check className="size-4 text-[var(--loombus-gold)]" /> : <FlaskConical className="size-4 text-[var(--loombus-gold)]" />}
+                {savingResearch ? "Saving…" : researchSaved ? "Saved to Research" : "Save to Research"}
+              </button>
+              <button type="button" onClick={() => openTool(ASK_LOOMBUS_STORAGE_KEY, "/library/ask-loombus")} className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[var(--loombus-gold)] px-4 text-sm font-black text-[var(--loombus-gold)]">
+                <Sparkles className="size-4" /> Ask Loombus
+              </button>
+              <button type="button" onClick={() => openTool(DISCUSS_PASSAGE_STORAGE_KEY, "/library/discuss-passage")} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[var(--loombus-gold)] px-4 text-sm font-black text-black">
+                <MessageSquareText className="size-4" /> Discuss passage
+              </button>
+            </div>
           </div>
+          {researchMessage ? <p className="mt-3 text-xs text-[var(--loombus-text-muted)]">{researchMessage}{researchSaved ? <> <a href="/library/research" className="font-black text-[var(--loombus-gold)]">View Research</a></> : null}</p> : null}
         </div>
       ) : null}
     </div>
