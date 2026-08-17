@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageSquareText, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 
 const PASSAGE_STORAGE_KEY = "loombus:library:discuss-passage:v1";
@@ -49,15 +49,15 @@ function findExactTextContainer(start: Node, end: Node, expectedText: string): H
 }
 
 export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId: string }) {
+  const captureInFlight = useRef(false);
   const [selection, setSelection] = useState<PassageSelection | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [capturing, setCapturing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function capture() {
-      if (capturing) return;
+      if (captureInFlight.current) return;
       const browserSelection = window.getSelection();
       if (!browserSelection || browserSelection.rangeCount !== 1 || browserSelection.isCollapsed) return;
 
@@ -66,7 +66,7 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
       const trimmed = raw.trim();
       if (!trimmed) return;
 
-      setCapturing(true);
+      captureInFlight.current = true;
       setError(null);
 
       try {
@@ -133,7 +133,7 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
           capturedAt: new Date().toISOString(),
         });
       } finally {
-        if (!cancelled) setCapturing(false);
+        captureInFlight.current = false;
       }
     }
 
@@ -148,7 +148,7 @@ export function LibraryDiscussPassageLauncher({ publicationId }: { publicationId
       document.removeEventListener("mouseup", handleSelectionEnd);
       document.removeEventListener("touchend", handleSelectionEnd);
     };
-  }, [capturing, publicationId]);
+  }, [publicationId]);
 
   function dismiss() {
     setSelection(null);
