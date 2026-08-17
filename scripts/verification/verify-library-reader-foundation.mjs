@@ -30,6 +30,19 @@ for (const token of [
   "window.localStorage.setItem",
   'aria-current={section.section_key === currentSection.section_key ? "location" : undefined}',
   "lg:sticky lg:top-20",
+  'start_offset, end_offset, text_sha256',
+  'window.crypto.subtle.digest("SHA-256"',
+  "textOffsetWithin",
+  "readerTextRef",
+  "renderInlineHighlights",
+  "highlight.text_sha256 === textSha256",
+  "text.slice(highlight.start_offset, highlight.end_offset) === highlight.selected_text",
+  "start_offset: selection.startOffset",
+  "end_offset: selection.endOffset",
+  "text_sha256: textSha256",
+  "Legacy highlight · sidebar only",
+  "Rendered inline",
+  "Inline range unavailable",
   "var(--loombus-gold)",
   "var(--loombus-page-bg)",
   "var(--loombus-reader-paper",
@@ -51,6 +64,7 @@ for (const token of [
   "anthropic",
   "getPublicUrl",
   "createSignedUrl",
+  "indexOf(highlight.selected_text)",
 ]) {
   if (reader.toLowerCase().includes(token.toLowerCase())) failures.push(`out-of-scope/legacy Reader capability present: ${token}`);
 }
@@ -64,6 +78,9 @@ if (failures.length) {
 console.log("Loombus Reader foundation verification passed");
 console.log("- Reader consumes ordered normalized publication sections");
 console.log("- stable section_key locators drive progress, highlights, and notes");
+console.log("- durable highlights persist exact UTF-16 offsets plus normalized-text SHA-256");
+console.log("- inline rendering requires hash-valid offsets and exact selected-text agreement");
+console.log("- legacy or stale highlights remain sidebar-visible but are not guessed inline");
 console.log("- current-chapter highlights and notes are visible and owner-scoped for deletion");
 console.log("- chapter navigation, persistent text sizing, and sticky desktop controls refine long-form reading");
 console.log("- missing normalized content fails closed without source-object fallback");
