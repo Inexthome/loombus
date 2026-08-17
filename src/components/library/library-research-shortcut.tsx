@@ -20,15 +20,17 @@ export function LibraryResearchShortcut() {
       window.cancelAnimationFrame(frame);
       frame = window.requestAnimationFrame(() => {
         const rail = document.querySelector<HTMLElement>(QUICK_RAIL_SELECTOR);
-        const railOpen = rail?.dataset.open === "true";
 
-        if (!rail || !railOpen) {
+        if (!rail) {
           setRaisedBottom(null);
           return;
         }
 
         const railRect = rail.getBoundingClientRect();
-        const nextBottom = Math.max(20, Math.ceil(window.innerHeight - railRect.top + QUICK_RAIL_GAP_PX));
+        const nextBottom = Math.max(
+          20,
+          Math.ceil(window.innerHeight - railRect.top + QUICK_RAIL_GAP_PX)
+        );
         setRaisedBottom(nextBottom);
       });
     }
