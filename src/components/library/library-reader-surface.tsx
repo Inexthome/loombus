@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, BookOpen, ChevronLeft, ChevronRight, Highlighter, Loader2, Minus, NotebookPen, Plus, Trash2, Type } from "lucide-react";
+import { ArrowLeft, BookOpen, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Highlighter, Loader2, Minus, NotebookPen, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type Publication = { id: string; title: string; subtitle: string | null; author_name: string | null; publisher_name: string | null };
@@ -10,13 +10,28 @@ type ReaderSection = { section_key: string; ordinal: number; title: string | nul
 type Progress = { locator: string | null; progress_percent: number };
 type Highlight = { id: string; locator: string; selected_text: string; start_offset: number | null; end_offset: number | null; text_sha256: string | null; created_at: string };
 type Note = { id: string; highlight_id: string | null; locator: string | null; body: string; created_at: string };
+type BookmarkRow = { id: string; locator: string; created_at: string };
 type ReaderSelection = { text: string; startOffset: number; endOffset: number };
+type SearchResult = { sectionIndex: number; locator: string; title: string; snippet: string };
 
 const READER_FONT_SIZE_KEY = "loombus-library-reader-font-size";
 
 function progressPercent(index: number, total: number): number {
   if (total <= 0) return 0;
   return Math.min(100, Math.max(1, Math.round(((index + 1) / total) * 100)));
+}
+
+function sectionLabel(section: ReaderSection): string {
+  return section.title ?? `Section ${section.ordinal + 1}`;
+}
+
+function searchSnippet(text: string, query: string): string {
+  const compact = text.replace(/\s+/g, " ").trim();
+  const index = compact.toLocaleLowerCase().indexOf(query.toLocaleLowerCase());
+  if (index < 0) return compact.slice(0, 150);
+  const start = Math.max(0, index - 55);
+  const end = Math.min(compact.length, index + query.length + 85);
+  return `${start > 0 ? "…" : ""}${compact.slice(start, end)}${end < compact.length ? "…" : ""}`;
 }
 
 async function sha256Text(value: string): Promise<string> {
@@ -75,6 +90,7 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
   const [progress, setProgress] = useState<Progress>({ locator: null, progress_percent: 0 });
   const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [bookmarks, setBookmarks] = useState<BookmarkRow[]>([]);
   const [fontSize, setFontSize] = useState(18);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -82,12 +98,32 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
   const [selection, setSelection] = useState<ReaderSelection | null>(null);
   const [currentTextSha256, setCurrentTextSha256] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const locatedIndex = sections.findIndex((section) => section.section_key === progress.locator);
   const currentIndex = locatedIndex >= 0 ? locatedIndex : 0;
   const currentSection = sections[currentIndex] ?? null;
   const sectionHighlights = useMemo(() => currentSection ? highlights.filter((row) => row.locator === currentSection.section_key) : [], [currentSection, highlights]);
   const sectionNotes = useMemo(() => currentSection ? notes.filter((row) => row.locator === currentSection.section_key) : [], [currentSection, notes]);
+  const bookmarkedLocators = useMemo(() => new Set(bookmarks.map((row) => row.locator)), [bookmarks]);
+  const currentBookmark = currentSection ? bookmarks.find((row) => row.locator === currentSection.section_key) ?? null : null;
+  const searchResults = useMemo<SearchResult[]>(() => {
+    const query = searchQuery.trim();
+    if (query.length < 2) return [];
+    const lowered = query.toLocaleLowerCase();
+    return sections.flatMap((section, sectionIndex) => {
+      const title = sectionLabel(section);
+      const titleMatch = title.toLocaleLowerCase().includes(lowered);
+      const bodyMatch = section.content_text.toLocaleLowerCase().includes(lowered);
+      if (!titleMatch && !bodyMatch) return [];
+      return [{
+        sectionIndex,
+        locator: section.section_key,
+        title,
+        snippet: bodyMatch ? searchSnippet(section.content_text, query) : "Chapter title match",
+      }];
+    }).slice(0, 25);
+  }, [searchQuery, sections]);
   const inlineHighlightCount = useMemo(() => currentTextSha256 ? sectionHighlights.filter((highlight) =>
     highlight.text_sha256 === currentTextSha256 &&
     highlight.start_offset !== null &&
@@ -148,15 +184,21 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
     }
     setUserId(user.id);
 
-    const [sectionResult, progressResult, highlightResult, noteResult] = await Promise.all([
+    const [sectionResult, progressResult, highlightResult, noteResult, bookmarkResult] = await Promise.all([
       supabase.from("library_publication_sections").select("section_key, ordinal, title, content_text").eq("publication_id", publicationId).order("ordinal", { ascending: true }),
       supabase.from("library_reading_progress").select("locator, progress_percent").eq("publication_id", publicationId).maybeSingle(),
       supabase.from("library_highlights").select("id, locator, selected_text, start_offset, end_offset, text_sha256, created_at").eq("publication_id", publicationId).order("created_at", { ascending: false }),
       supabase.from("library_notes").select("id, highlight_id, locator, body, created_at").eq("publication_id", publicationId).order("created_at", { ascending: false }),
+      supabase.from("library_bookmarks").select("id, locator, created_at").eq("publication_id", publicationId).order("created_at", { ascending: false }),
     ]);
 
     if (sectionResult.error) {
       setError("Unable to load this publication's reading content.");
+      setLoading(false);
+      return;
+    }
+    if (bookmarkResult.error) {
+      setError("Unable to load your private bookmarks.");
       setLoading(false);
       return;
     }
@@ -176,6 +218,7 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
     else setProgress({ locator: normalizedSections[0].section_key, progress_percent: progressPercent(0, normalizedSections.length) });
     setHighlights((highlightResult.data ?? []) as Highlight[]);
     setNotes((noteResult.data ?? []) as Note[]);
+    setBookmarks((bookmarkResult.data ?? []) as BookmarkRow[]);
     setLoading(false);
   }, [publicationId]);
 
@@ -192,6 +235,22 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
     else setProgress(next);
     setSelection(null);
     window.getSelection()?.removeAllRanges();
+    setSaving(false);
+  }
+
+  async function toggleBookmark() {
+    if (!userId || !currentSection) return;
+    setSaving(true);
+    setError(null);
+    if (currentBookmark) {
+      const { error: deleteError } = await supabase.from("library_bookmarks").delete().eq("id", currentBookmark.id).eq("user_id", userId).eq("publication_id", publicationId);
+      if (deleteError) setError("Unable to remove this bookmark.");
+      else setBookmarks((rows) => rows.filter((row) => row.id !== currentBookmark.id));
+    } else {
+      const { data, error: insertError } = await supabase.from("library_bookmarks").insert({ user_id: userId, publication_id: publicationId, locator: currentSection.section_key }).select("id, locator, created_at").single();
+      if (insertError || !data) setError("Unable to save this bookmark.");
+      else setBookmarks((rows) => [data as BookmarkRow, ...rows]);
+    }
     setSaving(false);
   }
 
@@ -298,10 +357,13 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
 
         {error ? <div role="alert" className="mt-5 rounded-2xl border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-4 text-sm">{error}</div> : null}
         {publication && currentSection ? (
-          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_19rem]">
+          <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <article className="rounded-[2rem] border border-[var(--loombus-border)] bg-[var(--loombus-reader-paper,var(--loombus-surface))] px-6 py-8 sm:px-10 sm:py-12">
               <div className="mx-auto max-w-3xl">
-                <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--loombus-gold)]">{currentSection.title ?? `Section ${currentSection.ordinal + 1}`}</p><p className="text-xs text-[var(--loombus-text-muted)]">Chapter {currentIndex + 1} of {sections.length}</p></div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--loombus-gold)]">{sectionLabel(currentSection)}</p><p className="mt-1 text-xs text-[var(--loombus-text-muted)]">Chapter {currentIndex + 1} of {sections.length}</p></div>
+                  <button onClick={() => void toggleBookmark()} disabled={saving} aria-pressed={Boolean(currentBookmark)} className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold ${currentBookmark ? "border-[var(--loombus-gold)] bg-[var(--loombus-gold-surface)] text-[var(--loombus-gold)]" : "border-[var(--loombus-border)] text-[var(--loombus-text-muted)]"}`}>{currentBookmark ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}{currentBookmark ? "Bookmarked" : "Bookmark"}</button>
+                </div>
                 <h1 className="mt-3 text-3xl font-semibold tracking-tight">{publication.title}</h1>
                 {publication.subtitle ? <p className="mt-2 text-lg text-[var(--loombus-text-muted)]">{publication.subtitle}</p> : null}
                 <p className="mt-2 text-sm text-[var(--loombus-text-subtle)]">{publication.author_name ?? publication.publisher_name ?? "Loombus Library"}</p>
@@ -313,9 +375,25 @@ export function LibraryReaderSurface({ publicationId }: { publicationId: string 
             </article>
 
             <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-              <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[var(--loombus-gold)]" /><h2 className="font-semibold">Chapters</h2></div><div className="mt-4 max-h-72 space-y-1 overflow-y-auto pr-1">{sections.map((section, index) => <button key={section.section_key} onClick={() => void moveTo(index)} aria-current={section.section_key === currentSection.section_key ? "location" : undefined} className={`w-full rounded-xl px-3 py-2 text-left text-sm ${section.section_key === currentSection.section_key ? "bg-[var(--loombus-gold-surface)] font-semibold" : "text-[var(--loombus-text-muted)]"}`}><span className="mr-2 text-xs text-[var(--loombus-text-subtle)]">{index + 1}</span>{section.title ?? `Section ${section.ordinal + 1}`}</button>)}</div></section>
+              <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
+                <div className="flex items-center gap-2"><Search className="h-4 w-4 text-[var(--loombus-gold)]" /><h2 className="font-semibold">Search this book</h2></div>
+                <div className="mt-4 flex items-center rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] px-3"><Search className="h-4 w-4 shrink-0 text-[var(--loombus-text-subtle)]" /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Find words or chapters…" className="min-w-0 flex-1 bg-transparent px-2 py-2.5 text-sm outline-none" />{searchQuery ? <button aria-label="Clear book search" onClick={() => setSearchQuery("")} className="text-[var(--loombus-text-muted)]"><X className="h-4 w-4" /></button> : null}</div>
+                {searchQuery.trim().length === 1 ? <p className="mt-3 text-xs text-[var(--loombus-text-muted)]">Type at least 2 characters.</p> : null}
+                {searchQuery.trim().length >= 2 ? <div className="mt-3 max-h-72 space-y-2 overflow-y-auto pr-1">{searchResults.length ? searchResults.map((result) => <button key={result.locator} onClick={() => void moveTo(result.sectionIndex)} className="w-full rounded-xl border border-[var(--loombus-border)] p-3 text-left hover:bg-[var(--loombus-surface-strong)]"><p className="text-xs font-semibold text-[var(--loombus-gold)]">{result.sectionIndex + 1}. {result.title}</p><p className="mt-1 line-clamp-3 text-xs leading-relaxed text-[var(--loombus-text-muted)]">{result.snippet}</p></button>) : <p className="text-xs text-[var(--loombus-text-muted)]">No matches in this book.</p>}</div> : null}
+              </section>
+
+              <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5">
+                <div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-[var(--loombus-gold)]" /><h2 className="font-semibold">Contents</h2></div><span className="text-xs text-[var(--loombus-text-muted)]">{bookmarks.length} saved</span></div>
+                <p className="mt-1 text-xs text-[var(--loombus-text-muted)]">Jump between chapters. Bookmarked chapters show a gold marker.</p>
+                <div className="mt-4 max-h-80 space-y-1 overflow-y-auto pr-1">{sections.map((section, index) => {
+                  const active = section.section_key === currentSection.section_key;
+                  const bookmarked = bookmarkedLocators.has(section.section_key);
+                  return <button key={section.section_key} onClick={() => void moveTo(index)} aria-current={active ? "location" : undefined} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm ${active ? "bg-[var(--loombus-gold-surface)] font-semibold" : "text-[var(--loombus-text-muted)] hover:bg-[var(--loombus-surface-strong)]"}`}><span className="w-5 shrink-0 text-right text-xs text-[var(--loombus-text-subtle)]">{index + 1}</span><span className="min-w-0 flex-1 truncate">{sectionLabel(section)}</span>{bookmarked ? <BookmarkCheck aria-label="Bookmarked chapter" className="h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /> : null}</button>;
+                })}</div>
+              </section>
+
               <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center gap-2"><NotebookPen className="h-4 w-4 text-[var(--loombus-gold)]" /><h2 className="font-semibold">Private note</h2></div><p className="mt-1 text-xs text-[var(--loombus-text-muted)]">Saved to this chapter only.</p><textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Write a note at this position…" className="mt-4 min-h-24 w-full rounded-xl border border-[var(--loombus-border)] bg-[var(--loombus-surface-strong)] p-3 text-sm outline-none" /><button onClick={() => void saveNote()} disabled={saving || !noteDraft.trim()} className="mt-3 text-sm font-semibold text-[var(--loombus-gold)] disabled:opacity-40">Save note</button></section>
-              <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold">This chapter</h2><span className="text-xs text-[var(--loombus-text-muted)]">{sectionHighlights.length} highlights · {sectionNotes.length} notes</span></div>{sectionHighlights.length || sectionNotes.length ? <div className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-1">{sectionHighlights.map((highlight) => <div key={highlight.id} className="rounded-xl bg-[var(--loombus-gold-surface)] p-3"><div className="flex items-start gap-2"><Highlighter className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /><div className="min-w-0 flex-1"><p className="text-xs leading-relaxed">“{highlight.selected_text}”</p><p className="mt-1 text-[10px] text-[var(--loombus-text-subtle)]">{highlight.start_offset === null ? "Legacy highlight · sidebar only" : highlight.text_sha256 === currentTextSha256 && highlight.end_offset !== null && currentSection.content_text.slice(highlight.start_offset, highlight.end_offset) === highlight.selected_text ? "Rendered inline" : "Inline range unavailable"}</p></div><button aria-label="Delete highlight" disabled={saving} onClick={() => void deleteHighlight(highlight.id)} className="shrink-0 text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}{sectionNotes.map((note) => <div key={note.id} className="rounded-xl border border-[var(--loombus-border)] p-3"><div className="flex items-start gap-2"><NotebookPen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /><p className="min-w-0 flex-1 whitespace-pre-wrap text-xs leading-relaxed">{note.body}</p><button aria-label="Delete note" disabled={saving} onClick={() => void deleteNote(note.id)} className="shrink-0 text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}</div> : <p className="mt-3 text-xs text-[var(--loombus-text-muted)]">No annotations in this chapter yet.</p>}<p className="mt-4 border-t border-[var(--loombus-border)] pt-3 text-[11px] text-[var(--loombus-text-subtle)]">Book total: {highlights.length} highlights · {notes.length} notes · {inlineHighlightCount} inline here</p></section>
+              <section className="rounded-[1.5rem] border border-[var(--loombus-border)] bg-[var(--loombus-surface)] p-5"><div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold">This chapter</h2><span className="text-xs text-[var(--loombus-text-muted)]">{sectionHighlights.length} highlights · {sectionNotes.length} notes</span></div>{sectionHighlights.length || sectionNotes.length ? <div className="mt-4 max-h-80 space-y-3 overflow-y-auto pr-1">{sectionHighlights.map((highlight) => <div key={highlight.id} className="rounded-xl bg-[var(--loombus-gold-surface)] p-3"><div className="flex items-start gap-2"><Highlighter className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /><div className="min-w-0 flex-1"><p className="text-xs leading-relaxed">“{highlight.selected_text}”</p><p className="mt-1 text-[10px] text-[var(--loombus-text-subtle)]">{highlight.start_offset === null ? "Legacy highlight · sidebar only" : highlight.text_sha256 === currentTextSha256 && highlight.end_offset !== null && currentSection.content_text.slice(highlight.start_offset, highlight.end_offset) === highlight.selected_text ? "Rendered inline" : "Inline range unavailable"}</p></div><button aria-label="Delete highlight" disabled={saving} onClick={() => void deleteHighlight(highlight.id)} className="shrink-0 text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}{sectionNotes.map((note) => <div key={note.id} className="rounded-xl border border-[var(--loombus-border)] p-3"><div className="flex items-start gap-2"><NotebookPen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--loombus-gold)]" /><p className="min-w-0 flex-1 whitespace-pre-wrap text-xs leading-relaxed">{note.body}</p><button aria-label="Delete note" disabled={saving} onClick={() => void deleteNote(note.id)} className="shrink-0 text-[var(--loombus-text-muted)] hover:text-[var(--loombus-text)]"><Trash2 className="h-3.5 w-3.5" /></button></div></div>)}</div> : <p className="mt-3 text-xs text-[var(--loombus-text-muted)]">No annotations in this chapter yet.</p>}<p className="mt-4 border-t border-[var(--loombus-border)] pt-3 text-[11px] text-[var(--loombus-text-subtle)]">Book total: {highlights.length} highlights · {notes.length} notes · {bookmarks.length} bookmarks · {inlineHighlightCount} inline here</p></section>
             </aside>
           </div>
         ) : null}
