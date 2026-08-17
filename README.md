@@ -1,6 +1,6 @@
 # Loombus
 
-Loombus is a signal-first discussion platform focused on thoughtful conversations, durable knowledge, and meaningful contribution.
+Loombus is a signal-first platform where ideas become structured conversations, stronger understanding, meaningful connections, and real opportunities.
 
 ## Stack
 

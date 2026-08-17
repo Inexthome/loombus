@@ -321,7 +321,7 @@ export default function LoginPage() {
         <h1 className="mb-6 text-4xl font-semibold tracking-tight sm:text-5xl">Log in.</h1>
 
         <p className="mb-8 leading-relaxed text-zinc-400 sm:mb-10">
-          Return to your high-signal discussion environment.
+          Return to your Loombus signal hub.
         </p>
 
         {checkingBiometricLogin ? (

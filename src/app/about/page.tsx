@@ -8,7 +8,7 @@ import {
 export const metadata: Metadata = {
   title: "About Loombus | Loombus",
   description:
-    "Learn how Loombus connects knowledge, people, private communities, local discovery, services, commerce, and AI-assisted understanding around Signal over noise.",
+    "Learn how Loombus moves ideas through structured discussion, evidence, knowledge, meaningful connections, and real opportunities around Signal over noise.",
   alternates: {
     canonical: "https://loombus.com/about",
   },
@@ -39,11 +39,13 @@ const sections: PublicPolicySection[] = [
     title: "An Everything Knowledge Platform",
     paragraphs: [
       <>
-        Loombus is growing beyond a discussion feed into an everything knowledge
-        platform. It brings together public discussions, structured replies,
-        people, topics, saved learning, private Rooms, files, calendars,
-        businesses, services, requests, jobs, events, marketplace listings,
-        appointments, local discovery, and intelligent matching.
+        Loombus is a signal-first platform where ideas can move through structured
+        discussion, evidence, stronger understanding, meaningful connection, and
+        action. Its broader vision is an everything knowledge platform that brings
+        together public discussions, publications, people, topics, saved learning,
+        private Rooms, investment research, files, calendars, businesses, services,
+        requests, jobs, events, marketplace listings, appointments, local discovery,
+        and intelligent matching.
       </>,
       <>
         “Everything” describes the breadth of useful activity that can be organized
@@ -72,15 +74,50 @@ const sections: PublicPolicySection[] = [
     ],
   },
   {
+    id: "library",
+    title: "Library and Publication-Based Knowledge",
+    paragraphs: [
+      <>
+        Library supports publications, reading progress, highlights, and private
+        notes. A passage can become one entry point into a structured discussion,
+        allowing readers to examine an idea without treating a summary or excerpt
+        as a replacement for the original work.
+      </>,
+      <>
+        The Library flow is passage to discussion to evidence to knowledge. The
+        platform-wide flow begins more broadly with an idea, question, claim,
+        problem, or possibility and is not limited to reading.
+      </>,
+    ],
+  },
+  {
+    id: "the-floor",
+    title: "The Floor and Investment Research",
+    paragraphs: [
+      <>
+        The Floor is Loombus&apos;s investing research and discussion area. It can
+        support theses, company research, evidence, counterarguments, analyst
+        context, learning, and community discussion about markets and investing.
+      </>,
+      <>
+        The Floor does not execute securities trades or guarantee investment
+        outcomes. Its research, AI-assisted tools, member contributions, rankings,
+        and educational material do not replace independent verification or
+        licensed financial advice.
+      </>,
+    ],
+  },
+  {
     id: "search",
     title: "Search Everything Inside Loombus",
     paragraphs: [
       <>
         Loombus Search is designed to find authorized content and destinations
         inside Loombus. Depending on your access, results may include discussions,
-        replies, people, topics, public pages, saved items, private Room content,
-        Room resources, files, events, services, businesses, jobs, marketplace
-        listings, requests, and other platform records.
+        replies, publications, Library destinations, The Floor, people, topics,
+        public pages, saved items, private Room content, Room resources, files,
+        events, services, businesses, jobs, marketplace listings, requests, and
+        other platform records.
       </>,
       <>
         Loombus Search is not Google Search and is not a general search of the open
@@ -310,13 +347,15 @@ export default function AboutPage() {
       title="About Loombus"
       description={
         <>
-          Loombus is an everything knowledge platform built for Signal over noise.
-          It connects structured discussion, people, private communities, real-world
-          discovery, services, commerce, and AI-assisted understanding in one place.
+          Loombus is a signal-first platform where ideas move through structured
+          discussion, evidence, knowledge, meaningful connection, and action. Its
+          broader everything knowledge vision connects people, publications, private
+          communities, investment research, real-world discovery, services, commerce,
+          and AI-assisted understanding in one place.
         </>
       }
       sections={sections}
-      reviewedDate="July 18, 2026"
+      reviewedDate="August 17, 2026"
     />
   );
 }

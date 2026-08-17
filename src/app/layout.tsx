@@ -35,7 +35,8 @@ import { SessionLifecycleGuard } from "@/components/session-lifecycle-guard";
 
 const siteUrl = "https://loombus.com";
 const siteTitle = "Loombus";
-const siteDescription = "A high-signal discussion platform for thoughtful conversations.";
+const siteDescription =
+  "Loombus is a signal-first platform where ideas become structured conversations, stronger understanding, meaningful connections, and real opportunities.";
 
 export const viewport: Viewport = {
   width: "device-width",
