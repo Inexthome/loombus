@@ -65,13 +65,14 @@ function buildWelcomeEmail({ siteUrl }: { siteUrl: string }) {
   const text = [
     "Welcome to Loombus.",
     "",
-    "Loombus is built for high-signal discussions, thoughtful replies, and conversations worth returning to.",
+    "Loombus is a signal-first platform where ideas move through structured discussion, evidence, understanding, connection, and action.",
     "",
     "Good first steps:",
     "- Complete your profile",
-    "- Browse active discussions",
+    "- Choose a topic and browse active discussions",
     "- Follow people whose contributions add signal",
     "- Start one focused discussion when you are ready",
+    "- Explore Library, Rooms, The Floor, and real-world discovery when they fit your goals",
     "",
     `Open Loombus: ${siteUrl}/dashboard`,
     `Manage notification settings: ${siteUrl}/profile`,
@@ -80,15 +81,16 @@ function buildWelcomeEmail({ siteUrl }: { siteUrl: string }) {
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111; max-width: 640px; margin: 0 auto;">
       <h1 style="font-size: 28px; margin-bottom: 12px;">Welcome to Loombus.</h1>
-      <p>Loombus is built for high-signal discussions, thoughtful replies, and conversations worth returning to.</p>
+      <p>Loombus is a signal-first platform where ideas move through structured discussion, evidence, understanding, connection, and action.</p>
 
       <div style="margin: 24px 0; padding: 18px; border: 1px solid #ddd; border-radius: 14px;">
         <p style="margin-top: 0;"><strong>Good first steps:</strong></p>
         <ul>
           <li>Complete your profile.</li>
-          <li>Browse active discussions.</li>
+          <li>Choose a topic and browse active discussions.</li>
           <li>Follow people whose contributions add signal.</li>
           <li>Start one focused discussion when you are ready.</li>
+          <li>Explore Library, Rooms, The Floor, and real-world discovery when they fit your goals.</li>
         </ul>
       </div>
 
