@@ -1,0 +1,22 @@
+name: Library Discuss Passage foundation
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260817094000_add_library_passage_discussion_foundation.sql"
+      - "scripts/verification/verify-library-discuss-passage-foundation.mjs"
+      - ".github/workflows/library-discuss-passage-foundation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-library-discuss-passage-foundation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library Discuss Passage foundation
+        run: node scripts/verification/verify-library-discuss-passage-foundation.mjs
