@@ -4,14 +4,14 @@ Status: release candidate work in progress. Do not merge to production or submit
 
 ## Comparison basis
 
-The repository does not contain an App Store Connect or Google Play artifact manifest that identifies the exact binaries currently installed by testers. This comparison therefore uses the last identifiable native release baseline in Git:
+The repository does not contain an App Store Connect or Google Play artifact manifest that identifies the exact binaries currently installed by testers. The public [Apple App Store listing](https://apps.apple.com/us/app/loombus/id6774788429) currently shows version 1.0.2. The public [Google Play listing](https://play.google.com/store/apps/details?id=com.loombus.app) shows a June 17, 2026 update but does not expose its version code. This comparison therefore keeps the last identifiable native source baseline in Git separate from the public-store evidence:
 
 | Item | Installed-build source baseline | Current release branch |
 | --- | --- | --- |
 | Git revision | `6a80b6b2` | `agent/mobile-release-auth-persistence` release branch |
 | Date | 2026-06-23 | 2026-08-18 |
-| iOS metadata | 1.0.3, build 1 | 1.0.3, build 1, not bumped yet |
-| Android metadata | 1.0.2, version code 4 | 1.0.2, version code 4, not bumped yet |
+| iOS metadata | Source baseline: 1.0.3, build 1; public App Store: 1.0.2, build hidden | 1.0.3, build 1, not bumped yet |
+| Android metadata | Source baseline: 1.0.2, version code 4; public Play version code hidden | 1.0.2, version code 4, not bumped yet |
 | Change volume | Baseline | 3,671 commits; 1,477 files; 349,810 insertions; 40,026 deletions |
 
 Before store submission, confirm the actual latest TestFlight and Play Console version/build numbers. The candidate must then receive new, monotonically increasing build numbers on both platforms.
