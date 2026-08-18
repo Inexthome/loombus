@@ -22,6 +22,7 @@ type PermissionValue =
   | "prompt"
   | "prompt-with-rationale"
   | "selected-only"
+  | "system-controlled"
   | "not-used"
   | "unavailable"
   | "checking";
@@ -34,6 +35,7 @@ type PermissionState = {
   photos: PermissionValue;
   notifications: PermissionValue;
   biometrics: PermissionValue;
+  backgroundRefresh: PermissionValue;
   tracking: PermissionValue;
 };
 
@@ -43,6 +45,7 @@ const INITIAL_PERMISSIONS: PermissionState = {
   photos: "checking",
   notifications: "checking",
   biometrics: "checking",
+  backgroundRefresh: "system-controlled",
   tracking: "not-used",
 };
 
@@ -53,6 +56,7 @@ const PERMISSION_LABELS: Record<PermissionValue, string> = {
   prompt: "Not requested",
   "prompt-with-rationale": "Permission needed",
   "selected-only": "Selected media only",
+  "system-controlled": "System controlled",
   "not-used": "Not used",
   unavailable: "Unavailable",
   checking: "Checking…",
@@ -175,6 +179,7 @@ export function NativeAppPermissionsCard() {
       photos,
       notifications,
       biometrics,
+      backgroundRefresh: "system-controlled",
       tracking: "not-used",
     });
   }, [platform]);
@@ -308,6 +313,12 @@ export function NativeAppPermissionsCard() {
           description="Used locally to protect a remembered Loombus session. Biometric templates never go to Loombus."
           value={permissions.biometrics}
           Icon={ScanFace}
+        />
+        <PermissionRow
+          title="Background App Refresh"
+          description="Loombus uses system-scheduled and push-driven refresh to keep notification badges current. It does not continuously run or poll for content."
+          value={permissions.backgroundRefresh}
+          Icon={RefreshCw}
         />
         <PermissionRow
           title="Cross-app tracking"

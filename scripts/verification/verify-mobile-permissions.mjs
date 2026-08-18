@@ -91,6 +91,7 @@ for (const permission of [
   "Photos and videos",
   "Notifications",
   "Face ID or device biometrics",
+  "Background App Refresh",
   "Cross-app tracking",
 ]) {
   requireText(

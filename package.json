@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "verify:mobile-auth": "node scripts/verification/verify-mobile-auth-persistence.mjs",
+    "verify:mobile-background": "node scripts/verification/verify-mobile-background-refresh.mjs",
     "verify:mobile-permissions": "node scripts/verification/verify-mobile-permissions.mjs",
     "verify:teen-safety": "node --import ./scripts/teen-safety-vercel-bypass.mjs --import ./scripts/teen-safety-http-throttle.mjs scripts/verify-teen-safety-production.mjs",
     "cap": "cap",
@@ -19,6 +20,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
+    "@capacitor/background-runner": "^3.0.0",
     "@capacitor/camera": "^8.2.2",
     "@capacitor/core": "^8.4.1",
     "@capacitor/geolocation": "^8.2.2",
