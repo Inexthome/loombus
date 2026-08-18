@@ -172,6 +172,12 @@ for (const expected of [
 }
 
 requireText(
+  nativeClient,
+  'const ELIGIBLE_STATUSES = new Set(["accepted", "approved", "confirmed"]);',
+  "Accepted appointments must be eligible for mobile Live Updates."
+);
+
+requireText(
   authSignOut,
   "endAllAppointmentLiveUpdates()",
   "Sign-out must close appointment live surfaces before clearing the session."
