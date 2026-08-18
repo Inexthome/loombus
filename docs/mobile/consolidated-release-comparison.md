@@ -10,7 +10,7 @@ App Store Connect and Google Play Console were verified on August 18, 2026. The 
 | --- | --- | --- |
 | Git revision | `6a80b6b2` | `agent/mobile-release-auth-persistence` release branch |
 | Date | 2026-06-23 | 2026-08-18 |
-| iOS metadata | Distributed: 1.0.2, build 1 | 1.0.3, build 1 |
+| iOS metadata | Distributed: 1.0.2, build 1 | 1.0.3, build 4 |
 | Android metadata | Distributed: 1.0.2, version code 4 | 1.0.3, version code 5 |
 | Change volume | Baseline | 3,671 commits; 1,477 files; 349,810 insertions; 40,026 deletions |
 
