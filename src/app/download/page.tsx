@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader, PageShell, Panel } from "@/components/ui";
 
-const iosAppStoreUrl = "https://apps.apple.com/us/search?term=loombus";
+const iosAppStoreUrl = "https://apps.apple.com/us/app/loombus/id6774788429";
 const googlePlayUrl =
-  "https://play.google.com/store/apps/details?id=com.loombus.mobile";
+  "https://play.google.com/store/apps/details?id=com.loombus.app";
 
 function qrCodeUrl(url: string) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=16&data=${encodeURIComponent(
@@ -20,8 +20,7 @@ const downloadOptions = [
     qrAlt: "QR code for opening Loombus in the App Store",
     description:
       "Open the App Store link on your iPhone, or scan the code with your camera to find Loombus.",
-    note:
-      "If the direct app listing does not appear yet, search for “Loombus” in the App Store.",
+    note: "The link opens the official Loombus App Store listing.",
   },
   {
     platform: "Android",
@@ -30,8 +29,7 @@ const downloadOptions = [
     qrAlt: "QR code for opening Loombus in Google Play",
     description:
       "Open the Google Play link on your Android phone, or scan the code to check the Loombus listing.",
-    note:
-      "Android public release is still being prepared. If you are a tester, use the Google Play testing access assigned to your account.",
+    note: "The link opens the official Loombus Google Play listing.",
   },
 ];
 

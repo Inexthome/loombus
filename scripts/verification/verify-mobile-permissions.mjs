@@ -55,14 +55,14 @@ for (const key of [
   requireText(infoPlist, key, `The iOS ${key} declaration is missing.`);
 }
 
-for (const permission of [
+requireText(
+  androidManifest,
   "android.permission.ACCESS_COARSE_LOCATION",
-  "android.permission.ACCESS_FINE_LOCATION",
-]) {
-  requireText(
-    androidManifest,
-    permission,
-    `The Android ${permission} declaration is missing.`
+  "The Android approximate-location declaration is missing."
+);
+if (androidManifest.includes("android.permission.ACCESS_FINE_LOCATION")) {
+  throw new Error(
+    "Android precise location must remain undeclared while Loombus only uses approximate location."
   );
 }
 

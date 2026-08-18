@@ -21,6 +21,7 @@ const [
   signOutHelper,
   iosEntitlements,
   appleAssociation,
+  androidAssociation,
 ] = await Promise.all([
   read("src/lib/supabase/client.ts"),
   read("src/components/session-lifecycle-guard.tsx"),
@@ -29,6 +30,7 @@ const [
   read("src/lib/auth-sign-out.ts"),
   read("ios/App/Loombus.entitlements"),
   read("public/.well-known/apple-app-site-association"),
+  read("src/app/.well-known/assetlinks.json/route.ts"),
 ]);
 
 requireText(
@@ -87,6 +89,19 @@ if (
   throw new Error("The Apple webcredentials association is incomplete.");
 }
 
+for (const expected of [
+  "LOOMBUS_ANDROID_APP_SIGNING_SHA256",
+  "delegate_permission/common.get_login_creds",
+  'package_name: ANDROID_PACKAGE_NAME',
+  'const ANDROID_PACKAGE_NAME = "com.loombus.app"',
+]) {
+  requireText(
+    androidAssociation,
+    expected,
+    `The Android password-manager association is missing ${expected}.`
+  );
+}
+
 console.log(
-  "Mobile auth persistence verification passed: cookie sessions, legacy migration, transient-error preservation, push cleanup, and iOS webcredentials are present."
+  "Mobile auth persistence verification passed: cookie sessions, legacy migration, transient-error preservation, push cleanup, iOS webcredentials, and Android credential association are present."
 );

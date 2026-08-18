@@ -23,8 +23,8 @@ The candidate version identifiers are newer than both verified store baselines. 
 | Remembered login | Browser storage session behavior could diverge inside iOS and Android WebViews | Cookie-backed Supabase session, legacy session migration, and transient-network preservation | Implemented; device restart tests pending |
 | Remain signed in after closing app | Not reliable on mobile | Session persists unless the user explicitly logs out or the server invalidates the refresh token | Implemented; force-quit and token-refresh tests pending |
 | Logout | Could leave native push registration active | Current-device push token is disabled before Supabase sign-out | Implemented; device test pending |
-| Password manager association | No verified iOS web-credential association | iOS associated domain plus hosted Apple App Site Association file | Implemented; Associated Domains entitlement/device test pending |
-| Approximate location | No native permission workflow | Native coarse-location request only after the user chooses a Local/nearby action | Implemented; iOS and Android tests pending |
+| Password manager association | No verified native credential association | iOS Associated Domains and AASA plus Android Digital Asset Links endpoint | Implemented; Android Play signing fingerprint and device tests pending |
+| Approximate location | No native permission workflow | Native coarse-location request only after the user chooses a Local/nearby action; Android precise-location permission removed | Implemented; iOS and Android tests pending |
 | Camera and photos | Web-oriented upload behavior | Native Camera/Photo Picker support, iOS limited-library handling, Android selected-media picker | Implemented; device tests pending |
 | Permission visibility | No consolidated native status view | Mobile permission center under Privacy & Account Security | Implemented |
 | Notifications and badges | Standard push delivery | Exact unread count included in APNs and FCM delivery | Implemented; push environment/device tests pending |
@@ -54,15 +54,22 @@ The candidate version identifiers are newer than both verified store baselines. 
 - Mobile release metadata verifier: passed against the verified App Store Connect and Play Console baselines.
 - Targeted ESLint: no errors; two pre-existing `no-explicit-any` warnings remain in push delivery.
 - Capacitor iOS and Android synchronization: passed.
+- Android backup and device-transfer exclusion: passed static verification.
+- Android FileProvider scope: restricted to app-owned Pictures and cache paths.
+- Included 64-bit Android native libraries: passed 16 KB ELF alignment verification.
+- iOS app privacy manifest: attached to the app target; archive privacy report pending.
+- Public Google Play link: corrected to `com.loombus.app`.
 
 ## Required release gates
 
-1. Build and archive iOS on macOS with Xcode. Validate signing, Associated Domains, APNs, Background Modes, and the embedded Live Activities extension.
-2. Build Android release with Android Studio/Gradle and validate target SDK 36 behavior.
-3. Test upgrade installation over the currently distributed iOS and Android builds, not only clean installs.
-4. Complete the device matrix below and record evidence before merge.
-5. Re-run `LOOMBUS_IOS_STORE_VERSION=1.0.2 LOOMBUS_IOS_STORE_BUILD=1 LOOMBUS_ANDROID_STORE_VERSION_CODE=4 npm run verify:mobile-release-metadata -- --require-store-baseline` immediately before upload.
-6. Merge to production only after every blocking row passes.
+1. On the secured release machine, provide the ignored `android/app/google-services.json`, the Play app-signing SHA-256 fingerprint, and production APNs/FCM environment values. Run `npm run verify:mobile-release-hardening -- --require-production-config`.
+2. Build and archive iOS on macOS with Xcode 26 or later and the iOS 26 SDK. Validate signing, Associated Domains, APNs, Background Modes, the privacy report, and the embedded Live Activities extension.
+3. Build the Android release with Android Studio/Gradle and validate target SDK 36 behavior. Run `npm run verify:android-page-size -- --artifact=/absolute/path/to/app-release.aab`, then confirm `PAGE_ALIGNMENT_16K` using the current Android bundle analysis tools.
+4. Test upgrade installation over the currently distributed iOS and Android builds, not only clean installs.
+5. Complete the device matrix below and record evidence before merge.
+6. Complete the App Store Privacy, Google Play Data Safety, and Apple social-media age-rating review in `docs/mobile/store-submission-readiness.md`.
+7. Re-run `LOOMBUS_IOS_STORE_VERSION=1.0.2 LOOMBUS_IOS_STORE_BUILD=1 LOOMBUS_ANDROID_STORE_VERSION_CODE=4 npm run verify:mobile-release-metadata -- --require-store-baseline` immediately before upload.
+8. Merge to production only after every blocking row passes.
 
 ## Device test matrix
 
@@ -84,4 +91,4 @@ The candidate version identifiers are newer than both verified store baselines. 
 
 ## Release decision
 
-Current decision: **NO-GO for production**. The web and static mobile checks are green, but native compilation, upgrade testing, store version confirmation, and on-device Live Activity/Live Update validation are incomplete.
+Current decision: **NO-GO for production**. The code and static mobile hardening are ready, but production credentials, Play signing association, native compilation, upgrade testing, store declarations, and on-device Live Activity/Live Update validation are incomplete.
