@@ -4,17 +4,17 @@ Status: release candidate work in progress. Do not merge to production or submit
 
 ## Comparison basis
 
-The repository does not contain an App Store Connect or Google Play artifact manifest that identifies the exact binaries currently installed by testers. The public [Apple App Store listing](https://apps.apple.com/us/app/loombus/id6774788429) currently shows version 1.0.2. The public [Google Play listing](https://play.google.com/store/apps/details?id=com.loombus.app) shows a June 17, 2026 update but does not expose its version code. This comparison therefore keeps the last identifiable native source baseline in Git separate from the public-store evidence:
+App Store Connect and Google Play Console were verified on August 18, 2026. The distributed iOS baseline is 1.0.2, build 1. The distributed Android production baseline is 1.0.2, version code 4. The public [Apple App Store listing](https://apps.apple.com/us/app/loombus/id6774788429) independently shows version 1.0.2, and the public [Google Play listing](https://play.google.com/store/apps/details?id=com.loombus.app) shows the corresponding June release.
 
 | Item | Installed-build source baseline | Current release branch |
 | --- | --- | --- |
 | Git revision | `6a80b6b2` | `agent/mobile-release-auth-persistence` release branch |
 | Date | 2026-06-23 | 2026-08-18 |
-| iOS metadata | Source baseline: 1.0.3, build 1; public App Store: 1.0.2, build hidden | 1.0.3, build 1, not bumped yet |
-| Android metadata | Source baseline: 1.0.2, version code 4; public Play version code hidden | 1.0.2, version code 4, not bumped yet |
+| iOS metadata | Distributed: 1.0.2, build 1 | 1.0.3, build 1 |
+| Android metadata | Distributed: 1.0.2, version code 4 | 1.0.3, version code 5 |
 | Change volume | Baseline | 3,671 commits; 1,477 files; 349,810 insertions; 40,026 deletions |
 
-Before store submission, confirm the actual latest TestFlight and Play Console version/build numbers. The candidate must then receive new, monotonically increasing build numbers on both platforms.
+The candidate version identifiers are newer than both verified store baselines. Recheck the consoles immediately before upload in case another build is uploaded first.
 
 ## Mobile behavior matrix
 
@@ -51,18 +51,17 @@ Before store submission, confirm the actual latest TestFlight and Play Console v
 - Mobile permission verifier: passed.
 - Mobile background refresh verifier: passed.
 - Mobile live update verifier: passed.
-- Mobile release metadata verifier: passed; store monotonicity remains pending authoritative console values.
+- Mobile release metadata verifier: passed against the verified App Store Connect and Play Console baselines.
 - Targeted ESLint: no errors; two pre-existing `no-explicit-any` warnings remain in push delivery.
 - Capacitor iOS and Android synchronization: passed.
 
 ## Required release gates
 
-1. Obtain the exact current TestFlight and Play Console version/build numbers, then bump both native projects.
-   Run `LOOMBUS_IOS_STORE_VERSION=x.y.z LOOMBUS_IOS_STORE_BUILD=n LOOMBUS_ANDROID_STORE_VERSION_CODE=n npm run verify:mobile-release-metadata -- --require-store-baseline` after entering those authoritative values.
-2. Build and archive iOS on macOS with Xcode. Validate signing, Associated Domains, APNs, Background Modes, and the embedded Live Activities extension.
-3. Build Android release with Android Studio/Gradle and validate target SDK 36 behavior.
-4. Test upgrade installation over the currently distributed iOS and Android builds, not only clean installs.
-5. Complete the device matrix below and record evidence before merge.
+1. Build and archive iOS on macOS with Xcode. Validate signing, Associated Domains, APNs, Background Modes, and the embedded Live Activities extension.
+2. Build Android release with Android Studio/Gradle and validate target SDK 36 behavior.
+3. Test upgrade installation over the currently distributed iOS and Android builds, not only clean installs.
+4. Complete the device matrix below and record evidence before merge.
+5. Re-run `LOOMBUS_IOS_STORE_VERSION=1.0.2 LOOMBUS_IOS_STORE_BUILD=1 LOOMBUS_ANDROID_STORE_VERSION_CODE=4 npm run verify:mobile-release-metadata -- --require-store-baseline` immediately before upload.
 6. Merge to production only after every blocking row passes.
 
 ## Device test matrix
