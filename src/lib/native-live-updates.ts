@@ -44,7 +44,7 @@ const LiveUpdates = registerPlugin<LoombusLiveUpdatesPlugin>(
 );
 
 const TERMINAL_STATUSES = new Set(["cancelled", "completed", "declined"]);
-const ELIGIBLE_STATUSES = new Set(["approved", "confirmed"]);
+const ELIGIBLE_STATUSES = new Set(["accepted", "approved", "confirmed"]);
 const START_WINDOW_MS = 60 * 60 * 1000;
 
 export async function getAppointmentLiveUpdateStatus() {
@@ -101,7 +101,7 @@ export async function startAppointmentLiveUpdate(item: LiveAppointmentItem) {
   }
   if (!isEligibleForLiveUpdate(item)) {
     throw new Error(
-      "Live updates become available one hour before a confirmed appointment."
+      "Live updates become available one hour before an accepted appointment."
     );
   }
 
