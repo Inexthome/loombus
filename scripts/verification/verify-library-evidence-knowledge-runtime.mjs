@@ -2,13 +2,15 @@ import fs from "node:fs";
 
 const surfacePath = "src/components/library/library-evidence-knowledge-surface.tsx";
 const pagePath = "src/app/library/research/evidence/page.tsx";
+const researchPagePath = "src/app/library/research/page.tsx";
 
-for (const path of [surfacePath, pagePath]) {
+for (const path of [surfacePath, pagePath, researchPagePath]) {
   if (!fs.existsSync(path)) throw new Error(`Missing Evidence & Knowledge runtime file: ${path}`);
 }
 
 const surface = fs.readFileSync(surfacePath, "utf8");
 const page = fs.readFileSync(pagePath, "utf8");
+const researchPage = fs.readFileSync(researchPagePath, "utf8");
 
 function requireText(source, text, label) {
   if (!source.includes(text)) throw new Error(`Missing ${label}: ${text}`);
@@ -19,6 +21,8 @@ function rejectText(source, text, label) {
 }
 
 requireText(page, "<LibraryEvidenceKnowledgeSurface />", "workspace page wiring");
+requireText(researchPage, 'href="/library/research/evidence"', "Research workspace navigation");
+requireText(researchPage, "Evidence & Knowledge", "Research navigation label");
 
 for (const table of [
   "library_research_items",
