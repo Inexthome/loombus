@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 import { supabase } from "@/lib/supabase/client";
 import { isNativeApp } from "@/lib/native-app";
 import {
@@ -95,7 +96,7 @@ export function NativeBiometricSessionGate() {
         if (!promptSeen) {
           window.localStorage.setItem(BIOMETRIC_SESSION_PROMPT_SEEN_KEY, "true");
           unlockEnabled = window.confirm(
-            "Protect remembered Loombus sessions with Face ID on this device?"
+            "Protect remembered Loombus sessions with device biometrics?"
           );
 
           if (unlockEnabled) {
@@ -130,14 +131,14 @@ export function NativeBiometricSessionGate() {
 
       clearSessionVerified();
       setStatus("locked");
-      setMessage(result.error ?? "Face ID verification was canceled.");
+      setMessage(result.error ?? "Biometric verification was canceled.");
     } finally {
       checkInFlight.current = false;
     }
   }, []);
 
   useEffect(() => {
-    void runBiometricGate();
+    const initialCheck = window.setTimeout(() => void runBiometricGate(), 0);
 
     const {
       data: { subscription },
@@ -169,6 +170,7 @@ export function NativeBiometricSessionGate() {
     window.addEventListener(BIOMETRIC_UNLOCK_SETTING_EVENT, handleSettingChange);
 
     return () => {
+      window.clearTimeout(initialCheck);
       subscription.unsubscribe();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener(
@@ -186,7 +188,7 @@ export function NativeBiometricSessionGate() {
   async function handleSignOut() {
     clearSessionVerified();
     setBiometricUnlockEnabled(false);
-    await supabase.auth.signOut();
+    await signOutCurrentDevice();
     window.location.replace("/login");
   }
 
@@ -207,7 +209,7 @@ export function NativeBiometricSessionGate() {
 
         <p className="mb-6 text-sm leading-relaxed text-zinc-400">
           {status === "locked"
-            ? message || "Use Face ID, Touch ID, or your device passcode to continue."
+            ? message || "Use your device biometrics or device passcode to continue."
             : "Checking this device before opening your remembered session."}
         </p>
 
@@ -218,7 +220,7 @@ export function NativeBiometricSessionGate() {
               onClick={() => void handleRetry()}
               className="w-full rounded-full bg-white px-5 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
             >
-              Try Face ID again
+              Try device biometrics again
             </button>
 
             <button

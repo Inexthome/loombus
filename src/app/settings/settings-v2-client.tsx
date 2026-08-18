@@ -1,6 +1,7 @@
 "use client";
 
 import { DISCUSSION_TOPICS } from "@/lib/discussion-topics";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 import { supabase } from "@/lib/supabase/client";
 import {
   getAiUsageLabel,
@@ -727,7 +728,7 @@ export default function SettingsV2Client() {
 
       setAccountActionMessage("Account deactivated. You will be signed out.");
       window.setTimeout(async () => {
-        await supabase.auth.signOut();
+        await signOutCurrentDevice();
         window.location.href = "/";
       }, 900);
     } catch {

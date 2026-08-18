@@ -3,12 +3,13 @@
 Loombus keeps users signed in by preserving the Supabase browser session.
 
 Rules:
-- Do not store raw passwords.
+- Do not store passwords in WebView storage, browser storage, logs, or the database.
+- Optional biometric sign-in may store the credential only through the operating system secure credential store.
 - Do not add an iOS permission for remembered login because remembered login is not a phone permission.
 - Keep Supabase browser sessions persistent.
 - Keep automatic token refresh enabled.
 - Use logout to clear the saved session.
-- Add Face ID later as an optional unlock layer on top of the saved session, not as the primary account credential.
+- Keep biometric sign-in optional and native-only. Supabase remains the account authentication system.
 
 Native iOS permission rows such as Photos, Camera, Notifications, Live Activities, Siri, and Location should only be added when Loombus has a real feature that requests them.
 
@@ -17,12 +18,11 @@ Native iOS permission rows such as Photos, Camera, Notifications, Live Activitie
 Current native iOS permission descriptions:
 - Photos: used when a user chooses an existing image for a profile avatar, discussion attachment, or message attachment.
 - Camera: used only when a user chooses to take a new photo for a profile avatar, discussion attachment, or message attachment.
+- Microphone: used only when a user deliberately records video with audio.
+- Location: requested only after the user chooses a Local or nearby action. Loombus does not continuously track location.
+- Live Activities: started by the user for an active appointment on supported devices.
 
-Not currently enabled:
-- Location
-- Microphone
-- Siri/App Intents
-- Live Activities
+The Capacitor geolocation dependency requires both iOS location usage-description keys, but Loombus requests only while-using access. Android declares only `ACCESS_COARSE_LOCATION` and requests the `coarseLocation` alias.
 
 Do not add sensitive permissions until Loombus has a feature that clearly needs them.
 
@@ -124,6 +124,22 @@ Granular fallback variables are also supported:
 - `FIREBASE_TOKEN_URI`, optional, defaults to `https://oauth2.googleapis.com/token`
 
 Do not commit Firebase service account JSON or private keys. Keep `android/app/google-services.json` local and ignored.
+
+## Android password-manager association
+
+Loombus serves `/.well-known/assetlinks.json` for Android credential sharing. Set this production environment variable to the SHA-256 fingerprint shown under Google Play Console, App integrity, App signing:
+
+- `LOOMBUS_ANDROID_APP_SIGNING_SHA256`
+
+Use the colon-separated fingerprint. Multiple valid signing fingerprints may be separated by commas. The endpoint intentionally returns `503` until a valid fingerprint is configured so Loombus never publishes a false credential association.
+
+Before producing the release artifacts, run:
+
+```bash
+npm run verify:mobile-release-hardening -- --require-production-config
+```
+
+This checks the local Firebase Android client configuration, production APNs and FCM environment shape, and Android credential-association fingerprint without committing any secret.
 
 ## Native biometric sign-in
 

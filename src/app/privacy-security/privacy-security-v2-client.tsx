@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { NativeAppPermissionsCard } from "@/components/native-app-permissions-card";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 import { supabase } from "@/lib/supabase/client";
 import "./privacy-security-v2.css";
 
@@ -496,7 +498,7 @@ export default function PrivacySecurityV2Client() {
     showNotice("");
 
     try {
-      const { error } = await supabase.auth.signOut({ scope: "global" });
+      const { error } = await signOutCurrentDevice({ scope: "global" });
       if (error) {
         showNotice(error.message || "Unable to sign out all sessions.", true);
         setSigningOutAll(false);
@@ -714,6 +716,8 @@ export default function PrivacySecurityV2Client() {
                 )}
               </div>
             </article>
+
+            <NativeAppPermissionsCard />
 
             <article className="privacy-security-v2-card">
               <header className="privacy-security-v2-card-header">

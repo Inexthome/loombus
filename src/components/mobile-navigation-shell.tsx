@@ -50,6 +50,7 @@ import {
   getBlockedRelationshipUserIds,
 } from "@/lib/notification-block-filter";
 import { supabase } from "@/lib/supabase/client";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 
 type MobileNavProfile = {
   username: string | null;
@@ -196,7 +197,7 @@ export function MobileNavigationShell() {
 
   async function handleLogout() {
     closeMenu();
-    await supabase.auth.signOut();
+    await signOutCurrentDevice();
     window.location.href = "/";
   }
 

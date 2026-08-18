@@ -33,18 +33,36 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.loombus.mobile.background.refresh</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Loombus uses camera access only when you choose to take a photo or video for a profile image, discussion attachment, message attachment, or Video Context.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Loombus uses microphone access only when you choose to record a video with audio for a discussion attachment, message attachment, or Video Context.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Loombus uses your location only when you choose a nearby or local feature. Loombus does not continuously track your location.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Loombus uses your location only when you choose a nearby or local feature. Loombus does not continuously track your location.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Loombus uses Face ID to protect remembered sign-ins and confirm it is you before opening your saved session.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Loombus adds media to your photo library only when you choose to save an image or video.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Loombus uses photo library access so you can upload profile images, attach images or videos to discussions, and add Video Context when you choose.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+		<string>remote-notification</string>
+	</array>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>

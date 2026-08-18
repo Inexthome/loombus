@@ -51,6 +51,7 @@ import {
 } from "@/lib/notification-block-filter";
 import { normalizePublicText } from "@/lib/public-text";
 import { supabase } from "@/lib/supabase/client";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 
 type DesktopTopNavProfile = {
   username: string | null;
@@ -449,7 +450,7 @@ export function DesktopTopNavbar() {
   }, [pathname]);
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await signOutCurrentDevice();
     window.location.href = "/";
   }
 

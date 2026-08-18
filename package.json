@@ -7,6 +7,13 @@
     "build": "bash -o pipefail -c 'next build > /tmp/loombus-next-build.log 2>&1 || { tail -160 /tmp/loombus-next-build.log; exit 1; }'",
     "start": "next start",
     "lint": "eslint",
+    "verify:mobile-auth": "node scripts/verification/verify-mobile-auth-persistence.mjs",
+    "verify:android-page-size": "node scripts/verification/verify-android-page-size.mjs",
+    "verify:mobile-background": "node scripts/verification/verify-mobile-background-refresh.mjs",
+    "verify:mobile-live-updates": "node scripts/verification/verify-mobile-live-updates.mjs",
+    "verify:mobile-permissions": "node scripts/verification/verify-mobile-permissions.mjs",
+    "verify:mobile-release-hardening": "node scripts/verification/verify-mobile-release-hardening.mjs",
+    "verify:mobile-release-metadata": "node scripts/verification/verify-mobile-release-metadata.mjs",
     "verify:teen-safety": "node --import ./scripts/teen-safety-vercel-bypass.mjs --import ./scripts/teen-safety-http-throttle.mjs scripts/verify-teen-safety-production.mjs",
     "cap": "cap",
     "cap:sync": "cap sync",
@@ -17,7 +24,10 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
+    "@capacitor/background-runner": "^3.0.0",
+    "@capacitor/camera": "^8.2.2",
     "@capacitor/core": "^8.4.1",
+    "@capacitor/geolocation": "^8.2.2",
     "@capacitor/ios": "^8.4.1",
     "@capacitor/push-notifications": "^8.1.1",
     "@capgo/capacitor-native-biometric": "^8.4.11",
@@ -45,7 +55,7 @@
     "typescript": "^6"
   },
   "overrides": {
-    "postcss": "8.5.22",
+    "postcss": "8.5.26",
     "sharp": "0.35.3"
   }
 }

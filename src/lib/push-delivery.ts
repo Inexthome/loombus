@@ -425,6 +425,7 @@ async function sendApnsNotification(args: {
   title: string;
   body: string;
   url: string;
+  unreadCount: number;
 }): Promise<ApnsSendResult> {
   const jwt = createApnsJwt(args.config);
   const payload = JSON.stringify({
@@ -434,8 +435,11 @@ async function sendApnsNotification(args: {
         body: args.body,
       },
       sound: "default",
+      badge: args.unreadCount,
+      "content-available": 1,
     },
     url: args.url,
+    unreadCount: String(args.unreadCount),
   });
 
   return new Promise((resolve) => {
@@ -537,6 +541,7 @@ async function sendFcmNotification(args: {
   body: string;
   url: string;
   payload: NotificationPayload;
+  unreadCount: number;
 }): Promise<FcmSendResult> {
   try {
     const accessToken = await getFcmAccessToken(args.config);
@@ -562,11 +567,13 @@ async function sendFcmNotification(args: {
             type: args.payload.type,
             targetType: args.payload.target_type,
             targetId: args.payload.target_id ?? "",
+            unreadCount: String(args.unreadCount),
           },
           android: {
             priority: "HIGH",
             notification: {
               sound: "default",
+              notification_count: args.unreadCount,
             },
           },
         },
@@ -656,6 +663,24 @@ async function disablePushToken(tokenId: string, reason: string) {
   }
 }
 
+async function getUnreadNotificationCount(
+  supabase: ReturnType<typeof createClient>,
+  userId: string
+) {
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .is("read_at", null);
+
+  if (error) {
+    console.error("Unable to load the native push badge count:", error.message);
+    return 1;
+  }
+
+  return Math.max(0, Math.min(999, count ?? 1));
+}
+
 export async function sendNativePushForNotification(payload: NotificationPayload) {
   if (!shouldSendNativePush(payload)) {
     return;
@@ -683,6 +708,7 @@ export async function sendNativePushForNotification(payload: NotificationPayload
   const title = getPushTitle(payload);
   const body = cleanPushBody(payload.message) || "You have a new Loombus notification.";
   const url = getNotificationUrl(payload);
+  const unreadCount = await getUnreadNotificationCount(supabase, payload.user_id);
   const deliveryTasks: Promise<void>[] = [];
 
   if (apnsConfig) {
@@ -701,6 +727,7 @@ export async function sendNativePushForNotification(payload: NotificationPayload
           title,
           body,
           url,
+          unreadCount,
         });
 
         if (!result.ok) {
@@ -738,6 +765,7 @@ export async function sendNativePushForNotification(payload: NotificationPayload
           body,
           url,
           payload,
+          unreadCount,
         });
 
         if (!result.ok) {

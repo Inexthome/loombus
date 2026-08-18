@@ -75,7 +75,7 @@ export async function saveNativeBiometricLoginCredentials(
   if (!isNativeApp()) {
     return {
       ok: false,
-      error: "Face ID login is only available in the installed mobile app.",
+      error: "Biometric login is only available in the installed mobile app.",
     };
   }
 
@@ -123,7 +123,7 @@ export async function getNativeBiometricLoginCredentials() {
   if (!isNativeApp()) {
     return {
       ok: false,
-      error: "Face ID login is only available in the installed mobile app.",
+      error: "Biometric login is only available in the installed mobile app.",
     };
   }
 

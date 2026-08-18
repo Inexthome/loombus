@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import CapacitorBackgroundRunner
 import SafariServices
 import WebKit
 import AuthenticationServices
@@ -13,6 +14,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
     private var webAuthenticationSession: ASWebAuthenticationSession?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        BackgroundRunnerPlugin.registerBackgroundTask()
+        BackgroundRunnerPlugin.handleApplicationDidFinishLaunching(
+            launchOptions: launchOptions
+        )
+
         DispatchQueue.main.async {
             self.enableWebViewZoom()
         }
@@ -156,6 +162,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
         return true
     }
 
+    private func handleLoombusNavigation(_ url: URL) -> Bool {
+        guard url.scheme == "loombus" else {
+            return false
+        }
+
+        let destination: String
+        switch url.host {
+        case "appointments":
+            destination = "/appointments"
+        default:
+            return false
+        }
+
+        guard let destinationUrl = URL(string: "https://loombus.com\(destination)") else {
+            return false
+        }
+
+        DispatchQueue.main.async {
+            guard let bridgeController = self.findBridgeViewController(from: self.window?.rootViewController),
+                  let webView = bridgeController.webView else {
+                return
+            }
+            webView.load(URLRequest(url: destinationUrl))
+        }
+
+        return true
+    }
+
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.name == "loombusOAuth",
               let urlString = message.body as? String,
@@ -185,6 +219,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
             return true
         }
 
+        if handleLoombusNavigation(url) {
+            return true
+        }
+
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call.
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
@@ -210,6 +248,24 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
             name: .capacitorDidFailToRegisterForRemoteNotifications,
             object: error
         )
+    }
+
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        BackgroundRunnerPlugin.dispatchEvent(
+            event: "remoteNotification",
+            eventArgs: userInfo
+        ) { result in
+            switch result {
+            case .success:
+                completionHandler(.newData)
+            case .failure:
+                completionHandler(.failed)
+            }
+        }
     }
 
 

@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 type DiscussionViewInsertRow = {
   discussion_id?: unknown;
@@ -94,8 +94,10 @@ function openNativeOAuthSession(url: string) {
   return true;
 }
 
-const supabaseClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+const supabaseClient = createBrowserClient(
+  supabaseUrl,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   {
     auth: {
@@ -170,3 +172,118 @@ supabaseClient.from = ((relation: string) => {
 }) as typeof supabaseClient.from;
 
 export const supabase = supabaseClient;
+
+type LegacyStoredSession = {
+  access_token?: unknown;
+  refresh_token?: unknown;
+};
+
+let persistedSessionRestorePromise: Promise<void> | null = null;
+
+function getLegacyAuthStorageKey() {
+  try {
+    const projectReference = new URL(supabaseUrl).hostname.split(".")[0];
+    return projectReference ? `sb-${projectReference}-auth-token` : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseLegacyStoredSession(value: string): LegacyStoredSession | null {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+
+    if (!isRecord(parsed)) {
+      return null;
+    }
+
+    return parsed as LegacyStoredSession;
+  } catch {
+    return null;
+  }
+}
+
+function isExpiredLegacySessionError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { code?: unknown; status?: unknown };
+  const code = typeof candidate.code === "string" ? candidate.code : "";
+
+  return (
+    candidate.status === 400 ||
+    candidate.status === 401 ||
+    code === "refresh_token_not_found" ||
+    code === "refresh_token_already_used" ||
+    code === "session_not_found"
+  );
+}
+
+/**
+ * Moves sessions written by the former local-storage browser client into the
+ * cookie-backed SSR client. This preserves existing native app logins across
+ * the release that changes storage formats.
+ */
+export function restorePersistedSupabaseSession() {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+
+  if (persistedSessionRestorePromise) {
+    return persistedSessionRestorePromise;
+  }
+
+  const restorePromise = (async () => {
+    const { data: currentSession } = await supabaseClient.auth.getSession();
+
+    if (currentSession.session) {
+      return;
+    }
+
+    const legacyStorageKey = getLegacyAuthStorageKey();
+    const legacyValue = legacyStorageKey
+      ? window.localStorage.getItem(legacyStorageKey)
+      : null;
+
+    if (!legacyStorageKey || !legacyValue) {
+      return;
+    }
+
+    const legacySession = parseLegacyStoredSession(legacyValue);
+    const accessToken = legacySession?.access_token;
+    const refreshToken = legacySession?.refresh_token;
+
+    if (typeof accessToken !== "string" || typeof refreshToken !== "string") {
+      return;
+    }
+
+    const { data, error } = await supabaseClient.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (error && isExpiredLegacySessionError(error)) {
+      window.localStorage.removeItem(legacyStorageKey);
+      return;
+    }
+
+    if (error) {
+      throw error;
+    }
+
+    if (!error && data.session) {
+      window.localStorage.removeItem(legacyStorageKey);
+    }
+  })();
+
+  persistedSessionRestorePromise = restorePromise;
+
+  return restorePromise.catch((error) => {
+    if (persistedSessionRestorePromise === restorePromise) {
+      persistedSessionRestorePromise = null;
+    }
+
+    throw error;
+  });
+}

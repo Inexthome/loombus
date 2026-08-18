@@ -19,6 +19,7 @@ import {
   type LocalManageResponse,
 } from "@/lib/local-discovery";
 import { localDiscoveryAuthorizedFetch } from "@/lib/local-discovery-client";
+import { getCurrentApproximateLocation } from "@/lib/native-location";
 
 type CurrentArea = { latitude: number; longitude: number };
 
@@ -111,32 +112,22 @@ export default function LocalManagePage() {
     setCurrentArea(null);
   }, [selected]);
 
-  function acquireCurrentArea() {
-    if (!navigator.geolocation) {
-      setNotice("This browser does not provide current-location access.");
-      return;
-    }
+  async function acquireCurrentArea() {
     setLocating(true);
     setNotice("");
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCurrentArea({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        setLocating(false);
-        setNotice(
-          "Current area captured. Loombus will store a rounded approximate point, not the browser's exact coordinate.",
-        );
-      },
-      () => {
-        setLocating(false);
-        setNotice(
-          "Current location was not shared. Browser location permission is required to create a distance-search anchor.",
-        );
-      },
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
-    );
+
+    try {
+      setCurrentArea(await getCurrentApproximateLocation());
+      setNotice(
+        "Current area captured. Loombus will store a rounded approximate point, not the device's exact coordinate."
+      );
+    } catch {
+      setNotice(
+        "Current location was not shared. Location permission is required to create a distance-search anchor."
+      );
+    } finally {
+      setLocating(false);
+    }
   }
 
   async function save() {
