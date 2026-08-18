@@ -3,12 +3,14 @@ name: Library Evidence & Knowledge runtime
 on:
   pull_request:
     paths:
+      - "src/app/library/research/page.tsx"
       - "src/app/library/research/evidence/**"
       - "src/components/library/library-evidence-knowledge-surface.tsx"
       - "scripts/verification/verify-library-evidence-knowledge-runtime.mjs"
       - ".github/workflows/library-evidence-knowledge-runtime.yml"
   push:
     paths:
+      - "src/app/library/research/page.tsx"
       - "src/app/library/research/evidence/**"
       - "src/components/library/library-evidence-knowledge-surface.tsx"
       - "scripts/verification/verify-library-evidence-knowledge-runtime.mjs"
