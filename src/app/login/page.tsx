@@ -4,7 +4,10 @@ import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { AppleLogoMark, GoogleLogoMark } from "@/components/auth-provider-icons";
 import { getAuthErrorMessage } from "@/lib/auth-error-message";
-import { supabase } from "@/lib/supabase/client";
+import {
+  restorePersistedSupabaseSession,
+  supabase,
+} from "@/lib/supabase/client";
 import { isIosNativeApp, isNativeApp } from "@/lib/native-app";
 import {
   deleteNativeBiometricLoginCredentials,
@@ -125,6 +128,18 @@ export default function LoginPage() {
     let mounted = true;
 
     async function loadLoginState() {
+      try {
+        await restorePersistedSupabaseSession();
+      } catch {
+        if (mounted) {
+          setMessage(
+            "Loombus could not restore your saved session. Check your connection and try again."
+          );
+          setCheckingBiometricLogin(false);
+        }
+        return;
+      }
+
       const { data } = await supabase.auth.getSession();
 
       if (!mounted) {

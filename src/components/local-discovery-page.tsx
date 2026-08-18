@@ -36,6 +36,7 @@ import {
   type LocalDiscoveryResponse,
   type LocalDiscoveryResult,
 } from "@/lib/local-discovery";
+import { getCurrentApproximateLocation } from "@/lib/native-location";
 
 const EMPTY_RESPONSE: LocalDiscoveryResponse = {
   results: [],
@@ -225,27 +226,19 @@ export default function LocalDiscoveryPage() {
     [center, dateWindow, entityType, includeRemote, location, query],
   );
 
-  function useCurrentLocation() {
-    if (!navigator.geolocation) {
-      setNotice("This browser does not provide current-location access.");
-      return;
-    }
+  async function useCurrentLocation() {
     setLocating(true);
     setNotice("");
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCenter({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        setLocating(false);
-      },
-      () => {
-        setLocating(false);
-        setNotice("Current location was not shared. Enter a city, state, or ZIP code instead.");
-      },
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 300_000 },
-    );
+
+    try {
+      setCenter(await getCurrentApproximateLocation());
+    } catch {
+      setNotice(
+        "Current location was not shared. Enter a city, state, or ZIP code instead."
+      );
+    } finally {
+      setLocating(false);
+    }
   }
 
   function clearFilters() {

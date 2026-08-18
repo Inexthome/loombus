@@ -4,7 +4,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
 import { getAccountEnforcementResult } from "@/lib/account-enforcement";
-import { supabase } from "@/lib/supabase/client";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
+import {
+  restorePersistedSupabaseSession,
+  supabase,
+} from "@/lib/supabase/client";
 
 const AUTHENTICATED_ROOT_DESTINATION = "/discussions";
 const BACKGROUND_REVALIDATION_INTERVAL_MS = 5 * 60 * 1000;
@@ -62,6 +66,24 @@ function getAccountAccessHref(status: string) {
   return `/account-access?status=${encodeURIComponent(status)}`;
 }
 
+function isConfirmedInvalidSessionError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as { code?: unknown; status?: unknown };
+  const code = typeof candidate.code === "string" ? candidate.code : "";
+
+  return (
+    candidate.status === 401 ||
+    code === "bad_jwt" ||
+    code === "invalid_jwt" ||
+    code === "refresh_token_not_found" ||
+    code === "refresh_token_already_used" ||
+    code === "session_not_found"
+  );
+}
+
 export function SessionLifecycleGuard() {
   const pathname = usePathname();
   const router = useRouter();
@@ -99,6 +121,7 @@ export function SessionLifecycleGuard() {
 
       const validationPromise = (async () => {
         try {
+          await restorePersistedSupabaseSession();
           const { data: sessionData } = await supabase.auth.getSession();
 
           if (!sessionData.session) {
@@ -113,8 +136,13 @@ export function SessionLifecycleGuard() {
           }
 
           const { data: userData, error: userError } = await supabase.auth.getUser();
+          if (userError && !isConfirmedInvalidSessionError(userError)) {
+            router.replace(getAccountAccessHref("verification_unavailable"));
+            return false;
+          }
+
           if (userError || !userData.user) {
-            await supabase.auth.signOut({ scope: "local" });
+            await signOutCurrentDevice({ scope: "local" });
             router.replace(rootPath ? "/login" : getLoginHref(pathname));
             return false;
           }

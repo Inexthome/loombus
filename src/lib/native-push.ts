@@ -8,6 +8,62 @@ let pushListenersRegistered = false;
 let pushPluginModulePromise: Promise<PushNotificationsModule> | null = null;
 let pendingPushToken: { token: string; platform: string } | null = null;
 
+const NATIVE_PUSH_TOKEN_STORAGE_KEY = "loombus:native-push-token";
+
+type StoredNativePushToken = {
+  token: string;
+  platform: string;
+};
+
+function getStoredNativePushToken(): StoredNativePushToken | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const value = window.localStorage.getItem(NATIVE_PUSH_TOKEN_STORAGE_KEY);
+    const parsed = value ? (JSON.parse(value) as unknown) : null;
+
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return null;
+    }
+
+    const candidate = parsed as { token?: unknown; platform?: unknown };
+
+    if (
+      typeof candidate.token !== "string" ||
+      typeof candidate.platform !== "string"
+    ) {
+      return null;
+    }
+
+    return { token: candidate.token, platform: candidate.platform };
+  } catch {
+    return null;
+  }
+}
+
+function storeNativePushToken(token: string, platform: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    NATIVE_PUSH_TOKEN_STORAGE_KEY,
+    JSON.stringify({ token, platform })
+  );
+}
+
+function clearStoredNativePushToken(token: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (getStoredNativePushToken()?.token === token) {
+    window.localStorage.removeItem(NATIVE_PUSH_TOKEN_STORAGE_KEY);
+  }
+}
+
 async function getPushNotificationsModule() {
   if (!pushPluginModulePromise) {
     pushPluginModulePromise = import("@capacitor/push-notifications");
@@ -34,6 +90,8 @@ function getNativePushTokenType(platform: string) {
 }
 
 async function registerPushToken(token: string, platform: string) {
+  storeNativePushToken(token, platform);
+
   const tokenType = getNativePushTokenType(platform);
   const accessToken = await getAccessToken();
 
@@ -65,6 +123,51 @@ async function registerPushToken(token: string, platform: string) {
 
   const payload = await response.json().catch(() => ({}));
   console.error("Loombus push token registration failed.", payload);
+}
+
+export async function disableNativePushNotificationsForCurrentSession() {
+  const storedToken = getStoredNativePushToken() ?? pendingPushToken;
+
+  if (!storedToken) {
+    return { ok: true };
+  }
+
+  const accessToken = await getAccessToken();
+
+  if (!accessToken) {
+    return { ok: false, error: "No authenticated session was available." };
+  }
+
+  try {
+    const response = await fetch("/api/push/device-tokens", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ token: storedToken.token }),
+    });
+
+    if (!response.ok) {
+      return { ok: false, error: "The push token could not be disabled." };
+    }
+
+    clearStoredNativePushToken(storedToken.token);
+
+    if (pendingPushToken?.token === storedToken.token) {
+      pendingPushToken = null;
+    }
+
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "The push token could not be disabled.",
+    };
+  }
 }
 
 async function flushPendingPushToken() {

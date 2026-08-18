@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { type Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { LoombusLoadingScreen } from "@/components/loombus-loading-screen";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 import { getAuthErrorMessage } from "@/lib/auth-error-message";
 import { isIosNativeApp } from "@/lib/native-app";
 import { supabase } from "@/lib/supabase/client";
@@ -104,7 +105,7 @@ async function getPostAuthRedirect(next: string, sessionOverride: Session | null
       payload.code === "account_not_eligible" ||
       payload.code === "under_13_not_allowed"
     ) {
-      await supabase.auth.signOut();
+      await signOutCurrentDevice();
       return "/signup?ineligible=1";
     }
   }

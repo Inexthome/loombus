@@ -17,6 +17,7 @@ import {
   getProfileDisplayName,
 } from "@/components/profile-avatar";
 import { useRoomWorkspace } from "@/components/room-workspace-context";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 import { normalizePublicText } from "@/lib/public-text";
 import { supabase } from "@/lib/supabase/client";
 
@@ -168,7 +169,7 @@ export function RoomTopbarActions() {
   if (!roomId || !authorized || pathname.endsWith("/billing/success")) return null;
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await signOutCurrentDevice();
     window.location.href = "/login";
   }
 

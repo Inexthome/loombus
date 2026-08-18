@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
 import { DateOfBirthSelect } from "@/components/date-of-birth-select";
 import { getAgeBandFromDateOfBirth } from "@/lib/age-safety";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 import { supabase } from "@/lib/supabase/client";
 
 function getSafeNext(value: string | null) {
@@ -53,7 +54,7 @@ export default function AgeGatePage() {
 
     if (ageBand === "under_13") {
       setMessage("This account is not eligible to use Loombus.");
-      await supabase.auth.signOut();
+      await signOutCurrentDevice();
       return;
     }
 
@@ -88,7 +89,7 @@ export default function AgeGatePage() {
           payload.code === "account_not_eligible" ||
           payload.code === "under_13_not_allowed"
         ) {
-          await supabase.auth.signOut();
+          await signOutCurrentDevice();
         }
 
         setSaving(false);

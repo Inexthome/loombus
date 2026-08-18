@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { signOutCurrentDevice } from "@/lib/auth-sign-out";
 import { supabase } from "@/lib/supabase/client";
 import { isNativeApp } from "@/lib/native-app";
 import {
@@ -186,7 +187,7 @@ export function NativeBiometricSessionGate() {
   async function handleSignOut() {
     clearSessionVerified();
     setBiometricUnlockEnabled(false);
-    await supabase.auth.signOut();
+    await signOutCurrentDevice();
     window.location.replace("/login");
   }
 
