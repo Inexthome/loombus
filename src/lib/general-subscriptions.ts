@@ -33,7 +33,7 @@ export type ResolvedGeneralSubscription = {
   paidPlan: SubscriptionPlanId;
   active: boolean;
   isAdminOverride: boolean;
-  source: "general_subscription" | "legacy_ai_entitlement" | "free";
+  source: "profile_admin" | "general_subscription" | "legacy_ai_entitlement" | "free";
   subscription: GeneralSubscriptionRow | null;
   subscriptions: GeneralSubscriptionRow[];
 };
@@ -127,7 +127,7 @@ export async function getResolvedGeneralSubscriptionForUser(
 ): Promise<ResolvedGeneralSubscription> {
   const supabase = createBillingReadClient();
 
-  const [generalResult, legacyResult] = await Promise.all([
+  const [generalResult, legacyResult, profileResult] = await Promise.all([
     (supabase.from("user_general_subscriptions") as any)
       .select(
         "id, user_id, plan_key, provider, provider_customer_id, provider_subscription_id, provider_product_id, original_transaction_id, app_account_token, environment, status, current_period_end, cancel_at_period_end, last_verified_at, updated_at"
@@ -138,7 +138,25 @@ export async function getResolvedGeneralSubscriptionForUser(
       .select("tier, ai_assisted_enabled, monthly_summary_limit")
       .eq("user_id", userId)
       .maybeSingle(),
+    (supabase.from("profiles") as any)
+      .select("is_admin")
+      .eq("id", userId)
+      .maybeSingle(),
   ]);
+
+  const subscriptions = (generalResult.data ?? []) as GeneralSubscriptionRow[];
+
+  if (!profileResult.error && profileResult.data?.is_admin === true) {
+    return {
+      plan: "pro",
+      paidPlan: "free",
+      active: true,
+      isAdminOverride: true,
+      source: "profile_admin",
+      subscription: null,
+      subscriptions,
+    };
+  }
 
   const legacyRow = legacyResult.data;
   const legacyTier = legacyRow?.tier?.trim().toLowerCase() ?? "";
@@ -150,12 +168,11 @@ export async function getResolvedGeneralSubscriptionForUser(
       isAdminOverride: true,
       source: "legacy_ai_entitlement",
       subscription: null,
-      subscriptions: (generalResult.data ?? []) as GeneralSubscriptionRow[],
+      subscriptions,
     };
   }
 
   if (!generalResult.error && generalResult.data?.length) {
-    const subscriptions = generalResult.data as GeneralSubscriptionRow[];
     const effective = resolveEffectiveSubscriptionFromRows(subscriptions);
 
     return {
