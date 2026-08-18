@@ -4,8 +4,8 @@ Status: release checklist only. Do not merge, deploy, upload, or submit until ev
 
 ## Locked candidate
 
-- iOS: `1.0.3 (1)`, bundle `com.loombus.mobile`
-- Live Activities extension: `1.0.3 (1)`, bundle `com.loombus.mobile.LiveActivities`
+- iOS: `1.0.3 (4)`, bundle `com.loombus.mobile`
+- Live Activities extension: `1.0.3 (4)`, bundle `com.loombus.mobile.LiveActivities`
 - Android: `1.0.3`, version code `5`, package `com.loombus.app`
 - Distributed comparison: iOS `1.0.2 (1)` and Android `1.0.2`, version code `4`
 
