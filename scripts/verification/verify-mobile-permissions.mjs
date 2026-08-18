@@ -92,6 +92,7 @@ for (const permission of [
   "Notifications",
   "Face ID or device biometrics",
   "Background App Refresh",
+  "Live Activities and updates",
   "Cross-app tracking",
 ]) {
   requireText(
@@ -100,6 +101,17 @@ for (const permission of [
     `The mobile permission center is missing ${permission}.`
   );
 }
+
+requireText(
+  infoPlist,
+  "NSSupportsLiveActivities",
+  "iOS Live Activities support is missing."
+);
+requireText(
+  androidManifest,
+  "android.permission.POST_PROMOTED_NOTIFICATIONS",
+  "Android promoted Live Updates permission is missing."
+);
 
 requireText(
   permissionsCard,

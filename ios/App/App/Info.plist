@@ -53,6 +53,8 @@
 	<string>Loombus adds media to your photo library only when you choose to save an image or video.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Loombus uses photo library access so you can upload profile images, attach images or videos to discussions, and add Video Context when you choose.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIBackgroundModes</key>

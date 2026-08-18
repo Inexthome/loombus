@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Activity,
   Bell,
   Camera,
   Images,
@@ -36,6 +37,7 @@ type PermissionState = {
   notifications: PermissionValue;
   biometrics: PermissionValue;
   backgroundRefresh: PermissionValue;
+  liveUpdates: PermissionValue;
   tracking: PermissionValue;
 };
 
@@ -46,6 +48,7 @@ const INITIAL_PERMISSIONS: PermissionState = {
   notifications: "checking",
   biometrics: "checking",
   backgroundRefresh: "system-controlled",
+  liveUpdates: "system-controlled",
   tracking: "not-used",
 };
 
@@ -180,6 +183,7 @@ export function NativeAppPermissionsCard() {
       notifications,
       biometrics,
       backgroundRefresh: "system-controlled",
+      liveUpdates: "system-controlled",
       tracking: "not-used",
     });
   }, [platform]);
@@ -319,6 +323,12 @@ export function NativeAppPermissionsCard() {
           description="Loombus uses system-scheduled and push-driven refresh to keep notification badges current. It does not continuously run or poll for content."
           value={permissions.backgroundRefresh}
           Icon={RefreshCw}
+        />
+        <PermissionRow
+          title="Live Activities and updates"
+          description="Reserved for an appointment that is about to start or currently in progress. Your device controls whether an eligible update is promoted on system surfaces."
+          value={permissions.liveUpdates}
+          Icon={Activity}
         />
         <PermissionRow
           title="Cross-app tracking"
