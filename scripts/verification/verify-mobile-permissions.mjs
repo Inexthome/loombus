@@ -21,6 +21,8 @@ const [
   nativeLocation,
   localDiscovery,
   localManage,
+  permissionsCard,
+  privacySecurity,
 ] = await Promise.all([
   read("package.json"),
   read("ios/App/App/Info.plist"),
@@ -28,6 +30,8 @@ const [
   read("src/lib/native-location.ts"),
   read("src/components/local-discovery-page.tsx"),
   read("src/components/local-manage-page.tsx"),
+  read("src/components/native-app-permissions-card.tsx"),
+  read("src/app/privacy-security/privacy-security-v2-client.tsx"),
 ]);
 
 JSON.parse(packageJson);
@@ -81,6 +85,32 @@ for (const source of [localDiscovery, localManage]) {
   );
 }
 
+for (const permission of [
+  "Approximate location",
+  "Camera",
+  "Photos and videos",
+  "Notifications",
+  "Face ID or device biometrics",
+  "Cross-app tracking",
+]) {
+  requireText(
+    permissionsCard,
+    permission,
+    `The mobile permission center is missing ${permission}.`
+  );
+}
+
+requireText(
+  permissionsCard,
+  'tracking: "not-used"',
+  "Tracking must remain accurately marked as unused until Loombus introduces cross-app tracking."
+);
+requireText(
+  privacySecurity,
+  "<NativeAppPermissionsCard />",
+  "The mobile permission center must be available from Privacy & Account Security."
+);
+
 console.log(
-  "Mobile permission verification passed: on-demand approximate location and selected-media foundations are configured for iOS and Android."
+  "Mobile permission verification passed: the in-app status center, on-demand approximate location, selected media, and tracking disclosure are configured for iOS and Android."
 );
