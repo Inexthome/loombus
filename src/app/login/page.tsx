@@ -62,7 +62,8 @@ export default function LoginPage() {
   const autoBiometricStarted = useRef(false);
 
   useEffect(() => {
-    setNativeApp(isNativeApp());
+    const timeout = window.setTimeout(() => setNativeApp(isNativeApp()), 0);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   const getNextPath = useCallback(() => {
@@ -225,7 +226,7 @@ export default function LoginPage() {
 
       if (!savedLoginAlready) {
         const shouldRemember = window.confirm(
-          "Remember this login with Face ID on this device?"
+          "Remember this login with device biometrics on this device?"
         );
 
         if (shouldRemember) {
@@ -351,7 +352,9 @@ export default function LoginPage() {
               Saved biometric sign-in
             </p>
 
-            <h2 className="mb-3 text-xl font-medium">Sign in with Face ID.</h2>
+            <h2 className="mb-3 text-xl font-medium">
+              Sign in with device biometrics.
+            </h2>
 
             <p className="mb-5 text-sm leading-relaxed text-zinc-500">
               Continue as <span className="text-zinc-300">{rememberedBiometricEmail || "the saved account"}</span>.
@@ -363,7 +366,9 @@ export default function LoginPage() {
               disabled={loading || biometricSigningIn}
               className="mb-3 w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {biometricSigningIn ? "Signing in..." : "Sign in with Face ID"}
+              {biometricSigningIn
+                ? "Signing in..."
+                : "Sign in with device biometrics"}
             </button>
 
             <button
@@ -463,7 +468,7 @@ export default function LoginPage() {
 
               {nativeApp === true ? (
                 <p className="rounded-2xl border border-zinc-900 bg-black p-4 text-xs leading-relaxed text-zinc-500">
-                  After a successful email login, Loombus can ask whether you want to save this login with Face ID or device biometrics on this device.
+                  After a successful email login, Loombus can ask whether you want to save this login with device biometrics on this device.
                 </p>
               ) : null}
 

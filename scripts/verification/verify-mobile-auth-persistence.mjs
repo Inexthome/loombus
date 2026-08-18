@@ -52,6 +52,11 @@ requireText(
   "Login must restore an existing legacy session before showing sign-in."
 );
 requireText(
+  loginPage,
+  "Remember this login with device biometrics on this device?",
+  "Saved-login copy must work for both iOS and Android biometrics."
+);
+requireText(
   sessionGuard,
   'getAccountAccessHref("verification_unavailable")',
   "Transient auth verification failures must preserve the saved session."

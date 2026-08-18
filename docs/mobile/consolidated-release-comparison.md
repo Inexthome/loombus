@@ -51,12 +51,14 @@ Before store submission, confirm the actual latest TestFlight and Play Console v
 - Mobile permission verifier: passed.
 - Mobile background refresh verifier: passed.
 - Mobile live update verifier: passed.
+- Mobile release metadata verifier: passed; store monotonicity remains pending authoritative console values.
 - Targeted ESLint: no errors; two pre-existing `no-explicit-any` warnings remain in push delivery.
 - Capacitor iOS and Android synchronization: passed.
 
 ## Required release gates
 
 1. Obtain the exact current TestFlight and Play Console version/build numbers, then bump both native projects.
+   Run `LOOMBUS_IOS_STORE_VERSION=x.y.z LOOMBUS_IOS_STORE_BUILD=n LOOMBUS_ANDROID_STORE_VERSION_CODE=n npm run verify:mobile-release-metadata -- --require-store-baseline` after entering those authoritative values.
 2. Build and archive iOS on macOS with Xcode. Validate signing, Associated Domains, APNs, Background Modes, and the embedded Live Activities extension.
 3. Build Android release with Android Studio/Gradle and validate target SDK 36 behavior.
 4. Test upgrade installation over the currently distributed iOS and Android builds, not only clean installs.
