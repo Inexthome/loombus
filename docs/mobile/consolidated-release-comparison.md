@@ -8,7 +8,7 @@ The repository does not contain an App Store Connect or Google Play artifact man
 
 | Item | Installed-build source baseline | Current release branch |
 | --- | --- | --- |
-| Git revision | `6a80b6b2` | `fb61415b` |
+| Git revision | `6a80b6b2` | `agent/mobile-release-auth-persistence` release branch |
 | Date | 2026-06-23 | 2026-08-18 |
 | iOS metadata | 1.0.3, build 1 | 1.0.3, build 1, not bumped yet |
 | Android metadata | 1.0.2, version code 4 | 1.0.2, version code 4, not bumped yet |
@@ -29,8 +29,8 @@ Before store submission, confirm the actual latest TestFlight and Play Console v
 | Permission visibility | No consolidated native status view | Mobile permission center under Privacy & Account Security | Implemented |
 | Notifications and badges | Standard push delivery | Exact unread count included in APNs and FCM delivery | Implemented; push environment/device tests pending |
 | Background App Refresh | No configured background runner | System-scheduled, push-driven badge refresh with no periodic content polling | Implemented; native lifecycle tests pending |
-| iOS Live Activities | Not declared | `NSSupportsLiveActivities` declared | Capability foundation only; Widget extension and appointment lifecycle wiring still required |
-| Android Live Updates | Not declared | Android 16 promoted-notification permission declared | Capability foundation only; promoted ongoing appointment notification still required |
+| iOS Live Activities | Not declared | Loombus ActivityKit bridge, embedded Widget extension, Lock Screen and Dynamic Island appointment presentation | Implemented; Xcode archive and device lifecycle tests pending |
+| Android Live Updates | Not declared | Ongoing appointment notification with Android 16 promotion request and countdown | Implemented; Android 16 device test pending |
 | Cross-app tracking | No advertising tracking | Still no cross-app advertising tracking and no ATT prompt | Correct as implemented; add a prompt only if tracking is introduced later |
 | Biometrics | Native biometric support present | Shown in the mobile permission center and retained for local session protection | Regression test pending |
 
@@ -40,7 +40,8 @@ Before store submission, confirm the actual latest TestFlight and Play Console v
 - Opening or foregrounding the app can refresh an expired access token and then load normal app data.
 - Background refresh performs no periodic network fetch or content polling.
 - Each actual native push now performs one small unread-count database query so the push can carry an accurate badge count. This is event-driven work, not continuous background traffic.
-- Live Activities and Android Live Updates are not yet wired to an update stream, so they currently add no update traffic.
+- Live Activities and Android Live Updates use appointment timing already loaded by the signed-in app. They do not add a polling stream or recurring server egress.
+- The countdown continues on the device. Appointment changes and completed surfaces reconcile when the app next syncs; precise server-driven background changes would require a future event-driven APNs/FCM update path.
 
 ## Verification completed on the branch
 
@@ -49,18 +50,18 @@ Before store submission, confirm the actual latest TestFlight and Play Console v
 - Mobile auth persistence verifier: passed.
 - Mobile permission verifier: passed.
 - Mobile background refresh verifier: passed.
+- Mobile live update verifier: passed.
 - Targeted ESLint: no errors; two pre-existing `no-explicit-any` warnings remain in push delivery.
 - Capacitor iOS and Android synchronization: passed.
 
 ## Required release gates
 
-1. Finish the iOS Live Activity Widget extension and Android promoted ongoing-notification implementation for active appointments, or explicitly remove Live Activities from this release scope.
-2. Obtain the exact current TestFlight and Play Console version/build numbers, then bump both native projects.
-3. Build and archive iOS on macOS with Xcode. Validate signing, Associated Domains, APNs, Background Modes, and the Live Activities capability.
-4. Build Android release with Android Studio/Gradle and validate target SDK 36 behavior.
-5. Test upgrade installation over the currently distributed iOS and Android builds, not only clean installs.
-6. Complete the device matrix below and record evidence before merge.
-7. Merge to production only after every blocking row passes.
+1. Obtain the exact current TestFlight and Play Console version/build numbers, then bump both native projects.
+2. Build and archive iOS on macOS with Xcode. Validate signing, Associated Domains, APNs, Background Modes, and the embedded Live Activities extension.
+3. Build Android release with Android Studio/Gradle and validate target SDK 36 behavior.
+4. Test upgrade installation over the currently distributed iOS and Android builds, not only clean installs.
+5. Complete the device matrix below and record evidence before merge.
+6. Merge to production only after every blocking row passes.
 
 ## Device test matrix
 
@@ -82,4 +83,4 @@ Before store submission, confirm the actual latest TestFlight and Play Console v
 
 ## Release decision
 
-Current decision: **NO-GO for production**. The web and static mobile checks are green, but native compilation, upgrade testing, store version confirmation, and the actual Live Activity/Live Update presentation are incomplete.
+Current decision: **NO-GO for production**. The web and static mobile checks are green, but native compilation, upgrade testing, store version confirmation, and on-device Live Activity/Live Update validation are incomplete.

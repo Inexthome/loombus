@@ -9,6 +9,7 @@
     "lint": "eslint",
     "verify:mobile-auth": "node scripts/verification/verify-mobile-auth-persistence.mjs",
     "verify:mobile-background": "node scripts/verification/verify-mobile-background-refresh.mjs",
+    "verify:mobile-live-updates": "node scripts/verification/verify-mobile-live-updates.mjs",
     "verify:mobile-permissions": "node scripts/verification/verify-mobile-permissions.mjs",
     "verify:teen-safety": "node --import ./scripts/teen-safety-vercel-bypass.mjs --import ./scripts/teen-safety-http-throttle.mjs scripts/verify-teen-safety-production.mjs",
     "cap": "cap",

@@ -15,6 +15,10 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { getNativePlatform } from "@/lib/native-app";
 import { getNativeBiometricAvailability } from "@/lib/native-biometric";
+import {
+  getAppointmentLiveUpdateStatus,
+  openAppointmentLiveUpdateSettings,
+} from "@/lib/native-live-updates";
 
 type PermissionValue =
   | "granted"
@@ -28,7 +32,12 @@ type PermissionValue =
   | "unavailable"
   | "checking";
 
-type PermissionKind = "location" | "camera" | "photos" | "notifications";
+type PermissionKind =
+  | "location"
+  | "camera"
+  | "photos"
+  | "notifications"
+  | "live-updates";
 
 type PermissionState = {
   location: PermissionValue;
@@ -86,6 +95,7 @@ function PermissionRow({
   Icon,
   actionLabel,
   disabled,
+  disableWhenAllowed = true,
   onAction,
 }: {
   title: string;
@@ -94,6 +104,7 @@ function PermissionRow({
   Icon: LucideIcon;
   actionLabel?: string;
   disabled?: boolean;
+  disableWhenAllowed?: boolean;
   onAction?: () => void;
 }) {
   const allowed = value === "granted" || value === "limited";
@@ -110,7 +121,7 @@ function PermissionRow({
         <button
           type="button"
           onClick={onAction}
-          disabled={disabled || allowed}
+          disabled={disabled || (disableWhenAllowed && allowed)}
           className="privacy-security-v2-secondary mt-3"
         >
           {actionLabel}
@@ -134,7 +145,13 @@ export function NativeAppPermissionsCard() {
       return;
     }
 
-    const [locationResult, cameraResult, pushResult, biometricResult] =
+    const [
+      locationResult,
+      cameraResult,
+      pushResult,
+      biometricResult,
+      liveUpdateResult,
+    ] =
       await Promise.allSettled([
         import("@capacitor/geolocation").then(({ Geolocation }) =>
           Geolocation.checkPermissions()
@@ -146,6 +163,7 @@ export function NativeAppPermissionsCard() {
           PushNotifications.checkPermissions()
         ),
         getNativeBiometricAvailability(),
+        getAppointmentLiveUpdateStatus(),
       ]);
 
     const location =
@@ -175,6 +193,15 @@ export function NativeAppPermissionsCard() {
       biometricResult.value.isAvailable
         ? "granted"
         : "unavailable";
+    const liveUpdates =
+      liveUpdateResult.status !== "fulfilled"
+        ? "unavailable"
+        : !liveUpdateResult.value.supported
+          ? "denied"
+          : platform === "android" &&
+              liveUpdateResult.value.promotionEnabled === false
+            ? "limited"
+            : "granted";
 
     setPermissions({
       location,
@@ -183,7 +210,7 @@ export function NativeAppPermissionsCard() {
       notifications,
       biometrics,
       backgroundRefresh: "system-controlled",
-      liveUpdates: "system-controlled",
+      liveUpdates,
       tracking: "not-used",
     });
   }, [platform]);
@@ -210,6 +237,8 @@ export function NativeAppPermissionsCard() {
           "@capacitor/push-notifications"
         );
         await PushNotifications.requestPermissions();
+      } else if (kind === "live-updates") {
+        await openAppointmentLiveUpdateSettings();
       } else {
         const { Camera } = await import("@capacitor/camera");
         await Camera.requestPermissions({ permissions: [kind] });
@@ -329,6 +358,10 @@ export function NativeAppPermissionsCard() {
           description="Reserved for an appointment that is about to start or currently in progress. Your device controls whether an eligible update is promoted on system surfaces."
           value={permissions.liveUpdates}
           Icon={Activity}
+          actionLabel="Open device settings"
+          disabled={Boolean(working)}
+          disableWhenAllowed={permissions.liveUpdates !== "limited"}
+          onAction={() => void requestPermission("live-updates")}
         />
         <PermissionRow
           title="Cross-app tracking"

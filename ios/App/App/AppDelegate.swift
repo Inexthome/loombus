@@ -162,6 +162,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
         return true
     }
 
+    private func handleLoombusNavigation(_ url: URL) -> Bool {
+        guard url.scheme == "loombus" else {
+            return false
+        }
+
+        let destination: String
+        switch url.host {
+        case "appointments":
+            destination = "/appointments"
+        default:
+            return false
+        }
+
+        guard let destinationUrl = URL(string: "https://loombus.com\(destination)") else {
+            return false
+        }
+
+        DispatchQueue.main.async {
+            guard let bridgeController = self.findBridgeViewController(from: self.window?.rootViewController),
+                  let webView = bridgeController.webView else {
+                return
+            }
+            webView.load(URLRequest(url: destinationUrl))
+        }
+
+        return true
+    }
+
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.name == "loombusOAuth",
               let urlString = message.body as? String,
@@ -188,6 +216,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UIScrollViewDelegate, WKS
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         if handleLoombusAuthCallback(url) {
+            return true
+        }
+
+        if handleLoombusNavigation(url) {
             return true
         }
 
