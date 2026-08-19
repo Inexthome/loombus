@@ -1,0 +1,10 @@
+html:not(.dark) .professional-booking-payment-operations-scope .bg-zinc-100\/70 {
+  background-color: rgb(250 250 250 / 0.96) !important;
+  color: rgb(39 39 42) !important;
+  border: 1px solid rgb(228 228 231 / 0.9);
+}
+
+html:not(.dark) .professional-booking-payment-operations-scope .bg-zinc-100\/80 {
+  background-color: rgb(250 250 250 / 0.98) !important;
+  color: rgb(82 82 91) !important;
+}
