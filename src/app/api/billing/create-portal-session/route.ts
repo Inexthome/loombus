@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { getBillingSupabaseAdmin } from "@/lib/billing-entitlements";
+import {
+  getResolvedGeneralSubscriptionForUser,
+  isGeneralSubscriptionActive,
+} from "@/lib/general-subscriptions";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_BILLING_PORTAL_CONFIGURATION_ID =
@@ -87,43 +91,63 @@ async function resolveGeneralMembershipStripeBilling({
 }): Promise<BillingOwnership | null> {
   const admin = getBillingSupabaseAdmin();
 
-  let generalQuery = (admin.from("user_general_subscriptions") as any)
-    .select("provider_customer_id, provider_subscription_id")
-    .eq("user_id", userId)
-    .eq("provider", "stripe")
-    .not("provider_customer_id", "is", null)
-    .order("last_verified_at", { ascending: false, nullsFirst: false })
-    .order("updated_at", { ascending: false })
-    .limit(1);
-
-  if (subscriptionId) {
-    generalQuery = generalQuery.eq(
-      "provider_subscription_id",
-      subscriptionId
+  if (!subscriptionId) {
+    const resolved = await getResolvedGeneralSubscriptionForUser(userId);
+    const activeStripeSubscription = resolved.subscriptions.find(
+      (subscription) =>
+        subscription.provider === "stripe" &&
+        isGeneralSubscriptionActive(subscription) &&
+        Boolean(subscription.provider_customer_id)
     );
-  }
 
-  const { data: generalRows, error: generalError } = await generalQuery;
-  if (!generalError) {
-    const general = ((generalRows ?? [])[0] ?? null) as
-      | GeneralStripeBillingRow
-      | null;
-    if (general?.provider_customer_id) {
+    if (activeStripeSubscription?.provider_customer_id) {
       return {
-        customerId: general.provider_customer_id,
-        subscriptionId:
-          subscriptionId ?? general.provider_subscription_id ?? null,
+        customerId: activeStripeSubscription.provider_customer_id,
+        subscriptionId: activeStripeSubscription.provider_subscription_id ?? null,
         scope: "membership",
       };
     }
-  } else if (generalError.code !== "42P01") {
-    throw new Error(
-      `Unable to verify general Premium billing: ${generalError.message}`
+
+    const hasProviderNeutralMembership = resolved.subscriptions.some(
+      (subscription) =>
+        subscription.provider === "stripe" || subscription.provider === "apple"
     );
+
+    if (hasProviderNeutralMembership) {
+      return null;
+    }
+  } else {
+    const { data: generalRows, error: generalError } = await (
+      admin.from("user_general_subscriptions") as any
+    )
+      .select("provider_customer_id, provider_subscription_id")
+      .eq("user_id", userId)
+      .eq("provider", "stripe")
+      .eq("provider_subscription_id", subscriptionId)
+      .not("provider_customer_id", "is", null)
+      .limit(1);
+
+    if (!generalError) {
+      const general = ((generalRows ?? [])[0] ?? null) as
+        | GeneralStripeBillingRow
+        | null;
+      if (general?.provider_customer_id) {
+        return {
+          customerId: general.provider_customer_id,
+          subscriptionId: general.provider_subscription_id ?? subscriptionId,
+          scope: "membership",
+        };
+      }
+    } else if (generalError.code !== "42P01") {
+      throw new Error(
+        `Unable to verify general Premium billing: ${generalError.message}`
+      );
+    }
   }
 
   // Rollout fallback for environments that have not applied the additive
-  // subscription-foundation migration yet.
+  // subscription-foundation migration yet, or accounts that have not yet
+  // produced any provider-neutral membership row.
   const { data: entitlement, error: entitlementError } = await admin
     .from("user_ai_entitlements")
     .select("stripe_customer_id, stripe_subscription_id")
@@ -153,18 +177,11 @@ async function resolveGeneralMembershipStripeBilling({
 }
 
 async function hasAppleGeneralMembership(userId: string) {
-  const admin = getBillingSupabaseAdmin();
-  const { data, error } = await (admin.from("user_general_subscriptions") as any)
-    .select("id")
-    .eq("user_id", userId)
-    .eq("provider", "apple")
-    .limit(1);
-
-  if (error?.code === "42P01") return false;
-  if (error) {
-    throw new Error(`Unable to verify Apple billing provider: ${error.message}`);
-  }
-  return Boolean((data ?? []).length);
+  const resolved = await getResolvedGeneralSubscriptionForUser(userId);
+  return resolved.subscriptions.some(
+    (subscription) =>
+      subscription.provider === "apple" && isGeneralSubscriptionActive(subscription)
+  );
 }
 
 async function resolveBillingOwnership({
