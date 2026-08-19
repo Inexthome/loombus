@@ -4,4 +4,5 @@
     <string name="title_activity_main">Loombus</string>
     <string name="package_name">com.loombus.app</string>
     <string name="custom_url_scheme">com.loombus.app</string>
+    <string name="asset_statements" translatable="false">[{"include":"https://loombus.com/.well-known/assetlinks.json"}]</string>
 </resources>

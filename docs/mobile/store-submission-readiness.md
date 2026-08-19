@@ -4,9 +4,9 @@ Status: release checklist only. Do not merge, deploy, upload, or submit until ev
 
 ## Locked candidate
 
-- iOS: `1.0.3 (4)`, bundle `com.loombus.mobile`
-- Live Activities extension: `1.0.3 (4)`, bundle `com.loombus.mobile.LiveActivities`
-- Android: `1.0.3`, version code `5`, package `com.loombus.app`
+- iOS: `1.0.3 (5)`, bundle `com.loombus.mobile`
+- Live Activities extension: `1.0.3 (5)`, bundle `com.loombus.mobile.LiveActivities`
+- Android: `1.0.3`, version code `6`, package `com.loombus.app`
 - Distributed comparison: iOS `1.0.2 (1)` and Android `1.0.2`, version code `4`
 
 ## App Store Connect
@@ -37,7 +37,9 @@ Status: release checklist only. Do not merge, deploy, upload, or submit until ev
 - Run `npm run verify:android-page-size -- --artifact=/absolute/path/to/app-release.aab` and confirm `PAGE_ALIGNMENT_16K` with the current bundle analysis tools, following [Android's 16 KB guidance](https://developer.android.com/guide/practices/page-sizes).
 - Install each signed candidate as an upgrade over its distributed predecessor.
 - Verify session persistence after backgrounding, force quit, device restart, offline relaunch, and token refresh.
-- Verify explicit logout clears the session, removes saved biometric credentials when selected, disables the current push token, and ends active appointment surfaces.
+- Verify Apple Passwords and Google Password Manager offer to save/update a successful Email login and later autofill both fields.
+- Verify explicit logout clears only the Loombus session and credential-provider state, preserves OS-saved passwords, disables the current push token, and ends active appointment surfaces.
+- Verify the optional Face ID/device-biometric app lock remains independent from password saving.
 - Verify approximate location allow, deny, and Settings recovery.
 - Verify camera and selected-photo flows without broad library access.
 - Verify push in foreground, background, and terminated states with accurate badges and no duplicates.

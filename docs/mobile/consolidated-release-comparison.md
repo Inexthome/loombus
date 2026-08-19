@@ -8,10 +8,10 @@ App Store Connect and Google Play Console were verified on August 18, 2026. The 
 
 | Item | Installed-build source baseline | Current release branch |
 | --- | --- | --- |
-| Git revision | `6a80b6b2` | `agent/mobile-release-auth-persistence` release branch |
+| Git revision | `6a80b6b2` | `agent/mobile-password-manager-system-save` release branch |
 | Date | 2026-06-23 | 2026-08-18 |
-| iOS metadata | Distributed: 1.0.2, build 1 | 1.0.3, build 4 |
-| Android metadata | Distributed: 1.0.2, version code 4 | 1.0.3, version code 5 |
+| iOS metadata | Distributed: 1.0.2, build 1 | 1.0.3, build 5 |
+| Android metadata | Distributed: 1.0.2, version code 4 | 1.0.3, version code 6 |
 | Change volume | Baseline | 3,671 commits; 1,477 files; 349,810 insertions; 40,026 deletions |
 
 The candidate version identifiers are newer than both verified store baselines. Recheck the consoles immediately before upload in case another build is uploaded first.
@@ -22,8 +22,8 @@ The candidate version identifiers are newer than both verified store baselines. 
 | --- | --- | --- | --- |
 | Remembered login | Browser storage session behavior could diverge inside iOS and Android WebViews | Cookie-backed Supabase session, legacy session migration, and transient-network preservation | Implemented; device restart tests pending |
 | Remain signed in after closing app | Not reliable on mobile | Session persists unless the user explicitly logs out or the server invalidates the refresh token | Implemented; force-quit and token-refresh tests pending |
-| Logout | Could leave native push registration active | Current-device push token is disabled before Supabase sign-out | Implemented; device test pending |
-| Password manager association | No verified native credential association | iOS Associated Domains and AASA plus Android Digital Asset Links endpoint | Implemented; Android Play signing fingerprint and device tests pending |
+| Logout | Could leave native push registration active | Current-device push token is disabled before Supabase sign-out; OS-saved passwords remain available | Implemented; device test pending |
+| Password manager association | Private biometric vault did not create entries in Apple Passwords or Google Password Manager | Native Apple Shared Web Credentials and Android Credential Manager save/update flows, plus the verified website associations | Implemented; signed device tests pending |
 | Approximate location | No native permission workflow | Native coarse-location request only after the user chooses a Local/nearby action; Android precise-location permission removed | Implemented; iOS and Android tests pending |
 | Camera and photos | Web-oriented upload behavior | Native Camera/Photo Picker support, iOS limited-library handling, Android selected-media picker | Implemented; device tests pending |
 | Permission visibility | No consolidated native status view | Mobile permission center under Privacy & Account Security | Implemented |
@@ -32,7 +32,7 @@ The candidate version identifiers are newer than both verified store baselines. 
 | iOS Live Activities | Not declared | Loombus ActivityKit bridge, embedded Widget extension, Lock Screen and Dynamic Island appointment presentation | Implemented; Xcode archive and device lifecycle tests pending |
 | Android Live Updates | Not declared | Ongoing appointment notification with Android 16 promotion request and countdown | Implemented; Android 16 device test pending |
 | Cross-app tracking | No advertising tracking | Still no cross-app advertising tracking and no ATT prompt | Correct as implemented; add a prompt only if tracking is introduced later |
-| Biometrics | Native biometric support present | Shown in the mobile permission center and retained for local session protection | Regression test pending |
+| Biometrics | Native biometric support mixed app locking with private credential storage | Retained only as the optional local app/session lock; password storage belongs to the OS password manager | Regression test pending |
 
 ## Egress and runtime impact
 
@@ -86,7 +86,7 @@ The candidate version identifiers are newer than both verified store baselines. 
 | Badge increments accurately and clears after reads | Pending | Pending | Yes |
 | Background refresh does not create duplicate notifications | Pending | Pending | Yes |
 | Active appointment starts, updates, deep-links, and ends its live surface | Pending | Pending | Yes if retained in scope |
-| Biometrics unlock remembered session | Pending | Pending | Yes |
+| Optional biometrics app lock protects a remembered session | Pending | Pending | Yes |
 | Tracking prompt is absent | Pending | Pending | Yes |
 
 ## Release decision

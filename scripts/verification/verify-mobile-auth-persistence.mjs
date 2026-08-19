@@ -17,19 +17,41 @@ const [
   supabaseClient,
   sessionGuard,
   loginPage,
+  nativeBiometric,
+  nativePasswordManager,
+  authSessionCleanup,
   nativePush,
   signOutHelper,
   iosEntitlements,
+  iosPasswordManager,
+  iosBridgeController,
+  iosProject,
   appleAssociation,
+  androidBuild,
+  androidManifest,
+  androidStrings,
+  androidPasswordManager,
+  androidMainActivity,
   androidAssociation,
 ] = await Promise.all([
   read("src/lib/supabase/client.ts"),
   read("src/components/session-lifecycle-guard.tsx"),
   read("src/app/login/page.tsx"),
+  read("src/lib/native-biometric.ts"),
+  read("src/lib/native-password-manager.ts"),
+  read("src/components/auth-session-cleanup.tsx"),
   read("src/lib/native-push.ts"),
   read("src/lib/auth-sign-out.ts"),
   read("ios/App/Loombus.entitlements"),
+  read("ios/App/App/LoombusPasswordManagerPlugin.swift"),
+  read("ios/App/App/LoombusBridgeViewController.swift"),
+  read("ios/App/App.xcodeproj/project.pbxproj"),
   read("public/.well-known/apple-app-site-association"),
+  read("android/app/build.gradle"),
+  read("android/app/src/main/AndroidManifest.xml"),
+  read("android/app/src/main/res/values/strings.xml"),
+  read("android/app/src/main/java/com/loombus/app/LoombusPasswordManagerPlugin.java"),
+  read("android/app/src/main/java/com/loombus/app/MainActivity.java"),
   read("src/app/.well-known/assetlinks.json/route.ts"),
 ]);
 
@@ -53,11 +75,38 @@ requireText(
   "await restorePersistedSupabaseSession();",
   "Login must restore an existing legacy session before showing sign-in."
 );
+for (const expected of [
+  '<label htmlFor="email"',
+  'name="email"',
+  'type="email"',
+  'autoComplete="username"',
+  'name="password"',
+  'autoComplete="current-password"',
+  "saveLoginToSystemPasswordManager",
+]) {
+  requireText(loginPage, expected, `The native login form is missing ${expected}.`);
+}
+if (loginPage.includes("Remember this login with device biometrics")) {
+  throw new Error("The repeated private biometric credential prompt must be removed.");
+}
+for (const forbidden of ["setCredentials(", "getSecureCredentials("]) {
+  if (nativeBiometric.includes(forbidden)) {
+    throw new Error(`Private biometric password storage must not use ${forbidden}.`);
+  }
+}
 requireText(
-  loginPage,
-  "Remember this login with device biometrics on this device?",
-  "Saved-login copy must work for both iOS and Android biometrics."
+  nativeBiometric,
+  "clearLegacyNativeBiometricLoginCredentials",
+  "The obsolete private biometric credential must be removed once."
 );
+requireText(
+  nativePasswordManager,
+  'registerPlugin<PasswordManagerPlugin>(\n  "LoombusPasswordManager"',
+  "The shared system password-manager bridge is missing."
+);
+if (authSessionCleanup.includes("deleteNativeBiometricLoginCredentials")) {
+  throw new Error("Signing out must not delete credentials owned by the password manager.");
+}
 requireText(
   sessionGuard,
   'getAccountAccessHref("verification_unavailable")',
@@ -78,6 +127,28 @@ requireText(
   "webcredentials:loombus.com",
   "The iOS app must declare the Loombus password AutoFill association."
 );
+for (const expected of [
+  "SecAddSharedWebCredential(",
+  '"loombus.com" as CFString',
+  'public let jsName = "LoombusPasswordManager"',
+]) {
+  requireText(
+    iosPasswordManager,
+    expected,
+    `The Apple Passwords bridge is missing ${expected}.`
+  );
+}
+requireText(
+  iosBridgeController,
+  "registerPluginInstance(LoombusPasswordManagerPlugin())",
+  "The iOS bridge does not register the password-manager plugin."
+);
+for (const expected of [
+  "LoombusPasswordManagerPlugin.swift in Sources",
+  "LoombusPasswordManagerPlugin.swift */ = {isa = PBXFileReference",
+]) {
+  requireText(iosProject, expected, `The Xcode project is missing ${expected}.`);
+}
 
 const association = JSON.parse(appleAssociation);
 if (
@@ -102,6 +173,51 @@ for (const expected of [
   );
 }
 
+for (const expected of [
+  "androidx.credentials:credentials:1.6.0-beta02",
+  "androidx.credentials:credentials-play-services-auth:1.6.0-beta02",
+  "androidx.webkit:webkit:$androidxWebkitVersion",
+]) {
+  requireText(androidBuild, expected, `Android is missing ${expected}.`);
+}
+requireText(
+  androidManifest,
+  'android:name="asset_statements"',
+  "Android is missing its password-manager asset statement."
+);
+requireText(
+  androidStrings,
+  "https://loombus.com/.well-known/assetlinks.json",
+  "Android does not reference the hosted Digital Asset Links file."
+);
+for (const expected of [
+  "CreatePasswordRequest",
+  "createCredentialAsync(",
+  "clearCredentialStateAsync(",
+]) {
+  requireText(
+    androidPasswordManager,
+    expected,
+    `The Google Password Manager bridge is missing ${expected}.`
+  );
+}
+for (const expected of [
+  "registerPlugin(LoombusPasswordManagerPlugin.class)",
+  "WebViewFeature.WEB_AUTHENTICATION",
+  "WebSettingsCompat.setWebAuthenticationSupport(",
+]) {
+  requireText(
+    androidMainActivity,
+    expected,
+    `The Android WebView password-manager setup is missing ${expected}.`
+  );
+}
+requireText(
+  signOutHelper,
+  "clearNativePasswordManagerCredentialState",
+  "Android sign-out must clear credential-provider session state without deleting saved passwords."
+);
+
 console.log(
-  "Mobile auth persistence verification passed: cookie sessions, legacy migration, transient-error preservation, push cleanup, iOS webcredentials, and Android credential association are present."
+  "Mobile auth persistence verification passed: cookie sessions persist, the obsolete private biometric prompt is removed, Apple Passwords and Google Password Manager save flows are wired, logout preserves saved credentials, and the independent biometric app lock remains available."
 );
