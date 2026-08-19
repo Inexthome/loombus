@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { deleteNativeBiometricLoginCredentials } from "@/lib/native-biometric";
 import { supabase } from "@/lib/supabase/client";
 
 const TRANSIENT_LOCAL_STORAGE_KEYS = [
@@ -36,7 +35,6 @@ export function AuthSessionCleanup() {
       }
 
       clearTransientSessionState();
-      void deleteNativeBiometricLoginCredentials();
     });
 
     return () => {

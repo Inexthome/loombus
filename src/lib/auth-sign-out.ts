@@ -1,14 +1,17 @@
 import { disableNativePushNotificationsForCurrentSession } from "@/lib/native-push";
 import { endAllAppointmentLiveUpdates } from "@/lib/native-live-updates";
+import { clearNativePasswordManagerCredentialState } from "@/lib/native-password-manager";
 import { supabase } from "@/lib/supabase/client";
 
 type SignOutOptions = Parameters<typeof supabase.auth.signOut>[0];
 
 export async function signOutCurrentDevice(options?: SignOutOptions) {
-  const [pushResult, liveUpdateResult] = await Promise.allSettled([
-    disableNativePushNotificationsForCurrentSession(),
-    endAllAppointmentLiveUpdates(),
-  ]);
+  const [pushResult, liveUpdateResult, credentialStateResult] =
+    await Promise.allSettled([
+      disableNativePushNotificationsForCurrentSession(),
+      endAllAppointmentLiveUpdates(),
+      clearNativePasswordManagerCredentialState(),
+    ]);
 
   if (pushResult.status === "rejected" || !pushResult.value.ok) {
     console.warn(
@@ -21,6 +24,18 @@ export async function signOutCurrentDevice(options?: SignOutOptions) {
     console.warn(
       "Loombus could not close this device's appointment live updates before sign-out.",
       liveUpdateResult.reason
+    );
+  }
+
+  if (
+    credentialStateResult.status === "rejected" ||
+    !credentialStateResult.value.ok
+  ) {
+    console.warn(
+      "Loombus could not clear Android credential-provider session state before sign-out.",
+      credentialStateResult.status === "fulfilled"
+        ? credentialStateResult.value.error
+        : credentialStateResult.reason
     );
   }
 

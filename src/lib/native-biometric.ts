@@ -8,6 +8,8 @@ export const BIOMETRIC_UNLOCK_SETTING_EVENT =
 
 const BIOMETRIC_LOGIN_SERVER = "loombus.com";
 const BIOMETRIC_LOGIN_EMAIL_KEY = "loombus:native-biometric-login-email";
+const BIOMETRIC_LOGIN_MIGRATION_KEY =
+  "loombus:native-biometric-login-migrated-to-system-password-manager";
 
 type NativeBiometricModule = typeof import("@capgo/capacitor-native-biometric");
 
@@ -43,17 +45,16 @@ export function setBiometricUnlockEnabled(enabled: boolean) {
   window.dispatchEvent(new Event(BIOMETRIC_UNLOCK_SETTING_EVENT));
 }
 
-export function getRememberedBiometricLoginEmail() {
-  if (typeof window === "undefined") {
-    return "";
-  }
+export async function clearLegacyNativeBiometricLoginCredentials() {
+  if (typeof window === "undefined") return;
 
-  return window.localStorage.getItem(BIOMETRIC_LOGIN_EMAIL_KEY) ?? "";
-}
+  window.localStorage.removeItem(BIOMETRIC_LOGIN_EMAIL_KEY);
 
-export async function isNativeBiometricLoginSaved() {
-  if (!isNativeApp()) {
-    return false;
+  if (
+    !isNativeApp() ||
+    window.localStorage.getItem(BIOMETRIC_LOGIN_MIGRATION_KEY) === "true"
+  ) {
+    return;
   }
 
   try {
@@ -62,116 +63,15 @@ export async function isNativeBiometricLoginSaved() {
       server: BIOMETRIC_LOGIN_SERVER,
     });
 
-    return Boolean(result.isSaved);
-  } catch {
-    return false;
-  }
-}
-
-export async function saveNativeBiometricLoginCredentials(
-  username: string,
-  password: string
-) {
-  if (!isNativeApp()) {
-    return {
-      ok: false,
-      error: "Biometric login is only available in the installed mobile app.",
-    };
-  }
-
-  try {
-    const { NativeBiometric, AccessControl } = await getNativeBiometricModule();
-
-    const availability = await NativeBiometric.isAvailable({
-      useFallback: true,
-    });
-
-    if (!availability.isAvailable) {
-      return {
-        ok: false,
-        error:
-          "Set up Face ID, Touch ID, fingerprint, or a device passcode before saving biometric sign-in.",
-      };
+    if (result.isSaved) {
+      await NativeBiometric.deleteCredentials({
+        server: BIOMETRIC_LOGIN_SERVER,
+      });
     }
 
-    await NativeBiometric.setCredentials({
-      server: BIOMETRIC_LOGIN_SERVER,
-      username,
-      password,
-      accessControl: AccessControl.BIOMETRY_ANY,
-    });
-
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(BIOMETRIC_LOGIN_EMAIL_KEY, username);
-    }
-
-    setBiometricUnlockEnabled(true);
-
-    return { ok: true };
-  } catch (error) {
-    return {
-      ok: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unable to save biometric sign-in on this device.",
-    };
-  }
-}
-
-export async function getNativeBiometricLoginCredentials() {
-  if (!isNativeApp()) {
-    return {
-      ok: false,
-      error: "Biometric login is only available in the installed mobile app.",
-    };
-  }
-
-  try {
-    const { NativeBiometric } = await getNativeBiometricModule();
-    const credentials = await NativeBiometric.getSecureCredentials({
-      server: BIOMETRIC_LOGIN_SERVER,
-      reason: "Sign in to Loombus.",
-      title: "Sign in to Loombus",
-      subtitle: "Use Face ID, fingerprint, or device passcode.",
-      description: "Loombus will use your saved login for this device.",
-      negativeButtonText: "Cancel",
-    });
-
-    return {
-      ok: true,
-      username: credentials.username,
-      password: credentials.password,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unable to unlock saved biometric sign-in.",
-    };
-  }
-}
-
-export async function deleteNativeBiometricLoginCredentials() {
-  if (typeof window !== "undefined") {
-    window.localStorage.removeItem(BIOMETRIC_LOGIN_EMAIL_KEY);
-    window.localStorage.removeItem(BIOMETRIC_UNLOCK_ENABLED_KEY);
-    window.dispatchEvent(new Event(BIOMETRIC_UNLOCK_SETTING_EVENT));
-  }
-
-  if (!isNativeApp()) {
-    return;
-  }
-
-  try {
-    const { NativeBiometric } = await getNativeBiometricModule();
-    await NativeBiometric.deleteCredentials({
-      server: BIOMETRIC_LOGIN_SERVER,
-    });
+    window.localStorage.setItem(BIOMETRIC_LOGIN_MIGRATION_KEY, "true");
   } catch {
-    // Ignore cleanup failures. Local display state is still cleared above.
+    // Retry later without changing the independent biometric app-lock setting.
   }
 }
 
