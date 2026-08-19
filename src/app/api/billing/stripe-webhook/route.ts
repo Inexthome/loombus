@@ -160,6 +160,16 @@ function getGeneralStripeBillingIdentity(
     getCustomerIdFromSubscription(subscription) ?? fallbackCustomerId ?? null;
   const priceId = getSubscriptionPriceId(subscription);
   const periodEnd = getSubscriptionPeriodEnd(subscription);
+  const scheduledCancelAt =
+    typeof subscription.cancel_at === "number" &&
+    Number.isFinite(subscription.cancel_at)
+      ? subscription.cancel_at
+      : null;
+  const effectivelyCancelsAtPeriodEnd =
+    subscription.cancel_at_period_end ||
+    (scheduledCancelAt !== null &&
+      periodEnd !== null &&
+      scheduledCancelAt * 1000 === new Date(periodEnd).getTime());
 
   return {
     provider: "stripe",
@@ -168,7 +178,7 @@ function getGeneralStripeBillingIdentity(
     providerProductId: priceId,
     currentPeriodEnd: periodEnd,
     subscriptionStatus: subscription.status,
-    cancelAtPeriodEnd: subscription.cancel_at_period_end,
+    cancelAtPeriodEnd: effectivelyCancelsAtPeriodEnd,
     lastVerifiedAt: new Date().toISOString(),
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
