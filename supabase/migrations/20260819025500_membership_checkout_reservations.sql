@@ -18,6 +18,7 @@ create table if not exists public.membership_checkout_reservations (
     )
   ),
   stripe_checkout_session_id text,
+  checkout_expires_at timestamptz not null,
   expires_at timestamptz not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
