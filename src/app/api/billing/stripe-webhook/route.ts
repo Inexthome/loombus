@@ -98,6 +98,39 @@ function getPlanKeyFromSubscription(subscription: Stripe.Subscription) {
   return subscription.metadata?.plan_key ?? null;
 }
 
+async function resolveGeneralStripeSubscriptionOwnership(
+  subscription: Stripe.Subscription
+): Promise<{ userId: string; planKey: string | null } | null> {
+  const metadataUserId = getUserIdFromSubscription(subscription);
+  const metadataPlanKey = getPlanKeyFromSubscription(subscription);
+
+  if (metadataUserId) {
+    return { userId: metadataUserId, planKey: metadataPlanKey };
+  }
+
+  const supabase = getBillingSupabaseAdmin();
+  const { data, error } = await (
+    supabase.from("user_general_subscriptions") as any
+  )
+    .select("user_id, plan_key")
+    .eq("provider", "stripe")
+    .eq("provider_subscription_id", subscription.id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Unable to recover Stripe subscription ownership: ${error.message}`
+    );
+  }
+
+  if (!data?.user_id) return null;
+
+  return {
+    userId: data.user_id,
+    planKey: metadataPlanKey ?? data.plan_key ?? null,
+  };
+}
+
 function getGeneralStripeBillingIdentity(
   subscription: Stripe.Subscription,
   fallbackCustomerId?: string | null
@@ -288,16 +321,16 @@ async function handleSubscriptionChanged(subscription: Stripe.Subscription) {
     return;
   }
 
-  const userId = getUserIdFromSubscription(subscription);
-  const planKey = getPlanKeyFromSubscription(subscription);
-  if (!userId) {
+  const ownership = await resolveGeneralStripeSubscriptionOwnership(subscription);
+  if (!ownership) {
     console.warn(
-      "Stripe subscription event missing user_id metadata:",
+      "Stripe subscription event could not be matched to a Loombus account:",
       subscription.id
     );
     return;
   }
 
+  const { userId, planKey } = ownership;
   const billingIdentity = getGeneralStripeBillingIdentity(subscription);
 
   if (
