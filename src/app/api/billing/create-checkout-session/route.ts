@@ -8,7 +8,8 @@ import {
 } from "@/lib/general-subscriptions";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-const MEMBERSHIP_CHECKOUT_RESERVATION_MS = 60 * 60 * 1000;
+const MEMBERSHIP_CHECKOUT_SESSION_MS = 60 * 60 * 1000;
+const MEMBERSHIP_CHECKOUT_RESERVATION_MS = 24 * 60 * 60 * 1000;
 
 const CHECKOUT_PLANS = {
   premium_monthly: {
@@ -72,6 +73,7 @@ type MembershipCheckoutReservation = {
   reservation_id: string;
   plan_key: string;
   stripe_checkout_session_id: string | null;
+  checkout_expires_at: string;
   expires_at: string;
 };
 
@@ -145,7 +147,7 @@ async function loadMembershipCheckoutReservation(userId: string) {
     admin.from("membership_checkout_reservations") as any
   )
     .select(
-      "user_id,reservation_id,plan_key,stripe_checkout_session_id,expires_at"
+      "user_id,reservation_id,plan_key,stripe_checkout_session_id,checkout_expires_at,expires_at"
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -186,8 +188,12 @@ async function reserveMembershipCheckout(
   }
 
   const admin = getBillingSupabaseAdmin();
+  const now = Date.now();
+  const checkoutExpiresAt = new Date(
+    now + MEMBERSHIP_CHECKOUT_SESSION_MS
+  ).toISOString();
   const expiresAt = new Date(
-    Date.now() + MEMBERSHIP_CHECKOUT_RESERVATION_MS
+    now + MEMBERSHIP_CHECKOUT_RESERVATION_MS
   ).toISOString();
   const { data, error } = await (
     admin.from("membership_checkout_reservations") as any
@@ -195,10 +201,11 @@ async function reserveMembershipCheckout(
     .insert({
       user_id: userId,
       plan_key: planKey,
+      checkout_expires_at: checkoutExpiresAt,
       expires_at: expiresAt,
     })
     .select(
-      "user_id,reservation_id,plan_key,stripe_checkout_session_id,expires_at"
+      "user_id,reservation_id,plan_key,stripe_checkout_session_id,checkout_expires_at,expires_at"
     )
     .single();
 
@@ -370,7 +377,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "A different Loombus membership checkout is already in progress. Finish that checkout or try this plan again after the current checkout expires.",
+              "A different Loombus membership checkout is already in progress. Finish that checkout or retry after it expires.",
             code: "membership_checkout_already_in_progress",
           },
           { status: 409 }
@@ -456,7 +463,8 @@ export async function POST(request: NextRequest) {
       ...(membershipReservation
         ? {
             expires_at: Math.floor(
-              new Date(membershipReservation.expires_at).getTime() / 1000
+              new Date(membershipReservation.checkout_expires_at).getTime() /
+                1000
             ),
           }
         : {}),
