@@ -12,6 +12,13 @@ type PremiumPlanCheckoutButtonProps = {
   variant?: "primary" | "secondary";
 };
 
+type CanonicalSubscriptionStatus = {
+  active?: boolean;
+  isAdmin?: boolean;
+  billingProvider?: "stripe" | "apple" | null;
+  providers?: Array<"stripe" | "apple">;
+};
+
 export function PremiumPlanCheckoutButton({
   planKey,
   children,
@@ -33,6 +40,52 @@ export function PremiumPlanCheckoutButton({
           message: "Sign in before starting a Loombus subscription purchase.",
           actionHref: "/login?next=/premium",
           actionLabel: "Log in",
+        });
+        return;
+      }
+
+      // Fail closed before either Stripe Checkout or StoreKit purchase. The
+      // server remains authoritative, but this preflight prevents the Premium
+      // UI from initiating a second recurring membership when an active Stripe
+      // or Apple membership is already bound to the account.
+      const subscriptionResponse = await fetch("/api/billing/subscription-status", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        cache: "no-store",
+      });
+
+      if (!subscriptionResponse.ok) {
+        showSubscriptionWarning({
+          title: "Plan verification unavailable",
+          message:
+            "Loombus could not verify your current membership. No purchase was started. Please try again shortly.",
+        });
+        return;
+      }
+
+      const subscriptionStatus =
+        (await subscriptionResponse.json()) as CanonicalSubscriptionStatus;
+
+      if (subscriptionStatus.active || subscriptionStatus.isAdmin) {
+        const providerLabel = subscriptionStatus.providers?.includes("apple")
+          ? subscriptionStatus.providers.includes("stripe")
+            ? "Apple or Stripe"
+            : "Apple"
+          : subscriptionStatus.providers?.includes("stripe")
+            ? "Stripe"
+            : subscriptionStatus.billingProvider === "apple"
+              ? "Apple"
+              : subscriptionStatus.billingProvider === "stripe"
+                ? "Stripe"
+                : "your current billing provider";
+
+        showSubscriptionWarning({
+          title: "Membership already active",
+          message: subscriptionStatus.isAdmin
+            ? "Admin access already includes Loombus paid-plan capabilities. No subscription purchase was started."
+            : `Your Loombus membership is already active through ${providerLabel}. Use Manage billing to change or cancel the existing membership instead of starting another subscription.`,
         });
         return;
       }
