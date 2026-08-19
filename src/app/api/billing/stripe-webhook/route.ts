@@ -84,10 +84,31 @@ function getSubscriptionPriceId(subscription: Stripe.Subscription) {
 }
 
 function getSubscriptionPeriodEnd(subscription: Stripe.Subscription) {
-  const periodEnd = (
-    subscription as Stripe.Subscription & { current_period_end?: number }
+  const legacyPeriodEnd = (
+    subscription as Stripe.Subscription & {
+      current_period_end?: number | null;
+    }
   ).current_period_end;
-  return periodEnd ? new Date(periodEnd * 1000).toISOString() : null;
+
+  if (
+    typeof legacyPeriodEnd === "number" &&
+    Number.isFinite(legacyPeriodEnd)
+  ) {
+    return new Date(legacyPeriodEnd * 1000).toISOString();
+  }
+
+  const itemPeriodEnds = subscription.items.data
+    .map((item) => item.current_period_end)
+    .filter(
+      (value): value is number =>
+        typeof value === "number" && Number.isFinite(value)
+    );
+
+  if (itemPeriodEnds.length === 0) {
+    return null;
+  }
+
+  return new Date(Math.min(...itemPeriodEnds) * 1000).toISOString();
 }
 
 function getUserIdFromSubscription(subscription: Stripe.Subscription) {
