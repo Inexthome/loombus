@@ -241,6 +241,7 @@ export default function ProfessionalBookingPaymentOperationsClient() {
     ["Needs attention", summary?.attention ?? 0, RotateCcw, "Pending reconciliation or error"],
     ["Captured", summary?.captured ?? 0, CheckCircle2, "Successfully paid"],
     ["Refunded", summary?.refunded ?? 0, RefreshCw, "Full refund recorded"],
+    ["Authorization expired", summary?.authorizationExpired ?? 0, Clock3, "Authorization no longer usable"],
     ["Open disputes", summary?.openDisputes ?? 0, ShieldCheck, "Read-only dispute queue"],
   ] as const;
 
@@ -272,7 +273,7 @@ export default function ProfessionalBookingPaymentOperationsClient() {
         <div className="mt-6 rounded-2xl border border-red-500/30 bg-red-500/5 px-5 py-4 text-sm text-red-700 dark:text-red-300">{message}</div>
       ) : null}
 
-      <section className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <section className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
         {cards.map(([label, value, Icon, detail]) => (
           <div key={label} className="rounded-2xl border border-zinc-200/80 bg-white/70 p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/50">
             <div className="flex items-center justify-between gap-3">
