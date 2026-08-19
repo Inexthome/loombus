@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import {
+  getResolvedGeneralSubscriptionForUser,
+  isGeneralSubscriptionActive,
+} from "@/lib/general-subscriptions";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 
@@ -100,6 +104,26 @@ function getPriceId(planKey: CheckoutPlanKey) {
   return undefined;
 }
 
+async function getMembershipCheckoutState(userId: string) {
+  const resolved = await getResolvedGeneralSubscriptionForUser(userId);
+  const providerSubscriptions = resolved.subscriptions.filter(
+    (subscription) =>
+      subscription.provider === "stripe" || subscription.provider === "apple"
+  );
+  const activeProviderSubscriptions = providerSubscriptions.filter(
+    isGeneralSubscriptionActive
+  );
+  const existingStripeCustomerId = providerSubscriptions.find(
+    (subscription) =>
+      subscription.provider === "stripe" && subscription.provider_customer_id
+  )?.provider_customer_id;
+
+  return {
+    activeProviderSubscriptions,
+    existingStripeCustomerId: existingStripeCustomerId ?? null,
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -162,6 +186,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let existingStripeCustomerId: string | null = null;
+    if (isMembershipCheckoutPlanKey(requestedPlanKey)) {
+      const membershipState = await getMembershipCheckoutState(user.id);
+      existingStripeCustomerId = membershipState.existingStripeCustomerId;
+
+      if (membershipState.activeProviderSubscriptions.length > 0) {
+        const providers = Array.from(
+          new Set(
+            membershipState.activeProviderSubscriptions.map(
+              (subscription) => subscription.provider
+            )
+          )
+        );
+        const providerLabel = providers.includes("apple")
+          ? providers.includes("stripe")
+            ? "Apple or Stripe"
+            : "Apple"
+          : "Stripe";
+
+        return NextResponse.json(
+          {
+            error:
+              `You already have an active Loombus membership billed through ${providerLabel}. Manage your existing membership to change plan or billing interval.`,
+            code: "membership_subscription_already_active",
+            providers,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     if (
       isMembershipCheckoutPlanKey(requestedPlanKey) &&
       stripeKeyLooksLive() &&
@@ -214,7 +269,9 @@ export async function POST(request: NextRequest) {
         ? `${origin}/the-floor/subscribe?checkout=cancelled&plan=${requestedPlanKey}`
         : `${origin}/premium?checkout=cancelled&plan=${requestedPlanKey}`,
       client_reference_id: user.id,
-      customer_email: user.email ?? undefined,
+      ...(existingStripeCustomerId
+        ? { customer: existingStripeCustomerId }
+        : { customer_email: user.email ?? undefined }),
       metadata,
       ...(selectedPlan.mode === "subscription"
         ? {
