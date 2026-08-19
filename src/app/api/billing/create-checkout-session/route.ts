@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { getBillingSupabaseAdmin } from "@/lib/billing-entitlements";
 import {
   getResolvedGeneralSubscriptionForUser,
   isGeneralSubscriptionActive,
 } from "@/lib/general-subscriptions";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const MEMBERSHIP_CHECKOUT_RESERVATION_MS = 60 * 60 * 1000;
 
 const CHECKOUT_PLANS = {
   premium_monthly: {
@@ -65,6 +67,13 @@ const CHECKOUT_PLANS = {
 } as const;
 
 type CheckoutPlanKey = keyof typeof CHECKOUT_PLANS;
+type MembershipCheckoutReservation = {
+  user_id: string;
+  reservation_id: string;
+  plan_key: string;
+  stripe_checkout_session_id: string | null;
+  expires_at: string;
+};
 
 function isCheckoutPlanKey(value: string): value is CheckoutPlanKey {
   return value in CHECKOUT_PLANS;
@@ -123,6 +132,106 @@ async function getMembershipCheckoutState(userId: string) {
     existingStripeCustomerId: existingStripeCustomerId ?? null,
     isAdminOverride: resolved.isAdminOverride,
   };
+}
+
+function reservationExpired(reservation: MembershipCheckoutReservation) {
+  const expiresAt = new Date(reservation.expires_at).getTime();
+  return !Number.isFinite(expiresAt) || expiresAt <= Date.now();
+}
+
+async function loadMembershipCheckoutReservation(userId: string) {
+  const admin = getBillingSupabaseAdmin();
+  const { data, error } = await (
+    admin.from("membership_checkout_reservations") as any
+  )
+    .select(
+      "user_id,reservation_id,plan_key,stripe_checkout_session_id,expires_at"
+    )
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Unable to verify membership checkout reservation: ${error.message}`);
+  }
+
+  return (data ?? null) as MembershipCheckoutReservation | null;
+}
+
+async function deleteMembershipCheckoutReservation(
+  userId: string,
+  reservationId: string
+) {
+  const admin = getBillingSupabaseAdmin();
+  const { error } = await (
+    admin.from("membership_checkout_reservations") as any
+  )
+    .delete()
+    .eq("user_id", userId)
+    .eq("reservation_id", reservationId);
+
+  if (error) {
+    throw new Error(`Unable to clear membership checkout reservation: ${error.message}`);
+  }
+}
+
+async function reserveMembershipCheckout(
+  userId: string,
+  planKey: CheckoutPlanKey
+): Promise<MembershipCheckoutReservation> {
+  const existing = await loadMembershipCheckoutReservation(userId);
+  if (existing && !reservationExpired(existing)) return existing;
+
+  if (existing) {
+    await deleteMembershipCheckoutReservation(userId, existing.reservation_id);
+  }
+
+  const admin = getBillingSupabaseAdmin();
+  const expiresAt = new Date(
+    Date.now() + MEMBERSHIP_CHECKOUT_RESERVATION_MS
+  ).toISOString();
+  const { data, error } = await (
+    admin.from("membership_checkout_reservations") as any
+  )
+    .insert({
+      user_id: userId,
+      plan_key: planKey,
+      expires_at: expiresAt,
+    })
+    .select(
+      "user_id,reservation_id,plan_key,stripe_checkout_session_id,expires_at"
+    )
+    .single();
+
+  if (!error && data) return data as MembershipCheckoutReservation;
+
+  if (error?.code === "23505") {
+    const winner = await loadMembershipCheckoutReservation(userId);
+    if (winner && !reservationExpired(winner)) return winner;
+  }
+
+  throw new Error(
+    `Unable to reserve membership checkout: ${error?.message ?? "reservation unavailable"}`
+  );
+}
+
+async function persistMembershipCheckoutSession(
+  reservation: MembershipCheckoutReservation,
+  sessionId: string
+) {
+  const admin = getBillingSupabaseAdmin();
+  const { error } = await (
+    admin.from("membership_checkout_reservations") as any
+  )
+    .update({
+      stripe_checkout_session_id: sessionId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", reservation.user_id)
+    .eq("reservation_id", reservation.reservation_id);
+
+  if (error) {
+    throw new Error(`Unable to persist membership checkout session: ${error.message}`);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -249,6 +358,55 @@ export async function POST(request: NextRequest) {
       "https://loombus.com";
 
     const stripe = new Stripe(STRIPE_SECRET_KEY);
+    let membershipReservation: MembershipCheckoutReservation | null = null;
+
+    if (isMembershipCheckoutPlanKey(requestedPlanKey)) {
+      membershipReservation = await reserveMembershipCheckout(
+        user.id,
+        requestedPlanKey
+      );
+
+      if (membershipReservation.plan_key !== requestedPlanKey) {
+        return NextResponse.json(
+          {
+            error:
+              "A different Loombus membership checkout is already in progress. Finish that checkout or try this plan again after the current checkout expires.",
+            code: "membership_checkout_already_in_progress",
+          },
+          { status: 409 }
+        );
+      }
+
+      if (membershipReservation.stripe_checkout_session_id) {
+        const existingSession = await stripe.checkout.sessions.retrieve(
+          membershipReservation.stripe_checkout_session_id
+        );
+
+        if (existingSession.status === "open" && existingSession.url) {
+          return NextResponse.json({ url: existingSession.url });
+        }
+
+        if (existingSession.status === "complete") {
+          return NextResponse.json(
+            {
+              error:
+                "Your membership checkout already completed and is being finalized. No second checkout was started.",
+              code: "membership_checkout_already_completed",
+            },
+            { status: 409 }
+          );
+        }
+
+        await deleteMembershipCheckoutReservation(
+          user.id,
+          membershipReservation.reservation_id
+        );
+        membershipReservation = await reserveMembershipCheckout(
+          user.id,
+          requestedPlanKey
+        );
+      }
+    }
 
     const metadata = {
       user_id: user.id,
@@ -265,7 +423,7 @@ export async function POST(request: NextRequest) {
         "credits" in selectedPlan ? String(selectedPlan.credits) : "",
     };
 
-    const session = await stripe.checkout.sessions.create({
+    const checkoutParams: Stripe.Checkout.SessionCreateParams = {
       mode: selectedPlan.mode,
       payment_method_types: ["card"],
       line_items: [
@@ -295,7 +453,27 @@ export async function POST(request: NextRequest) {
             },
           }
         : {}),
-    });
+      ...(membershipReservation
+        ? {
+            expires_at: Math.floor(
+              new Date(membershipReservation.expires_at).getTime() / 1000
+            ),
+          }
+        : {}),
+    };
+
+    const session = await stripe.checkout.sessions.create(
+      checkoutParams,
+      membershipReservation
+        ? {
+            idempotencyKey: `loombus-membership-${membershipReservation.reservation_id}`,
+          }
+        : undefined
+    );
+
+    if (membershipReservation) {
+      await persistMembershipCheckoutSession(membershipReservation, session.id);
+    }
 
     if (!session.url) {
       return NextResponse.json(
