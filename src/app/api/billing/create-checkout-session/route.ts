@@ -121,6 +121,7 @@ async function getMembershipCheckoutState(userId: string) {
   return {
     activeProviderSubscriptions,
     existingStripeCustomerId: existingStripeCustomerId ?? null,
+    isAdminOverride: resolved.isAdminOverride,
   };
 }
 
@@ -190,6 +191,17 @@ export async function POST(request: NextRequest) {
     if (isMembershipCheckoutPlanKey(requestedPlanKey)) {
       const membershipState = await getMembershipCheckoutState(user.id);
       existingStripeCustomerId = membershipState.existingStripeCustomerId;
+
+      if (membershipState.isAdminOverride) {
+        return NextResponse.json(
+          {
+            error:
+              "Admin access already includes Loombus Premium Pro capabilities. A paid membership is not required for this account.",
+            code: "membership_checkout_admin_not_required",
+          },
+          { status: 409 }
+        );
+      }
 
       if (membershipState.activeProviderSubscriptions.length > 0) {
         const providers = Array.from(
