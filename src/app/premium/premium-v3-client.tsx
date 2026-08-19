@@ -56,7 +56,7 @@ type CanonicalSubscriptionStatus = {
   paidPlan: SubscriptionPlanId;
   active: boolean;
   isAdmin: boolean;
-  source: "general_subscription" | "legacy_ai_entitlement" | "free";
+  source: "profile_admin" | "general_subscription" | "legacy_ai_entitlement" | "free";
   billingProvider: "stripe" | "apple" | null;
   providers: Array<"stripe" | "apple">;
 };
