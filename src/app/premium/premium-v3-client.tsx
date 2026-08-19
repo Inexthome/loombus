@@ -277,17 +277,44 @@ function PlanActions({
     );
   }
 
+  if (signedIn && currentPlan !== "free") {
+    return (
+      <div className="premium-v2-actions">
+        {canManageBilling ? (
+          <div className="premium-v2-embedded-action">
+            <BillingPortalButton variant="secondary">
+              Manage billing
+            </BillingPortalButton>
+          </div>
+        ) : (
+          <Link
+            href="/support#contact-support"
+            className="premium-v2-secondary-action"
+          >
+            Ask about billing
+          </Link>
+        )}
+      </div>
+    );
+  }
+
   const purchasablePlan = plan as PurchasablePlan;
-  const monthlyKey = purchasablePlan === "premium" ? "premium_monthly" : "premium_plus_monthly";
-  const annualKey = purchasablePlan === "premium" ? "premium_annual" : "premium_plus_annual";
+  const monthlyKey =
+    purchasablePlan === "premium"
+      ? "premium_monthly"
+      : "premium_plus_monthly";
+  const annualKey =
+    purchasablePlan === "premium"
+      ? "premium_annual"
+      : "premium_plus_annual";
 
   return (
     <div className="premium-v2-actions premium-v2-checkout-actions">
       <PremiumPlanCheckoutButton planKey={monthlyKey}>
-        {signedIn && currentPlan !== "free" ? "Upgrade monthly" : "Start monthly"}
+        Start monthly
       </PremiumPlanCheckoutButton>
       <PremiumPlanCheckoutButton planKey={annualKey} variant="secondary">
-        {signedIn && currentPlan !== "free" ? "Upgrade annually" : "Start annually"}
+        Start annually
       </PremiumPlanCheckoutButton>
     </div>
   );
