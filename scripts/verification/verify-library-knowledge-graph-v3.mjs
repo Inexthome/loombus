@@ -3,7 +3,7 @@ import fs from "node:fs";
 const page = fs.readFileSync("src/app/library/research/evidence/graph/page.tsx", "utf8");
 const surface = fs.readFileSync("src/components/library/library-knowledge-graph-v3-surface.tsx", "utf8");
 
-if (!page.includes("LibraryKnowledgeGraphV3Surface")) throw new Error("Graph route must render v3 surface");
+if (!page.includes("LibraryKnowledgeGraphV3Surface") && !page.includes("LibraryKnowledgeGraphV4Surface")) throw new Error("Graph route must render v3 or approved successor surface");
 for (const table of [
   "library_research_claims",
   "library_knowledge_objects",
