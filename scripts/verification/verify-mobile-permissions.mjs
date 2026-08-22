@@ -60,10 +60,25 @@ requireText(
   "android.permission.ACCESS_COARSE_LOCATION",
   "The Android approximate-location declaration is missing."
 );
-if (androidManifest.includes("android.permission.ACCESS_FINE_LOCATION")) {
-  throw new Error(
-    "Android precise location must remain undeclared while Loombus only uses approximate location."
-  );
+
+const effectiveAndroidManifest = androidManifest.replace(
+  /<uses-permission\b(?=[^>]*tools:node=["']remove["'])[^>]*\/>/g,
+  ""
+);
+
+for (const [permission, message] of [
+  [
+    "android.permission.ACCESS_FINE_LOCATION",
+    "Android precise location must remain undeclared while Loombus only uses approximate location.",
+  ],
+  [
+    "android.permission.ACCESS_BACKGROUND_LOCATION",
+    "Android background location must remain undeclared while Loombus only uses foreground approximate location.",
+  ],
+]) {
+  if (effectiveAndroidManifest.includes(permission)) {
+    throw new Error(message);
+  }
 }
 
 requireText(
