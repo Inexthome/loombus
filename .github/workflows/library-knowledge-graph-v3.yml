@@ -1,0 +1,25 @@
+name: Library Knowledge Graph v3
+
+on:
+  pull_request:
+    paths:
+      - "src/app/library/research/evidence/graph/page.tsx"
+      - "src/components/library/library-knowledge-graph-v3-surface.tsx"
+      - "scripts/verification/verify-library-knowledge-graph-v3.mjs"
+      - ".github/workflows/library-knowledge-graph-v3.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Verify Knowledge Graph v3
+        run: node scripts/verification/verify-library-knowledge-graph-v3.mjs
+      - name: Diff check
+        run: git diff --check

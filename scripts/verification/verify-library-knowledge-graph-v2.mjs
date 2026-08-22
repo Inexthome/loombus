@@ -16,7 +16,8 @@ const graph = fs.readFileSync(files.graph, "utf8");
 const provenancePage = fs.readFileSync(files.provenancePage, "utf8");
 const focused = fs.readFileSync(files.focused, "utf8");
 
-if (!graphPage.includes("LibraryKnowledgeGraphV2Surface")) throw new Error("Graph route must render v2 surface");
+const routeRendersV2OrSuccessor = graphPage.includes("LibraryKnowledgeGraphV2Surface") || graphPage.includes("LibraryKnowledgeGraphV3Surface");
+if (!routeRendersV2OrSuccessor) throw new Error("Graph route must render v2 surface or an approved successor surface");
 if (!graph.includes("kindFilter") || !graph.includes("relationFilter") || !graph.includes("statusFilter")) throw new Error("Graph v2 filters are incomplete");
 if (!graph.includes("Incoming") || !graph.includes("Outgoing")) throw new Error("Graph v2 must expose relationship directionality");
 if (!graph.includes("Trace provenance")) throw new Error("Graph v2 must expose provenance traversal");
