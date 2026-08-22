@@ -1,0 +1,31 @@
+name: Library discussion feedback runtime
+
+on:
+  pull_request:
+    paths:
+      - "src/app/api/library/discussion-feedback/**"
+      - "src/app/library/research/from-discussion/**"
+      - "src/app/discussions/[id]/page.tsx"
+      - "src/components/library/discussion-library-feedback-launcher.tsx"
+      - "src/components/library/library-discussion-feedback-surface.tsx"
+      - "scripts/verification/verify-library-discussion-feedback-runtime.mjs"
+      - ".github/workflows/library-discussion-feedback-runtime.yml"
+  push:
+    paths:
+      - "src/app/api/library/discussion-feedback/**"
+      - "src/app/library/research/from-discussion/**"
+      - "src/app/discussions/[id]/page.tsx"
+      - "src/components/library/discussion-library-feedback-launcher.tsx"
+      - "src/components/library/library-discussion-feedback-surface.tsx"
+      - "scripts/verification/verify-library-discussion-feedback-runtime.mjs"
+      - ".github/workflows/library-discussion-feedback-runtime.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/verification/verify-library-discussion-feedback-runtime.mjs
