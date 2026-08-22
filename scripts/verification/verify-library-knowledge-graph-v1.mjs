@@ -32,8 +32,14 @@ for (const table of requiredTables) {
   if (!surface.includes(`from(\"${table}\")`)) throw new Error(`Knowledge Graph does not read ${table}`);
 }
 
-for (const relation of ["supports", "challenges", "context", "core", "supporting", "counterpoint", "derived from opening post", "derived from reply", "promoted to discussion"]) {
-  if (!surface.includes(relation)) throw new Error(`Missing relationship vocabulary: ${relation}`);
+// Evidence and knowledge-membership vocabularies are data-driven from their
+// canonical relation/role columns, so verify the runtime forwards those values
+// into graph edges instead of requiring brittle literal strings in the UI source.
+if (!surface.includes('row.relation')) throw new Error("Knowledge Graph must map canonical evidence relation values");
+if (!surface.includes('row.role')) throw new Error("Knowledge Graph must map canonical knowledge-claim role values");
+
+for (const relation of ["derived from opening post", "derived from reply", "promoted to discussion"]) {
+  if (!surface.includes(relation)) throw new Error(`Missing fixed relationship vocabulary: ${relation}`);
 }
 
 if (!surface.includes("supabase.auth.getUser()")) throw new Error("Knowledge Graph must require authenticated member context");
