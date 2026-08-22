@@ -2,7 +2,7 @@ import fs from "node:fs";
 
 const page = fs.readFileSync("src/app/library/research/evidence/graph/page.tsx", "utf8");
 const surface = fs.readFileSync("src/components/library/library-knowledge-graph-v5-surface.tsx", "utf8");
-if (!page.includes("LibraryKnowledgeGraphV5Surface")) throw new Error("Graph route must render v5 surface");
+if (!["LibraryKnowledgeGraphV5Surface", "LibraryKnowledgeGraphV6Surface"].some((token) => page.includes(token))) throw new Error("Graph route must render v5 or approved successor surface");
 for (const token of ["findShortestPath", "maxHops", "Either direction", "Recorded direction only", "Shortest recorded path", "Saved graph views", "localStorage", "Trace provenance", "LibraryKnowledgeGraphV4Surface"]) if (!surface.includes(token)) throw new Error(`Missing v5 semantic exploration contract: ${token}`);
 for (const table of ["library_research_claims","library_knowledge_objects","library_research_items","library_research_claim_evidence","library_knowledge_claims","library_discussion_claim_derivations","library_discussion_knowledge_derivations","library_reply_claim_derivations","library_reply_knowledge_derivations","library_knowledge_discussion_promotions","library_publications","discussions"]) if (!surface.includes(`from(\"${table}\")`)) throw new Error(`Missing v5 graph source: ${table}`);
 for (const relation of ["derived from opening post", "derived from reply", "promoted to discussion"]) if (!surface.includes(relation)) throw new Error(`Missing v5 fixed relation: ${relation}`);
