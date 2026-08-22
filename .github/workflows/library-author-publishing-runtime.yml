@@ -1,0 +1,21 @@
+name: Library author publishing runtime
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20260822231500_add_library_author_publishing_runtime.sql"
+      - "src/app/library/publish/page.tsx"
+      - "scripts/verification/verify-library-author-publishing-runtime.mjs"
+      - ".github/workflows/library-author-publishing-runtime.yml"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify Library author publishing runtime
+        run: node scripts/verification/verify-library-author-publishing-runtime.mjs
