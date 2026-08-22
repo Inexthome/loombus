@@ -1,5 +1,5 @@
-import { LibraryKnowledgeGraphV5Surface } from "@/components/library/library-knowledge-graph-v5-surface";
+import { LibraryKnowledgeGraphV6Surface } from "@/components/library/library-knowledge-graph-v6-surface";
 
 export default function LibraryKnowledgeGraphPage() {
-  return <LibraryKnowledgeGraphV5Surface />;
+  return <LibraryKnowledgeGraphV6Surface />;
 }
